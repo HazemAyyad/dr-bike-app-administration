@@ -1,0 +1,46 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
+
+class BoxesWidget extends StatelessWidget {
+  const BoxesWidget({Key? key, required this.box}) : super(key: key);
+
+  final Map<String, dynamic> box;
+
+  @override
+  Widget build(BuildContext context) {
+    TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
+
+    return Flexible(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Text(
+            box['boxName'],
+            style: textStyle.copyWith(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor3
+                  : Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+          Text(
+            "${NumberFormat('#,###').format(int.parse(box['amount'].toString()))} ${'currency'.tr}",
+            style: textStyle.copyWith(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor3
+                  : Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
