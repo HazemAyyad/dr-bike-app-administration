@@ -44,34 +44,36 @@ class ViewChecksWidget extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 5.h),
               child: Row(
                 children: [
-                  Container(
-                    width: 65.w,
-                    height: 65.h,
-                    decoration: BoxDecoration(
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor
-                          : AppColors.customGreyColor6,
-                      borderRadius: BorderRadius.circular(4.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withAlpha(30),
-                          blurRadius: 5.r,
-                          spreadRadius: 2.r,
-                          offset: Offset(0, 2),
+                  Flexible(
+                    child: Container(
+                      width: 65.w,
+                      height: 65.h,
+                      decoration: BoxDecoration(
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.customGreyColor6,
+                        borderRadius: BorderRadius.circular(4.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withAlpha(30),
+                            blurRadius: 5.r,
+                            spreadRadius: 2.r,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          "${NumberFormat('#,###').format(int.parse(check['total'].toString()))} ${'currency'.tr}",
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium!
+                              .copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15.sp,
+                              ),
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        "${NumberFormat('#,###').format(int.parse(check['total'].toString()))} ${'currency'.tr}",
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium!
-                            .copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15.sp,
-                            ),
                       ),
                     ),
                   ),

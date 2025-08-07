@@ -1,5 +1,7 @@
+import 'package:device_preview/device_preview.dart';
 import 'package:doctorbike/core/services/user_data.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -18,6 +20,11 @@ import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final binding = WidgetsFlutterBinding.ensureInitialized();
+  final window = binding.window;
+  final width = window.physicalSize.width / window.devicePixelRatio;
+  final height = window.physicalSize.height / window.devicePixelRatio;
   await GetStorage.init();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -28,12 +35,18 @@ void main() async {
   final userToken = await UserData.getUserToken();
   print('User Token: $userToken');
 
-  runApp(const MyApp());
+  runApp(
+    DevicePreview(
+      enabled: kDebugMode,
+      builder: (_) => MyApp(designSize: Size(width, height)),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({Key? key, required this.designSize}) : super(key: key);
 
+  final Size designSize;
   @override
   Widget build(BuildContext context) {
     ScreenUtilNew.init(context);
@@ -58,7 +71,9 @@ class MyApp extends StatelessWidget {
           },
         );
       },
-      designSize: const Size(430, 932),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      designSize: designSize,
     );
   }
 }

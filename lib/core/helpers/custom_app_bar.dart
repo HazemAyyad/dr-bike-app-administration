@@ -39,9 +39,7 @@ AppBar customAppBar(
     ),
     actions: actions ??
         [
-          if (fromDateController != null &&
-              toDateController != null &&
-              employeeNameController != null)
+          if (fromDateController != null && toDateController != null)
             IconButton(
               highlightColor: Colors.transparent,
               icon: Icon(

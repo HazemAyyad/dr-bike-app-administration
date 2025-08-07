@@ -127,7 +127,7 @@ class CreateTaskController extends GetxController {
   // متغير للصورة
   final subTaskFile = Rx<File?>(null);
 
-  List<File> selectedFile = [];
+  final selectedFile = Rx<File?>(null);
 
   final RxBool requireSubTasImage = false.obs;
 
@@ -199,6 +199,8 @@ class CreateTaskController extends GetxController {
     // resetData();
   }
 
+  final RxString recordedPath = ''.obs;
+
   // دالة لإعادة تعيين البيانات
   void resetData() {
     taskNameController.clear();
@@ -236,7 +238,7 @@ class CreateTaskController extends GetxController {
     isSelected.value = 0;
     hideTask.value = false;
     selectedDays.value = '';
-    selectedFile = [];
+    selectedFile.value = null;
     selectedDaysList.clear();
     super.dispose();
   }

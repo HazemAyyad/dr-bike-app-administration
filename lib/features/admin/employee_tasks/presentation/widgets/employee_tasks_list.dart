@@ -1,11 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
+import 'package:doctorbike/core/helpers/custom_chechbox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/employee_tasks_controller.dart';
 
 class EmployeeTasks extends StatelessWidget {
@@ -121,11 +123,55 @@ class EmployeeTasksLists extends StatelessWidget {
       children: [
         SizedBox(height: index == 0 ? 5.h : 0.h),
         GestureDetector(
-          onTap: () {
-            // controller.getUserTransactionsData(
-            //     debt.customerId.toString());
-            // showUserTransactions(context, controller, debt);
+          onLongPress: () {
+            Get.dialog(
+              AlertDialog(
+                backgroundColor: ThemeService.isDark.value
+                    ? AppColors.darckColor
+                    : AppColors.whiteColor,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomChechbox(
+                      title: 'deleteTask',
+                      value: controller.deleteTask,
+                      onChanged: (value) {
+                        controller.deleteTask.value = value!;
+                        Get.back();
+                      },
+                      style: theme.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.secondaryColor,
+                      ),
+                    ),
+                    CustomChechbox(
+                      title: 'deleteRepeatedTask',
+                      value: controller.deleteTasDuplicate,
+                      onChanged: (value) {
+                        controller.deleteTasDuplicate.value = value!;
+                        Get.back();
+                      },
+                      style: theme.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.secondaryColor,
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            );
           },
+          onTap: () => Get.toNamed(
+            AppRoutes.TASKDETAILS,
+            arguments: 'employeeTaskDetails',
+          ),
           child: Container(
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
@@ -202,7 +248,7 @@ class EmployeeTasksLists extends StatelessWidget {
                     ? SizedBox(height: 75.h, width: 90.w)
                     : Container(
                         width: 60.w,
-                        height: 75.h,
+                        height: 80.h,
                         decoration: BoxDecoration(
                           color: int.parse(order['time'] ?? 0) > 2
                               ? AppColors.customGreen1

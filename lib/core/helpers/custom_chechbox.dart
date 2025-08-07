@@ -8,13 +8,19 @@ import '../utils/app_colors.dart';
 class CustomChechbox extends StatelessWidget {
   const CustomChechbox({
     Key? key,
-    required this.titale,
+    required this.title,
+    this.subtitle,
     required this.value,
+    this.style,
+    this.shape,
     required this.onChanged,
   }) : super(key: key);
 
-  final String titale;
+  final String title;
+  final String? subtitle;
   final RxBool value;
+  final TextStyle? style;
+  final CircleBorder? shape;
   final void Function(bool?) onChanged;
 
   @override
@@ -24,26 +30,55 @@ class CustomChechbox extends StatelessWidget {
       children: [
         Obx(
           () => Checkbox(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4.r),
-            ),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            activeColor: AppColors.primaryColor,
+            shape: shape ??
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4.r),
+                ),
             side: BorderSide(color: AppColors.primaryColor),
             value: value.value,
             onChanged: onChanged,
           ),
         ),
-        Flexible(
-          child: Text(
-            titale.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w400,
-                  color: ThemeService.isDark.value
-                      ? Colors.white
-                      : AppColors.secondaryColor,
+        subtitle == null
+            ? Flexible(
+                child: Text(
+                  title.tr,
+                  style: style ??
+                      Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w400,
+                            color: ThemeService.isDark.value
+                                ? Colors.white
+                                : AppColors.secondaryColor,
+                          ),
                 ),
-          ),
-        ),
+              )
+            : Flexible(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title.tr,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                    Flexible(
+                      child: Text(
+                        subtitle!.tr,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w400,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
       ],
     );
   }

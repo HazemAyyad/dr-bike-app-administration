@@ -40,18 +40,17 @@ import '../features/admin/maintenance/presentation/views/maintenance_screen.dart
 import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
 import '../features/admin/sales/presentation/binding/sales_binding.dart';
 import '../features/admin/sales/presentation/views/sales_screen.dart';
-import '../features/admin/--/presentation/special_tasks/binding/special_tasks_binding.dart';
-import '../features/admin/--/presentation/special_tasks/views/special_tasks_screen.dart';
+import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
+import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
 import '../features/admin/--/presentation/project_management/binding/project_management_binding.dart';
 import '../features/admin/--/presentation/project_management/views/project_management_screen.dart';
 import '../features/admin/--/presentation/project_management/widgets/create_project_screen/create_project_screen.dart';
 import '../features/admin/--/presentation/project_management/widgets/project_details/project_details_screeen.dart';
-import '../features/admin/--/presentation/target_section/binding/target_section_binding.dart';
-import '../features/admin/--/presentation/target_section/views/target_section_screen.dart';
-import '../features/admin/--/presentation/target_section/widgets/add_new_target/add_new_target_screen.dart';
-import '../features/admin/--/presentation/target_section/widgets/target_details/target_details_screen.dart';
-import '../features/admin/--/presentation/task_details/binding/task_details_binding.dart';
-import '../features/admin/--/presentation/task_details/views/task_details_screen.dart';
+import '../features/admin/target_section/presentation/binding/target_section_binding.dart';
+import '../features/admin/target_section/presentation/views/target_section_screen.dart';
+import '../features/admin/target_section/presentation/widgets/add_new_target/add_new_target_screen.dart';
+import '../features/admin/target_section/presentation/widgets/target_details/target_details_screen.dart';
+import '../features/admin/employee_tasks/presentation/views/task_details_screen.dart';
 import '../features/admin/sales/presentation/widgets/new_cash_profit.dart';
 import '../features/admin/sales/presentation/widgets/new_instant_sale/new_instant_sale_screen.dart';
 import '../features/auth/presentation/login/binding/login_binding.dart';
@@ -192,7 +191,6 @@ class AppPages {
     GetPage(
       name: AppRoutes.TASKDETAILS,
       page: () => const TaskDetailsScreen(),
-      binding: TaskDetailsBinding(),
       transition: _transitionFade,
     ),
     // المهام الخاصة

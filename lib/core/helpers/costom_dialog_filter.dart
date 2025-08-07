@@ -12,7 +12,7 @@ void showCustomDialog(
   BuildContext context, {
   required TextEditingController fromDateController,
   required TextEditingController toDateController,
-  required TextEditingController employeeNameController,
+  required TextEditingController? employeeNameController,
   required String label,
   required VoidCallback onPressed,
 }) {
@@ -117,19 +117,23 @@ void showCustomDialog(
               ],
             ),
             SizedBox(height: 15.h),
-            CustomTextField(
-              label: label.tr,
-              labelTextstyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-              fillColor: ThemeService.isDark.value
-                  ? AppColors.customGreyColor
-                  : AppColors.whiteColor2,
-              hintText: 'employeeNameExample',
-              controller: employeeNameController,
-            ),
+
+            employeeNameController != null
+                ? CustomTextField(
+                    label: label.tr,
+                    labelTextstyle:
+                        Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: AppColors.primaryColor,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                    fillColor: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.whiteColor2,
+                    hintText: 'employeeNameExample',
+                    controller: employeeNameController,
+                  )
+                : SizedBox.shrink(),
             SizedBox(height: 20.h),
             AppButton(
               text: 'apply',

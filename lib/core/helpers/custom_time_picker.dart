@@ -329,7 +329,8 @@ class _CustomTimePickerState extends State<TimePicker> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        margin: EdgeInsets.symmetric(vertical: 10.7.h),
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryColor : Colors.grey[300],
           borderRadius: BorderRadius.circular(20),
@@ -385,7 +386,7 @@ class _DraggableClockHandState extends State<DraggableClockHand> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onPanUpdate: (details) {
-        final center = Offset(widget.size / 2, widget.size / 2);
+        final center = Offset(widget.size.w / 2, widget.size.h / 2);
         final dx = details.localPosition.dx - center.dx;
         final dy = details.localPosition.dy - center.dy;
         final newAngle = math.atan2(dx, -dy);
@@ -401,7 +402,7 @@ class _DraggableClockHandState extends State<DraggableClockHand> {
           painter: _ClockHandPainter(
             angle: _angle,
             color: widget.color,
-            length: widget.size / 2 - 42,
+            length: widget.size.w / 2.w - 42.w,
           ),
         ),
       ),
@@ -422,7 +423,7 @@ class _ClockHandPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width.w / 2, size.height.h / 2.05);
+    final center = Offset(size.width.w / 2.w, size.height.h / 2.05.h);
     final end = Offset(
       center.dx + length * math.sin(angle),
       center.dy - length * math.cos(angle),
@@ -430,7 +431,7 @@ class _ClockHandPainter extends CustomPainter {
 
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 2
+      ..strokeWidth = 2.w
       ..strokeCap = StrokeCap.round;
 
     canvas.drawLine(center, end, paint);

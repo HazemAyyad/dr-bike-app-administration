@@ -30,7 +30,7 @@ class EmployeeTasksController extends GetxController {
     if (currentTab.value == 0) {
       orders.addAll([
         {
-          'taskName': 'ترتيب  رفوف   رفوف رفوف رفوف رفوف رفوف رفوف المحل',
+          'taskName': 'ترتيب رفوف المحل',
           'employeeName': 'شادي أحمد',
           'startDate': '2025/02/30',
           'endDate': '2025/02/26',
@@ -48,7 +48,7 @@ class EmployeeTasksController extends GetxController {
           'image': AssetsManger.noImageNet,
         },
         {
-          'taskName': 'ترتيب  رفوف   رفوف رفوف رفوف رفوف رفوف رفوف المحل',
+          'taskName': 'ترتيب رفوف المحل',
           'employeeName': 'شادي أحمد',
           'startDate': '2025/02/25',
           'endDate': '2025/02/27',
@@ -114,6 +114,10 @@ class EmployeeTasksController extends GetxController {
       );
     }
   }
+
+  final RxBool deleteTask = false.obs;
+
+  final RxBool deleteTasDuplicate = false.obs;
 
   @override
   void dispose() {

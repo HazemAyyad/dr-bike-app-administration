@@ -9,7 +9,6 @@ import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/helpers/custom_calendar.dart';
-import '../../../employee_tasks/presentation/widgets/second_step/required_label.dart';
 import '../controllers/checks_controller.dart';
 
 class NewCheckScreen extends GetView<ChecksController> {
@@ -50,11 +49,12 @@ class NewCheckScreen extends GetView<ChecksController> {
                     isRequired: true,
                   ),
             SizedBox(height: 16.h),
-            BuildRequiredLabel(label: 'due_date'),
             CustomCalendar(
               isVisible: controller.isCalendarVisible,
               onTap: () => controller.toggleCalendar(),
               selectedDay: controller.selectedDay,
+              label: 'due_date',
+              isrequired: true,
             ),
             SizedBox(height: 16.h),
             CustomDropdownField(

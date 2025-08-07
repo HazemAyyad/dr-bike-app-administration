@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/custom_chechbox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -41,83 +42,21 @@ class CustomActionsAppBar extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Obx(
-                        () => ListTileTheme(
-                          horizontalTitleGap: 0.0,
-                          child: CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            activeColor: AppColors.primaryColor,
-                            controlAffinity: ListTileControlAffinity.leading,
-                            enableFeedback: true,
-                            value: controller.dateFilter.value,
-                            onChanged: (value) {
-                              controller.dateFilter.value = value ?? false;
-                            },
-                            title: Row(
-                              children: [
-                                Text(
-                                  'sortByDate'.tr,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                                Text(
-                                  'sortByDateDesc'.tr,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      CustomChechbox(
+                        title: 'sortByDate',
+                        subtitle: 'sortByDateDesc',
+                        value: controller.dateFilter,
+                        onChanged: (value) {
+                          controller.dateFilter.value = value ?? false;
+                        },
                       ),
-                      Obx(
-                        () => ListTileTheme(
-                          horizontalTitleGap: 0.0,
-                          child: CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            activeColor: AppColors.primaryColor,
-                            controlAffinity: ListTileControlAffinity.leading,
-                            enableFeedback: true,
-                            value: controller.amountFilter.value,
-                            onChanged: (value) {
-                              controller.amountFilter.value = value ?? false;
-                            },
-                            title: Row(
-                              children: [
-                                Text(
-                                  'sortByAmount'.tr,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                ),
-                                Text(
-                                  'sortByAmountDesc'.tr,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      CustomChechbox(
+                        title: 'sortByAmount',
+                        subtitle: 'sortByAmountDesc',
+                        value: controller.amountFilter,
+                        onChanged: (value) {
+                          controller.amountFilter.value = value ?? false;
+                        },
                       ),
                       CustomDropdownField(
                         label: 'beneficiary',

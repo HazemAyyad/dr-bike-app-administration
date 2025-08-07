@@ -9,6 +9,7 @@ const Map<String, String> ar = {
   'warning': 'تحذير',
   'info': 'معلومات',
   'failed': 'فشل',
+  'edit': 'تعديل',
 
   // messages
   'noInternetConnection': 'لا يوجد اتصال بالانترنت',
@@ -199,6 +200,8 @@ const Map<String, String> ar = {
   'from': 'من',
   'to': 'إلى',
   'apply': 'تطبيق',
+  'deleteTask': 'حذف المهمة',
+  'deleteRepeatedTask': 'حذف المهمة مع التكرار',
 
   // add Task
   'createNewEmployeeTask': 'إنشاء مهمة موظفين جديدة',
@@ -269,6 +272,11 @@ const Map<String, String> ar = {
   'numberOfPoints': 'عدد النقاط',
   'adminImage': 'صورة الإدارة',
   'employeeImage': 'صورة الموظف',
+  'recordAudio': 'تسجيل صوتي',
+
+  // مهمات خاصة
+  'weeklyTasks': 'مهمات الأسبوع',
+  'noDateTasks': 'مهمات بلا تاريخ',
 
   // employee Section
   'employeeList': 'قائمة الموظفين',

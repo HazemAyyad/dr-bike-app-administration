@@ -66,18 +66,20 @@ Widget _buildActionButton(String title, String route) {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4.w),
-            child: Text(
-              title.tr,
-              textAlign: TextAlign.center,
-              style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
-                    color: Colors.white,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          Flexible(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
+              child: Text(
+                title.tr,
+                textAlign: TextAlign.center,
+                style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         ],

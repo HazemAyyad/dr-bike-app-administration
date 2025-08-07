@@ -13,7 +13,7 @@ class ProfileScreen extends GetView<ProfileController> {
     return Scaffold(
       body: GetBuilder<ProfileController>(
         builder: (controller) {
-          return Padding(
+          return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child:
                 buildProfileSidebar(controller: controller, context: context),

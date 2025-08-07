@@ -9,6 +9,7 @@ const Map<String, String> en = {
   'warning': 'Warning',
   'info': 'Info',
   'failed': 'Failed',
+  'edit': 'Edit',
 
   // messages
   'noInternetConnection': 'No Internet Connection',
@@ -199,6 +200,8 @@ const Map<String, String> en = {
   'from': 'From',
   'to': 'To',
   'apply': 'Apply',
+  'deleteTask': 'Delete Task',
+  'deleteRepeatedTask': 'Delete Repeated Task',
 
   // add Task
   'createNewEmployeeTask': 'Create New Employee Task',
@@ -271,6 +274,11 @@ const Map<String, String> en = {
   'numberOfPoints': 'Number of Points',
   'adminImage': 'Admin Image',
   'employeeImage': 'Employee Image',
+  'recordAudio': 'Record Audio',
+
+  // مهمات خاصة
+  'weeklyTasks': 'Weekly Tasks',
+  'noDateTasks': 'No Date Tasks',
 
   // employee Section
   'employeeList': 'Employee List',

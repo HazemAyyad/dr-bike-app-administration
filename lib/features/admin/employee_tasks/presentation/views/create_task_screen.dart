@@ -1,23 +1,29 @@
-import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import 'package:doctorbike/core/helpers/custom_app_bar.dart';
+
+import '../../../../../core/helpers/app_button.dart';
+import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../core/helpers/custom_upload_button.dart';
+import '../../../../../core/helpers/loding_indicator.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
 import '../widgets/add_sub_task.dart';
-import '../widgets/second_step/second_step.dart';
-import '../widgets/third_step/third_step.dart';
+import '../widgets/select_date.dart';
+import '../../../../../core/helpers/multi_select_dropdown.dart';
+import '../widgets/audio_recorder.dart';
 
 class CreateTaskScreen extends GetView<CreateTaskController> {
   const CreateTaskScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final String title = Get.arguments['title'];
+    final String title = Get.arguments;
 
     return Scaffold(
       appBar: customAppBar(
@@ -33,9 +39,9 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 15.h),
-              // اسم المهمة
               Row(
                 children: [
+                  // اسم المهمة
                   Flexible(
                     child: CustomTextField(
                       isRequired: true,
@@ -58,6 +64,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                                 fontWeight: FontWeight.w400,
                               ),
                       controller: controller.taskDescriptionController,
+                      validator: (p0) => null,
                     ),
                   ),
                 ],
@@ -71,6 +78,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                       label: 'taskNotes',
                       hintText: 'taskDescriptionExample',
                       controller: controller.taskNotesController,
+                      validator: (p0) => null,
                     ),
                   ),
                   SizedBox(width: 15.w),
@@ -83,6 +91,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                             onChanged: (value) {
                               controller.selectedEmployees = value!;
                             },
+                            validator: (p0) => null,
                           )
                         : SizedBox(),
                   ),
@@ -91,8 +100,99 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               SizedBox(height: 15.h),
               // إضافة مهمة فرعية
               AddSubTask(controller: controller),
-              buildSecondStep(context, controller),
-              buildThirdStep(context, controller, title),
+              SizedBox(height: 10.h),
+              CustomTextField(
+                label: 'taskPoints',
+                hintText: 'taskPointsExample',
+                controller: controller.pointsController,
+                validator: (p0) => null,
+              ),
+              SizedBox(height: 15.h),
+              // تاريخ البدء
+              SelectDate(
+                label: 'startDate',
+                onTap: () => controller.toggleCalendar(true),
+                isSelected: controller.isSelected,
+                date: controller.startDate,
+                time: controller.startTime,
+                isEndDate: controller.isStartDateCalendarVisible,
+              ),
+              SizedBox(height: 15.h),
+              // تاريخ الانتهاء
+              SelectDate(
+                label: 'endDate',
+                onTap: () => controller.toggleCalendar(false),
+                isSelected: controller.isSelected,
+                date: controller.endDate,
+                time: controller.endTime,
+                isEndDate: controller.isEndDateCalendarVisible,
+              ),
+              SizedBox(height: 10.h),
+              // إشعار بدأ المهمة
+              CustomChechbox(
+                title: 'hideTask',
+                value: controller.hideTask,
+                onChanged: (value) => controller.hideTask.value = value!,
+              ),
+              // التكرار
+              CustomDropdownField(
+                label: 'taskRepeat'.tr,
+                hint: 'taskRepeatExample'.tr,
+                items: controller.weekDays,
+                onChanged: (value) => controller.selectedDays.value = value!,
+                validator: (p0) => null,
+              ),
+              SizedBox(height: 10.h),
+              MultiSelectDropdown(
+                toggleRecurrence: controller.toggleRecurrence,
+                selectedDaysList: controller.selectedDaysList,
+                isRecurrenceVisible: controller.isRecurrenceVisible,
+                label: 'taskRepeatDate',
+              ),
+              SizedBox(height: 20.h),
+              // صورة المهمة
+              title == 'createNewEmployeeTask'
+                  ? Column(
+                      children: [
+                        UploadImageButton(
+                          selectedFile: controller.selectedFile,
+                          title: 'uploadImage',
+                        ),
+                        SizedBox(height: 10.h),
+                        CustomChechbox(
+                          title: 'requireImage',
+                          value: controller.requireImage,
+                          onChanged: (value) {
+                            controller.requireImage.value = value!;
+                          },
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+
+              AudioRecorderButton(
+                label: 'recordAudio',
+                recordedPath: controller.recordedPath,
+              ),
+              SizedBox(height: 50.h),
+              Obx(
+                () => controller.isLoding.value
+                    ? lodingIndicator()
+                    : AppButton(
+                        text: 'createTask'.tr,
+                        textStyle:
+                            Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                        onPressed: () {
+                          controller.createTask(context);
+                        },
+                        height: 40.h,
+                      ),
+              ),
+              SizedBox(height: 50.h),
             ],
           ),
         ),

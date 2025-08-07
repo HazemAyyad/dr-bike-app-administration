@@ -12,76 +12,115 @@ class CustomCalendar extends StatelessWidget {
     required this.isVisible,
     required this.onTap,
     required this.selectedDay,
+    this.label,
+    this.isrequired = false,
   }) : super(key: key);
 
   final Function() onTap;
   final Rx<DateTime> selectedDay;
   final RxBool isVisible;
+  final String? label;
+  final bool? isrequired;
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: AppColors.customGreyColor2,
-            ),
-            borderRadius: BorderRadius.circular(11.r),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      children: [
+        label != null
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    showData(selectedDay.value),
-                    style:
-                        Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
+                    label!.tr,
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor6
+                              : AppColors.customGreyColor,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w400,
+                        ),
+                  ),
+                  isrequired!
+                      ? Text(
+                          '*',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: Colors.red,
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        )
+                      : SizedBox.shrink(),
+                ],
+              )
+            : SizedBox.shrink(),
+        SizedBox(height: 10.h),
+        Obx(
+          () => GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.customGreyColor2,
+                ),
+                borderRadius: BorderRadius.circular(11.r),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        showData(selectedDay.value),
+                        style: Theme.of(Get.context!)
+                            .textTheme
+                            .bodyMedium!
+                            .copyWith(
                               color: ThemeService.isDark.value
                                   ? AppColors.customGreyColor
                                   : AppColors.customGreyColor6,
                               fontSize: 16.sp,
                               fontWeight: FontWeight.w400,
                             ),
+                      ),
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        color: AppColors.primaryColor,
+                        size: 20.sp,
+                      ),
+                    ],
                   ),
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    color: AppColors.primaryColor,
-                    size: 20.sp,
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.decelerate,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) {
+                        return SizeTransition(
+                          sizeFactor: animation,
+                          child: child,
+                        );
+                      },
+                      child: isVisible.value
+                          ? Padding(
+                              padding: EdgeInsets.only(top: 20.h),
+                              child: Calendar(
+                                selectedDay: selectedDay.value,
+                                onDaySelected: (value) {
+                                  selectedDay.value = value;
+                                },
+                              ),
+                            )
+                          : SizedBox(),
+                    ),
                   ),
                 ],
               ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.decelerate,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return SizeTransition(
-                      sizeFactor: animation,
-                      child: child,
-                    );
-                  },
-                  child: isVisible.value
-                      ? Padding(
-                          padding: EdgeInsets.only(top: 20.h),
-                          child: Calendar(
-                            selectedDay: selectedDay.value,
-                            onDaySelected: (value) {
-                              selectedDay.value = value;
-                            },
-                          ),
-                        )
-                      : SizedBox(),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

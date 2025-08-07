@@ -144,7 +144,7 @@ class AddSubTask extends StatelessWidget {
                         ),
                         CustomChechbox(
                           value: controller.requireSubTasImage,
-                          titale: 'requireImage',
+                          title: 'requireImage',
                           onChanged: (value) {
                             controller.requireSubTasImage.value = value!;
                           },

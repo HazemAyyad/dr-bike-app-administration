@@ -44,12 +44,13 @@ class StatCard extends StatelessWidget {
                 imageicon,
                 height: 20.h,
                 width: 20.w,
+                scale: 0.5,
               ),
               SizedBox(width: 5.w),
               Flexible(
                 child: Text(
                   title.tr,
-                  overflow: TextOverflow.ellipsis,
+                  // overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium!.copyWith(
                     color: ThemeService.isDark.value
                         ? Colors.white
