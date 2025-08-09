@@ -135,15 +135,17 @@ Column changePasswordForm(
       // نص المساعدة
       Row(
         children: [
-          Text(
-            'passwordValidation'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w400,
-                  color: ThemeService.isDark.value
-                      ? AppColors.whiteColor
-                      : AppColors.customGreyColor,
-                ),
+          Flexible(
+            child: Text(
+              'passwordValidation'.tr,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w400,
+                    color: ThemeService.isDark.value
+                        ? AppColors.whiteColor
+                        : AppColors.customGreyColor,
+                  ),
+            ),
           ),
         ],
       ),

@@ -71,20 +71,20 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               ),
               SizedBox(height: 15.h),
               // ملاحظات عن المهمة
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'taskNotes',
-                      hintText: 'taskDescriptionExample',
-                      controller: controller.taskNotesController,
-                      validator: (p0) => null,
-                    ),
-                  ),
-                  SizedBox(width: 15.w),
-                  Flexible(
-                    child: title == 'createNewEmployeeTask'
-                        ? CustomDropdownField(
+              title == 'createNewEmployeeTask'
+                  ? Row(
+                      children: [
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'taskNotes',
+                            hintText: 'taskDescriptionExample',
+                            controller: controller.taskNotesController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        SizedBox(width: 15.w),
+                        Flexible(
+                          child: CustomDropdownField(
                             label: 'employeeName',
                             hint: 'chooseEmployee',
                             items: controller.availableEmployees,
@@ -92,11 +92,16 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                               controller.selectedEmployees = value!;
                             },
                             validator: (p0) => null,
-                          )
-                        : SizedBox(),
-                  ),
-                ],
-              ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : CustomTextField(
+                      label: 'taskNotes',
+                      hintText: 'taskDescriptionExample',
+                      controller: controller.taskNotesController,
+                      validator: (p0) => null,
+                    ),
               SizedBox(height: 15.h),
               // إضافة مهمة فرعية
               AddSubTask(controller: controller),
@@ -129,7 +134,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               ),
               SizedBox(height: 10.h),
               // إشعار بدأ المهمة
-              CustomChechbox(
+              CustomCheckBox(
                 title: 'hideTask',
                 value: controller.hideTask,
                 onChanged: (value) => controller.hideTask.value = value!,
@@ -150,31 +155,29 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 label: 'taskRepeatDate',
               ),
               SizedBox(height: 20.h),
-              // صورة المهمة
-              title == 'createNewEmployeeTask'
-                  ? Column(
-                      children: [
-                        UploadImageButton(
-                          selectedFile: controller.selectedFile,
-                          title: 'uploadImage',
-                        ),
-                        SizedBox(height: 10.h),
-                        CustomChechbox(
-                          title: 'requireImage',
-                          value: controller.requireImage,
-                          onChanged: (value) {
-                            controller.requireImage.value = value!;
-                          },
-                        ),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-
               AudioRecorderButton(
                 label: 'recordAudio',
                 recordedPath: controller.recordedPath,
               ),
-              SizedBox(height: 50.h),
+              SizedBox(height: 20.h),
+              // صورة المهمة
+              Column(
+                children: [
+                  UploadImageButton(
+                    selectedFile: controller.selectedFile,
+                    title: 'uploadImage',
+                  ),
+                  SizedBox(height: 10.h),
+                  CustomCheckBox(
+                    title: 'requireImage',
+                    value: controller.requireImage,
+                    onChanged: (value) {
+                      controller.requireImage.value = value!;
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 10.h),
               Obx(
                 () => controller.isLoding.value
                     ? lodingIndicator()

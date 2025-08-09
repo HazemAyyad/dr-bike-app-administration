@@ -40,25 +40,32 @@ class DebtsScreen extends GetView<DebtsController> {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          BuildDebtsAndCredits(
-                            icon: Icons.attach_money,
-                            label: 'gave'.tr,
-                            amount: controller
-                                    .dataService
-                                    .totalDebtsOwedToUsModel
-                                    .value
-                                    ?.totalDebtsOwedToUs ??
-                                '0',
-                            color: Colors.red,
+                          Flexible(
+                            child: BuildDebtsAndCredits(
+                              icon: Icons.attach_money,
+                              label: 'gave'.tr,
+                              amount: controller
+                                      .dataService
+                                      .totalDebtsOwedToUsModel
+                                      .value
+                                      ?.totalDebtsOwedToUs ??
+                                  '0',
+                              color: Colors.red,
+                            ),
                           ),
                           const SizedBox(width: 16),
-                          BuildDebtsAndCredits(
-                            icon: Icons.attach_money,
-                            label: 'took'.tr,
-                            amount: controller.dataService.totalDebtsWeOweModel
-                                    .value?.totalDebtsWeOwe ??
-                                '0',
-                            color: Colors.green,
+                          Flexible(
+                            child: BuildDebtsAndCredits(
+                              icon: Icons.attach_money,
+                              label: 'took'.tr,
+                              amount: controller
+                                      .dataService
+                                      .totalDebtsWeOweModel
+                                      .value
+                                      ?.totalDebtsWeOwe ??
+                                  '0',
+                              color: Colors.green,
+                            ),
                           ),
                         ],
                       ),

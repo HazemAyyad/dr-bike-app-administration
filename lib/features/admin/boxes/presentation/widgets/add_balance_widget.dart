@@ -52,7 +52,7 @@ class AddBalanceWidget extends StatelessWidget {
             SizedBox(height: 10.h),
             CustomDropdownField(
               label: 'boxName',
-              labelStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              labelTextStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: AppColors.primaryColor,
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w700,

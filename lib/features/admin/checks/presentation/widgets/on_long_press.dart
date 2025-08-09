@@ -121,7 +121,7 @@ Future<String?> cashTheCheck(
             ),
             child: CustomDropdownField(
               label: label,
-              labelStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              labelTextStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: AppColors.primaryColor,
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w700,

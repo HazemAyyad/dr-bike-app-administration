@@ -142,7 +142,7 @@ class AddSubTask extends StatelessWidget {
                           selectedFile: controller.subTaskFile,
                           title: 'uploadImage',
                         ),
-                        CustomChechbox(
+                        CustomCheckBox(
                           value: controller.requireSubTasImage,
                           title: 'requireImage',
                           onChanged: (value) {

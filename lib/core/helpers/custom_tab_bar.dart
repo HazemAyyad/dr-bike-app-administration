@@ -79,7 +79,7 @@ class CustomTabBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: currentTab.value == index
                   ? ThemeService.isDark.value
-                      ? AppColors.graywhiteColor
+                      ? AppColors.customGreyColor5
                       : AppColors.whiteColor
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(31.r),

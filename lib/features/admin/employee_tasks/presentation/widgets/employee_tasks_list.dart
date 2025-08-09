@@ -133,7 +133,7 @@ class EmployeeTasksLists extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CustomChechbox(
+                    CustomCheckBox(
                       title: 'deleteTask',
                       value: controller.deleteTask,
                       onChanged: (value) {
@@ -148,7 +148,7 @@ class EmployeeTasksLists extends StatelessWidget {
                             : AppColors.secondaryColor,
                       ),
                     ),
-                    CustomChechbox(
+                    CustomCheckBox(
                       title: 'deleteRepeatedTask',
                       value: controller.deleteTasDuplicate,
                       onChanged: (value) {

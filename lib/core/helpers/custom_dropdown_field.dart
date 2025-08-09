@@ -12,7 +12,7 @@ class CustomDropdownField extends StatelessWidget {
   final List<String> items;
   final Function(String?) onChanged;
   final bool isRequired;
-  final TextStyle? labelStyle;
+  final TextStyle? labelTextStyle;
   final BoxBorder? border;
   final bool isEnabled;
   final String? Function(String?)? validator;
@@ -23,7 +23,7 @@ class CustomDropdownField extends StatelessWidget {
     required this.items,
     required this.onChanged,
     this.isRequired = false,
-    this.labelStyle,
+    this.labelTextStyle,
     this.border,
     this.isEnabled = true,
     this.validator,
@@ -34,32 +34,35 @@ class CustomDropdownField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              label.tr,
-              style: labelStyle ??
-                  Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor6
-                            : AppColors.customGreyColor,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w400,
-                      ),
-            ),
-            isRequired
-                ? Text(
-                    '*',
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: Colors.red,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  )
-                : Container(),
-          ],
-        ),
-        SizedBox(height: 10.h),
+        label == ''
+            ? const SizedBox.shrink()
+            : Row(
+                children: [
+                  Text(
+                    label.tr,
+                    style: labelTextStyle ??
+                        Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor6
+                                  : AppColors.customGreyColor,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w400,
+                            ),
+                  ),
+                  isRequired
+                      ? Text(
+                          '*',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: Colors.red,
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        )
+                      : Container(),
+                ],
+              ),
+        label == '' ? const SizedBox.shrink() : SizedBox(height: 5.h),
         Container(
           decoration: BoxDecoration(
             color: ThemeService.isDark.value

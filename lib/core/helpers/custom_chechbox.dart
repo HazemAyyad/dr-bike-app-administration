@@ -5,8 +5,8 @@ import 'package:get/get.dart';
 import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 
-class CustomChechbox extends StatelessWidget {
-  const CustomChechbox({
+class CustomCheckBox extends StatelessWidget {
+  const CustomCheckBox({
     Key? key,
     required this.title,
     this.subtitle,

@@ -128,6 +128,30 @@ class ChecksController extends GetxController
             'checkNumber': '7851',
             'month': 'يناير 2025',
           },
+          {
+            'id': '1',
+            'total': '35000',
+            'date': '2025/07/25',
+            'days': '15',
+            'checkNumber': '7881',
+            'month': 'يوليو 2025',
+          },
+          {
+            'id': '2',
+            'total': '25000',
+            'date': '2025/08/02',
+            'days': '5',
+            'checkNumber': '7851',
+            'month': 'اغسطس 2025',
+          },
+          {
+            'id': '3',
+            'total': '25000',
+            'date': '2025/08/02',
+            'days': '-10',
+            'checkNumber': '7851',
+            'month': 'يناير 2025',
+          },
         ],
       );
       outGoingChecksList.addAll(

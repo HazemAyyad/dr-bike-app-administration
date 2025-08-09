@@ -42,7 +42,7 @@ class CustomActionsAppBar extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CustomChechbox(
+                      CustomCheckBox(
                         title: 'sortByDate',
                         subtitle: 'sortByDateDesc',
                         value: controller.dateFilter,
@@ -50,7 +50,7 @@ class CustomActionsAppBar extends StatelessWidget {
                           controller.dateFilter.value = value ?? false;
                         },
                       ),
-                      CustomChechbox(
+                      CustomCheckBox(
                         title: 'sortByAmount',
                         subtitle: 'sortByAmountDesc',
                         value: controller.amountFilter,
@@ -60,7 +60,7 @@ class CustomActionsAppBar extends StatelessWidget {
                       ),
                       CustomDropdownField(
                         label: 'beneficiary',
-                        labelStyle:
+                        labelTextStyle:
                             Theme.of(context).textTheme.bodyMedium!.copyWith(
                                   color: AppColors.primaryColor,
                                   fontSize: 15.sp,

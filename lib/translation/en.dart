@@ -279,19 +279,26 @@ const Map<String, String> en = {
   // مهمات خاصة
   'weeklyTasks': 'Weekly Tasks',
   'noDateTasks': 'No Date Tasks',
+  'transferTask': 'نقل المهمة',
 
   // employee Section
   'employeeList': 'Employee List',
   'workHours': 'Work Hours',
   'earnings': 'Earnings',
+  'loans': 'Loans',
+  'overtime': 'Overtime Requests',
+  'overtimeValue': 'Overtime Value',
+
   'hourlyRate': 'Hourly Rate',
   'points': 'Points',
   'point': 'Point',
   'workStartTime': 'Work Start Time',
   'workEndTime': 'Work End Time',
   'workHoursOfDay': 'Work Hours Of Day',
-  'salaryHours': 'Salary (based on working hours)',
+  'salary': 'Salary',
   'paySalary': 'Pay Salary',
+  'debt': 'Debt',
+  'debtValue': 'Debt Value',
 
   // add Employee
   'employeeNameExample': 'Example: Mohamed Mahmod Ali',

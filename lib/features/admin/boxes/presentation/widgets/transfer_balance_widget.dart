@@ -59,7 +59,7 @@ class TransferBalanceWidget extends StatelessWidget {
                   Flexible(
                     child: CustomDropdownField(
                       label: 'from',
-                      labelStyle:
+                      labelTextStyle:
                           Theme.of(context).textTheme.bodyMedium!.copyWith(
                                 color: AppColors.primaryColor,
                                 fontSize: 15.sp,
@@ -78,7 +78,7 @@ class TransferBalanceWidget extends StatelessWidget {
                   Flexible(
                     child: CustomDropdownField(
                       label: 'to',
-                      labelStyle:
+                      labelTextStyle:
                           Theme.of(context).textTheme.bodyMedium!.copyWith(
                                 color: AppColors.primaryColor,
                                 fontSize: 15.sp,

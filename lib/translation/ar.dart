@@ -274,22 +274,32 @@ const Map<String, String> ar = {
   'employeeImage': 'صورة الموظف',
   'recordAudio': 'تسجيل صوتي',
 
-  // مهمات خاصة
+  // المهام الخاصة
   'weeklyTasks': 'مهمات الأسبوع',
   'noDateTasks': 'مهمات بلا تاريخ',
+  'transferTask': 'نقل المهمة',
+  // 'deleteTask': 'حذف المهمة',
+  // 'deleteRepeatedTask': 'حذف المهمة مع التكرار',
+  // 'done': 'تم',
 
   // employee Section
   'employeeList': 'قائمة الموظفين',
   'workHours': 'أوقات الدوام',
   'earnings': 'الاستحقاقات المالية',
+  'loans': 'طلبات السلف',
+  'overtime': 'طلبات الاوفرتايم',
+  'overtimeValue': 'قيمة الاوفرتايم',
+
   'hourlyRate': 'سعر ساعة العمل',
   'points': 'عدد النقاط',
   'point': 'نقطة',
-  'workStartTime': 'وقت بدء العمل',
+  'workStartTime': 'وقت البدء',
   'workEndTime': 'وقت الانصراف',
   'workHoursOfDay': 'عدد ساعات العمل اليومي',
-  'salaryHours': 'الراتب(حسب ساعات العمل)',
+  'salary': 'الراتب',
   'paySalary': 'دفع الراتب',
+  'debt': 'الديون',
+  'debtValue': 'قيمة السلفة',
 
   // add Employee
   'employeeNameExample': 'مثال: محمد رفعت',
@@ -550,11 +560,8 @@ const Map<String, String> ar = {
   'newRequest': 'طلبات جديدة',
   "inProgress": "قيد العمل",
   "readyToDeliver": "جاهز للتسليم",
-  // 'archive': 'الارشيف',
   "createMaintenance": "إنشاء صيانة جديدة",
   "newMaintenance": "صيانة جديدة",
-  // 'customerName': 'أسم الزبون',
-  // 'customerNameExample': 'Example: Mohamed Nofal',
   "deliveryDate": "موعد التسليم",
   "saturday": "السبت",
   "sunday": "الأحد",
@@ -564,13 +571,10 @@ const Map<String, String> ar = {
   "thursday": "الخميس",
   "friday": "الجمعة",
   "deliveryTime": "وقت التسليم",
-  // 'details': 'تفاصيل',
-  // 'detailsExample': 'مثال : تفاصيل عن المنتج',
   "uploadMedia": "تحميل صور او فيديو للمنتج قبل الصيانة",
   "selectVideo": "أختيار فيديو",
   "selectImage": "أختيار صورة",
   'filesSelected': 'الملفات المحددة',
-  // 'next': 'التالي',
   "back": "رجوع",
   "delivered": "تم التسليم",
 };

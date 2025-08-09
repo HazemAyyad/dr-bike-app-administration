@@ -151,11 +151,11 @@ Widget buildAddMenuItem(
       controller.toggleAddMenu();
     },
     child: Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(vertical: 8.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset(iconAsset, height: 24.h, width: 24.w),
+          Flexible(child: Image.asset(iconAsset, height: 24.h, width: 24.w)),
           SizedBox(width: 8.w),
           Text(
             title.tr,

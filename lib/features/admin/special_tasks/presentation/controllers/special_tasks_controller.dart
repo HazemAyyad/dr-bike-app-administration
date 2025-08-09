@@ -81,6 +81,29 @@ class SpecialTasksController extends GetxController {
 
   final RxMap<String, RxBool> checkedMap = <String, RxBool>{}.obs;
 
+  final RxBool transferTask = false.obs;
+
+  final dayController = TextEditingController();
+
+  final List<String> daysList = [
+    "saturday".tr,
+    "sunday".tr,
+    "monday".tr,
+    "tuesday".tr,
+    "wednesday".tr,
+    "thursday".tr,
+    "friday".tr,
+  ];
+  final RxBool deleteTask = false.obs;
+
+  final RxBool deleteRepeatedTask = false.obs;
+
+  void setOnlyOneTrue(String key) {
+    transferTask.value = key == 'transferTask';
+    deleteTask.value = key == 'deleteTask';
+    deleteRepeatedTask.value = key == 'deleteRepeatedTask';
+  }
+
   @override
   void dispose() {
     fromDateController.dispose();
