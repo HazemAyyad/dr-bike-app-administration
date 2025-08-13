@@ -13,8 +13,7 @@ class ProjectManagementScreen extends GetView<ProjectManagementController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'projectManagement',
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,

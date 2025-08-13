@@ -10,7 +10,7 @@ class CustomTextField extends StatelessWidget {
     Key? key,
     required this.label,
     required this.hintText,
-    required this.controller,
+    this.controller,
     this.suffixIcon,
     this.enabled = true,
     this.fillColor,
@@ -29,11 +29,12 @@ class CustomTextField extends StatelessWidget {
     this.hintStyle,
     this.minLines,
     this.maxLines,
+    this.sizedBox,
   }) : super(key: key);
 
   final String label;
   final String hintText;
-  final TextEditingController controller;
+  final TextEditingController? controller;
   final Widget? suffixIcon;
   final bool enabled;
   final Color? fillColor;
@@ -52,39 +53,44 @@ class CustomTextField extends StatelessWidget {
   final TextStyle? hintStyle;
   final int? minLines;
   final int? maxLines;
+  final bool? sizedBox;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text.rich(
-          TextSpan(
-            text: label.tr,
-            style: labelTextstyle ??
-                Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: labelColor ??
-                          (ThemeService.isDark.value
-                              ? AppColors.customGreyColor6
-                              : AppColors.customGreyColor),
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
-            children: isRequired
-                ? [
-                    TextSpan(
-                      text: '*',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ]
-                : [],
-          ),
-        ),
-        SizedBox(height: 10.h),
+        label == ''
+            ? const SizedBox.shrink()
+            : Text.rich(
+                TextSpan(
+                  text: label.tr,
+                  style: labelTextstyle ??
+                      Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: labelColor ??
+                                (ThemeService.isDark.value
+                                    ? AppColors.customGreyColor6
+                                    : AppColors.customGreyColor),
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
+                  children: isRequired
+                      ? [
+                          TextSpan(
+                            text: '*',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ]
+                      : [],
+                ),
+              ),
+        sizedBox == false || label == ''
+            ? const SizedBox.shrink()
+            : SizedBox(height: 10.h),
         Container(
           decoration: decoration,
           child: TextFormField(
@@ -126,6 +132,10 @@ class CustomTextField extends StatelessWidget {
                     gapPadding: 1.w,
                     borderSide: BorderSide(color: Colors.transparent),
                   ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(11.r),
+                borderSide: BorderSide(color: Colors.transparent, width: 0),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(11.r),
                 gapPadding: 1.w,

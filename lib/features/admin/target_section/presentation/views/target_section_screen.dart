@@ -15,8 +15,7 @@ class TargetSectionScreen extends GetView<TargetSectionController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'targetSection',
         toDateController: controller.toDateController,
         fromDateController: controller.fromDateController,

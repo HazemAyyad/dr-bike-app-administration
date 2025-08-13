@@ -16,8 +16,7 @@ class TaskDetailsScreen extends StatelessWidget {
     final String title = Get.arguments;
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: title,
         actions: [
           TextButton.icon(

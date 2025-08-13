@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
 
 class DashboardController extends GetxController
@@ -67,6 +68,29 @@ class DashboardController extends GetxController
   void toggleAddMenu() {
     isAddMenuOpen.value = !isAddMenuOpen.value;
   }
+
+  List<Map<String, String>> addList = [
+    {
+      'title': 'newInvoice',
+      'icon': AssetsManger.invoiceIcon,
+      'route': AppRoutes.ADDNEWEMPLOYEESCREEN
+    },
+    {
+      'title': 'newEmployee',
+      'icon': AssetsManger.userIcon,
+      'route': AppRoutes.ADDNEWEMPLOYEESCREEN,
+    },
+    {
+      'title': 'newExpense',
+      'icon': AssetsManger.moneyIcon,
+      'route': AppRoutes.ADDNEWEMPLOYEESCREEN,
+    },
+    {
+      'title': 'newCustomer',
+      'icon': AssetsManger.userIcon,
+      'route': AppRoutes.ADDNEWCUSTOMERSCREEN,
+    },
+  ];
 
   @override
   void onClose() {

@@ -37,60 +37,62 @@ class Helpers {
                 horizontal: 16.w,
                 vertical: 16.h,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    AssetsManger.errorAnimationImage,
-                    height: 90.h,
-                    width: 90.w,
-                    fit: BoxFit.contain,
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: const Color(0XFFC01A1A),
-                          fontSize: 24.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: const Color(0XFF8C9191),
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
-                    // maxLines: 2,
-                    // overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 24.h),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0XFFC01A1A),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.r),
-                      ),
-                      minimumSize: Size(
-                          double.infinity, 47.h), // عرض الزر 100% من الشاشة
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      AssetsManger.errorAnimationImage,
+                      height: 90.h,
+                      width: 90.w,
+                      fit: BoxFit.contain,
                     ),
-                    onPressed: () {
-                      Get.back(); // إغلاق الـ Dialog
-                    },
-                    child: Text(
-                      'tryAgain'.tr,
+                    SizedBox(height: 4.h),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: Colors.white,
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w700,
+                            color: const Color(0XFFC01A1A),
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.w600,
                           ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 4.h),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: const Color(0XFF8C9191),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
+                      // maxLines: 2,
+                      // overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 24.h),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0XFFC01A1A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        minimumSize: Size(
+                            double.infinity, 47.h), // عرض الزر 100% من الشاشة
+                      ),
+                      onPressed: () {
+                        Get.back(); // إغلاق الـ Dialog
+                      },
+                      child: Text(
+                        'tryAgain'.tr,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: Colors.white,
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

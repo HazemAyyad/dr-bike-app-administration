@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../--/presentation/dashbord/widgets/floating_action_button.dart';
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 
 class AddList extends StatelessWidget {
   const AddList({
@@ -59,12 +59,11 @@ class AddList extends StatelessWidget {
                   itemCount: controller.addList.length,
                   itemBuilder: (context, index) {
                     final item = controller.addList[index];
-                    return buildAddMenuItem(
-                      item['title'],
-                      item['icon'],
-                      controller,
-                      context,
-                      item['route'],
+                    return BuildAddMenuItem(
+                      title: item['title'],
+                      iconAsset: item['icon'],
+                      route: item['route'],
+                      onTap: () => controller.toggleAddMenu(),
                     );
                   },
                 ),

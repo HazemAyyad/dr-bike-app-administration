@@ -16,7 +16,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(context, title: 'addNewCustomer', action: false),
+      appBar: CustomAppBar( title: 'addNewCustomer', action: false),
       body: Form(
         key: controller.formKey,
         child: ListView(

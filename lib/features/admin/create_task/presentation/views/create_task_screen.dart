@@ -26,8 +26,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
     final String title = Get.arguments;
 
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: title,
         action: false,
       ),

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/utils/app_colors.dart';
 
-class EarningsList extends StatelessWidget {
-  const EarningsList({Key? key, required this.employee}) : super(key: key);
+class WorkHoursList extends StatelessWidget {
+  const WorkHoursList({Key? key, required this.employee}) : super(key: key);
   final Map<String, dynamic> employee;
 
   @override
@@ -48,7 +48,7 @@ class EarningsList extends StatelessWidget {
                       style: textStyle.copyWith(
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w700,
-                        color: Colors.grey.withValues(alpha: 0.7),
+                        color: AppColors.customGreyColor5,
                       ),
                     ),
                     SizedBox(height: 5.h),
@@ -56,7 +56,7 @@ class EarningsList extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            '${'salary'.tr} : ${employee['salary']} ${'currency'.tr}',
+                            '${'workStartTime'.tr} : ${employee['workStartTime']}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textStyle.copyWith(
@@ -69,7 +69,7 @@ class EarningsList extends StatelessWidget {
                         SizedBox(width: 10.w),
                         Expanded(
                           child: Text(
-                            '${'debt'.tr} : ${employee['debts']}',
+                            '${'workEndTime'.tr} : ${employee['workEndTime']}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textStyle.copyWith(
@@ -99,7 +99,7 @@ class EarningsList extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: Text(
-            '${int.parse(employee['salary']) - int.parse(employee['debts'])} ${'currency'.tr}',
+            '${employee['workHoursOfDay']} ${'hours'.tr}',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: 14.sp,

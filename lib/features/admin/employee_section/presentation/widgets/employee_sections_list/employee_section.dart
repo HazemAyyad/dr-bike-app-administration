@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/services/theme_service.dart';
-import '../../../../../core/utils/app_colors.dart';
-import '../controllers/employee_section_controller.dart';
-import 'earnings_list.dart';
+import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/utils/app_colors.dart';
+import '../../controllers/employee_section_controller.dart';
+import 'entitlements_list.dart';
 import 'employee_list.dart';
 import 'loans_list.dart';
 import 'work_hours_list.dart';
@@ -107,7 +107,7 @@ class EmployeeSection extends StatelessWidget {
                             : controller.currentTab.value == 1
                                 ? WorkHoursList(employee: employee)
                                 : controller.currentTab.value == 2
-                                    ? EarningsList(employee: employee)
+                                    ? EntitlementsList(employee: employee)
                                     : controller.currentTab.value == 3
                                         ? LoansList(
                                             employee: employee,

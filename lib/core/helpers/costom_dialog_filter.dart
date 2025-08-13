@@ -10,8 +10,8 @@ import 'custom_text_field.dart';
 
 void showCustomDialog(
   BuildContext context, {
-  required TextEditingController fromDateController,
-  required TextEditingController toDateController,
+  required TextEditingController? fromDateController,
+  required TextEditingController? toDateController,
   required TextEditingController? employeeNameController,
   required String label,
   required VoidCallback onPressed,
@@ -45,7 +45,7 @@ void showCustomDialog(
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => selectDate(context, fromDateController),
+                    onTap: () => selectDate(context, fromDateController!),
                     child: CustomTextField(
                       enabled: false,
                       decoration: BoxDecoration(
@@ -81,7 +81,7 @@ void showCustomDialog(
                 SizedBox(width: 8.w),
                 Expanded(
                   child: GestureDetector(
-                    onTap: () => selectDate(context, toDateController),
+                    onTap: () => selectDate(context, toDateController!),
                     child: CustomTextField(
                       enabled: false,
                       decoration: BoxDecoration(

@@ -16,7 +16,7 @@ class AddNewFollowCustomerScreen extends GetView<CurrentFollowUpController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(context, title: 'addNewCustomer', action: false),
+      appBar: CustomAppBar(title: 'addNewCustomer', action: false),
       body: ListView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [

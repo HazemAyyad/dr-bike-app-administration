@@ -13,7 +13,7 @@ import '../utils/app_colors.dart';
 import 'dart:typed_data';
 
 class UploadImageButton extends StatelessWidget {
-  final Rx<File?> selectedFile;
+  final Rx<XFile?> selectedFile;
   final double? width;
   final double? height;
   final Color? textColor;
@@ -34,7 +34,9 @@ class UploadImageButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        if (selectedFile.value == null) pickFile();
+        if (selectedFile.value == null) {
+          pickFile();
+        }
       },
       child: Obx(
         () => SizedBox(
@@ -66,7 +68,7 @@ class UploadImageButton extends StatelessWidget {
         await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      selectedFile.value = File(pickedFile.path);
+      selectedFile.value = XFile(pickedFile.path);
     }
   }
 
@@ -107,7 +109,7 @@ class UploadImageButton extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: Image.file(
-              selectedFile.value!,
+              File(selectedFile.value!.path),
               fit: BoxFit.fill,
             ),
           ),

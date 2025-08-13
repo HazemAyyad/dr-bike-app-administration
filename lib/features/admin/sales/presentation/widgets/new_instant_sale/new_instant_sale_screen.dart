@@ -16,7 +16,7 @@ class NewInstantSaleScreen extends GetView<SalesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(context, title: 'newInstantSale'.tr, action: false),
+      appBar: CustomAppBar( title: 'newInstantSale'.tr, action: false),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Column(

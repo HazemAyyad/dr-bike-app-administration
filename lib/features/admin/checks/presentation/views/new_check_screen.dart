@@ -19,7 +19,7 @@ class NewCheckScreen extends GetView<ChecksController> {
     final bool isNewCheck = Get.arguments['isNewCheck'] ?? true;
 
     return Scaffold(
-      appBar: customAppBar(context,
+      appBar: CustomAppBar(
           title: isNewCheck ? 'newCheck'.tr : 'newReceipt'.tr, action: false),
       body: Form(
         key: controller.formKey,

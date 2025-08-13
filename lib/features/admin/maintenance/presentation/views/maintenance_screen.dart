@@ -14,8 +14,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'maintenance',
         employeeNameController: controller.employeeNameController,
         fromDateController: controller.fromDateController,

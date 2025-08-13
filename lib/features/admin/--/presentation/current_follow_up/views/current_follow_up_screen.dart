@@ -15,8 +15,7 @@ class CurrentFollowUpScreen extends GetView<CurrentFollowUpController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'followUpDepartment',
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,

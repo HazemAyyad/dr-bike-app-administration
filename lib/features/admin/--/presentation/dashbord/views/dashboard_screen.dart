@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../controllers/dashboard_controller.dart';
 import '../widgets/action_buttons.dart';
-import '../widgets/floating_action_button.dart';
+import '../../../../../../core/helpers/custom_floating_action_button.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/statistics_cards.dart';
 
@@ -40,7 +40,13 @@ class DashboardScreen extends GetView<DashboardController> {
           ],
         ),
       ),
-      floatingActionButton: CustomFloatingActionButton(controller: controller),
+      floatingActionButton: CustomFloatingActionButton(
+        isAddMenuOpen: controller.isAddMenuOpen,
+        onTap: () => controller.toggleAddMenu(),
+        opacityAnimation: controller.sizeAnimation,
+        sizeAnimation: controller.opacityAnimation,
+        addList: controller.addList,
+      ),
     );
   }
 }

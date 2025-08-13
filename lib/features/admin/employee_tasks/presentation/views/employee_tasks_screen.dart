@@ -14,8 +14,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'employeeTasks'.tr,
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,

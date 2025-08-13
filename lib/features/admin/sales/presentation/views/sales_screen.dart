@@ -17,8 +17,7 @@ class SalesScreen extends GetView<SalesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'sales',
         onPressedAdd: () {
           controller.toggleAddMenu();

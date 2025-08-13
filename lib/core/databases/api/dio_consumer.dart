@@ -33,8 +33,9 @@ class DioConsumer extends ApiConsumer {
     try {
       final response = await dio.post(
         path,
-        data:
-            isFormData ? FormData.fromMap(data as Map<String, dynamic>) : data,
+        data: isFormData && data is Map<String, dynamic>
+            ? FormData.fromMap(data)
+            : data,
         options: options,
         queryParameters: queryParameters,
         onSendProgress: onSendProgress,
@@ -44,25 +45,17 @@ class DioConsumer extends ApiConsumer {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'unknown_error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage: (data is Map && data['message'] != null)
+              ? data['message']
+              : 'unknown_error',
+          status: (data is Map && data['status'] != null)
+              ? data['status']
+              : e.response?.statusCode ?? 500,
+          data: (data is Map && data['data'] != null) ? data['data'] : {},
         ),
       );
     }
   }
-  //   print('==========Test================${e.response}');
-  //   handleDioException(e);
-  //   return e.response ??
-  //       Response(
-  //         requestOptions = RequestOptions(path: path),
-  //         statusCode = 500,
-  //         data = {
-  //           'message': 'unknown_error',
-  //         },
-  //       );
-  // }
-  // }
 
   //!GET
   @override

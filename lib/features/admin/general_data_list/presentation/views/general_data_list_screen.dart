@@ -14,8 +14,7 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'generalDataList',
         toDateController: controller.toDateController,
         fromDateController: controller.fromDateController,

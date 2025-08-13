@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 class GeneralDataListController extends GetxController {
   final GlobalKey formKey = GlobalKey();
@@ -24,8 +23,8 @@ class GeneralDataListController extends GetxController {
   TextEditingController instagramLinkController = TextEditingController();
   TextEditingController closePeople = TextEditingController();
 
-  Rx<File?> personalIdImage = Rx<File?>(null);
-  Rx<File?> carLicenseImage = Rx<File?>(null);
+  Rx<XFile?> personalIdImage = Rx<XFile?>(null);
+  Rx<XFile?> carLicenseImage = Rx<XFile?>(null);
   TextEditingController residenceLocationController = TextEditingController();
   TextEditingController workController = TextEditingController();
   TextEditingController workLocationController = TextEditingController();
@@ -126,8 +125,8 @@ class GeneralDataListController extends GetxController {
     instagramNameController.dispose();
     instagramLinkController.dispose();
     closePeople.dispose();
-    carLicenseImage = Rx<File?>(null);
-    personalIdImage = Rx<File?>(null);
+    carLicenseImage = Rx<XFile?>(null);
+    personalIdImage = Rx<XFile?>(null);
     residenceLocationController.dispose();
     workController.dispose();
     workLocationController.dispose();

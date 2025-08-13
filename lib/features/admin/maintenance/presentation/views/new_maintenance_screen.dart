@@ -18,8 +18,7 @@ class NewMaintenanceScreen extends GetView<MaintenanceController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'createMaintenance',
         action: false,
       ),

@@ -4,49 +4,56 @@ import 'package:get/get.dart';
 
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_colors.dart';
-import '../controllers/bottom_nav_bar_controller.dart';
 
-Widget buildNavItem({
-  required String assetImage,
-  required IconData filledIcon,
-  required String label,
-  required int index,
-  required BottomNavBarController controller,
-}) {
-  final isSelected = controller.currentIndex.value == index;
+class BuildNavItem extends StatelessWidget {
+  const BuildNavItem({
+    Key? key,
+    required this.isSelected,
+    required this.onTap,
+    required this.assetImage,
+    required this.label,
+  }) : super(key: key);
 
-  return InkWell(
-    onTap: () => controller.changePage(index),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedScale(
-          scale: isSelected ? 1.15 : 1.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          child: Image.asset(
-            assetImage,
-            color: isSelected
-                ? AppColors.secondaryColor
-                : ThemeService.isDark.value
-                    ? AppColors.whiteColor2
-                    : AppColors.customGreyColor5,
-            height: 29.h,
+  final bool isSelected;
+  final void Function() onTap;
+  final String assetImage;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedScale(
+            scale: isSelected ? 1.15 : 1.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: Image.asset(
+              assetImage,
+              color: isSelected
+                  ? AppColors.secondaryColor
+                  : ThemeService.isDark.value
+                      ? AppColors.whiteColor2
+                      : AppColors.customGreyColor5,
+              height: 29.h,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
-                color: isSelected
-                    ? AppColors.secondaryColor
-                    : ThemeService.isDark.value
-                        ? AppColors.whiteColor2
-                        : AppColors.customGreyColor5,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-      ],
-    ),
-  );
+          Text(
+            label,
+            style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
+                  color: isSelected
+                      ? AppColors.secondaryColor
+                      : ThemeService.isDark.value
+                          ? AppColors.whiteColor2
+                          : AppColors.customGreyColor5,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
 }

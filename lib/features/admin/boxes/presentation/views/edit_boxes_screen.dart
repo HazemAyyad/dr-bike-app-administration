@@ -14,7 +14,7 @@ class EditBoxesScreen extends GetView<BoxesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(context, title: 'editBox'.tr, action: false),
+      appBar: CustomAppBar( title: 'editBox'.tr, action: false),
       body: ListView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [

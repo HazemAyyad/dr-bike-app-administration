@@ -14,8 +14,7 @@ class BoxesScreen extends GetView<BoxesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'boxes',
         employeeNameController: controller.employeeNameController,
         fromDateController: controller.fromDateController,

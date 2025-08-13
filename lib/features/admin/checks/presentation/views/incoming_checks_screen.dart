@@ -19,8 +19,7 @@ class IncomingChecksScreen extends GetView<ChecksController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'incomingChecks'.tr,
         actions: [CustomActionsAppBar(controller: controller)],
       ),

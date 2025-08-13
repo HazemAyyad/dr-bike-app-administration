@@ -13,8 +13,7 @@ class TargetDetailsScreen extends GetView<TargetSectionController> {
   Widget build(BuildContext context) {
     var target = Get.arguments;
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'targetDetails',
         action: false,
         actions: [

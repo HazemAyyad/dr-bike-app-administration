@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:doctorbike/core/helpers/helpers.dart';
 import 'package:doctorbike/core/services/user_data.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/utils/app_colors.dart';
 import '../../../--/domain/usecases/special_tasks_usecase.dart';
@@ -125,9 +125,9 @@ class CreateTaskController extends GetxController {
   RxList<String> selectedDaysList = <String>[].obs;
 
   // متغير للصورة
-  final subTaskFile = Rx<File?>(null);
+  final subTaskFile = Rx<XFile?>(null);
 
-  final selectedFile = Rx<File?>(null);
+  final selectedFile = Rx<XFile?>(null);
 
   final RxBool requireSubTasImage = false.obs;
 

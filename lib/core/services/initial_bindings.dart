@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import '../../features/admin/debts/data/datasources/debet_datasource.dart';
 import '../../features/admin/debts/data/repositories/debts_implement.dart';
 import '../../features/admin/debts/presentation/controllers/debts_data_service.dart';
+import '../../features/admin/employee_section/data/datasources/employee_section_remote_datasource.dart';
+import '../../features/admin/employee_section/data/repositorie_imp/employee_section_implement.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repo_impl.dart';
 import '../../features/common_feature/data/datasources/common_datasource.dart';
@@ -73,5 +75,20 @@ class InitialBindings implements Bindings {
       () => DebtsDataService(),
       fenix: true,
     );
+
+    // قسم الموظين
+    Get.lazyPut<EmployeeDatasource>(
+      () => EmployeeDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<EmployeeImplement>(
+      () => EmployeeImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        employeeDatasource: Get.find<EmployeeDatasource>(),
+      ),
+      fenix: true,
+    );
+    // add points
+    
   }
 }

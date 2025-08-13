@@ -13,8 +13,7 @@ class GlobalCustomerDataScreen extends GetView<GeneralDataListController> {
   Widget build(BuildContext context) {
     var globalData = Get.arguments;
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'customerDetails',
         action: false,
         actions: [

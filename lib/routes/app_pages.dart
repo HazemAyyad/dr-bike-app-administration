@@ -28,7 +28,11 @@ import '../features/admin/--/presentation/current_follow_up/binding/current_foll
 import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
-import '../features/admin/employee_section/presentation/widgets/add_new_employee.dart';
+import '../features/admin/employee_section/presentation/views/activity_log_screen.dart';
+import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
+import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
+import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
+import '../features/admin/employee_section/presentation/views/working_bonuses_screen.dart';
 import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
 import '../features/admin/general_data_list/presentation/binding/general_data_list_binding.dart';
@@ -200,6 +204,7 @@ class AppPages {
       binding: SpecialTasksBinding(),
       transition: _transitionFadeIn,
     ),
+
     // قسم الموظفين
     GetPage(
       name: AppRoutes.EMPLOYEESECTIONSCREEN,
@@ -215,6 +220,32 @@ class AppPages {
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
+    GetPage(
+      name: AppRoutes.EMPLOYEEDETAILSSCREEN,
+      page: () => const EmployeeDetailsScreen(),
+      // binding: EmployeeSectionBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.ADDPENALTYANDREWARDSCREEN,
+      page: () => const AddPenaltyAndRewardScreen(),
+      binding: EmployeeSectionBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.POINTSTABLE,
+      page: () => const PointsTable(),
+      transition: _transitionUpToDown,
+    ),
+    GetPage(
+      name: AppRoutes.ACTIVITYLOGSCREEN,
+      page: () => const ActivityLogScreen(),
+      // binding: EmployeeSectionBinding(),
+      transition: _transitionCircularReveal,
+    ),
+
     // قسم ادارة المشاريع
     GetPage(
       name: AppRoutes.PROJECTMANAGEMENTSCREEN,

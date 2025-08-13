@@ -15,7 +15,7 @@ class NewCashProfitScreen extends GetView<SalesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(context, title: 'newCashProfit'.tr, action: false),
+      appBar: CustomAppBar( title: 'newCashProfit'.tr, action: false),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Column(

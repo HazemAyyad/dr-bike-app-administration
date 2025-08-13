@@ -36,6 +36,12 @@ class AppRoutes {
   static const ADDNEWCUSTOMERSCREEN = '/AddNewCustomerScreen';
   static const DEBTSSCREEN = '/DebtsScreen';
 
+  // EMPLOYEE TASKS SCREEN
+  static const EMPLOYEEDETAILSSCREEN = '/EmployeeDetailsScreen';
+  static const ADDPENALTYANDREWARDSCREEN = '/AddPenaltyAndRewardScreen';
+  static const POINTSTABLE = '/PointsTable';
+  static const ACTIVITYLOGSCREEN = '/ActivityLogScreen';
+
   // Boxes Screen
   static const BOXESSCREEN = '/BoxesScreen';
   static const CREATEBOXESSCREEN = '/CreateBoxesScreen';

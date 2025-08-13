@@ -17,6 +17,12 @@ class EndPoints {
   static const String getDebtsOwedToUs = 'get/debts/owed/to/us';
   static const String getDebtsWeOwe = 'get/debts/we/owe';
   static const String customerDebts = 'customer/debts';
+
+  // employees section
+  static const String createEmployee = 'create/employee';
+  static const String addPointsToEmployee = 'add/points/to/employee';
+  static const String minusPointsFromEmployee = 'minus/points/from/employee';
+  static const String paySalaryToEmployee = 'pay/employee/salary';
 }
 
 class ApiKey {

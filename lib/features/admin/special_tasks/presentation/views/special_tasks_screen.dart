@@ -13,8 +13,7 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(
-        context,
+      appBar: CustomAppBar(
         title: 'privateTasks',
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,

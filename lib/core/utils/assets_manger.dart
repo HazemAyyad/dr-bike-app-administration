@@ -80,6 +80,7 @@ class AssetsManger {
   static const String percentageIcon = "$iconsPath/percentage.png";
   static const String upLoadIcon = "$iconsPath/upLoad.png";
   static const String userIconNew = "$iconsPath/Group.png";
+  static const String qrcode = "$iconsPath/qrcode.png";
 
   static const String noImageNet =
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMmyTPv4M5fFPvYLrMzMQcPD_VO34ByNjouQ&s';

@@ -15,7 +15,7 @@ class ProjectDetailsScreeen extends StatelessWidget {
   Widget build(BuildContext context) {
     dynamic ordar = Get.arguments;
     return Scaffold(
-      appBar: customAppBar(context, title: 'projectDetails', action: false),
+      appBar: CustomAppBar( title: 'projectDetails', action: false),
       body: ListView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [

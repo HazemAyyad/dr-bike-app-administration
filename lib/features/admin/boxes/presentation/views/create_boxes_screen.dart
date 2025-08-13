@@ -13,7 +13,7 @@ class CreateBoxesScreen extends GetView<BoxesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: customAppBar(context, title: 'newBox'.tr, action: false),
+      appBar: CustomAppBar( title: 'newBox'.tr, action: false),
       body: Form(
         key: controller.formKey,
         child: ListView(

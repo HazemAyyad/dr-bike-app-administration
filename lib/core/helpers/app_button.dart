@@ -1,8 +1,6 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get_utils/get_utils.dart';
+import 'package:get/get.dart';
 
 import '../utils/app_colors.dart';
 
@@ -25,6 +23,7 @@ class AppButton extends StatelessWidget {
     this.borderRadius,
     this.widget,
     this.isRtl = false,
+    this.isLoading,
   }) : super(key: key);
 
   final String text;
@@ -43,15 +42,16 @@ class AppButton extends StatelessWidget {
   final BorderRadius? borderRadius;
   final Widget? widget;
   final bool? isRtl;
+  final RxBool? isLoading;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onPressed,
-      overlayColor: MaterialStateProperty.all(Colors.transparent),
+      overlayColor: WidgetStateProperty.all(Colors.transparent),
       borderRadius: BorderRadius.circular(5.r),
-      splashColor: Colors.white.withOpacity(0.3),
-      highlightColor: Colors.white.withOpacity(0.2),
+      splashColor: Colors.white.withAlpha(76),
+      highlightColor: Colors.white.withAlpha(51),
       child: Ink(
         decoration: BoxDecoration(
           border: Border.all(
@@ -68,13 +68,70 @@ class AppButton extends StatelessWidget {
           padding:
               padding ?? EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
           margin: margin,
-          child: widget != null
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    isRtl! ? widget! : SizedBox(),
-                    Text(
+          child: isLoading != null
+              ? Obx(
+                  () {
+                    return isLoading!.value
+                        ? Center(
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
+                          )
+                        : widget != null
+                            ? Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  isRtl! ? widget! : SizedBox(),
+                                  Text(
+                                    text.tr,
+                                    style: textStyle ??
+                                        Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color:
+                                                  textColor ?? getTextTheme(),
+                                              fontSize: size ?? 16.sp,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                  ),
+                                  isRtl! ? SizedBox() : widget!,
+                                ],
+                              )
+                            : Text(
+                                text.tr,
+                                style: textStyle ??
+                                    Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: textColor ?? getTextTheme(),
+                                          fontSize: size ?? 16.sp,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                              );
+                  },
+                )
+              : widget != null
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        isRtl! ? widget! : SizedBox(),
+                        Text(
+                          text.tr,
+                          style: textStyle ??
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: textColor ?? getTextTheme(),
+                                    fontSize: size ?? 16.sp,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                        ),
+                        isRtl! ? SizedBox() : widget!,
+                      ],
+                    )
+                  : Text(
                       text.tr,
                       style: textStyle ??
                           Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -83,18 +140,6 @@ class AppButton extends StatelessWidget {
                                 fontWeight: FontWeight.w400,
                               ),
                     ),
-                    isRtl! ? SizedBox() : widget!,
-                  ],
-                )
-              : Text(
-                  text.tr,
-                  style: textStyle ??
-                      Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: textColor ?? getTextTheme(),
-                            fontSize: size ?? 16.sp,
-                            fontWeight: FontWeight.w400,
-                          ),
-                ),
         ),
       ),
     );

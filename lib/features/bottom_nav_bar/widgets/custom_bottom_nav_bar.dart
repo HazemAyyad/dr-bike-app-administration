@@ -29,26 +29,23 @@ Widget customBottomNavigationBar({
           () => Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              buildNavItem(
+              BuildNavItem(
                 assetImage: AssetsManger.homeIcon,
-                filledIcon: Icons.home,
+                isSelected: controller.currentIndex.value == 0,
                 label: 'home'.tr,
-                index: 0,
-                controller: controller,
+                onTap: () => controller.changePage(0),
               ),
-              buildNavItem(
+              BuildNavItem(
                 assetImage: AssetsManger.taskIcon,
-                filledIcon: Icons.assignment,
+                isSelected: controller.currentIndex.value == 1,
                 label: 'newTask'.tr,
-                index: 1,
-                controller: controller,
+                onTap: () => controller.changePage(1),
               ),
-              buildNavItem(
+              BuildNavItem(
                 assetImage: AssetsManger.profileIcon,
-                filledIcon: Icons.person,
+                isSelected: controller.currentIndex.value == 2,
                 label: 'profile'.tr,
-                index: 2,
-                controller: controller,
+                onTap: () => controller.changePage(2),
               ),
             ],
           ),
