@@ -50,6 +50,8 @@ class AssetsManger {
 
   static const String rectangle = "$imagesPath/Rectangle.png";
 
+  static const String qrCode = "$imagesPath/qr_code.png";
+
   //Traders Images
   // static const String circleShape = "$imagePath/circle_shape.png";
   // static const String percentage = "$imagePath/percentage.svg";

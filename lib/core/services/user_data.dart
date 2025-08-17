@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:doctorbike/core/services/final_classes.dart';
 
 import '../../features/auth/data/models/user_model.dart';
+import 'initial_bindings.dart';
 
 class UserData {
   static String userToken = '';
@@ -65,5 +66,7 @@ class UserData {
     await FinalClasses.secureStorage.deleteAll();
     saveIsRememberUser(false);
     userToken = '';
+    employeePermissions = [];
+    test = '';
   }
 }

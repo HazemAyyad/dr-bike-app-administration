@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/connection/network_info.dart';
 import '../../../../core/errors/expentions.dart';
 import '../../../../core/errors/failure.dart';
+import '../../../../core/services/initial_bindings.dart';
 import '../../../../core/services/user_data.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
@@ -109,7 +110,14 @@ class AuthImplement implements AuthRepository {
 
       if (data['status'] == 'success') {
         await UserData.saveToken(data['token']);
-        await UserData.saveUser(UserModel.fromJson(data['user']));
+        await UserData.saveUser(UserModel.fromJson(data));
+        final userdata = await UserData.getSavedUser();
+        if (userdata != null) {
+          final permissionIds =
+              userdata.employeePermissions.map((p) => p.permissionId).toList();
+          employeePermissions.addAll(permissionIds);
+          test = userdata.user.type;
+        }
         return Right(UserModel.fromJson(data));
       }
       return Left(

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:collection/collection.dart';
+import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_chechbox.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -8,6 +9,7 @@ import 'package:get/get.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../data/models/employee_task_model.dart';
 import '../controllers/employee_tasks_controller.dart';
 
 class EmployeeTasks extends StatelessWidget {
@@ -21,13 +23,15 @@ class EmployeeTasks extends StatelessWidget {
     return Obx(
       () {
         if (controller.isLoading.value) {
-          return SliverToBoxAdapter(
+          return SliverFillRemaining(
+            hasScrollBody: false,
             child: const Center(
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
-        } else if (controller.orders.isEmpty) {
-          return SliverToBoxAdapter(
+        } else if (controller.employeeTaskService.employeeTasksList.isEmpty) {
+          return SliverFillRemaining(
+            hasScrollBody: false,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -39,59 +43,65 @@ class EmployeeTasks extends StatelessWidget {
                   ),
                   SizedBox(height: 10.h),
                   Text(
-                    'noDebts'.tr,
+                    'noData'.tr,
                     style: theme.copyWith(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w700,
                       color: AppColors.graywhiteColor,
                     ),
                   ),
-                  SizedBox(height: 150.h),
                 ],
               ),
             ),
           );
         }
-        final grouped =
-            groupBy(controller.orders, (Map v) => v['month'] as String);
-        final months = grouped.keys.toList();
+        // final grouped = groupBy<Map<dynamic, dynamic>, String>(
+        //     controller.employeeTasksList.map((task) => task.toJson()).toList(),
+        //     (Map v) => v['startTime'] as String);
+        // final months = grouped.keys.toList();
         return SliverList.builder(
-          itemCount: months.length,
+          itemCount: controller.employeeTaskService.employeeTasksList.length,
           itemBuilder: (context, index) {
-            final month = months[index];
-            final orders = grouped[month]!;
+            // final month = months[index];
+            final orders =
+                controller.employeeTaskService.employeeTasksList[index];
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        month,
-                        style: theme.copyWith(
-                          color: AppColors.primaryColor,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15.sp,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 5.h),
-                  Container(
-                    height: 1.h,
-                    width: double.infinity,
-                    color: AppColors.primaryColor,
-                  ),
-                  SizedBox(height: 10.h),
-                  ...orders.map(
-                    (order) {
-                      return EmployeeTasksLists(
-                        controller: controller,
-                        order: order,
-                        index: index,
-                      );
-                    },
+                  // Row(
+                  //   children: [
+                  //     Text(
+                  //       month,
+                  //       style: theme.copyWith(
+                  //         color: AppColors.primaryColor,
+                  //         fontWeight: FontWeight.w700,
+                  //         fontSize: 15.sp,
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  // SizedBox(height: 5.h),
+                  // Container(
+                  //   height: 1.h,
+                  //   width: double.infinity,
+                  //   color: AppColors.primaryColor,
+                  // ),
+                  // SizedBox(height: 10.h),
+                  // ...orders.map(
+                  //   (order) {
+                  //     return EmployeeTasksLists(
+                  //       controller: controller,
+                  //       order: order,
+                  //       index: index,
+                  //     );
+                  //   },
+                  // ),
+                  EmployeeTasksLists(
+                    controller: controller,
+                    order: orders,
+                    index: index,
                   ),
                 ],
               ),
@@ -112,7 +122,7 @@ class EmployeeTasksLists extends StatelessWidget {
   }) : super(key: key);
 
   final EmployeeTasksController controller;
-  final Map<String, dynamic> order;
+  final EmployeeTaskModel order;
   final int index;
 
   @override
@@ -123,51 +133,82 @@ class EmployeeTasksLists extends StatelessWidget {
       children: [
         SizedBox(height: index == 0 ? 5.h : 0.h),
         GestureDetector(
-          onLongPress: () {
-            Get.dialog(
-              AlertDialog(
-                backgroundColor: ThemeService.isDark.value
-                    ? AppColors.darckColor
-                    : AppColors.whiteColor,
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CustomCheckBox(
-                      title: 'deleteTask',
-                      value: controller.deleteTask,
-                      onChanged: (value) {
-                        controller.deleteTask.value = value!;
-                        Get.back();
-                      },
-                      style: theme.copyWith(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w700,
-                        color: ThemeService.isDark.value
-                            ? Colors.white
-                            : AppColors.secondaryColor,
-                      ),
+          onLongPress: () => controller.currentTab.value == 0
+              ? Get.dialog(
+                  AlertDialog(
+                    backgroundColor: ThemeService.isDark.value
+                        ? AppColors.darckColor
+                        : AppColors.whiteColor,
+                    content: Obx(
+                      () => controller.isLoading.value
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Center(
+                                  heightFactor: 3.7.h,
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primaryColor,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CustomCheckBox(
+                                  title: 'deleteTask',
+                                  value: controller.deleteTask,
+                                  onChanged: (value) {
+                                    controller.deleteTask.value = value!;
+                                    controller.deleteTasDuplicate.value = false;
+                                  },
+                                  style: theme.copyWith(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: ThemeService.isDark.value
+                                        ? Colors.white
+                                        : AppColors.secondaryColor,
+                                  ),
+                                ),
+                                CustomCheckBox(
+                                  title: 'deleteRepeatedTask',
+                                  value: controller.deleteTasDuplicate,
+                                  onChanged: (value) {
+                                    controller.deleteTasDuplicate.value =
+                                        value!;
+                                    controller.deleteTask.value = false;
+                                  },
+                                  style: theme.copyWith(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: ThemeService.isDark.value
+                                        ? Colors.white
+                                        : AppColors.secondaryColor,
+                                  ),
+                                ),
+                                SizedBox(height: 10.h),
+                                AppButton(
+                                  text: 'save',
+                                  onPressed: () =>
+                                      controller.deleteTask.value == false &&
+                                              controller.deleteTasDuplicate
+                                                      .value ==
+                                                  false
+                                          ? null
+                                          : controller.cancelEmployeeTask(
+                                              context: context,
+                                              taskId: order.id.toString(),
+                                              cancelWithRepetition: controller
+                                                  .deleteTasDuplicate.value,
+                                            ),
+                                ),
+                              ],
+                            ),
                     ),
-                    CustomCheckBox(
-                      title: 'deleteRepeatedTask',
-                      value: controller.deleteTasDuplicate,
-                      onChanged: (value) {
-                        controller.deleteTasDuplicate.value = value!;
-                        Get.back();
-                      },
-                      style: theme.copyWith(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w700,
-                        color: ThemeService.isDark.value
-                            ? Colors.white
-                            : AppColors.secondaryColor,
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            );
-          },
+                  ),
+                )
+              : null,
           onTap: () => Get.toNamed(
             AppRoutes.TASKDETAILS,
             arguments: 'employeeTaskDetails',
@@ -187,7 +228,7 @@ class EmployeeTasksLists extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(5.r),
                     child: CachedNetworkImage(
-                      imageUrl: order['image'],
+                      imageUrl: order.adminImg!,
                       placeholder: (context, url) => Center(
                         child: const CircularProgressIndicator(),
                       ),
@@ -210,7 +251,7 @@ class EmployeeTasksLists extends StatelessWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              '${order['taskName']}',
+                              order.taskName,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: theme.copyWith(
@@ -222,7 +263,7 @@ class EmployeeTasksLists extends StatelessWidget {
                           ),
                           Flexible(
                             child: Text(
-                              '${order['endDate']}',
+                              showData(order.endTime),
                               style: theme.copyWith(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w400,
@@ -234,7 +275,7 @@ class EmployeeTasksLists extends StatelessWidget {
                       ),
                       SizedBox(height: 15.h),
                       Text(
-                        '${order['employeeName']}',
+                        order.employeeName,
                         style: theme.copyWith(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w400,
@@ -250,11 +291,16 @@ class EmployeeTasksLists extends StatelessWidget {
                         width: 60.w,
                         height: 80.h,
                         decoration: BoxDecoration(
-                          color: int.parse(order['time'] ?? 0) > 2
-                              ? AppColors.customGreen1
-                              : int.parse(order['time'] ?? 0) > 0
-                                  ? AppColors.customOrange3
-                                  : AppColors.redColor,
+                          color:
+                              order.endTime.difference(DateTime.now()).inHours >
+                                      2
+                                  ? AppColors.customGreen1
+                                  : order.endTime
+                                              .difference(DateTime.now())
+                                              .inHours >
+                                          0
+                                      ? AppColors.customOrange3
+                                      : AppColors.redColor,
                           borderRadius: Get.locale!.languageCode == 'en'
                               ? BorderRadius.only(
                                   topRight: Radius.circular(4.r),
@@ -273,7 +319,10 @@ class EmployeeTasksLists extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Text(
-                              order['time'] ?? '0',
+                              order.endTime
+                                  .difference(DateTime.now())
+                                  .inHours
+                                  .toString(),
                               textAlign: TextAlign.center,
                               style: theme.copyWith(
                                 fontSize: 17.sp,
@@ -283,8 +332,12 @@ class EmployeeTasksLists extends StatelessWidget {
                             ),
                             SizedBox(height: 5.h),
                             Text(
-                              int.parse(order['time']) > 10 ||
-                                      int.parse(order['time']) < -10
+                              order.endTime.difference(DateTime.now()).inHours >
+                                          10 ||
+                                      order.endTime
+                                              .difference(DateTime.now())
+                                              .inHours <
+                                          -10
                                   ? 'hour'.tr
                                   : 'hours'.tr,
                               style: theme.copyWith(
@@ -301,7 +354,10 @@ class EmployeeTasksLists extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: index == controller.orders.length - 1 ? 60.h : 0.h,
+          height: index ==
+                  controller.employeeTaskService.employeeTasksList.length - 1
+              ? 60.h
+              : 0.h,
         ),
       ],
     );

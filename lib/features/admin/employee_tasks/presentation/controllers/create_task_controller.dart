@@ -1,15 +1,25 @@
+import 'dart:io';
 import 'package:doctorbike/core/helpers/helpers.dart';
-import 'package:doctorbike/core/services/user_data.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/utils/app_colors.dart';
-import '../../../--/domain/usecases/special_tasks_usecase.dart';
+import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../../employee_section/presentation/controllers/employee_service.dart';
+import '../../domain/usecases/create_task_usecase.dart';
+import 'employee_tasks_controller.dart';
 
 class CreateTaskController extends GetxController {
-  CreatSpecialTasksUsecase creatSpecialTasksUsecase;
-  CreateTaskController({required this.creatSpecialTasksUsecase});
+  CreateTaskUsecase createTaskUsecase;
+  GetAllEmployeeUsecase getAllEmployeeUsecase;
+  EmployeeService employeeService;
+
+  CreateTaskController({
+    required this.createTaskUsecase,
+    required this.getAllEmployeeUsecase,
+    required this.employeeService,
+  });
 
   final formKey = GlobalKey<FormState>();
 
@@ -17,26 +27,13 @@ class CreateTaskController extends GetxController {
   final TextEditingController taskDescriptionController =
       TextEditingController();
   final TextEditingController taskNotesController = TextEditingController();
-  String selectedEmployees = '';
-
+  final TextEditingController employeeIdConroller = TextEditingController();
   final TextEditingController subTaskNameController = TextEditingController();
   final TextEditingController subTaskDescriptionController =
       TextEditingController();
 
   // عدد النقاط
   final TextEditingController pointsController = TextEditingController();
-
-  // قائمة الموظفين المتاحين
-  final availableEmployees = [
-    'أحمد علي',
-    'محمد خالد',
-    'سارة أحمد',
-    'فاطمة محمد',
-    'خالد عمر',
-    'زينب سعيد',
-    'عمر حسن',
-    'ليلى كريم'
-  ];
 
   // المهام الفرعية
   RxList subTasks = [].obs;
@@ -111,15 +108,16 @@ class CreateTaskController extends GetxController {
 
   // متغير لاظهار التكرار
   RxBool isRecurrenceVisible = false.obs;
+
   void toggleRecurrence() {
     isRecurrenceVisible.value = !isRecurrenceVisible.value;
   }
 
   final weekDays = [
-    'taskRepeatDaily'.tr,
-    'taskRepeatWeekly'.tr,
-    'taskRepeatMonthly'.tr,
-    'taskRepeatYearly'.tr,
+    'noRepeat',
+    'daily',
+    'weekly',
+    'monthly',
   ];
 
   RxList<String> selectedDaysList = <String>[].obs;
@@ -135,54 +133,62 @@ class CreateTaskController extends GetxController {
 
   RxBool isLoding = false.obs;
 
+  final RxString recordedPath = ''.obs;
+
   // دالة لإنشاء المهمة
   void createTask(BuildContext context) async {
     if (formKey.currentState!.validate() &&
         selectedDays.value.isNotEmpty &&
         selectedDaysList.isNotEmpty) {
       // isLoding(true);
-      final token = await UserData.getUserToken();
 
-      final result = await creatSpecialTasksUsecase.call(
-        token: token,
+      final result = await createTaskUsecase.call(
         name: taskNameController.text,
         description: taskDescriptionController.text,
         notes: taskNotesController.text,
+        employeeId: employeeIdConroller.text,
         points: pointsController.text,
-        startDate: startDate.value.toString(),
-        endDate: '2025-06-21 15:30:00',
-        notShownForEmployee: hideTask.value ? '1' : '0',
+        startTime: startDate.value,
+        endTime: endDate.value,
         taskRecurrence: selectedDays.value,
-        taskRecurrenceTime: selectedDaysList.join(','),
-        subSpecialTaskName:
-            subTasks.isNotEmpty ? subTasks[0]['subTaskName'] : 'N/A',
-        subSpecialTaskDescription:
-            subTasks.isNotEmpty ? subTasks[0]['description'] : 'N/A',
+        taskRecurrenceTime: selectedDaysList,
+        subEmployeeTasks: subTasks,
+        notShownForEmployee: hideTask.value ? '1' : '0',
+        isForcedToUploadImg: requireImage.value ? '1' : '0',
+        adminImg: selectedFile.value,
+        audio: File(recordedPath.value),
       );
-      result.fold((failure) {
-        final errors = failure.data['errors'] as Map<String, dynamic>;
-        final messages = errors.values
-            .expand((list) => list) // يجمع كل القوائم
-            .cast<String>() // يحولها لـ List<String>
-            .join('\n'); // يفصل كل رسالة بسطر جديد
-
-        Helpers.showCustomDialogError(
-          context: context,
-          title: failure.errMessage,
-          message: messages,
-        );
-      }, (success) {
-        resetData();
-        Get.back();
-        Helpers.showCustomDialogSuccess(
-          context: context,
-          title: 'success'.tr,
-          message: 'taskCreatedSuccessfully'.tr,
-        );
-        Future.delayed(const Duration(seconds: 2), () {
-          Get.back();
-        });
-      });
+      result.fold(
+        (failure) {
+          final errors = failure.data['errors'] as Map<String, dynamic>;
+          final messages = errors.values
+              .expand((list) => list)
+              .cast<String>()
+              .join('')
+              .replaceAll('.', '- \n');
+          print(messages);
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: messages,
+          );
+        },
+        (success) {
+          Get.find<EmployeeTasksController>().getEmployeeTasks();
+          Future.delayed(
+            const Duration(seconds: 2),
+            () {
+              Get.back();
+              Get.back();
+            },
+          );
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
+        },
+      );
       isLoding(false);
     } else {
       Get.snackbar(
@@ -193,30 +199,37 @@ class CreateTaskController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     }
-    // هنا يمكن إضافة منطق حفظ المهمة إلى قاعدة البيانات
 
-    // إعادة تعيين البيانات
     // resetData();
   }
 
-  final RxString recordedPath = ''.obs;
+  //Get Employee
+  void getEmployee() async {
+    final result = await getAllEmployeeUsecase.call();
+    employeeService.employeeList.assignAll(result);
+    update();
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    getEmployee();
+  }
 
   // دالة لإعادة تعيين البيانات
   void resetData() {
     taskNameController.clear();
     taskDescriptionController.clear();
     taskNotesController.clear();
-    selectedEmployees = '';
+    employeeIdConroller.clear();
     subTasks.clear();
     subTaskNameController.clear();
     subTaskDescriptionController.clear();
     pointsController.clear();
-    selectedEmployees = '';
     selectedDays.value = '';
     isSelected.value = 0;
     hideTask.value = false;
     selectedDays.value = '';
-    // selectedFile.value = null;
     isStartDateCalendarVisible.value = false;
     isSubtasksListVisible.value = false;
     isRecurrenceVisible.value = false;
@@ -230,9 +243,9 @@ class CreateTaskController extends GetxController {
     taskDescriptionController.dispose();
     taskNotesController.dispose();
     subTaskNameController.dispose();
+    employeeIdConroller.dispose();
     subTaskDescriptionController.dispose();
     pointsController.dispose();
-    selectedEmployees = '';
     subTasks.clear();
     selectedDays.value = '';
     isSelected.value = 0;

@@ -12,7 +12,10 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/employee_section_controller.dart';
 import '../widgets/create_qrcode.dart';
+import '../widgets/employee_sections_list/employee_list.dart';
 import '../widgets/employee_sections_list/employee_section.dart';
+import '../widgets/employee_sections_list/financial_dues_list.dart';
+import '../widgets/employee_sections_list/work_hours_list.dart';
 
 class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
   const EmployeeSectionScreen({Key? key}) : super(key: key);
@@ -77,7 +80,124 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
               changeTab: controller.changeTab,
             ),
           ),
-          EmployeeSection(controller: controller),
+          Obx(
+            () => controller.currentTab.value == 0
+                ? EmployeeSection(
+                    list: controller.employeeService.employeeList,
+                    sliverList: SliverList.builder(
+                      itemCount: controller.employeeService.employeeList.length,
+                      itemBuilder: (context, index) {
+                        // final days = filter[index];
+                        final employee =
+                            controller.employeeService.employeeList[index];
+
+                        return Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 24.w,
+                            vertical: 5.h,
+                          ),
+                          child: Column(
+                            children: [
+                              SizedBox(height: index == 0 ? 10.h : 0.h),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: ThemeService.isDark.value
+                                      ? AppColors.customGreyColor4
+                                      : AppColors.whiteColor2,
+                                  borderRadius: BorderRadius.circular(4.r),
+                                ),
+                                child: EmployeeList(employee: employee),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    isLoading: controller.isLoading,
+                  )
+                : controller.currentTab.value == 1
+                    ? EmployeeSection(
+                        list: controller.employeeService.workingTimesList,
+                        sliverList: SliverList.builder(
+                          itemCount: controller
+                              .employeeService.workingTimesList.length,
+                          itemBuilder: (context, index) {
+                            // final days = filter[index];
+                            final employeeWorkingTimes = controller
+                                .employeeService.workingTimesList[index];
+
+                            return Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 24.w, vertical: 5.h),
+                              child: Column(
+                                children: [
+                                  SizedBox(height: index == 0 ? 10.h : 0.h),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: ThemeService.isDark.value
+                                          ? AppColors.customGreyColor4
+                                          : AppColors.whiteColor2,
+                                      borderRadius: BorderRadius.circular(4.r),
+                                    ),
+                                    child: WorkHoursList(
+                                      employee: employeeWorkingTimes,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        isLoading: controller.isLoading,
+                      )
+                    : controller.currentTab.value == 2
+                        ? EmployeeSection(
+                            list: controller.employeeService.financialDuesList,
+                            sliverList: SliverList.builder(
+                              itemCount: controller
+                                  .employeeService.financialDuesList.length,
+                              itemBuilder: (context, index) {
+                                final financialDues = controller
+                                    .employeeService.financialDuesList[index];
+
+                                return Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 24.w, vertical: 5.h),
+                                  child: Column(
+                                    children: [
+                                      SizedBox(height: index == 0 ? 10.h : 0.h),
+                                      Container(
+                                          decoration: BoxDecoration(
+                                            color: ThemeService.isDark.value
+                                                ? AppColors.customGreyColor4
+                                                : AppColors.whiteColor2,
+                                            borderRadius:
+                                                BorderRadius.circular(4.r),
+                                          ),
+                                          child: FinancialDuesList(
+                                              employee: financialDues)
+                                          //         : controller.currentTab.value == 3
+                                          //             ? LoansList(
+                                          //                 employee: employeeList,
+                                          //                 isOvertime: false,
+                                          //               )
+                                          //             : LoansList(
+                                          //                 employee: employeeList,
+                                          //                 isOvertime: true,
+                                          //               ),
+                                          ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            isLoading: controller.isLoading,
+                          )
+                        : SizedBox(),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(height: 80.h),
+          ),
         ],
       ),
       floatingActionButton: CustomFloatingActionButton(
@@ -91,6 +211,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
           iconAsset: AssetsManger.qrcode,
           route: '',
           onTap: () {
+            controller.generateQrCode(false);
             controller.toggleAddMenu();
             Get.dialog(CreateQrcode());
           },

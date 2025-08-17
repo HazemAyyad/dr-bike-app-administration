@@ -36,7 +36,7 @@ class EmailFieldWithChangeButton extends StatelessWidget {
               enabled: controller.isEditing.value,
             ),
             Positioned(
-              right: Get.locale!.languageCode == 'ar' ? 315.w : 15.w,
+              right: Get.locale!.languageCode == 'ar' ? 250.w : 15.w,
               bottom: controller.isFormValid.value ? 0.h : 20.h,
               child: TextButton(
                 onPressed: controller.toggleEditing,

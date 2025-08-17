@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:get/get.dart' as getx;
 
 import '../../errors/error_model.dart';
 import '../../errors/expentions.dart';
 import '../../services/languague_service.dart';
+import '../../services/user_data.dart';
 import 'api_consumer.dart';
 import 'end_points.dart';
 
@@ -16,8 +18,19 @@ class DioConsumer extends ApiConsumer {
     dio.options.receiveTimeout = Duration(seconds: 5);
     dio.options.headers = {
       'Accept': 'application/json',
-      'lang': LanguageController().getLang()
+      'lang': getx.Get.find<LanguageController>().getLang(),
     };
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await UserData.getUserToken();
+          if (token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          return handler.next(options);
+        },
+      ),
+    );
   }
 
   //!POST

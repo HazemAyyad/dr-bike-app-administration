@@ -5,19 +5,21 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../../domain/entities/employee_entity.dart';
+import '../../controllers/employee_section_controller.dart';
 
-class EmployeeList extends StatelessWidget {
+class EmployeeList extends GetView<EmployeeSectionController> {
   const EmployeeList({Key? key, required this.employee}) : super(key: key);
 
-  final Map<String, dynamic> employee;
+  final EmployeeEntity employee;
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
     return InkWell(
-      onTap: () => Get.toNamed(
-        AppRoutes.EMPLOYEEDETAILSSCREEN,
-        arguments: employee,
-      ),
+      onTap: () {
+        controller.getEmployeeDetails(employee.id.toString());
+        Get.toNamed(AppRoutes.EMPLOYEEDETAILSSCREEN, arguments: employee);
+      },
       child: Row(
         children: [
           Expanded(
@@ -29,7 +31,7 @@ class EmployeeList extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(5.r),
                       child: CachedNetworkImage(
-                        imageUrl: employee['image'],
+                        imageUrl: employee.employeeImg,
                         height: 65.h,
                         width: 65.w,
                         fit: BoxFit.cover,
@@ -50,7 +52,7 @@ class EmployeeList extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        employee['employeeName'],
+                        employee.employeeName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textStyle.copyWith(
@@ -59,9 +61,9 @@ class EmployeeList extends StatelessWidget {
                           color: AppColors.customGreyColor5,
                         ),
                       ),
-                      SizedBox(height: 5.h),
+                      SizedBox(height: 8.5.h),
                       Text(
-                        '${'hourlyRate'.tr} : ${employee['hourlyRate']} ${'currency'.tr}',
+                        '${'hourlyRate'.tr} : ${employee.hourWorkPrice} ${'currency'.tr}',
                         style: textStyle.copyWith(
                           fontSize: 12.sp,
                           fontWeight: FontWeight.w400,
@@ -75,8 +77,9 @@ class EmployeeList extends StatelessWidget {
             ),
           ),
           Container(
-            width: 50.w,
+            width: 60.w,
             height: 75.h,
+            padding: EdgeInsets.symmetric(horizontal: 5.w),
             decoration: BoxDecoration(
               color: AppColors.customGreen1,
               borderRadius: BorderRadiusDirectional.only(
@@ -86,10 +89,10 @@ class EmployeeList extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                '${employee['points']} ${'point'.tr}',
+                '${employee.points} ${'point'.tr}',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontSize: 15.sp,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),

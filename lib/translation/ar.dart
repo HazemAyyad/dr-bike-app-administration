@@ -2,7 +2,7 @@ const Map<String, String> ar = {
   'homeTitle': 'دراجة الطبيب',
   'tryAgain': 'حاول مرة اخرى',
   'noInternet': "التطبيق غير متصل بالإنترنت",
-  'noData': 'لا توجد بيانات',
+  'noData': 'لا يوجد بيانات',
 
   'success': 'نجح',
   'error': 'خطأ',
@@ -80,8 +80,9 @@ const Map<String, String> ar = {
 
   // Nav Bar
   'home': 'الرئيسية',
-  'profile': 'الملف الشخصي',
+  'profile': 'الحساب',
   'newTask': 'مهمة جديدة',
+  'scanQrCode': 'Qr Code',
   'cart': 'العربة',
 
   // Dashboard
@@ -248,10 +249,10 @@ const Map<String, String> ar = {
   'morning': 'صباحاً',
   'evening': 'مساءً',
 
-  'taskRepeatDaily': 'يوميًا',
-  'taskRepeatWeekly': 'اسبوعياً',
-  'taskRepeatMonthly': 'شهرياً',
-  'taskRepeatYearly': 'سنوياً',
+  'noRepeat': 'لا يوجد تكرار',
+  'daily': 'يوميًا',
+  'weekly': 'اسبوعياً',
+  'monthly': 'شهرياً',
 
   'taskRepeatDate': 'موعد تكرار المهمة',
   'taskRepeatDateExample': 'مثال: من الأحد إلي الخميس',
@@ -349,6 +350,7 @@ const Map<String, String> ar = {
   'employeeAddedSuccessfully': 'تم اضافة الموظف بنجاح',
   'regularWorkingHours': 'وقت الدوام الأساسي',
   'regularWorkingHoursExample': 'مثال: 08:00',
+  'editEmployee': 'تعديل بيانات الموظف',
 
   // follow Up Department
   'currentFollowUps': 'متابعات جارية',

@@ -29,13 +29,13 @@ class DashboardScreen extends GetView<DashboardController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            customSearchBar(context),
+            CustomSearchBar(),
             SizedBox(height: 20.h),
             // بطاقات الإحصائيات
-            buildStatisticsCards(controller: controller, context: context),
+            BuildStatisticsCards(controller: controller),
             SizedBox(height: 20.h),
             // أزرار الوظائف
-            buildActionButtons(controller: controller, context: context),
+            BuildActionButtons(controller: controller),
             SizedBox(height: 80.h),
           ],
         ),

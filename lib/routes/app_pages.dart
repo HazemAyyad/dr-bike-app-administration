@@ -22,16 +22,18 @@ import '../features/admin/checks/presentation/views/new_check_screen.dart';
 import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart';
 import '../features/admin/debts/presentation/binding/debts_binding.dart';
 import '../features/admin/debts/presentation/views/debts_screen.dart';
-import '../features/admin/create_task/presentation/binding/create_task_binding.dart';
-import '../features/admin/create_task/presentation/views/create_task_screen.dart';
+import '../features/admin/employee_tasks/presentation/binding/create_task_binding.dart';
+import '../features/admin/employee_tasks/presentation/views/create_task_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/binding/current_follow_up_binding.dart';
 import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
+import '../features/admin/employee_section/presentation/binding/qrcode_bideing.dart';
 import '../features/admin/employee_section/presentation/views/activity_log_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
 import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
+import '../features/admin/employee_section/presentation/views/qr_code_screen.dart';
 import '../features/admin/employee_section/presentation/views/working_bonuses_screen.dart';
 import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
@@ -243,6 +245,12 @@ class AppPages {
       name: AppRoutes.ACTIVITYLOGSCREEN,
       page: () => const ActivityLogScreen(),
       // binding: EmployeeSectionBinding(),
+      transition: _transitionCircularReveal,
+    ),
+    GetPage(
+      name: AppRoutes.FULLSCREENQRSCANNER,
+      page: () => const FullScreenQRScanner(),
+      binding: QrCodeBinding(),
       transition: _transitionCircularReveal,
     ),
 

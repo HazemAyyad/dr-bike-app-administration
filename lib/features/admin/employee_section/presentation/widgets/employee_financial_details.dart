@@ -7,28 +7,20 @@ import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/financial_details_model.dart';
 import '../controllers/employee_section_controller.dart';
 
 class EmployeeFinancialDetails extends StatelessWidget {
-  const EmployeeFinancialDetails({
-    Key? key,
-    required this.employee,
-    required this.controller,
-  }) : super(key: key);
+  const EmployeeFinancialDetails({Key? key, required this.controller})
+      : super(key: key);
 
-  final Map<String, dynamic> employee;
   final EmployeeSectionController controller;
 
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
-    double hoursFromPoints = (int.parse(employee['points']) / 50) *
-        int.parse(employee['hourlyRate']);
-    double total = (int.parse(employee['workHoursOfDay']) *
-            int.parse(employee['hourlyRate'])) +
-        hoursFromPoints -
-        int.parse(employee['debts']);
 
+    FinancialDetailsModel employee = controller.financialDetailsList.value!;
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.r),
@@ -89,7 +81,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontSize: 17.sp,
                         fontWeight: FontWeight.w700,
                       ),
-                      hintText: employee['employeeName'],
+                      hintText: employee.employeeName,
                       hintStyle: textStyle.copyWith(
                         color: Colors.grey,
                         fontSize: 15.sp,
@@ -111,7 +103,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontSize: 17.sp,
                         fontWeight: FontWeight.w700,
                       ),
-                      hint: employee['warkDay'],
+                      hint: 'employee',
                       items: controller.daysList,
                       onChanged: (value) {},
                     ),
@@ -129,7 +121,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontSize: 17.sp,
                         fontWeight: FontWeight.w700,
                       ),
-                      hintText: '${employee['debts']} ${'currency'.tr}',
+                      hintText: '${employee.debts} ${'currency'.tr}',
                       hintStyle: textStyle.copyWith(
                         color: Colors.grey,
                         fontSize: 15.sp,
@@ -151,7 +143,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                       label: 'salary'.tr,
-                      hintText: '${employee['salary']} ${'currency'.tr}',
+                      hintText: '${employee.salary} ${'currency'.tr}',
                       hintStyle: textStyle.copyWith(
                         color: Colors.grey,
                         fontSize: 15.sp,
@@ -177,7 +169,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                       label: 'points'.tr,
-                      hintText: '${employee['points']} ${'point'.tr}',
+                      hintText: '${employee.points} ${'point'.tr}',
                       hintStyle: textStyle.copyWith(
                         color: Colors.grey,
                         fontSize: 15.sp,
@@ -199,7 +191,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                       label: 'hourlyRate'.tr,
-                      hintText: '${employee['hourlyRate']} ${'currency'.tr}',
+                      hintText: '${employee.hourWorkPrice} ${'currency'.tr}',
                       hintStyle: textStyle.copyWith(
                         color: Colors.grey,
                         fontSize: 15.sp,
@@ -225,7 +217,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                       label: 'workHoursOfDay'.tr,
-                      hintText: '${employee['workHoursOfDay']} ${'hours'.tr}',
+                      hintText: '${employee.numberOfWorkHours} ${'hours'.tr}',
                       hintStyle: textStyle.copyWith(
                         color: Colors.grey,
                         fontSize: 15.sp,
@@ -247,7 +239,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                       label: 'total'.tr,
-                      hintText: '$total ${'currency'.tr}',
+                      hintText: '${employee.total} ${'currency'.tr}',
                       hintStyle: textStyle.copyWith(
                         color: Colors.grey,
                         fontSize: 15.sp,

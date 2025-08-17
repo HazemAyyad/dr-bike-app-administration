@@ -28,7 +28,16 @@ class AddPenaltyAndRewardScreen extends GetView<AddEmployeeController> {
               CustomDropdownField(
                 label: 'employeeName',
                 hint: 'employeeNameExample',
-                items: controller.eemployeesList,
+                dropdownField: controller.employeeService.employeeList.map((e) {
+                  return DropdownMenuItem<String>(
+                    value: e.id.toString(),
+                    child: Text(e.employeeName),
+                  );
+                }).toList(),
+                value: controller.employeeService.employeeList.any((e) =>
+                        e.id.toString() == controller.employeeConroller.text)
+                    ? controller.employeeConroller.text
+                    : null,
                 onChanged: (value) {
                   controller.employeeConroller.text = value!;
                 },
@@ -48,7 +57,6 @@ class AddPenaltyAndRewardScreen extends GetView<AddEmployeeController> {
                     ? null
                     : controller.addOrMinusPoints(
                         context,
-                        '11',
                         title == 'penalty' ? false : true,
                       ),
               ),

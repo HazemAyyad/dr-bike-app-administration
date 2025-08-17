@@ -39,7 +39,7 @@ void showCustomDialog(
                         : AppColors.secondaryColor,
                   ),
             ),
-            // SizedBox(height: 25.h),
+            SizedBox(height: 10.h),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -117,7 +117,6 @@ void showCustomDialog(
               ],
             ),
             SizedBox(height: 15.h),
-
             employeeNameController != null
                 ? CustomTextField(
                     label: label.tr,

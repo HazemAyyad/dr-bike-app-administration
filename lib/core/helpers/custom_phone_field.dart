@@ -15,12 +15,14 @@ class CustomPhoneField extends StatelessWidget {
     this.hintText,
     this.label = '',
     this.isRequired = false,
+    this.textInputAction,
   }) : super(key: key);
 
   final TextEditingController controller;
   final String? hintText;
   final String label;
   final bool isRequired;
+  final TextInputAction? textInputAction;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +59,8 @@ class CustomPhoneField extends StatelessWidget {
         Directionality(
           textDirection: TextDirection.ltr,
           child: IntlPhoneField(
+            textInputAction: textInputAction ?? TextInputAction.next,
+            keyboardType: TextInputType.phone,
             dropdownDecoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8.r),
             ),
@@ -93,9 +97,7 @@ class CustomPhoneField extends StatelessWidget {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.r),
                 gapPadding: 1,
-                borderSide: BorderSide(
-                  color: AppColors.customGreyColor3,
-                ),
+                borderSide: BorderSide(color: AppColors.customGreyColor3),
               ),
               labelStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: (ThemeService.isDark.value
@@ -115,10 +117,7 @@ class CustomPhoneField extends StatelessWidget {
                 dialCode: '970',
                 name: 'Palestin 2',
                 flag: "",
-                nameTranslations: {
-                  'ar': 'فلسطين 2',
-                  'en': 'Palestin 2',
-                },
+                nameTranslations: {'ar': 'فلسطين 2', 'en': 'Palestin 2'},
                 minLength: 9,
                 maxLength: 9,
               ),
@@ -139,10 +138,7 @@ class CustomPhoneField extends StatelessWidget {
                 dialCode: '972',
                 name: 'Palestine',
                 flag: '',
-                nameTranslations: {
-                  'ar': 'فلسطين',
-                  'en': 'Palestine',
-                },
+                nameTranslations: {'ar': 'فلسطين', 'en': 'Palestine'},
                 minLength: 9,
                 maxLength: 10,
               ),

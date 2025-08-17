@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../core/services/initial_bindings.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../../core/utils/assets_manger.dart';
@@ -27,7 +28,7 @@ Widget customBottomNavigationBar({
         ),
         child: Obx(
           () => Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               BuildNavItem(
                 assetImage: AssetsManger.homeIcon,
@@ -35,12 +36,14 @@ Widget customBottomNavigationBar({
                 label: 'home'.tr,
                 onTap: () => controller.changePage(0),
               ),
-              BuildNavItem(
-                assetImage: AssetsManger.taskIcon,
-                isSelected: controller.currentIndex.value == 1,
-                label: 'newTask'.tr,
-                onTap: () => controller.changePage(1),
-              ),
+              test == 'admin'
+                  ? SizedBox.shrink()
+                  : BuildNavItem(
+                      assetImage: AssetsManger.qrCode,
+                      isSelected: controller.currentIndex.value == 1,
+                      label: 'scanQrCode'.tr,
+                      onTap: () => controller.changePage(1),
+                    ),
               BuildNavItem(
                 assetImage: AssetsManger.profileIcon,
                 isSelected: controller.currentIndex.value == 2,

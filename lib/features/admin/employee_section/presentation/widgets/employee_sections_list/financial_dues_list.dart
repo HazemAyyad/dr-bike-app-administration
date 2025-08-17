@@ -4,21 +4,31 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../data/models/financial_dues_model.dart';
 import '../../controllers/employee_section_controller.dart';
 import '../employee_financial_details.dart';
 
-class EntitlementsList extends GetView<EmployeeSectionController> {
-  const EntitlementsList({Key? key, required this.employee}) : super(key: key);
-  final Map<String, dynamic> employee;
+class FinancialDuesList extends GetView<EmployeeSectionController> {
+  const FinancialDuesList({Key? key, required this.employee}) : super(key: key);
+  final FinancialDuesModel employee;
 
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
 
     return InkWell(
-      onTap: () => Get.dialog(
-        EmployeeFinancialDetails(employee: employee, controller: controller),
-      ),
+      onTap: () {
+        controller.getFinancialDetails(employee.id.toString());
+        Get.dialog(
+          Obx(
+            () => controller.financialDetailsList.value != null
+                ? controller.isDialogLoading.value
+                    ? const Center(child: CircularProgressIndicator())
+                    : EmployeeFinancialDetails(controller: controller)
+                : const Center(child: CircularProgressIndicator()),
+          ),
+        );
+      },
       child: Row(
         children: [
           Expanded(
@@ -29,7 +39,7 @@ class EntitlementsList extends GetView<EmployeeSectionController> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(5.r),
                     child: CachedNetworkImage(
-                      imageUrl: employee['image'],
+                      imageUrl: employee.employeeImg,
                       height: 65.h,
                       width: 65.w,
                       fit: BoxFit.cover,
@@ -49,7 +59,7 @@ class EntitlementsList extends GetView<EmployeeSectionController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        employee['employeeName'],
+                        employee.employeeName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textStyle.copyWith(
@@ -59,35 +69,37 @@ class EntitlementsList extends GetView<EmployeeSectionController> {
                         ),
                       ),
                       SizedBox(height: 5.h),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${'salary'.tr} : ${employee['salary']} ${'currency'.tr}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textStyle.copyWith(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.grey.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: Text(
-                              '${'debt'.tr} : ${employee['debts']}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: textStyle.copyWith(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.grey.withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        '${'salary'.tr} : ${employee.salary} ${'currency'.tr}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textStyle.copyWith(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey.withValues(alpha: 0.7),
+                        ),
                       ),
+                      Text(
+                        '${'debt'.tr} : ${employee.debts}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textStyle.copyWith(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.grey.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      // Row(
+                      //   children: [
+                      //     Expanded(
+                      //       child:
+                      //     ),
+                      //     SizedBox(width: 10.w),
+                      //     Expanded(
+                      //       child:
+                      //     ),
+                      //   ],
+                      // ),
                     ],
                   ),
                 ),
@@ -95,8 +107,9 @@ class EntitlementsList extends GetView<EmployeeSectionController> {
             ),
           ),
           Container(
-            width: 50.w,
+            width: 60.w,
             height: 75.h,
+            padding: EdgeInsets.symmetric(horizontal: 1.w),
             decoration: BoxDecoration(
               color: AppColors.customGreen1,
               borderRadius: BorderRadiusDirectional.only(
@@ -106,7 +119,7 @@ class EntitlementsList extends GetView<EmployeeSectionController> {
             ),
             alignment: Alignment.center,
             child: Text(
-              '${int.parse(employee['salary']) - int.parse(employee['debts'])} ${'currency'.tr}',
+              '${(double.parse(employee.salary) - double.parse(employee.debts)).toString()} ${'currency'.tr}',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     fontSize: 14.sp,

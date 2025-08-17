@@ -26,10 +26,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
     final String title = Get.arguments;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: title,
-        action: false,
-      ),
+      appBar: CustomAppBar(title: title, action: false),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Form(
@@ -83,14 +80,30 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                         ),
                         SizedBox(width: 15.w),
                         Flexible(
-                          child: CustomDropdownField(
-                            label: 'employeeName',
-                            hint: 'chooseEmployee',
-                            items: controller.availableEmployees,
-                            onChanged: (value) {
-                              controller.selectedEmployees = value!;
+                          child: GetBuilder<CreateTaskController>(
+                            builder: (_) {
+                              return CustomDropdownField(
+                                label: 'employeeName',
+                                hint: 'employeeNameExample',
+                                dropdownField: controller
+                                    .employeeService.employeeList
+                                    .map((e) {
+                                  return DropdownMenuItem<String>(
+                                    value: e.id.toString(),
+                                    child: Text(e.employeeName),
+                                  );
+                                }).toList(),
+                                value: controller.employeeService.employeeList
+                                        .any((e) =>
+                                            e.id.toString() ==
+                                            controller.employeeIdConroller.text)
+                                    ? controller.employeeIdConroller.text
+                                    : null,
+                                onChanged: (value) {
+                                  controller.employeeIdConroller.text = value!;
+                                },
+                              );
                             },
-                            validator: (p0) => null,
                           ),
                         ),
                       ],
@@ -109,6 +122,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 label: 'taskPoints',
                 hintText: 'taskPointsExample',
                 controller: controller.pointsController,
+                keyboardType: TextInputType.number,
                 validator: (p0) => null,
               ),
               SizedBox(height: 15.h),
@@ -143,7 +157,11 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 label: 'taskRepeat'.tr,
                 hint: 'taskRepeatExample'.tr,
                 items: controller.weekDays,
-                onChanged: (value) => controller.selectedDays.value = value!,
+                onChanged: (value) {
+                  value == 'noRepeat'
+                      ? controller.selectedDays.value = ''
+                      : controller.selectedDays.value = value!;
+                },
                 validator: (p0) => null,
               ),
               SizedBox(height: 10.h),

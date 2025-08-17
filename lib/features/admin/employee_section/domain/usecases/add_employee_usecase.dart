@@ -9,8 +9,8 @@ class AddEmployeeUsecase {
 
   AddEmployeeUsecase({required this.employeeRepository});
 
-  Future<Either<Failure, bool>> call({
-    required String token,
+  Future<Either<Failure, String>> call({
+    String? employeeId,
     required String name,
     required String email,
     required String phone,
@@ -26,7 +26,7 @@ class AddEmployeeUsecase {
     required List<String> permissions,
   }) {
     return employeeRepository.creatEmployee(
-      token: token,
+      employeeId: employeeId,
       name: name,
       email: email,
       phone: phone,

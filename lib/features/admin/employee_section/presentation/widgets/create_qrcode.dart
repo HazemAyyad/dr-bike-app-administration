@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/assets_manger.dart';
+import '../controllers/employee_section_controller.dart';
 
-class CreateQrcode extends StatelessWidget {
+class CreateQrcode extends GetView<EmployeeSectionController> {
   const CreateQrcode({Key? key}) : super(key: key);
 
   @override
@@ -34,11 +35,26 @@ class CreateQrcode extends StatelessWidget {
                 ),
           ),
           Padding(
-            padding: EdgeInsets.symmetric(vertical: 40.h),
-            child: Image.asset(
-              AssetsManger.qrcode,
-              height: 100.h,
-              width: 100.w,
+            padding: EdgeInsets.symmetric(vertical: 10.h),
+            child: Obx(
+              () => controller.isDialogLoading.value
+                  ? SizedBox(
+                      height: 200.h,
+                      child: Center(child: const CircularProgressIndicator()))
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(5.r),
+                      child: Center(
+                        child: QrImageView(
+                          data: controller.employeeService.qrGeneration.value !=
+                                  null
+                              ? controller
+                                  .employeeService.qrGeneration.value!.codeText
+                              : '446fasfasga4846',
+                          version: QrVersions.auto,
+                          size: 200.sp,
+                        ),
+                      ),
+                    ),
             ),
           ),
           Row(
@@ -46,7 +62,7 @@ class CreateQrcode extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               IconButton(
-                onPressed: () => Get.back(),
+                onPressed: () => controller.generateQrCode(true),
                 icon: const Icon(
                   Icons.refresh,
                   color: AppColors.primaryColor,
@@ -63,8 +79,10 @@ class CreateQrcode extends StatelessWidget {
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.w),
-            child:
-                AppButton(text: 'createBarCode', onPressed: () => Get.back()),
+            child: AppButton(
+              text: 'createBarCode',
+              onPressed: () => Get.back(),
+            ),
           ),
           SizedBox(height: 20.h),
         ],

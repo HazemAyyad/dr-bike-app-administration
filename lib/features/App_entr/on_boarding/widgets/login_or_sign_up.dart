@@ -20,12 +20,11 @@ class LoginOrSignUpScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                AssetsManger.onBoardingScreenFour,
-                height: 369.h,
-                width: 332.w,
+              SizedBox(height: 50.h),
+              Expanded(
+                child: Image.asset(AssetsManger.onBoardingScreenFour),
               ),
-              SizedBox(height: 72.h),
+              SizedBox(height: 30.h),
               SizedBox(
                 width: 246.w,
                 child: Text(
@@ -40,7 +39,7 @@ class LoginOrSignUpScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
-              SizedBox(height: 100.h),
+              SizedBox(height: 50.h),
               AppButton(
                 height: 46.h,
                 width: 382.w,
@@ -82,6 +81,7 @@ class LoginOrSignUpScreen extends StatelessWidget {
                     : AppColors.secondaryColor,
                 borderWidth: 1.5,
               ),
+              SizedBox(height: 50.h),
             ],
           ),
         ),

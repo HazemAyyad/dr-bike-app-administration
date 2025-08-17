@@ -17,7 +17,7 @@ class SkipButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(
       () => controller.currentPage.value == 3
-          ? const SizedBox()
+          ? SizedBox(height: 60.h)
           : Align(
               alignment: Alignment.topLeft,
               child: Container(

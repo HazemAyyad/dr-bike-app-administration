@@ -23,41 +23,34 @@ class OnboardingItem extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            flex: 6,
-            child: Image.asset(
-              imagePath,
-              height: 369.h,
-              width: 332.w,
-            ),
+            child: Image.asset(imagePath),
           ),
-          SizedBox(height: 72.h),
-          Expanded(
-            flex: 4,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: ThemeService.isDark.value
-                            ? Colors.white
-                            : AppColors.secondaryColor,
-                        fontSize: 22.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                ),
-                SizedBox(height: 24.h),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: AppColors.graywhiteColor,
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w400,
-                      ),
-                ),
-              ],
-            ),
+          SizedBox(height: 20.h),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: ThemeService.isDark.value
+                          ? Colors.white
+                          : AppColors.secondaryColor,
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              SizedBox(height: 20.h),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: AppColors.graywhiteColor,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
+              ),
+            ],
           ),
+          SizedBox(height: 30.h),
         ],
       ),
     );

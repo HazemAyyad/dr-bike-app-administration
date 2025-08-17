@@ -28,12 +28,6 @@ class SignUpSuccessScreen extends StatelessWidget {
                 fit: BoxFit.contain,
               ),
               SizedBox(height: 50.h),
-              // Image.asset(
-              //   AssetsManger.successAnimation,
-              //   height: ScreenUtilNew.height(160),
-              //   width: ScreenUtilNew.width(160),
-              //   fit: BoxFit.contain,
-              // ),
               Text(
                 'verificationSuccess'.tr,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(

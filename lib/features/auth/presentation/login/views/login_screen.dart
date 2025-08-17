@@ -19,55 +19,54 @@ class LoginScreen extends GetView<LoginController> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Form(
-              key: controller.formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 64.h),
-                  AppLogo(),
-                  SizedBox(height: 56.h),
-                  Text(
-                    'welcomeBack'.tr,
-                    style: TextTheme.of(context).bodyMedium!.copyWith(
-                          color: ThemeService.isDark.value
-                              ? Colors.white
-                              : AppColors.secondaryColor,
-                          fontSize: 26.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  SizedBox(height: 50.h),
-                  LogInTextField(controller: controller),
-                  SizedBox(height: 15.h),
-                  RememberMe(controller: controller),
-                  SizedBox(height: 15.h),
-                  Obx(() => controller.isLoading.value
-                      ? lodingIndicator()
-                      : AppButton(
-                          text: 'login',
-                          onPressed: () {
-                            controller.sendOtp(context);
-                          },
-                          textStyle:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.secondaryColor
-                                        : AppColors.whiteColor,
-                                    fontSize: 20.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                          height: 48.h,
-                        )),
-                  SizedBox(height: 15.h),
-                  DontHaveAccount(),
-                ],
-              ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Form(
+            key: controller.formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(height: 64.h),
+                AppLogo(),
+                SizedBox(height: 56.h),
+                Text(
+                  'welcomeBack'.tr,
+                  style: TextTheme.of(context).bodyMedium!.copyWith(
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.secondaryColor,
+                        fontSize: 26.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                SizedBox(height: 50.h),
+                LogInTextField(controller: controller),
+                SizedBox(height: 15.h),
+                RememberMe(controller: controller),
+                SizedBox(height: 15.h),
+                Obx(() => controller.isLoading.value
+                    ? lodingIndicator()
+                    : AppButton(
+                        text: 'login',
+                        onPressed: () {
+                          controller.sendOtp(context);
+                        },
+                        textStyle:
+                            Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  color: ThemeService.isDark.value
+                                      ? AppColors.secondaryColor
+                                      : AppColors.whiteColor,
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                        height: 48.h,
+                      )),
+                SizedBox(height: 15.h),
+                DontHaveAccount(),
+                SizedBox(height: 30.h),
+              ],
             ),
           ),
         ),

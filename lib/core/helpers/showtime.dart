@@ -20,3 +20,15 @@ String showDataAndTime(DateTime date) {
   //  hh:mm a
   return formattedDate;
 }
+
+String formatTimeTo12Hour(String time24) {
+  // تحويل النص لوقت
+  final dateTime = DateFormat("HH:mm:ss").parse(time24);
+  // تحويله لصيغة 12 ساعة مع AM/PM
+  return DateFormat("hh:mm a").format(dateTime);
+}
+
+String formatTimeTo12HourArabic(String time24) {
+  final dateTime = DateFormat("HH:mm:ss").parse(time24);
+  return DateFormat("hh:mm a", "ar").format(dateTime);
+}

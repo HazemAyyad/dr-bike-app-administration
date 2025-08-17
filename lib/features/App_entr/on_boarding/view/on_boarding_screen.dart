@@ -39,7 +39,7 @@ class OnboardingScreen extends GetView<OnboardingController> {
               ),
             ),
             OnBoardingIndicator(controller: controller),
-            SizedBox(height: 25.h),
+            SizedBox(height: 20.h),
             Obx(
               () => OnBoardingButton(
                 progress: controller.currentPage.value,

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../auth/domain/usecases/logout_usecase.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class LogOutController extends GetxController {
   Logout logout;
@@ -28,8 +29,10 @@ class LogOutController extends GetxController {
           message: 'logoutError'.tr,
         );
       },
-      (success) {
+      (success) async {
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+        await DefaultCacheManager().emptyCache();
+
         UserData.clearAllUserData();
 
         Helpers.showCustomDialogSuccess(

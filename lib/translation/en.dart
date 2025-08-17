@@ -82,6 +82,7 @@ const Map<String, String> en = {
   'home': 'Home',
   'profile': 'Profile',
   'newTask': 'New Task',
+  'scanQrCode': 'Qr Code',
   'cart': 'Cart',
 
   // Dashboard
@@ -248,10 +249,10 @@ const Map<String, String> en = {
   'morning': 'AM',
   'evening': 'PM',
 
-  'taskRepeatDaily': 'Daily',
-  'taskRepeatWeekly': 'Weekly',
-  'taskRepeatMonthly': 'Monthly',
-  'taskRepeatYearly': 'Yearly',
+  'noRepeat': 'No Repeat',
+  'daily': 'Daily',
+  'weekly': 'Weekly',
+  'monthly': 'Monthly',
 
   'taskRepeatDate': 'Task Repeat Date',
   'taskRepeatDateExample': 'Example: From Sunday to Thursday',
@@ -303,7 +304,7 @@ const Map<String, String> en = {
   // مهمات خاصة
   'weeklyTasks': 'Weekly Tasks',
   'noDateTasks': 'No Date Tasks',
-  'transferTask': 'نقل المهمة',
+  'transferTask': 'Transfer Task',
 
   // employee Section
   'employeeList': 'Employee List',
@@ -347,6 +348,7 @@ const Map<String, String> en = {
   'employeeAddedSuccessfully': 'Employee added successfully',
   'regularWorkingHours': 'Regular Working Hours',
   'regularWorkingHoursExample': 'Example: from 8 AM to 2 PM',
+  'editEmployee': 'Edit Employee Details',
 
   // follow Up Department
   'currentFollowUps': 'Ongoing Follow-Ups',

@@ -3,183 +3,56 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
-import '../../../../../core/services/user_data.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../data/models/financial_details_model.dart';
+import '../../domain/usecases/employee_details_usecase.dart';
+import '../../domain/usecases/financial_details_usecase.dart';
+import '../../domain/usecases/financial_dues.usecase.dart';
+import '../../domain/usecases/get_all_employee.dart';
 import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
+import '../../domain/usecases/qr_generation_usecase.dart';
+import '../../domain/usecases/working_times_usecase.dart';
+import 'employee_service.dart';
 
 class EmployeeSectionController extends GetxController
     with GetTickerProviderStateMixin {
   PaySalaryToEmployeeUsecase paySalaryEmployee;
+  GetAllEmployeeUsecase getAllEmployeeUsecase;
+  WorkingTimesUsecase workingTimesUsecase;
+  FinancialDuesUsecase financialDuesUsecase;
+  FinancialDetailsUsecase financialDetailsUsecase;
+  EmployeeDetailsUsecase employeeDetailsUsecase;
+  QrGenerationUsecase qrGenerationUsecase;
 
-  EmployeeSectionController({required this.paySalaryEmployee});
+  EmployeeService employeeService;
+
+  EmployeeSectionController({
+    required this.paySalaryEmployee,
+    required this.getAllEmployeeUsecase,
+    required this.workingTimesUsecase,
+    required this.financialDuesUsecase,
+    required this.financialDetailsUsecase,
+    required this.employeeDetailsUsecase,
+    required this.qrGenerationUsecase,
+    required this.employeeService,
+  });
 
   final GlobalKey formKey = GlobalKey<FormState>();
+
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
   final TextEditingController employeeNameController = TextEditingController();
 
   RxInt currentTab = 0.obs;
-  RxList<Map<String, dynamic>> employeeList = <Map<String, dynamic>>[].obs;
-  final tabs =
-      ['employeeList', 'workHours', 'entitlements', 'loans', 'overtime'].obs;
+  final tabs = [
+    'employeeList', 'workHours', 'entitlements',
+    // 'loans', 'overtime'
+  ].obs;
 
   final RxBool isLoading = false.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
-    fetchOrders();
-  }
-
-  void fetchOrders() {
-    // Simulate fetching orders based on the current tab
-    employeeList.clear();
-    if (currentTab.value == 0) {
-      employeeList.addAll([
-        {
-          'employeeName': 'شادي  أحمد أحمد أحمد أحمد أحمد أحمد أحمد أحمدأحمد',
-          'image': AssetsManger.noImageNet,
-          'hourlyRate': '1000',
-          'points': '70',
-          'warkDay': 'الاثنين',
-        },
-        {
-          'employeeName': 'شادي أحمد أحمد',
-          'image': AssetsManger.noImageNet,
-          'hourlyRate': '100',
-          'points': '70',
-          'warkDay': 'الاثنين',
-        },
-        {
-          'employeeName': 'شادي أحمد',
-          'image': AssetsManger.noImageNet,
-          'hourlyRate': '100',
-          'points': '70',
-          'warkDay': 'الاثنين',
-        },
-        {
-          'employeeName': 'شادي أحمد',
-          'image': AssetsManger.noImageNet,
-          'hourlyRate': '100',
-          'points': '70',
-          'warkDay': 'الاثنين',
-        },
-      ]);
-    } else if (currentTab.value == 1) {
-      employeeList.addAll(
-        [
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'workStartTime': '8 ص',
-            'workEndTime': '4 م',
-            'workHoursOfDay': '8',
-            'warkDay': 'الاثنين',
-          },
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'workStartTime': '8 ص',
-            'workEndTime': '4 م',
-            'workHoursOfDay': '8',
-            'warkDay': 'الاثنين',
-          },
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'workStartTime': '8 ص',
-            'workEndTime': '4 م',
-            'workHoursOfDay': '8',
-            'warkDay': 'الاحد',
-          },
-        ],
-      );
-    } else if (currentTab.value == 2) {
-      employeeList.addAll(
-        [
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'salary': '1700',
-            'debts': '200',
-            'points': '30',
-            'hourlyRate': '50',
-            'workHoursOfDay': '7',
-            'warkDay': 'الاثنين',
-          },
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'salary': '3000',
-            'debts': '250',
-            'points': '70',
-            'hourlyRate': '50',
-            'workHoursOfDay': '8',
-            'warkDay': 'الاثنين',
-          },
-        ],
-      );
-    } else if (currentTab.value == 3) {
-      employeeList.addAll(
-        [
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'debts': '750',
-            'stuts': 'طلب مقبول',
-            'date': '20/7/2025',
-            'warkDay': 'الاثنين',
-          },
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'debts': '250',
-            'stuts': 'طلب مرفوض',
-            'date': '20/7/2025',
-            'warkDay': 'الاثنين',
-          },
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'debts': '250',
-            'stuts': 'طلب تحت المتابعة',
-            'date': '20/7/2025',
-            'warkDay': 'الاثنين',
-          },
-        ],
-      );
-    } else if (currentTab.value == 4) {
-      employeeList.addAll(
-        [
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'overtime': '2',
-            'debts': '250',
-            'date': '20/7/2025',
-            'stuts': 'طلب مقبول',
-            'warkDay': 'الاثنين',
-          },
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'overtime': '3',
-            'debts': '250',
-            'date': '20/7/2025',
-            'stuts': 'طلب مرفوض',
-            'warkDay': 'الاثنين',
-          },
-          {
-            'employeeName': 'شادي أحمد',
-            'image': AssetsManger.noImageNet,
-            'overtime': '15',
-            'debts': '250',
-            'date': '20/7/2025',
-            'stuts': 'طلب تحت المتابعة',
-            'warkDay': 'الاثنين',
-          },
-        ],
-      );
-    }
   }
 
   final List<String> daysList = [
@@ -245,38 +118,13 @@ class EmployeeSectionController extends GetxController
     //   'route': AppRoutes.NEWCASHPROFITSCREEN,
     // },
   ];
-  @override
-  void onInit() {
-    super.onInit();
-    fetchOrders();
-
-    animController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 300),
-    );
-
-    opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);
-    sizeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: animController, curve: Curves.fastOutSlowIn),
-    );
-
-    ever(isAddMenuOpen, (bool open) {
-      if (open) {
-        animController.forward();
-      } else {
-        animController.reverse();
-      }
-    });
-  }
 
   final RxBool isPaymentLoading = false.obs;
   //pay Salary To Employee
   void paySalaryToEmployee(BuildContext context, String employeeId) async {
     if ((formKey.currentState as FormState).validate()) {
       isPaymentLoading(true);
-      final token = await UserData.getUserToken();
       final result = await paySalaryEmployee.call(
-        token: token,
         employeeId: employeeId,
         salary: paySalaryController.text,
       );
@@ -308,6 +156,98 @@ class EmployeeSectionController extends GetxController
     }
   }
 
+  //Get Employee
+  void getEmployee() async {
+    employeeService.employeeList.isEmpty ? isLoading(true) : isLoading(false);
+    final result = await getAllEmployeeUsecase.call();
+    employeeService.employeeList.assignAll(result);
+    isLoading(false);
+  }
+
+  //Get Working Times
+  void getWorkingTimesList() async {
+    employeeService.workingTimesList.isEmpty
+        ? isLoading(true)
+        : isLoading(false);
+    final result = await workingTimesUsecase.call();
+    employeeService.workingTimesList.assignAll(result);
+    isLoading(false);
+  }
+
+  //Get Financial Dues
+  void getFinancialDues() async {
+    employeeService.financialDuesList.isEmpty
+        ? isLoading(true)
+        : isLoading(false);
+    final result = await financialDuesUsecase.call();
+    employeeService.financialDuesList.assignAll(result);
+    isLoading(false);
+  }
+
+  RxBool isDialogLoading = false.obs;
+
+  // Get Financial Details
+  Rxn<FinancialDetailsModel> financialDetailsList =
+      Rxn<FinancialDetailsModel>();
+
+  void getFinancialDetails(String employeeId) async {
+    employeeId == financialDetailsList.value?.employeeId.toString()
+        ? isDialogLoading(false)
+        : isDialogLoading(true);
+    final result = await financialDetailsUsecase.call(employeeId: employeeId);
+    financialDetailsList.value = result;
+    isDialogLoading(false);
+  }
+
+  // Get Employee Details
+  void getEmployeeDetails(String employeeId) async {
+    employeeId == employeeService.employeeDetails.value?.id.toString()
+        ? isDialogLoading(false)
+        : isDialogLoading(true);
+    final result = await employeeDetailsUsecase.call(employeeId: employeeId);
+    employeeService.employeeDetails.value = result;
+    isDialogLoading(false);
+  }
+
+  // generate QR code
+  void generateQrCode(bool isrefresh) async {
+    isDialogLoading(true);
+    if (employeeService.qrGeneration.value == null) {
+      final result = await qrGenerationUsecase.call();
+      employeeService.qrGeneration.value = result;
+    }
+    if (isrefresh) {
+      final result = await qrGenerationUsecase.call();
+      employeeService.qrGeneration.value = result;
+    }
+    isDialogLoading(false);
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    getEmployee();
+    getWorkingTimesList();
+    getFinancialDues();
+    animController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
+
+    opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);
+    sizeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: animController, curve: Curves.fastOutSlowIn),
+    );
+
+    ever(isAddMenuOpen, (bool open) {
+      if (open) {
+        animController.forward();
+      } else {
+        animController.reverse();
+      }
+    });
+  }
+
   @override
   void dispose() {
     fromDateController.dispose();
@@ -317,6 +257,8 @@ class EmployeeSectionController extends GetxController
     addRegularWorkingHoursController.dispose();
     addWorkHoursController.dispose();
     animController.dispose();
+    opacityAnimation.isDismissed;
+    sizeAnimation.isDismissed;
     super.dispose();
   }
 }

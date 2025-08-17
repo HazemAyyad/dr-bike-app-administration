@@ -1,9 +1,15 @@
+import 'package:doctorbike/features/admin/employee_section/domain/usecases/qr_scan_usecase.dart';
+import 'package:doctorbike/features/admin/employee_section/presentation/controllers/qrcode_controller.dart';
 import 'package:doctorbike/features/common_feature/presentation/user_profile/views/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../admin/--/presentation/dashbord/controllers/dashboard_controller.dart';
 import '../../admin/--/presentation/dashbord/views/dashboard_screen.dart';
+import '../../admin/employee_section/data/repositorie_imp/employee_section_implement.dart';
+import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
+import '../../admin/employee_section/presentation/controllers/employee_service.dart';
+import '../../admin/employee_section/presentation/views/qr_code_screen.dart';
 import '../../common_feature/presentation/user_profile/controllers/profile_controller.dart';
 import '../../home/views/home_page_screen.dart';
 
@@ -32,11 +38,27 @@ class BottomNavBarController extends GetxController {
     switch (index) {
       case 0:
         if (!Get.isRegistered<DashboardController>()) {
-          Get.put(DashboardController());
+          Get.put(
+            DashboardController(
+              getAllEmployeeUsecase: GetAllEmployeeUsecase(
+                employeeRepository: Get.find<EmployeeImplement>(),
+              ),
+              employeeService: Get.find<EmployeeService>(),
+            ),
+          );
         }
         return DashboardScreen(key: ValueKey(0));
       case 1:
-        return HomePageScreen(key: ValueKey(1));
+        if (!Get.isRegistered<QrCodeController>()) {
+          Get.put(
+            QrCodeController(
+              qrScanUsecase: QrScanUsecase(
+                employeeRepository: Get.find<EmployeeImplement>(),
+              ),
+            ),
+          );
+        }
+        return FullScreenQRScanner(key: ValueKey(1));
       case 2:
         if (!Get.isRegistered<ProfileController>()) {
           Get.put(ProfileController());

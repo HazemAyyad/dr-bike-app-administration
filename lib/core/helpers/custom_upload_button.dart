@@ -108,10 +108,15 @@ class UploadImageButton extends StatelessWidget {
         Positioned.fill(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: Image.file(
-              File(selectedFile.value!.path),
-              fit: BoxFit.fill,
-            ),
+            child: selectedFile.value!.path.startsWith('http')
+                ? Image.network(
+                    selectedFile.value!.path,
+                    fit: BoxFit.fill,
+                  )
+                : Image.file(
+                    File(selectedFile.value!.path),
+                    fit: BoxFit.fill,
+                  ),
           ),
         ),
         Positioned(

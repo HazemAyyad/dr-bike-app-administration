@@ -4,10 +4,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../domain/entities/working_times_entity.dart';
 
 class WorkHoursList extends StatelessWidget {
   const WorkHoursList({Key? key, required this.employee}) : super(key: key);
-  final Map<String, dynamic> employee;
+  final WorkingTimesEntity employee;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +23,7 @@ class WorkHoursList extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(5.r),
                   child: CachedNetworkImage(
-                    imageUrl: employee['image'],
+                    imageUrl: employee.employeeImg,
                     height: 65.h,
                     width: 65.w,
                     fit: BoxFit.cover,
@@ -42,7 +43,7 @@ class WorkHoursList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      employee['employeeName'],
+                      employee.employeeName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textStyle.copyWith(
@@ -52,34 +53,25 @@ class WorkHoursList extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 5.h),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${'workStartTime'.tr} : ${employee['workStartTime']}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: textStyle.copyWith(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.grey.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Expanded(
-                          child: Text(
-                            '${'workEndTime'.tr} : ${employee['workEndTime']}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: textStyle.copyWith(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w400,
-                              color: Colors.grey.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '${'workStartTime'.tr} : ${employee.startWorkTime}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textStyle.copyWith(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    Text(
+                      '${'workEndTime'.tr} : ${employee.endWorkTime}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textStyle.copyWith(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.grey.withValues(alpha: 0.7),
+                      ),
                     ),
                   ],
                 ),
@@ -88,8 +80,9 @@ class WorkHoursList extends StatelessWidget {
           ),
         ),
         Container(
-          width: 50.w,
+          width: 60.w,
           height: 75.h,
+          padding: EdgeInsets.symmetric(horizontal: 5.w),
           decoration: BoxDecoration(
             color: AppColors.customGreen1,
             borderRadius: BorderRadiusDirectional.only(
@@ -99,7 +92,7 @@ class WorkHoursList extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: Text(
-            '${employee['workHoursOfDay']} ${'hours'.tr}',
+            '${employee.numberOfWorkHours} ${'hours'.tr}',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: 14.sp,

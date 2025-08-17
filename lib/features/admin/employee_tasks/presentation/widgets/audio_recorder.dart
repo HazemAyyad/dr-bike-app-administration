@@ -1,15 +1,15 @@
 import 'dart:io';
-import 'package:audio_waveforms/audio_waveforms.dart';
-// import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-// import 'package:flutter_sound/flutter_sound.dart' hide PlayerState;
 import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+
+import 'package:get/get.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 
 class AudioRecorderButton extends StatefulWidget {
   const AudioRecorderButton({
@@ -26,8 +26,8 @@ class AudioRecorderButton extends StatefulWidget {
 }
 
 class AudioRecorderButtonState extends State<AudioRecorderButton> {
-  late final RecorderController _recorderController;
-  late final PlayerController _playerController;
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final FlutterSoundPlayer _player = FlutterSoundPlayer();
 
   final RxBool _isRecording = false.obs;
   final RxBool _isPlaying = false.obs;
@@ -39,63 +39,49 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
   }
 
   Future<void> _init() async {
-    _recorderController = RecorderController()
-      ..androidEncoder = AndroidEncoder.aac
-      ..androidOutputFormat = AndroidOutputFormat.mpeg4
-      ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
-      ..sampleRate = 16000
-      ..updateFrequency = const Duration(milliseconds: 100);
-
-    _playerController = PlayerController();
-
-    _playerController.onPlayerStateChanged.listen((s) {
-      _isPlaying.value = s.isPlaying;
-    });
-    _playerController.onCompletion.listen((_) async {
-      _isPlaying.value = false;
-      await _playerController.seekTo(0);
-    });
+    await _recorder.openRecorder();
+    await _player.openPlayer();
   }
 
   Future<void> _startRecording() async {
     await Permission.microphone.request();
-
     final dir = await getTemporaryDirectory();
     final path =
         '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.aac';
-    await _recorderController.record(path: path);
-    _isRecording.value = true;
+
+    await _recorder.startRecorder(
+      toFile: path,
+      codec: Codec.aacMP4,
+    );
+
     widget.recordedPath.value = path;
+    setState(() => _isRecording.value = true);
   }
 
   Future<void> _stopRecording() async {
-    await _recorderController.stop();
+    await _recorder.stopRecorder();
     _isRecording.value = false;
   }
 
   Future<void> _playRecording() async {
     if (_isPlaying.value) {
-      await _playerController.pausePlayer();
+      await _player.stopPlayer();
+      setState(() => _isPlaying.value = false);
       return;
     }
 
-    final isPrepared = _playerController.playerState != PlayerState.stopped;
+    await _player.startPlayer(
+      fromURI: widget.recordedPath.value,
+      codec: Codec.aacMP4,
+      whenFinished: () => setState(() => _isPlaying.value = false),
+    );
 
-    if (!isPrepared) {
-      await _playerController.preparePlayer(
-        path: widget.recordedPath.value,
-        shouldExtractWaveform: true,
-      );
-      _playerController.setFinishMode(finishMode: FinishMode.pause);
-    }
-
-    await _playerController.startPlayer();
+    setState(() => _isPlaying.value = true);
   }
 
   Future<void> _resetRecording() async {
-    if (_isRecording.value) await _recorderController.stop();
-    if (_isPlaying.value) await _playerController.pausePlayer();
-    await _playerController.stopAllPlayers();
+    if (_isRecording.value) await _recorder.stopRecorder();
+    if (_isPlaying.value) await _player.stopPlayer();
 
     if (widget.recordedPath.value.isNotEmpty) {
       final file = File(widget.recordedPath.value);
@@ -108,8 +94,8 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
 
   @override
   void dispose() {
-    _recorderController.dispose();
-    _playerController.dispose();
+    _recorder.closeRecorder();
+    _player.closePlayer();
     super.dispose();
   }
 
@@ -144,11 +130,17 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
             child: Row(
               children: _isRecording.value
                   ? [
-                      Flexible(
-                        child: AudioWaveforms(
-                          recorderController: _recorderController,
-                          waveStyle: const WaveStyle(showDurationLabel: true),
-                          size: const Size(double.infinity, 50),
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 15.w),
+                          child: Text(
+                            "جارٍ التسجيل...",
+                            style: TextStyle(
+                              fontSize: 15.sp,
+                              color: AppColors.primaryColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                       IconButton(
@@ -165,16 +157,17 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
                             icon: const Icon(Icons.refresh, color: Colors.red),
                             onPressed: _resetRecording,
                           ),
-                          Flexible(
-                            child: AudioFileWaveforms(
-                              playerController: _playerController,
-                              size: const Size(double.infinity, 50),
-                              playerWaveStyle: const PlayerWaveStyle(
-                                liveWaveColor: Colors.blueAccent,
-                                fixedWaveColor: Colors.grey,
-                                showSeekLine: true,
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 15.w),
+                              child: Text(
+                                widget.recordedPath.value.split('/').last,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.grey,
+                                ),
                               ),
-                              enableSeekGesture: true,
                             ),
                           ),
                           IconButton(
@@ -216,6 +209,7 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
     });
   }
 }
+
 
   // Future<void> _uploadAudio(File file) async {
   //   final dio = Dio();

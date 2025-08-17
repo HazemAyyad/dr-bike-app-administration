@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../core/helpers/app_button.dart';
+import '../../../../core/services/initial_bindings.dart';
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../../../routes/app_routes.dart';
@@ -38,6 +39,7 @@ class NoInternetScreen extends StatelessWidget {
                     ? AppColors.primaryColor
                     : Colors.white,
                 onPressed: () {
+                  InitialBindings().dependencies();
                   Get.offAllNamed(AppRoutes.SPLASHSCREEN);
                 },
                 text: 'tryAgain',

@@ -1,4 +1,3 @@
-// بناء حقل قائمة منسدلة
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -9,24 +8,28 @@ import '../utils/app_colors.dart';
 class CustomDropdownField extends StatelessWidget {
   final String label;
   final String hint;
-  final List<String> items;
+  final List<String>? items;
+  final String? value;
   final Function(String?) onChanged;
   final bool isRequired;
   final TextStyle? labelTextStyle;
   final BoxBorder? border;
   final bool isEnabled;
   final String? Function(String?)? validator;
+  final List<DropdownMenuItem<String>>? dropdownField;
   const CustomDropdownField({
     Key? key,
     required this.label,
     required this.hint,
-    required this.items,
+    this.items,
+    this.value,
     required this.onChanged,
     this.isRequired = false,
     this.labelTextStyle,
     this.border,
     this.isEnabled = true,
     this.validator,
+    this.dropdownField,
   }) : super(key: key);
 
   @override
@@ -72,6 +75,7 @@ class CustomDropdownField extends StatelessWidget {
             borderRadius: BorderRadius.circular(11.r),
           ),
           child: DropdownButtonFormField<String>(
+            value: value,
             validator: validator ??
                 (value) {
                   if (value == null || value.isEmpty) {
@@ -101,20 +105,22 @@ class CustomDropdownField extends StatelessWidget {
                   ),
               // textAlign: TextAlign.right,
             ),
-            items: items
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text(
-                      item.tr,
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w400,
-                          ),
-                    ),
-                  ),
-                )
-                .toList(),
+            items: dropdownField ??
+                items!
+                    .map(
+                      (item) => DropdownMenuItem(
+                        value: item,
+                        child: Text(
+                          item.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                        ),
+                      ),
+                    )
+                    .toList(),
             onChanged: isEnabled ? onChanged : null,
           ),
         ),

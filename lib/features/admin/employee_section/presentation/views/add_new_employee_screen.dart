@@ -19,8 +19,10 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
 
   @override
   Widget build(BuildContext context) {
+    final String title =
+        Get.arguments['AddNewEmployeeScreen'] ?? 'addNewEmployee';
     return Scaffold(
-      appBar: CustomAppBar(title: 'addNewEmployee'.tr, action: false),
+      appBar: CustomAppBar(title: title, action: false),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Form(
@@ -56,55 +58,61 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 ],
               ),
               SizedBox(height: 15.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomPhoneField(
-                      label: 'phoneNumber',
-                      hintText: '58458XXXXX',
-                      controller: controller.phoneNumberController,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomPhoneField(
-                      label: 'alternatePhone',
-                      hintText: '58410XXXXX',
-                      controller: controller.subPhoneController,
-                    ),
-                  ),
-                ],
+              CustomPhoneField(
+                label: 'phoneNumber',
+                hintText: '58458XXXXX',
+                controller: controller.phoneNumberController,
               ),
-              SizedBox(height: 15.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      isRequired: true,
-                      label: 'password',
-                      hintText: '**********',
-                      controller: controller.passwordController,
-                      validator: (p0) => Validators.validatePassword(
-                        p0,
-                        Get.locale!.languageCode,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      isRequired: true,
-                      label: 'confirmPassword',
-                      hintText: '**********',
-                      controller: controller.confirmPasswordController,
-                      validator: (p0) => Validators.validatePassword(
-                        p0,
-                        Get.locale!.languageCode,
-                      ),
-                    ),
-                  ),
-                ],
+              SizedBox(height: 10.h),
+
+              CustomPhoneField(
+                label: 'alternatePhone',
+                hintText: '58410XXXXX',
+                controller: controller.subPhoneController,
               ),
+              // Row(
+              //   children: [
+              //     Flexible(
+              //       child:
+              //     ),
+              //     SizedBox(width: 10.w),
+              //     Flexible(
+              //       child:
+              //     ),
+              //   ],
+              // ),
+              SizedBox(height: controller.isEditEmployee ? 0 : 15.h),
+              controller.isEditEmployee
+                  ? SizedBox()
+                  : Row(
+                      children: [
+                        Flexible(
+                          child: CustomTextField(
+                            isRequired: true,
+                            label: 'password',
+                            hintText: '**********',
+                            controller: controller.passwordController,
+                            validator: (p0) => Validators.validatePassword(
+                              p0,
+                              Get.locale!.languageCode,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: CustomTextField(
+                            isRequired: true,
+                            label: 'confirmPassword',
+                            hintText: '**********',
+                            controller: controller.confirmPasswordController,
+                            validator: (p0) => Validators.validatePassword(
+                              p0,
+                              Get.locale!.languageCode,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
               SizedBox(height: 15.h),
               Row(
                 children: [
@@ -131,7 +139,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 hintText: 'workHoursExample',
                 controller: controller.workHoursOfDayController,
               ),
-              SizedBox(height: 10.w),
+              SizedBox(height: 15.w),
               CustomTimePicker(
                 isVisible: controller.isVisible,
                 onTap: () =>
@@ -212,7 +220,8 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
               SizedBox(height: 20.h),
               AppButton(
                 isLoading: controller.isLoading,
-                text: 'addNewEmployee'.tr,
+                text:
+                    title == 'editEmployee' ? 'saveChanges' : 'addNewEmployee',
                 textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w700,

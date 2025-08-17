@@ -17,59 +17,56 @@ class SignUpScreen extends GetView<SignUpController> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
-          child: SingleChildScrollView(
-            child: Form(
-              key: controller.formKey,
-              child: Column(
-                children: [
-                  SizedBox(height: 50.h),
-                  // Logo
-                  AppLogo(),
-                  SizedBox(height: 25.h),
-                  // Title
-                  Text(
-                    "welcome".tr,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: ThemeService.isDark.value
-                              ? Colors.white
-                              : AppColors.secondaryColor,
-                          fontSize: 24.sp,
-                          fontWeight: FontWeight.w700,
+      body: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: SingleChildScrollView(
+          child: Form(
+            key: controller.formKey,
+            child: Column(
+              children: [
+                SizedBox(height: 80.h),
+                // Logo
+                AppLogo(),
+                SizedBox(height: 25.h),
+                // Title
+                Text(
+                  "welcome".tr,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.secondaryColor,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                SizedBox(height: 25.h),
+                SignUpTextField(controller: controller),
+                SizedBox(height: 24.h),
+                // Register Button
+                Obx(
+                  () => controller.isLoading.value
+                      ? lodingIndicator()
+                      : AppButton(
+                          text: 'register',
+                          onPressed: () {
+                            controller.register(context);
+                          },
+                          textStyle:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.secondaryColor
+                                        : AppColors.whiteColor,
+                                    fontSize: 20.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                          height: 48.h,
                         ),
-                  ),
-                  SizedBox(height: 25.h),
-                  SignUpTextField(controller: controller),
-                  SizedBox(height: 24.h),
-                  // Register Button
-                  Obx(
-                    () => controller.isLoading.value
-                        ? lodingIndicator()
-                        : AppButton(
-                            text: 'register',
-                            onPressed: () {
-                              controller.register(context);
-                            },
-                            textStyle: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.secondaryColor
-                                      : AppColors.whiteColor,
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                            height: 48.h,
-                          ),
-                  ),
-                  SizedBox(height: 16.h),
-                  // Bottom Text
-                  AlreadyHaveAccount(),
-                ],
-              ),
+                ),
+                SizedBox(height: 16.h),
+                // Bottom Text
+                AlreadyHaveAccount(),
+                SizedBox(height: 30.h),
+              ],
             ),
           ),
         ),

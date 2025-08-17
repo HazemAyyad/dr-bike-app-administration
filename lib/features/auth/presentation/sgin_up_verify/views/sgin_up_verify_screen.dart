@@ -22,8 +22,7 @@ class SginupVerifyScreen extends GetView<SginupVerifyController> {
           key: controller.formKey,
           child: Column(
             children: [
-              SizedBox(height: 272.h),
-
+              SizedBox(height: 200.h),
               // Title
               Text(
                 "startNow".tr,
@@ -36,7 +35,6 @@ class SginupVerifyScreen extends GetView<SginupVerifyController> {
                     ),
               ),
               SizedBox(height: 30.h),
-
               // Subtitle
               Text(
                 "otpSent".tr,

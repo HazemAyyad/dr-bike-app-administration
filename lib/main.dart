@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'core/connection/network_info.dart';
 import 'core/services/languague_service.dart';
 import 'core/services/notification_firebase_service.dart';
 import 'core/services/theme_service.dart';
@@ -20,21 +21,15 @@ import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await GetStorage.init();
 
   final binding = WidgetsFlutterBinding.ensureInitialized();
   final window = binding.window;
   final width = window.physicalSize.width / window.devicePixelRatio;
   final height = window.physicalSize.height / window.devicePixelRatio;
-  await GetStorage.init();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await NotificationFirebaseService.instance.intNotification();
-  await initializeDateFormatting(); // لجميع اللغات المدعومة
-  print('FCM Token: ${NotificationFirebaseService.instance.finalToken}');
-  final userToken = await UserData.getUserToken();
-  print('User Token: $userToken');
 
+  print('Screen Width: $width');
+  print('Screen Height: $height');
   runApp(
     DevicePreview(
       enabled: kDebugMode,
@@ -61,7 +56,8 @@ class MyApp extends StatelessWidget {
           themeMode: ThemeService.instance.themeMode,
           translations: Translation(),
           locale: Locale(
-              Get.put<LanguageController>(LanguageController()).getLang()),
+            Get.put<LanguageController>(LanguageController()).getLang(),
+          ),
           fallbackLocale: const Locale('en'),
           initialBinding: InitialBindings(),
           initialRoute: AppRoutes.SPLASHSCREEN,

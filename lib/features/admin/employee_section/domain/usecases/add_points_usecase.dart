@@ -8,13 +8,11 @@ class AddPointsUsecase {
   AddPointsUsecase({required this.employeeRepository});
 
   Future<Either<Failure, String>> call({
-    required String token,
     required String employeeId,
     required String points,
     required bool isAdd,
   }) {
     return employeeRepository.addPointsToEmployee(
-      token: token,
       employeeId: employeeId,
       points: points,
       isAdd: isAdd,

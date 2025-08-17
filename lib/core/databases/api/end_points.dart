@@ -23,6 +23,24 @@ class EndPoints {
   static const String addPointsToEmployee = 'add/points/to/employee';
   static const String minusPointsFromEmployee = 'minus/points/from/employee';
   static const String paySalaryToEmployee = 'pay/employee/salary';
+  static const String employees = 'employees';
+  static const String workingTimes = 'working/times';
+  static const String financialDues = 'financial/dues';
+  static const String employeeFinancialDetails =
+      'show/employee/financial/details';
+  static const String employeePermissions = 'employee/permissions';
+  static const String qrGeneration = 'qr-generation';
+  static const String editEmployee = 'edit/employee';
+  static const String qrScan = 'qr-scan';
+
+  // tasks section
+  static const String createEmployeeTask = 'create/employee/task';
+  static const String getEmployeeTasks = 'employee/ongoing/tasks';
+  static const String getCompletedTasks = 'employee/completed/tasks';
+  static const String getCanceledTasks = 'employee/canceled/tasks';
+  static const String cancelEmployeeTask = 'cancel/employee/task';
+  static const String cancelEmployeeTaskWithRepetition =
+      'cancel/employee/task/with/repetition';
 }
 
 class ApiKey {
@@ -58,33 +76,40 @@ class ApiKey {
   static const String is_canceled_customer = 'is_canceled_customer';
   static const String customer_debts = 'customer_debts';
   static const String items = 'items';
-
-  static const String message = 'message';
-  static const String success = 'success';
-  static const String token = 'token';
-  static const String user_type = 'user_type';
-  static const String details = 'details';
-  static const String client = 'client';
-  static const String seller = 'seller';
-  static const String delegate = 'delegate';
-  static const String first_name = 'first_name';
-  static const String last_name = 'last_name';
-  static const String facebook = 'facebook';
-  static const String instagram = 'instagram';
-  static const String whatsapp_number = 'whatsapp_number';
-  static const String tiktok = 'tiktok';
-  static const String is_sponser = 'is_sponser';
+  static const String employee_name = 'employee_name';
+  static const String hour_work_price = 'hour_work_price';
   static const String points = 'points';
-  static const String country = 'country';
-  static const String country_name = 'country_name';
-  static const String country_name_ar = 'country_name_ar';
-  static const String is_admin = 'is_admin';
-  static const String img = 'img';
-  static const String sections = 'sections';
-  static const String city_name = 'city_name';
-  static const String city_name_ar = 'city_name_ar';
+  static const String employee_img = 'employee_img';
+  static const String user_name = 'user_name';
+  static const String start_work_time = 'start_work_time';
+  static const String end_work_time = 'end_work_time';
+  static const String number_of_work_hours = 'number_of_work_hours';
+  static const String working_times = 'working_times';
+  static const String salary = 'salary';
+  static const String financial_dues = 'financial_dues';
+  static const String employee_id = 'employee_id';
+  static const String total_work_hours = 'total_work_hours';
+  static const String points_revenue = 'points_revenue';
+  static const String financial_details = 'financial_details';
+  static const String employee_details = 'employee_details';
+  static const String overtime_work_price = 'overtime_work_price';
+  static const String document_img = 'document_img';
+  static const String permissions = 'permissions';
+  static const String permission_id = 'permission_id';
+  static const String permission_name = 'permission_name';
+  static const String permission_name_en = 'permission_name_en';
+  static const String qr_image_url = 'qr_image_url';
+  static const String code_text = 'code_text';
+  static const String employee_permissions = 'employee_permissions';
+  static const String employee = 'employee';
   static const String fcm_token = 'fcm_token';
-  static const String offers = 'offers';
+  static const String task_name = 'task_name';
+  static const String start_time = 'start_time';
+  static const String end_time = 'end_time';
+  static const String is_canceled = 'is_canceled';
+  static const String admin_img = 'admin_img';
+  static const String audio = 'audio';
+
   static const String bg_img = 'bg_img';
   static const String discount_percentage = 'discount_percentage';
   static const String exclusions = 'exclusions';

@@ -41,6 +41,7 @@ class AppRoutes {
   static const ADDPENALTYANDREWARDSCREEN = '/AddPenaltyAndRewardScreen';
   static const POINTSTABLE = '/PointsTable';
   static const ACTIVITYLOGSCREEN = '/ActivityLogScreen';
+  static const FULLSCREENQRSCANNER = '/FullScreenQRScanner';
 
   // Boxes Screen
   static const BOXESSCREEN = '/BoxesScreen';

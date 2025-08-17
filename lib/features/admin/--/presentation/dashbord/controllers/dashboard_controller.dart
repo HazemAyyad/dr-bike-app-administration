@@ -3,27 +3,70 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../../../employee_section/presentation/controllers/employee_service.dart';
 
 class DashboardController extends GetxController
     with GetTickerProviderStateMixin {
+  GetAllEmployeeUsecase getAllEmployeeUsecase;
+  EmployeeService employeeService;
+  DashboardController({
+    required this.getAllEmployeeUsecase,
+    required this.employeeService,
+  });
+  final filteredButtons = <Map<String, dynamic>>[];
+
   List<Map<String, dynamic>> buttons = [
-    {'title': 'employeeTasks', 'route': AppRoutes.EMPLOYEETASKSSCREEN},
-    {'title': 'privateTasks', 'route': AppRoutes.PRIVATETASKSSCREEN},
-    {'title': 'employeeDepartment', 'route': AppRoutes.EMPLOYEESECTIONSCREEN},
-    {'title': 'projectManagement', 'route': AppRoutes.PROJECTMANAGEMENTSCREEN},
-    {'title': 'messagesDepartment', 'route': ''},
-    {'title': 'infoCompletion', 'route': ''},
-    {'title': 'targetSetting', 'route': AppRoutes.TARGETSECTIONSCREEN},
-    {'title': 'followUpDepartment', 'route': AppRoutes.CURRENTFOLLOWUPSCREEN},
-    {'title': 'debts', 'route': AppRoutes.DEBTSSCREEN},
-    {'title': 'sales', 'route': AppRoutes.SALESSCREEN},
-    {'title': 'generalData', 'route': AppRoutes.GENERALDATALISTSCREEN},
-    {'title': 'partnersDepartment', 'route': ''},
-    {'title': 'inventory', 'route': ''},
-    {'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
-    {'title': 'purchasingDepartment', 'route': ''},
-    {'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
-    {'title': 'checksandCommitments', 'route': AppRoutes.CHECKSSCREEN},
+    {
+      'id': '21',
+      'title': 'employeeTasks',
+      'route': AppRoutes.EMPLOYEETASKSSCREEN
+    },
+    {
+      'id': '22',
+      'title': 'privateTasks',
+      'route': AppRoutes.PRIVATETASKSSCREEN
+    },
+    {
+      'id': '23',
+      'title': 'employeeDepartment',
+      'route': AppRoutes.EMPLOYEESECTIONSCREEN
+    },
+    {
+      'id': '24',
+      'title': 'projectManagement',
+      'route': AppRoutes.PROJECTMANAGEMENTSCREEN
+    },
+    {'id': '25', 'title': 'messagesDepartment', 'route': ''},
+    {'id': '26', 'title': 'infoCompletion', 'route': ''},
+    {
+      'id': '27',
+      'title': 'targetSetting',
+      'route': AppRoutes.TARGETSECTIONSCREEN
+    },
+    {
+      'id': '28',
+      'title': 'followUpDepartment',
+      'route': AppRoutes.CURRENTFOLLOWUPSCREEN
+    },
+    {'id': '29', 'title': 'debts', 'route': AppRoutes.DEBTSSCREEN},
+    {'id': '30', 'title': 'sales', 'route': AppRoutes.SALESSCREEN},
+    {
+      'id': '31',
+      'title': 'generalData',
+      'route': AppRoutes.GENERALDATALISTSCREEN
+    },
+    {'id': '32', 'title': 'partnersDepartment', 'route': ''},
+    {'id': '33', 'title': 'inventory', 'route': ''},
+    {'id': '34', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
+    {'id': '35', 'title': 'purchasingDepartment', 'route': ''},
+    {'id': '36', 'title': 'financialMatters', 'route': ''},
+    {
+      'id': '37',
+      'title': 'checksandCommitments',
+      'route': AppRoutes.CHECKSSCREEN
+    },
+    {'id': '38', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
   ];
 
   // متغيرات للإحصائيات
@@ -41,6 +84,12 @@ class DashboardController extends GetxController
   late AnimationController animController;
   late Animation<double> opacityAnimation;
   late Animation<double> sizeAnimation;
+
+  void getEmployee() async {
+    final result = await getAllEmployeeUsecase.call();
+    employeeService.employeeList.assignAll(result);
+    update();
+  }
 
   @override
   void onInit() {
@@ -63,6 +112,7 @@ class DashboardController extends GetxController
         animController.reverse();
       }
     });
+    getEmployee();
   }
 
   void toggleAddMenu() {

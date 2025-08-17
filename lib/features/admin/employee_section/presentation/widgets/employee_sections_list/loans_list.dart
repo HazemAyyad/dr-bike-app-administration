@@ -97,7 +97,7 @@ class LoansList extends GetView<EmployeeSectionController> {
             ),
           ),
           Container(
-            width: 50.w,
+            width: 60.w,
             height: 75.h,
             decoration: BoxDecoration(
               color: employee['stuts'] == 'طلب مقبول'
