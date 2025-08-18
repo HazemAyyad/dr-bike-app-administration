@@ -198,7 +198,7 @@ class EmployeeTasksLists extends StatelessWidget {
                                           ? null
                                           : controller.cancelEmployeeTask(
                                               context: context,
-                                              taskId: order.id.toString(),
+                                              taskId: order.taskId.toString(),
                                               cancelWithRepetition: controller
                                                   .deleteTasDuplicate.value,
                                             ),
@@ -209,10 +209,17 @@ class EmployeeTasksLists extends StatelessWidget {
                   ),
                 )
               : null,
-          onTap: () => Get.toNamed(
-            AppRoutes.TASKDETAILS,
-            arguments: 'employeeTaskDetails',
-          ),
+          onTap: () {
+            controller.getTaskDetails(taskId: order.taskId.toString());
+
+            Get.toNamed(
+              AppRoutes.TASKDETAILS,
+              arguments: {
+                'title': 'employeeTaskDetails',
+                'controller': controller
+              },
+            );
+          },
           child: Container(
             decoration: BoxDecoration(
               color: ThemeService.isDark.value

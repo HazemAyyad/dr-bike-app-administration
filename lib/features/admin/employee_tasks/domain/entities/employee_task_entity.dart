@@ -1,6 +1,7 @@
 class EmployeeTaskEntity {
-  final int id;
+  final int taskId;
   final String taskName;
+  final String employeeId;
   final String employeeName;
   final DateTime startTime;
   final DateTime endTime;
@@ -10,8 +11,9 @@ class EmployeeTaskEntity {
   final String? audio;
 
   EmployeeTaskEntity({
-    required this.id,
+    required this.taskId,
     required this.taskName,
+    required this.employeeId,
     required this.employeeName,
     required this.startTime,
     required this.endTime,

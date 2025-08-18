@@ -206,6 +206,8 @@ const Map<String, String> en = {
   'apply': 'Apply',
   'deleteTask': 'Delete Task',
   'deleteRepeatedTask': 'Delete Repeated Task',
+  'subTasks': 'Sub Tasks',
+  'cancelTask': 'Cancel Task',
 
   // add Task
   'createNewEmployeeTask': 'Create New Employee Task',
@@ -257,13 +259,13 @@ const Map<String, String> en = {
   'taskRepeatDate': 'Task Repeat Date',
   'taskRepeatDateExample': 'Example: From Sunday to Thursday',
 
-  'everySaturday': 'Every Saturday',
-  'everySunday': 'Every Sunday',
-  'everyMonday': 'Every Monday',
-  'everyTuesday': 'Every Tuesday',
-  'everyWednesday': 'Every Wednesday',
-  'everyThursday': 'Every Thursday',
-  'everyFriday': 'Every Friday',
+  'everySaturday': 'Saturday',
+  'everySunday': 'Sunday',
+  'everyMonday': 'Monday',
+  'everyTuesday': 'Tuesday',
+  'everyWednesday': 'Wednesday',
+  'everyThursday': 'Thursday',
+  'everyFriday': 'Friday',
 
   'uploadImage': 'Upload Image from the admin',
   'requireImage': 'Require the employee to attach images upon task completion',

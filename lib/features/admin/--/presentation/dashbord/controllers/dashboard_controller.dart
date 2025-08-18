@@ -73,7 +73,6 @@ class DashboardController extends GetxController
   final RxInt debtToUs = 100.obs;
   final RxInt debtOnUs = 20.obs;
   final RxInt products = 150.obs;
-  final RxInt employees = 40.obs;
   final RxInt completedTasks = 30.obs;
   final RxInt pendingTasks = 5.obs;
   final RxInt expenses = 1200.obs;

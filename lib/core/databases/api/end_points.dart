@@ -41,6 +41,7 @@ class EndPoints {
   static const String cancelEmployeeTask = 'cancel/employee/task';
   static const String cancelEmployeeTaskWithRepetition =
       'cancel/employee/task/with/repetition';
+  static const String showEmployeeTask = 'show/employee/task';
 }
 
 class ApiKey {
@@ -109,20 +110,20 @@ class ApiKey {
   static const String is_canceled = 'is_canceled';
   static const String admin_img = 'admin_img';
   static const String audio = 'audio';
+  static const String task_id = 'task_id';
+  static const String description = 'description';
+  static const String not_shown_for_employee = 'not_shown_for_employee';
+  static const String is_forced_to_upload_img = 'is_forced_to_upload_img';
+  static const String task_recurrence = 'task_recurrence';
+  static const String task_recurrence_time = 'task_recurrence_time';
+  static const String sub_tasks = 'sub_tasks';
+  static const String sub_id = 'sub_id';
+  static const String sub_name = 'sub_name';
+  static const String sub_description = 'sub_description';
+  static const String sub_status = 'sub_status';
+  static const String sub_admin_img = 'sub_admin_img';
+  static const String subtask_admin_img_path = 'subtask_admin_img_path';
 
-  static const String bg_img = 'bg_img';
-  static const String discount_percentage = 'discount_percentage';
-  static const String exclusions = 'exclusions';
-  static const String period = 'period';
-  static const String store_id = 'store_id';
-  static const String store = 'store';
-  static const String user_id = 'user_id';
-  static const String section_id = 'section_id';
-  static const String delegate_id = 'delegate_id';
-  static const String licensed_operator_number = 'licensed_operator_number';
-  static const String sector_representative = 'sector_representative';
-  static const String location = 'location';
-  static const String work_days = 'work_days';
   static const String work_hours = 'work_hours';
   static const String sector_qr = 'sector_qr';
   static const String contract_img = 'contract_img';

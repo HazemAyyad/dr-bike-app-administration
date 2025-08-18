@@ -47,7 +47,7 @@ class EmployeeTasksDataSource {
         subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
             subEmployeeTasks[i]['subTaskdescription'];
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
-            subEmployeeTasks[i]['imageIsRequired'];
+            subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
       final response = await api.post(
         EndPoints.createEmployeeTask,
@@ -87,7 +87,7 @@ class EmployeeTasksDataSource {
         ),
       );
       final data = response.data;
-      // print('Response data: $response');
+      print('Response data: $response');
       return data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -141,6 +141,27 @@ class EmployeeTasksDataSource {
             ? EndPoints.cancelEmployeeTaskWithRepetition
             : EndPoints.cancelEmployeeTask,
         data: {'employee_task_id': employeeTaskId},
+      );
+      final data = response.data;
+      // print('Response data: $response');
+      return data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> getTaskDetails({required String taskId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.showEmployeeTask,
+        queryParameters: {'employee_task_id': taskId},
       );
       final data = response.data;
       // print('Response data: $response');

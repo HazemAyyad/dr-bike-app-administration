@@ -166,7 +166,6 @@ class CreateTaskController extends GetxController {
               .cast<String>()
               .join('')
               .replaceAll('.', '- \n');
-          print(messages);
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
@@ -216,27 +215,6 @@ class CreateTaskController extends GetxController {
     getEmployee();
   }
 
-  // دالة لإعادة تعيين البيانات
-  void resetData() {
-    taskNameController.clear();
-    taskDescriptionController.clear();
-    taskNotesController.clear();
-    employeeIdConroller.clear();
-    subTasks.clear();
-    subTaskNameController.clear();
-    subTaskDescriptionController.clear();
-    pointsController.clear();
-    selectedDays.value = '';
-    isSelected.value = 0;
-    hideTask.value = false;
-    selectedDays.value = '';
-    isStartDateCalendarVisible.value = false;
-    isSubtasksListVisible.value = false;
-    isRecurrenceVisible.value = false;
-    requireImage.value = false;
-    selectedDaysList.clear();
-  }
-
   @override
   void dispose() {
     taskNameController.dispose();
@@ -247,11 +225,6 @@ class CreateTaskController extends GetxController {
     subTaskDescriptionController.dispose();
     pointsController.dispose();
     subTasks.clear();
-    selectedDays.value = '';
-    isSelected.value = 0;
-    hideTask.value = false;
-    selectedDays.value = '';
-    selectedFile.value = null;
     selectedDaysList.clear();
     super.dispose();
   }

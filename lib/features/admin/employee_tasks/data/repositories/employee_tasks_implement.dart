@@ -113,4 +113,19 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
+
+  @override
+  Future<dynamic> getTaskDetails({required String taskId}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result =
+            await employeeTasksDataSource.getTaskDetails(taskId: taskId);
+        return result;
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw [];
+    }
+  }
 }

@@ -212,7 +212,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                         height: 40.h,
                       ),
               ),
-              SizedBox(height: 50.h),
+              SizedBox(height: 20.h),
             ],
           ),
         ),

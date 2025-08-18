@@ -29,4 +29,6 @@ abstract class EmployeeTasksRepository {
     required XFile? adminImg,
     required File audio,
   });
+
+  Future<dynamic> getTaskDetails({required String taskId});
 }

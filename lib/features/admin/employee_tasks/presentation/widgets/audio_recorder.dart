@@ -39,8 +39,8 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
   }
 
   Future<void> _init() async {
-    await _recorder.openRecorder();
-    await _player.openPlayer();
+    _recorder.openRecorder();
+    _player.openPlayer();
   }
 
   Future<void> _startRecording() async {

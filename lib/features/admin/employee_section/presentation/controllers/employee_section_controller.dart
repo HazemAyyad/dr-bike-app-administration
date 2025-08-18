@@ -165,7 +165,7 @@ class EmployeeSectionController extends GetxController
   }
 
   //Get Working Times
-  void getWorkingTimesList() async {
+  void getWorkingTimes() async {
     employeeService.workingTimesList.isEmpty
         ? isLoading(true)
         : isLoading(false);
@@ -227,7 +227,7 @@ class EmployeeSectionController extends GetxController
   void onInit() {
     super.onInit();
     getEmployee();
-    getWorkingTimesList();
+    getWorkingTimes();
     getFinancialDues();
     animController = AnimationController(
       vsync: this,

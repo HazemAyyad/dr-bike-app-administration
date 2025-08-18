@@ -14,6 +14,7 @@ class CustomCheckBox extends StatelessWidget {
     this.style,
     this.shape,
     required this.onChanged,
+    this.scale = 1.0,
   }) : super(key: key);
 
   final String title;
@@ -22,6 +23,7 @@ class CustomCheckBox extends StatelessWidget {
   final TextStyle? style;
   final CircleBorder? shape;
   final void Function(bool?) onChanged;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +31,19 @@ class CustomCheckBox extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Obx(
-          () => Checkbox(
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            activeColor: AppColors.primaryColor,
-            shape: shape ??
-                RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-            side: BorderSide(color: AppColors.primaryColor),
-            value: value.value,
-            onChanged: onChanged,
+          () => Transform.scale(
+            scale: scale,
+            child: Checkbox(
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              activeColor: AppColors.primaryColor,
+              shape: shape ??
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+              side: BorderSide(color: AppColors.primaryColor),
+              value: value.value,
+              onChanged: onChanged,
+            ),
           ),
         ),
         subtitle == null

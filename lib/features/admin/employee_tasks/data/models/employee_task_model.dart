@@ -5,8 +5,9 @@ import '../../domain/entities/employee_task_entity.dart';
 
 class EmployeeTaskModel extends EmployeeTaskEntity {
   EmployeeTaskModel({
-    required int id,
+    required int taskId,
     required String taskName,
+    required String employeeId,
     required String employeeName,
     required DateTime startTime,
     required DateTime endTime,
@@ -15,8 +16,9 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     String? adminImg,
     String? audio,
   }) : super(
-          id: id,
+          taskId: taskId,
           taskName: taskName,
+          employeeId: employeeId,
           employeeName: employeeName,
           startTime: startTime,
           endTime: endTime,
@@ -28,8 +30,9 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
 
   factory EmployeeTaskModel.fromJson(Map<String, dynamic> json) {
     return EmployeeTaskModel(
-      id: json[ApiKey.id] ?? 0,
+      taskId: json[ApiKey.task_id] ?? 0,
       taskName: json[ApiKey.task_name] ?? 'Unknown',
+      employeeId: json[ApiKey.employee_id] ?? 'Unknown',
       employeeName: json[ApiKey.employee_name] ?? 'Unknown',
       startTime: DateTime.parse(json[ApiKey.start_time] ?? DateTime.now()),
       endTime: DateTime.parse(json[ApiKey.end_time] ?? DateTime.now()),
@@ -43,7 +46,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
 
   Map<String, dynamic> toJson() {
     return {
-      ApiKey.id: id,
+      ApiKey.task_id: taskId,
       ApiKey.task_name: taskName,
       ApiKey.employee_name: employeeName,
       ApiKey.start_time: startTime.toIso8601String(),
