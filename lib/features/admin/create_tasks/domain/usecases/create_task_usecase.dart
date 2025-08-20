@@ -8,7 +8,7 @@ import '../../../../../core/errors/failure.dart';
 import '../repositories/employee_tasks_repository.dart';
 
 class CreateTaskUsecase {
-  final EmployeeTasksRepository employeeTasksRepository;
+  final CreateEmployeeTasksRepository employeeTasksRepository;
 
   CreateTaskUsecase({required this.employeeTasksRepository});
 

@@ -11,7 +11,6 @@ class EndPoints {
   static const String logout = 'logout';
   static const String changePassword = 'change/password';
   static const String updateProfile = 'update/profile';
-  static const String createSpecialTask = 'create/special/task';
   static const String totalDebtsWeOwe = 'total/debts/we/owe';
   static const String totalDebtsOwedToUs = 'total/debts/owed/to/us';
   static const String getDebtsOwedToUs = 'get/debts/owed/to/us';
@@ -35,6 +34,8 @@ class EndPoints {
 
   // tasks section
   static const String createEmployeeTask = 'create/employee/task';
+  static const String createSpecialTask = 'create/special/task';
+
   static const String getEmployeeTasks = 'employee/ongoing/tasks';
   static const String getCompletedTasks = 'employee/completed/tasks';
   static const String getCanceledTasks = 'employee/canceled/tasks';
@@ -42,6 +43,18 @@ class EndPoints {
   static const String cancelEmployeeTaskWithRepetition =
       'cancel/employee/task/with/repetition';
   static const String showEmployeeTask = 'show/employee/task';
+
+  // special tasks
+  static const String getOngoingSpecialTasks = 'ongoing/special/tasks';
+  static const String getNoDateSpecialTasks = 'no-date/special/tasks';
+  static const String getCompletedSpecialTasks = 'completed/special/tasks';
+  static const String changeSpecialTaskToCompleted =
+      'change/special/task/to/completed';
+  static const String showSpecialTask = 'show/special/task';
+  static const String cancelSpecialTask = 'cancel/special/task';
+  static const String cancelSpecialTaskWithRepetition =
+      'cancel/special/task/with/repitition';
+  static const String transferSpecialTask = 'transfer/special/task';
 }
 
 class ApiKey {
@@ -123,15 +136,15 @@ class ApiKey {
   static const String sub_status = 'sub_status';
   static const String sub_admin_img = 'sub_admin_img';
   static const String subtask_admin_img_path = 'subtask_admin_img_path';
+  static const String employee_images_path = 'employee_images_path';
+  static const String employees = 'employees';
+  static const String start_date = 'start_date';
+  static const String end_date = 'end_date';
+  static const String ongoing_tasks = 'ongoing_tasks';
+  static const String completed_tasks = 'completed_tasks';
+  static const String canceled_tasks = 'canceled_tasks';
+  static const String no_date_tasks = 'no_date_tasks';
 
-  static const String work_hours = 'work_hours';
-  static const String sector_qr = 'sector_qr';
-  static const String contract_img = 'contract_img';
-  static const String store_img = 'store_img';
-  static const String seller_name = 'seller_name';
-  static const String phone_number1 = 'phone_number1';
-  static const String phone_number2 = 'phone_number2';
-  static const String is_most_popular = 'is_most_popular';
   static const String stores = 'stores';
   static const String sellers = 'sellers';
   static const String package_id = 'package_id';

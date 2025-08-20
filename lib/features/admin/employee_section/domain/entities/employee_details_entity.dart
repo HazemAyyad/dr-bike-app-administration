@@ -9,8 +9,8 @@ class EmployeeDetailsEntity {
   final String numberOfWorkHours;
   final String startWorkTime;
   final String endWorkTime;
-  final String employeeImg;
-  final String documentImg;
+  final List<String> employeeImg;
+  final List<String> documentImg;
   final List<PermissionEntity> permissions;
 
   const EmployeeDetailsEntity({

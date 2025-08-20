@@ -129,8 +129,9 @@ class EmployeeTasksDataSource {
         ),
       );
     }
-  } // create employee task
+  }
 
+  // create employee task
   Future<Map<String, dynamic>> cancelEmployeeTask({
     required String employeeTaskId,
     required bool cancelWithRepetition,
@@ -157,6 +158,7 @@ class EmployeeTasksDataSource {
     }
   }
 
+  // get task details
   Future<dynamic> getTaskDetails({required String taskId}) async {
     try {
       final response = await api.post(

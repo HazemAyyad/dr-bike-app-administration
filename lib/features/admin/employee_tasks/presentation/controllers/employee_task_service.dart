@@ -1,10 +1,9 @@
 import 'package:get/get.dart';
 
-import '../../data/models/employee_task_model.dart';
 import '../../data/models/task_details_model.dart';
 
 class EmployeeTaskService {
-  final RxList<EmployeeTaskModel> employeeTasksList = <EmployeeTaskModel>[].obs;
+  // final RxList<EmployeeTaskModel> employeeTasksList = <EmployeeTaskModel>[].obs;
 
   final Rx<TaskDetailsModel?> taskDetails = Rx<TaskDetailsModel?>(null);
 

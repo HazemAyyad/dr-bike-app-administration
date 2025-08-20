@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_details_model.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/employee_details_model.dart';
 import '../../data/models/financial_dues_model.dart';
@@ -20,7 +21,6 @@ abstract class EmployeeRepository {
 
   Future<QrGenerationModel> qrGeneration();
 
-  Future<Either<Failure, String>> qrScan({required String qrData});
 
   Future<EmployeeDetailsModel> getEmployeeDetails({required String employeeId});
 
@@ -36,8 +36,8 @@ abstract class EmployeeRepository {
     required String overtimeWorkPrice,
     required String numberOfWorkHours,
     required String startWorkTime,
-    required XFile? documentImg,
-    required XFile? employeeImg,
+    required List<File> documentImg,
+    required List<File> employeeImg,
     required List<String> permissions,
   });
 

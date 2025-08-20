@@ -15,8 +15,8 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
     required String numberOfWorkHours,
     required String startWorkTime,
     required String endWorkTime,
-    required String employeeImg,
-    required String documentImg,
+    required List<String> employeeImg,
+    required List<String> documentImg,
     required List<PermissionEntity> permissions,
   }) : super(
           id: id,
@@ -36,25 +36,35 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
 
   factory EmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
     return EmployeeDetailsModel(
-      id: json[ApiKey.employee_details][ApiKey.id],
-      name: json[ApiKey.employee_details][ApiKey.name],
-      email: json[ApiKey.employee_details][ApiKey.email],
-      phone: json[ApiKey.employee_details][ApiKey.phone],
-      subPhone: json[ApiKey.employee_details][ApiKey.sub_phone],
-      hourWorkPrice: json[ApiKey.employee_details][ApiKey.hour_work_price],
-      overtimeWorkPrice: json[ApiKey.employee_details]
-          [ApiKey.overtime_work_price],
-      numberOfWorkHours: json[ApiKey.employee_details]
-          [ApiKey.number_of_work_hours],
-      startWorkTime: json[ApiKey.employee_details][ApiKey.start_work_time],
-      endWorkTime: json[ApiKey.employee_details][ApiKey.end_work_time],
-      employeeImg: ShowNetImage.getPhoto(
-          json[ApiKey.employee_details][ApiKey.employee_img]),
-      documentImg: ShowNetImage.getPhoto(
-          json[ApiKey.employee_details][ApiKey.document_img]),
-      permissions: (json[ApiKey.permissions] as List)
-          .map((p) => PermissionModel.fromJson(p))
-          .toList(),
+      id: json[ApiKey.employee_details][ApiKey.id] ?? 0,
+      name: json[ApiKey.employee_details][ApiKey.name] ?? 'Unknown',
+      email: json[ApiKey.employee_details][ApiKey.email] ?? 'Unknown',
+      phone: json[ApiKey.employee_details][ApiKey.phone] ?? 'Unknown',
+      subPhone: json[ApiKey.employee_details][ApiKey.sub_phone] ?? 'Unknown',
+      hourWorkPrice:
+          json[ApiKey.employee_details][ApiKey.hour_work_price] ?? '0',
+      overtimeWorkPrice:
+          json[ApiKey.employee_details][ApiKey.overtime_work_price] ?? '0',
+      numberOfWorkHours:
+          json[ApiKey.employee_details][ApiKey.number_of_work_hours] ?? '0',
+      startWorkTime:
+          json[ApiKey.employee_details][ApiKey.start_work_time] ?? '',
+      endWorkTime: json[ApiKey.employee_details][ApiKey.end_work_time] ?? '',
+      employeeImg: (json[ApiKey.employee_details][ApiKey.employee_img] is List)
+          ? (json[ApiKey.employee_details][ApiKey.employee_img] as List)
+              .map((img) => ShowNetImage.getPhoto(img))
+              .toList()
+          : [],
+      documentImg: (json[ApiKey.employee_details][ApiKey.document_img] is List)
+          ? (json[ApiKey.employee_details][ApiKey.document_img] as List)
+              .map((img) => ShowNetImage.getPhoto(img))
+              .toList()
+          : [],
+      permissions: (json[ApiKey.permissions] is List)
+          ? (json[ApiKey.permissions] as List)
+              .map((p) => PermissionModel.fromJson(p))
+              .toList()
+          : [],
     );
   }
 }

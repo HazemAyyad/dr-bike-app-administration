@@ -116,15 +116,17 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                     ),
               SizedBox(height: 15.h),
               // إضافة مهمة فرعية
-              AddSubTask(controller: controller),
+              AddSubTask(controller: controller, title: title),
               SizedBox(height: 10.h),
-              CustomTextField(
-                label: 'taskPoints',
-                hintText: 'taskPointsExample',
-                controller: controller.pointsController,
-                keyboardType: TextInputType.number,
-                validator: (p0) => null,
-              ),
+              title == 'createNewEmployeeTask'
+                  ? CustomTextField(
+                      label: 'taskPoints',
+                      hintText: 'taskPointsExample',
+                      controller: controller.pointsController,
+                      keyboardType: TextInputType.number,
+                      validator: (p0) => null,
+                    )
+                  : SizedBox.shrink(),
               SizedBox(height: 15.h),
               // تاريخ البدء
               SelectDate(
@@ -147,22 +149,21 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               ),
               SizedBox(height: 10.h),
               // إشعار بدأ المهمة
-              CustomCheckBox(
-                title: 'hideTask',
-                value: controller.hideTask,
-                onChanged: (value) => controller.hideTask.value = value!,
-              ),
+              title == 'createNewEmployeeTask'
+                  ? CustomCheckBox(
+                      title: 'hideTask',
+                      value: controller.hideTask,
+                      onChanged: (value) => controller.hideTask.value = value!,
+                    )
+                  : SizedBox.shrink(),
               // التكرار
               CustomDropdownField(
                 label: 'taskRepeat'.tr,
                 hint: 'taskRepeatExample'.tr,
                 items: controller.weekDays,
                 onChanged: (value) {
-                  value == 'noRepeat'
-                      ? controller.selectedDays.value = ''
-                      : controller.selectedDays.value = value!;
+                  controller.selectedDays.value = value!;
                 },
-                validator: (p0) => null,
               ),
               SizedBox(height: 10.h),
               MultiSelectDropdown(
@@ -185,13 +186,15 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                     title: 'uploadImage',
                   ),
                   SizedBox(height: 10.h),
-                  CustomCheckBox(
-                    title: 'requireImage',
-                    value: controller.requireImage,
-                    onChanged: (value) {
-                      controller.requireImage.value = value!;
-                    },
-                  ),
+                  title == 'createNewEmployeeTask'
+                      ? CustomCheckBox(
+                          title: 'requireImage',
+                          value: controller.requireImage,
+                          onChanged: (value) {
+                            controller.requireImage.value = value!;
+                          },
+                        )
+                      : SizedBox.shrink(),
                 ],
               ),
               SizedBox(height: 10.h),
@@ -207,12 +210,13 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                                   color: Colors.white,
                                 ),
                         onPressed: () {
-                          controller.createTask(context);
+                          title == 'createNewEmployeeTask'
+                              ? controller.createTask(context)
+                              : controller.createSpecialTask(context);
                         },
                         height: 40.h,
                       ),
               ),
-              SizedBox(height: 20.h),
             ],
           ),
         ),

@@ -132,6 +132,14 @@ const Map<String, String> en = {
   'newExpense': 'New Expense',
   'newCustomer': 'New Customer',
 
+  // Dashboard Employee
+  'startWork': 'Start Work',
+  'leaveWork': 'Leave Work',
+  'workingHours': 'Working hours (per month)',
+  // 'hourlyRate': 'سعر ساعة العمل',
+  'advancesAndDebts': 'Advances and Debts',
+  'remainingBalance': 'Remaining Balance',
+
   // Profile Screen
   'personalDetails': 'Personal Details',
   'changePassword': 'Change Password',
@@ -286,7 +294,7 @@ const Map<String, String> en = {
   'selectAll': 'Select All',
   'unselectAll': 'Unselect All',
   'addBarCode': 'Add Barcode',
-  'createBarCode': 'Create Barcode',
+  'createBarNewCode': 'Create New Barcode',
   'employeeDetails': 'Employee Details',
   'addPenalty': 'Add Penalty',
   'addReward': 'Add Reward',
@@ -326,6 +334,7 @@ const Map<String, String> en = {
   'addOvertime': 'Add Overtime',
   'orderAcceptedSuccessfully': 'Order accepted successfully',
   'orderRejectedSuccessfully': 'Order rejected successfully',
+  'transferTaskError': 'You cannot transfer the task to a past day',
 
   'hourlyRate': 'Hourly Rate',
   'points': 'Points',

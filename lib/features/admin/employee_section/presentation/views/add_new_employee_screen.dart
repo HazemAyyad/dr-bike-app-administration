@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_chechbox.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
@@ -147,20 +148,217 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 selectedTime: controller.selectedTime,
                 label: 'regularWorkingHours',
               ),
-              // CustomTextField(
-              //   label: 'regularWorkingHours',
-              //   hintText: 'regularWorkingHoursExample',
-              //   controller: controller.regularWorkingHoursController,
-              // ),
               SizedBox(height: 15.h),
-              UploadImageButton(
-                selectedFile: controller.documentsImages,
+              controller.isEditEmployee
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        controller.documentsImageList.isEmpty
+                            ? SizedBox.shrink()
+                            : Text(
+                                'documentsImages'.tr,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: (ThemeService.isDark.value
+                                          ? AppColors.customGreyColor6
+                                          : AppColors.customGreyColor),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                        SizedBox(height: 5.h),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Obx(
+                            () => controller.deleteImage.value
+                                ? SizedBox.shrink()
+                                : Row(
+                                    children: [
+                                      ...controller.documentsImageList
+                                          .asMap()
+                                          .entries
+                                          .map(
+                                        (entry) {
+                                          final index = entry.key;
+                                          final file = entry.value;
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 5.w),
+                                            child: Stack(
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          5.r),
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: file.path,
+                                                    height: 200.h,
+                                                    width: 200.w,
+                                                    fit: BoxFit.fill,
+                                                    fadeInDuration:
+                                                        const Duration(
+                                                            milliseconds: 200),
+                                                    fadeOutDuration:
+                                                        const Duration(
+                                                            milliseconds: 200),
+                                                    placeholder:
+                                                        (context, url) =>
+                                                            const Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    ),
+                                                    errorWidget: (context, url,
+                                                            error) =>
+                                                        const Icon(Icons.error),
+                                                  ),
+                                                ),
+                                                // زرار فوق الصورة
+                                                Positioned(
+                                                  right: 8,
+                                                  top: 8,
+                                                  child: IconButton(
+                                                    icon: const Icon(
+                                                        Icons.delete,
+                                                        color: Colors.red),
+                                                    onPressed: () {
+                                                      controller
+                                                          .deleteImage(true);
+                                                      controller
+                                                          .documentsImageList
+                                                          .removeAt(index);
+                                                      controller
+                                                          .deleteImage(false);
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        SizedBox(height: 15.h),
+                      ],
+                    )
+                  : SizedBox.shrink(),
+              MediaUploadButton(
                 title: 'documentsImages',
+                onFilesChanged: (val) {
+                  controller.documentsImageList.addAll(val);
+                },
+                allowedType: MediaType.image,
               ),
               SizedBox(height: 15.h),
-              UploadImageButton(
-                selectedFile: controller.employeeImage,
+              controller.isEditEmployee
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        controller.employeeImageList.isEmpty
+                            ? SizedBox.shrink()
+                            : Text(
+                                'employeeImage'.tr,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: (ThemeService.isDark.value
+                                          ? AppColors.customGreyColor6
+                                          : AppColors.customGreyColor),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                        SizedBox(height: 5.h),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Obx(
+                            () => controller.deleteImage.value
+                                ? SizedBox.shrink()
+                                : Row(
+                                    children: [
+                                      ...controller.employeeImageList
+                                          .asMap()
+                                          .entries
+                                          .map(
+                                        (entry) {
+                                          final index = entry.key;
+                                          final file = entry.value;
+
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 5.w),
+                                            child: Stack(
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          5.r),
+                                                  child: file.path
+                                                          .startsWith('http')
+                                                      ? CachedNetworkImage(
+                                                          imageUrl: file.path,
+                                                          height: 200.h,
+                                                          width: 200.w,
+                                                          fit: BoxFit.fill,
+                                                          placeholder: (context,
+                                                                  url) =>
+                                                              const Center(
+                                                                  child:
+                                                                      CircularProgressIndicator()),
+                                                          errorWidget: (context,
+                                                                  url, error) =>
+                                                              const Icon(
+                                                                  Icons.error),
+                                                        )
+                                                      : Image.file(
+                                                          file,
+                                                          height: 200.h,
+                                                          width: 200.w,
+                                                          fit: BoxFit.fill,
+                                                        ),
+                                                ),
+                                                Positioned(
+                                                  right: 8,
+                                                  top: 8,
+                                                  child: IconButton(
+                                                    icon: const Icon(
+                                                        Icons.delete,
+                                                        color: Colors.red),
+                                                    onPressed: () {
+                                                      controller
+                                                          .deleteImage(true);
+                                                      controller
+                                                          .employeeImageList
+                                                          .removeAt(index);
+                                                      controller
+                                                          .deleteImage(false);
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        SizedBox(height: 15.h),
+                      ],
+                    )
+                  : SizedBox.shrink(),
+              MediaUploadButton(
                 title: 'employeeImage',
+                onFilesChanged: (val) {
+                  controller.employeeImageList.addAll(val);
+                },
+                allowedType: MediaType.image,
               ),
               SizedBox(height: 10.h),
               Row(
@@ -232,7 +430,6 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                     ? null
                     : controller.addNewEmployee(context),
               ),
-              SizedBox(height: 20.h),
             ],
           ),
         ),

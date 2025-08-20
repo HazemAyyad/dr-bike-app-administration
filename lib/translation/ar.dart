@@ -85,7 +85,7 @@ const Map<String, String> ar = {
   'scanQrCode': 'Qr Code',
   'cart': 'العربة',
 
-  // Dashboard
+  // Dashboard admin
   'welcomeBack.': 'مرحباً بعودتك...',
   'search': 'بحث',
 
@@ -131,6 +131,14 @@ const Map<String, String> ar = {
   'newEmployee': 'موظف جديد',
   'newExpense': 'مصروف جديد',
   'newCustomer': 'زبون جديد',
+
+  // Dashboard Employee
+  'startWork': 'بدء العمل',
+  'leaveWork': 'مغادرة العمل',
+  'workingHours': 'عدد ساعات العمل(في الشهر)',
+  // 'hourlyRate': 'سعر ساعة العمل',
+  'advancesAndDebts': 'سلف وديون',
+  'remainingBalance': 'المتبقي من الحساب',
 
   // Profile Screen
   'personalDetails': 'التفاصيل الشخصية',
@@ -284,7 +292,7 @@ const Map<String, String> ar = {
   'selectAll': 'اختيار الكل',
   'unselectAll': 'الغاء اختيار الكل',
   'addBarCode': 'إضافة باركود',
-  'createBarCode': 'إنشاء الباركود',
+  'createBarNewCode': 'إنشاء باركود جديد',
   'employeeDetails': 'تفاصيل الموظف',
   'addPenalty': 'إضافة عقوبة',
   'addReward': 'إضافة مكافأة',
@@ -339,6 +347,7 @@ const Map<String, String> ar = {
   'addOvertime': 'إضافة ساعات عمل اوفرتايم',
   'orderAcceptedSuccessfully': 'تم قبول الطلب بنجاح',
   'orderRejectedSuccessfully': 'تم رفض الطلب بنجاح',
+  'transferTaskError': 'لا يمكنك نقل المهمة ليوم ماضي',
 
   // add Employee
   'employeeNameExample': 'مثال: محمد رفعت',

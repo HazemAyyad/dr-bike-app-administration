@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
@@ -35,10 +36,15 @@ class AddEmployeeController extends GetxController {
           employeeService.employeeDetails.value!.overtimeWorkPrice;
       workHoursOfDayController.text =
           employeeService.employeeDetails.value!.numberOfWorkHours;
-      documentsImages.value =
-          XFile(employeeService.employeeDetails.value!.documentImg);
-      employeeImage.value =
-          XFile(employeeService.employeeDetails.value!.employeeImg);
+
+      for (var docImgPath
+          in employeeService.employeeDetails.value!.documentImg) {
+        documentsImageList.add(File(docImgPath));
+      }
+      for (var docImgPath
+          in employeeService.employeeDetails.value!.employeeImg) {
+        employeeImageList.add(File(docImgPath));
+      }
       selectedTime.value = TimeOfDay(
         hour: int.parse(
             employeeService.employeeDetails.value!.startWorkTime.split(':')[0]),
@@ -67,11 +73,9 @@ class AddEmployeeController extends GetxController {
   final TextEditingController overTimeRateController = TextEditingController();
   final TextEditingController workHoursOfDayController =
       TextEditingController();
-  // final TextEditingController regularWorkingHoursController =
-  //     TextEditingController();
 
-  final Rx<XFile?> documentsImages = Rx<XFile?>(null);
-  final Rx<XFile?> employeeImage = Rx<XFile?>(null);
+  final List<File> documentsImageList = [];
+  final List<File> employeeImageList = [];
 
   final List<Map<String, dynamic>> permissionsList = [
     {'name': 'employeeTasks'.tr, 'id': '21', 'permission': false.obs},
@@ -135,23 +139,26 @@ class AddEmployeeController extends GetxController {
         isLoading(true);
         String formattedTime =
             '${selectedTime.value.hour.toString().padLeft(2, '0')}:${selectedTime.value.minute.toString().padLeft(2, '0')}';
-
         final result = await employeeUsecase.call(
           employeeId: isEditEmployee
               ? employeeService.employeeDetails.value!.id.toString()
               : null,
           name: employeeNameController.text,
           email: emailController.text,
-          phone: phoneNumberController.text,
-          subPhone: subPhoneController.text,
+          phone: RegExp(r'^[0-9+\s]+$').hasMatch(phoneNumberController.text)
+              ? phoneNumberController.text
+              : '',
+          subPhone: RegExp(r'^[0-9+\s]+$').hasMatch(subPhoneController.text)
+              ? subPhoneController.text
+              : '',
           password: passwordController.text,
           passwordConfirmation: confirmPasswordController.text,
           hourWorkPrice: hourlyRateController.text,
           overtimeWorkPrice: overTimeRateController.text,
           numberOfWorkHours: workHoursOfDayController.text,
           startWorkTime: formattedTime,
-          documentImg: documentsImages.value,
-          employeeImg: employeeImage.value,
+          documentImg: documentsImageList,
+          employeeImg: employeeImageList,
           permissions: permissionsList
               .where((e) => e['permission'].value)
               .map<String>((e) => e['id'])
@@ -162,19 +169,27 @@ class AddEmployeeController extends GetxController {
             String errorMessages = '';
             bool permissionsAdded = false;
 
-            failure.data['errors'].forEach((key, value) {
-              // لو المفتاح من نوع permissions
-              if (key.startsWith('permissions')) {
-                if (permissionsAdded) {
-                  errorMessages += "Permissions: ${value.first}\n";
-                  permissionsAdded = true;
+            final errors = failure.data?['errors'] as Map<String, dynamic>?;
+
+            if (errors != null) {
+              errors.forEach((key, value) {
+                // لو المفتاح من نوع permissions
+                if (key.startsWith('permissions')) {
+                  if (!permissionsAdded) {
+                    errorMessages += "Permissions: ${value.first}\n";
+                    permissionsAdded = true;
+                  }
+                } else {
+                  for (var msg in value) {
+                    errorMessages += "- $key: $msg\n";
+                  }
                 }
-              } else {
-                for (var msg in value) {
-                  errorMessages += "- $key: $msg\n";
-                }
-              }
-            });
+              });
+            } else {
+              // fallback message لو مفيش errors
+              errorMessages = failure.data?['message'] ?? failure.errMessage;
+            }
+
             Helpers.showCustomDialogError(
               context: context,
               title: failure.errMessage,
@@ -252,6 +267,8 @@ class AddEmployeeController extends GetxController {
     }
   }
 
+  RxBool deleteImage = false.obs;
+
   @override
   void dispose() {
     phoneNumberController.dispose();
@@ -266,8 +283,7 @@ class AddEmployeeController extends GetxController {
     employeeNameController.dispose();
     employeeConroller.dispose();
     pointsConroller.dispose();
-    employeeImage.value = null;
-    documentsImages.value = null;
+
     super.dispose();
   }
 }

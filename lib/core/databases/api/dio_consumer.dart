@@ -14,8 +14,8 @@ class DioConsumer extends ApiConsumer {
   DioConsumer({required this.dio}) {
     dio.options.baseUrl = EndPoints.baserUrl;
     // بعض الخيارات الافتراضية
-    dio.options.connectTimeout = Duration(seconds: 5);
-    dio.options.receiveTimeout = Duration(seconds: 5);
+    dio.options.connectTimeout = Duration(seconds: 10);
+    dio.options.receiveTimeout = Duration(seconds: 20);
     dio.options.headers = {
       'Accept': 'application/json',
       'lang': getx.Get.find<LanguageController>().getLang(),
@@ -55,16 +55,19 @@ class DioConsumer extends ApiConsumer {
       );
       return response; // إعادة الكائن الكامل
     } on DioException catch (e) {
+      print('==========Test================$e');
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
           errorMessage: (data is Map && data['message'] != null)
               ? data['message']
-              : 'unknown_error',
+              : e.message ?? 'unknown_error',
           status: (data is Map && data['status'] != null)
               ? data['status']
               : e.response?.statusCode ?? 500,
-          data: (data is Map && data['data'] != null) ? data['data'] : {},
+          data: (data is Map && data['data'] != null)
+              ? data['data']
+              : {}, // نرجع Map فاضية بدل null
         ),
       );
     }

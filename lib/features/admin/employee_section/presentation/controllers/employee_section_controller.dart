@@ -1,10 +1,18 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:doctorbike/core/utils/assets_manger.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/financial_details_model.dart';
+import '../../data/models/financial_dues_model.dart';
+import '../../domain/entities/employee_entity.dart';
+import '../../domain/entities/working_times_entity.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
@@ -39,8 +47,8 @@ class EmployeeSectionController extends GetxController
 
   final GlobalKey formKey = GlobalKey<FormState>();
 
-  final TextEditingController fromDateController = TextEditingController();
-  final TextEditingController toDateController = TextEditingController();
+  // final TextEditingController fromDateController = TextEditingController();
+  // final TextEditingController toDateController = TextEditingController();
   final TextEditingController employeeNameController = TextEditingController();
 
   RxInt currentTab = 0.obs;
@@ -223,6 +231,39 @@ class EmployeeSectionController extends GetxController
     isDialogLoading(false);
   }
 
+  final RxList<EmployeeEntity> filteredEmployees = <EmployeeEntity>[].obs;
+  final RxList<WorkingTimesEntity> filteredWorkingTimes =
+      <WorkingTimesEntity>[].obs;
+  final RxList<FinancialDuesModel> filteredFinancialDues =
+      <FinancialDuesModel>[].obs;
+
+  void filterLists() {
+    if (employeeNameController.text.isEmpty) {
+      // رجع القوائم الأصلية
+      filteredEmployees.assignAll(employeeService.employeeList);
+      filteredWorkingTimes.assignAll(employeeService.workingTimesList);
+      filteredFinancialDues.assignAll(employeeService.financialDuesList);
+    } else {
+      final lowerQuery = employeeNameController.text..toLowerCase();
+
+      filteredEmployees.assignAll(
+        employeeService.employeeList
+            .where((e) => e.employeeName.toLowerCase().contains(lowerQuery)),
+      );
+
+      filteredWorkingTimes.assignAll(
+        employeeService.workingTimesList
+            .where((w) => w.employeeName.toLowerCase().contains(lowerQuery)),
+      );
+
+      filteredFinancialDues.assignAll(
+        employeeService.financialDuesList
+            .where((f) => f.employeeName.toLowerCase().contains(lowerQuery)),
+      );
+    }
+    Get.back();
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -246,12 +287,42 @@ class EmployeeSectionController extends GetxController
         animController.reverse();
       }
     });
+    filteredEmployees.assignAll(employeeService.employeeList);
+    filteredWorkingTimes.assignAll(employeeService.workingTimesList);
+    filteredFinancialDues.assignAll(employeeService.financialDuesList);
+  }
+
+  final GlobalKey qrKey = GlobalKey();
+  Future<void> downloadQr() async {
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+
+      RenderRepaintBoundary boundary =
+          qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+      ui.Image image = await boundary.toImage(pixelRatio: 4.0);
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+
+      Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      await ImageGallerySaverPlus.saveImage(
+        pngBytes,
+        quality: 100,
+        name: "employee_qr_${DateTime.now().millisecondsSinceEpoch}",
+      );
+
+      Get.snackbar("نجاح ✅", "تم حفظ الكود في المعرض");
+    } catch (e) {
+      Get.snackbar("خطأ ❌", "فشل حفظ الكود");
+      print("Error: $e");
+    }
   }
 
   @override
   void dispose() {
-    fromDateController.dispose();
-    toDateController.dispose();
+    // fromDateController.dispose();
+    // toDateController.dispose();
     employeeNameController.dispose();
     paySalaryController.dispose();
     addRegularWorkingHoursController.dispose();

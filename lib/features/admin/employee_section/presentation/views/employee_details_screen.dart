@@ -75,29 +75,30 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                             .employeeService.employeeDetails.value!.name,
                       ),
                       SizedBox(height: 15.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'employeeImage'.tr,
-                                  style: theme.copyWith(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.customGreyColor6
-                                        : AppColors.customGreyColor4,
-                                  ),
-                                ),
-                                SizedBox(height: 5.h),
-                                ClipRRect(
+                      Text(
+                        'employeeImage'.tr,
+                        style: theme.copyWith(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor6
+                              : AppColors.customGreyColor4,
+                        ),
+                      ),
+                      SizedBox(height: 5.h),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ...controller.employeeService.employeeDetails.value!
+                                .employeeImg
+                                .map(
+                              (e) => Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 5.w),
+                                child: ClipRRect(
                                   borderRadius: BorderRadius.circular(5.r),
                                   child: CachedNetworkImage(
-                                    imageUrl: controller.employeeService
-                                        .employeeDetails.value!.employeeImg,
+                                    imageUrl: e,
                                     height: 200.h,
                                     width: 200.w,
                                     fit: BoxFit.fill,
@@ -112,30 +113,37 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                                         const Icon(Icons.error),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 10.w),
-                          Flexible(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'documentsImages'.tr,
-                                  style: theme.copyWith(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.customGreyColor6
-                                        : AppColors.customGreyColor4,
-                                  ),
-                                ),
-                                SizedBox(height: 5.h),
-                                ClipRRect(
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(width: 10.w),
+                      Text(
+                        'documentsImages'.tr,
+                        style: theme.copyWith(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor6
+                              : AppColors.customGreyColor4,
+                        ),
+                      ),
+                      SizedBox(height: 5.h),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            ...controller.employeeService.employeeDetails.value!
+                                .documentImg
+                                .map(
+                              (e) => Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 5.w),
+                                child: ClipRRect(
                                   borderRadius: BorderRadius.circular(5.r),
                                   child: CachedNetworkImage(
-                                    imageUrl: controller.employeeService
-                                        .employeeDetails.value!.documentImg,
+                                    imageUrl: e,
                                     height: 200.h,
                                     width: 200.w,
                                     fit: BoxFit.fill,
@@ -150,10 +158,10 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                                         const Icon(Icons.error),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       SizedBox(height: 10.h),
                       SupTextAndDis(

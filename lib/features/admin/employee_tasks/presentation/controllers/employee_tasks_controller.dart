@@ -3,6 +3,7 @@ import 'package:doctorbike/features/admin/employee_tasks/domain/usecases/get_tas
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../data/models/employee_task_model.dart';
 import '../../domain/usecases/cancel_employee_task_usecase.dart';
 import '../../domain/usecases/employee_tasks_usecase.dart';
 import 'employee_task_service.dart';
@@ -31,7 +32,6 @@ class EmployeeTasksController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
-    employeeTaskService.employeeTasksList.clear();
     getEmployeeTasks();
   }
 
@@ -39,12 +39,23 @@ class EmployeeTasksController extends GetxController {
 
   final RxBool deleteTasDuplicate = false.obs;
 
-  void getEmployeeTasks() async {
-    employeeTaskService.employeeTasksList.isEmpty
-        ? isLoading(true)
-        : isLoading(false);
+  Map<String, List<EmployeeTaskModel>> employeeTasks = {};
+
+  // get employee tasks
+  Future<void> getEmployeeTasks() async {
+    employeeTasks.clear();
+    isLoading(true);
     final result = await employeeTasksUsecase.call(page: currentTab.value);
-    employeeTaskService.employeeTasksList.assignAll(result);
+    for (var task in result) {
+      String dateKey = "${task.endTime.year}-${task.endTime.month}";
+      if (employeeTasks.containsKey(dateKey)) {
+        if (!employeeTasks[dateKey]!.any((t) => t.taskId == task.taskId)) {
+          employeeTasks[dateKey]!.add(task);
+        }
+      } else {
+        employeeTasks[dateKey] = [task];
+      }
+    }
     isLoading(false);
   }
 
@@ -58,6 +69,7 @@ class EmployeeTasksController extends GetxController {
 
     final result = await cancelEmployeeTaskUsecase.call(
         employeeTaskId: taskId, cancelWithRepetition: cancelWithRepetition);
+
     result.fold(
       (failure) {
         Get.back();
@@ -68,9 +80,11 @@ class EmployeeTasksController extends GetxController {
           duration: const Duration(milliseconds: 1500),
         );
       },
-      (success) {
+      (success) async {
+        await Get.find<EmployeeTasksController>().getEmployeeTasks();
+
         Get.back();
-        Get.find<EmployeeTasksController>().getEmployeeTasks();
+
         Future.delayed(
           const Duration(milliseconds: 500),
           () {
@@ -84,9 +98,11 @@ class EmployeeTasksController extends GetxController {
         );
       },
     );
+    // Get.find<EmployeeTasksController>().getEmployeeTasks();
+
     deleteTasDuplicate.value = false;
     deleteTask.value = false;
-    isLoading(false);
+    // isLoading(false);
   }
 
   final RxBool isTaskDetailsLoading = false.obs;

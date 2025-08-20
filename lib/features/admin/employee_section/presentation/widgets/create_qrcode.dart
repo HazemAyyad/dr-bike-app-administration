@@ -44,44 +44,58 @@ class CreateQrcode extends GetView<EmployeeSectionController> {
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(5.r),
                       child: Center(
-                        child: QrImageView(
-                          data: controller.employeeService.qrGeneration.value !=
-                                  null
-                              ? controller
-                                  .employeeService.qrGeneration.value!.codeText
-                              : '446fasfasga4846',
-                          version: QrVersions.auto,
-                          size: 200.sp,
+                        child: RepaintBoundary(
+                          key: controller.qrKey,
+                          child: QrImageView(
+                            data:
+                                controller.employeeService.qrGeneration.value !=
+                                        null
+                                    ? controller.employeeService.qrGeneration
+                                        .value!.codeText
+                                    : '446fasfasga4846',
+                            version: QrVersions.auto,
+                            size: 200.sp,
+                            backgroundColor: Colors.white,
+                          ),
                         ),
                       ),
                     ),
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () => controller.generateQrCode(true),
-                icon: const Icon(
-                  Icons.refresh,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-              IconButton(
-                onPressed: () => Get.back(),
-                icon: const Icon(
-                  Icons.file_download_outlined,
-                  color: AppColors.primaryColor,
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: () => controller.downloadQr(),
+            icon: Icon(
+              Icons.file_download_outlined,
+              size: 30.sp,
+              color: AppColors.primaryColor,
+            ),
           ),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   crossAxisAlignment: CrossAxisAlignment.center,
+          //   children: [
+          //     IconButton(
+          //       onPressed: () => ,
+          //       icon: const Icon(
+          //         Icons.refresh,
+          //         color: AppColors.primaryColor,
+          //       ),
+          //     ),
+          //     IconButton(
+          //       onPressed: () => controller.downloadQr(),
+          //       icon: const Icon(
+          //         Icons.file_download_outlined,
+          //         color: AppColors.primaryColor,
+          //       ),
+          //     ),
+          //   ],
+          // ),
+          SizedBox(height: 20.h),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20.w),
             child: AppButton(
-              text: 'createBarCode',
-              onPressed: () => Get.back(),
+              text: 'createBarNewCode',
+              onPressed: () => controller.generateQrCode(true),
             ),
           ),
           SizedBox(height: 20.h),

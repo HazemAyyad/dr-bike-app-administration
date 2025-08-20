@@ -1,5 +1,6 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../repositories/employee_section_repository.dart';
@@ -21,8 +22,8 @@ class AddEmployeeUsecase {
     required String overtimeWorkPrice,
     required String numberOfWorkHours,
     required String startWorkTime,
-    required XFile? documentImg,
-    required XFile? employeeImg,
+    required List<File> documentImg,
+    required List<File> employeeImg,
     required List<String> permissions,
   }) {
     return employeeRepository.creatEmployee(

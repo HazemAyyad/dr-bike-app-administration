@@ -37,10 +37,9 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       startTime: DateTime.parse(json[ApiKey.start_time] ?? DateTime.now()),
       endTime: DateTime.parse(json[ApiKey.end_time] ?? DateTime.now()),
       isCanceled: (json[ApiKey.is_canceled] ?? '0') == '1',
-      employeeImg:
-          ShowNetImage.getPhoto(_emptyToNull(json[ApiKey.employee_img])),
-      adminImg: ShowNetImage.getPhoto(_emptyToNull(json[ApiKey.admin_img])),
-      audio: _emptyToNull(json[ApiKey.audio]),
+      employeeImg: ShowNetImage.getPhoto(json[ApiKey.employee_img]),
+      adminImg: ShowNetImage.getPhoto(json[ApiKey.admin_img]),
+      audio: ShowNetImage.getPhoto(json[ApiKey.audio]),
     );
   }
 
@@ -58,13 +57,13 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     };
   }
 
-  static String? _emptyToNull(String? value) {
-    if (value == null) return null;
-    return (value.startsWith('public/') ||
-            value != 'no employee image' &&
-                value != 'no admin image' &&
-                value != 'no audio')
-        ? value
-        : null;
-  }
+  // static String? _emptyToNull(String? value) {
+  //   if (value == null) return null;
+  //   return (value.startsWith('public/') ||
+  //           value != 'no employee image' &&
+  //               value != 'no admin image' &&
+  //               value != 'no audio')
+  //       ? value
+  //       : null;
+  // }
 }

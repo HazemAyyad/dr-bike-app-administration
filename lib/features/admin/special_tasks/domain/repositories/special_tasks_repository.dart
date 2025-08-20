@@ -1,20 +1,22 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../data/models/special_task_details_model.dart';
+import '../../data/models/special_task_model.dart';
 
-abstract class Repository {
-  Future<Either<Failure, bool>> creatSpecialTasks({
-    required String token,
-    required String name,
-    required String description,
-    required String notes,
-    required String points,
-    required String startDate,
-    required String endDate,
-    required String notShownForEmployee,
-    required String taskRecurrence,
-    required String taskRecurrenceTime,
-    required String subSpecialTaskName,
-    required String subSpecialTaskDescription,
+abstract class SpecialTasksRepository {
+  Future<List<SpecialTaskModel>> specialTasks({required String page});
+
+  Future<Either<Failure, String>> completedSpecialTasks(
+      {required String specialTaskId});
+
+  Future<SpecialTaskDetailsModel> getSpecialTasksDetails(
+      {required String specialTaskId});
+
+  Future<Either<Failure, String>> cancelSpecialTask({
+    required String specialTaskId,
+    required bool repitition,
+    required bool isTransfer,
+    DateTime? endDate,
   });
 }

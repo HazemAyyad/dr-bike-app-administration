@@ -25,9 +25,6 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'employeeSection',
-        toDateController: controller.toDateController,
-        fromDateController: controller.fromDateController,
-        employeeNameController: controller.employeeNameController,
         actions: [
           IconButton(
             icon: Icon(
@@ -61,11 +58,13 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
             onPressed: () {
               showCustomDialog(
                 context,
-                fromDateController: controller.fromDateController,
-                toDateController: controller.toDateController,
+                // fromDateController: controller.fromDateController,
+                // toDateController: controller.toDateController,
                 employeeNameController: controller.employeeNameController,
                 label: 'employeeName',
-                onPressed: () {},
+                onPressed: () {
+                  controller.filterLists();
+                },
               );
             },
           ),
@@ -83,13 +82,11 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
           Obx(
             () => controller.currentTab.value == 0
                 ? EmployeeSection(
-                    list: controller.employeeService.employeeList,
+                    list: controller.filteredEmployees,
                     sliverList: SliverList.builder(
-                      itemCount: controller.employeeService.employeeList.length,
+                      itemCount: controller.filteredEmployees.length,
                       itemBuilder: (context, index) {
-                        // final days = filter[index];
-                        final employee =
-                            controller.employeeService.employeeList[index];
+                        final employee = controller.filteredEmployees[index];
 
                         return Padding(
                           padding: EdgeInsets.symmetric(
@@ -108,6 +105,12 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                 ),
                                 child: EmployeeList(employee: employee),
                               ),
+                              SizedBox(
+                                height: index ==
+                                        controller.filteredEmployees.length - 1
+                                    ? 50.h
+                                    : 0.h,
+                              ),
                             ],
                           ),
                         );
@@ -117,14 +120,12 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                   )
                 : controller.currentTab.value == 1
                     ? EmployeeSection(
-                        list: controller.employeeService.workingTimesList,
+                        list: controller.filteredWorkingTimes,
                         sliverList: SliverList.builder(
-                          itemCount: controller
-                              .employeeService.workingTimesList.length,
+                          itemCount: controller.filteredWorkingTimes.length,
                           itemBuilder: (context, index) {
-                            // final days = filter[index];
-                            final employeeWorkingTimes = controller
-                                .employeeService.workingTimesList[index];
+                            final employeeWorkingTimes =
+                                controller.filteredWorkingTimes[index];
 
                             return Padding(
                               padding: EdgeInsets.symmetric(
@@ -143,6 +144,14 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                       employee: employeeWorkingTimes,
                                     ),
                                   ),
+                                  SizedBox(
+                                    height: index ==
+                                            controller.filteredWorkingTimes
+                                                    .length -
+                                                1
+                                        ? 50.h
+                                        : 0.h,
+                                  ),
                                 ],
                               ),
                             );
@@ -152,13 +161,13 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                       )
                     : controller.currentTab.value == 2
                         ? EmployeeSection(
-                            list: controller.employeeService.financialDuesList,
+                            list: controller.filteredFinancialDues,
                             sliverList: SliverList.builder(
-                              itemCount: controller
-                                  .employeeService.financialDuesList.length,
+                              itemCount:
+                                  controller.filteredFinancialDues.length,
                               itemBuilder: (context, index) {
-                                final financialDues = controller
-                                    .employeeService.financialDuesList[index];
+                                final financialDues =
+                                    controller.filteredFinancialDues[index];
 
                                 return Padding(
                                   padding: EdgeInsets.symmetric(
@@ -186,6 +195,14 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                           //                 isOvertime: true,
                                           //               ),
                                           ),
+                                      SizedBox(
+                                        height: index ==
+                                                controller.filteredFinancialDues
+                                                        .length -
+                                                    1
+                                            ? 50.h
+                                            : 0.h,
+                                      ),
                                     ],
                                   ),
                                 );

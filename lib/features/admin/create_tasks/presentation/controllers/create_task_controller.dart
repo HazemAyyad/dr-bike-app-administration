@@ -7,17 +7,21 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../employee_section/presentation/controllers/employee_service.dart';
+import '../../../special_tasks/presentation/controllers/special_tasks_controller.dart';
+import '../../domain/usecases/creat_special_tasks_usecase.dart';
 import '../../domain/usecases/create_task_usecase.dart';
-import 'employee_tasks_controller.dart';
+import '../../../employee_tasks/presentation/controllers/employee_tasks_controller.dart';
 
 class CreateTaskController extends GetxController {
   CreateTaskUsecase createTaskUsecase;
   GetAllEmployeeUsecase getAllEmployeeUsecase;
+  CreatSpecialTasksUsecase creatSpecialTasksUsecase;
   EmployeeService employeeService;
 
   CreateTaskController({
     required this.createTaskUsecase,
     required this.getAllEmployeeUsecase,
+    required this.creatSpecialTasksUsecase,
     required this.employeeService,
   });
 
@@ -137,10 +141,18 @@ class CreateTaskController extends GetxController {
 
   // دالة لإنشاء المهمة
   void createTask(BuildContext context) async {
-    if (formKey.currentState!.validate() &&
-        selectedDays.value.isNotEmpty &&
-        selectedDaysList.isNotEmpty) {
-      // isLoding(true);
+    // if (selectedDays.value != 'noRepeat' && selectedDaysList.isEmpty) {
+    //   // Get.snackbar(
+    //   //   'info'.tr,
+    //   //   'pleaseFillAllFields'.tr,
+    //   //   backgroundColor: AppColors.redColor,
+    //   //   colorText: AppColors.whiteColor,
+    //   //   snackPosition: SnackPosition.BOTTOM,
+    //   // );
+    //   return;
+    // }
+    if (formKey.currentState!.validate() && selectedDays.value.isNotEmpty) {
+      isLoding(true);
 
       final result = await createTaskUsecase.call(
         name: taskNameController.text,
@@ -189,6 +201,80 @@ class CreateTaskController extends GetxController {
         },
       );
       isLoding(false);
+    }
+    // else {
+    //   Get.snackbar(
+    //     'info'.tr,
+    //     'pleaseFillAllFields'.tr,
+    //     backgroundColor: AppColors.redColor,
+    //     colorText: AppColors.whiteColor,
+    //     snackPosition: SnackPosition.BOTTOM,
+    //   );
+    // }
+  }
+
+  // دالة لإنشاء المهمة خاصة
+  void createSpecialTask(BuildContext context) async {
+    if (formKey.currentState!.validate() &&
+        selectedDays.value.isNotEmpty &&
+        selectedDaysList.isNotEmpty) {
+      isLoding(true);
+
+      final result = await creatSpecialTasksUsecase.call(
+        name: taskNameController.text,
+        description: taskDescriptionController.text,
+        notes: taskNotesController.text,
+        startDate: startDate.value,
+        endDate: endDate.value,
+        taskRecurrence: selectedDays.value,
+        taskRecurrenceTime: selectedDaysList,
+        subSpecialTasks: subTasks,
+        notShownForEmployee: hideTask.value ? '1' : '0',
+        forceEmployeeToAddImg: requireImage.value,
+        adminImg: selectedFile.value,
+        audio: File(recordedPath.value),
+      );
+      result.fold(
+        (failure) {
+          final errors = failure.data != null ? failure.data['errors'] : null;
+
+          if (errors is Map<String, dynamic>) {
+            final messages = errors.values
+                .expand((list) => list)
+                .cast<String>()
+                .join('')
+                .replaceAll('.', '- \n');
+
+            Helpers.showCustomDialogError(
+              context: context,
+              title: failure.errMessage,
+              message: messages,
+            );
+          } else {
+            Helpers.showCustomDialogError(
+              context: context,
+              title: failure.errMessage,
+              message: "Unexpected error occurred", // 👈 رسالة fallback
+            );
+          }
+        },
+        (success) {
+          Get.find<SpecialTasksController>().getSpecialTasks();
+          Future.delayed(
+            const Duration(seconds: 2),
+            () {
+              Get.back();
+              Get.back();
+            },
+          );
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
+        },
+      );
+      isLoding(false);
     } else {
       Get.snackbar(
         'info'.tr,
@@ -198,14 +284,12 @@ class CreateTaskController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     }
-
-    // resetData();
   }
 
   //Get Employee
   void getEmployee() async {
     final result = await getAllEmployeeUsecase.call();
-    employeeService.employeeList.assignAll(result);
+    employeeService.employeeList.value = result;
     update();
   }
 

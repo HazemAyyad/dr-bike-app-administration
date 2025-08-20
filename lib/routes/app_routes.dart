@@ -69,4 +69,7 @@ class AppRoutes {
   static const CHANGEPASSWORDSCREEN = '/changepasswordscreen';
   static const MYORDERSSCREEN = '/myordersscreen';
   static const CONTACTUSSCREEN = '/contactus';
+
+  // Special Tasks
+  static const SPECIALTASKDETAILSSCREEN = '/SpecialTaskDetailsScreen';
 }

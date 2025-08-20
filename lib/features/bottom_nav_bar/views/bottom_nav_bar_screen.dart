@@ -12,10 +12,7 @@ class BottomNavBarScreen extends GetView<BottomNavBarController> {
     return Scaffold(
       // extendBody: true,
       body: controller.animatedSwitch(),
-      bottomNavigationBar: customBottomNavigationBar(
-        context: context,
-        controller: controller,
-      ),
+      bottomNavigationBar: CustomBottomNavigationBar(),
     );
   }
 }

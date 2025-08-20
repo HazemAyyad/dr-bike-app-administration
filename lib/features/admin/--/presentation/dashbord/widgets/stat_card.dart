@@ -12,6 +12,7 @@ class StatCard extends StatelessWidget {
   final String imageicon;
   final String value;
   final String subtitle;
+  final bool show;
 
   const StatCard({
     Key? key,
@@ -19,6 +20,7 @@ class StatCard extends StatelessWidget {
     required this.imageicon,
     required this.value,
     required this.subtitle,
+    this.show = false,
   }) : super(key: key);
 
   @override
@@ -68,7 +70,10 @@ class StatCard extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  NumberFormat('#,###').format(int.parse(value.toString())),
+                  show
+                      ? value.toString()
+                      : NumberFormat('#,###')
+                          .format(int.parse(value.toString())),
                   style: theme.textTheme.bodyMedium!.copyWith(
                     color: AppColors.primaryColor,
                     fontSize: 15.sp,

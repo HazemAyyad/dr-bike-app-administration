@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import '../../data/repositorie_imp/employee_section_implement.dart';
+import '../../data/repositories/scan_qrcode_implement.dart';
 import '../../domain/usecases/qr_scan_usecase.dart';
 import '../controllers/qrcode_controller.dart';
 
@@ -10,7 +10,7 @@ class QrCodeBinding extends Bindings {
     Get.lazyPut(
       () => QrCodeController(
         qrScanUsecase: QrScanUsecase(
-          employeeRepository: Get.find<EmployeeImplement>(),
+          scanQrCodeRepository: Get.find<ScanQrCodeImplement>(),
         ),
       ),
     );

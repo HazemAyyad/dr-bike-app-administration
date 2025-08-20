@@ -46,100 +46,105 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      overlayColor: WidgetStateProperty.all(Colors.transparent),
-      borderRadius: BorderRadius.circular(5.r),
-      splashColor: Colors.white.withAlpha(76),
-      highlightColor: Colors.white.withAlpha(51),
-      child: Ink(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: borderColor ?? Colors.transparent,
-            width: borderWidth ?? 0,
+    return SafeArea(
+      child: InkWell(
+        onTap: onPressed,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        borderRadius: BorderRadius.circular(5.r),
+        splashColor: Colors.white.withAlpha(76),
+        highlightColor: Colors.white.withAlpha(51),
+        child: Ink(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: borderColor ?? Colors.transparent,
+              width: borderWidth ?? 0,
+            ),
+            color: color ?? getButtonTheme(),
+            borderRadius: borderRadius ?? BorderRadius.circular(11.r),
           ),
-          color: color ?? getButtonTheme(),
-          borderRadius: borderRadius ?? BorderRadius.circular(11.r),
-        ),
-        child: Container(
-          height: height,
-          width: width,
-          alignment: Alignment.center,
-          padding:
-              padding ?? EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
-          margin: margin,
-          child: isLoading != null
-              ? Obx(
-                  () {
-                    return isLoading!.value
-                        ? Center(
-                            child:
-                                CircularProgressIndicator(color: Colors.white),
-                          )
-                        : widget != null
-                            ? Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  isRtl! ? widget! : SizedBox(),
-                                  Text(
-                                    text.tr,
-                                    style: textStyle ??
-                                        Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium!
-                                            .copyWith(
-                                              color:
-                                                  textColor ?? getTextTheme(),
-                                              fontSize: size ?? 16.sp,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                  ),
-                                  isRtl! ? SizedBox() : widget!,
-                                ],
-                              )
-                            : Text(
-                                text.tr,
-                                style: textStyle ??
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(
-                                          color: textColor ?? getTextTheme(),
-                                          fontSize: size ?? 16.sp,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                              );
-                  },
-                )
-              : widget != null
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        isRtl! ? widget! : SizedBox(),
-                        Text(
-                          text.tr,
-                          style: textStyle ??
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    color: textColor ?? getTextTheme(),
-                                    fontSize: size ?? 16.sp,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                        ),
-                        isRtl! ? SizedBox() : widget!,
-                      ],
-                    )
-                  : Text(
-                      text.tr,
-                      style: textStyle ??
-                          Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                color: textColor ?? getTextTheme(),
-                                fontSize: size ?? 16.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
-                    ),
+          child: Container(
+            height: height,
+            width: width,
+            alignment: Alignment.center,
+            padding: padding ??
+                EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
+            margin: margin,
+            child: isLoading != null
+                ? Obx(
+                    () {
+                      return isLoading!.value
+                          ? Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.white),
+                            )
+                          : widget != null
+                              ? Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    isRtl! ? widget! : SizedBox(),
+                                    Text(
+                                      text.tr,
+                                      style: textStyle ??
+                                          Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium!
+                                              .copyWith(
+                                                color:
+                                                    textColor ?? getTextTheme(),
+                                                fontSize: size ?? 16.sp,
+                                                fontWeight: FontWeight.w400,
+                                              ),
+                                    ),
+                                    isRtl! ? SizedBox() : widget!,
+                                  ],
+                                )
+                              : Text(
+                                  text.tr,
+                                  style: textStyle ??
+                                      Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            color: textColor ?? getTextTheme(),
+                                            fontSize: size ?? 16.sp,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                );
+                    },
+                  )
+                : widget != null
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          isRtl! ? widget! : SizedBox(),
+                          Text(
+                            text.tr,
+                            style: textStyle ??
+                                Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: textColor ?? getTextTheme(),
+                                      fontSize: size ?? 16.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                          ),
+                          isRtl! ? SizedBox() : widget!,
+                        ],
+                      )
+                    : Text(
+                        text.tr,
+                        style: textStyle ??
+                            Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  color: textColor ?? getTextTheme(),
+                                  fontSize: size ?? 16.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                      ),
+          ),
         ),
       ),
     );

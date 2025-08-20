@@ -9,13 +9,10 @@ import '../../../../../../core/utils/assets_manger.dart';
 import '../controllers/dashboard_controller.dart';
 import 'stat_card.dart';
 
-class BuildStatisticsCards extends StatelessWidget {
-  const BuildStatisticsCards({
-    Key? key,
-    required this.controller,
-  }) : super(key: key);
+class BuildStatisticsCards extends GetView<DashboardController> {
+  const BuildStatisticsCards({Key? key}) : super(key: key);
 
-  final DashboardController controller;
+  @override
   @override
   Widget build(BuildContext context) {
     return Container(

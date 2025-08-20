@@ -22,18 +22,18 @@ import '../features/admin/checks/presentation/views/new_check_screen.dart';
 import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart';
 import '../features/admin/debts/presentation/binding/debts_binding.dart';
 import '../features/admin/debts/presentation/views/debts_screen.dart';
-import '../features/admin/employee_tasks/presentation/binding/create_task_binding.dart';
-import '../features/admin/employee_tasks/presentation/views/create_task_screen.dart';
+import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
+import '../features/admin/create_tasks/presentation/views/create_task_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/binding/current_follow_up_binding.dart';
 import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
-import '../features/admin/employee_section/presentation/binding/qrcode_bideing.dart';
+import '../features/employee/scan_qrcode/presentation/binding/qrcode_bideing.dart';
 import '../features/admin/employee_section/presentation/views/activity_log_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
 import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
-import '../features/admin/employee_section/presentation/views/qr_code_screen.dart';
+import '../features/employee/scan_qrcode/presentation/views/qr_code_screen.dart';
 import '../features/admin/employee_section/presentation/views/working_bonuses_screen.dart';
 import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
@@ -52,6 +52,7 @@ import '../features/admin/--/presentation/project_management/binding/project_man
 import '../features/admin/--/presentation/project_management/views/project_management_screen.dart';
 import '../features/admin/--/presentation/project_management/widgets/create_project_screen/create_project_screen.dart';
 import '../features/admin/--/presentation/project_management/widgets/project_details/project_details_screeen.dart';
+import '../features/admin/special_tasks/presentation/widgets/special_task_details_screen.dart';
 import '../features/admin/target_section/presentation/binding/target_section_binding.dart';
 import '../features/admin/target_section/presentation/views/target_section_screen.dart';
 import '../features/admin/target_section/presentation/widgets/add_new_target/add_new_target_screen.dart';
@@ -179,6 +180,7 @@ class AppPages {
       binding: DashboardBinding(),
       transition: _transitionDownToUp,
     ),
+
     // مهام الموظفين
     GetPage(
       name: AppRoutes.EMPLOYEETASKSSCREEN,
@@ -199,6 +201,7 @@ class AppPages {
       page: () => const TaskDetailsScreen(),
       transition: _transitionFade,
     ),
+
     // المهام الخاصة
     GetPage(
       name: AppRoutes.PRIVATETASKSSCREEN,
@@ -206,7 +209,12 @@ class AppPages {
       binding: SpecialTasksBinding(),
       transition: _transitionFadeIn,
     ),
-
+    GetPage(
+      name: AppRoutes.SPECIALTASKDETAILSSCREEN,
+      page: () => const SpecialTaskDetailsScreen(),
+      binding: SpecialTasksBinding(),
+      transition: _transitionFade,
+    ),
     // قسم الموظفين
     GetPage(
       name: AppRoutes.EMPLOYEESECTIONSCREEN,
@@ -317,6 +325,7 @@ class AppPages {
       // binding:
       transition: _transitionFade,
     ),
+
     // قائمة البيانات العامة
     GetPage(
       name: AppRoutes.GENERALDATALISTSCREEN,
@@ -338,6 +347,7 @@ class AppPages {
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
+
     // إنشاء الصناديق
     GetPage(
       name: AppRoutes.DEBTSSCREEN,
@@ -345,6 +355,7 @@ class AppPages {
       binding: DebtsBinding(),
       transition: _transitionFadeIn,
     ),
+
     // المبيعات
     GetPage(
       name: AppRoutes.SALESSCREEN,
@@ -366,6 +377,7 @@ class AppPages {
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
+
     // Checks
     GetPage(
       name: AppRoutes.CHECKSSCREEN,

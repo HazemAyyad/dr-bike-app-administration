@@ -11,9 +11,12 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
 
 class AddSubTask extends StatelessWidget {
-  const AddSubTask({Key? key, required this.controller}) : super(key: key);
+  const AddSubTask({Key? key, required this.controller, required this.title})
+      : super(key: key);
 
   final CreateTaskController controller;
+  final String title;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -142,13 +145,15 @@ class AddSubTask extends StatelessWidget {
                           selectedFile: controller.subTaskFile,
                           title: 'uploadImage',
                         ),
-                        CustomCheckBox(
-                          value: controller.requireSubTasImage,
-                          title: 'requireImage',
-                          onChanged: (value) {
-                            controller.requireSubTasImage.value = value!;
-                          },
-                        ),
+                        title == 'createNewEmployeeTask'
+                            ? CustomCheckBox(
+                                value: controller.requireSubTasImage,
+                                title: 'requireImage',
+                                onChanged: (value) {
+                                  controller.requireSubTasImage.value = value!;
+                                },
+                              )
+                            : const SizedBox.shrink(),
                         SizedBox(height: 15.h),
                         // أزرار الإجراءات
                         Obx(

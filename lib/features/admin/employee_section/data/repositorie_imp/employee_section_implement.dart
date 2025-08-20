@@ -1,10 +1,11 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_details_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_details_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_dues_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_generation_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/working_times_model.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
@@ -34,8 +35,8 @@ class EmployeeImplement implements EmployeeRepository {
     required String overtimeWorkPrice,
     required String numberOfWorkHours,
     required String startWorkTime,
-    required XFile? documentImg,
-    required XFile? employeeImg,
+    required List<File> documentImg,
+    required List<File> employeeImg,
     required List<String> permissions,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -229,30 +230,6 @@ class EmployeeImplement implements EmployeeRepository {
       }
     } else {
       throw [];
-    }
-  }
-
-  // scan QR code
-  @override
-  Future<Either<Failure, String>> qrScan({
-    required String qrData,
-  }) async {
-    if (!await networkInfo.isConnected) {
-      return Left(NoConnectionFailure());
-    }
-    try {
-      final result = await employeeDatasource.qrScan(qrData: qrData);
-      if (result['status'] == 'success') {
-        return Right(result['message']);
-      }
-      return Left(
-        ValidationFailure(
-          result['message'] ?? 'Unknown error',
-          result,
-        ),
-      );
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }

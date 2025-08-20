@@ -1,5 +1,6 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -30,11 +31,45 @@ class EmployeeDatasource {
     required String overtimeWorkPrice,
     required String numberOfWorkHours,
     required String startWorkTime,
-    required XFile? documentImg,
-    required XFile? employeeImg,
+    required List<File> documentImg,
+    required List<File> employeeImg,
     required List<String> permissions,
   }) async {
     try {
+      Map<String, dynamic> documentsImageList = {};
+
+      documentsImageList['document_img[]'] = await Future.wait(
+        documentImg.map((e) async {
+          if (e.path.startsWith('http://') || e.path.startsWith('https://')) {
+            // صورة جاية من السيرفر → رجعها كـ string
+            return e.path;
+          } else {
+            // صورة محلية → حولها لـ MultipartFile
+            return await MultipartFile.fromFile(
+              e.path,
+              filename: e.path.split('/').last,
+            );
+          }
+        }),
+      );
+
+      Map<String, dynamic> employeeImgList = {};
+      // لو الصور جايه لينكات من الـ API (يعني فيها http)
+      employeeImgList['employee_img[]'] = await Future.wait(
+        employeeImg.map((e) async {
+          if (e.path.startsWith('http://') || e.path.startsWith('https://')) {
+            // صورة جاية من السيرفر → رجعها كـ string
+            return e.path;
+          } else {
+            // صورة محلية → حولها لـ MultipartFile
+            return await MultipartFile.fromFile(
+              e.path,
+              filename: e.path.split('/').last,
+            );
+          }
+        }),
+      );
+
       final response = await api.post(
         employeeId != null ? EndPoints.editEmployee : EndPoints.createEmployee,
         data: {
@@ -49,22 +84,8 @@ class EmployeeDatasource {
           'overtime_work_price': overtimeWorkPrice,
           'number_of_work_hours': numberOfWorkHours,
           'start_work_time': startWorkTime,
-          if (employeeImg != null && employeeImg.path.contains('http://'))
-            'employee_img': employeeImg.path,
-          if (employeeImg != null && !employeeImg.path.contains('http://'))
-            'employee_img': await MultipartFile.fromFile(
-              employeeImg.path,
-              filename: employeeImg.name,
-            ),
-          if (employeeImg == null) 'employee_img': '',
-          if (documentImg != null && documentImg.path.contains('http://'))
-            'document_img': documentImg.path,
-          if (documentImg != null && !documentImg.path.contains('http://'))
-            'document_img': await MultipartFile.fromFile(
-              documentImg.path,
-              filename: documentImg.name,
-            ),
-          if (employeeImg == null) 'document_img': '',
+          ...employeeImgList,
+          ...documentsImageList,
           'permissions[]': permissions,
         },
         isFormData: true,
@@ -262,26 +283,6 @@ class EmployeeDatasource {
       final employee =
           QrGenerationModel.fromJson(response.data as Map<String, dynamic>);
       return employee;
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
-        ),
-      );
-    }
-  }
-
-  // scan QR code
-  Future<Map<String, dynamic>> qrScan({required String qrData}) async {
-    try {
-      final response =
-          await api.post(EndPoints.qrScan, data: {'qr_data': qrData});
-      final data = response.data;
-      // print('Response data: $response');
-      return data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

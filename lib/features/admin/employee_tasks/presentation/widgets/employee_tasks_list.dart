@@ -29,7 +29,7 @@ class EmployeeTasks extends StatelessWidget {
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
-        } else if (controller.employeeTaskService.employeeTasksList.isEmpty) {
+        } else if (controller.employeeTasks.isEmpty) {
           return SliverFillRemaining(
             hasScrollBody: false,
             child: Center(
@@ -60,48 +60,44 @@ class EmployeeTasks extends StatelessWidget {
         //     (Map v) => v['startTime'] as String);
         // final months = grouped.keys.toList();
         return SliverList.builder(
-          itemCount: controller.employeeTaskService.employeeTasksList.length,
+          itemCount: controller.employeeTasks.length,
           itemBuilder: (context, index) {
-            // final month = months[index];
-            final orders =
-                controller.employeeTaskService.employeeTasksList[index];
+            final month = controller.employeeTasks.keys.toList()[index];
+            // final orders =
+            //     controller.employeeTaskService.employeeTasksList[month];
+            List<EmployeeTaskModel> date = controller.employeeTasks[month]!;
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
               child: Column(
                 children: [
-                  // Row(
-                  //   children: [
-                  //     Text(
-                  //       month,
-                  //       style: theme.copyWith(
-                  //         color: AppColors.primaryColor,
-                  //         fontWeight: FontWeight.w700,
-                  //         fontSize: 15.sp,
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
-                  // SizedBox(height: 5.h),
-                  // Container(
-                  //   height: 1.h,
-                  //   width: double.infinity,
-                  //   color: AppColors.primaryColor,
-                  // ),
-                  // SizedBox(height: 10.h),
-                  // ...orders.map(
-                  //   (order) {
-                  //     return EmployeeTasksLists(
-                  //       controller: controller,
-                  //       order: order,
-                  //       index: index,
-                  //     );
-                  //   },
-                  // ),
-                  EmployeeTasksLists(
-                    controller: controller,
-                    order: orders,
-                    index: index,
+                  Row(
+                    children: [
+                      Text(
+                        month,
+                        style: theme.copyWith(
+                          color: AppColors.primaryColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 5.h),
+                  Container(
+                    height: 1.h,
+                    width: double.infinity,
+                    color: AppColors.primaryColor,
+                  ),
+                  SizedBox(height: 10.h),
+                  ...date.map(
+                    (order) {
+                      return EmployeeTasksLists(
+                        controller: controller,
+                        order: order,
+                        index: index,
+                      );
+                    },
                   ),
                 ],
               ),
@@ -131,7 +127,7 @@ class EmployeeTasksLists extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(height: index == 0 ? 5.h : 0.h),
+        SizedBox(height: 8.h),
         GestureDetector(
           onLongPress: () => controller.currentTab.value == 0
               ? Get.dialog(
@@ -212,13 +208,7 @@ class EmployeeTasksLists extends StatelessWidget {
           onTap: () {
             controller.getTaskDetails(taskId: order.taskId.toString());
 
-            Get.toNamed(
-              AppRoutes.TASKDETAILS,
-              arguments: {
-                'title': 'employeeTaskDetails',
-                'controller': controller
-              },
-            );
+            Get.toNamed(AppRoutes.TASKDETAILS);
           },
           child: Container(
             decoration: BoxDecoration(
@@ -360,12 +350,9 @@ class EmployeeTasksLists extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(
-          height: index ==
-                  controller.employeeTaskService.employeeTasksList.length - 1
-              ? 60.h
-              : 0.h,
-        ),
+        // SizedBox(
+        //   height: index == controller.employeeTasks.length - 1 ? 60.h : 0.h,
+        // ),
       ],
     );
   }

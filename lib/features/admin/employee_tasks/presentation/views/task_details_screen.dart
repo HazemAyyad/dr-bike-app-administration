@@ -5,25 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/employee_tasks_controller.dart';
 
-class TaskDetailsScreen extends StatelessWidget {
+class TaskDetailsScreen extends GetView<EmployeeTasksController> {
   const TaskDetailsScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final String title = Get.arguments['title'];
-    final EmployeeTasksController controller = Get.arguments['controller'];
-
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
       appBar: CustomAppBar(
-        title: title,
+        title: 'employeeTaskDetails',
         actions: [
           TextButton.icon(
             icon: Icon(
@@ -57,39 +53,24 @@ class TaskDetailsScreen extends StatelessWidget {
           if (controller.isTaskDetailsLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
-          final testt = controller.employeeTaskService.taskDetails.value!;
+          final data = controller.employeeTaskService.taskDetails.value!;
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // SizedBox(height: 10.h),
-                // Text(
-                //   " 1 مارس الى 3 مارس",
-                //   style:theme.copyWith(
-                //         fontSize: 15.sp,
-                //         fontWeight: FontWeight.w700,
-                //         color: ThemeService.isDark.value
-                //             ? AppColors.customGreyColor6
-                //             : AppColors.customGreyColor4,
-                //       ),
-                // ),
                 SupTextAndDis(
                   title: 'taskName'.tr,
-                  discription: testt.taskName,
+                  discription: data.taskName,
                 ),
-                title == 'employeeTaskDetails'
-                    ? SupTextAndDis(
-                        title: 'employeeName'.tr,
-                        discription: testt.taskName,
-                      )
-                    : const SizedBox.shrink(),
-                title == 'employeeTaskDetails'
-                    ? SupTextAndDis(
-                        title: 'numberOfPoints'.tr,
-                        discription: testt.points.toString(),
-                      )
-                    : const SizedBox.shrink(),
+                SupTextAndDis(
+                  title: 'employeeName'.tr,
+                  discription: data.taskName,
+                ),
+                SupTextAndDis(
+                  title: 'numberOfPoints'.tr,
+                  discription: data.points.toString(),
+                ),
                 SizedBox(height: 10.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -112,7 +93,7 @@ class TaskDetailsScreen extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(5.r),
                             child: CachedNetworkImage(
-                              imageUrl: testt.adminImg!,
+                              imageUrl: data.adminImg!,
                               placeholder: (context, url) => Center(
                                 child: const CircularProgressIndicator(),
                               ),
@@ -145,11 +126,7 @@ class TaskDetailsScreen extends StatelessWidget {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(5.r),
                             child: CachedNetworkImage(
-                              imageUrl: controller
-                                  .employeeTaskService
-                                  .subtaskAdminImgPath
-                                  .value!
-                                  .subtaskAdminImgPath,
+                              imageUrl: data.employeeImg!,
                               placeholder: (context, url) => Center(
                                 child: const CircularProgressIndicator(),
                               ),
@@ -167,7 +144,7 @@ class TaskDetailsScreen extends StatelessWidget {
                 ),
                 SupTextAndDis(
                   title: 'taskDescription',
-                  discription: testt.taskDescription,
+                  discription: data.taskDescription,
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 15.h),
@@ -190,7 +167,7 @@ class TaskDetailsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                ...testt.subTasks.map(
+                ...data.subTasks.map(
                   (tasks) => Container(
                     margin: EdgeInsets.symmetric(vertical: 5.h),
                     padding: EdgeInsets.all(6),
@@ -234,7 +211,7 @@ class TaskDetailsScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10.r),
                           child: CachedNetworkImage(
                             imageUrl:
-                                '${EndPoints.baserUrlForImage}public/AdminEmployeeTasksImages/${tasks.adminImg!.split('/')[3]}',
+                                '${controller.employeeTaskService.subtaskAdminImgPath.value!.subtaskAdminImgPath}/${tasks.adminImg!.split('/')[3]}',
                             placeholder: (context, url) => Center(
                               child: const CircularProgressIndicator(),
                             ),
@@ -262,14 +239,15 @@ class TaskDetailsScreen extends StatelessWidget {
                       SupTextAndDis(
                         noSized: true,
                         title: 'taskRepeat'.tr,
-                        discription: testt.taskRecurrence.tr,
+                        discription: data.taskRecurrence.tr,
                       ),
-                      SupTextAndDis(
-                        title: 'taskRepeatDate'.tr,
-                        discription: testt.taskRecurrenceTime
-                            .map((e) => e.tr)
-                            .join(' ,'),
-                      ),
+                      if (data.taskRecurrence != 'noRepeat')
+                        SupTextAndDis(
+                          title: 'taskRepeatDate'.tr,
+                          discription: data.taskRecurrenceTime
+                              .map((e) => e.tr)
+                              .join(' ,'),
+                        ),
                     ],
                   ),
                 ),
@@ -278,11 +256,10 @@ class TaskDetailsScreen extends StatelessWidget {
                   text: 'cancelTask',
                   onPressed: () => controller.cancelEmployeeTask(
                     context: context,
-                    taskId: testt.taskId.toString(),
+                    taskId: data.taskId.toString(),
                     cancelWithRepetition: false,
                   ),
                 ),
-                SizedBox(height: 20.h),
               ],
             ),
           );

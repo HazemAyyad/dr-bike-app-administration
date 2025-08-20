@@ -1,8 +1,10 @@
+import 'package:doctorbike/core/services/user_data.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
+import '../../../../../auth/data/models/user_model.dart';
 import '../../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../../employee_section/presentation/controllers/employee_service.dart';
 
@@ -86,14 +88,20 @@ class DashboardController extends GetxController
 
   void getEmployee() async {
     final result = await getAllEmployeeUsecase.call();
-    employeeService.employeeList.assignAll(result);
+    employeeService.employeeList.value = result;
+    update();
+  }
+
+  final Rxn<UserModel> userData = Rxn<UserModel>();
+
+  void getUserData() async {
+    userData.value = await UserData.getSavedUser();
     update();
   }
 
   @override
-  void onInit() {
+  void onInit() async {
     super.onInit();
-
     animController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 300),
@@ -112,6 +120,7 @@ class DashboardController extends GetxController
       }
     });
     getEmployee();
+    getUserData();
   }
 
   void toggleAddMenu() {
