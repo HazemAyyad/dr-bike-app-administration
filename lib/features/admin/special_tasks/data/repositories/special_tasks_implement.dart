@@ -102,4 +102,29 @@ class SpecialTasksImplement implements SpecialTasksRepository {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
+
+  //  اكمال المهمة
+  @override
+  Future<Either<Failure, String>> subSpecialTaskCompleted(
+      {required String subTaskId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await specialTasksDatasource.subSpecialTaskCompleted(
+        subTaskId: subTaskId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']!);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
 }

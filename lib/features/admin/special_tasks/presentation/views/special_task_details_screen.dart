@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
 import '../controllers/special_tasks_controller.dart';
 
 class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
@@ -17,51 +16,19 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'privateTaskDetails',
-        actions: [
-          TextButton.icon(
-            icon: Icon(
-              Icons.edit_calendar_outlined,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-              size: 25.sp,
-            ),
-            onPressed: () {
-              Get.toNamed(
-                AppRoutes.CREATETASKSCREEN,
-                arguments: 'createNewEmployeeTask',
-              );
-            },
-            label: Text(
-              'edit'.tr,
-              style: theme.copyWith(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w700,
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: CustomAppBar(title: 'privateTaskDetails', action: false),
       body: Obx(
         () {
           if (controller.isGetLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
-          final data = controller.specialTaskDetails.value!;
+          final data = controller.specialTasksService.specialTaskDetails.value!;
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SupTextAndDis(
-                  title: 'taskName'.tr,
-                  discription: data.taskName,
-                ),
+                SupTextAndDis(title: 'taskName'.tr, discription: data.taskName),
                 SizedBox(height: 10.h),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(5.r),
@@ -137,10 +104,15 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                                   ? AppColors.customGreyColor6
                                   : AppColors.customGreyColor4,
                             ),
-                            value: tasks.status == 'ongoing'
-                                ? false.obs
-                                : true.obs,
-                            onChanged: (value) {},
+                            value: (tasks.status != 'ongoing').obs,
+                            onChanged: (value) {
+                              if (tasks.status != 'ongoing') return;
+                              controller.makeSubsSpecialTaskCompleted(
+                                context,
+                                tasks.subTaskId.toString(),
+                                data.taskId.toString(),
+                              );
+                            },
                           ),
                         ),
                         ClipRRect(
@@ -173,14 +145,17 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                     children: [
                       SupTextAndDis(
                         noSized: true,
-                        title: 'taskRepeat'.tr,
+                        title: 'taskRepeat',
                         discription: data.taskRecurrence.tr,
                       ),
-                      SupTextAndDis(
-                        title: 'taskRepeatDate'.tr,
-                        discription:
-                            data.taskRecurrenceTime.map((e) => e.tr).join(' ,'),
-                      ),
+                      data.taskRecurrence == 'noRepeat'
+                          ? SizedBox.shrink()
+                          : SupTextAndDis(
+                              title: 'taskRepeatDate',
+                              discription: data.taskRecurrenceTime
+                                  .map((e) => e.tr)
+                                  .join(' ,'),
+                            ),
                     ],
                   ),
                 ),

@@ -9,6 +9,7 @@ import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
+import 'build_sub_task_image.dart';
 
 class AddSubTask extends StatelessWidget {
   const AddSubTask({Key? key, required this.controller, required this.title})
@@ -49,7 +50,6 @@ class AddSubTask extends StatelessWidget {
                 ),
           ),
         ),
-
         // قائمة المهام الفرعية
         Obx(
           () => Column(
@@ -62,6 +62,8 @@ class AddSubTask extends StatelessWidget {
                         icon: Icon(Icons.close, size: 20.sp, color: Colors.red),
                         onPressed: () => controller.subTasks.remove(task),
                       ),
+                      buildSubTaskImage(task['subTaskImage']),
+                      SizedBox(width: 10.w),
                       Flexible(
                         child: ListTile(
                           contentPadding: EdgeInsets.zero,
@@ -82,7 +84,7 @@ class AddSubTask extends StatelessWidget {
                                 ),
                           ),
                           subtitle: Text(
-                            task['description'] ?? '',
+                            task['subTaskdescription'] ?? '',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium!

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -23,7 +24,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
 
   @override
   Widget build(BuildContext context) {
-    final String title = Get.arguments;
+    final String title = Get.arguments['title'];
 
     return Scaffold(
       appBar: CustomAppBar(title: title, action: false),
@@ -159,7 +160,15 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               // التكرار
               CustomDropdownField(
                 label: 'taskRepeat'.tr,
-                hint: 'taskRepeatExample'.tr,
+                hint:
+                    // controller.isEdit && controller.title == 'editPrivateTask'
+                    //     ? controller.specialTasksService.specialTaskDetails.value!
+                    //         .taskRecurrence
+                    //     :
+                    controller.isEdit && controller.title != 'editPrivateTask'
+                        ? controller.employeeTaskService.taskDetails.value!
+                            .taskRecurrence
+                        : 'taskRepeatExample'.tr,
                 items: controller.weekDays,
                 onChanged: (value) {
                   controller.selectedDays.value = value!;
@@ -179,12 +188,126 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               ),
               SizedBox(height: 20.h),
               // صورة المهمة
+              // controller.isEdit
+              //     ? Column(
+              //         crossAxisAlignment: CrossAxisAlignment.start,
+              //         children: [
+              //           controller.documentsImageList.isEmpty
+              //               ? SizedBox.shrink()
+              //               : Text(
+              //                   'documentsImages'.tr,
+              //                   style: Theme.of(context)
+              //                       .textTheme
+              //                       .bodyMedium!
+              //                       .copyWith(
+              //                         color: (ThemeService.isDark.value
+              //                             ? AppColors.customGreyColor6
+              //                             : AppColors.customGreyColor),
+              //                         fontSize: 15.sp,
+              //                         fontWeight: FontWeight.w400,
+              //                       ),
+              //                 ),
+              //           SizedBox(height: 5.h),
+              //           SingleChildScrollView(
+              //             scrollDirection: Axis.horizontal,
+              //             child: Obx(
+              //               () => controller.deleteImage.value
+              //                   ? SizedBox.shrink()
+              //                   : Row(
+              //                       children: [
+              //                         ...controller.documentsImageList
+              //                             .asMap()
+              //                             .entries
+              //                             .map(
+              //                           (entry) {
+              //                             final index = entry.key;
+              //                             final file = entry.value;
+              //                             return Padding(
+              //                               padding: EdgeInsets.symmetric(
+              //                                   horizontal: 5.w),
+              //                               child: Stack(
+              //                                 children: [
+              //                                   ClipRRect(
+              //                                     borderRadius:
+              //                                         BorderRadius.circular(
+              //                                             5.r),
+              //                                     child: CachedNetworkImage(
+              //                                       imageUrl: file.path,
+              //                                       height: 200.h,
+              //                                       width: 200.w,
+              //                                       fit: BoxFit.fill,
+              //                                       fadeInDuration:
+              //                                           const Duration(
+              //                                               milliseconds: 200),
+              //                                       fadeOutDuration:
+              //                                           const Duration(
+              //                                               milliseconds: 200),
+              //                                       placeholder:
+              //                                           (context, url) =>
+              //                                               const Center(
+              //                                         child:
+              //                                             CircularProgressIndicator(),
+              //                                       ),
+              //                                       errorWidget: (context, url,
+              //                                               error) =>
+              //                                           const Icon(Icons.error),
+              //                                     ),
+              //                                   ),
+              //                                   // زرار فوق الصورة
+              //                                   Positioned(
+              //                                     right: 8,
+              //                                     top: 8,
+              //                                     child: IconButton(
+              //                                       icon: const Icon(
+              //                                           Icons.delete,
+              //                                           color: Colors.red),
+              //                                       onPressed: () {
+              //                                         controller
+              //                                             .deleteImage(true);
+              //                                         controller
+              //                                             .documentsImageList
+              //                                             .removeAt(index);
+              //                                         controller
+              //                                             .deleteImage(false);
+              //                                       },
+              //                                     ),
+              //                                   ),
+              //                                 ],
+              //                               ),
+              //                             );
+              //                           },
+              //                         ),
+              //                       ],
+              //                     ),
+              //             ),
+              //           ),
+              //           SizedBox(height: 15.h),
+              // ],
+              // )
+              // : SizedBox.shrink(),
               Column(
                 children: [
-                  UploadImageButton(
-                    selectedFile: controller.selectedFile,
-                    title: 'uploadImage',
-                  ),
+                  controller.isEdit && controller.title == 'editPrivateTask'
+                      ? controller.selectedFile.value != null
+                          ? controller.selectedFile.value!.path.contains('http')
+                              ? CachedNetworkImage(
+                                  imageUrl: controller.selectedFile.value!.path,
+                                  height: 350.h,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                )
+                              : UploadImageButton(
+                                  selectedFile: controller.selectedFile,
+                                  title: 'uploadImage',
+                                )
+                          : UploadImageButton(
+                              selectedFile: controller.selectedFile,
+                              title: 'uploadImage',
+                            )
+                      : UploadImageButton(
+                          selectedFile: controller.selectedFile,
+                          title: 'uploadImage',
+                        ),
                   SizedBox(height: 10.h),
                   title == 'createNewEmployeeTask'
                       ? CustomCheckBox(
@@ -210,9 +333,15 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                                   color: Colors.white,
                                 ),
                         onPressed: () {
-                          title == 'createNewEmployeeTask'
-                              ? controller.createTask(context)
-                              : controller.createSpecialTask(context);
+                          if (controller.isEdit) {
+                            controller.title == 'editPrivateTask'
+                                ? controller.createSpecialTask(context)
+                                : controller.createTask(context);
+                          } else {
+                            title == 'createNewEmployeeTask'
+                                ? controller.createTask(context)
+                                : controller.createSpecialTask(context);
+                          }
                         },
                         height: 40.h,
                       ),

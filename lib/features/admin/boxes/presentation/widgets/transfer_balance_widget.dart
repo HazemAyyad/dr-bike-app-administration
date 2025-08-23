@@ -9,14 +9,11 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/boxes_controller.dart';
 
-class TransferBalanceWidget extends StatelessWidget {
-  const TransferBalanceWidget({
-    Key? key,
-    required this.controller,
-  }) : super(key: key);
+class TransferBalanceWidget extends GetView<BoxesController> {
+  const TransferBalanceWidget({Key? key, required this.boxId})
+      : super(key: key);
 
-  final BoxesController controller;
-
+  final int boxId;
   @override
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
@@ -30,96 +27,113 @@ class TransferBalanceWidget extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(15.w),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.swap_horiz,
-                  size: 25.h,
-                  color: AppColors.primaryColor,
-                ),
-                SizedBox(width: 5.w),
-                Text(
-                  'transferBalance'.tr,
-                  style: textStyle.copyWith(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 15.h),
-            SizedBox(
-              height: 80.h,
-              child: Row(
+        child: Form(
+          key: controller.formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
-                    child: CustomDropdownField(
-                      label: 'from',
-                      labelTextStyle:
-                          Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                color: AppColors.primaryColor,
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                      hint: 'boxNameExample',
-                      items: controller.boxes
-                          .map((box) => box['boxName'] as String)
-                          .toList(),
-                      onChanged: (value) {
-                        controller.transferFromBoxNameController.text = value!;
-                      },
-                    ),
+                  Icon(
+                    Icons.swap_horiz,
+                    size: 25.h,
+                    color: AppColors.primaryColor,
                   ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomDropdownField(
-                      label: 'to',
-                      labelTextStyle:
-                          Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                color: AppColors.primaryColor,
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                      hint: 'boxNameExample',
-                      items: controller.boxes
-                          .map((box) => box['boxName'] as String)
-                          .toList(),
-                      onChanged: (value) {
-                        controller.transferToBoxNameController.text = value!;
-                      },
+                  SizedBox(width: 5.w),
+                  Text(
+                    'transferBalance'.tr,
+                    style: textStyle.copyWith(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-            ),
-            SizedBox(height: 10.h),
-            CustomTextField(
-              label: 'total'.tr,
-              labelTextstyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-              hintText: 'totalExample',
-              controller: controller.transferTotalController,
-            ),
-            SizedBox(height: 20.h),
-            AppButton(
-              text: 'apply',
-              textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.whiteColor,
-                  ),
-              onPressed: () {
-                Get.back();
-              },
-            ),
-          ],
+              SizedBox(height: 15.h),
+              CustomDropdownField(
+                label: 'to',
+                hint: 'boxNameExample',
+                dropdownField: controller.filteredshownBoxes
+                    .where((e) => e.boxId != boxId)
+                    .map((e) {
+                  return DropdownMenuItem<String>(
+                    value: e.boxId.toString(),
+                    child: Text(e.boxName),
+                  );
+                }).toList(),
+                value: controller.filteredshownBoxes.any((e) =>
+                        e.boxId.toString() ==
+                        controller.transferToBoxIdController.text)
+                    ? controller.transferToBoxIdController.text
+                    : null,
+                onChanged: (value) {
+                  controller.transferToBoxIdController.text = value!;
+                },
+              ),
+              // SizedBox(
+              //   height: 80.h,
+              //   child: Row(
+              //     children: [
+              //       Flexible(
+              //         child: CustomDropdownField(
+              //           label: 'from',
+              //           hint: 'اختر الصندوق',
+              //           dropdownField:
+              //               controller.boxesServes.shownBoxes.map((e) {
+              //             return DropdownMenuItem<String>(
+              //               value: e.boxId.toString(), // ✅ القيمة هنا = boxId
+              //               child: Text(e.boxName), // المعروض للمستخدم
+              //             );
+              //           }).toList(),
+              //           value: controller.boxesServes.shownBoxes.any((e) =>
+              //                   e.boxId.toString() ==
+              //                   controller.transferFromBoxIdController.text)
+              //               ? controller.transferFromBoxIdController
+              //                   .text // ✅ خليها نفس الـ id
+              //               : null,
+              //           onChanged: (value) {
+              //             if (value != null) {
+              //               controller.transferFromBoxIdController.text =
+              //                   value; // ✅ خزّن الـ id
+              //             }
+              //           },
+              //         ),
+              //       ),
+              //       SizedBox(width: 10.w),
+              //       Flexible(
+              //         child:
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              SizedBox(height: 10.h),
+              CustomTextField(
+                label: 'total'.tr,
+                labelTextstyle:
+                    Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: AppColors.primaryColor,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                hintText: 'totalExample',
+                controller: controller.transferTotalController,
+              ),
+              SizedBox(height: 20.h),
+              AppButton(
+                isLoading: controller.isAddBoxLoading,
+                text: 'apply',
+                textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.whiteColor,
+                    ),
+                onPressed: () {
+                  controller.transferBoxBalance(context, boxId.toString());
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

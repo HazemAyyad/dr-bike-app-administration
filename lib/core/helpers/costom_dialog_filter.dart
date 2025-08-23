@@ -145,15 +145,40 @@ void showCustomDialog(
                     controller: employeeNameController,
                   )
                 : SizedBox.shrink(),
-            SizedBox(height: 20.h),
-            AppButton(
-              text: 'apply',
-              textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.whiteColor,
+            // SizedBox(height: 10.h),
+
+            SizedBox(height: 10.h),
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    text: 'apply',
+                    textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.whiteColor,
+                        ),
+                    onPressed: onPressed,
                   ),
-              onPressed: onPressed,
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: AppButton(
+                    color: Colors.red,
+                    text: 'clear',
+                    textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.whiteColor,
+                        ),
+                    onPressed: () {
+                      fromDateController?.clear();
+                      toDateController?.clear();
+                      employeeNameController?.clear();
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),

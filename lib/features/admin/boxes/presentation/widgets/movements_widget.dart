@@ -5,11 +5,12 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../domain/entity/all_boxes_logs_entity.dart';
 
 class MovementsWidget extends StatelessWidget {
   const MovementsWidget({Key? key, required this.box}) : super(key: key);
 
-  final Map<String, dynamic> box;
+  final BoxLog box;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +24,9 @@ class MovementsWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "${box['note']}",
+                box.type! == 'transfer'
+                    ? 'transferBalance'.tr
+                    : 'addOrTransferBalance'.tr,
                 style: textStyle.copyWith(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w400,
@@ -33,12 +36,12 @@ class MovementsWidget extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 2.h),
-              box['note'].contains('نقل')
+              box.fromBox != null
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "${'from'.tr} : ${box['from']}",
+                          "${'from'.tr} : ${box.fromBox!.name}",
                           style: textStyle.copyWith(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w400,
@@ -49,7 +52,7 @@ class MovementsWidget extends StatelessWidget {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          "${'to'.tr} : ${box['to']}",
+                          "${'to'.tr} : ${box.toBox!.name}",
                           style: textStyle.copyWith(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w400,
@@ -61,7 +64,7 @@ class MovementsWidget extends StatelessWidget {
                       ],
                     )
                   : Text(
-                      "${box['boxName']}",
+                      box.box!.name,
                       style: textStyle.copyWith(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w400,
@@ -77,9 +80,9 @@ class MovementsWidget extends StatelessWidget {
             width: 60.w,
             height: 70.h,
             decoration: BoxDecoration(
-              color: box['note'] == 'نقل رصيد'
+              color: box.type == 'transfer'
                   ? AppColors.customOrange3
-                  : box['note'] == 'سحب رصيد'
+                  : box.type != 'add'
                       ? AppColors.redColor
                       : AppColors.customGreen1,
               borderRadius: Get.locale!.languageCode == 'en'
@@ -96,9 +99,7 @@ class MovementsWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  NumberFormat('#,###').format(
-                    int.parse(box['amount'].toString()),
-                  ),
+                  NumberFormat('#,###').format(box.value),
                   textAlign: TextAlign.center,
                   style: textStyle.copyWith(
                     fontSize: 17.sp,

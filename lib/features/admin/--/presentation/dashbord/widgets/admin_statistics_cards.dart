@@ -13,7 +13,6 @@ class BuildStatisticsCards extends GetView<DashboardController> {
   const BuildStatisticsCards({Key? key}) : super(key: key);
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(10),
@@ -65,8 +64,7 @@ class BuildStatisticsCards extends GetView<DashboardController> {
                     return StatCard(
                       title: 'employees',
                       imageicon: AssetsManger.usersIcon,
-                      value: controller.employeeService.employeeList.length
-                          .toString(),
+                      value: 15.toString(),
                       subtitle: 'employee',
                     );
                   },

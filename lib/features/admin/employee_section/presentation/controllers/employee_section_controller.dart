@@ -120,11 +120,6 @@ class EmployeeSectionController extends GetxController
       'icon': AssetsManger.moneyIcon,
       'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
     },
-    // {
-    //   'title': 'barcode',
-    //   'icon': AssetsManger.qrcode,
-    //   'route': AppRoutes.NEWCASHPROFITSCREEN,
-    // },
   ];
 
   final RxBool isPaymentLoading = false.obs;
@@ -315,7 +310,6 @@ class EmployeeSectionController extends GetxController
       Get.snackbar("نجاح ✅", "تم حفظ الكود في المعرض");
     } catch (e) {
       Get.snackbar("خطأ ❌", "فشل حفظ الكود");
-      print("Error: $e");
     }
   }
 

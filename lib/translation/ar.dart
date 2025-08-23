@@ -212,6 +212,7 @@ const Map<String, String> ar = {
   'from': 'من',
   'to': 'إلى',
   'apply': 'تطبيق',
+  'clear': 'مسح',
   'deleteTask': 'حذف المهمة',
   'deleteRepeatedTask': 'حذف المهمة مع التكرار',
   'subTasks': 'المهام الفرعية',
@@ -314,9 +315,7 @@ const Map<String, String> ar = {
   'weeklyTasks': 'مهمات الأسبوع',
   'noDateTasks': 'مهمات بلا تاريخ',
   'transferTask': 'نقل المهمة',
-  // 'deleteTask': 'حذف المهمة',
-  // 'deleteRepeatedTask': 'حذف المهمة مع التكرار',
-  // 'done': 'تم',
+  'editPrivateTask': 'تعديل المهمة الخاصة',
 
   // employee Section
   'employeeList': 'قائمة الموظفين',
@@ -603,6 +602,7 @@ const Map<String, String> ar = {
   'editBox': 'تعديل الصندوق',
   'addBalance': 'إضافة رصيد',
   'transferBalance': 'نقل رصيد',
+  'addOrTransferBalance': 'اضافة / سحب رصيد',
   'value': 'القيمة',
   'transfer': 'نقل',
 

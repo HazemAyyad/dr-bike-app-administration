@@ -13,7 +13,7 @@ class CreateBoxesScreen extends GetView<BoxesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar( title: 'newBox'.tr, action: false),
+      appBar: CustomAppBar(title: 'newBox'.tr, action: false),
       body: Form(
         key: controller.formKey,
         child: ListView(
@@ -32,16 +32,15 @@ class CreateBoxesScreen extends GetView<BoxesController> {
               hintText: 'startBalanceExample',
               controller: controller.createStartBalanceController,
               keyboardType: TextInputType.number,
-              validator: (p0) => null,
+              // validator: (p0) => null,
             ),
             SizedBox(height: 30.h),
             SizedBox(height: 30.h),
             AppButton(
+              isLoading: controller.isAddBoxLoading,
               text: 'createBox',
               onPressed: () {
-                if ((controller.formKey.currentState as FormState).validate()) {
-                  print('done');
-                }
+                controller.addBox(context);
               },
               textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: Colors.white,

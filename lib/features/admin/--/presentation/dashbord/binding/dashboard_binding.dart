@@ -13,7 +13,7 @@ class DashboardBinding extends Bindings {
         getAllEmployeeUsecase: GetAllEmployeeUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
-        employeeService: Get.find<EmployeeService>(),
+        // employeeService: Get.find<EmployeeService>(),
       ),
     );
   }

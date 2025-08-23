@@ -121,4 +121,25 @@ class SpecialTasksDatasource {
       );
     }
   }
+
+  // change sub special task to completed
+  Future<Map<String, dynamic>> subSpecialTaskCompleted(
+      {required String subTaskId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.changeSubSpecialTaskToCompleted,
+        data: {'sub_task_id': subTaskId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
 }

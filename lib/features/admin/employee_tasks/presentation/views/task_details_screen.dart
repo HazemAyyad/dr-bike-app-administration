@@ -32,7 +32,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
             onPressed: () {
               Get.toNamed(
                 AppRoutes.CREATETASKSCREEN,
-                arguments: 'createNewEmployeeTask',
+                arguments: {'title': 'createNewEmployeeTask', 'isEdit': true},
               );
             },
             label: Text(
@@ -72,69 +72,45 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   discription: data.points.toString(),
                 ),
                 SizedBox(height: 10.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'adminImage'.tr,
-                            style: theme.copyWith(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor6
-                                  : AppColors.customGreyColor4,
-                            ),
-                          ),
-                          SizedBox(height: 5.h),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(5.r),
-                            child: CachedNetworkImage(
-                              imageUrl: data.adminImg!,
-                              placeholder: (context, url) => Center(
-                                child: const CircularProgressIndicator(),
-                              ),
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.error),
-                              fit: BoxFit.fill,
-                              width: 250.w,
-                              height: 200.h,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      'adminImage'.tr,
+                      style: theme.copyWith(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor6
+                            : AppColors.customGreyColor4,
                       ),
                     ),
-                    SizedBox(width: 10.w),
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    SizedBox(height: 5.h),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
                         children: [
-                          Text(
-                            'employeeImage'.tr,
-                            style: theme.copyWith(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor6
-                                  : AppColors.customGreyColor4,
-                            ),
-                          ),
-                          SizedBox(height: 5.h),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(5.r),
-                            child: CachedNetworkImage(
-                              imageUrl: data.employeeImg!,
-                              placeholder: (context, url) => Center(
-                                child: const CircularProgressIndicator(),
+                          ...data.adminImg!.map(
+                            (e) => Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 5.w),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(5.r),
+                                child: CachedNetworkImage(
+                                  imageUrl: e,
+                                  height: 200.h,
+                                  width: 200.w,
+                                  fit: BoxFit.fill,
+                                  fadeInDuration:
+                                      const Duration(milliseconds: 200),
+                                  fadeOutDuration:
+                                      const Duration(milliseconds: 200),
+                                  placeholder: (context, url) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
                               ),
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.error),
-                              fit: BoxFit.fill,
-                              width: 250.w,
-                              height: 200.h,
                             ),
                           ),
                         ],
@@ -142,6 +118,94 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                     ),
                   ],
                 ),
+                SizedBox(height: 10.h),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'employeeImage'.tr,
+                      style: theme.copyWith(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor6
+                            : AppColors.customGreyColor4,
+                      ),
+                    ),
+                    SizedBox(height: 5.h),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ...data.employeeImg!.map(
+                            (e) => Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 5.w),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(5.r),
+                                child: CachedNetworkImage(
+                                  imageUrl: e,
+                                  height: 200.h,
+                                  width: 200.w,
+                                  fit: BoxFit.fill,
+                                  fadeInDuration:
+                                      const Duration(milliseconds: 200),
+                                  fadeOutDuration:
+                                      const Duration(milliseconds: 200),
+                                  placeholder: (context, url) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                //   children: [
+                //     Flexible(
+                //       child:
+                //     ),
+                //     SizedBox(width: 10.w),
+                //     Flexible(
+                //       child: Column(
+                //         crossAxisAlignment: CrossAxisAlignment.start,
+                //         children: [
+                //           Text(
+                //             'employeeImage'.tr,
+                //             style: theme.copyWith(
+                //               fontSize: 14.sp,
+                //               fontWeight: FontWeight.w700,
+                //               color: ThemeService.isDark.value
+                //                   ? AppColors.customGreyColor6
+                //                   : AppColors.customGreyColor4,
+                //             ),
+                //           ),
+                //           SizedBox(height: 5.h),
+                //           ClipRRect(
+                //             borderRadius: BorderRadius.circular(5.r),
+                //             child: CachedNetworkImage(
+                //               imageUrl: data.employeeImg!,
+                //               placeholder: (context, url) => Center(
+                //                 child: const CircularProgressIndicator(),
+                //               ),
+                //               errorWidget: (context, url, error) =>
+                //                   const Icon(Icons.error),
+                //               fit: BoxFit.fill,
+                //               width: 250.w,
+                //               height: 200.h,
+                //             ),
+                //           ),
+                //         ],
+                //       ),
+                //     ),
+                //   ],
+                // ),
                 SupTextAndDis(
                   title: 'taskDescription',
                   discription: data.taskDescription,
@@ -167,64 +231,81 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                     ],
                   ),
                 ),
-                ...data.subTasks.map(
-                  (tasks) => Container(
-                    margin: EdgeInsets.symmetric(vertical: 5.h),
-                    padding: EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: tasks.status == 'ongoing'
-                          ? null
-                          : ThemeService.isDark.value
-                              ? AppColors.customGreyColor
-                              : AppColors.customGreyColor6,
-                      borderRadius: BorderRadius.circular(11.r),
-                      border: Border.all(color: AppColors.customGreyColor6),
-                    ),
-                    height: 70.h,
-                    width: double.infinity,
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: CustomCheckBox(
-                            scale: 1.5,
-                            shape: CircleBorder(
-                              side: BorderSide(color: AppColors.primaryColor),
+                data.subTasks.isEmpty
+                    ? SizedBox.shrink()
+                    : Column(
+                        children: [
+                          ...data.subTasks.map(
+                            (tasks) => Container(
+                              margin: EdgeInsets.symmetric(vertical: 5.h),
+                              padding: EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: tasks.status == 'ongoing'
+                                    ? null
+                                    : ThemeService.isDark.value
+                                        ? AppColors.customGreyColor
+                                        : AppColors.customGreyColor6,
+                                borderRadius: BorderRadius.circular(11.r),
+                                border: Border.all(
+                                    color: AppColors.customGreyColor6),
+                              ),
+                              height: 70.h,
+                              width: double.infinity,
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: CustomCheckBox(
+                                      scale: 1.5,
+                                      shape: CircleBorder(
+                                        side: BorderSide(
+                                            color: AppColors.primaryColor),
+                                      ),
+                                      title:
+                                          '${tasks.name}${'\n'}${tasks.description}',
+                                      style: theme.copyWith(
+                                        decoration: tasks.status == 'ongoing'
+                                            ? TextDecoration.none
+                                            : TextDecoration.lineThrough,
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w500,
+                                        color: ThemeService.isDark.value
+                                            ? AppColors.customGreyColor6
+                                            : AppColors.customGreyColor4,
+                                      ),
+                                      value: tasks.status == 'ongoing'
+                                          ? false.obs
+                                          : true.obs,
+                                      onChanged: (value) {},
+                                    ),
+                                  ),
+                                  tasks.adminImg!.isEmpty
+                                      ? const SizedBox()
+                                      : ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10.r),
+                                          child: CachedNetworkImage(
+                                            imageUrl: tasks.adminImg!
+                                                .map((e) => e)
+                                                .toList()[0],
+                                            placeholder: (context, url) =>
+                                                Center(
+                                              child:
+                                                  const CircularProgressIndicator(),
+                                            ),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    const Icon(Icons.error),
+                                            fit: BoxFit.fill,
+                                            height: double.infinity,
+                                            width: 60.w,
+                                          ),
+                                        ),
+                                ],
+                              ),
                             ),
-                            title: '${tasks.name}${'\n'}${tasks.description}',
-                            style: theme.copyWith(
-                              decoration: tasks.status == 'ongoing'
-                                  ? TextDecoration.none
-                                  : TextDecoration.lineThrough,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor6
-                                  : AppColors.customGreyColor4,
-                            ),
-                            value: tasks.status == 'ongoing'
-                                ? false.obs
-                                : true.obs,
-                            onChanged: (value) {},
                           ),
-                        ),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10.r),
-                          child: CachedNetworkImage(
-                            imageUrl:
-                                '${controller.employeeTaskService.subtaskAdminImgPath.value!.subtaskAdminImgPath}/${tasks.adminImg!.split('/')[3]}',
-                            placeholder: (context, url) => Center(
-                              child: const CircularProgressIndicator(),
-                            ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.error),
-                            fit: BoxFit.fill,
-                            width: 55.w,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                        ],
+                      ),
                 SizedBox(height: 15.h),
                 Container(
                   padding: EdgeInsets.all(10),

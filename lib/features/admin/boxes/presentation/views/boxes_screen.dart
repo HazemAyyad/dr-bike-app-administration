@@ -16,10 +16,11 @@ class BoxesScreen extends GetView<BoxesController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'boxes',
-        employeeNameController: controller.employeeNameController,
-        fromDateController: controller.fromDateController,
-        toDateController: controller.toDateController,
+        employeeNameController: controller.boxNameController,
+        // fromDateController: controller.fromDateController,
+        // toDateController: controller.toDateController,
         label: 'boxName',
+        onPressedFilter: () => controller.filterLists(),
         onPressedAdd: () {
           Get.toNamed(AppRoutes.CREATEBOXESSCREEN);
         },

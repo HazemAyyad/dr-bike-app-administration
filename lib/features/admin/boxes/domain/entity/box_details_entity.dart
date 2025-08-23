@@ -1,0 +1,15 @@
+import 'all_boxes_logs_entity.dart';
+
+class BoxDetailsEntity {
+  final String boxName;
+  final String totalBalance;
+  final String isShown;
+  final List<BoxLog> boxLogs;
+
+  BoxDetailsEntity({
+    required this.boxName,
+    required this.totalBalance,
+    required this.isShown,
+    required this.boxLogs,
+  });
+}

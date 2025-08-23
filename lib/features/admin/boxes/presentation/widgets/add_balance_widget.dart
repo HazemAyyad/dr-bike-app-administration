@@ -3,17 +3,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/boxes_controller.dart';
 
-class AddBalanceWidget extends StatelessWidget {
-  const AddBalanceWidget({Key? key, required this.controller})
-      : super(key: key);
+class AddBalanceWidget extends GetView<BoxesController> {
+  const AddBalanceWidget({Key? key, required this.boxId}) : super(key: key);
 
-  final BoxesController controller;
+  final int boxId;
 
   @override
   Widget build(BuildContext context) {
@@ -50,34 +48,40 @@ class AddBalanceWidget extends StatelessWidget {
               ],
             ),
             SizedBox(height: 10.h),
-            CustomDropdownField(
-              label: 'boxName',
-              labelTextStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-              hint: 'boxNameExample',
-              items: controller.boxes
-                  .map((box) => box['boxName'] as String)
-                  .toList(),
-              onChanged: (value) {
-                controller.addBalanceBoxNameController.text = value!;
-              },
-            ),
+            // CustomDropdownField(
+            //   label: 'boxName',
+            //   labelTextStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+            //         color: AppColors.primaryColor,
+            //         fontSize: 15.sp,
+            //         fontWeight: FontWeight.w700,
+            //       ),
+            //   hint: 'boxNameExample',
+            //   items: controller.boxes
+            //       .map((box) => box['boxName'] as String)
+            //       .toList(),
+            //   onChanged: (value) {
+            //     controller.addBalanceBoxNameController.text = value!;
+            //   },
+            // ),
+            Text(boxId.toString(), style: textStyle.copyWith(fontSize: 15.sp)),
             SizedBox(height: 10.h),
-            CustomTextField(
-              label: 'value'.tr,
-              labelTextstyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-              hintText: 'totalExample',
-              controller: controller.addBalanceValueController,
+            Form(
+              key: controller.formKey,
+              child: CustomTextField(
+                label: 'value'.tr,
+                labelTextstyle:
+                    Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: AppColors.primaryColor,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                hintText: 'totalExample',
+                controller: controller.addBalanceValueController,
+              ),
             ),
             SizedBox(height: 20.h),
             AppButton(
+              isLoading: controller.isAddBoxLoading,
               text: 'apply',
               textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     fontSize: 15.sp,
@@ -85,7 +89,10 @@ class AddBalanceWidget extends StatelessWidget {
                     color: AppColors.whiteColor,
                   ),
               onPressed: () {
-                Get.back();
+                controller.addBoxBalance(
+                  context,
+                  boxId.toString(),
+                );
               },
             ),
           ],

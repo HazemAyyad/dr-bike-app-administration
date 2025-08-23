@@ -52,7 +52,7 @@ import '../features/admin/--/presentation/project_management/binding/project_man
 import '../features/admin/--/presentation/project_management/views/project_management_screen.dart';
 import '../features/admin/--/presentation/project_management/widgets/create_project_screen/create_project_screen.dart';
 import '../features/admin/--/presentation/project_management/widgets/project_details/project_details_screeen.dart';
-import '../features/admin/special_tasks/presentation/widgets/special_task_details_screen.dart';
+import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
 import '../features/admin/target_section/presentation/binding/target_section_binding.dart';
 import '../features/admin/target_section/presentation/views/target_section_screen.dart';
 import '../features/admin/target_section/presentation/widgets/add_new_target/add_new_target_screen.dart';
@@ -420,7 +420,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.EDITBOXESSCREEN,
       page: () => const EditBoxesScreen(),
-      transition: _transitionFadeIn,
+      transition: _transitionCircularReveal,
     ),
 
     // Maintenance Screen

@@ -5,11 +5,12 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/get_shown_boxes_model.dart';
 
 class BoxesWidget extends StatelessWidget {
   const BoxesWidget({Key? key, required this.box}) : super(key: key);
 
-  final Map<String, dynamic> box;
+  final GetShownBoxesModel box;
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +21,7 @@ class BoxesWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Text(
-            box['boxName'],
+            box.boxName,
             style: textStyle.copyWith(
               fontSize: 16.sp,
               fontWeight: FontWeight.w700,
@@ -30,7 +31,7 @@ class BoxesWidget extends StatelessWidget {
             ),
           ),
           Text(
-            "${NumberFormat('#,###').format(int.parse(box['amount'].toString()))} ${'currency'.tr}",
+            "${NumberFormat('#,###').format(box.totalBalance)} ${'currency'.tr}",
             style: textStyle.copyWith(
               fontSize: 16.sp,
               fontWeight: FontWeight.w700,

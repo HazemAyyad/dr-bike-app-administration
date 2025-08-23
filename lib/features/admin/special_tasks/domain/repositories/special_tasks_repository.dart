@@ -19,4 +19,8 @@ abstract class SpecialTasksRepository {
     required bool isTransfer,
     DateTime? endDate,
   });
+
+  Future<Either<Failure, String>> subSpecialTaskCompleted({
+    required String subTaskId,
+  });
 }

@@ -212,6 +212,7 @@ const Map<String, String> en = {
   'from': 'From',
   'to': 'To',
   'apply': 'Apply',
+  'clear': 'Clear',
   'deleteTask': 'Delete Task',
   'deleteRepeatedTask': 'Delete Repeated Task',
   'subTasks': 'Sub Tasks',
@@ -315,6 +316,7 @@ const Map<String, String> en = {
   'weeklyTasks': 'Weekly Tasks',
   'noDateTasks': 'No Date Tasks',
   'transferTask': 'Transfer Task',
+  'editPrivateTask': 'Edit Private Task',
 
   // employee Section
   'employeeList': 'Employee List',
@@ -600,6 +602,7 @@ const Map<String, String> en = {
   'editBox': 'Edit Box',
   'addBalance': 'Add Balance',
   'transferBalance': 'Transfer Balance',
+  'addOrTransferBalance': 'Add / Transfer Balance',
   'value': 'Value',
   'transfer': 'Transfer',
 

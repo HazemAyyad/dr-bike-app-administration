@@ -11,10 +11,8 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/special_tasks_controller.dart';
 
-class TasksList extends StatelessWidget {
-  const TasksList({Key? key, required this.controller}) : super(key: key);
-
-  final SpecialTasksController controller;
+class TasksList extends GetView<SpecialTasksController> {
+  const TasksList({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +27,7 @@ class TasksList extends StatelessWidget {
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
-        } else if (controller.groupedTasks.isEmpty) {
+        } else if (controller.filteredTasks.isEmpty) {
           return SliverToBoxAdapter(
             child: Center(
               child: Column(
@@ -58,11 +56,11 @@ class TasksList extends StatelessWidget {
         }
 
         return SliverList.builder(
-          itemCount: controller.groupedTasks.length,
+          itemCount: controller.filteredTasks.length,
           itemBuilder: (context, index) {
-            String date = controller.groupedTasks.keys.toList()[index];
+            String date = controller.filteredTasks.keys.toList()[index];
             List<SpecialTaskModel> tasksForDate =
-                controller.groupedTasks[date]!;
+                controller.filteredTasks[date]!;
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),

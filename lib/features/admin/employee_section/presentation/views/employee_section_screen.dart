@@ -108,7 +108,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                               SizedBox(
                                 height: index ==
                                         controller.filteredEmployees.length - 1
-                                    ? 50.h
+                                    ? 20.h
                                     : 0.h,
                               ),
                             ],
@@ -149,7 +149,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                             controller.filteredWorkingTimes
                                                     .length -
                                                 1
-                                        ? 50.h
+                                        ? 20.h
                                         : 0.h,
                                   ),
                                 ],
@@ -200,7 +200,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                                 controller.filteredFinancialDues
                                                         .length -
                                                     1
-                                            ? 50.h
+                                            ? 20.h
                                             : 0.h,
                                       ),
                                     ],

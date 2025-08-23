@@ -5,6 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import '../../features/admin/boxes/data/datasources/boxes_datasource.dart';
+import '../../features/admin/boxes/data/repositories/boxes_implement.dart';
 import '../../features/admin/create_tasks/data/datasources/employee_tasks_remote_datasource.dart';
 import '../../features/admin/create_tasks/data/repositories/employee_tasks_implement.dart';
 import '../../features/admin/debts/data/datasources/debet_datasource.dart';
@@ -190,6 +192,19 @@ class InitialBindings implements Bindings {
       () => ScanQrCodeImplement(
         networkInfo: Get.find<NetworkInfo>(),
         scanQrcodeDatasource: Get.find<ScanQrCodeDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // boxes
+    Get.lazyPut<BoxesDatasource>(
+      () => BoxesDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<BoxesImplement>(
+      () => BoxesImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        boxesDatasource: Get.find<BoxesDatasource>(),
       ),
       fenix: true,
     );

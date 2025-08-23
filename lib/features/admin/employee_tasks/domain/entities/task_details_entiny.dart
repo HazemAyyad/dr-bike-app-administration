@@ -15,8 +15,8 @@ class TaskDetailsEntity {
   final String employeeName;
   final bool isCanceled;
   final String? parentId;
-  final String? adminImg;
-  final String? employeeImg;
+  final List<String>? adminImg;
+  final List<String>? employeeImg;
   final String? audio;
   final List<SubTaskEntity> subTasks;
 
@@ -49,7 +49,7 @@ class SubTaskEntity {
   final String name;
   final String description;
   final String status;
-  final String? adminImg;
+  final List<String>? adminImg;
   final bool isForcedToUploadImg;
 
   const SubTaskEntity({

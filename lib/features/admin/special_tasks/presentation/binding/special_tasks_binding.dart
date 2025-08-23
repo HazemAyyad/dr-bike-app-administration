@@ -1,6 +1,7 @@
 import 'package:doctorbike/features/admin/special_tasks/data/repositories/special_tasks_implement.dart';
 import 'package:get/get.dart';
 
+import '../../domain/usecases/subs_pecial_task_completed_usecase.dart';
 import '../../domain/usecases/cancel_special_task_usecase.dart';
 import '../../domain/usecases/completed_special_tasks_usecase.dart';
 import '../../domain/usecases/special_task_details_usecase.dart';
@@ -24,6 +25,9 @@ class SpecialTasksBinding extends Bindings {
           specialTasksRepository: Get.find<SpecialTasksImplement>(),
         ),
         cancelSpecialTaskUsecase: CancelSpecialTaskUsecase(
+          specialTasksRepository: Get.find<SpecialTasksImplement>(),
+        ),
+        subsSpecialTaskCompletedUsecase: SubsSpecialTaskCompletedUsecase(
           specialTasksRepository: Get.find<SpecialTasksImplement>(),
         ),
       ),

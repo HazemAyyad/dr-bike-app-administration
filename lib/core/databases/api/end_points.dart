@@ -34,6 +34,8 @@ class EndPoints {
 
   // tasks section
   static const String createEmployeeTask = 'create/employee/task';
+  static const String editEmployeeTask = 'edit/employee/task';
+
   static const String createSpecialTask = 'create/special/task';
 
   static const String getEmployeeTasks = 'employee/ongoing/tasks';
@@ -55,6 +57,18 @@ class EndPoints {
   static const String cancelSpecialTaskWithRepetition =
       'cancel/special/task/with/repitition';
   static const String transferSpecialTask = 'transfer/special/task';
+  static const String changeSubSpecialTaskToCompleted =
+      'change/sub/special/task/to/completed';
+
+  // Boxes
+  static const String addBox = 'add/box';
+  static const String getShownBoxes = 'get/shown/boxes';
+  static const String getHiddenBoxes = 'get/hidden/boxes';
+  static const String getBoxLogs = 'all/box/logs';
+  static const String transferBoxBalance = 'transfer/box/balance';
+  static const String showBox = 'show/box';
+  static const String addBoxBalance = 'add/box/balance';
+  static const String editBox = 'edit/box';
 }
 
 class ApiKey {

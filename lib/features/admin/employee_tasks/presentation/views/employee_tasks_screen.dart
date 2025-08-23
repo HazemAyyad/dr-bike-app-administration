@@ -23,7 +23,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
           // Handle add button press
           Get.toNamed(
             AppRoutes.CREATETASKSCREEN,
-            arguments: 'createNewEmployeeTask',
+            arguments: {'title': 'createNewEmployeeTask', 'isEdit': false},
           );
         },
       ),

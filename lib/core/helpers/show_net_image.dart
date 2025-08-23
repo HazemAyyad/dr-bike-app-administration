@@ -5,7 +5,9 @@ import '../utils/assets_manger.dart';
 class ShowNetImage {
   static String getPhoto(String? photoUrl) {
     if (photoUrl == null ||
+        photoUrl == 'null' ||
         photoUrl.isEmpty ||
+        photoUrl == '' ||
         photoUrl == 'no img' ||
         photoUrl == 'no images' ||
         photoUrl == 'no admin image' ||
@@ -13,6 +15,7 @@ class ShowNetImage {
         photoUrl == 'no audio') {
       return AssetsManger.noImageNet; // صورة افتراضية إذا كانت الصورة غير متاحة
     }
+
     return "${EndPoints.baserUrlForImage}$photoUrl/";
   }
 }

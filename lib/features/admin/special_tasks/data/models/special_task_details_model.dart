@@ -32,7 +32,9 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
       taskId: json['id'] ?? 0,
       taskName: json['name'] ?? '',
       taskDescription: json['description'] ?? '',
-      adminImg: ShowNetImage.getPhoto("$taskPath/${json['admin_img'] ?? ''}"),
+      adminImg: json['admin_img'] != null || json['admin_img'] != 'null'
+          ? ShowNetImage.getPhoto("$taskPath/${json['admin_img']}")
+          : '',
       taskRecurrence: json['task_recurrence'] ?? '',
       taskRecurrenceTime: List<String>.from(json['task_recurrence_time'] ?? []),
       subTasks: (json['sub_tasks'] as List<dynamic>? ?? [])

@@ -20,8 +20,8 @@ class TaskDetailsModel extends TaskDetailsEntity {
     required String employeeName,
     required bool isCanceled,
     String? parentId,
-    String? adminImg,
-    String? employeeImg,
+    List<String>? adminImg,
+    List<String>? employeeImg,
     String? audio,
     required List<SubTaskModel> subTasks,
   }) : super(
@@ -70,10 +70,17 @@ class TaskDetailsModel extends TaskDetailsEntity {
       employeeName: json[ApiKey.employee_name] ?? '',
       isCanceled: (json[ApiKey.is_canceled]?.toString() ?? "0") == "1",
       parentId: json[ApiKey.parent_id]?.toString(),
-      adminImg: ShowNetImage.getPhoto(_emptyToNull(json[ApiKey.admin_img])),
-      employeeImg:
-          ShowNetImage.getPhoto(_emptyToNull(json[ApiKey.employee_img])),
-      audio: json[ApiKey.audio],
+      adminImg:
+          (json[ApiKey.admin_img] != null && json[ApiKey.admin_img] is List)
+              ? List<String>.from(
+                  json[ApiKey.admin_img].map((e) => ShowNetImage.getPhoto(e)))
+              : [],
+      employeeImg: (json[ApiKey.employee_img] != null &&
+              json[ApiKey.employee_img] is List)
+          ? List<String>.from(
+              json[ApiKey.employee_img].map((e) => ShowNetImage.getPhoto(e)))
+          : [],
+      audio: ShowNetImage.getPhoto(json[ApiKey.audio] ?? ''),
       subTasks: (json[ApiKey.sub_tasks] as List<dynamic>? ?? [])
           .map((e) => SubTaskModel.fromJson(e))
           .toList(),
@@ -105,16 +112,6 @@ class TaskDetailsModel extends TaskDetailsEntity {
           subTasks.map((e) => (e as SubTaskModel).toJson()).toList(),
     };
   }
-
-  static String? _emptyToNull(String? value) {
-    if (value == null) return null;
-    return (value.startsWith('public/') ||
-            value != 'no employee image' &&
-                value != 'no admin image' &&
-                value != 'no audio')
-        ? value
-        : null;
-  }
 }
 
 class SubTaskModel extends SubTaskEntity {
@@ -123,7 +120,7 @@ class SubTaskModel extends SubTaskEntity {
     required String name,
     required String description,
     required String status,
-    String? adminImg,
+    List<String>? adminImg,
     required bool isForcedToUploadImg,
   }) : super(
           id: id,
@@ -142,7 +139,11 @@ class SubTaskModel extends SubTaskEntity {
       status: json[ApiKey.status] ?? '',
       isForcedToUploadImg:
           (json[ApiKey.is_forced_to_upload_img]?.toString() ?? "0") == "1",
-      adminImg: ShowNetImage.getPhoto(_emptyToNull(json[ApiKey.admin_img])),
+      adminImg:
+          (json[ApiKey.admin_img] != null && json[ApiKey.admin_img] is List)
+              ? List<String>.from(
+                  json[ApiKey.admin_img].map((e) => ShowNetImage.getPhoto(e)))
+              : [],
     );
   }
 
@@ -155,16 +156,6 @@ class SubTaskModel extends SubTaskEntity {
       ApiKey.admin_img: adminImg,
       ApiKey.is_forced_to_upload_img: isForcedToUploadImg ? "1" : "0",
     };
-  }
-
-  static String? _emptyToNull(String? value) {
-    if (value == null) return null;
-    return (value.startsWith('public/') ||
-            value != 'no employee image' &&
-                value != 'no admin image' &&
-                value != 'no audio')
-        ? value
-        : null;
   }
 }
 

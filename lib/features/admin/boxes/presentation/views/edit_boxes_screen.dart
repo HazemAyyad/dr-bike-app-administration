@@ -13,54 +13,67 @@ class EditBoxesScreen extends GetView<BoxesController> {
 
   @override
   Widget build(BuildContext context) {
+    final String boxId = Get.arguments;
+
     return Scaffold(
-      appBar: CustomAppBar( title: 'editBox'.tr, action: false),
-      body: ListView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        children: [
-          SizedBox(height: 10.h),
-          CustomTextField(
-            isRequired: true,
-            label: 'boxName'.tr,
-            hintText: 'BalanceTransferExample',
-            controller: controller.editBoxNameController,
-          ),
-          SizedBox(height: 20.h),
-          CustomTextField(
-            label: 'startBalance'.tr,
-            hintText: 'startBalanceExample',
-            controller: controller.editStartBalanceController,
-            keyboardType: TextInputType.number,
-          ),
-          SizedBox(height: 20.h),
-          CustomDropdownField(
-            label: 'appear',
-            hint: 'visible',
-            items: controller.appears,
-            onChanged: (value) {
-              controller.appearController.text = value!;
-            },
-          ),
-          SizedBox(height: 30.h),
-          // Container(
-          //   decoration: BoxDecoration(
-          //     border: Border.all(
-          //       color: AppColors.primaryColor,
-          //       width: 1.w,
-          //     ),
-          //   ),
-          // ),
-          SizedBox(height: 30.h),
-          AppButton(
-            text: 'editBox',
-            onPressed: () {},
-            textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-          )
-        ],
+      appBar: CustomAppBar(title: 'editBox'.tr, action: false),
+      body: GetBuilder<BoxesController>(
+        builder: (controller) {
+          return controller.isLoading.value
+              ? const Center(child: CircularProgressIndicator())
+              : Form(
+                  key: controller.formKey,
+                  child: ListView(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    children: [
+                      SizedBox(height: 10.h),
+                      CustomTextField(
+                        isRequired: true,
+                        label: 'boxName'.tr,
+                        hintText: 'BalanceTransferExample',
+                        controller: controller.editBoxNameController,
+                      ),
+                      SizedBox(height: 20.h),
+                      CustomTextField(
+                        label: 'startBalance'.tr,
+                        hintText: 'startBalanceExample',
+                        controller: controller.editStartBalanceController,
+                        keyboardType: TextInputType.number,
+                      ),
+                      SizedBox(height: 20.h),
+                      CustomDropdownField(
+                        label: 'appear',
+                        hint: 'visible',
+                        value: controller.appearController.text,
+                        items: controller.appears,
+                        onChanged: (value) {
+                          controller.appearController.text = value!;
+                        },
+                      ),
+                      SizedBox(height: 30.h),
+                      // if (controller.boxesServes.boxDetails.value != null &&
+                      //     controller
+                      //         .boxesServes.boxDetails.value!.boxLogs.isNotEmpty)
+                      //   ...controller.boxesServes.boxDetails.value!.boxLogs
+                      //       .map((e) => MovementsWidget(box: e)),
+                      SizedBox(height: 30.h),
+                      AppButton(
+                        isLoading: controller.isAddBoxLoading,
+                        text: 'editBox',
+                        onPressed: () {
+                          controller.editBox(context, boxId);
+                        },
+                        textStyle:
+                            Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                      )
+                    ],
+                  ),
+                );
+        },
       ),
     );
   }

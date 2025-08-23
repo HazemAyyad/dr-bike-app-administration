@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../employee_section/presentation/controllers/employee_service.dart';
+import '../../../employee_tasks/presentation/controllers/employee_task_service.dart';
 import '../../../special_tasks/presentation/controllers/special_tasks_controller.dart';
 import '../../domain/usecases/creat_special_tasks_usecase.dart';
 import '../../domain/usecases/create_task_usecase.dart';
@@ -17,12 +18,16 @@ class CreateTaskController extends GetxController {
   GetAllEmployeeUsecase getAllEmployeeUsecase;
   CreatSpecialTasksUsecase creatSpecialTasksUsecase;
   EmployeeService employeeService;
+  // SpecialTasksService specialTasksService;
+  EmployeeTaskService employeeTaskService;
 
   CreateTaskController({
     required this.createTaskUsecase,
     required this.getAllEmployeeUsecase,
     required this.creatSpecialTasksUsecase,
     required this.employeeService,
+    // required this.specialTasksService,
+    required this.employeeTaskService,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -108,7 +113,7 @@ class CreateTaskController extends GetxController {
   RxBool hideTask = false.obs;
 
   // التكرار ايام الاسبوع
-  final selectedDays = ''.obs;
+  RxString selectedDays = ''.obs;
 
   // متغير لاظهار التكرار
   RxBool isRecurrenceVisible = false.obs;
@@ -141,16 +146,6 @@ class CreateTaskController extends GetxController {
 
   // دالة لإنشاء المهمة
   void createTask(BuildContext context) async {
-    // if (selectedDays.value != 'noRepeat' && selectedDaysList.isEmpty) {
-    //   // Get.snackbar(
-    //   //   'info'.tr,
-    //   //   'pleaseFillAllFields'.tr,
-    //   //   backgroundColor: AppColors.redColor,
-    //   //   colorText: AppColors.whiteColor,
-    //   //   snackPosition: SnackPosition.BOTTOM,
-    //   // );
-    //   return;
-    // }
     if (formKey.currentState!.validate() && selectedDays.value.isNotEmpty) {
       isLoding(true);
 
@@ -202,22 +197,11 @@ class CreateTaskController extends GetxController {
       );
       isLoding(false);
     }
-    // else {
-    //   Get.snackbar(
-    //     'info'.tr,
-    //     'pleaseFillAllFields'.tr,
-    //     backgroundColor: AppColors.redColor,
-    //     colorText: AppColors.whiteColor,
-    //     snackPosition: SnackPosition.BOTTOM,
-    //   );
-    // }
   }
 
   // دالة لإنشاء المهمة خاصة
   void createSpecialTask(BuildContext context) async {
-    if (formKey.currentState!.validate() &&
-        selectedDays.value.isNotEmpty &&
-        selectedDaysList.isNotEmpty) {
+    if (formKey.currentState!.validate()) {
       isLoding(true);
 
       final result = await creatSpecialTasksUsecase.call(
@@ -254,7 +238,7 @@ class CreateTaskController extends GetxController {
             Helpers.showCustomDialogError(
               context: context,
               title: failure.errMessage,
-              message: "Unexpected error occurred", // 👈 رسالة fallback
+              message: "Unexpected error occurred",
             );
           }
         },
@@ -293,10 +277,70 @@ class CreateTaskController extends GetxController {
     update();
   }
 
+  final bool isEdit = Get.arguments['isEdit'];
+  final String title = Get.arguments['title'];
+
+  // void updatePrivateTask() {
+  //   taskNameController.text =
+  //       specialTasksService.specialTaskDetails.value!.taskName;
+  //   taskDescriptionController.text =
+  //       specialTasksService.specialTaskDetails.value!.taskDescription;
+  //   //  taskNotesController.text = specialTasksService.specialTaskDetails.value!.;
+  //   selectedDays.value =
+  //       specialTasksService.specialTaskDetails.value!.taskRecurrence;
+  //   for (var element
+  //       in specialTasksService.specialTaskDetails.value!.taskRecurrenceTime) {
+  //     selectedDaysList.add(element);
+  //   }
+  //   selectedFile.value =
+  //       XFile(specialTasksService.specialTaskDetails.value!.adminImg);
+
+  //   for (var element
+  //       in specialTasksService.specialTaskDetails.value!.subTasks) {
+  //     subTasks.add({
+  //       'subTaskName': element.subTaskName,
+  //       'subTaskdescription': element.subTaskDescription,
+  //       'subTaskImage': element.adminImg,
+  //       'imageIsRequired': element.forceEmployeeToAddImg,
+  //     });
+  //   }
+  // }
+
+  void updateEmployeeTask() {
+    final data = employeeTaskService.taskDetails.value!;
+    taskNameController.text = data.taskName;
+    taskDescriptionController.text = data.taskDescription;
+    taskNotesController.text = data.notes;
+    employeeIdConroller.text = data.employeeId.toString();
+    for (var element in data.subTasks) {
+      subTasks.add({
+        'subTaskName': element.name,
+        'subTaskdescription': element.description,
+        'subTaskImage': element.adminImg,
+        'imageIsRequired': element.isForcedToUploadImg ? '1' : '0',
+      });
+    }
+    pointsController.text = data.points.toString();
+    startDate.value = data.startTime;
+    endDate.value = data.endTime;
+    hideTask.value = data.notShownForEmployee;
+    selectedDays.value = data.taskRecurrence;
+    for (var element in data.taskRecurrenceTime) {
+      selectedDaysList.add(element);
+    }
+    recordedPath.value = File(data.audio!).path;
+    selectedFile.value = XFile(data.adminImg!.first);
+    selectedDays.value = data.taskRecurrence;
+  }
+
   @override
   void onInit() {
     super.onInit();
     getEmployee();
+    if (isEdit) {
+      // title == 'editPrivateTask' ? updatePrivateTask() :
+      updateEmployeeTask();
+    }
   }
 
   @override

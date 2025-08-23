@@ -17,11 +17,12 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
         title: 'privateTasks',
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
+        onPressedFilter: () => controller.filterLists(true),
         onPressedAdd: () {
           // Handle add button press
           Get.toNamed(
             AppRoutes.CREATETASKSCREEN,
-            arguments: 'addNewPravateTask',
+            arguments: {'title': 'addNewPravateTask', 'isEdit': false},
           );
         },
       ),
@@ -35,7 +36,7 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
               changeTab: controller.changeTab,
             ),
           ),
-          TasksList(controller: controller),
+          TasksList(),
         ],
       ),
     );

@@ -38,11 +38,17 @@ class CreateEmployeeTasksDataSource {
       for (int i = 0; i < subEmployeeTasks.length; i++) {
         subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
             subEmployeeTasks[i]['subTaskName'];
-        subEmployeeTasksMap['sub_employee_tasks[$i][admin_subtask__img]'] =
-            await MultipartFile.fromFile(
-          subEmployeeTasks[i]['subTaskImage'],
-          filename: subEmployeeTasks[i]['subTaskImage'].split('/').last,
-        );
+        subEmployeeTasks[i]['subTaskImage'] != null ||
+                subEmployeeTasks[i]['subTaskImage'].path.startsWith('http')
+            ? subEmployeeTasksMap[
+                    'sub_employee_tasks[$i][admin_subtask__img[]]'] =
+                subEmployeeTasks[i]['subTaskImage']
+            : subEmployeeTasksMap[
+                    'sub_employee_tasks[$i][admin_subtask__img[]]'] =
+                await MultipartFile.fromFile(
+                subEmployeeTasks[i]['subTaskImage'],
+                filename: subEmployeeTasks[i]['subTaskImage'].split('/').last,
+              );
         subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
             subEmployeeTasks[i]['subTaskdescription'];
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
@@ -51,6 +57,7 @@ class CreateEmployeeTasksDataSource {
       final response = await api.post(
         EndPoints.createEmployeeTask,
         data: {
+          'employee_task_id': 250,
           'name': name,
           'description': description,
           'notes': notes,
@@ -64,17 +71,21 @@ class CreateEmployeeTasksDataSource {
           'not_shown_for_employee': notShownForEmployee,
           'is_forced_to_upload_img': isForcedToUploadImg,
           if (adminImg != null)
-            'admin_img': await MultipartFile.fromFile(
-              adminImg.path,
-              filename: adminImg.name,
-            ),
+            'admin_img[]': adminImg.path.startsWith('http')
+                ? adminImg
+                : await MultipartFile.fromFile(
+                    adminImg.path,
+                    filename: adminImg.path.split('/').last,
+                  ),
           'audio': audio.path.isEmpty
               ? ''
-              : await MultipartFile.fromFile(
-                  audio.path,
-                  filename: audio.path.split('/').last,
-                  contentType: MediaType("audio", "x-m4a"),
-                ),
+              : audio.path.startsWith('http')
+                  ? audio.path
+                  : await MultipartFile.fromFile(
+                      audio.path,
+                      filename: audio.path.split('/').last,
+                      contentType: MediaType("audio", "x-m4a"),
+                    ),
         },
         isFormData: true,
         options: Options(
@@ -118,11 +129,14 @@ class CreateEmployeeTasksDataSource {
       for (int i = 0; i < subSpecialTasks.length; i++) {
         subSpecialTasksMap['sub_special_tasks[$i][name]'] =
             subSpecialTasks[i]['subTaskName'];
-        subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img]'] =
-            await MultipartFile.fromFile(
-          subSpecialTasks[i]['subTaskImage'],
-          filename: subSpecialTasks[i]['subTaskImage'].split('/').last,
-        );
+        subSpecialTasks[i]['subTaskImage'] != null
+            ? subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img]'] =
+                await MultipartFile.fromFile(
+                subSpecialTasks[i]['subTaskImage'] ?? '',
+                filename: subSpecialTasks[i]['subTaskImage'].split('/').last,
+              )
+            : subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img]'] =
+                '';
         subSpecialTasksMap['sub_special_tasks[$i][description]'] =
             subSpecialTasks[i]['subTaskdescription'];
         subSpecialTasksMap[

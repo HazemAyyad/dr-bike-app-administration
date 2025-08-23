@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/auth_logo.dart';
-import '../../../../../core/helpers/loding_indicator.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../controllers/login_controller.dart';
 import '../widgets/dont_have_account.dart';
@@ -46,23 +45,22 @@ class LoginScreen extends GetView<LoginController> {
                 SizedBox(height: 15.h),
                 RememberMe(controller: controller),
                 SizedBox(height: 15.h),
-                Obx(() => controller.isLoading.value
-                    ? lodingIndicator()
-                    : AppButton(
-                        text: 'login',
-                        onPressed: () {
-                          controller.sendOtp(context);
-                        },
-                        textStyle:
-                            Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.secondaryColor
-                                      : AppColors.whiteColor,
-                                  fontSize: 20.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                        height: 48.h,
-                      )),
+                AppButton(
+                  isLoading: controller.isLoading,
+                  isSafeArea: false,
+                  text: 'login',
+                  onPressed: () {
+                    controller.sendOtp(context);
+                  },
+                  textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: ThemeService.isDark.value
+                            ? AppColors.secondaryColor
+                            : AppColors.whiteColor,
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                  height: 48.h,
+                ),
                 SizedBox(height: 15.h),
                 DontHaveAccount(),
                 SizedBox(height: 30.h),

@@ -44,7 +44,7 @@ class BottomNavBarController extends GetxController {
               getAllEmployeeUsecase: GetAllEmployeeUsecase(
                 employeeRepository: Get.find<EmployeeImplement>(),
               ),
-              employeeService: Get.find<EmployeeService>(),
+              // employeeService: Get.find<EmployeeService>(),
             ),
           );
         }

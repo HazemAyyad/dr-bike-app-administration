@@ -11,10 +11,10 @@ import '../../../../employee_section/presentation/controllers/employee_service.d
 class DashboardController extends GetxController
     with GetTickerProviderStateMixin {
   GetAllEmployeeUsecase getAllEmployeeUsecase;
-  EmployeeService employeeService;
+  // EmployeeService employeeService;
   DashboardController({
     required this.getAllEmployeeUsecase,
-    required this.employeeService,
+    // required this.employeeService,
   });
   final filteredButtons = <Map<String, dynamic>>[];
 
@@ -86,11 +86,11 @@ class DashboardController extends GetxController
   late Animation<double> opacityAnimation;
   late Animation<double> sizeAnimation;
 
-  void getEmployee() async {
-    final result = await getAllEmployeeUsecase.call();
-    employeeService.employeeList.value = result;
-    update();
-  }
+  // void getEmployee() async {
+  //   final result = await getAllEmployeeUsecase.call();
+  //   employeeService.employeeList.value = result;
+  //   update();
+  // }
 
   final Rxn<UserModel> userData = Rxn<UserModel>();
 
@@ -119,7 +119,7 @@ class DashboardController extends GetxController
         animController.reverse();
       }
     });
-    getEmployee();
+    // getEmployee();
     getUserData();
   }
 

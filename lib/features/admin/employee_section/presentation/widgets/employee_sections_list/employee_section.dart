@@ -56,11 +56,6 @@ class EmployeeSection extends StatelessWidget {
             ),
           );
         }
-        // final grouped = groupBy<EmployeeEntity, String>(
-        //   EmployeeService().employeeList,
-        //   (EmployeeEntity v) => v.,
-        // );
-        // final filter = grouped.keys.toList();
         return sliverList;
       },
     );

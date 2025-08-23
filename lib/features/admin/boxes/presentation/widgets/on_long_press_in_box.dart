@@ -4,13 +4,15 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/get_shown_boxes_model.dart';
 import '../controllers/boxes_controller.dart';
 import 'add_balance_widget.dart';
 import 'transfer_balance_widget.dart';
 
 class OnLongPressInBox extends GetView<BoxesController> {
-  const OnLongPressInBox({Key? key}) : super(key: key);
+  const OnLongPressInBox({Key? key, required this.box}) : super(key: key);
 
+  final GetShownBoxesModel box;
   @override
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
@@ -41,7 +43,7 @@ class OnLongPressInBox extends GetView<BoxesController> {
                 TextButton.icon(
                   onPressed: () {
                     Get.back();
-                    Get.dialog(AddBalanceWidget(controller: controller));
+                    Get.dialog(AddBalanceWidget(boxId: box.boxId));
                   },
                   label: Text(
                     'addBalance'.tr,
@@ -60,7 +62,7 @@ class OnLongPressInBox extends GetView<BoxesController> {
                 TextButton.icon(
                   onPressed: () {
                     Get.back();
-                    Get.dialog(TransferBalanceWidget(controller: controller));
+                    Get.dialog(TransferBalanceWidget(boxId: box.boxId));
                   },
                   label: Text(
                     'transferBalance'.tr,

@@ -14,6 +14,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.fromDateController,
     this.toDateController,
     this.employeeNameController,
+    this.onPressedFilter,
     this.onPressedAdd,
     this.label,
     this.action = true,
@@ -24,6 +25,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextEditingController? fromDateController;
   final TextEditingController? toDateController;
   final TextEditingController? employeeNameController;
+  final void Function()? onPressedFilter;
   final VoidCallback? onPressedAdd;
   final bool? action;
   final List<Widget>? actions;
@@ -52,7 +54,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: actions ??
           [
-            if (fromDateController != null && toDateController != null)
+            if (fromDateController != null ||
+                toDateController != null ||
+                employeeNameController != null)
               IconButton(
                 highlightColor: Colors.transparent,
                 icon: Icon(
@@ -65,11 +69,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onPressed: () {
                   showCustomDialog(
                     context,
-                    fromDateController: fromDateController!,
-                    toDateController: toDateController!,
+                    fromDateController: fromDateController,
+                    toDateController: toDateController,
                     employeeNameController: employeeNameController,
                     label: label ?? 'employeeName',
-                    onPressed: () {},
+                    onPressed: onPressedFilter ?? () {},
                   );
                 },
               ),
