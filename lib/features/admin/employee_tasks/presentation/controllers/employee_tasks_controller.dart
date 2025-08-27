@@ -115,8 +115,6 @@ class EmployeeTasksController extends GetxController {
     final result = await getTaskDetailsUsecase.call(taskId: taskId);
     employeeTaskService.taskDetails.value =
         TaskDetailsModel.fromJson(result['employee_task']);
-    // employeeTaskService.subtaskAdminImgPath.value =
-    //     ImagesPathInfoModel.fromJson(result['images_path_info']);
     isTaskDetailsLoading(false);
   }
 

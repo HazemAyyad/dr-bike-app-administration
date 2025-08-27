@@ -1,9 +1,10 @@
 import 'dart:io';
 
-import 'package:doctorbike/core/services/user_data.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/helpers.dart';
+import '../../domain/usecases/add_debt_usecase.dart';
 import '../../domain/usecases/debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/debts_we_owe_usecase.dart';
 import '../../domain/usecases/total_debts_owed_to_us_usecase.dart';
@@ -15,6 +16,7 @@ class DebtsController extends GetxController {
   final TotalDebtsOwedToUsUsecase totalDebtsOwedToUs;
   final TotalDebtsWeOweUsecase totalDebtsWeOwe;
   final DebtsOwedToUsUsecase debtsOwedToUs;
+  final AddDebtUsecase addDebtUsecase;
   final DebtsWeOweUsecase debtsWeOwe;
 
   final UserTransactionsUsecase userTransactionsData;
@@ -25,8 +27,9 @@ class DebtsController extends GetxController {
     required this.totalDebtsOwedToUs,
     required this.totalDebtsWeOwe,
     required this.debtsOwedToUs,
-    required this.debtsWeOwe,
     required this.userTransactionsData,
+    required this.debtsWeOwe,
+    required this.addDebtUsecase,
     required this.dataService,
   });
 
@@ -53,19 +56,12 @@ class DebtsController extends GetxController {
 
   final tabs = ['debtsForUs', 'debtsOnUs'].obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    getDebtsWeOwe();
-  }
-
   void changeTab(int index) {
     currentTab.value = index;
   }
 
   void getTotalDebtsOwedToUs() async {
-    String token = await UserData.getUserToken();
-    final result = await totalDebtsOwedToUs.call(token: token);
+    final result = await totalDebtsOwedToUs.call();
 
     result.fold((failure) {}, (success) {
       dataService.totalDebtsOwedToUsModel.value = success;
@@ -73,8 +69,7 @@ class DebtsController extends GetxController {
   }
 
   void getTotalDebtsWeOwe() async {
-    String token = await UserData.getUserToken();
-    final result = await totalDebtsWeOwe.call(token: token);
+    final result = await totalDebtsWeOwe.call();
     result.fold((failure) {}, (success) {
       dataService.totalDebtsWeOweModel.value = success;
     });
@@ -85,8 +80,7 @@ class DebtsController extends GetxController {
         ? isDebtsWeOweLoading(true)
         : isDebtsWeOweLoading(false);
     // if (dataService.totalDebtsWeOweModel.value != null) return;
-    String token = await UserData.getUserToken();
-    final result = await debtsOwedToUs.call(token: token);
+    final result = await debtsOwedToUs.call();
     result.fold((failure) {}, (success) {
       dataService.debtsOwedToUsModel.value = success;
     });
@@ -97,8 +91,7 @@ class DebtsController extends GetxController {
     dataService.debtsWeOweModel.value == null
         ? isDebtsWeOweLoading(true)
         : isDebtsWeOweLoading(false);
-    String token = await UserData.getUserToken();
-    final result = await debtsWeOwe.call(token: token);
+    final result = await debtsWeOwe.call();
     result.fold((failure) {}, (success) {
       dataService.debtsWeOweModel.value = success;
     });
@@ -114,9 +107,7 @@ class DebtsController extends GetxController {
       userTransactionsLoading(false);
     }
 
-    String token = await UserData.getUserToken();
-    final result =
-        await userTransactionsData.call(token: token, customerId: customerId);
+    final result = await userTransactionsData.call(customerId: customerId);
     result.fold((failure) {}, (success) {
       dataService.userTransactionsDataModel.value = success;
     });
@@ -181,7 +172,10 @@ class DebtsController extends GetxController {
     }
   }
 
-  void createDebts() {
+  final RxBool isLoading = false.obs;
+
+  // add Debts
+  void addDebts(BuildContext context, String customerId, String type) async {
     if (formKey.currentState?.validate() ?? false) {
       if (totalDebtController.text.isEmpty ||
           dueDateController.text.isEmpty ||
@@ -193,27 +187,62 @@ class DebtsController extends GetxController {
         );
         return;
       }
-
-      final newDebt = {
-        'isForUs': false,
-        'debtsemployeeName': customerName,
-        'debtsAmount': totalDebtController.text,
-        // 'image': selectedFile..value?.path,
-        'startDate': '2025-02-25',
-        'endDate': dueDateController.text,
-        'createdAt': DateTime.now().toIso8601String(),
-        'isDone': false,
-      };
-
-      debts.addAll([newDebt]);
-      // fetchOrders(); // Refresh the debts list
-      Get.back(); // Close the bottom sheet
-      Get.snackbar(
-        'success'.tr,
-        'debtCreatedSuccessfully'.tr,
-        snackPosition: SnackPosition.BOTTOM,
+      isLoading(true);
+      final result = await addDebtUsecase.call(
+        customerId: customerId,
+        dueDate: dueDateController.text,
+        total: totalDebtController.text,
+        receiptImage: selectedFile,
+        type: type,
+        notes: moreDetailsController.text,
       );
+      result.fold(
+        (failure) {
+          final errors = failure.data['errors'];
+          String errorMessage = '';
+
+          if (errors is Map) {
+            errorMessage = errors.entries
+                .map((e) => "${e.key}: ${(e.value as List).join(', ')}")
+                .join("\n");
+          } else {
+            errorMessage = errors.toString();
+          }
+
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: errorMessage,
+          );
+        },
+        (success) {
+          getDebtsWeOwe();
+          getDebtsOwedToUs();
+          getTotalDebtsWeOwe();
+          getTotalDebtsOwedToUs();
+          Get.back();
+
+          Future.delayed(
+            Duration(milliseconds: 1500),
+            () {
+              Get.back();
+            },
+          );
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
+        },
+      );
+      isLoading(false);
     }
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    getDebtsWeOwe();
   }
 
   @override
@@ -221,8 +250,6 @@ class DebtsController extends GetxController {
     totalDebtController.dispose();
     moreDetailsController.dispose();
     dueDateController.dispose();
-    // selectedFile.value = null;
-    customerName = '';
     super.dispose();
   }
 }

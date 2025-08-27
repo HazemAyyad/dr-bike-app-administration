@@ -26,10 +26,7 @@ class UserTransactionsWidget extends StatelessWidget {
         SizedBox(height: index == 0 ? 5.h : 0.h),
         Container(
           margin: EdgeInsets.only(bottom: 10.h),
-          padding: EdgeInsets.symmetric(
-            horizontal: 16.w,
-            vertical: 10.h,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
           decoration: BoxDecoration(
             color: ThemeService.isDark.value
                 ? AppColors.customGreyColor
@@ -94,14 +91,20 @@ class UserTransactionsWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          (debt.notes?.isNotEmpty ?? false) ? debt.notes! : '',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.customGreyColor2,
-                                  ),
+                        Flexible(
+                          child: Text(
+                            debt.notes!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.customGreyColor2,
+                                ),
+                          ),
                         ),
                         Text(
                           debt.debtType == 'we owe' ? 'took'.tr : 'gave'.tr,

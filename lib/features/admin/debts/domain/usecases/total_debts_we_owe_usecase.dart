@@ -8,7 +8,7 @@ class TotalDebtsWeOweUsecase {
 
   TotalDebtsWeOweUsecase({required this.debtsRepository});
 
-  Future<Either<Failure, dynamic>> call({required String token}) {
-    return debtsRepository.totalDebtsWeOwe(token: token);
+  Future<Either<Failure, dynamic>> call() {
+    return debtsRepository.totalDebtsWeOwe();
   }
 }

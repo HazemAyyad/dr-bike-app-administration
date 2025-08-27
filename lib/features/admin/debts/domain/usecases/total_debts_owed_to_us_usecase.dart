@@ -9,7 +9,7 @@ class TotalDebtsOwedToUsUsecase {
 
   TotalDebtsOwedToUsUsecase({required this.debtsRepository});
 
-  Future<Either<Failure, TotalDebtsOwedToUsModel>> call({required String token}) {
-    return debtsRepository.totalDebtsOwedToUs(token: token);
+  Future<Either<Failure, TotalDebtsOwedToUsModel>> call() {
+    return debtsRepository.totalDebtsOwedToUs();
   }
 }

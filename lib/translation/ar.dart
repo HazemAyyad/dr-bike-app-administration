@@ -103,6 +103,10 @@ const Map<String, String> ar = {
   'currency': 'شيكل',
   'currency1': 'دولار',
   'currency2': 'دينار',
+  'check': 'شيك',
+  'rejected': 'معدم',
+  'reference': 'مرجع',
+  'cashed' : 'مقبول',
 
   'employeeTasks': 'مهام الموظفين',
   'privateTasks': 'المهام الخاصة',
@@ -155,6 +159,7 @@ const Map<String, String> ar = {
   'cancel': 'إلغاء',
   'logoutSuccess': 'تم تسجيل الخروج بنجاح',
   'logoutError': 'حدث خطأ أثناء تسجيل الخروج، حاول مرة أخرى لاحقاً',
+  'areYouSure': 'هل أنت متأكد؟',
 
   'doctorBikeWillStartToApplyThisChange':
       'سيبدأ Doctor Bike في تطبيق هذا التغيير',
@@ -488,11 +493,13 @@ const Map<String, String> ar = {
   'work': 'العمل',
   'workExample': 'مثال: مهندس',
   'workTitleExample': 'مثال: مدرس',
+  'customer': 'بائع',
+  'seller': 'زبون',
 
   // قسم الديون
   'gave': 'أعطيت',
   'took': 'أخذت',
-  'since': 'منذ',
+  'since': 'مضت',
   'days': 'يوم',
   'dayss': 'أيام',
   'remaining': 'متبقي',

@@ -11,11 +11,14 @@ class EndPoints {
   static const String logout = 'logout';
   static const String changePassword = 'change/password';
   static const String updateProfile = 'update/profile';
+
+  // debts section
   static const String totalDebtsWeOwe = 'total/debts/we/owe';
   static const String totalDebtsOwedToUs = 'total/debts/owed/to/us';
   static const String getDebtsOwedToUs = 'get/debts/owed/to/us';
   static const String getDebtsWeOwe = 'get/debts/we/owe';
   static const String customerDebts = 'customer/debts';
+  static const String addDebt = 'add/debt';
 
   // employees section
   static const String createEmployee = 'create/employee';
@@ -69,6 +72,46 @@ class EndPoints {
   static const String showBox = 'show/box';
   static const String addBoxBalance = 'add/box/balance';
   static const String editBox = 'edit/box';
+
+  // check section
+  static const String notCashedIncomingChecks =
+      'general/checks/data/first/page';
+  static const String addOutgoingCheck = 'add/outgoing/check';
+  static const String addIncomingCheck = 'add/incoming/check';
+
+  static const String notCashedOutgoingChecks = 'not-cashed/outgoing/checks';
+  static const String inComingChecks = 'not-cashed/incoming/checks';
+
+  static const String cashedOutgoingChecks = 'cashed/to/person/outgoing/checks';
+  static const String cashedIncomingChecks = 'cashed/to/person/incoming/checks';
+
+  static const String archivedOutgoingChecks = 'archived/outgoing/checks';
+  static const String archivedIncomingChecks = 'archived/incoming/checks';
+
+  static const String cancelOutgoingCheck = 'cancel/an/outgoing/check';
+  static const String cancelIncomingCheck = 'cancel/an/incoming/check';
+
+  static const String cashOutgoingCheckToPerson =
+      'cash/an/outgoing/check/to/person';
+  static const String cashIncomingCheckToPerson =
+      'cash/incoming/check/to/person';
+
+  static const String cashOutgoingCheck = 'cash/an/outgoing/check';
+  static const String cashIncomingCheck = 'cash/an/incoming/check';
+
+  static const String returnOutgoingCheck = 'return/an/outgoing/check';
+  static const String returnIncomingCheck = 'return/an/incoming/check';
+
+  static const String all_customers = 'all/customers';
+  static const String all_sellers = 'all/sellers';
+
+  static const String generalOutgoingChecks = 'general/outgoing/checks/data';
+  static const String generalIncomingChecks = 'general/incoming/checks/data';
+
+  static const String chashIncomingCheckToBox = 'cash/incoming/check/to/box';
+
+  // stock
+  static const String getProductsList = 'get/products/list';
 }
 
 class ApiKey {

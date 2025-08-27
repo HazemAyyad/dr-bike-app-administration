@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -7,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 
 import '../../../../../core/helpers/custom_tab_bar.dart';
-import '../../../sales/presentation/widgets/add_list.dart';
 import '../controllers/checks_controller.dart';
 import '../widgets/checks_details.dart';
 import '../widgets/custom_actions_appbar.dart';
@@ -21,7 +18,7 @@ class IncomingChecksScreen extends GetView<ChecksController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'incomingChecks'.tr,
-        actions: [CustomActionsAppBar(controller: controller)],
+        actions: [CustomActionsAppBar(isNewCheck: false)],
       ),
       body: Stack(
         children: [
@@ -34,11 +31,7 @@ class IncomingChecksScreen extends GetView<ChecksController> {
                   background: Column(
                     children: [
                       SizedBox(height: 10.h),
-                      ChecksDetails(
-                        controller: controller,
-                        numberOfChecks: controller.inComingNumberOfChecks,
-                        total: controller.inComingTotal,
-                      ),
+                      ChecksDetails(isOutGoing: false),
                       SizedBox(height: 20.h),
                       AppTabs(
                         tabs: controller.tabs,
@@ -49,27 +42,10 @@ class IncomingChecksScreen extends GetView<ChecksController> {
                   ),
                 ),
               ),
-              CustomListVeiwBuilder(
-                controller: controller,
-                list: controller.inComingChecksList,
-              ),
+              CustomListVeiwBuilder(),
+              SliverToBoxAdapter(child: SizedBox(height: 50.h)),
             ],
           ),
-          Obx(() {
-            if (!controller.isAddMenuOpen.value) return SizedBox.shrink();
-            return Positioned.fill(
-              child: GestureDetector(
-                onTap: controller.toggleAddMenu,
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
-                  child: Container(
-                    color: Colors.transparent,
-                  ),
-                ),
-              ),
-            );
-          }),
-          AddList(controller: controller),
         ],
       ),
     );

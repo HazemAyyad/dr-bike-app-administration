@@ -7,6 +7,8 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import '../../features/admin/boxes/data/datasources/boxes_datasource.dart';
 import '../../features/admin/boxes/data/repositories/boxes_implement.dart';
+import '../../features/admin/checks/data/datasources/checks_datasource.dart';
+import '../../features/admin/checks/data/repositories/checks_implement.dart';
 import '../../features/admin/create_tasks/data/datasources/employee_tasks_remote_datasource.dart';
 import '../../features/admin/create_tasks/data/repositories/employee_tasks_implement.dart';
 import '../../features/admin/debts/data/datasources/debet_datasource.dart';
@@ -205,6 +207,19 @@ class InitialBindings implements Bindings {
       () => BoxesImplement(
         networkInfo: Get.find<NetworkInfo>(),
         boxesDatasource: Get.find<BoxesDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // Checks
+    Get.lazyPut<ChecksDatasource>(
+      () => ChecksDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<ChecksImplement>(
+      () => ChecksImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        checksDatasource: Get.find<ChecksDatasource>(),
       ),
       fenix: true,
     );

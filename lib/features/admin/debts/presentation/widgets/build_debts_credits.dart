@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -64,7 +65,7 @@ class BuildDebtsAndCredits extends StatelessWidget {
           ),
           SizedBox(height: 5.h),
           Text(
-            '$amount ${'currency'.tr}',
+            '${NumberFormat("#,###").format(double.parse(amount))} ${'currency'.tr}',
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w700,

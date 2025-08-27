@@ -12,15 +12,21 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/debts_controller.dart';
 import 'app_bar.dart';
 
-void createDebts(
-  BuildContext context,
-  String title,
-  String supTitle,
-  Color color,
-  DebtsController controller,
-) {
-  Get.bottomSheet(
-    SafeArea(
+class CreateDebts extends GetView<DebtsController> {
+  const CreateDebts({
+    Key? key,
+    required this.title,
+    required this.supTitle,
+    required this.color,
+  }) : super(key: key);
+
+  final String title;
+  final String supTitle;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
       child: Scaffold(
         extendBody: true,
         appBar: appBar(title, false, context, Get.find<DebtsController>(),
@@ -53,15 +59,9 @@ void createDebts(
                     isRequired: true,
                     enabled: false,
                     label: 'due_date',
-                    labelColor: ThemeService.isDark.value
-                        ? AppColors.customGreyColor6
-                        : AppColors.customGreyColor,
                     hintText: controller.dueDateController.text.isEmpty
                         ? 'endDateExample'
                         : showData(controller.dueDateController.text),
-                    hintColor: ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.customGreyColor6,
                     controller: controller.dueDateController,
                     suffixIcon: Icon(
                       Icons.calendar_today_outlined,
@@ -110,7 +110,7 @@ void createDebts(
                 FormField<void>(
                   validator: (file) {
                     if (controller.selectedFile.isEmpty) {
-                      return 'برجاء اختيار صورة الهوية';
+                      return 'receipt'.tr;
                     }
                     return null;
                   },
@@ -123,17 +123,9 @@ void createDebts(
                           width: double.infinity,
                           allowedType: MediaType.image,
                           onFilesChanged: (files) {
-                            controller.selectedFile = [files.first];
+                            controller.selectedFile = files;
                           },
                         ),
-                        // UploadButton(
-                        //   selectedFile: controller.selectedFile,
-                        //   title: 'uploadPersonalIdImage',
-                        //   width: double.infinity,
-                        //   textColor: ThemeService.isDark.value
-                        //       ? Colors.white
-                        //       : AppColors.primaryColor,
-                        // ),
                         if (formFieldState.hasError)
                           Padding(
                             padding: const EdgeInsets.only(top: 5),
@@ -164,9 +156,14 @@ void createDebts(
                 ),
                 SizedBox(height: 20.h),
                 AppButton(
+                  isLoading: controller.isLoading,
                   text: 'createNewDebt',
                   onPressed: () {
-                    controller.createDebts();
+                    controller.addDebts(
+                      context,
+                      '8',
+                      supTitle == 'gave' ? 'owed to us' : 'we owe',
+                    );
                   },
                   textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         color: Colors.white,
@@ -180,10 +177,6 @@ void createDebts(
           ),
         ),
       ),
-    ),
-    ignoreSafeArea: false,
-    isScrollControlled: true,
-    backgroundColor:
-        ThemeService.isDark.value ? AppColors.darckColor : Colors.white,
-  );
+    );
+  }
 }

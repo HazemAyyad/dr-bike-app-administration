@@ -23,9 +23,10 @@ class ChecksScreen extends GetView<ChecksController> {
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [
           SizedBox(height: 10.h),
-          ChecksInformaiton(controller: controller),
+          ChecksInformaiton(),
           SizedBox(height: 30.h),
           AppButton(
+            isSafeArea: false,
             text: 'outgoingChecks',
             textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: 16.sp,
@@ -33,6 +34,11 @@ class ChecksScreen extends GetView<ChecksController> {
                   fontWeight: FontWeight.w700,
                 ),
             onPressed: () {
+              controller.isInComing = false;
+              controller.generalData();
+              controller.getNotCashed();
+              controller.getCashedToPerson();
+              controller.getArchive();
               Get.toNamed(AppRoutes.OUTGOINGCHECKSSCREEN);
             },
             color: AppColors.primaryColor,
@@ -40,6 +46,7 @@ class ChecksScreen extends GetView<ChecksController> {
           ),
           SizedBox(height: 15.h),
           AppButton(
+            isSafeArea: false,
             text: 'incomingChecks',
             textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: 16.sp,
@@ -47,6 +54,12 @@ class ChecksScreen extends GetView<ChecksController> {
                   fontWeight: FontWeight.w700,
                 ),
             onPressed: () {
+              controller.isInComing = true;
+              controller.generalData();
+              controller.getNotCashed();
+              controller.getCashedToPerson();
+              controller.getArchive();
+
               Get.toNamed(AppRoutes.INCOMINGCHECKSSCREEN);
             },
             color: AppColors.primaryColor,

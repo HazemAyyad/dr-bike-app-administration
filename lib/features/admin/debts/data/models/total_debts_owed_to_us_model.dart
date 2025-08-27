@@ -7,7 +7,8 @@ class TotalDebtsOwedToUsModel {
 
   factory TotalDebtsOwedToUsModel.fromJson(Map<String, dynamic> json) {
     return TotalDebtsOwedToUsModel(
-      totalDebtsOwedToUs: json[ApiKey.total_debts_owed_to_us] ?? '0',
+      totalDebtsOwedToUs:
+          (json[ApiKey.total_debts_owed_to_us] ?? '0').toString(),
     );
   }
 

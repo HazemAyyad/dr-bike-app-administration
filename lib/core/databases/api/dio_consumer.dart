@@ -57,17 +57,27 @@ class DioConsumer extends ApiConsumer {
     } on DioException catch (e) {
       print('==========Test================$e');
       final data = e.response?.data;
+
+      String errorMessage;
+      int statusCode = e.response?.statusCode ?? 500;
+
+      if (statusCode == 429 ||
+          (data is Map && data['message'] == "Too Many Attempts.")) {
+        // رسالة مخصصة للمستخدم
+        errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة لاحقاً.";
+      } else {
+        errorMessage = (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message ?? 'حدث خطأ غير معروف';
+      }
+
       throw ServerException(
         ErrorModel(
-          errorMessage: (data is Map && data['message'] != null)
-              ? data['message']
-              : e.message ?? 'unknown_error',
+          errorMessage: errorMessage,
           status: (data is Map && data['status'] != null)
               ? data['status']
-              : e.response?.statusCode ?? 500,
-          data: (data is Map && data['data'] != null)
-              ? data['data']
-              : {}, // نرجع Map فاضية بدل null
+              : statusCode,
+          data: (data is Map && data['data'] != null) ? data['data'] : {},
         ),
       );
     }
@@ -90,9 +100,31 @@ class DioConsumer extends ApiConsumer {
       );
       return response;
     } on DioException catch (e) {
-      print('==========Test================${e.response}');
-      handleDioException(e);
-      rethrow;
+      print('==========Test================$e');
+      final data = e.response?.data;
+
+      String errorMessage;
+      int statusCode = e.response?.statusCode ?? 500;
+
+      if (statusCode == 429 ||
+          (data is Map && data['message'] == "Too Many Attempts.")) {
+        // رسالة مخصصة للمستخدم
+        errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة لاحقاً.";
+      } else {
+        errorMessage = (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message ?? 'حدث خطأ غير معروف';
+      }
+
+      throw ServerException(
+        ErrorModel(
+          errorMessage: errorMessage,
+          status: (data is Map && data['status'] != null)
+              ? data['status']
+              : statusCode,
+          data: (data is Map && data['data'] != null) ? data['data'] : {},
+        ),
+      );
     }
   }
 

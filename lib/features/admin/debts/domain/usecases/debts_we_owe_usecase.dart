@@ -9,7 +9,7 @@ class DebtsWeOweUsecase {
 
   DebtsWeOweUsecase({required this.debtsRepository});
 
-  Future<Either<Failure, DebtsWeOweModel>> call({required String token}) {
-    return debtsRepository.debtsWeOwe(token: token);
+  Future<Either<Failure, DebtsWeOweModel>> call() {
+    return debtsRepository.debtsWeOwe();
   }
 }

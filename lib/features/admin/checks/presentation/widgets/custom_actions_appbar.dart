@@ -7,13 +7,14 @@ import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/checks_controller.dart';
 
-class CustomActionsAppBar extends StatelessWidget {
-  const CustomActionsAppBar({Key? key, required this.controller})
+class CustomActionsAppBar extends GetView<ChecksController> {
+  const CustomActionsAppBar({Key? key, required this.isNewCheck})
       : super(key: key);
 
-  final ChecksController controller;
+  final bool isNewCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +71,6 @@ class CustomActionsAppBar extends StatelessWidget {
                         items: controller.beneficiary,
                         onChanged: (value) {
                           controller.selectedBeneficiary = value ?? '';
-                          print('المستفيد: ${controller.selectedBeneficiary}');
                         },
                       ),
                       SizedBox(height: 30.h),
@@ -105,7 +105,10 @@ class CustomActionsAppBar extends StatelessWidget {
           ),
           onPressed: () {
             // Handle add action
-            controller.toggleAddMenu();
+            Get.toNamed(
+              AppRoutes.NEWCHECKSCREEN,
+              arguments: {'isNewCheck': isNewCheck},
+            );
           },
         ),
       ],

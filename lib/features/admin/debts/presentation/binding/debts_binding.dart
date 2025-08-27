@@ -2,7 +2,7 @@ import 'package:doctorbike/features/admin/debts/data/repositories/debts_implemen
 import 'package:doctorbike/features/admin/debts/domain/usecases/total_debts_we_owe_usecase.dart';
 import 'package:get/get.dart';
 
-
+import '../../domain/usecases/add_debt_usecase.dart';
 import '../../domain/usecases/debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/debts_we_owe_usecase.dart';
 import '../../domain/usecases/total_debts_owed_to_us_usecase.dart';
@@ -31,6 +31,9 @@ class DebtsBinding extends Bindings {
           debtsRepository: Get.find<DebtsImplement>(),
         ),
         dataService: Get.find<DebtsDataService>(),
+        addDebtUsecase: AddDebtUsecase(
+          debtsRepository: Get.find<DebtsImplement>(),
+        ),
       ),
     );
     Future.delayed(Duration.zero, () {

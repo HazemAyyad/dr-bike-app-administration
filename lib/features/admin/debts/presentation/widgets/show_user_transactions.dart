@@ -11,13 +11,14 @@ import 'app_bar.dart';
 import 'gave_and_took_button.dart';
 import 'user_transactions_widget.dart';
 
-void showUserTransactions(
-  BuildContext context,
-  DebtsController controller,
-  debt,
-) {
-  Get.bottomSheet(
-    SafeArea(
+class ShowUserTransactions extends GetView<DebtsController> {
+  const ShowUserTransactions({Key? key, required this.debt}) : super(key: key);
+
+  final dynamic debt;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
       child: Scaffold(
         extendBody: true,
         appBar: appBar(
@@ -54,8 +55,10 @@ void showUserTransactions(
                 () {
                   if (controller.userTransactionsLoading.value) {
                     return const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryColor,
+                      child: Column(
+                        children: [
+                          CircularProgressIndicator(),
+                        ],
                       ),
                     );
                   } else if (controller
@@ -120,12 +123,8 @@ void showUserTransactions(
             ],
           ),
         ),
-        bottomNavigationBar: gaveAndTookButton(context),
+        bottomNavigationBar: GaveAndTookButton(),
       ),
-    ),
-    ignoreSafeArea: false,
-    isScrollControlled: true,
-    backgroundColor:
-        ThemeService.isDark.value ? AppColors.darckColor : Colors.white,
-  );
+    );
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -5,9 +6,10 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/check_model.dart';
 
 class ViewChecksWidget extends StatelessWidget {
-  final Map<String, dynamic> check;
+  final CheckModel check;
   final bool? shadowed;
   final int? currentTab;
   const ViewChecksWidget({
@@ -48,6 +50,7 @@ class ViewChecksWidget extends StatelessWidget {
                     child: Container(
                       width: 65.w,
                       height: 65.h,
+                      // padding: EdgeInsets.symmetric(horizontal: 10.w),
                       decoration: BoxDecoration(
                         color: ThemeService.isDark.value
                             ? AppColors.customGreyColor
@@ -64,7 +67,7 @@ class ViewChecksWidget extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          "${NumberFormat('#,###').format(int.parse(check['total'].toString()))} ${'currency'.tr}",
+                          "${NumberFormat('#,###').format(double.parse(check.total))} ${'currency'.tr}",
                           textAlign: TextAlign.center,
                           style: Theme.of(context)
                               .textTheme
@@ -82,66 +85,109 @@ class ViewChecksWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "${'checkNumber'.tr} : ${check['checkNumber'] ?? ''}",
+                        "${'checkNumber'.tr} : ${check.checkId}",
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              fontSize: 14.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w400,
                               color: Colors.grey.withAlpha(500),
                             ),
                       ),
                       SizedBox(height: 5.h),
                       Text(
-                        "${'due_date'.tr} : ${check['date']}",
+                        "${'due_date'.tr} : ${showData(check.dueDate)}",
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              fontSize: 14.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w400,
                               color: Colors.grey.withAlpha(500),
                             ),
                       ),
+                      if (currentTab != 0) SizedBox(height: 5.h),
+                      if (currentTab == 1)
+                        Text(
+                          check.customer != null
+                              ? check.customer!.name
+                              : check.seller != null
+                                  ? check.seller!.name
+                                  : check.fromCustomer != null
+                                      ? check.toCustomer != null
+                                          ? '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toCustomer!.name}'
+                                          : '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toSeller!.name}'
+                                      : check.toSeller != null
+                                          ? '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toSeller!.name}'
+                                          : '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toCustomer!.name}',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.grey.withAlpha(500),
+                                  ),
+                        ),
+                      if (currentTab == 2)
+                        Text(
+                          check.customer != null
+                              ? check.customer!.name
+                              : check.seller != null
+                                  ? check.seller!.name
+                                  : check.fromCustomer != null
+                                      ? check.fromCustomer!.name
+                                      : check.fromSeller != null
+                                          ? check.fromSeller!.name
+                                          : '',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.grey.withAlpha(500),
+                                  ),
+                        ),
                     ],
                   ),
                 ],
               ),
             ),
           ),
-          Container(
-            width: 60.w,
-            height: 75.h,
-            decoration: BoxDecoration(
-              color: int.parse(check['days']) > 5
-                  ? AppColors.customGreen1
-                  : int.parse(check['days']) > 0
-                      ? AppColors.customOrange3
-                      : AppColors.redColor,
-              borderRadius: Get.locale!.languageCode == 'en'
-                  ? BorderRadius.only(
-                      topRight: Radius.circular(4.r),
-                      bottomRight: Radius.circular(4.r),
-                    )
-                  : BorderRadius.only(
-                      topLeft: Radius.circular(4.r),
-                      bottomLeft: Radius.circular(4.r),
-                    ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  currentTab == 2 ? check['status'] : check['days'] ?? '0',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+          currentTab != 2
+              ? Container(
+                  width: 60.w,
+                  height: 75.h,
+                  decoration: BoxDecoration(
+                    color: check.dueDate.difference(DateTime.now()).inDays > 5
+                        ? AppColors.customGreen1
+                        : check.dueDate.difference(DateTime.now()).inDays > 0
+                            ? AppColors.customOrange3
+                            : AppColors.redColor,
+                    borderRadius: Get.locale!.languageCode == 'en'
+                        ? BorderRadius.only(
+                            topRight: Radius.circular(4.r),
+                            bottomRight: Radius.circular(4.r),
+                          )
+                        : BorderRadius.only(
+                            topLeft: Radius.circular(4.r),
+                            bottomLeft: Radius.circular(4.r),
+                          ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        check.dueDate
+                            .difference(DateTime.now())
+                            .inDays
+                            .toString(),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                       ),
-                ),
-                SizedBox(height: 5.h),
-                currentTab == 2
-                    ? SizedBox()
-                    : Text(
-                        int.parse(check['days']) > 10 ||
-                                int.parse(check['days']) < -10
+                      Text(
+                        check.dueDate.difference(DateTime.now()).inDays > 10 ||
+                                check.dueDate
+                                        .difference(DateTime.now())
+                                        .inDays <
+                                    -10
                             ? 'days'.tr
                             : 'dayss'.tr,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -150,9 +196,59 @@ class ViewChecksWidget extends StatelessWidget {
                               color: Colors.white,
                             ),
                       ),
-              ],
-            ),
-          ),
+                    ],
+                  ),
+                )
+              : Container(
+                  width: 60.w,
+                  height: 75.h,
+                  decoration: BoxDecoration(
+                    color: check.status == 'cashed' ||
+                            check.status == 'cashed_to_box'
+                        ? AppColors.customGreen1
+                        : check.status != 'cancelled'
+                            ? AppColors.customOrange3
+                            : AppColors.redColor,
+                    borderRadius: Get.locale!.languageCode == 'en'
+                        ? BorderRadius.only(
+                            topRight: Radius.circular(4.r),
+                            bottomRight: Radius.circular(4.r),
+                          )
+                        : BorderRadius.only(
+                            topLeft: Radius.circular(4.r),
+                            bottomLeft: Radius.circular(4.r),
+                          ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        'check'.tr,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white,
+                            ),
+                      ),
+                      SizedBox(height: 5.h),
+                      Text(
+                        check.status == 'cashed' ||
+                                check.status == 'cashed_to_box'
+                            ? 'cashed'.tr
+                            : check.status == 'cancelled'
+                                ? 'rejected'.tr
+                                : 'reference'.tr,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
         ],
       ),
     );

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
@@ -7,17 +9,23 @@ import '../../data/models/total_debts_we_owe_model.dart';
 import '../../data/models/user_transactions_data_model.dart';
 
 abstract class DebtsRepository {
-  Future<Either<Failure, TotalDebtsOwedToUsModel>> totalDebtsOwedToUs(
-      {required String token});
+  Future<Either<Failure, TotalDebtsOwedToUsModel>> totalDebtsOwedToUs();
 
-  Future<Either<Failure, TotalDebtsWeOweModel>> totalDebtsWeOwe(
-      {required String token});
+  Future<Either<Failure, TotalDebtsWeOweModel>> totalDebtsWeOwe();
 
-  Future<Either<Failure, DebtsWeOweModel>> debtsWeOwe({required String token});
+  Future<Either<Failure, DebtsWeOweModel>> debtsWeOwe();
 
-  Future<Either<Failure, DebtsWeOweModel>> debtsOwedToUs(
-      {required String token});
+  Future<Either<Failure, DebtsWeOweModel>> debtsOwedToUs();
 
   Future<Either<Failure, UserTransactionsDataModel>> userTransactionsData(
-      {required String token, required String customerId});
+      {required String customerId});
+
+  Future<Either<Failure, String>> addDebt({
+    required String customerId,
+    required String type,
+    required String dueDate,
+    required String total,
+    required List<File> receiptImage,
+    required String notes,
+  });
 }

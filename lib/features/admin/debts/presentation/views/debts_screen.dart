@@ -82,11 +82,11 @@ class DebtsScreen extends GetView<DebtsController> {
                 ],
               ),
             ),
-            showDebtsWidget(controller, context),
+            ShowDebtsWidget(),
           ],
         ),
       ),
-      bottomNavigationBar: gaveAndTookButton(context),
+      bottomNavigationBar: GaveAndTookButton(),
     );
   }
 }

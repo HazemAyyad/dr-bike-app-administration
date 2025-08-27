@@ -103,6 +103,10 @@ const Map<String, String> en = {
   'currency': 'Shekel',
   'currency1': 'Dollar',
   'currency2': 'Dinar',
+  'check': 'Check',
+  'rejected': 'Rejected',
+  'reference': 'Reference',
+  'cashed': 'Cashed',
 
   'employeeTasks': 'Employee Tasks',
   'privateTasks': 'Special Tasks',
@@ -156,6 +160,8 @@ const Map<String, String> en = {
   'logoutSuccess': 'Logged out successfully',
 
   'logoutError': 'An error occurred while logging out, please try again later',
+  'areYouSure': 'Are you sure?',
+
   'doctorBikeWillStartToApplyThisChange':
       'Doctor Bike will start to apply this change',
   'changeToEnglish': 'Change to English',
@@ -488,6 +494,8 @@ const Map<String, String> en = {
   'work': 'Work',
   'workExample': 'Example: Engineer',
   'workTitleExample': 'Example: Teacher',
+  'customer': 'Customer',
+  'seller': 'Seller',
 
   // قسم الديون
   'gave': 'I Lent',

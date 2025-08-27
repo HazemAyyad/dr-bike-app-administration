@@ -76,9 +76,13 @@ class AppButton extends StatelessWidget {
                       ? Obx(
                           () {
                             return isLoading!.value
-                                ? Center(
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white),
+                                ? SizedBox(
+                                    height: 25.h,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   )
                                 : widget != null
                                     ? Row(

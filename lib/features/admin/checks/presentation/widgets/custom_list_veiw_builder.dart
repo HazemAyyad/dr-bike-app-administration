@@ -1,118 +1,118 @@
-import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/checks_controller.dart';
 import 'on_long_press.dart';
 import 'view_checks_widget.dart';
 
-class CustomListVeiwBuilder extends StatelessWidget {
-  const CustomListVeiwBuilder({
-    Key? key,
-    required this.list,
-    required this.controller,
-  }) : super(key: key);
-
-  final RxList<Map<String, dynamic>> list;
-  final ChecksController controller;
+class CustomListVeiwBuilder extends GetView<ChecksController> {
+  const CustomListVeiwBuilder({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Obx(
       () {
-        final grouped = groupBy(list, (Map v) => v['month'] as String);
-        final months = grouped.keys.toList();
-        return list.isEmpty
-            ? const Center(child: CircularProgressIndicator())
-            : list.isEmpty
-                ? Center(
-                    child: Text(
-                      'noData'.tr,
-                      style:
-                          Theme.of(context).textTheme.headlineMedium!.copyWith(
-                                color: AppColors.customGreyColor,
-                              ),
-                    ),
-                  )
-                : SliverList.builder(
-                    itemCount: months.length,
-                    itemBuilder: (context, section) {
-                      final month = months[section];
-                      final items = grouped[month]!;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // separator عنوان الشهر
-                            Row(
-                              children: [
-                                Text(
-                                  month,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium!
-                                      .copyWith(
-                                        color: AppColors.primaryColor,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15.sp,
-                                      ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 5.h),
-                            Container(
-                              height: 1.h,
-                              width: double.infinity,
+        if (controller.isLoading.value) {
+          return SliverFillRemaining(
+            hasScrollBody: true,
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (controller.currentTab.value == 0) {
+          if (controller.inComingChecksList.value!.inComingChecksList.isEmpty) {
+            return SliverFillRemaining(
+              hasScrollBody: true,
+              child: ShowNoData(),
+            );
+          }
+        }
+        if (controller.currentTab.value == 1) {
+          if (controller.cashedToPerson.value!.cashedToPerson.isEmpty) {
+            return SliverFillRemaining(
+              hasScrollBody: true,
+              child: ShowNoData(),
+            );
+          }
+        }
+        if (controller.currentTab.value == 2) {
+          if (controller.archiveData.value!.archiveData.isEmpty) {
+            return SliverFillRemaining(
+              hasScrollBody: true,
+              child: ShowNoData(),
+            );
+          }
+        }
+        return SliverList.builder(
+          itemCount: controller.currentTab.value == 0
+              ? controller.inComingTasks.length
+              : controller.currentTab.value == 1
+                  ? controller.cashedToPersonTasks.length
+                  : controller.archiveTasks.length,
+          itemBuilder: (context, section) {
+            final month = controller.currentTab.value == 0
+                ? controller.inComingTasks.keys.toList()[section]
+                : controller.currentTab.value == 1
+                    ? controller.cashedToPersonTasks.keys.toList()[section]
+                    : controller.archiveTasks.keys.toList()[section];
+
+            final checks = controller.currentTab.value == 0
+                ? controller.inComingTasks[month]
+                : controller.currentTab.value == 1
+                    ? controller.cashedToPersonTasks[month]
+                    : controller.archiveTasks[month];
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // separator عنوان الشهر
+                  Row(
+                    children: [
+                      Text(
+                        month.split('-').reversed.join(' - '),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium!
+                            .copyWith(
                               color: AppColors.primaryColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15.sp,
                             ),
-                            SizedBox(height: 10.h),
-                            // عرض العناصر
-                            ...items.map(
-                              (item) => GestureDetector(
-                                onLongPress: listEquals(
-                                  list,
-                                  controller.inComingChecksList,
-                                )
-                                    ? () {
-                                        onLongPress(
-                                          item,
-                                          context,
-                                          controller,
-                                          controller
-                                              .incomingChecksDidNotActOnIt,
-                                          controller.incomingChecksActedOnIt,
-                                          controller.archive,
-                                        );
-                                      }
-                                    : () {
-                                        controller.currentTab.value == 2
-                                            ? null
-                                            : onLongPress(
-                                                item,
-                                                context,
-                                                controller,
-                                                controller
-                                                    .outgoingChecksDidNotActOnIt,
-                                                controller
-                                                    .outgoingChecksActedOnIt,
-                                                null,
-                                              );
-                                      },
-                                child: ViewChecksWidget(
-                                  check: item,
-                                  currentTab: controller.currentTab.value,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 5.h),
+                  Container(
+                    height: 1.h,
+                    width: double.infinity,
+                    color: AppColors.primaryColor,
+                  ),
+                  SizedBox(height: 10.h),
+                  // عرض العناصر
+                  ...checks!.map(
+                    (check) => GestureDetector(
+                      onLongPress: !controller.isInComing &&
+                              controller.currentTab.value == 2
+                          ? null
+                          : () {
+                              Get.dialog(OnLongPress(check: check));
+                            },
+                      child: ViewChecksWidget(
+                        check: check,
+                        currentTab: controller.currentTab.value,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }

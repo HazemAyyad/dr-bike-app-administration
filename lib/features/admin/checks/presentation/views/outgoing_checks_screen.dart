@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -6,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 
 import '../../../../../core/helpers/custom_tab_bar.dart';
-import '../../../sales/presentation/widgets/add_list.dart';
 import '../controllers/checks_controller.dart';
 import '../widgets/checks_details.dart';
 import '../widgets/custom_actions_appbar.dart';
@@ -20,55 +18,40 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
     return Scaffold(
       appBar: CustomAppBar(
           title: 'outgoingChecks'.tr,
-          actions: [CustomActionsAppBar(controller: controller)]),
+          actions: [CustomActionsAppBar(isNewCheck: true)]),
       body: Stack(
         children: [
-          CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 270.h,
-                automaticallyImplyLeading: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Column(
-                    children: [
-                      SizedBox(height: 10.h),
-                      ChecksDetails(
-                        controller: controller,
-                        numberOfChecks: controller.outGoingNumberOfChecks,
-                        total: controller.outGoingTotal,
-                        isOutComingChecks: true,
+          Obx(
+            () => CustomScrollView(
+              slivers: [
+                controller.isLoading.value
+                    ? SliverFillRemaining(
+                        hasScrollBody: true,
+                        child: const Center(child: CircularProgressIndicator()),
+                      )
+                    : SliverAppBar(
+                        expandedHeight: 270.h,
+                        automaticallyImplyLeading: false,
+                        flexibleSpace: FlexibleSpaceBar(
+                          background: Column(
+                            children: [
+                              SizedBox(height: 10.h),
+                              ChecksDetails(isOutGoing: true),
+                              SizedBox(height: 20.h),
+                              AppTabs(
+                                tabs: controller.tabs,
+                                currentTab: controller.currentTab,
+                                changeTab: controller.changeTab,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      SizedBox(height: 20.h),
-                      AppTabs(
-                        tabs: controller.tabs,
-                        currentTab: controller.currentTab,
-                        changeTab: controller.changeTab,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              CustomListVeiwBuilder(
-                controller: controller,
-                list: controller.outGoingChecksList,
-              ),
-            ],
+                CustomListVeiwBuilder(),
+                SliverToBoxAdapter(child: SizedBox(height: 50.h)),
+              ],
+            ),
           ),
-          Obx(() {
-            if (!controller.isAddMenuOpen.value) return SizedBox.shrink();
-            return Positioned.fill(
-              child: GestureDetector(
-                onTap: controller.toggleAddMenu,
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
-                  child: Container(
-                    color: Colors.transparent,
-                  ),
-                ),
-              ),
-            );
-          }),
-          AddList(controller: controller),
         ],
       ),
     );

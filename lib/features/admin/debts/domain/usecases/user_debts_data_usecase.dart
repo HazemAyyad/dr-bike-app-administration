@@ -10,8 +10,7 @@ class UserTransactionsUsecase {
   UserTransactionsUsecase({required this.debtsRepository});
 
   Future<Either<Failure, UserTransactionsDataModel>> call(
-      {required String token, required String customerId}) {
-    return debtsRepository.userTransactionsData(
-        token: token, customerId: customerId);
+      {required String customerId}) {
+    return debtsRepository.userTransactionsData(customerId: customerId);
   }
 }
