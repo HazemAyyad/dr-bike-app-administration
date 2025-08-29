@@ -7,13 +7,8 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/sales_controller.dart';
 
-class DiscountWidget extends StatelessWidget {
-  const DiscountWidget({
-    Key? key,
-    required this.controller,
-  }) : super(key: key);
-
-  final SalesController controller;
+class DiscountWidget extends GetView<SalesController> {
+  const DiscountWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,22 +19,7 @@ class DiscountWidget extends StatelessWidget {
             Expanded(
               child: CustomTextField(
                 label: 'discount',
-                labelTextstyle:
-                    Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor6
-                              : AppColors.customGreyColor,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
                 hintText: 'discountExample',
-                hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor
-                          : AppColors.customGreyColor6,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
                 controller: controller.discountController,
                 keyboardType: TextInputType.number,
               ),
@@ -49,22 +29,7 @@ class DiscountWidget extends StatelessWidget {
               child: CustomTextField(
                 isRequired: true,
                 label: 'totalBill',
-                labelTextstyle:
-                    Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor6
-                              : AppColors.customGreyColor,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
                 hintText: 'totalExample',
-                hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor
-                          : AppColors.customGreyColor6,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
                 controller: controller.totalController,
                 keyboardType: TextInputType.number,
               ),
@@ -76,22 +41,11 @@ class DiscountWidget extends StatelessWidget {
           minLines: 3,
           maxLines: 5,
           label: 'details',
-          labelTextstyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor6
-                    : AppColors.customGreyColor,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w400,
-              ),
           hintText: 'detailsExample',
-          hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor
-                    : AppColors.customGreyColor6,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w400,
-              ),
           controller: controller.noteController,
+          validator: (value) {
+            return null;
+          },
         ),
         SizedBox(height: 20.h),
         Row(

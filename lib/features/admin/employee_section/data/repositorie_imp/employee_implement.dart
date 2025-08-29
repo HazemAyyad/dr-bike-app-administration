@@ -11,7 +11,7 @@ import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/employee_section_repository.dart';
-import '../datasources/employee_section_remote_datasource.dart';
+import '../datasources/employee_datasource.dart';
 import '../models/employee_model.dart';
 
 class EmployeeImplement implements EmployeeRepository {

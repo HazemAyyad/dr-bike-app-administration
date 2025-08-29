@@ -8,13 +8,8 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/sales_controller.dart';
 import 'build_item.dart';
 
-class AddNewInstantSale extends StatelessWidget {
-  const AddNewInstantSale({
-    Key? key,
-    required this.controller,
-  }) : super(key: key);
-
-  final SalesController controller;
+class AddNewInstantSaleWidget extends GetView<SalesController> {
+  const AddNewInstantSaleWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +30,18 @@ class AddNewInstantSale extends StatelessWidget {
                   children: [
                     Flexible(
                       child: CustomDropdownField(
-                        isRequired: true,
-                        items: controller.itemsName,
-                        label: '${'item'.tr} ${index + 1} ',
+                        label: 'item',
                         hint: 'itemExample',
+                        dropdownField: controller.products.map((e) {
+                          return DropdownMenuItem<String>(
+                            value: e.id.toString(),
+                            child: Text(e.nameAr),
+                          );
+                        }).toList(),
+                        value: controller.products.any((e) =>
+                                e.id.toString() == item.selectedItem.value)
+                            ? item.selectedItem.value
+                            : null,
                         onChanged: (value) {
                           item.selectedItem.value = value!;
                         },
@@ -59,7 +62,9 @@ class AddNewInstantSale extends StatelessWidget {
                                 children: [
                                   CustomDropdownField(
                                     isRequired: true,
-                                    items: controller.itemsName,
+                                    items: controller.products
+                                        .map((a) => a.nameAr)
+                                        .toList(),
                                     label: '${'item'.tr} ${index + 1} ',
                                     hint: 'itemExample',
                                     onChanged: (value) {
@@ -67,7 +72,11 @@ class AddNewInstantSale extends StatelessWidget {
                                     },
                                   ),
                                   SizedBox(height: 20.h),
-                                  buildItem(context, item, index, animation),
+                                  BuildItem(
+                                    item: removedItem,
+                                    index: index,
+                                    animation: animation,
+                                  ),
                                 ],
                               ),
                             ),
@@ -78,8 +87,8 @@ class AddNewInstantSale extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: 20.h),
-                buildItem(context, item, index, animation),
-                SizedBox(height: 15.h),
+                BuildItem(item: item, index: index, animation: animation),
+                SizedBox(height: 20.h),
                 if (index == controller.items.length - 1)
                   Column(
                     children: [

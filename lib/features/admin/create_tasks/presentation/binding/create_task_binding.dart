@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-import '../../../employee_section/data/repositorie_imp/employee_section_implement.dart';
+import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../employee_section/presentation/controllers/employee_service.dart';
 import '../../../employee_tasks/presentation/controllers/employee_task_service.dart';

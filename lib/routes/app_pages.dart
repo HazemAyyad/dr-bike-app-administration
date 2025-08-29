@@ -58,8 +58,8 @@ import '../features/admin/target_section/presentation/views/target_section_scree
 import '../features/admin/target_section/presentation/widgets/add_new_target/add_new_target_screen.dart';
 import '../features/admin/target_section/presentation/widgets/target_details/target_details_screen.dart';
 import '../features/admin/employee_tasks/presentation/views/task_details_screen.dart';
-import '../features/admin/sales/presentation/widgets/new_cash_profit.dart';
-import '../features/admin/sales/presentation/widgets/new_instant_sale/new_instant_sale_screen.dart';
+import '../features/admin/sales/presentation/views/new_cash_profit_screen.dart';
+import '../features/admin/sales/presentation/views/new_instant_sale_screen.dart';
 import '../features/auth/presentation/login/binding/login_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/binding/sgin_up_verify_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/views/sgin_up_verify_screen.dart';
@@ -433,6 +433,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.NEWMAINTENANCESCREEN,
       page: () => const NewMaintenanceScreen(),
+      binding: MaintenanceBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,

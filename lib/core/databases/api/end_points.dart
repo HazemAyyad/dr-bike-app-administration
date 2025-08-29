@@ -112,6 +112,15 @@ class EndPoints {
 
   // stock
   static const String getProductsList = 'get/products/list';
+
+  // sales
+  static const String allProducts = 'all/products';
+
+  static const String createProfitSale = 'create/profit/sale';
+  static const String allProfitSales = 'all/profit/sales';
+
+  static const String createInstantSale = 'create/instant/sale';
+  static const String allInstantSales = 'all/instant/sales';
 }
 
 class ApiKey {

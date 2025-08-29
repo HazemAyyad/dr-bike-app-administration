@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/--/data/datasources/admin_remote_datasource.dart';
 import 'package:doctorbike/features/admin/--/data/repositories/admin_implement.dart';
+import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -14,12 +15,13 @@ import '../../features/admin/create_tasks/data/repositories/employee_tasks_imple
 import '../../features/admin/debts/data/datasources/debet_datasource.dart';
 import '../../features/admin/debts/data/repositories/debts_implement.dart';
 import '../../features/admin/debts/presentation/controllers/debts_data_service.dart';
-import '../../features/admin/employee_section/data/datasources/employee_section_remote_datasource.dart';
-import '../../features/admin/employee_section/data/repositorie_imp/employee_section_implement.dart';
+import '../../features/admin/employee_section/data/datasources/employee_datasource.dart';
+import '../../features/admin/employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../features/admin/employee_section/presentation/controllers/employee_service.dart';
 import '../../features/admin/employee_tasks/data/datasources/employee_tasks_remote_datasource.dart';
 import '../../features/admin/employee_tasks/data/repositories/employee_tasks_implement.dart';
 import '../../features/admin/employee_tasks/presentation/controllers/employee_task_service.dart';
+import '../../features/admin/sales/data/repositories/sales_implement.dart';
 import '../../features/admin/special_tasks/data/datasources/special_tasks_datasource.dart';
 import '../../features/admin/special_tasks/data/repositories/special_tasks_implement.dart';
 import '../../features/admin/special_tasks/presentation/controllers/special_tasks_service.dart';
@@ -67,6 +69,23 @@ class InitialBindings implements Bindings {
     print('User Token: $userToken');
     Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
     Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true);
+
+    // قسم الموظين
+    Get.lazyPut<EmployeeDatasource>(
+      () => EmployeeDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<EmployeeImplement>(
+      () => EmployeeImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        employeeDatasource: Get.find<EmployeeDatasource>(),
+      ),
+      fenix: true,
+    );
+    Get.lazyPut<EmployeeService>(
+      () => EmployeeService(),
+      fenix: true,
+    );
 
     // auth feature
     Get.lazyPut<AuthRemoteDataSource>(
@@ -118,23 +137,6 @@ class InitialBindings implements Bindings {
     );
     Get.lazyPut<DebtsDataService>(
       () => DebtsDataService(),
-      fenix: true,
-    );
-
-    // قسم الموظين
-    Get.lazyPut<EmployeeDatasource>(
-      () => EmployeeDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut<EmployeeImplement>(
-      () => EmployeeImplement(
-        networkInfo: Get.find<NetworkInfo>(),
-        employeeDatasource: Get.find<EmployeeDatasource>(),
-      ),
-      fenix: true,
-    );
-    Get.lazyPut<EmployeeService>(
-      () => EmployeeService(),
       fenix: true,
     );
 
@@ -220,6 +222,19 @@ class InitialBindings implements Bindings {
       () => ChecksImplement(
         networkInfo: Get.find<NetworkInfo>(),
         checksDatasource: Get.find<ChecksDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // sales
+    Get.lazyPut<SalesDatasource>(
+      () => SalesDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<SalesImplement>(
+      () => SalesImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        salesDatasource: Get.find<SalesDatasource>(),
       ),
       fenix: true,
     );

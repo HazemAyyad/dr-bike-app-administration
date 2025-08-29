@@ -398,7 +398,7 @@ class ChecksController extends GetxController
 
   // get cashed to person checks
   final Rxn<ArchiveDataModel> archiveData = Rxn<ArchiveDataModel>(null);
-  Map<String, List<CheckModel>> archiveTasks = {};
+  final Map<String, List<CheckModel>> archiveTasks = {};
 
   Future<void> getArchive() async {
     isLoading(true);

@@ -22,6 +22,7 @@ class AssetsManger {
   static const String successAnimation = "$imagesPath/success_animation.gif";
 
   static const String boxesImage = "$imagesPath/Group.png";
+  static const String salesImage = "$imagesPath/Sales.png";
 
   //OTP
   // static const String vertified = "$imagePath/vertified.svg";

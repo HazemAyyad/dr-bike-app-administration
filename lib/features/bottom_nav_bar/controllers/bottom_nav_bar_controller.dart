@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 
 import '../../admin/--/presentation/dashbord/controllers/dashboard_controller.dart';
 import '../../admin/--/presentation/dashbord/views/dashboard_screen.dart';
-import '../../admin/employee_section/data/repositorie_imp/employee_section_implement.dart';
+import '../../admin/employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
 import '../../admin/employee_section/presentation/controllers/employee_service.dart';
 import '../../employee/scan_qrcode/data/repositories/scan_qrcode_implement.dart';

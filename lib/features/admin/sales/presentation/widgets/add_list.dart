@@ -1,3 +1,4 @@
+import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -6,13 +7,8 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 
-class AddList extends StatelessWidget {
-  const AddList({
-    Key? key,
-    required this.controller,
-  }) : super(key: key);
-
-  final dynamic controller;
+class AddList extends GetView<SalesController> {
+  const AddList({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -53,19 +49,13 @@ class AddList extends StatelessWidget {
                       ),
                 ),
                 SizedBox(height: 8.h),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: controller.addList.length,
-                  itemBuilder: (context, index) {
-                    final item = controller.addList[index];
-                    return BuildAddMenuItem(
-                      title: item['title'],
-                      iconAsset: item['icon'],
-                      route: item['route'],
-                      onTap: () => controller.toggleAddMenu(),
-                    );
-                  },
+                ...controller.addList.map(
+                  (item) => BuildAddMenuItem(
+                    title: item['title']!,
+                    iconAsset: item['icon']!,
+                    route: item['route']!,
+                    onTap: () => controller.toggleAddMenu(),
+                  ),
                 ),
               ],
             ),

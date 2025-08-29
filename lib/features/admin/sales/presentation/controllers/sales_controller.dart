@@ -1,18 +1,40 @@
+import 'package:doctorbike/features/admin/sales/data/models/product_model.dart';
+import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
+import 'package:doctorbike/features/admin/sales/domain/usecases/add_instant_sales_usecase.dart';
+import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sales_usecase.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../domain/usecases/add_profit_sale.dart';
+import '../../domain/usecases/get_all_products_usecase.dart';
+import '../../domain/usecases/get_profit_sales_usecase.dart';
 import 'sales_service.dart';
 
 class SalesController extends GetxController
     with GetSingleTickerProviderStateMixin {
+  final AddProfitSaleUsecase addProfitSaleUsecase;
+  final GetProfitSalesUsecase getProfitSalesUsecase;
+  final GetInstantSalesUsecase getInstantSalesUsecase;
+  final GetAllProductsUsecase getAllProductsUsecase;
+  final AddInstantSalesUsecase addInstantSalesUsecase;
   final SalesService salesService;
+
+  SalesController({
+    required this.salesService,
+    required this.addProfitSaleUsecase,
+    required this.getProfitSalesUsecase,
+    required this.getInstantSalesUsecase,
+    required this.getAllProductsUsecase,
+    required this.addInstantSalesUsecase,
+  });
+
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
   final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
 
-  SalesController({required this.salesService});
-  final TextEditingController quantityController = TextEditingController();
-  final TextEditingController priceController = TextEditingController();
   final TextEditingController discountController = TextEditingController();
   final TextEditingController totalController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
@@ -28,77 +50,12 @@ class SalesController extends GetxController
 
   final targets = <Map<String, dynamic>>[].obs;
 
-  final RxInt selectedTypeIndex = 0.obs;
-
   final isLoading = false.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
-    fetchOrders();
   }
 
-  void fetchOrders() {
-    // Simulate fetching orders based on the current tab
-    targets.clear();
-    if (currentTab.value == 0) {
-      targets.addAll(
-        [
-          {
-            'id': '1',
-            'image':
-                'https://marketplace.canva.com/EAE0GDU32B8/1/0/1131w/canva-%D9%81%D8%A7%D8%AA%D9%88%D8%B1%D8%A9-%D8%A3%D8%B2%D8%B1%D9%82-%D9%88%D8%A3%D8%B5%D9%81%D8%B1-%D8%B9%D9%85%D9%84-%D8%AA%D8%AC%D8%A7%D8%B1%D9%8A-K5dvNWT48wY.jpg',
-            'total': '3000',
-            'items': {
-              'موتور بنزين': '2000',
-              'زمور': '30',
-            },
-            'day': 'الاحد',
-          },
-          {
-            'id': '2',
-            'image':
-                'https://marketplace.canva.com/EAE0GDU32B8/1/0/1131w/canva-%D9%81%D8%A7%D8%AA%D9%88%D8%B1%D8%A9-%D8%A3%D8%B2%D8%B1%D9%82-%D9%88%D8%A3%D8%B5%D9%81%D8%B1-%D8%B9%D9%85%D9%84-%D8%AA%D8%AC%D8%A7%D8%B1%D9%8A-K5dvNWT48wY.jpg',
-            'total': '2000',
-            'items': {
-              'موتور بنزين': '2000',
-            },
-            'day': 'الاثنين',
-          },
-        ],
-      );
-    } else if (currentTab.value == 1) {
-      targets.addAll(
-        [
-          {
-            'id': '2',
-            'image':
-                'https://marketplace.canva.com/EAE0GDU32B8/1/0/1131w/canva-%D9%81%D8%A7%D8%AA%D9%88%D8%B1%D8%A9-%D8%A3%D8%B2%D8%B1%D9%82-%D9%88%D8%A3%D8%B5%D9%81%D8%B1-%D8%B9%D9%85%D9%84-%D8%AA%D8%AC%D8%A7%D8%B1%D9%8A-K5dvNWT48wY.jpg',
-            'total': '2000',
-            'items': {
-              'بيع لوحة الكترونية مستعملة موجودة بالمخزن الاول': '',
-            },
-            'day': 'الاثنين',
-          },
-          {
-            'id': '1',
-            'image':
-                'https://marketplace.canva.com/EAE0GDU32B8/1/0/1131w/canva-%D9%81%D8%A7%D8%AA%D9%88%D8%B1%D8%A9-%D8%A3%D8%B2%D8%B1%D9%82-%D9%88%D8%A3%D8%B5%D9%81%D8%B1-%D8%B9%D9%85%D9%84-%D8%AA%D8%AC%D8%A7%D8%B1%D9%8A-K5dvNWT48wY.jpg',
-            'total': '3000',
-            'items': {
-              'بيع لوحة الكترونية مستعملة موجودة بالمخزن الاول': '',
-            },
-            'day': 'الاحد',
-          },
-        ],
-      );
-    }
-  }
-
-  List<String> itemsName = [
-    'موتور بنزين',
-    'زمور',
-    'بيع لوحة الكترونية مستعملة موجودة بالمخزن الاول',
-  ];
   final items = <ItemModel>[ItemModel()].obs;
 
   void addItem() {
@@ -140,33 +97,179 @@ class SalesController extends GetxController
     {
       'title': 'receiveMaintenance',
       'icon': AssetsManger.userIcon,
-      'route': AppRoutes.NEWCASHPROFITSCREEN,
+      'route': AppRoutes.NEWMAINTENANCESCREEN,
     },
   ];
 
-  @override
-  void onClose() {
-    animController.dispose();
-    quantityController.dispose();
-    priceController.dispose();
-    discountController.dispose();
-    totalController.dispose();
-    noteController.dispose();
-    totalCostController.dispose();
-    fromDateController.dispose();
-    toDateController.dispose();
-    employeeNameController.dispose();
-    for (var item in items) {
-      item.quantityController.dispose();
-      item.priceController.dispose();
+  // add profit sale
+  Future<void> addProfitSale({required BuildContext context}) async {
+    if (formKey.currentState!.validate()) {
+      isLoading(true);
+      final result = await addProfitSaleUsecase.call(
+        notes: noteController.text,
+        totalCost: totalCostController.text,
+      );
+      result.fold(
+        (failure) {
+          String errorMessages = '';
+          bool permissionsAdded = false;
+          final errors = failure.data?['errors'] as Map<String, dynamic>?;
+          if (errors != null) {
+            errors.forEach((key, value) {
+              if (key.startsWith('permissions')) {
+                if (!permissionsAdded) {
+                  errorMessages += "Permissions: ${value.first}\n";
+                  permissionsAdded = true;
+                }
+              } else {
+                for (var msg in value) {
+                  errorMessages += "- $key: $msg\n";
+                }
+              }
+            });
+          } else {
+            errorMessages = failure.data?['message'] ?? failure.errMessage;
+          }
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: errorMessages,
+          );
+        },
+        (success) {
+          noteController.clear();
+          totalCostController.clear();
+          Get.back();
+          Future.delayed(
+            Duration(milliseconds: 1500),
+            () {
+              getProfitSales();
+              Get.back();
+            },
+          );
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
+        },
+      );
     }
-    super.onClose();
+    isLoading(false);
+  }
+
+  // add instant sale
+  Future<void> addInstantSale({required BuildContext context}) async {
+    if (formKey.currentState!.validate()) {
+      isLoading(true);
+      final result = await addInstantSalesUsecase.call(
+        productId: items.first.selectedItem.value,
+        quantity: items.first.quantityController.text,
+        cost: items.first.priceController.text,
+        discount: discountController.text,
+        totalCost: totalController.text,
+        note: noteController.text,
+        type: 'normal',
+        projectId: '',
+        otherProducts: items,
+      );
+      result.fold(
+        (failure) {
+          String errorMessages = '';
+          bool permissionsAdded = false;
+          final errors = failure.data?['errors'] as Map<String, dynamic>?;
+          if (errors != null) {
+            errors.forEach((key, value) {
+              if (key.startsWith('permissions')) {
+                if (!permissionsAdded) {
+                  errorMessages += "Permissions: ${value.first}\n";
+                  permissionsAdded = true;
+                }
+              } else {
+                for (var msg in value) {
+                  errorMessages += "- $key: $msg\n";
+                }
+              }
+            });
+          } else {
+            errorMessages = failure.data?['message'] ?? failure.errMessage;
+          }
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: errorMessages,
+          );
+        },
+        (success) async {
+          noteController.clear();
+          totalCostController.clear();
+          items.map((e) => e.quantityController.clear());
+          items.map((e) => e.priceController.clear());
+          items.map((e) => e.selectedItem.value = '');
+          discountController.clear();
+          totalController.clear();
+          Future.delayed(
+            Duration(milliseconds: 1500),
+            () {
+              getInstantSales();
+              Get.back();
+              Get.back();
+            },
+          );
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
+        },
+      );
+    }
+    isLoading(false);
+  }
+
+  // get profit sales
+  final Map<String, List<ProfitSale>> profitSalesTasks = {};
+
+  void getProfitSales() async {
+    isLoading(true);
+    profitSalesTasks.clear();
+    for (var profitSale in await getProfitSalesUsecase.call()) {
+      String dateKey =
+          "${profitSale.createdAt.year}-${profitSale.createdAt.month}";
+      if (profitSalesTasks.containsKey(dateKey)) {
+        if (!profitSalesTasks[dateKey]!.any((a) => a.id == profitSale.id)) {
+          profitSalesTasks[dateKey]!.add(profitSale);
+        }
+      } else {
+        profitSalesTasks[dateKey] = [profitSale];
+      }
+    }
+    isLoading(false);
+  }
+
+  // get instant sales
+  // final Map<String, List<InstantSalesModel>> instantSalesTasks = {};
+
+  void getInstantSales() async {
+    isLoading(true);
+    final result = await getInstantSalesUsecase.call();
+    salesService.instantSalesTasks.assignAll(result);
+    isLoading(false);
+  }
+
+  // get all products
+  final List<ProductModel> products = [];
+  void getAllProducts() async {
+    final result = await getAllProductsUsecase.call();
+    products.assignAll(result);
   }
 
   @override
   void onInit() {
     super.onInit();
-    fetchOrders();
+    getProfitSales();
+    getInstantSales();
+    getAllProducts();
     animController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 300),
@@ -184,6 +287,23 @@ class SalesController extends GetxController
         animController.reverse();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    animController.dispose();
+    discountController.dispose();
+    totalController.dispose();
+    noteController.dispose();
+    totalCostController.dispose();
+    fromDateController.dispose();
+    toDateController.dispose();
+    employeeNameController.dispose();
+    for (var item in items) {
+      item.quantityController.dispose();
+      item.priceController.dispose();
+    }
+    super.dispose();
   }
 }
 

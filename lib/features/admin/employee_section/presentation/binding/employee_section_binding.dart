@@ -2,7 +2,7 @@ import 'package:doctorbike/features/admin/employee_section/domain/usecases/add_e
 import 'package:doctorbike/features/admin/employee_section/domain/usecases/get_all_employee.dart';
 import 'package:get/get.dart';
 
-import '../../data/repositorie_imp/employee_section_implement.dart';
+import '../../data/repositorie_imp/employee_implement.dart';
 import '../../domain/usecases/add_points_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
