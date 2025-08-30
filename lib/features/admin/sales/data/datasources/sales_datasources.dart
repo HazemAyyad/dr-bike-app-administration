@@ -113,27 +113,27 @@ class SalesDatasource {
     required RxList<ItemModel> otherProducts,
   }) async {
     try {
-      final otherProductsMap = <String, dynamic>{};
+      // final otherProductsMap = <String, dynamic>{};
 
-      for (int i = 1; i < otherProducts.length; i++) {
-        otherProductsMap['other_products[$i][product_id]'] =
-            otherProducts[i].selectedItem.value;
-        otherProductsMap['other_products[$i][cost]'] =
-            otherProducts[i].priceController.text;
-        otherProductsMap['other_products[$i][quantity]'] =
-            otherProducts[i].quantityController.text;
-        otherProductsMap['other_products[$i][type]'] = 'normal';
-      }
+      // for (int i = 1; i < otherProducts.length; i++) {
+      //   otherProductsMap['other_products[$i][product_id]'] =
+      //       otherProducts[i].selectedItem.value;
+      //   otherProductsMap['other_products[$i][cost]'] =
+      //       otherProducts[i].priceController.text;
+      //   otherProductsMap['other_products[$i][quantity]'] =
+      //       otherProducts[i].quantityController.text;
+      //   otherProductsMap['other_products[$i][type]'] = 'normal';
+      // }
       final otherProductsList = otherProducts
           .map((item) => {
                 'product_id': item.selectedItem.value,
                 'cost': item.priceController.text,
                 'quantity': item.quantityController.text,
-                'type': 'normal',
+                'type':
+                    item.selectedCustomersSellers.value ? 'project' : 'normal',
               })
           .toList();
 
-      print("==================== $otherProductsMap");
       final response = await api.post(
         EndPoints.createInstantSale,
         data: {
@@ -150,7 +150,7 @@ class SalesDatasource {
         },
         isFormData: true,
       );
-      print("==================== ${response.data}");
+      // print("==================== ${response.data}");
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

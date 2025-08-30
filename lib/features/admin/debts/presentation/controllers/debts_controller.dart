@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../checks/data/models/check_model.dart';
 import '../../domain/usecases/add_debt_usecase.dart';
 import '../../domain/usecases/debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/debts_we_owe_usecase.dart';
@@ -19,6 +22,7 @@ class DebtsController extends GetxController {
   final AddDebtUsecase addDebtUsecase;
   final DebtsWeOweUsecase debtsWeOwe;
 
+  final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final UserTransactionsUsecase userTransactionsData;
 
   final DebtsDataService dataService;
@@ -30,10 +34,13 @@ class DebtsController extends GetxController {
     required this.userTransactionsData,
     required this.debtsWeOwe,
     required this.addDebtUsecase,
+    required this.allCustomersSellersUsecase,
     required this.dataService,
   });
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  final RxBool selectedCustomersSellers = false.obs;
 
   RxInt currentTab = 0.obs;
   RxList<Map<String, dynamic>> debts = <Map<String, dynamic>>[].obs;
@@ -43,7 +50,7 @@ class DebtsController extends GetxController {
   final TextEditingController moreDetailsController = TextEditingController();
   final TextEditingController dueDateController = TextEditingController();
 
-  String customerName = '';
+  // String customerName = '';
   // Rx<File?> selectedFile = Rx<File?>(null);
   List<File> selectedFile = [];
 
@@ -98,7 +105,7 @@ class DebtsController extends GetxController {
     isDebtsWeOweLoading(false);
   }
 
-  void getUserTransactionsData(String customerId) async {
+  void getUserTransactionsData(String customerId, String sellerId) async {
     if (dataService.customerId != customerId) {
       userTransactionsLoading(true);
       dataService.userTransactionsDataModel.value = null;
@@ -107,7 +114,10 @@ class DebtsController extends GetxController {
       userTransactionsLoading(false);
     }
 
-    final result = await userTransactionsData.call(customerId: customerId);
+    final result = await userTransactionsData.call(
+      customerId: customerId,
+      sellerId: sellerId,
+    );
     result.fold((failure) {}, (success) {
       dataService.userTransactionsDataModel.value = success;
     });
@@ -175,74 +185,94 @@ class DebtsController extends GetxController {
   final RxBool isLoading = false.obs;
 
   // add Debts
-  void addDebts(BuildContext context, String customerId, String type) async {
-    if (formKey.currentState?.validate() ?? false) {
-      if (totalDebtController.text.isEmpty ||
-          dueDateController.text.isEmpty ||
-          customerName.isEmpty) {
-        Get.snackbar(
-          'error'.tr,
-          'debtCreatedSuccessfully'.tr,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        return;
-      }
-      isLoading(true);
-      final result = await addDebtUsecase.call(
-        customerId: customerId,
-        dueDate: dueDateController.text,
-        total: totalDebtController.text,
-        receiptImage: selectedFile,
-        type: type,
-        notes: moreDetailsController.text,
+  void addDebts({
+    required BuildContext context,
+    required bool isCustomer,
+    required String customerId,
+    required String type,
+  }) async {
+    if (totalDebtController.text.isEmpty || dueDateController.text.isEmpty) {
+      Get.snackbar(
+        'error'.tr,
+        'pleaseFillAllFields'.tr,
+        snackPosition: SnackPosition.BOTTOM,
       );
-      result.fold(
-        (failure) {
-          final errors = failure.data['errors'];
-          String errorMessage = '';
-
-          if (errors is Map) {
-            errorMessage = errors.entries
-                .map((e) => "${e.key}: ${(e.value as List).join(', ')}")
-                .join("\n");
-          } else {
-            errorMessage = errors.toString();
-          }
-
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: errorMessage,
-          );
-        },
-        (success) {
-          getDebtsWeOwe();
-          getDebtsOwedToUs();
-          getTotalDebtsWeOwe();
-          getTotalDebtsOwedToUs();
-          Get.back();
-
-          Future.delayed(
-            Duration(milliseconds: 1500),
-            () {
-              Get.back();
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-        },
-      );
-      isLoading(false);
+      return;
     }
+    isLoading(true);
+    final result = await addDebtUsecase.call(
+      isCustomer: isCustomer,
+      customerId: customerId,
+      dueDate: dueDateController.text,
+      total: totalDebtController.text,
+      receiptImage: selectedFile,
+      type: type,
+      notes: moreDetailsController.text,
+    );
+    result.fold(
+      (failure) {
+        final errors = failure.data['errors'];
+        String errorMessage = '';
+
+        if (errors is Map) {
+          errorMessage = errors.entries
+              .map((e) => "${e.key}: ${(e.value as List).join(', ')}")
+              .join("\n");
+        } else {
+          errorMessage = errors.toString();
+        }
+
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: errorMessage,
+        );
+      },
+      (success) {
+        getDebtsWeOwe();
+        getDebtsOwedToUs();
+        getTotalDebtsWeOwe();
+        getTotalDebtsOwedToUs();
+        dueDateController.clear();
+        totalDebtController.clear();
+        moreDetailsController.clear();
+        selectedFile.clear();
+        Get.back();
+
+        Future.delayed(
+          Duration(milliseconds: 1500),
+          () {
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isLoading(false);
+  }
+
+  // get all customers and sellers
+  final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;
+  final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
+
+  void getAllCustomersAndSellers() async {
+    final resultCustomers = await allCustomersSellersUsecase.call(
+        endPoint: EndPoints.all_customers);
+    final resultSellers =
+        await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
+    allSellersList.assignAll(resultSellers);
+    allCustomersList.assignAll(resultCustomers);
   }
 
   @override
   void onInit() {
     super.onInit();
     getDebtsWeOwe();
+    getAllCustomersAndSellers();
   }
 
   @override

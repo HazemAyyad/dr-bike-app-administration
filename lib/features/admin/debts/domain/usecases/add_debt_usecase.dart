@@ -11,6 +11,7 @@ class AddDebtUsecase {
   AddDebtUsecase({required this.debtsRepository});
 
   Future<Either<Failure, String>> call({
+    required bool isCustomer,
     required String customerId,
     required String type,
     required String dueDate,
@@ -19,6 +20,7 @@ class AddDebtUsecase {
     required String notes,
   }) {
     return debtsRepository.addDebt(
+      isCustomer: isCustomer,
       customerId: customerId,
       type: type,
       dueDate: dueDate,

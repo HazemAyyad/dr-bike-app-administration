@@ -4,6 +4,7 @@ class InstantSalesModel {
   final String cost;
   final String totalCost;
   final String quantity;
+  final DateTime date;
   final String notes;
   final List<SubProductsModel> subProducts;
 
@@ -13,6 +14,7 @@ class InstantSalesModel {
     required this.cost,
     required this.totalCost,
     required this.quantity,
+    required this.date,
     required this.notes,
     this.subProducts = const [],
   });
@@ -24,6 +26,7 @@ class InstantSalesModel {
       cost: json['cost'] ?? '0',
       totalCost: json['total_cost'] ?? '0',
       quantity: json['quantity'] ?? '0',
+      date: DateTime.parse(json['date'] ?? ''),
       notes: json['notes'] ?? '',
       subProducts: (json['sub_products'] as List<dynamic>?)
               ?.map((e) => SubProductsModel.fromJson(e as Map<String, dynamic>))
@@ -39,6 +42,7 @@ class InstantSalesModel {
       'cost': cost,
       'total_cost': totalCost,
       'quantity': quantity,
+      'date': date,
       'notes': notes,
       'sub_products': subProducts.map((e) => e.toJson()).toList(),
     };

@@ -82,11 +82,15 @@ class DebetDatasource {
 
   Future<Map<String, dynamic>> userTransactionsData({
     required String customerId,
+    required String sellerId,
   }) async {
     try {
       final response = await api.post(
-        EndPoints.customerDebts,
-        data: {'customer_id': customerId},
+        EndPoints.personDebts,
+        data: {
+          if (customerId != '0') 'customer_id': customerId,
+          if (sellerId != '0') 'seller_id': sellerId,
+        },
       );
       // final data = response.data;
       // print('Response data: $response');
@@ -105,6 +109,7 @@ class DebetDatasource {
 
   // addDebt
   Future<Map<String, dynamic>> addDebt({
+    required bool isCustomer,
     required String customerId,
     required String type,
     required String dueDate,
@@ -116,7 +121,8 @@ class DebetDatasource {
       final response = await api.post(
         EndPoints.addDebt,
         data: {
-          'customer_id': customerId,
+          if (isCustomer) 'customer_id': customerId,
+          if (!isCustomer) 'seller_id': customerId,
           'type': type,
           'due_date': dueDate,
           'total': total,

@@ -1,9 +1,19 @@
-import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../domain/usecases/get_customers_usecase.dart';
+import 'general_data_serves.dart';
+
 class GeneralDataListController extends GetxController {
+  final GeneralDataServes generalDataServes;
+  final GetCustomersUseCase getCustomersUseCase;
+
+  GeneralDataListController({
+    required this.generalDataServes,
+    required this.getCustomersUseCase,
+  });
+
   final GlobalKey formKey = GlobalKey();
 
   TextEditingController toDateController = TextEditingController();
@@ -34,68 +44,12 @@ class GeneralDataListController extends GetxController {
   final List<Map<String, dynamic>> generalDatalist = [];
 
   final tabs = ['merchants', 'customers'];
-  @override
-  void onInit() {
-    super.onInit();
-    fetchOrders();
-  }
 
   void changeTab(int index) {
     currentTab.value = index;
-    fetchOrders();
   }
 
-  void fetchOrders() {
-    // Simulate fetching orders based on the current tab
-    generalDatalist.clear();
-    if (currentTab.value == 0) {
-      generalDatalist.addAll(
-        [
-          {
-            'customerName': 'ماجد احمد',
-            'customerPhoneNumber': '+9772548632',
-            'job': 'مهندس',
-            'image': AssetsManger.noImageNet,
-          },
-          {
-            'customerName': 'ماجد احمد',
-            'customerPhoneNumber': '+9772548632',
-            'job': 'مهندس',
-            'image': AssetsManger.noImageNet,
-          },
-          {
-            'customerName': 'ماجد احمد',
-            'customerPhoneNumber': '+9772548632',
-            'job': 'مهندس',
-            'image': AssetsManger.noImageNet,
-          },
-          {
-            'customerName': 'ماجد احمد',
-            'customerPhoneNumber': '+9772548632',
-            'job': 'مهندس',
-            'image': AssetsManger.noImageNet,
-          },
-        ],
-      );
-    } else if (currentTab.value == 1) {
-      generalDatalist.addAll(
-        [
-          {
-            'customerName': 'ماجد احمد',
-            'customerPhoneNumber': '+9772548632',
-            'job': 'مهندس',
-            'image': AssetsManger.noImageNet,
-          },
-          {
-            'customerName': 'ماجد احمد',
-            'customerPhoneNumber': '+9772548632',
-            'job': 'مهندس',
-            'image': AssetsManger.noImageNet,
-          },
-        ],
-      );
-    }
-  }
+  final isLoading = false.obs;
 
   List<String> customerTypeList = ['جملة', 'قطاعي'];
 
@@ -109,6 +63,29 @@ class GeneralDataListController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     }
+  }
+
+  //Get General Data List
+
+  void getGeneralDataList({bool isSellers = false, bool loding = false}) async {
+    generalDataServes.employeeDataList.isEmpty ||
+            generalDataServes.sellersDataList.isEmpty
+        ? isLoading(true)
+        : isLoading(false);
+    loding ? isLoading(true) : null;
+
+    final employeeResult = await getCustomersUseCase.call(isSellers: isSellers);
+    generalDataServes.employeeDataList.assignAll(employeeResult);
+
+    final sellersResult = await getCustomersUseCase.call(isSellers: true);
+    generalDataServes.sellersDataList.assignAll(sellersResult);
+    isLoading(false);
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    getGeneralDataList();
   }
 
   @override

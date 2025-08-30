@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/state_manager.dart';
 
-import '../../../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../../../core/helpers/custom_text_field.dart';
-import '../../../../../../../core/helpers/custom_upload_button.dart';
-import '../../../../../../../core/services/theme_service.dart';
-import '../../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../../core/helpers/custom_upload_button.dart';
+import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/project_management_controller.dart';
 import 'partnership_data.dart';
 

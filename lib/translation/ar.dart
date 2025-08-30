@@ -106,7 +106,7 @@ const Map<String, String> ar = {
   'check': 'شيك',
   'rejected': 'معدم',
   'reference': 'مرجع',
-  'cashed' : 'مقبول',
+  'cashed': 'مقبول',
 
   'employeeTasks': 'مهام الموظفين',
   'privateTasks': 'المهام الخاصة',
@@ -120,7 +120,7 @@ const Map<String, String> ar = {
   'sales': 'المبيعات',
   'generalData': 'البيانات العامة',
   'partnersDepartment': 'قسم الشراكات',
-  'inventory': 'المخزون',
+  'stock': 'المخزون',
   'boxes': 'الصناديق',
   'purchasingDepartment': 'قسم الشراء',
   'financialMatters': 'المصاريف والأمور المالية',
@@ -371,6 +371,7 @@ const Map<String, String> ar = {
   'currentFollowUps': 'متابعات جارية',
   'completedFollowUps': 'متابعات منتهية',
   'customerName': 'أسم الزبون',
+  'sellerName': 'أسم البائع',
   'productDetails': 'تفاصيل المنتج',
   'notifyCustomer': 'ابلاغ الزبون بالمنتج',
   'cancelFollowUp': 'الغاء المتابعة',
@@ -535,6 +536,8 @@ const Map<String, String> ar = {
   'cashProfit': 'ربح نقدي',
   'total': 'الاجمالي',
   'newInstantSale': 'بيع فوري جديد',
+  'saleForProject': 'بيع لمشروع',
+  'instantSale': 'بيع فوري',
 
   'item': 'الصنف',
   'itemExample': 'مثال : موتور',
@@ -634,4 +637,10 @@ const Map<String, String> ar = {
   'filesSelected': 'الملفات المحددة',
   "back": "رجوع",
   "delivered": "تم التسليم",
+
+  // قسم المخزون
+  // 'products': 'المنتجات',
+  'clearance': 'التصفيات',
+  'productComposition': 'تركيب منتج',
+  // 'stock': 'المخزون',
 };

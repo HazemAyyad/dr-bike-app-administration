@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/databases/api/api_consumer.dart';
+import 'package:doctorbike/core/databases/api/dio_consumer.dart';
 import 'package:doctorbike/features/admin/sales/data/models/product_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/add_instant_sales_usecase.dart';
@@ -5,9 +7,12 @@ import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sale
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../data/models/instant_sales_model.dart';
+import '../../data/models/ongoing_project_model.dart';
 import '../../domain/usecases/add_profit_sale.dart';
 import '../../domain/usecases/get_all_products_usecase.dart';
 import '../../domain/usecases/get_profit_sales_usecase.dart';
@@ -43,7 +48,6 @@ class SalesController extends GetxController
   // filters
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
-  final TextEditingController employeeNameController = TextEditingController();
 
   final currentTab = 0.obs;
   List<String> tabs = ['spotSale', 'cashProfit'];
@@ -141,9 +145,14 @@ class SalesController extends GetxController
           totalCostController.clear();
           Get.back();
           Future.delayed(
-            Duration(milliseconds: 1500),
+            Duration(milliseconds: 500),
             () {
-              getProfitSales();
+              getProfitSales(loding: true);
+            },
+          );
+          Future.delayed(
+            Duration(milliseconds: 1000),
+            () {
               Get.back();
             },
           );
@@ -169,8 +178,10 @@ class SalesController extends GetxController
         discount: discountController.text,
         totalCost: totalController.text,
         note: noteController.text,
-        type: 'normal',
-        projectId: '',
+        type: items.first.selectedCustomersSellers.value ? 'project' : 'normal',
+        projectId: items.first.selectedCustomersSellers.value
+            ? items.first.selectedValue.value!
+            : '',
         otherProducts: items,
       );
       result.fold(
@@ -179,18 +190,20 @@ class SalesController extends GetxController
           bool permissionsAdded = false;
           final errors = failure.data?['errors'] as Map<String, dynamic>?;
           if (errors != null) {
-            errors.forEach((key, value) {
-              if (key.startsWith('permissions')) {
-                if (!permissionsAdded) {
-                  errorMessages += "Permissions: ${value.first}\n";
-                  permissionsAdded = true;
+            errors.forEach(
+              (key, value) {
+                if (key.startsWith('permissions')) {
+                  if (!permissionsAdded) {
+                    errorMessages += "Permissions: ${value.first}\n";
+                    permissionsAdded = true;
+                  }
+                } else {
+                  for (var msg in value) {
+                    errorMessages += "- $key: $msg\n";
+                  }
                 }
-              } else {
-                for (var msg in value) {
-                  errorMessages += "- $key: $msg\n";
-                }
-              }
-            });
+              },
+            );
           } else {
             errorMessages = failure.data?['message'] ?? failure.errMessage;
           }
@@ -209,9 +222,14 @@ class SalesController extends GetxController
           discountController.clear();
           totalController.clear();
           Future.delayed(
-            Duration(milliseconds: 1500),
+            Duration(milliseconds: 500),
             () {
-              getInstantSales();
+              getProfitSales(loding: true);
+            },
+          );
+          Future.delayed(
+            Duration(milliseconds: 1000),
+            () {
               Get.back();
               Get.back();
             },
@@ -228,33 +246,128 @@ class SalesController extends GetxController
   }
 
   // get profit sales
-  final Map<String, List<ProfitSale>> profitSalesTasks = {};
-
-  void getProfitSales() async {
-    isLoading(true);
-    profitSalesTasks.clear();
+  void getProfitSales({bool loding = false}) async {
+    salesService.filterProfitSalesTasks.isEmpty ? isLoading(true) : null;
+    loding ? isLoading(true) : null;
+    // salesService.profitSalesTasks.clear();
     for (var profitSale in await getProfitSalesUsecase.call()) {
       String dateKey =
-          "${profitSale.createdAt.year}-${profitSale.createdAt.month}";
-      if (profitSalesTasks.containsKey(dateKey)) {
-        if (!profitSalesTasks[dateKey]!.any((a) => a.id == profitSale.id)) {
-          profitSalesTasks[dateKey]!.add(profitSale);
+          "${profitSale.createdAt.year}-${profitSale.createdAt.month}-${profitSale.createdAt.day}";
+      if (salesService.profitSalesTasks.containsKey(dateKey)) {
+        if (!salesService.profitSalesTasks[dateKey]!
+            .any((a) => a.id == profitSale.id)) {
+          salesService.profitSalesTasks[dateKey]!.add(profitSale);
+          salesService.filterProfitSalesTasks.assignAll(
+            salesService.profitSalesTasks,
+          );
         }
       } else {
-        profitSalesTasks[dateKey] = [profitSale];
+        salesService.profitSalesTasks[dateKey] = [profitSale];
+        salesService.filterProfitSalesTasks.assignAll(
+          salesService.profitSalesTasks,
+        );
       }
     }
     isLoading(false);
   }
 
   // get instant sales
-  // final Map<String, List<InstantSalesModel>> instantSalesTasks = {};
-
-  void getInstantSales() async {
-    isLoading(true);
-    final result = await getInstantSalesUsecase.call();
-    salesService.instantSalesTasks.assignAll(result);
+  void getInstantSales({bool loding = false}) async {
+    salesService.filterInstantSalesTasks.isNotEmpty
+        ? isLoading(false)
+        : isLoading(true);
+    loding ? isLoading(true) : null;
+    for (var instantSale in await getInstantSalesUsecase.call()) {
+      String dateKey =
+          "${instantSale.date.year}-${instantSale.date.month}-${instantSale.date.day}";
+      if (salesService.instantSalesTasks.containsKey(dateKey)) {
+        if (!salesService.instantSalesTasks[dateKey]!
+            .any((a) => a.id == instantSale.id)) {
+          salesService.instantSalesTasks[dateKey]!.add(instantSale);
+          salesService.filterInstantSalesTasks
+              .assignAll(salesService.instantSalesTasks);
+        }
+      } else {
+        salesService.instantSalesTasks[dateKey] = [instantSale];
+        salesService.filterInstantSalesTasks
+            .assignAll(salesService.instantSalesTasks);
+      }
+    }
     isLoading(false);
+  }
+
+  // بيانات العرض بعد الفلترة
+  void filterLists(bool isFilter) {
+    isLoading(true);
+    final from = DateTime.tryParse(fromDateController.text);
+    final to = DateTime.tryParse(toDateController.text);
+
+    if (from == null && to == null) {
+      salesService.filterProfitSalesTasks.assignAll(
+        salesService.profitSalesTasks,
+      );
+      salesService.filterInstantSalesTasks
+          .assignAll(salesService.instantSalesTasks);
+      isFilter ? Get.back() : null;
+      isLoading(false);
+      return;
+    }
+
+    final Map<String, List<ProfitSale>> newMap = Map.fromEntries(
+      salesService.profitSalesTasks.entries.map((entry) {
+        final list = entry.value.where((task) {
+          final start = task.createdAt;
+          final end = task.updatedAt;
+          // لو فيه from فقط
+          if (from != null && to == null) {
+            return start.isAtSameMomentAs(from) || start.isAfter(from);
+          }
+          // لو فيه to فقط
+          if (to != null && from == null) {
+            return end.isAtSameMomentAs(to) || end.isBefore(to);
+          }
+          // لو الاتنين موجودين
+          if (from != null && to != null) {
+            final startsOk =
+                start.isAtSameMomentAs(from) || start.isAfter(from);
+            final endsOk = end.isAtSameMomentAs(to) || end.isBefore(to);
+            return startsOk && endsOk;
+          }
+          return true;
+        }).toList();
+        return MapEntry(entry.key, list);
+      }).where((e) => e.value.isNotEmpty),
+    );
+    final Map<String, List<InstantSalesModel>> newMap2 = Map.fromEntries(
+      salesService.instantSalesTasks.entries.map((entry) {
+        final list = entry.value.where((task) {
+          final start = task.date;
+          final end = task.date;
+          // لو فيه from فقط
+          if (from != null && to == null) {
+            return start.isAtSameMomentAs(from) || start.isAfter(from);
+          }
+          // لو فيه to فقط
+          if (to != null && from == null) {
+            return end.isAtSameMomentAs(to) || end.isBefore(to);
+          }
+          // لو الاتنين موجودين
+          if (from != null && to != null) {
+            final startsOk =
+                start.isAtSameMomentAs(from) || start.isAfter(from);
+            final endsOk = end.isAtSameMomentAs(to) || end.isBefore(to);
+            return startsOk && endsOk;
+          }
+          return true;
+        }).toList();
+        return MapEntry(entry.key, list);
+      }).where((e) => e.value.isNotEmpty),
+    );
+    isLoading(false);
+
+    salesService.filterProfitSalesTasks.assignAll(newMap);
+    salesService.filterInstantSalesTasks.assignAll(newMap2);
+    isFilter ? Get.back() : null;
   }
 
   // get all products
@@ -264,11 +377,25 @@ class SalesController extends GetxController
     products.assignAll(result);
   }
 
+  // get ongoing projects
+  final ApiConsumer api = Get.find<DioConsumer>();
+  final List<OngoingProject> ongoingProjects = [];
+  void getOngoingProjects() async {
+    final result = await api.get(EndPoints.ongoingProjects);
+    ongoingProjects.clear();
+    ongoingProjects.addAll(
+      (result.data['ongoing projects'] as List)
+          .map((e) => OngoingProject.fromJson(e))
+          .toList(),
+    );
+  }
+
   @override
   void onInit() {
     super.onInit();
-    getProfitSales();
+    getOngoingProjects();
     getInstantSales();
+    getProfitSales();
     getAllProducts();
     animController = AnimationController(
       vsync: this,
@@ -298,7 +425,6 @@ class SalesController extends GetxController
     totalCostController.dispose();
     fromDateController.dispose();
     toDateController.dispose();
-    employeeNameController.dispose();
     for (var item in items) {
       item.quantityController.dispose();
       item.priceController.dispose();
@@ -308,7 +434,9 @@ class SalesController extends GetxController
 }
 
 class ItemModel {
-  RxString selectedItem = ''.obs;
-  TextEditingController quantityController = TextEditingController();
-  TextEditingController priceController = TextEditingController();
+  final RxString selectedItem = ''.obs;
+  final RxBool selectedCustomersSellers = false.obs;
+  final RxnString selectedValue = RxnString();
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
 }

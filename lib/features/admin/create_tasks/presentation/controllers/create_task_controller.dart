@@ -145,11 +145,12 @@ class CreateTaskController extends GetxController {
   final RxString recordedPath = ''.obs;
 
   // دالة لإنشاء المهمة
-  void createTask(BuildContext context) async {
+  void createTask(BuildContext context, {int employeeTaskId = 0}) async {
     if (formKey.currentState!.validate() && selectedDays.value.isNotEmpty) {
       isLoding(true);
 
       final result = await createTaskUsecase.call(
+        employeeTaskId: employeeTaskId,
         name: taskNameController.text,
         description: taskDescriptionController.text,
         notes: taskNotesController.text,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
@@ -26,6 +27,8 @@ class CreateDebts extends GetView<DebtsController> {
 
   @override
   Widget build(BuildContext context) {
+    final RxnString selectedValue = RxnString();
+
     return SafeArea(
       child: Scaffold(
         extendBody: true,
@@ -39,16 +42,68 @@ class CreateDebts extends GetView<DebtsController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 16.h),
-                CustomDropdownField(
-                  label: 'customerName',
-                  hint: 'employeeNameExample',
-                  items: ['Employee 1', 'Employee 2', 'Employee 3'],
-                  onChanged: (value) {
-                    // Handle the change
-                    controller.customerName = value!;
-                    print('Selected employee: ${controller.customerName} ');
-                  },
-                  isRequired: true,
+                Obx(
+                  () => Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: CustomCheckBox(
+                          title: 'seller'.tr,
+                          value: RxBool(
+                              !controller.selectedCustomersSellers.value ==
+                                  true),
+                          onChanged: (val) {
+                            selectedValue.value = null;
+                            controller.selectedCustomersSellers.value = false;
+                          },
+                        ),
+                      ),
+                      Flexible(
+                        child: CustomCheckBox(
+                          title: 'customer'.tr,
+                          value: RxBool(
+                              !controller.selectedCustomersSellers.value ==
+                                  false),
+                          onChanged: (val) {
+                            selectedValue.value = null;
+                            controller.selectedCustomersSellers.value = true;
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Obx(
+                  () => CustomDropdownField(
+                    label: controller.selectedCustomersSellers.value == false
+                        ? 'customerName'.tr
+                        : 'sellerName'.tr,
+                    hint: 'employeeNameExample',
+                    dropdownField:
+                        controller.selectedCustomersSellers.value == false
+                            ? controller.allCustomersList
+                                .map(
+                                  (e) => DropdownMenuItem<String>(
+                                    value: e.id.toString(),
+                                    child: Text(e.name),
+                                  ),
+                                )
+                                .toList()
+                            : controller.allSellersList
+                                .map(
+                                  (e) => DropdownMenuItem<String>(
+                                    value: e.id.toString(),
+                                    child: Text(e.name),
+                                  ),
+                                )
+                                .toList(),
+                    value: selectedValue.value,
+                    onChanged: (val) {
+                      selectedValue.value = val!;
+                    },
+                  ),
                 ),
                 SizedBox(height: 20.h),
                 GestureDetector(
@@ -159,11 +214,14 @@ class CreateDebts extends GetView<DebtsController> {
                   isLoading: controller.isLoading,
                   text: 'createNewDebt',
                   onPressed: () {
-                    controller.addDebts(
-                      context,
-                      '8',
-                      supTitle == 'gave' ? 'owed to us' : 'we owe',
-                    );
+                    if (controller.formKey.currentState?.validate() ?? false) {
+                      controller.addDebts(
+                        context: context,
+                        isCustomer: !controller.selectedCustomersSellers.value,
+                        customerId: selectedValue.value!,
+                        type: supTitle == 'gave' ? 'owed to us' : 'we owe',
+                      );
+                    }
                   },
                   textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         color: Colors.white,

@@ -17,7 +17,7 @@ class EndPoints {
   static const String totalDebtsOwedToUs = 'total/debts/owed/to/us';
   static const String getDebtsOwedToUs = 'get/debts/owed/to/us';
   static const String getDebtsWeOwe = 'get/debts/we/owe';
-  static const String customerDebts = 'customer/debts';
+  static const String personDebts = 'person/debts';
   static const String addDebt = 'add/debt';
 
   // employees section
@@ -121,6 +121,13 @@ class EndPoints {
 
   static const String createInstantSale = 'create/instant/sale';
   static const String allInstantSales = 'all/instant/sales';
+
+  // projects
+  static const String ongoingProjects = 'ongoing/project';
+
+  // general data list
+  static const String mainPageCustomers = 'main/page/customers';
+  static const String mainPageSellers = 'main/page/sellers';
 }
 
 class ApiKey {

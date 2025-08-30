@@ -120,7 +120,7 @@ const Map<String, String> en = {
   'sales': 'Sales',
   'generalData': 'General Data',
   'partnersDepartment': 'Partnerships Section',
-  'inventory': 'Inventory',
+  'stock': 'Stock',
   'boxes': 'Boxes',
   'purchasingDepartment': 'Purchasing Section',
   'financialMatters': 'Expenses and Financial Affairs',
@@ -373,6 +373,7 @@ const Map<String, String> en = {
   'currentFollowUps': 'Ongoing Follow-Ups',
   'completedFollowUps': 'Completed Follow-Ups',
   'customerName': 'Customer Name',
+  'sellerName': 'Seller Name',
   'productDetails': 'Details',
   'notifyCustomer': 'Notify Customer',
   'cancelFollowUp': 'Cancel Follow',
@@ -536,6 +537,9 @@ const Map<String, String> en = {
   'cashProfit': 'Cash Profit',
   'total': 'Total',
   'newInstantSale': 'New Instant Sale',
+  'saleForProject': 'Sale for Project',
+  'instantSale': 'Instant Sale',
+
   'item': 'Item',
   'itemExample': 'Example: Motor',
   'quantity': 'Quantity',
@@ -634,5 +638,9 @@ const Map<String, String> en = {
   "selectImage": "Select Image",
   'filesSelected': 'Files Selected',
   "back": "Back",
-  "delivered": "Delivered"
+  "delivered": "Delivered",
+
+  // قسم المخزون
+  'clearance': 'Clearance',
+  'productComposition': 'Product Composition',
 };

@@ -18,9 +18,10 @@ abstract class DebtsRepository {
   Future<Either<Failure, DebtsWeOweModel>> debtsOwedToUs();
 
   Future<Either<Failure, UserTransactionsDataModel>> userTransactionsData(
-      {required String customerId});
+      {required String customerId, required String sellerId});
 
   Future<Either<Failure, String>> addDebt({
+    required bool isCustomer,
     required String customerId,
     required String type,
     required String dueDate,

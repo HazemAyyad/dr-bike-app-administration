@@ -334,9 +334,14 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                                 ),
                         onPressed: () {
                           if (controller.isEdit) {
-                            controller.title == 'editPrivateTask'
-                                ? controller.createSpecialTask(context)
-                                : controller.createTask(context);
+                            // controller.title == 'editPrivateTask'
+                            //     ? controller.createSpecialTask(context)
+                            //     :
+                            controller.createTask(
+                              context,
+                              employeeTaskId: controller.employeeTaskService
+                                  .taskDetails.value!.taskId,
+                            );
                           } else {
                             title == 'createNewEmployeeTask'
                                 ? controller.createTask(context)

@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/custom_chechbox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -88,6 +89,58 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                 ),
                 SizedBox(height: 20.h),
                 BuildItem(item: item, index: index, animation: animation),
+                SizedBox(height: 20.h),
+                Obx(
+                  () => Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: CustomCheckBox(
+                          title: 'instantSale'.tr,
+                          value: RxBool(
+                              !item.selectedCustomersSellers.value == true),
+                          onChanged: (val) {
+                            item.selectedValue.value = null;
+                            item.selectedCustomersSellers.value = false;
+                          },
+                        ),
+                      ),
+                      Flexible(
+                        child: CustomCheckBox(
+                          title: 'saleForProject'.tr,
+                          value: RxBool(
+                              !item.selectedCustomersSellers.value == false),
+                          onChanged: (val) {
+                            item.selectedValue.value = null;
+                            item.selectedCustomersSellers.value = true;
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Obx(
+                  () => item.selectedCustomersSellers.value
+                      ? CustomDropdownField(
+                          label: 'projectName'.tr,
+                          hint: 'projectNameExample',
+                          dropdownField: controller.ongoingProjects
+                              .map(
+                                (e) => DropdownMenuItem<String>(
+                                  value: e.id.toString(),
+                                  child: Text(e.name),
+                                ),
+                              )
+                              .toList(),
+                          value: item.selectedValue.value,
+                          onChanged: (val) {
+                            item.selectedValue.value = val!;
+                          },
+                        )
+                      : SizedBox.shrink(),
+                ),
                 SizedBox(height: 20.h),
                 if (index == controller.items.length - 1)
                   Column(

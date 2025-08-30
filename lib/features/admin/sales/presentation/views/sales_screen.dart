@@ -24,9 +24,11 @@ class SalesScreen extends GetView<SalesController> {
         onPressedAdd: () {
           controller.toggleAddMenu();
         },
+        onPressedFilter: () {
+          controller.filterLists(true);
+        },
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
-        employeeNameController: controller.employeeNameController,
       ),
       body: Stack(
         children: [
@@ -52,11 +54,13 @@ class SalesScreen extends GetView<SalesController> {
                       );
                     }
                     if (controller.currentTab.value == 0) {
-                      if (controller.salesService.instantSalesTasks.isEmpty) {
+                      if (controller
+                          .salesService.filterInstantSalesTasks.isEmpty) {
                         return SliverFillRemaining(child: ShowNoData());
                       }
                     } else if (controller.currentTab.value == 1) {
-                      if (controller.profitSalesTasks.isEmpty) {
+                      if (controller
+                          .salesService.filterProfitSalesTasks.isEmpty) {
                         return SliverFillRemaining(child: ShowNoData());
                       }
                     }
@@ -64,28 +68,60 @@ class SalesScreen extends GetView<SalesController> {
                       delegate: controller.currentTab.value == 0
                           ? SliverChildBuilderDelegate(
                               (context, index) {
-                                final instantSales = controller
-                                    .salesService.instantSalesTasks.reversed
-                                    .toList()[index];
-                                return Column(
-                                  children: [
-                                    SizedBox(height: index == 0 ? 35.h : 0.h),
-                                    InstantSaleCard(instantSale: instantSales),
-                                  ],
-                                );
-                              },
-                              childCount: controller
-                                  .salesService.instantSalesTasks.length,
-                            )
-                          : SliverChildBuilderDelegate(
-                              (context, index) {
-                                final month = controller.profitSalesTasks.keys
+                                final month = controller
+                                    .salesService.filterInstantSalesTasks.keys
                                     .toList()
                                     .reversed
                                     .toList()[index];
 
-                                final sales = controller
-                                    .profitSalesTasks[month]!.reversed
+                                final sales = controller.salesService
+                                    .filterInstantSalesTasks[month]!.reversed
+                                    .toList();
+                                return Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          month.toString(),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineMedium!
+                                              .copyWith(
+                                                color: AppColors.primaryColor,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15.sp,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 5.h),
+                                    Container(
+                                      height: 1.h,
+                                      width: double.infinity,
+                                      color: AppColors.primaryColor,
+                                    ),
+                                    SizedBox(height: 10.h),
+                                    ...sales.map(
+                                      (instantSales) => InstantSaleCard(
+                                        instantSale: instantSales,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                              childCount: controller
+                                  .salesService.filterInstantSalesTasks.length,
+                            )
+                          : SliverChildBuilderDelegate(
+                              (context, index) {
+                                final month = controller
+                                    .salesService.filterProfitSalesTasks.keys
+                                    .toList()
+                                    .reversed
+                                    .toList()[index];
+
+                                final sales = controller.salesService
+                                    .filterProfitSalesTasks[month]!.reversed
                                     .toList();
                                 return Column(
                                   children: [
@@ -118,7 +154,8 @@ class SalesScreen extends GetView<SalesController> {
                                   ],
                                 );
                               },
-                              childCount: controller.profitSalesTasks.length,
+                              childCount: controller
+                                  .salesService.filterProfitSalesTasks.length,
                             ),
                     );
                   },

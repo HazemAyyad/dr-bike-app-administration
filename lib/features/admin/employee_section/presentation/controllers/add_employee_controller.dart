@@ -90,7 +90,7 @@ class AddEmployeeController extends GetxController {
     {'name': 'sales'.tr, 'id': '30', 'permission': false.obs},
     {'name': 'generalData'.tr, 'id': '31', 'permission': false.obs},
     {'name': 'partnersDepartment'.tr, 'id': '32', 'permission': false.obs},
-    {'name': 'inventory'.tr, 'id': '33', 'permission': false.obs},
+    {'name': 'stock'.tr, 'id': '33', 'permission': false.obs},
     {'name': 'boxes'.tr, 'id': '34', 'permission': false.obs},
     {'name': 'purchasingDepartment'.tr, 'id': '35', 'permission': false.obs},
     {'name': 'financialMatters'.tr, 'id': '36', 'permission': false.obs},

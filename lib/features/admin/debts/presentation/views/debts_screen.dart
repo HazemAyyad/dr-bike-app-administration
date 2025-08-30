@@ -76,7 +76,7 @@ class DebtsScreen extends GetView<DebtsController> {
                     tabs: controller.tabs,
                     currentTab: controller.currentTab,
                     changeTab: controller.changeTab,
-                    width: 250.w,
+                    // width: 250.w,
                   ),
                   SizedBox(height: 15.h),
                 ],

@@ -22,6 +22,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
 
   @override
   Future<Either<Failure, String>> creatEmployeeTasks({
+    required int employeeTaskId,
     required String name,
     required String description,
     required String notes,
@@ -42,6 +43,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     }
     try {
       final result = await employeeTasksDataSource.creatEmployeeTasks(
+        employeeTaskId: employeeTaskId,
         name: name,
         description: description,
         notes: notes,

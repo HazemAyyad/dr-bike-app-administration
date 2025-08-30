@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../--/presentation/project_management/widgets/project_details/sup_text_and_dis.dart';
+import '../../../project_management/presentation/widgets/project_details/sup_text_and_dis.dart';
 import '../controllers/general_data_list_controller.dart';
 
 class GlobalCustomerDataScreen extends GetView<GeneralDataListController> {
@@ -11,7 +11,7 @@ class GlobalCustomerDataScreen extends GetView<GeneralDataListController> {
 
   @override
   Widget build(BuildContext context) {
-    var globalData = Get.arguments;
+    // var globalData = Get.arguments;
     return Scaffold(
       appBar: CustomAppBar(
         title: 'customerDetails',
@@ -20,7 +20,7 @@ class GlobalCustomerDataScreen extends GetView<GeneralDataListController> {
           GestureDetector(
             onTap: () {
               // Handle cancel order action
-              print('Cancel ${globalData['customerName']}');
+              print('Cancel ${'customerName'}');
             },
             child: Container(
               margin: EdgeInsets.symmetric(horizontal: 20.w),
@@ -52,22 +52,19 @@ class GlobalCustomerDataScreen extends GetView<GeneralDataListController> {
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [
           // target details view
-          supTextAndDis(context, 'customerName', globalData['customerName']),
-          supTextAndDis(context, 'customerType', globalData['customerType']),
-          supTextAndDis(context, 'customerPhoneNumber',
-              globalData['customerPhoneNumber']),
-          supTextAndDis(context, 'facebookName', globalData['facebookName']),
-          supTextAndDis(context, 'facebookLink', globalData['facebookLink']),
-          supTextAndDis(context, 'instagramName', globalData['instagramName']),
-          supTextAndDis(context, 'instagramLink', globalData['instagramLink']),
-          supTextAndDis(context, 'closeContacts', globalData['closeContacts']),
-          supTextAndDis(context, 'homeLocation', globalData['homeLocation']),
-          supTextAndDis(context, 'job', globalData['job']),
-          supTextAndDis(context, 'workLocation', globalData['workLocation']),
-          supTextAndDis(context, 'closestPersonNumber',
-              globalData['closestPersonNumber']),
-          supTextAndDis(
-              context, 'closestPersonWork', globalData['closestPersonWork']),
+          supTextAndDis(context, 'customerName', 'customerName'),
+          supTextAndDis(context, 'customerType', 'customerType'),
+          supTextAndDis(context, 'customerPhoneNumber', 'customerPhoneNumber'),
+          supTextAndDis(context, 'facebookName', 'facebookName'),
+          supTextAndDis(context, 'facebookLink', 'facebookLink'),
+          supTextAndDis(context, 'instagramName', 'instagramName'),
+          supTextAndDis(context, 'instagramLink', 'instagramLink'),
+          supTextAndDis(context, 'closeContacts', 'closeContacts'),
+          supTextAndDis(context, 'homeLocation', 'homeLocation'),
+          supTextAndDis(context, 'job', 'job'),
+          supTextAndDis(context, 'workLocation', 'workLocation'),
+          supTextAndDis(context, 'closestPersonNumber', 'closestPersonNumber'),
+          supTextAndDis(context, 'closestPersonWork', 'closestPersonWork'),
           SizedBox(height: 10.w),
         ],
       ),

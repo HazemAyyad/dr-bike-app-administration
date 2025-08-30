@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:doctorbike/features/App_entr/on_boarding/widgets/login_or_sign_up.dart';
+import 'package:doctorbike/features/admin/stock/presentation/binding/stock_binding.dart';
+import 'package:doctorbike/features/admin/stock/presentation/views/stock_screen.dart';
 import 'package:doctorbike/features/auth/presentation/login/views/login_screen.dart';
 import 'package:get/get.dart';
 
@@ -48,10 +50,10 @@ import '../features/admin/sales/presentation/binding/sales_binding.dart';
 import '../features/admin/sales/presentation/views/sales_screen.dart';
 import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
 import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
-import '../features/admin/--/presentation/project_management/binding/project_management_binding.dart';
-import '../features/admin/--/presentation/project_management/views/project_management_screen.dart';
-import '../features/admin/--/presentation/project_management/widgets/create_project_screen/create_project_screen.dart';
-import '../features/admin/--/presentation/project_management/widgets/project_details/project_details_screeen.dart';
+import '../features/admin/project_management/presentation/binding/project_management_binding.dart';
+import '../features/admin/project_management/presentation/views/project_management_screen.dart';
+import '../features/admin/project_management/presentation/widgets/create_project_screen/create_project_screen.dart';
+import '../features/admin/project_management/presentation/widgets/project_details/project_details_screeen.dart';
 import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
 import '../features/admin/target_section/presentation/binding/target_section_binding.dart';
 import '../features/admin/target_section/presentation/views/target_section_screen.dart';
@@ -438,6 +440,15 @@ class AppPages {
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
+
+    // Stock
+    GetPage(
+      name: AppRoutes.STOCKSCREEN,
+      page: () => const StockScreen(),
+      binding: StockBinding(),
+      transition: _transitionFadeIn,
+    ),
+
     // Profile Screen
     GetPage(
       name: AppRoutes.PROFILESCREEN,

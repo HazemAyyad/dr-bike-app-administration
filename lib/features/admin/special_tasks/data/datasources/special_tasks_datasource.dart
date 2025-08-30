@@ -13,7 +13,7 @@ class SpecialTasksDatasource {
   SpecialTasksDatasource({required this.api});
 
 // get special tasks
-  Future<List<SpecialTaskModel>> specialTasks({required String page}) async {
+  Future<List<SpecialTaskModel>> getSpecialTasks({required String page}) async {
     try {
       final response = await api.get(
         page == '0'
@@ -72,10 +72,7 @@ class SpecialTasksDatasource {
         EndPoints.showSpecialTask,
         data: {'special_task_id': specialTaskId},
       );
-      return SpecialTaskDetailsModel.fromJson(
-        response.data['special_task'],
-        response.data['images_path_info'],
-      );
+      return SpecialTaskDetailsModel.fromJson(response.data['special_task']);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

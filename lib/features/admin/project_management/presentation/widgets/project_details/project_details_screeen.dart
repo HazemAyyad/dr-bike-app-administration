@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../../../core/services/theme_service.dart';
-import '../../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../../core/services/theme_service.dart';
+import '../../../../../../core/utils/app_colors.dart';
 import 'project_status.dart';
 import 'sup_text_and_dis.dart';
 

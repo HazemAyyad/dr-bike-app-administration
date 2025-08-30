@@ -72,4 +72,7 @@ class AppRoutes {
 
   // Special Tasks
   static const SPECIALTASKDETAILSSCREEN = '/SpecialTaskDetailsScreen';
+
+  // Stock
+  static const STOCKSCREEN = '/StockScreen';
 }

@@ -77,19 +77,6 @@ class ChecksController extends GetxController
   final currentTab = 0.obs;
   final tabs = ['didNotActOnIt', 'actedOnIt', 'archive'].obs;
 
-  // ألا حصائيات العامة
-  final RxString youOwe = '19'.obs;
-  final RxString forYou = '0'.obs;
-  final RxString all = '19'.obs;
-  final RxString employees = '40'.obs;
-  final RxString totalDebts = '30'.obs;
-  final RxString totalOwed = '5'.obs;
-  final RxString expenses = '1200'.obs;
-
-  // احصائيات الشيكات الواردة
-  final RxString inComingNumberOfChecks = '50'.obs;
-  final RxString inComingTotal = '30000'.obs;
-
   final isLoading = false.obs;
 
   void changeTab(int index) {

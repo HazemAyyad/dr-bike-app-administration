@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -25,22 +26,59 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
           Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN);
         },
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Column(
-          children: [
-            // global tab bar
-            AppTabs(
-              tabs: controller.tabs,
-              currentTab: controller.currentTab,
-              changeTab: controller.changeTab,
-              width: 270.w,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Center(
+              child: AppTabs(
+                tabs: controller.tabs,
+                currentTab: controller.currentTab,
+                changeTab: controller.changeTab,
+                // width: 270.w,
+              ),
             ),
-            SizedBox(height: 20.h),
-            // global data
-            GlobalData(controller: controller),
-          ],
-        ),
+          ),
+          Obx(
+            () {
+              if (controller.isLoading.value) {
+                return SliverFillRemaining(
+                  hasScrollBody: true,
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+              if (controller.currentTab.value == 0
+                  ? controller.generalDataServes.employeeDataList.isEmpty
+                  : controller.generalDataServes.sellersDataList.isEmpty) {
+                return SliverFillRemaining(
+                  hasScrollBody: true,
+                  child: ShowNoData(),
+                );
+              }
+              return SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final employee = controller.currentTab.value == 0
+                        ? controller.generalDataServes.employeeDataList.reversed
+                            .toList()[index]
+                        : controller.generalDataServes.sellersDataList.reversed
+                            .toList()[index];
+                    return Column(
+                      children: [
+                        SizedBox(height: index == 0 ? 10.h : 0.h),
+                        GlobalData(employee: employee),
+                      ],
+                    );
+                  },
+                  childCount: controller.currentTab.value == 0
+                      ? controller.generalDataServes.employeeDataList.length
+                      : controller.generalDataServes.sellersDataList.length,
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

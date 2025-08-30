@@ -2,7 +2,7 @@ class SpecialTaskDetailsEntities {
   final int taskId;
   final String taskName;
   final String taskDescription;
-  final String adminImg;
+  final List<String> adminImg;
   final String taskRecurrence;
   final List<String> taskRecurrenceTime;
   final List<SubTaskEntity> subTasks;
@@ -24,7 +24,7 @@ class SubTaskEntity {
   final String subTaskName;
   final String subTaskDescription;
   final String status;
-  final String adminImg;
+  final List<String> adminImg;
   final bool forceEmployeeToAddImg;
 
   SubTaskEntity({

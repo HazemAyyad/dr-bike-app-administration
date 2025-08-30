@@ -7,7 +7,7 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
     required int taskId,
     required String taskName,
     required String taskDescription,
-    required String adminImg,
+    required List<String> adminImg,
     required String taskRecurrence,
     required List<String> taskRecurrenceTime,
     required List<SubTaskModel> subTasks,
@@ -21,24 +21,19 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
           subTasks: subTasks,
         );
 
-  factory SpecialTaskDetailsModel.fromJson(
-    Map<String, dynamic> json,
-    Map<String, dynamic> imagePaths,
-  ) {
-    final taskPath = imagePaths['task_admin_img_path'] ?? '';
-    final subtaskPath = imagePaths['subtask_admin_img_path'] ?? '';
-
+  factory SpecialTaskDetailsModel.fromJson(Map<String, dynamic> json) {
     return SpecialTaskDetailsModel(
       taskId: json['id'] ?? 0,
       taskName: json['name'] ?? '',
       taskDescription: json['description'] ?? '',
-      adminImg: json['admin_img'] != null || json['admin_img'] != 'null'
-          ? ShowNetImage.getPhoto("$taskPath/${json['admin_img']}")
-          : '',
+      adminImg: json['admin_img'] != null && json['admin_img'] != 'null'
+          ? List<String>.from(
+              json['admin_img'].map((e) => ShowNetImage.getPhoto(e)))
+          : [],
       taskRecurrence: json['task_recurrence'] ?? '',
       taskRecurrenceTime: List<String>.from(json['task_recurrence_time'] ?? []),
       subTasks: (json['sub_tasks'] as List<dynamic>? ?? [])
-          .map((e) => SubTaskModel.fromJson(e, subtaskPath))
+          .map((e) => SubTaskModel.fromJson(e))
           .toList(),
     );
   }
@@ -51,7 +46,7 @@ class SubTaskModel extends SubTaskEntity {
     required String subTaskName,
     required String subTaskDescription,
     required String status,
-    required String adminImg,
+    required List<String> adminImg,
     required bool forceEmployeeToAddImg,
   }) : super(
           subTaskId: subTaskId,
@@ -63,15 +58,17 @@ class SubTaskModel extends SubTaskEntity {
           forceEmployeeToAddImg: forceEmployeeToAddImg,
         );
 
-  factory SubTaskModel.fromJson(Map<String, dynamic> json, String subtaskPath) {
+  factory SubTaskModel.fromJson(Map<String, dynamic> json) {
     return SubTaskModel(
       subTaskId: json['id'] ?? 0,
       specialTaskId: json['special_task_id'] ?? '',
       subTaskName: json['name'] ?? '',
       subTaskDescription: json['description'] ?? '',
       status: json['status'] ?? '',
-      adminImg:
-          ShowNetImage.getPhoto("$subtaskPath/${json['admin_img'] ?? ''}"),
+      adminImg: json['admin_img'] != null && json['admin_img'] != 'null'
+          ? List<String>.from(
+              json['admin_img'].map((e) => ShowNetImage.getPhoto(e)))
+          : [],
       forceEmployeeToAddImg:
           (json['force_employee_to_add_img_for_sub_task'] ?? "0") == "1",
     );

@@ -13,6 +13,7 @@ class CreateTaskUsecase {
   CreateTaskUsecase({required this.employeeTasksRepository});
 
   Future<Either<Failure, String>> call({
+    required int employeeTaskId,
     required String name,
     required String description,
     required String notes,
@@ -29,6 +30,7 @@ class CreateTaskUsecase {
     required File audio,
   }) {
     return employeeTasksRepository.creatEmployeeTasks(
+      employeeTaskId: employeeTaskId,
       name: name,
       description: description,
       notes: notes,

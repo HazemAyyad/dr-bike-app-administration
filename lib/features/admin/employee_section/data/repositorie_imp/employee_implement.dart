@@ -143,7 +143,7 @@ class EmployeeImplement implements EmployeeRepository {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
     } else {
-      throw [];
+      throw ServerFailure('No internet connection', {});
     }
   }
 
@@ -159,7 +159,7 @@ class EmployeeImplement implements EmployeeRepository {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
     } else {
-      throw [];
+      throw ServerFailure('No internet connection', {});
     }
   }
 
@@ -175,7 +175,7 @@ class EmployeeImplement implements EmployeeRepository {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
     } else {
-      throw [];
+      throw ServerFailure('No internet connection', {});
     }
   }
 
@@ -194,7 +194,7 @@ class EmployeeImplement implements EmployeeRepository {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
     } else {
-      throw [];
+      throw ServerFailure('No internet connection', {});
     }
   }
 
@@ -213,7 +213,7 @@ class EmployeeImplement implements EmployeeRepository {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
     } else {
-      throw [];
+      throw ServerFailure('No internet connection', {});
     }
   }
 
@@ -229,7 +229,7 @@ class EmployeeImplement implements EmployeeRepository {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }
     } else {
-      throw [];
+      throw ServerFailure('No internet connection', {});
     }
   }
 }

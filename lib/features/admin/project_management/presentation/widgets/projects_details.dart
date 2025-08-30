@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../../../../core/services/theme_service.dart';
-import '../../../../../../core/utils/app_colors.dart';
-import '../../../../../../core/utils/assets_manger.dart';
-import '../../../../../my_orders/widgets/row_text.dart';
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/assets_manger.dart';
+import '../../../../my_orders/widgets/row_text.dart';
 
 Container projectsDetails(BuildContext context, order,
     {required String icon, required String tital}) {

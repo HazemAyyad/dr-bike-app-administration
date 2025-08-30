@@ -95,7 +95,7 @@ class ChecksDatasource {
       return GeneralChecksDataModel.fromJson(response.data['data']);
     } on DioException catch (e) {
       Get.snackbar(
-        "تنبيه",
+        "error".tr,
         e.toString(),
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,

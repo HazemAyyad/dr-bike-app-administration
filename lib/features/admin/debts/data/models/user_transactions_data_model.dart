@@ -4,22 +4,19 @@ import 'package:doctorbike/core/helpers/show_net_image.dart';
 class UserTransactionsDataModel {
   final String status;
   final int customerBalance;
-  final bool isCanceledCustomer;
   final List<Debt> customerDebts;
 
   UserTransactionsDataModel({
     required this.status,
     required this.customerBalance,
-    required this.isCanceledCustomer,
     required this.customerDebts,
   });
 
   factory UserTransactionsDataModel.fromJson(Map<String, dynamic> json) {
     return UserTransactionsDataModel(
       status: json[ApiKey.status] ?? 'failed',
-      customerBalance: json[ApiKey.customer_balance] ?? 0,
-      isCanceledCustomer: json[ApiKey.is_canceled_customer] == '1',
-      customerDebts: (json[ApiKey.customer_debts] as List<dynamic>?)
+      customerBalance: json['person_balance'] ?? 0,
+      customerDebts: (json['person_debts'] as List<dynamic>?)
               ?.map((e) => Debt.fromJson(e))
               .toList() ??
           [],
@@ -30,7 +27,6 @@ class UserTransactionsDataModel {
     return {
       ApiKey.status: status,
       ApiKey.customer_balance: customerBalance,
-      ApiKey.is_canceled_customer: isCanceledCustomer ? '1' : '0',
       ApiKey.customer_debts: customerDebts.map((e) => e.toJson()).toList(),
     };
   }

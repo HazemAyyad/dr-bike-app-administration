@@ -33,7 +33,7 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(5.r),
                   child: CachedNetworkImage(
-                    imageUrl: data.adminImg,
+                    imageUrl: data.adminImg.first,
                     placeholder: (context, url) => Center(
                       child: const CircularProgressIndicator(),
                     ),
@@ -118,7 +118,7 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10.r),
                           child: CachedNetworkImage(
-                            imageUrl: tasks.adminImg,
+                            imageUrl: tasks.adminImg.first,
                             placeholder: (context, url) => Center(
                               child: const CircularProgressIndicator(),
                             ),

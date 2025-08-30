@@ -87,7 +87,7 @@ class ChecksImplement implements ChecksRepository {
         return result;
       } on ServerException catch (e) {
         Get.snackbar(
-          "تنبيه",
+          "error".tr,
           e.errorModel.errorMessage,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,

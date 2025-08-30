@@ -67,8 +67,10 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                 SizedBox(height: index == 0 ? 5.h : 0.h),
                 GestureDetector(
                   onTap: () {
-                    controller
-                        .getUserTransactionsData(debt.customerId.toString());
+                    controller.getUserTransactionsData(
+                      debt.customerId.toString(),
+                      debt.sellerId.toString(),
+                    );
                     Get.bottomSheet(
                       ShowUserTransactions(debt: debt),
                       ignoreSafeArea: false,

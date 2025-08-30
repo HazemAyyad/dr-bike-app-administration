@@ -1,3 +1,5 @@
+import 'package:doctorbike/features/admin/checks/data/repositories/checks_implement.dart';
+import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 import 'package:doctorbike/features/admin/debts/data/repositories/debts_implement.dart';
 import 'package:doctorbike/features/admin/debts/domain/usecases/total_debts_we_owe_usecase.dart';
 import 'package:get/get.dart';
@@ -33,6 +35,9 @@ class DebtsBinding extends Bindings {
         dataService: Get.find<DebtsDataService>(),
         addDebtUsecase: AddDebtUsecase(
           debtsRepository: Get.find<DebtsImplement>(),
+        ),
+        allCustomersSellersUsecase: AllCustomersSellersUsecase(
+          checksRepository: Get.find<ChecksImplement>(),
         ),
       ),
     );

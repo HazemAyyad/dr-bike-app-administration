@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/--/data/datasources/admin_remote_datasource.dart';
 import 'package:doctorbike/features/admin/--/data/repositories/admin_implement.dart';
+import 'package:doctorbike/features/admin/general_data_list/presentation/controllers/general_data_serves.dart';
 import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
@@ -21,6 +22,8 @@ import '../../features/admin/employee_section/presentation/controllers/employee_
 import '../../features/admin/employee_tasks/data/datasources/employee_tasks_remote_datasource.dart';
 import '../../features/admin/employee_tasks/data/repositories/employee_tasks_implement.dart';
 import '../../features/admin/employee_tasks/presentation/controllers/employee_task_service.dart';
+import '../../features/admin/general_data_list/data/datasources/general_data_list_datasource.dart';
+import '../../features/admin/general_data_list/data/repositories/general_data_list_implement.dart';
 import '../../features/admin/sales/data/repositories/sales_implement.dart';
 import '../../features/admin/special_tasks/data/datasources/special_tasks_datasource.dart';
 import '../../features/admin/special_tasks/data/repositories/special_tasks_implement.dart';
@@ -135,10 +138,7 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-    Get.lazyPut<DebtsDataService>(
-      () => DebtsDataService(),
-      fenix: true,
-    );
+    Get.lazyPut<DebtsDataService>(() => DebtsDataService(), fenix: true);
 
     // انشاء مهام الموظفين
     Get.lazyPut<CreateEmployeeTasksDataSource>(
@@ -165,10 +165,7 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-    Get.lazyPut<EmployeeTaskService>(
-      () => EmployeeTaskService(),
-      fenix: true,
-    );
+    Get.lazyPut<EmployeeTaskService>(() => EmployeeTaskService(), fenix: true);
 
     // المهام الخاصة
     Get.lazyPut<SpecialTasksDatasource>(
@@ -238,5 +235,19 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
+
+    // general data list
+    Get.lazyPut<GeneralDataListDatasource>(
+      () => GeneralDataListDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<GeneralDataListImplement>(
+      () => GeneralDataListImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        generalDataListDatasource: Get.find<GeneralDataListDatasource>(),
+      ),
+      fenix: true,
+    );
+    Get.lazyPut<GeneralDataServes>(() => GeneralDataServes(), fenix: true);
   }
 }

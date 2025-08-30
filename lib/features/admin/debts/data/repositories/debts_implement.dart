@@ -104,13 +104,15 @@ class DebtsImplement implements DebtsRepository {
 
   @override
   Future<Either<Failure, UserTransactionsDataModel>> userTransactionsData(
-      {required String customerId}) async {
+      {required String customerId, required String sellerId}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
-      final result =
-          await debetDatasource.userTransactionsData(customerId: customerId);
+      final result = await debetDatasource.userTransactionsData(
+        customerId: customerId,
+        sellerId: sellerId,
+      );
       if (result['status'] == 'success') {
         return Right(UserTransactionsDataModel.fromJson(result));
       }
@@ -128,6 +130,7 @@ class DebtsImplement implements DebtsRepository {
   // addDebt
   @override
   Future<Either<Failure, String>> addDebt({
+    required bool isCustomer,
     required String customerId,
     required String type,
     required String dueDate,
@@ -140,6 +143,7 @@ class DebtsImplement implements DebtsRepository {
     }
     try {
       final result = await debetDatasource.addDebt(
+        isCustomer: isCustomer,
         customerId: customerId,
         type: type,
         dueDate: dueDate,

@@ -20,7 +20,7 @@ class SpecialTasksImplement implements SpecialTasksRepository {
   Future<List<SpecialTaskModel>> specialTasks({required String page}) async {
     if (await networkInfo.isConnected) {
       try {
-        final result = await specialTasksDatasource.specialTasks(page: page);
+        final result = await specialTasksDatasource.getSpecialTasks(page: page);
 
         return result;
       } on ServerException catch (e) {

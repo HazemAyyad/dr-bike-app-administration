@@ -7,6 +7,7 @@ import '../../../../../core/errors/failure.dart';
 
 abstract class CreateEmployeeTasksRepository {
   Future<Either<Failure, String>> creatEmployeeTasks({
+    required int employeeTaskId,
     required String name,
     required String description,
     required String notes,

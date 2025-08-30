@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../--/presentation/project_management/widgets/project_details/sup_text_and_dis.dart';
+import '../../../../project_management/presentation/widgets/project_details/sup_text_and_dis.dart';
 import '../../controllers/target_section_controller.dart';
 
 class TargetDetailsScreen extends GetView<TargetSectionController> {

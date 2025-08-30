@@ -23,6 +23,7 @@ class AssetsManger {
 
   static const String boxesImage = "$imagesPath/Group.png";
   static const String salesImage = "$imagesPath/Sales.png";
+  static const String generalDataImage = "$imagesPath/general data.png";
 
   //OTP
   // static const String vertified = "$imagePath/vertified.svg";

@@ -31,11 +31,10 @@ void main() async {
   print('Screen Width: $width');
   print('Screen Height: $height');
   runApp(
-    // DevicePreview(
-    // enabled: kDebugMode,
-    // builder: (_) =>
-    MyApp(designSize: Size(width, height)),
-    // ),
+    DevicePreview(
+      enabled: kDebugMode,
+      builder: (_) => MyApp(designSize: Size(width, height)),
+    ),
   );
 }
 

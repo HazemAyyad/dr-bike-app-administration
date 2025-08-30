@@ -59,7 +59,7 @@ class DashboardController extends GetxController
       'route': AppRoutes.GENERALDATALISTSCREEN
     },
     {'id': '32', 'title': 'partnersDepartment', 'route': ''},
-    {'id': '33', 'title': 'inventory', 'route': ''},
+    {'id': '33', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
     {'id': '34', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
     {'id': '35', 'title': 'purchasingDepartment', 'route': ''},
     {'id': '36', 'title': 'financialMatters', 'route': ''},

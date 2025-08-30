@@ -17,6 +17,7 @@ class CreateEmployeeTasksDataSource {
 
   // create employee task
   Future<Map<String, dynamic>> creatEmployeeTasks({
+    required int employeeTaskId,
     required String name,
     required String description,
     required String notes,
@@ -33,31 +34,42 @@ class CreateEmployeeTasksDataSource {
     required File audio,
   }) async {
     try {
+      print(subEmployeeTasks);
+      print(employeeTaskId);
       final subEmployeeTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subEmployeeTasks.length; i++) {
         subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
             subEmployeeTasks[i]['subTaskName'];
-        subEmployeeTasks[i]['subTaskImage'] != null ||
-                subEmployeeTasks[i]['subTaskImage'].path.startsWith('http')
-            ? subEmployeeTasksMap[
-                    'sub_employee_tasks[$i][admin_subtask__img[]]'] =
-                subEmployeeTasks[i]['subTaskImage']
-            : subEmployeeTasksMap[
-                    'sub_employee_tasks[$i][admin_subtask__img[]]'] =
+        final imgList = subEmployeeTasks[i]['subTaskImage'] as List;
+
+        if (imgList.isNotEmpty) {
+          final img = imgList.first; // أول صورة فقط
+
+          if (img.toString().startsWith('http')) {
+            subEmployeeTasksMap[
+                'sub_employee_tasks[$i][admin_subtask__img][]'] = img;
+          } else {
+            subEmployeeTasksMap[
+                    'sub_employee_tasks[$i][admin_subtask__img][]'] =
                 await MultipartFile.fromFile(
-                subEmployeeTasks[i]['subTaskImage'],
-                filename: subEmployeeTasks[i]['subTaskImage'].split('/').last,
-              );
+              img,
+              filename: img.split('/').last,
+            );
+          }
+        }
         subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
             subEmployeeTasks[i]['subTaskdescription'];
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
             subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
       final response = await api.post(
-        EndPoints.createEmployeeTask,
+        // employeeTaskId != 0
+        // ?
+        EndPoints.editEmployeeTask,
+        // : EndPoints.createEmployeeTask,
         data: {
-          'employee_task_id': 250,
+          if (employeeTaskId != 0) 'employee_task_id': employeeTaskId,
           'name': name,
           'description': description,
           'notes': notes,
@@ -130,13 +142,14 @@ class CreateEmployeeTasksDataSource {
         subSpecialTasksMap['sub_special_tasks[$i][name]'] =
             subSpecialTasks[i]['subTaskName'];
         subSpecialTasks[i]['subTaskImage'] != null
-            ? subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img]'] =
+            ? subSpecialTasksMap[
+                    'sub_special_tasks[$i][admin_subtask__img][]'] =
                 await MultipartFile.fromFile(
                 subSpecialTasks[i]['subTaskImage'] ?? '',
                 filename: subSpecialTasks[i]['subTaskImage'].split('/').last,
               )
-            : subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img]'] =
-                '';
+            : subSpecialTasksMap[
+                'sub_special_tasks[$i][admin_subtask__img][]'] = '';
         subSpecialTasksMap['sub_special_tasks[$i][description]'] =
             subSpecialTasks[i]['subTaskdescription'];
         subSpecialTasksMap[
@@ -157,7 +170,7 @@ class CreateEmployeeTasksDataSource {
           ...subSpecialTasksMap,
           'force_employee_to_add_img': forceEmployeeToAddImg ? 1 : 0,
           if (adminImg != null)
-            'admin_img': await MultipartFile.fromFile(
+            'admin_img[]': await MultipartFile.fromFile(
               adminImg.path,
               filename: adminImg.name,
             ),
