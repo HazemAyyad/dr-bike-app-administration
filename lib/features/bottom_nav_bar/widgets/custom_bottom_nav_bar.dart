@@ -38,7 +38,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                     label: 'home'.tr,
                     onTap: () => controller.changePage(0),
                   ),
-                  test == 'admin'
+                  userType == 'admin'
                       ? SizedBox.shrink()
                       : BuildNavItem(
                           assetImage: AssetsManger.qrCode,

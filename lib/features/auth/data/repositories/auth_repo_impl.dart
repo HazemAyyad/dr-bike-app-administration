@@ -116,7 +116,7 @@ class AuthImplement implements AuthRepository {
           final permissionIds =
               userdata.employeePermissions.map((p) => p.permissionId).toList();
           employeePermissions.addAll(permissionIds);
-          test = userdata.user.type;
+          userType = userdata.user.type;
         }
         return Right(UserModel.fromJson(data));
       }

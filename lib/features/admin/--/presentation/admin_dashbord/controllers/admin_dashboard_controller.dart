@@ -6,17 +6,13 @@ import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../../../auth/data/models/user_model.dart';
 import '../../../../employee_section/domain/usecases/get_all_employee.dart';
-import '../../../../employee_section/presentation/controllers/employee_service.dart';
 
 class DashboardController extends GetxController
     with GetTickerProviderStateMixin {
   GetAllEmployeeUsecase getAllEmployeeUsecase;
-  // EmployeeService employeeService;
   DashboardController({
     required this.getAllEmployeeUsecase,
-    // required this.employeeService,
   });
-  final filteredButtons = <Map<String, dynamic>>[];
 
   List<Map<String, dynamic>> buttons = [
     {
@@ -86,18 +82,12 @@ class DashboardController extends GetxController
   late Animation<double> opacityAnimation;
   late Animation<double> sizeAnimation;
 
-  // void getEmployee() async {
-  //   final result = await getAllEmployeeUsecase.call();
-  //   employeeService.employeeList.value = result;
-  //   update();
+  // final Rxn<UserModel> userData = Rxn<UserModel>();
+
+  // void getUserData() async {
+  // userData.value = await UserData.getSavedUser();
+  // update();
   // }
-
-  final Rxn<UserModel> userData = Rxn<UserModel>();
-
-  void getUserData() async {
-    userData.value = await UserData.getSavedUser();
-    update();
-  }
 
   @override
   void onInit() async {
@@ -120,14 +110,14 @@ class DashboardController extends GetxController
       }
     });
     // getEmployee();
-    getUserData();
+    // getUserData();
   }
 
   void toggleAddMenu() {
     isAddMenuOpen.value = !isAddMenuOpen.value;
   }
 
-  List<Map<String, String>> addList = [
+  List<Map<String, String>> adminAddList = [
     {
       'title': 'newInvoice',
       'icon': AssetsManger.invoiceIcon,
@@ -153,6 +143,8 @@ class DashboardController extends GetxController
   @override
   void onClose() {
     animController.dispose();
+    opacityAnimation.isDismissed;
+    sizeAnimation.isDismissed;
     super.onClose();
   }
 }

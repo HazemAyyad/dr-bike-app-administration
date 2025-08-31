@@ -6,7 +6,7 @@ class GetCustomersUseCase {
   final GeneralDataListRepository generalDataListRepository;
   GetCustomersUseCase({required this.generalDataListRepository});
 
-  Future<List<GeneralDataModel>> call({bool isSellers = false}) {
-    return generalDataListRepository.getGeneralList(isSellers: isSellers);
+  Future<List<GeneralDataModel>> call({required int tab}) {
+    return generalDataListRepository.getGeneralList(tab: tab);
   }
 }

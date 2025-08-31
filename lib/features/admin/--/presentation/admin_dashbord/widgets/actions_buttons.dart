@@ -3,18 +3,38 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/services/initial_bindings.dart';
+import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../controllers/dashboard_controller.dart';
 
 class BuildActionButtons extends StatelessWidget {
-  const BuildActionButtons({Key? key, required this.controller})
-      : super(key: key);
+  const BuildActionButtons({
+    Key? key,
+    required this.buttons,
+    this.employeePermissions,
+  }) : super(key: key);
 
-  final DashboardController controller;
+  final List<Map<String, dynamic>> buttons;
+  final List<int>? employeePermissions;
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        SizedBox(height: 5.h),
+        Row(
+          children: [
+            Text(
+              'permissions'.tr,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.secondaryColor,
+                  ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8.h),
         GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
@@ -24,18 +44,18 @@ class BuildActionButtons extends StatelessWidget {
           ),
           shrinkWrap: true,
           physics: NeverScrollableScrollPhysics(),
-          itemCount: test == 'admin'
-              ? controller.buttons.length
-              : controller.buttons
-                  .where(
-                      (x) => employeePermissions.contains(int.parse(x['id'])))
+          itemCount: userType == 'admin'
+              ? buttons.length
+              : buttons
+                  .where((x) =>
+                      employeePermissions!.contains(int.parse(x['id'] ?? 0)))
                   .length,
           itemBuilder: (context, index) {
-            final filteredButtons = test == 'admin'
-                ? controller.buttons
-                : controller.buttons
-                    .where(
-                        (x) => employeePermissions.contains(int.parse(x['id'])))
+            final filteredButtons = userType == 'admin'
+                ? buttons
+                : buttons
+                    .where((x) =>
+                        employeePermissions!.contains(int.parse(x['id'])))
                     .toList();
 
             return _buildActionButton(

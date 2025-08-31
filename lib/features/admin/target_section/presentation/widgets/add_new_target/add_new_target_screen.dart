@@ -17,7 +17,7 @@ class AddNewTargetScreen extends GetView<TargetSectionController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar( title: 'addNewTarget', action: false),
+      appBar: CustomAppBar(title: 'addNewTarget', action: false),
       body: ListView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [

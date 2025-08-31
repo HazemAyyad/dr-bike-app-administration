@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../--/presentation/dashbord/widgets/search_bar.dart';
+import '../../../--/presentation/admin_dashbord/widgets/search_bar.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -42,8 +42,7 @@ class StockScreen extends GetView<StockController> {
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
               ),
-              onChanged: (value) {
-              },
+              onChanged: (value) {},
             ),
           ),
         ),

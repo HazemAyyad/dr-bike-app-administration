@@ -168,7 +168,6 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                               itemBuilder: (context, index) {
                                 final financialDues =
                                     controller.filteredFinancialDues[index];
-
                                 return Padding(
                                   padding: EdgeInsets.symmetric(
                                       horizontal: 24.w, vertical: 5.h),

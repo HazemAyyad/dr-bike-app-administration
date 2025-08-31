@@ -329,6 +329,11 @@ const Map<String, String> ar = {
   'loans': 'طلبات السلف',
   'overtime': 'طلبات الاوفرتايم',
   'overtimeValue': 'قيمة الاوفرتايم',
+  'overtimeRequest': 'طلب اوفر تايم',
+  'numbeOfOvertimeHours': 'عدد ساعات الاوفر تايم',
+  'submitRequest': 'تقديم الطلب',
+
+  'loanRequest': 'طلب سلفة',
 
   'hourlyRate': 'سعر ساعة العمل',
   'points': 'عدد النقاط',
@@ -383,8 +388,10 @@ const Map<String, String> ar = {
   'addNewCustomer': 'إضافة زبون جديد',
   'customerTypeTitle': 'نوع الزبون',
   'customerTypeExample': 'مثال: جملة',
+  'wholesale': 'جملة',
+  'retail': 'مفرق',
   'phoneNumberTitle': 'رقم الهاتف',
-  'phoneNumberExample': 'مثال: +977 255645',
+  'phoneNumberExample': 'مثال: 255645',
   'notes': 'ملاحظات',
   'notesExample': 'مثال: ملاحظات علي الزبون',
   'addCustomer': 'إضافة الزبون',
@@ -458,6 +465,7 @@ const Map<String, String> ar = {
   'generalDataList': 'قائمة البيانات العامة',
   'merchants': 'التجار',
   'customers': 'الزبائن',
+  'completeData': 'اكمال البيانات',
   'customerPhoneNumber': 'الرقم الشخصي',
   'job': 'العمل',
 

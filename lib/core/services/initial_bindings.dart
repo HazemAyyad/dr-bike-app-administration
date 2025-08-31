@@ -32,6 +32,8 @@ import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repo_impl.dart';
 import '../../features/common_feature/data/datasources/common_datasource.dart';
 import '../../features/common_feature/data/repositories/common_repo_impl.dart';
+import '../../features/employee/employee_dashbord/data/datasources/employee_dashbord_datasource.dart';
+import '../../features/employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
 import '../../features/employee/scan_qrcode/data/datasources/scan_qrcode_datasource.dart';
 import '../../features/employee/scan_qrcode/data/repositories/scan_qrcode_implement.dart';
 import '../../firebase_options.dart';
@@ -40,7 +42,9 @@ import '../databases/api/dio_consumer.dart';
 import 'notification_firebase_service.dart';
 import 'user_data.dart';
 
-String test = '';
+String userType = '';
+
+// list of permissions
 List<int> employeePermissions = [];
 
 class InitialBindings implements Bindings {
@@ -65,13 +69,26 @@ class InitialBindings implements Bindings {
       final permissionIds =
           userdata.employeePermissions.map((p) => p.permissionId).toList();
       employeePermissions.addAll(permissionIds);
-      test = userdata.user.type;
-      print('User Type: $test');
+      userType = userdata.user.type;
+      print('User Type: $userType');
       print('User Type: $employeePermissions');
     }
     print('User Token: $userToken');
     Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
     Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true);
+
+    // employee dashbord
+    Get.lazyPut<EmployeeDashbordDatasource>(
+      () => EmployeeDashbordDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<EmployeeDashbordImplement>(
+      () => EmployeeDashbordImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        employeeDashbordDatasource: Get.find<EmployeeDashbordDatasource>(),
+      ),
+      fenix: true,
+    );
 
     // قسم الموظين
     Get.lazyPut<EmployeeDatasource>(

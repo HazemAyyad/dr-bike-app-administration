@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/assets_manger.dart';
-import '../controllers/dashboard_controller.dart';
+import '../controllers/admin_dashboard_controller.dart';
 import 'stat_card.dart';
 
 class BuildStatisticsCards extends GetView<DashboardController> {

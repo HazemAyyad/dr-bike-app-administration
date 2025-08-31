@@ -22,6 +22,9 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
         employeeNameController: controller.employeeNameController,
         label: 'customerName',
         onPressedAdd: () {
+          controller.isEdit.value = false;
+          controller.clearForm();
+
           // Handle add button press
           Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN);
         },
@@ -50,7 +53,10 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
               }
               if (controller.currentTab.value == 0
                   ? controller.generalDataServes.employeeDataList.isEmpty
-                  : controller.generalDataServes.sellersDataList.isEmpty) {
+                  : controller.currentTab.value == 1
+                      ? controller.generalDataServes.sellersDataList.isEmpty
+                      : controller
+                          .generalDataServes.inCompleteDataList.isEmpty) {
                 return SliverFillRemaining(
                   hasScrollBody: true,
                   child: ShowNoData(),
@@ -62,8 +68,13 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                     final employee = controller.currentTab.value == 0
                         ? controller.generalDataServes.employeeDataList.reversed
                             .toList()[index]
-                        : controller.generalDataServes.sellersDataList.reversed
-                            .toList()[index];
+                        : controller.currentTab.value == 1
+                            ? controller
+                                .generalDataServes.sellersDataList.reversed
+                                .toList()[index]
+                            : controller
+                                .generalDataServes.inCompleteDataList.reversed
+                                .toList()[index];
                     return Column(
                       children: [
                         SizedBox(height: index == 0 ? 10.h : 0.h),
@@ -73,7 +84,10 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                   },
                   childCount: controller.currentTab.value == 0
                       ? controller.generalDataServes.employeeDataList.length
-                      : controller.generalDataServes.sellersDataList.length,
+                      : controller.currentTab.value == 1
+                          ? controller.generalDataServes.sellersDataList.length
+                          : controller
+                              .generalDataServes.inCompleteDataList.length,
                 ),
               );
             },

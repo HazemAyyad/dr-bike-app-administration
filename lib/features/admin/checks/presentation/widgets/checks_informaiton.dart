@@ -5,7 +5,7 @@ import 'package:get/get_state_manager/get_state_manager.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
-import '../../../--/presentation/dashbord/widgets/stat_card.dart';
+import '../../../--/presentation/admin_dashbord/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
 
 class ChecksInformaiton extends StatelessWidget {

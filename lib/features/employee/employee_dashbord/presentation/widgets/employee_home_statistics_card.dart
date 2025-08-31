@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/services/theme_service.dart';
-import '../../../../../../core/utils/app_colors.dart';
-import '../../../../../../core/utils/assets_manger.dart';
-import '../../../../../../routes/app_routes.dart';
-import '../controllers/dashboard_controller.dart';
-import 'stat_card.dart';
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/assets_manger.dart';
+import '../../../../../routes/app_routes.dart';
+import '../../../../admin/--/presentation/admin_dashbord/widgets/stat_card.dart';
+import '../controllers/employee_dashbord_controller.dart';
 
-class EmployeeHomeStatisticsCard extends GetView<DashboardController> {
+class EmployeeHomeStatisticsCard extends StatelessWidget {
   const EmployeeHomeStatisticsCard({Key? key}) : super(key: key);
 
   @override
@@ -55,17 +55,16 @@ class EmployeeHomeStatisticsCard extends GetView<DashboardController> {
                 ? AppColors.customGreyColor
                 : AppColors.whiteColor2,
           ),
-          child: GetBuilder<DashboardController>(
-            builder: (_) {
+          child: GetBuilder<EmployeeDashbordController>(
+            builder: (controller) {
               return Column(
                 children: [
                   StatCard(
                     title: 'workingHours',
                     imageicon: AssetsManger.cashIcon,
-                    value: controller.userData.value == null
+                    value: controller.employeeData.value == null
                         ? '0'
-                        : controller
-                            .userData.value!.user.employee.totalWorkHours,
+                        : controller.employeeData.value!.numberOfWorkHours,
                     subtitle: 'currency',
                   ),
                   SizedBox(width: 8.w),
@@ -73,9 +72,9 @@ class EmployeeHomeStatisticsCard extends GetView<DashboardController> {
                     show: true,
                     title: 'hourlyRate',
                     imageicon: AssetsManger.cashIcon,
-                    value: controller.userData.value == null
+                    value: controller.employeeData.value == null
                         ? '0'
-                        : controller.userData.value!.user.employee.hourWorkPrice
+                        : controller.employeeData.value!.hourWorkPrice
                             .toString(),
                     subtitle: 'currency',
                   ),
@@ -83,9 +82,9 @@ class EmployeeHomeStatisticsCard extends GetView<DashboardController> {
                     show: true,
                     title: 'advancesAndDebts',
                     imageicon: AssetsManger.cashIcon,
-                    value: controller.userData.value == null
+                    value: controller.employeeData.value == null
                         ? '0'
-                        : controller.userData.value!.user.employee.debts,
+                        : controller.employeeData.value!.debts,
                     subtitle: 'currency',
                   ),
                   SizedBox(width: 8.w),
@@ -93,10 +92,9 @@ class EmployeeHomeStatisticsCard extends GetView<DashboardController> {
                     show: true,
                     title: 'remainingBalance',
                     imageicon: AssetsManger.cashIcon,
-                    value: controller.userData.value == null
+                    value: controller.employeeData.value == null
                         ? '0'
-                        : controller.userData.value!.user.employee.salary
-                            .toString(),
+                        : controller.employeeData.value!.salary.toString(),
                     subtitle: 'currency',
                   ),
                 ],

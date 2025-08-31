@@ -67,6 +67,6 @@ class UserData {
     saveIsRememberUser(false);
     userToken = '';
     employeePermissions = [];
-    test = '';
+    userType = '';
   }
 }

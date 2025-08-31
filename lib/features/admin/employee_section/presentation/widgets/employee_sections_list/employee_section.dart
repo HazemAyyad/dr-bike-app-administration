@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/utils/app_colors.dart';
 
 class EmployeeSection extends StatelessWidget {
@@ -17,8 +18,6 @@ class EmployeeSection extends StatelessWidget {
   final RxBool isLoading;
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme.bodyMedium!;
-
     return Obx(
       () {
         if (isLoading.value) {
@@ -31,29 +30,8 @@ class EmployeeSection extends StatelessWidget {
             ),
           );
         } else if (list.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(height: 150.h),
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 100.h,
-                    color: AppColors.graywhiteColor,
-                  ),
-                  SizedBox(height: 10.h),
-                  Text(
-                    'noDebts'.tr,
-                    style: theme.copyWith(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.graywhiteColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          return SliverFillRemaining(
+            child: ShowNoData(),
           );
         }
         return sliverList;

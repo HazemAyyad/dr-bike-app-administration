@@ -21,11 +21,15 @@ class GlobalData extends GetView<GeneralDataListController> {
       child: GestureDetector(
         // overlayColor: WidgetStateProperty.all(Colors.transparent),
         onTap: () {
-          // Handle order card tap
-          Get.toNamed(
-            AppRoutes.GLOBALCUSTOMERDATASCREEN,
-            // arguments: generalData,
+          controller.clearForm();
+          controller.isEdit.value = true;
+          controller.getPersonData(
+            customerId:
+                controller.currentTab.value == 1 ? employee.id.toString() : '',
+            sellerId:
+                controller.currentTab.value == 0 ? employee.id.toString() : '',
           );
+          Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN);
         },
         onLongPress: () {
           Get.dialog(

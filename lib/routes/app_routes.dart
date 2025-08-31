@@ -15,7 +15,8 @@ class AppRoutes {
   static const HOMEPAGESCREEN = '/homepagescreen';
 
   // Dashboard
-  static const DASHBOARDSCREEN = '/dashboardscreen';
+  static const ADMINDASHBOARDSCREEN = '/dashboardscreen';
+  static const EMPLOYEEDASHBOARDSCREEN = '/EmployeeDashbordScreen';
   static const EMPLOYEETASKSSCREEN = '/employeetasksscreen';
   static const CREATETASKSCREEN = '/createtaskscreen';
   static const TASKDETAILS = '/taskdetails';

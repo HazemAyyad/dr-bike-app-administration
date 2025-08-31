@@ -4,6 +4,8 @@ import 'package:doctorbike/features/App_entr/on_boarding/widgets/login_or_sign_u
 import 'package:doctorbike/features/admin/stock/presentation/binding/stock_binding.dart';
 import 'package:doctorbike/features/admin/stock/presentation/views/stock_screen.dart';
 import 'package:doctorbike/features/auth/presentation/login/views/login_screen.dart';
+import 'package:doctorbike/features/employee/employee_dashbord/presentation/binding/employee_dashbord_binding.dart';
+import 'package:doctorbike/features/employee/employee_dashbord/presentation/views/employee_dashbord_screen.dart';
 import 'package:get/get.dart';
 
 import 'package:doctorbike/features/home/views/home_page_screen.dart';
@@ -42,7 +44,6 @@ import '../features/admin/employee_tasks/presentation/views/employee_tasks_scree
 import '../features/admin/general_data_list/presentation/binding/general_data_list_binding.dart';
 import '../features/admin/general_data_list/presentation/views/general_data_list_screen.dart';
 import '../features/admin/general_data_list/presentation/views/add_new_customer_screen.dart';
-import '../features/admin/general_data_list/presentation/views/customer_details_screen.dart';
 import '../features/admin/maintenance/presentation/binding/maintenance_binding.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_screen.dart';
 import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
@@ -72,8 +73,8 @@ import '../features/auth/presentation/sign_up_otp/views/sign_up_otp_screen.dart'
 import '../features/auth/presentation/success/views/success_screen.dart';
 import '../features/bottom_nav_bar/binding/binding.dart';
 import '../features/bottom_nav_bar/views/bottom_nav_bar_screen.dart';
-import '../features/admin/--/presentation/dashbord/binding/dashboard_binding.dart';
-import '../features/admin/--/presentation/dashbord/views/dashboard_screen.dart';
+import '../features/admin/--/presentation/admin_dashbord/binding/admin_dashboard_binding.dart';
+import '../features/admin/--/presentation/admin_dashbord/views/admin_dashboard_screen.dart';
 import '../features/common_feature/presentation/change_password/binding/change_password_binding.dart';
 import '../features/common_feature/presentation/change_password/views/change_password_screen.dart';
 import '../features/common_feature/presentation/contact_us/views/contact_us_screen.dart';
@@ -175,11 +176,19 @@ class AppPages {
       transition: _defaultTransition,
     ),
 
-    // Dashboard
+    // Admin Dashboard
     GetPage(
-      name: AppRoutes.DASHBOARDSCREEN,
-      page: () => const DashboardScreen(),
+      name: AppRoutes.ADMINDASHBOARDSCREEN,
+      page: () => const AdminDashboardScreen(),
       binding: DashboardBinding(),
+      transition: _transitionDownToUp,
+    ),
+
+    // Employee Dashboard
+    GetPage(
+      name: AppRoutes.EMPLOYEEDASHBOARDSCREEN,
+      page: () => const EmployeeDashbordScreen(),
+      binding: EmployeeDashbordBinding(),
       transition: _transitionDownToUp,
     ),
 
@@ -335,12 +344,12 @@ class AppPages {
       binding: GeneralDataListBinding(),
       transition: _transitionFadeIn,
     ),
-    GetPage(
-      name: AppRoutes.GLOBALCUSTOMERDATASCREEN,
-      page: () => const GlobalCustomerDataScreen(),
-      // binding:
-      transition: _transitionFade,
-    ),
+    // GetPage(
+    //   name: AppRoutes.GLOBALCUSTOMERDATASCREEN,
+    //   page: () => const GlobalCustomerDataScreen(),
+    //   // binding:
+    //   transition: _transitionFade,
+    // ),
     GetPage(
       name: AppRoutes.ADDNEWCUSTOMERSCREEN,
       page: () => const AddNewCustomerScreen(),

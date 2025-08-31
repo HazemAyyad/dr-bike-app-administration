@@ -12,6 +12,12 @@ class EndPoints {
   static const String changePassword = 'change/password';
   static const String updateProfile = 'update/profile';
 
+// employee Dashboard
+  static const String employeeHomeData = 'employee/home/data';
+
+  static const String addOvertimeOrder = 'employee/add/overtime/order';
+  static const String addLoanOrder = 'employee/add/loan/order';
+
   // debts section
   static const String totalDebtsWeOwe = 'total/debts/we/owe';
   static const String totalDebtsOwedToUs = 'total/debts/owed/to/us';
@@ -126,8 +132,13 @@ class EndPoints {
   static const String ongoingProjects = 'ongoing/project';
 
   // general data list
+  static const String createPerson = 'create/person';
+  static const String editPerson = 'edit/person';
+  static const String showPerson = 'show/person';
+
   static const String mainPageCustomers = 'main/page/customers';
   static const String mainPageSellers = 'main/page/sellers';
+  static const String mainPageInComplete = 'main/page/incomplete/persons';
 }
 
 class ApiKey {

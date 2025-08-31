@@ -64,10 +64,9 @@ class CreateEmployeeTasksDataSource {
             subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
       final response = await api.post(
-        // employeeTaskId != 0
-        // ?
-        EndPoints.editEmployeeTask,
-        // : EndPoints.createEmployeeTask,
+        employeeTaskId != 0
+            ? EndPoints.editEmployeeTask
+            : EndPoints.createEmployeeTask,
         data: {
           if (employeeTaskId != 0) 'employee_task_id': employeeTaskId,
           'name': name,

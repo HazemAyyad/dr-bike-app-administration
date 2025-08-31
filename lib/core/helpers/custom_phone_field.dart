@@ -93,7 +93,8 @@ class CustomPhoneField extends StatelessWidget {
               fillColor: (ThemeService.isDark.value
                   ? AppColors.customGreyColor
                   : AppColors.whiteColor2),
-              labelText: controller.text.isEmpty ? hintText : controller.text,
+              labelText:
+                  controller.text.isEmpty ? hintText!.tr : controller.text,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.r),
                 gapPadding: 1,

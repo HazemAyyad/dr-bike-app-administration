@@ -1,14 +1,19 @@
+import 'package:doctorbike/core/services/initial_bindings.dart';
+import 'package:doctorbike/features/employee/employee_dashbord/presentation/views/employee_dashbord_screen.dart';
 import 'package:doctorbike/features/employee/scan_qrcode/domain/usecases/qr_scan_usecase.dart';
 import 'package:doctorbike/features/employee/scan_qrcode/presentation/controllers/qrcode_controller.dart';
 import 'package:doctorbike/features/common_feature/presentation/user_profile/views/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../admin/--/presentation/dashbord/controllers/dashboard_controller.dart';
-import '../../admin/--/presentation/dashbord/views/dashboard_screen.dart';
+import '../../admin/--/presentation/admin_dashbord/controllers/admin_dashboard_controller.dart';
+import '../../admin/--/presentation/admin_dashbord/views/admin_dashboard_screen.dart';
 import '../../admin/employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
-import '../../admin/employee_section/presentation/controllers/employee_service.dart';
+import '../../employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
+import '../../employee/employee_dashbord/domain/usecases/get_employee_data_usecase.dart';
+import '../../employee/employee_dashbord/domain/usecases/request_over_time_loan_usecase.dart';
+import '../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../../employee/scan_qrcode/data/repositories/scan_qrcode_implement.dart';
 import '../../employee/scan_qrcode/presentation/views/qr_code_screen.dart';
 import '../../common_feature/presentation/user_profile/controllers/profile_controller.dart';
@@ -38,17 +43,35 @@ class BottomNavBarController extends GetxController {
   Widget _getPage(int index) {
     switch (index) {
       case 0:
-        if (!Get.isRegistered<DashboardController>()) {
-          Get.put(
-            DashboardController(
-              getAllEmployeeUsecase: GetAllEmployeeUsecase(
-                employeeRepository: Get.find<EmployeeImplement>(),
+        if (userType == 'admin') {
+          if (!Get.isRegistered<DashboardController>()) {
+            Get.put(
+              DashboardController(
+                getAllEmployeeUsecase: GetAllEmployeeUsecase(
+                  employeeRepository: Get.find<EmployeeImplement>(),
+                ),
               ),
-              // employeeService: Get.find<EmployeeService>(),
-            ),
-          );
+            );
+            return AdminDashboardScreen();
+          }
+          return AdminDashboardScreen();
+        } else {
+          if (!Get.isRegistered<EmployeeDashbordController>()) {
+            Get.put(
+              EmployeeDashbordController(
+                requestOverTimeLoanUsecase: RequestOverTimeLoanUsecase(
+                  employeeDashbordRepository:
+                      Get.find<EmployeeDashbordImplement>(),
+                ),
+                getEmployeeDataUsecase: GetEmployeeDataUsecase(
+                  employeeDashbordRepository:
+                      Get.find<EmployeeDashbordImplement>(),
+                ),
+              ),
+            );
+          }
+          return EmployeeDashbordScreen();
         }
-        return DashboardScreen(key: ValueKey(0));
       case 1:
         if (!Get.isRegistered<QrCodeController>()) {
           Get.put(
