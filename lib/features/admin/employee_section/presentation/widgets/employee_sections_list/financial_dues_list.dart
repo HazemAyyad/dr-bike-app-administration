@@ -10,6 +10,7 @@ import '../employee_financial_details.dart';
 
 class FinancialDuesList extends GetView<EmployeeSectionController> {
   const FinancialDuesList({Key? key, required this.employee}) : super(key: key);
+
   final FinancialDuesModel employee;
 
   @override

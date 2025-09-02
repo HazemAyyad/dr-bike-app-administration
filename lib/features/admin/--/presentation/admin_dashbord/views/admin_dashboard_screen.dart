@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/custom_floating_action_button.dart';
 
 import '../controllers/admin_dashboard_controller.dart';
@@ -15,16 +16,20 @@ class AdminDashboardScreen extends GetView<DashboardController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(
-          '${'welcomeBack.'.tr} Mohamed',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
+      appBar: CustomAppBar(
+        title: 'welcomeBack.'.tr,
+        action: false,
       ),
+      //  AppBar(
+      //   scrolledUnderElevation: 0,
+      //   title: Text(
+      //     '${'welcomeBack.'.tr} Mohamed',
+      //     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+      //           fontSize: 20.sp,
+      //           fontWeight: FontWeight.w700,
+      //         ),
+      //   ),
+      // ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Column(

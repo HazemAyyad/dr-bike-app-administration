@@ -237,7 +237,7 @@ class ViewChecksWidget extends StatelessWidget {
                                 check.status == 'cashed_to_box'
                             ? 'cashed'.tr
                             : check.status == 'cancelled'
-                                ? 'rejected'.tr
+                                ? 'rejectedd'.tr
                                 : 'reference'.tr,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(

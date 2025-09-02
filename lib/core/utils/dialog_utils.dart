@@ -28,49 +28,54 @@ class DialogUtils {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          fixedSize: Size(130.w, 30.h),
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.r),
+                      Flexible(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            fixedSize: Size(130.w, 30.h),
+                            backgroundColor: Colors.red,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
                           ),
-                        ),
-                        onPressed: onConfirm,
-                        child: Text(
-                          'yes'.tr,
-                          style: Theme.of(Get.context!)
-                              .textTheme
-                              .bodyMedium!
-                              .copyWith(
-                                color: Colors.white,
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
+                          onPressed: onConfirm,
+                          child: Text(
+                            'yes'.tr,
+                            style: Theme.of(Get.context!)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  color: Colors.white,
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                          ),
                         ),
                       ),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          fixedSize: Size(130.w, 30.h),
-                          side: BorderSide(
-                            color: Colors.red,
-                            width: 1.w,
+                      SizedBox(width: 10.w),
+                      Flexible(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            fixedSize: Size(130.w, 30.h),
+                            side: BorderSide(
+                              color: Colors.red,
+                              width: 1.w,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20.r),
+                          onPressed: () => Get.back(),
+                          child: Text(
+                            'cancel'.tr,
+                            style: Theme.of(Get.context!)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  color: Colors.red,
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
                           ),
-                        ),
-                        onPressed: () => Get.back(),
-                        child: Text(
-                          'cancel'.tr,
-                          style: Theme.of(Get.context!)
-                              .textTheme
-                              .bodyMedium!
-                              .copyWith(
-                                color: Colors.red,
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
                         ),
                       ),
                     ],

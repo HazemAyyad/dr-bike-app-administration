@@ -5,6 +5,7 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
+import '../../domain/usecases/change_task_completed_uasecase.dart';
 import '../../domain/usecases/get_employee_data_usecase.dart';
 import '../../domain/usecases/request_over_time_loan_usecase.dart';
 
@@ -12,9 +13,12 @@ class EmployeeDashbordController extends GetxController
     with GetTickerProviderStateMixin {
   final RequestOverTimeLoanUsecase requestOverTimeLoanUsecase;
   final GetEmployeeDataUsecase getEmployeeDataUsecase;
+  final ChangeTaskCompletedUasecase changeTaskCompletedUasecase;
+
   EmployeeDashbordController({
     required this.requestOverTimeLoanUsecase,
     required this.getEmployeeDataUsecase,
+    required this.changeTaskCompletedUasecase,
   });
   final formKey = GlobalKey<FormState>();
 
@@ -159,10 +163,69 @@ class EmployeeDashbordController extends GetxController
     }
   }
 
+  final RxBool isTaskLoading = false.obs;
+
+// change task to completed
+  void changeTaskToCompleted({
+    required BuildContext context,
+    required bool isSubTask,
+    required int taskId,
+  }) async {
+    isTaskLoading(true);
+    final result = await changeTaskCompletedUasecase.call(
+      isSubTask: isSubTask,
+      taskId: taskId,
+    );
+    result.fold(
+      (failure) {
+        String errorMessages = '';
+        bool data = false;
+        final errors = failure.data?['errors'] as Map<String, dynamic>?;
+        if (errors != null) {
+          errors.forEach((key, value) {
+            if (key.startsWith('permissions')) {
+              if (!data) {
+                errorMessages += "Permissions: ${value.first}\n";
+                data = true;
+              }
+            } else {
+              for (var msg in value) {
+                errorMessages += "- $key: $msg\n";
+              }
+            }
+          });
+        } else {
+          errorMessages = failure.data?['message'] ?? failure.errMessage;
+        }
+        Get.snackbar(
+          'error'.tr,
+          errorMessages,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
+      (success) {
+        // Get.back();
+        Future.delayed(
+          Duration(milliseconds: 1500),
+          () {
+            getEmployeeData();
+            Get.back();
+          },
+        );
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
+    );
+    isTaskLoading(false);
+  }
+
   // get employee data
   final Rxn<DashbordEmployeeDetailsModel> employeeData = Rxn();
   void getEmployeeData() async {
-    isLoading(true);
+    employeeData.value != null ? isLoading(false) : isLoading(true);
     final result = await getEmployeeDataUsecase.call();
     employeeData.value = result;
     isLoading(false);

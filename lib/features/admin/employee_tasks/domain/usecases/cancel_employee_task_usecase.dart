@@ -8,11 +8,15 @@ class CancelEmployeeTaskUsecase {
 
   CancelEmployeeTaskUsecase({required this.employeeTasksRepository});
 
-  Future<Either<Failure, String>> call(
-      {required String employeeTaskId, bool cancelWithRepetition = false}) {
+  Future<Either<Failure, String>> call({
+    required String employeeTaskId,
+    bool cancelWithRepetition = false,
+    bool isCompleted = false,
+  }) {
     return employeeTasksRepository.cancelEmployeeTask(
       employeeTaskId: employeeTaskId,
       cancelWithRepetition: cancelWithRepetition,
+      isCompleted: isCompleted,
     );
   }
 }

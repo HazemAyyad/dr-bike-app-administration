@@ -1,9 +1,15 @@
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
+import 'package:doctorbike/core/helpers/show_no_data.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/logs_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../employee_tasks/presentation/views/task_details_screen.dart';
+import '../controllers/employee_section_controller.dart';
 
 class ActivityLogScreen extends StatelessWidget {
   const ActivityLogScreen({Key? key}) : super(key: key);
@@ -33,7 +39,7 @@ class ActivityLogScreen extends StatelessWidget {
                           children: [
                             CustomText(title: 'activity'),
                             CustomText(title: 'description'),
-                            CustomText(title: 'details'),
+                            SizedBox(width: 20.w),
                           ],
                         ),
                       ),
@@ -43,68 +49,206 @@ class ActivityLogScreen extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
-              child: Column(
-                children: List.generate(
-                  10,
-                  (index) => Container(
-                    margin: EdgeInsets.symmetric(vertical: 5.h),
-                    padding: EdgeInsets.symmetric(horizontal: 10.w),
-                    height: 40.h,
-                    decoration: BoxDecoration(
-                      border:
-                          Border.all(color: AppColors.primaryColor, width: 1.w),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        CustomText(
-                          title: 'إضافة عقوبة جديدة',
-                          color: AppColors.customGreyColor2,
-                        ),
-                        SizedBox(width: 5.w),
-                        Container(
-                          width: 1.w,
-                          height: 20.h,
-                          color: AppColors.primaryColor,
-                        ),
-                        SizedBox(width: 5.w),
-                        CustomText(
-                          title: 'خصم يوم عمل للموظف احمد علي',
-                          color: AppColors.customGreyColor2,
-                        ),
-                        Container(
-                          width: 1.w,
-                          height: 20.h,
-                          color: AppColors.primaryColor,
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.exit_to_app,
-                                color: Get.isDarkMode
-                                    ? AppColors.primaryColor
-                                    : AppColors.secondaryColor,
+              child: GetBuilder<EmployeeSectionController>(
+                builder: (controller) {
+                  return Column(
+                    children: [
+                      ...controller.employeeService.logsMap.entries
+                          .take(100)
+                          .map(
+                        (entry) {
+                          final dateKey = entry.key;
+                          final logs = entry.value;
+
+                          if (logs.isEmpty) {
+                            return ShowNoData();
+                          }
+
+                          if (controller.isDialogLoading.value) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // لو حابب تعرض التاريخ كعنوان
+                              Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8.h),
+                                child: Text(
+                                  dateKey,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium!
+                                      .copyWith(
+                                        color: AppColors.primaryColor,
+                                        fontWeight: FontWeight.w400,
+                                        fontSize: 14.sp,
+                                      ),
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              ...logs.take(100).map(
+                                    (log) => GestureDetector(
+                                      onTap: () {
+                                        Get.dialog(
+                                          ShowLogDetails(log: log),
+                                        );
+                                      },
+                                      child: Container(
+                                        margin:
+                                            EdgeInsets.symmetric(vertical: 5.h),
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 10.w),
+                                        height: 40.h,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: AppColors.primaryColor,
+                                            width: 1.w,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(8.r),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            CustomText(
+                                              title: log.name,
+                                              color: AppColors.customGreyColor2,
+                                            ),
+                                            SizedBox(width: 5.w),
+                                            Container(
+                                              width: 1.w,
+                                              height: 20.h,
+                                              color: AppColors.primaryColor,
+                                            ),
+                                            SizedBox(width: 5.w),
+                                            CustomText(
+                                              title: log.description,
+                                              color: AppColors.customGreyColor2,
+                                            ),
+                                            Container(
+                                              width: 1.w,
+                                              height: 20.h,
+                                              color: AppColors.primaryColor,
+                                            ),
+                                            IconButton(
+                                              onPressed: () {
+                                                controller.cancelLog(
+                                                  context: context,
+                                                  logId: log.id.toString(),
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                Icons.delete_outline_rounded,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                            ],
+                          );
+                        },
+                      ),
+                      SizedBox(height: 50.h),
+                    ],
+                  );
+                },
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ShowLogDetails extends StatelessWidget {
+  const ShowLogDetails({
+    Key? key,
+    required this.log,
+  }) : super(key: key);
+
+  final LogsModel log;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      backgroundColor: ThemeService.isDark.value
+          ? AppColors.darckColor
+          : AppColors.whiteColor,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: 10.w,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(
+            15.r,
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: 10.w),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    SizedBox(),
+                    Text(
+                      'details'.tr,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: ThemeService.isDark.value
+                                ? AppColors.primaryColor
+                                : AppColors.secondaryColor,
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
                     ),
-                  ),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: Icon(
+                        Icons.close,
+                        color: AppColors.primaryColor,
+                        size: 30.sp,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              SupTextAndDis(
+                title: 'activity',
+                titleColor: AppColors.primaryColor,
+                discription: log.name,
+              ),
+              SupTextAndDis(
+                title: 'description',
+                titleColor: AppColors.primaryColor,
+                discription: log.description,
+              ),
+              SupTextAndDis(
+                title: 'details',
+                titleColor: AppColors.primaryColor,
+                discription: log.type,
+              ),
+              SupTextAndDis(
+                title: 'day',
+                titleColor: AppColors.primaryColor,
+                discription: showDataAndTime(log.createdAt),
+              ),
+              SizedBox(height: 20.h),
+            ],
+          ),
         ),
       ),
     );

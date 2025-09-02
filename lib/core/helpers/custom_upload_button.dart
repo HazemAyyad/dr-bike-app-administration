@@ -339,77 +339,79 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
               ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          height: 100.h,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _files.length,
-            itemBuilder: (context, i) {
-              final file = _files[i];
-              final path = file.path;
+        Flexible(
+          child: SizedBox(
+            height: 100.h,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _files.length,
+              itemBuilder: (context, i) {
+                final file = _files[i];
+                final path = file.path;
 
-              Widget preview;
+                Widget preview;
 
-              if (_isImage(path)) {
-                preview = Image.file(file,
-                    width: 80.w, height: 80.h, fit: BoxFit.cover);
-              } else if (_videoThumbnails[path] != null) {
-                preview = Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Image.memory(_videoThumbnails[path]!,
-                        width: 80.w, height: 80.h, fit: BoxFit.cover),
-                    const Icon(Icons.play_circle_fill,
-                        size: 32, color: Colors.white),
-                  ],
-                );
-              } else {
-                final progress = _progress[path] ?? 0;
-                preview = Container(
-                  width: 80.w,
-                  height: 80.h,
-                  color: Colors.grey[300],
-                  child: Stack(
+                if (_isImage(path)) {
+                  preview = Image.file(file,
+                      width: 80.w, height: 80.h, fit: BoxFit.cover);
+                } else if (_videoThumbnails[path] != null) {
+                  preview = Stack(
                     alignment: Alignment.center,
                     children: [
-                      SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: CircularProgressIndicator(value: progress),
+                      Image.memory(_videoThumbnails[path]!,
+                          width: 80.w, height: 80.h, fit: BoxFit.cover),
+                      const Icon(Icons.play_circle_fill,
+                          size: 32, color: Colors.white),
+                    ],
+                  );
+                } else {
+                  final progress = _progress[path] ?? 0;
+                  preview = Container(
+                    width: 80.w,
+                    height: 80.h,
+                    color: Colors.grey[300],
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: CircularProgressIndicator(value: progress),
+                        ),
+                        Text('${(progress * 100).toInt()}%',
+                            style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: EdgeInsets.only(right: 8.w),
+                  child: Stack(
+                    children: [
+                      preview,
+                      Positioned(
+                        right: 2,
+                        top: 2,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(
+                              () {
+                                _files.removeAt(i);
+                                _progress.remove(path);
+                                _videoThumbnails.remove(path);
+                              },
+                            );
+                            widget.onFilesChanged(_files);
+                          },
+                          child: const Icon(Icons.close, color: Colors.red),
+                        ),
                       ),
-                      Text('${(progress * 100).toInt()}%',
-                          style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 );
-              }
-
-              return Padding(
-                padding: EdgeInsets.only(right: 8.w),
-                child: Stack(
-                  children: [
-                    preview,
-                    Positioned(
-                      right: 2,
-                      top: 2,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(
-                            () {
-                              _files.removeAt(i);
-                              _progress.remove(path);
-                              _videoThumbnails.remove(path);
-                            },
-                          );
-                          widget.onFilesChanged(_files);
-                        },
-                        child: const Icon(Icons.close, color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+              },
+            ),
           ),
         ),
       ],

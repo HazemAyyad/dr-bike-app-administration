@@ -10,6 +10,8 @@ import '../models/employee_details_model.dart';
 import '../models/employee_model.dart';
 import '../models/financial_details_model.dart';
 import '../models/financial_dues_model.dart';
+import '../models/logs_model.dart';
+import '../models/overtime_and_loan_model.dart';
 import '../models/qr_generation_model.dart';
 import '../models/working_times_model.dart';
 
@@ -283,6 +285,126 @@ class EmployeeDatasource {
       final employee =
           QrGenerationModel.fromJson(response.data as Map<String, dynamic>);
       return employee;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // get Overtime And Loan
+  Future<List<OvertimeAndLoanModel>> getOvertimeAndLoan({
+    required bool isOvertime,
+  }) async {
+    try {
+      final response = await api
+          .get(isOvertime ? EndPoints.overtimeOrders : EndPoints.loanOrders);
+      List<OvertimeAndLoanModel> employees =
+          (response.data['employee_orders'] as List)
+              .map((e) => OvertimeAndLoanModel.fromJson(e))
+              .toList();
+      return employees;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // reject employee order
+  Future<Map<String, dynamic>> rejectEmployeeOrder({
+    required String employeeOrderId,
+  }) async {
+    try {
+      final response = await api.post(EndPoints.rejectEmployeeOrder, data: {
+        'employee_order_id': employeeOrderId,
+      });
+      final data = response.data;
+      return data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // approve employee order
+  Future<Map<String, dynamic>> approveEmployeeOrder({
+    required String employeeOrderId,
+    required String overtimeValue,
+    required String loanValue,
+    required String extraWorkHoursValue,
+  }) async {
+    try {
+      final response = await api.post(
+        loanValue.isNotEmpty
+            ? EndPoints.approveEmployeeLoanOrder
+            : EndPoints.approveEmployeeOvertimeOrder,
+        data: {
+          'employee_order_id': employeeOrderId,
+          if (loanValue.isNotEmpty) 'loan_value': loanValue,
+          if (overtimeValue.isNotEmpty) 'overtime_value': overtimeValue,
+          if (extraWorkHoursValue.isNotEmpty)
+            'extra_work_hours': extraWorkHoursValue,
+        },
+      );
+      final data = response.data;
+      return data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // get logs
+  Future<List<LogsModel>> getLogs() async {
+    try {
+      final response = await api.get(EndPoints.employeeLogs);
+      List<LogsModel> logs = (response.data['logs'] as List)
+          .map((e) => LogsModel.fromJson(e))
+          .toList();
+      return logs;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // cancel log
+  Future<Map<String, dynamic>> cancelLog({required String logId}) async {
+    try {
+      final response = await api.post(EndPoints.cancelLog, data: {
+        'log_id': logId,
+      });
+      final data = response.data;
+      return data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -268,7 +268,7 @@ class SalesController extends GetxController
         );
       }
     }
-    isLoading(false);
+    loding ? isLoading(false) : null;
   }
 
   // get instant sales
@@ -380,6 +380,7 @@ class SalesController extends GetxController
   // get ongoing projects
   final ApiConsumer api = Get.find<DioConsumer>();
   final List<OngoingProject> ongoingProjects = [];
+
   void getOngoingProjects() async {
     final result = await api.get(EndPoints.ongoingProjects);
     ongoingProjects.clear();
@@ -393,9 +394,9 @@ class SalesController extends GetxController
   @override
   void onInit() {
     super.onInit();
-    getOngoingProjects();
     getInstantSales();
-    getProfitSales();
+    getProfitSales(loding: false);
+    getOngoingProjects();
     getAllProducts();
     animController = AnimationController(
       vsync: this,

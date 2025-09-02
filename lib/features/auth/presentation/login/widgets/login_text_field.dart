@@ -21,10 +21,6 @@ class LogInTextField extends StatelessWidget {
           controller: controller.emailController,
           label: 'email',
           hintText: 'email',
-          labelColor: ThemeService.isDark.value
-              ? AppColors.graywhiteColor
-              : AppColors.customGreyColor,
-          hintColor: AppColors.customGreyColor3,
           isRequired: true,
           keyboardType: TextInputType.emailAddress,
           validator: (p0) =>
@@ -36,11 +32,7 @@ class LogInTextField extends StatelessWidget {
             controller: controller.passwordController,
             label: 'password',
             hintText: '************',
-            labelColor: ThemeService.isDark.value
-                ? AppColors.graywhiteColor
-                : AppColors.customGreyColor,
             isRequired: true,
-            hintColor: AppColors.customGreyColor3,
             keyboardType: TextInputType.visiblePassword,
             suffixIcon: IconButton(
               onPressed: () => controller.togglePasswordVisibility(),
@@ -55,8 +47,6 @@ class LogInTextField extends StatelessWidget {
             ),
             obscureText: controller.isPasswordVisible.value,
             textInputAction: TextInputAction.done,
-            validator: (p0) =>
-                Validators.validatePassword(p0, Get.locale!.languageCode),
           ),
         ),
       ],

@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_details_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_details_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_dues_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/overtime_and_loan_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_generation_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/working_times_model.dart';
 
@@ -13,6 +14,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/employee_section_repository.dart';
 import '../datasources/employee_datasource.dart';
 import '../models/employee_model.dart';
+import '../models/logs_model.dart';
 
 class EmployeeImplement implements EmployeeRepository {
   final NetworkInfo networkInfo;
@@ -230,6 +232,123 @@ class EmployeeImplement implements EmployeeRepository {
       }
     } else {
       throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<List<OvertimeAndLoanModel>> getOvertimeAndLoan({
+    required bool isOvertime,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await employeeDatasource.getOvertimeAndLoan(
+          isOvertime: isOvertime,
+        );
+
+        return result;
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  // reject employee order
+  @override
+  Future<Either<Failure, String>> rejectEmployeeOrder({
+    required String employeeOrderId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.rejectEmployeeOrder(
+        employeeOrderId: employeeOrderId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  // approve employee order
+  @override
+  Future<Either<Failure, String>> approveEmployeeOrder({
+    required String employeeOrderId,
+    required String overtimeValue,
+    required String loanValue,
+    required String extraWorkHoursValue,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.approveEmployeeOrder(
+        employeeOrderId: employeeOrderId,
+        overtimeValue: overtimeValue,
+        loanValue: loanValue,
+        extraWorkHoursValue: extraWorkHoursValue,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  // get logs
+  @override
+  Future<List<LogsModel>> getLogs() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await employeeDatasource.getLogs();
+
+        return result;
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  // cancel log
+  @override
+  Future<Either<Failure, String>> cancelLog({required String logId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.cancelLog(
+        logId: logId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }

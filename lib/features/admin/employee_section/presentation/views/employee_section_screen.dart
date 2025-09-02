@@ -15,6 +15,7 @@ import '../widgets/create_qrcode.dart';
 import '../widgets/employee_sections_list/employee_list.dart';
 import '../widgets/employee_sections_list/employee_section.dart';
 import '../widgets/employee_sections_list/financial_dues_list.dart';
+import '../widgets/employee_sections_list/loans_list.dart';
 import '../widgets/employee_sections_list/work_hours_list.dart';
 
 class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
@@ -175,25 +176,16 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                     children: [
                                       SizedBox(height: index == 0 ? 10.h : 0.h),
                                       Container(
-                                          decoration: BoxDecoration(
-                                            color: ThemeService.isDark.value
-                                                ? AppColors.customGreyColor4
-                                                : AppColors.whiteColor2,
-                                            borderRadius:
-                                                BorderRadius.circular(4.r),
-                                          ),
-                                          child: FinancialDuesList(
-                                              employee: financialDues)
-                                          //         : controller.currentTab.value == 3
-                                          //             ? LoansList(
-                                          //                 employee: employeeList,
-                                          //                 isOvertime: false,
-                                          //               )
-                                          //             : LoansList(
-                                          //                 employee: employeeList,
-                                          //                 isOvertime: true,
-                                          //               ),
-                                          ),
+                                        decoration: BoxDecoration(
+                                          color: ThemeService.isDark.value
+                                              ? AppColors.customGreyColor4
+                                              : AppColors.whiteColor2,
+                                          borderRadius:
+                                              BorderRadius.circular(4.r),
+                                        ),
+                                        child: FinancialDuesList(
+                                            employee: financialDues),
+                                      ),
                                       SizedBox(
                                         height: index ==
                                                 controller.filteredFinancialDues
@@ -209,7 +201,95 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                             ),
                             isLoading: controller.isLoading,
                           )
-                        : SizedBox(),
+                        : controller.currentTab.value == 3
+                            ? EmployeeSection(
+                                list: controller.filteredLoanList,
+                                sliverList: SliverList.builder(
+                                  itemCount: controller.filteredLoanList.length,
+                                  itemBuilder: (context, index) {
+                                    final financialDues =
+                                        controller.filteredLoanList[index];
+                                    return Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 24.w, vertical: 5.h),
+                                      child: Column(
+                                        children: [
+                                          SizedBox(
+                                              height: index == 0 ? 10.h : 0.h),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: ThemeService.isDark.value
+                                                  ? AppColors.customGreyColor4
+                                                  : AppColors.whiteColor2,
+                                              borderRadius:
+                                                  BorderRadius.circular(4.r),
+                                            ),
+                                            child: LoansList(
+                                              employee: financialDues,
+                                              isOvertime: false,
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: index ==
+                                                    controller.filteredLoanList
+                                                            .length -
+                                                        1
+                                                ? 20.h
+                                                : 0.h,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                                isLoading: controller.isLoading,
+                              )
+                            : EmployeeSection(
+                                list: controller.filteredOvertimeList,
+                                sliverList: SliverList.builder(
+                                  itemCount:
+                                      controller.filteredOvertimeList.length,
+                                  itemBuilder: (context, index) {
+                                    final financialDues =
+                                        controller.filteredOvertimeList[index];
+                                    return Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 24.w,
+                                        vertical: 5.h,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          SizedBox(
+                                              height: index == 0 ? 10.h : 0.h),
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: ThemeService.isDark.value
+                                                  ? AppColors.customGreyColor4
+                                                  : AppColors.whiteColor2,
+                                              borderRadius:
+                                                  BorderRadius.circular(4.r),
+                                            ),
+                                            child: LoansList(
+                                              employee: financialDues,
+                                              isOvertime: true,
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: index ==
+                                                    controller
+                                                            .filteredOvertimeList
+                                                            .length -
+                                                        1
+                                                ? 20.h
+                                                : 0.h,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                                isLoading: controller.isLoading,
+                              ),
           ),
           SliverToBoxAdapter(
             child: SizedBox(height: 80.h),

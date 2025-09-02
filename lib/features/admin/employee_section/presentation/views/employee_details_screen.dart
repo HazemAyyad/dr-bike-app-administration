@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -97,20 +98,39 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                                 padding: EdgeInsets.symmetric(horizontal: 5.w),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(5.r),
-                                  child: CachedNetworkImage(
-                                    imageUrl: e,
-                                    height: 200.h,
-                                    width: 200.w,
-                                    fit: BoxFit.fill,
-                                    fadeInDuration:
-                                        const Duration(milliseconds: 200),
-                                    fadeOutDuration:
-                                        const Duration(milliseconds: 200),
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      showGeneralDialog(
+                                        context: context,
+                                        barrierDismissible: true,
+                                        barrierLabel: 'Dismiss',
+                                        barrierColor:
+                                            Colors.black.withAlpha(128),
+                                        transitionDuration:
+                                            const Duration(milliseconds: 300),
+                                        pageBuilder: (context, anim1, anim2) {
+                                          return FullScreenZoomImage(
+                                            imageUrl: e,
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: CachedNetworkImage(
+                                      imageUrl: e,
+                                      height: 200.h,
+                                      width: 200.w,
+                                      fit: BoxFit.fill,
+                                      fadeInDuration:
+                                          const Duration(milliseconds: 200),
+                                      fadeOutDuration:
+                                          const Duration(milliseconds: 200),
+                                      placeholder: (context, url) =>
+                                          const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(Icons.error),
                                     ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
                                   ),
                                 ),
                               ),
@@ -142,20 +162,39 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                                 padding: EdgeInsets.symmetric(horizontal: 5.w),
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(5.r),
-                                  child: CachedNetworkImage(
-                                    imageUrl: e,
-                                    height: 200.h,
-                                    width: 200.w,
-                                    fit: BoxFit.fill,
-                                    fadeInDuration:
-                                        const Duration(milliseconds: 200),
-                                    fadeOutDuration:
-                                        const Duration(milliseconds: 200),
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      showGeneralDialog(
+                                        context: context,
+                                        barrierDismissible: true,
+                                        barrierLabel: 'Dismiss',
+                                        barrierColor:
+                                            Colors.black.withAlpha(128),
+                                        transitionDuration:
+                                            const Duration(milliseconds: 300),
+                                        pageBuilder: (context, anim1, anim2) {
+                                          return FullScreenZoomImage(
+                                            imageUrl: e,
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: CachedNetworkImage(
+                                      imageUrl: e,
+                                      height: 200.h,
+                                      width: 200.w,
+                                      fit: BoxFit.fill,
+                                      fadeInDuration:
+                                          const Duration(milliseconds: 200),
+                                      fadeOutDuration:
+                                          const Duration(milliseconds: 200),
+                                      placeholder: (context, url) =>
+                                          const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(Icons.error),
                                     ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
                                   ),
                                 ),
                               ),

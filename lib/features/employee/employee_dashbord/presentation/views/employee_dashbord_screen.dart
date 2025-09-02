@@ -49,32 +49,74 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                 }
                 return Column(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          'tasks'.tr,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 17.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.customGreyColor
-                                        : AppColors.secondaryColor,
+                    Obx(
+                      () {
+                        if (controller.isTaskLoading.value) {
+                          return Column(
+                            children: [
+                              SizedBox(height: 52.h),
+                              Center(child: CircularProgressIndicator()),
+                            ],
+                          );
+                        }
+                        if (controller.employeeData.value != null) {
+                          return Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'tasks'.tr,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          fontSize: 17.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: ThemeService.isDark.value
+                                              ? AppColors.customGreyColor
+                                              : AppColors.secondaryColor,
+                                        ),
                                   ),
-                        ),
-                      ],
+                                ],
+                              ),
+                              SizedBox(height: 8.h),
+                              if (controller.employeeData.value!.tasks.isEmpty)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'لا يوجد مهمات'.tr,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w400,
+                                            color: AppColors.customGreyColor,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ...controller.employeeData.value!.tasks
+                                  .take(5)
+                                  .map(
+                                    (e) => EmployeeDashbordTasks(e: e),
+                                  ),
+                            ],
+                          );
+                        }
+                        return SizedBox.shrink();
+                      },
                     ),
-                    SizedBox(height: 8.h),
-                    ...controller.employeeData.value!.tasks.take(5).map(
-                          (e) => EmployeeDashbordTasks(e: e),
-                        ),
-                    BuildActionButtons(
-                      buttons: controller.buttons,
-                      employeePermissions: controller
-                          .employeeData.value?.permissions
-                          .map((e) => e.id)
-                          .toList(),
-                    ),
+                    controller.employeeData.value!.permissions.isNotEmpty
+                        ? BuildActionButtons(
+                            buttons: controller.buttons,
+                            employeePermissions: controller
+                                .employeeData.value?.permissions
+                                .map((e) => e.id)
+                                .toList(),
+                          )
+                        : SizedBox.shrink(),
                   ],
                 );
               },

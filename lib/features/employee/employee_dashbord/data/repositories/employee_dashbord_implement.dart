@@ -18,8 +18,10 @@ class EmployeeDashbordImplement implements EmployeeDashbordRepository {
 
   // request over time or loan
   @override
-  Future<Either<Failure, String>> requestOverTimeOrLoan(
-      {required String value, required bool isOverTime}) async {
+  Future<Either<Failure, String>> requestOverTimeOrLoan({
+    required String value,
+    required bool isOverTime,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -53,6 +55,35 @@ class EmployeeDashbordImplement implements EmployeeDashbordRepository {
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+// change employee task to completed
+  @override
+  Future<Either<Failure, String>> changeEmployeeTaskToCompleted({
+    required bool isSubTask,
+    required int taskId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result =
+          await employeeDashbordDatasource.changeEmployeeTaskToCompleted(
+        isSubTask: isSubTask,
+        taskId: taskId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }

@@ -11,6 +11,7 @@ import '../../admin/--/presentation/admin_dashbord/views/admin_dashboard_screen.
 import '../../admin/employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
 import '../../employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
+import '../../employee/employee_dashbord/domain/usecases/change_task_completed_uasecase.dart';
 import '../../employee/employee_dashbord/domain/usecases/get_employee_data_usecase.dart';
 import '../../employee/employee_dashbord/domain/usecases/request_over_time_loan_usecase.dart';
 import '../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
@@ -64,6 +65,10 @@ class BottomNavBarController extends GetxController {
                       Get.find<EmployeeDashbordImplement>(),
                 ),
                 getEmployeeDataUsecase: GetEmployeeDataUsecase(
+                  employeeDashbordRepository:
+                      Get.find<EmployeeDashbordImplement>(),
+                ),
+                changeTaskCompletedUasecase: ChangeTaskCompletedUasecase(
                   employeeDashbordRepository:
                       Get.find<EmployeeDashbordImplement>(),
                 ),

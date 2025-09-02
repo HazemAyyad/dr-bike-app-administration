@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../data/models/overtime_and_loan_model.dart';
 import '../../controllers/employee_section_controller.dart';
 import '../requests_details.dart';
 
@@ -14,7 +16,7 @@ class LoansList extends GetView<EmployeeSectionController> {
     required this.isOvertime,
   }) : super(key: key);
 
-  final Map<String, dynamic> employee;
+  final OvertimeAndLoanModel employee;
   final bool isOvertime;
   @override
   Widget build(BuildContext context) {
@@ -41,18 +43,35 @@ class LoansList extends GetView<EmployeeSectionController> {
                     padding: const EdgeInsets.all(5),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(5.r),
-                      child: CachedNetworkImage(
-                        imageUrl: employee['image'],
-                        height: 65.h,
-                        width: 65.w,
-                        fit: BoxFit.cover,
-                        fadeInDuration: const Duration(milliseconds: 200),
-                        fadeOutDuration: const Duration(milliseconds: 200),
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(),
+                      child: GestureDetector(
+                        onTap: () {
+                          showGeneralDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            barrierLabel: 'Dismiss',
+                            barrierColor: Colors.black.withAlpha(128),
+                            transitionDuration:
+                                const Duration(milliseconds: 300),
+                            pageBuilder: (context, anim1, anim2) {
+                              return FullScreenZoomImage(
+                                imageUrl: employee.employeeImg,
+                              );
+                            },
+                          );
+                        },
+                        child: CachedNetworkImage(
+                          imageUrl: employee.employeeImg,
+                          height: 65.h,
+                          width: 65.w,
+                          fit: BoxFit.cover,
+                          fadeInDuration: const Duration(milliseconds: 200),
+                          fadeOutDuration: const Duration(milliseconds: 200),
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          errorWidget: (context, url, error) =>
+                              const Icon(Icons.error),
                         ),
-                        errorWidget: (context, url, error) =>
-                            const Icon(Icons.error),
                       ),
                     ),
                   ),
@@ -63,7 +82,7 @@ class LoansList extends GetView<EmployeeSectionController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        employee['employeeName'],
+                        employee.employeeName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: textStyle.copyWith(
@@ -75,7 +94,11 @@ class LoansList extends GetView<EmployeeSectionController> {
                       SizedBox(height: 5.h),
                       isOvertime
                           ? Text(
-                              '${'overtimeValue'.tr} : ${int.parse(employee['overtime'])} ${int.parse(employee['overtime']) > 10 ? 'hour'.tr : 'hours'.tr}',
+                              employee.overtimeValue!.isEmpty
+                                  ? '${'overtimeValue'.tr} : ${employee.extraWorkHoursValue ?? ''} '
+                                      '${(int.tryParse(employee.extraWorkHoursValue ?? '0') ?? 0) > 10 ? 'hour'.tr : 'hours'.tr}'
+                                  : '${'overtimeValue'.tr} : ${employee.overtimeValue ?? ''} '
+                                      '${(int.tryParse(employee.overtimeValue ?? '0') ?? 0) > 10 ? 'hour'.tr : 'hours'.tr}',
                               style: textStyle.copyWith(
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
@@ -83,7 +106,7 @@ class LoansList extends GetView<EmployeeSectionController> {
                               ),
                             )
                           : Text(
-                              '${'debtValue'.tr} : ${employee['debts']} ${'currency'.tr}',
+                              '${'debtValue'.tr} : ${employee.loanValue} ${'currency'.tr}',
                               style: textStyle.copyWith(
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
@@ -100,11 +123,11 @@ class LoansList extends GetView<EmployeeSectionController> {
             width: 60.w,
             height: 75.h,
             decoration: BoxDecoration(
-              color: employee['stuts'] == 'طلب مقبول'
+              color: employee.orderStatus == 'approved'
                   ? AppColors.customGreen1
-                  : employee['stuts'] == 'طلب مرفوض'
-                      ? AppColors.redColor
-                      : AppColors.customOrange,
+                  : employee.orderStatus == 'pending'
+                      ? AppColors.customOrange
+                      : AppColors.redColor,
               borderRadius: BorderRadiusDirectional.only(
                 topEnd: Radius.circular(4.r),
                 bottomEnd: Radius.circular(4.r),
@@ -112,7 +135,7 @@ class LoansList extends GetView<EmployeeSectionController> {
             ),
             child: Center(
               child: Text(
-                employee['stuts'],
+                employee.orderStatus.tr,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontSize: 13.sp,

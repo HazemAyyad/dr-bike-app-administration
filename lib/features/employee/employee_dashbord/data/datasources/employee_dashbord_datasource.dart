@@ -1,5 +1,3 @@
-// ignore_for_file: depend_on_referenced_packages
-
 import 'package:dio/dio.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
@@ -27,7 +25,6 @@ class EmployeeDashbordDatasource {
         },
       );
       // final data = response.data;
-      print('Response data: $response');
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -47,6 +44,33 @@ class EmployeeDashbordDatasource {
       final response = await api.post(EndPoints.employeeHomeData);
       return DashbordEmployeeDetailsModel.fromJson(
           response.data['employee_details']);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // change employee task to completed
+  Future<Map<String, dynamic>> changeEmployeeTaskToCompleted({
+    required bool isSubTask,
+    required int taskId,
+  }) async {
+    try {
+      final response = await api.post(
+          isSubTask
+              ? EndPoints.changeSubEmployeeTaskToCompleted
+              : EndPoints.changeEmployeeTaskToCompleted,
+          data: {
+            if (isSubTask) 'sub_task_id': taskId,
+            if (!isSubTask) 'employee_task_id': taskId,
+          });
+      return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -210,6 +210,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.TASKDETAILS,
       page: () => const TaskDetailsScreen(),
+      binding: EmployeeTasksBinding(),
       transition: _transitionFade,
     ),
 

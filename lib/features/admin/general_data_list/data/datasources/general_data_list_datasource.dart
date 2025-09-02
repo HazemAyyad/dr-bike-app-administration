@@ -48,7 +48,7 @@ class GeneralDataListDatasource {
       iDImage['ID_image[]'] = await Future.wait(
         data.iDImage.map((e) async {
           if (e.path.startsWith('http')) {
-            return e.path;
+            return e.path.split('http://doctorbike.mj-sall.com/').last;
           } else {
             // لو ملف جديد → Multipart
             return await MultipartFile.fromFile(
@@ -63,16 +63,18 @@ class GeneralDataListDatasource {
       licenseImage['license_image[]'] = await Future.wait(
         data.licenseImage.map((e) async {
           if (e.path.startsWith('http')) {
-            return e.path;
+            return e.path.split('http://doctorbike.mj-sall.com/').last;
           } else {
             return await MultipartFile.fromFile(
               e.path,
-              filename: e.path.split('/').last,
+              filename: e.path.split('http://doctorbike.mj-sall.com/').last,
             );
           }
         }),
       );
 
+      print(iDImage);
+      print(licenseImage);
       final response = await api.post(
         customerId.isNotEmpty || sellerId.isNotEmpty
             ? EndPoints.editPerson

@@ -9,4 +9,9 @@ abstract class EmployeeDashbordRepository {
     required String value,
   });
   Future<DashbordEmployeeDetailsModel> getEmployeeData();
+
+  Future<Either<Failure, String>> changeEmployeeTaskToCompleted({
+    required bool isSubTask,
+    required int taskId,
+  });
 }

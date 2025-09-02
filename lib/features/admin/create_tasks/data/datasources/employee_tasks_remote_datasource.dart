@@ -34,27 +34,25 @@ class CreateEmployeeTasksDataSource {
     required File audio,
   }) async {
     try {
-      print(subEmployeeTasks);
-      print(employeeTaskId);
       final subEmployeeTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subEmployeeTasks.length; i++) {
         subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
             subEmployeeTasks[i]['subTaskName'];
-        final imgList = subEmployeeTasks[i]['subTaskImage'] as List;
+        final imgList = subEmployeeTasks[i]['subTaskImage'];
 
-        if (imgList.isNotEmpty) {
-          final img = imgList.first; // أول صورة فقط
+        if (imgList != null) {
+          // final img = imgList.first; // أول صورة فقط
 
-          if (img.toString().startsWith('http')) {
+          if (imgList.toString().startsWith('http')) {
             subEmployeeTasksMap[
-                'sub_employee_tasks[$i][admin_subtask__img][]'] = img;
+                'sub_employee_tasks[$i][admin_subtask__img][]'] = [imgList];
           } else {
             subEmployeeTasksMap[
                     'sub_employee_tasks[$i][admin_subtask__img][]'] =
                 await MultipartFile.fromFile(
-              img,
-              filename: img.split('/').last,
+              imgList,
+              filename: imgList.split('/').last,
             );
           }
         }

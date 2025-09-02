@@ -104,9 +104,12 @@ const Map<String, String> ar = {
   'currency1': 'دولار',
   'currency2': 'دينار',
   'check': 'شيك',
-  'rejected': 'معدم',
+  'rejectedd': 'معدم',
   'reference': 'مرجع',
   'cashed': 'مقبول',
+  'pending': 'قيد الانتظار',
+  'approved': 'مقبول',
+  'rejected': 'مرفوض',
 
   'employeeTasks': 'مهام الموظفين',
   'privateTasks': 'المهام الخاصة',

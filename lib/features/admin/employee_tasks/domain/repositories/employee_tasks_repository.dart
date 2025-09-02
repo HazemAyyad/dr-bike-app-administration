@@ -10,6 +10,7 @@ abstract class EmployeeTasksRepository {
   Future<Either<Failure, String>> cancelEmployeeTask({
     required String employeeTaskId,
     required bool cancelWithRepetition,
+    required bool isCompleted,
   });
   Future<List<EmployeeTaskModel>> getEmployeeTasks({required int page});
 
@@ -31,4 +32,9 @@ abstract class EmployeeTasksRepository {
   });
 
   Future<dynamic> getTaskDetails({required String taskId});
+
+  Future<dynamic> uplodeTaskImage({
+    required String taskId,
+    required List<File> image,
+  });
 }

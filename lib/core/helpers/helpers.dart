@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/assets_manger.dart';
 import '../utils/screen_util_new.dart';
@@ -29,7 +30,9 @@ class Helpers {
           child: Container(
             width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeService.isDark.value
+                  ? AppColors.darckColor
+                  : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Padding(
@@ -118,7 +121,9 @@ class Helpers {
           child: Container(
             width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeService.isDark.value
+                  ? AppColors.darckColor
+                  : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Padding(
@@ -184,7 +189,9 @@ class Helpers {
           child: Container(
             width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: ThemeService.isDark.value
+                  ? AppColors.darckColor
+                  : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Padding(

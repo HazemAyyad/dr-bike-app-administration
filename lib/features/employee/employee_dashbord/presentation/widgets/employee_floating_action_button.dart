@@ -45,7 +45,7 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
             }),
 
             Positioned(
-              bottom: 40.h,
+              bottom: 50.h,
               left: Get.locale!.languageCode == 'ar' ? 0.w : 180.w,
               right: Get.locale!.languageCode == 'ar' ? 180.w : 0.w,
               child: SizeTransition(
@@ -74,19 +74,6 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Flexible(
-                          child: Text(
-                            'add'.tr,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: AppColors.primaryColor,
-                                  fontSize: 17.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                          ),
-                        ),
                         ...controller.employeeAddList.map(
                           (e) => InkWell(
                             overlayColor:

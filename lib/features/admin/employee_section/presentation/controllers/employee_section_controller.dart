@@ -11,28 +11,38 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/financial_details_model.dart';
 import '../../data/models/financial_dues_model.dart';
+import '../../data/models/overtime_and_loan_model.dart';
 import '../../domain/entities/employee_entity.dart';
 import '../../domain/entities/working_times_entity.dart';
+import '../../domain/usecases/approve_employee_order_usecase.dart';
+import '../../domain/usecases/cancel_log_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
 import '../../domain/usecases/get_all_employee.dart';
+import '../../domain/usecases/get_logs_usecase.dart';
+import '../../domain/usecases/overtime_and_loan_usecase.dart';
 import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
 import '../../domain/usecases/qr_generation_usecase.dart';
+import '../../domain/usecases/reject_order_usecase.dart';
 import '../../domain/usecases/working_times_usecase.dart';
 import 'employee_service.dart';
 
 class EmployeeSectionController extends GetxController
     with GetTickerProviderStateMixin {
-  PaySalaryToEmployeeUsecase paySalaryEmployee;
-  GetAllEmployeeUsecase getAllEmployeeUsecase;
-  WorkingTimesUsecase workingTimesUsecase;
-  FinancialDuesUsecase financialDuesUsecase;
-  FinancialDetailsUsecase financialDetailsUsecase;
-  EmployeeDetailsUsecase employeeDetailsUsecase;
-  QrGenerationUsecase qrGenerationUsecase;
-
-  EmployeeService employeeService;
+  final PaySalaryToEmployeeUsecase paySalaryEmployee;
+  final GetAllEmployeeUsecase getAllEmployeeUsecase;
+  final WorkingTimesUsecase workingTimesUsecase;
+  final FinancialDuesUsecase financialDuesUsecase;
+  final FinancialDetailsUsecase financialDetailsUsecase;
+  final EmployeeDetailsUsecase employeeDetailsUsecase;
+  final QrGenerationUsecase qrGenerationUsecase;
+  final OvertimeAndLoanUsecase overtimeAndLoanUsecase;
+  final RejectOrderUsecase rejectOrderUsecase;
+  final ApproveEmployeeOrderUsecase approveEmployeeOrderUsecase;
+  final GetLogsUsecase getLogsUsecase;
+  final CancelLogUsecase cancelLogUsecase;
+  final EmployeeService employeeService;
 
   EmployeeSectionController({
     required this.paySalaryEmployee,
@@ -42,20 +52,23 @@ class EmployeeSectionController extends GetxController
     required this.financialDetailsUsecase,
     required this.employeeDetailsUsecase,
     required this.qrGenerationUsecase,
+    required this.overtimeAndLoanUsecase,
+    required this.rejectOrderUsecase,
+    required this.approveEmployeeOrderUsecase,
+    required this.getLogsUsecase,
+    required this.cancelLogUsecase,
     required this.employeeService,
   });
 
-  final GlobalKey formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   // final TextEditingController fromDateController = TextEditingController();
   // final TextEditingController toDateController = TextEditingController();
   final TextEditingController employeeNameController = TextEditingController();
 
   RxInt currentTab = 0.obs;
-  final tabs = [
-    'employeeList', 'workHours', 'entitlements',
-    // 'loans', 'overtime'
-  ].obs;
+  final tabs =
+      ['employeeList', 'workHours', 'entitlements', 'loans', 'overtime'].obs;
 
   final RxBool isLoading = false.obs;
 
@@ -75,22 +88,29 @@ class EmployeeSectionController extends GetxController
 
   final TextEditingController paySalaryController = TextEditingController();
 
-  RxBool acceptOrder = false.obs;
+  final TextEditingController overtimeValueController = TextEditingController();
+
+  final TextEditingController loanValueController = TextEditingController();
+
+  final TextEditingController extraWorkHoursController =
+      TextEditingController();
+
+  RxBool loanValue = false.obs;
 
   RxBool rejectOrder = false.obs;
 
-  RxBool addRegularWorkingHours = false.obs;
+  RxBool extraWorkHours = false.obs;
   final TextEditingController addRegularWorkingHoursController =
       TextEditingController();
 
-  RxBool addWorkHours = false.obs;
+  RxBool overtimeValue = false.obs;
   final TextEditingController addWorkHoursController = TextEditingController();
 
   void setOnlyOneTrue(String key) {
-    acceptOrder.value = key == 'acceptOrder';
+    loanValue.value = key == 'loanValue';
     rejectOrder.value = key == 'rejectOrder';
-    addRegularWorkingHours.value = key == 'addRegularWorkingHours';
-    addWorkHours.value = key == 'addWorkHours';
+    extraWorkHours.value = key == 'extraWorkHours';
+    overtimeValue.value = key == 'overtimeValue';
   }
 
   // متغير للتحكم في قائمة الإضافة
@@ -159,11 +179,129 @@ class EmployeeSectionController extends GetxController
     }
   }
 
+  // reject Employee Order
+  void rejectEmployeeOrder(BuildContext context, String employeeOrderId) async {
+    isPaymentLoading(true);
+    final result =
+        await rejectOrderUsecase.call(employeeOrderId: employeeOrderId);
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'],
+        );
+      },
+      (success) {
+        Get.back();
+        Future.delayed(
+          Duration(milliseconds: 1500),
+          () {
+            getOvertimeAndLoan();
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isPaymentLoading(false);
+  }
+
+  // approve Employee Order
+  void approveEmployeeOrder({
+    required BuildContext context,
+    required String employeeOrderId,
+  }) async {
+    isPaymentLoading(true);
+    final result = await approveEmployeeOrderUsecase.call(
+      employeeOrderId: employeeOrderId,
+      overtimeValue: overtimeValueController.text.isEmpty
+          ? ''
+          : overtimeValueController.text,
+      loanValue:
+          loanValueController.text.isEmpty ? '' : loanValueController.text,
+      extraWorkHoursValue: extraWorkHoursController.text.isEmpty
+          ? ''
+          : extraWorkHoursController.text,
+    );
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'],
+        );
+      },
+      (success) {
+        overtimeValueController.clear();
+        loanValueController.clear();
+        extraWorkHoursController.clear();
+        loanValue.value = false;
+        rejectOrder.value = false;
+        extraWorkHours.value = false;
+        overtimeValue.value = false;
+        Get.back();
+        Future.delayed(
+          Duration(milliseconds: 1500),
+          () {
+            getOvertimeAndLoan();
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isPaymentLoading(false);
+  }
+
+  // cancel Log
+  void cancelLog({
+    required BuildContext context,
+    required String logId,
+  }) async {
+    isPaymentLoading(true);
+    final result = await cancelLogUsecase.call(logId: logId);
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'],
+        );
+      },
+      (success) {
+        Future.delayed(
+          Duration(milliseconds: 1500),
+          () {
+            getLogs();
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isPaymentLoading(false);
+    update();
+  }
+
   //Get Employee
   void getEmployee() async {
     employeeService.employeeList.isEmpty ? isLoading(true) : isLoading(false);
     final result = await getAllEmployeeUsecase.call();
     employeeService.employeeList.assignAll(result);
+    filteredEmployees.assignAll(employeeService.employeeList);
     isLoading(false);
   }
 
@@ -174,6 +312,7 @@ class EmployeeSectionController extends GetxController
         : isLoading(false);
     final result = await workingTimesUsecase.call();
     employeeService.workingTimesList.assignAll(result);
+    filteredWorkingTimes.assignAll(employeeService.workingTimesList);
     isLoading(false);
   }
 
@@ -184,6 +323,7 @@ class EmployeeSectionController extends GetxController
         : isLoading(false);
     final result = await financialDuesUsecase.call();
     employeeService.financialDuesList.assignAll(result);
+    filteredFinancialDues.assignAll(employeeService.financialDuesList);
     isLoading(false);
   }
 
@@ -212,6 +352,39 @@ class EmployeeSectionController extends GetxController
     isDialogLoading(false);
   }
 
+  // Get Overtime And Loan
+  void getOvertimeAndLoan() async {
+    employeeService.financialDuesList.isEmpty
+        ? isLoading(true)
+        : isLoading(false);
+    final overtimeResult = await overtimeAndLoanUsecase.call(isOvertime: true);
+    employeeService.overtimeList.assignAll(overtimeResult);
+    filteredOvertimeList.assignAll(employeeService.overtimeList);
+    final loanResult = await overtimeAndLoanUsecase.call(isOvertime: false);
+    employeeService.loanList.assignAll(loanResult);
+    filteredLoanList.assignAll(employeeService.loanList);
+    isLoading(false);
+  }
+
+  // Get Logs
+  void getLogs() async {
+    employeeService.logsMap.isEmpty ? isLoading(true) : isLoading(false);
+    employeeService.logsMap.clear();
+    for (var task in await getLogsUsecase.call()) {
+      String dateKey =
+          "${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
+      if (employeeService.logsMap.containsKey(dateKey)) {
+        if (!employeeService.logsMap[dateKey]!.any((t) => t.id == task.id)) {
+          employeeService.logsMap[dateKey]!.add(task);
+        }
+      } else {
+        employeeService.logsMap[dateKey] = [task];
+      }
+    }
+    isLoading(false);
+    update();
+  }
+
   // generate QR code
   void generateQrCode(bool isrefresh) async {
     isDialogLoading(true);
@@ -231,6 +404,10 @@ class EmployeeSectionController extends GetxController
       <WorkingTimesEntity>[].obs;
   final RxList<FinancialDuesModel> filteredFinancialDues =
       <FinancialDuesModel>[].obs;
+  final RxList<OvertimeAndLoanModel> filteredOvertimeList =
+      <OvertimeAndLoanModel>[].obs;
+  final RxList<OvertimeAndLoanModel> filteredLoanList =
+      <OvertimeAndLoanModel>[].obs;
 
   void filterLists() {
     if (employeeNameController.text.isEmpty) {
@@ -238,6 +415,8 @@ class EmployeeSectionController extends GetxController
       filteredEmployees.assignAll(employeeService.employeeList);
       filteredWorkingTimes.assignAll(employeeService.workingTimesList);
       filteredFinancialDues.assignAll(employeeService.financialDuesList);
+      filteredOvertimeList.assignAll(employeeService.overtimeList);
+      filteredLoanList.assignAll(employeeService.loanList);
     } else {
       final lowerQuery = employeeNameController.text..toLowerCase();
 
@@ -255,6 +434,14 @@ class EmployeeSectionController extends GetxController
         employeeService.financialDuesList
             .where((f) => f.employeeName.toLowerCase().contains(lowerQuery)),
       );
+      filteredOvertimeList.assignAll(
+        employeeService.overtimeList
+            .where((o) => o.employeeName.toLowerCase().contains(lowerQuery)),
+      );
+      filteredLoanList.assignAll(
+        employeeService.loanList
+            .where((l) => l.employeeName.toLowerCase().contains(lowerQuery)),
+      );
     }
     Get.back();
   }
@@ -265,6 +452,8 @@ class EmployeeSectionController extends GetxController
     getEmployee();
     getWorkingTimes();
     getFinancialDues();
+    getOvertimeAndLoan();
+    getLogs();
     animController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 300),
@@ -282,9 +471,6 @@ class EmployeeSectionController extends GetxController
         animController.reverse();
       }
     });
-    filteredEmployees.assignAll(employeeService.employeeList);
-    filteredWorkingTimes.assignAll(employeeService.workingTimesList);
-    filteredFinancialDues.assignAll(employeeService.financialDuesList);
   }
 
   final GlobalKey qrKey = GlobalKey();

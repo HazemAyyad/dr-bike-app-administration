@@ -38,7 +38,7 @@ class BuildActionButtons extends StatelessWidget {
         GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            childAspectRatio: 2.3.h,
+            childAspectRatio: 2.h,
             crossAxisSpacing: 8.w,
             mainAxisSpacing: 13.h,
           ),

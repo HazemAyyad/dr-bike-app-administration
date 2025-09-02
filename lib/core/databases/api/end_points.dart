@@ -14,6 +14,10 @@ class EndPoints {
 
 // employee Dashboard
   static const String employeeHomeData = 'employee/home/data';
+  static const String changeEmployeeTaskToCompleted =
+      'change/employee/task/to/completed';
+  static const String changeSubEmployeeTaskToCompleted =
+      'change/sub/employee/task/to/completed';
 
   static const String addOvertimeOrder = 'employee/add/overtime/order';
   static const String addLoanOrder = 'employee/add/loan/order';
@@ -40,6 +44,14 @@ class EndPoints {
   static const String qrGeneration = 'qr-generation';
   static const String editEmployee = 'edit/employee';
   static const String qrScan = 'qr-scan';
+  static const String overtimeOrders = 'employee/overtime/orders';
+  static const String loanOrders = 'employee/loan/orders';
+  static const String rejectEmployeeOrder = 'reject/employee/order';
+  static const String approveEmployeeLoanOrder = 'approve/employee/loan/order';
+  static const String approveEmployeeOvertimeOrder =
+      'approve/employee/overtime/order';
+  static const String employeeLogs = 'employee/logs';
+  static const String cancelLog = 'cancel/log';
 
   // tasks section
   static const String createEmployeeTask = 'create/employee/task';
@@ -54,6 +66,8 @@ class EndPoints {
   static const String cancelEmployeeTaskWithRepetition =
       'cancel/employee/task/with/repetition';
   static const String showEmployeeTask = 'show/employee/task';
+  static const String editEmployeeTaskImages =
+      'employee/edit/employee/task/images';
 
   // special tasks
   static const String getOngoingSpecialTasks = 'ongoing/special/tasks';

@@ -76,7 +76,7 @@ class EmployeeTasksDataSource {
               : await MultipartFile.fromFile(
                   audio.path,
                   filename: audio.path.split('/').last,
-                  contentType: MediaType("audio", "x-m4a"), // ✅ السيرفر يقبله
+                  contentType: MediaType("audio", "x-m4a"),
                 ),
         },
         isFormData: true,
@@ -87,7 +87,6 @@ class EmployeeTasksDataSource {
         ),
       );
       final data = response.data;
-      print('Response data: $response');
       return data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -135,12 +134,15 @@ class EmployeeTasksDataSource {
   Future<Map<String, dynamic>> cancelEmployeeTask({
     required String employeeTaskId,
     required bool cancelWithRepetition,
+    required bool isCompleted,
   }) async {
     try {
       final response = await api.post(
         cancelWithRepetition
             ? EndPoints.cancelEmployeeTaskWithRepetition
-            : EndPoints.cancelEmployeeTask,
+            : isCompleted
+                ? EndPoints.changeEmployeeTaskToCompleted
+                : EndPoints.cancelEmployeeTask,
         data: {'employee_task_id': employeeTaskId},
       );
       final data = response.data;
@@ -165,6 +167,45 @@ class EmployeeTasksDataSource {
         EndPoints.showEmployeeTask,
         queryParameters: {'employee_task_id': taskId},
       );
+      final data = response.data;
+      // print('Response data: $response');
+      return data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // uplode task image
+  Future<dynamic> uplodeTaskImage({
+    required String taskId,
+    required List<File> image,
+  }) async {
+    try {
+      final subEmployeeTasksMap = <String, dynamic>{};
+      subEmployeeTasksMap['employee_img[]'] = await Future.wait(
+        image.map((e) async {
+          return await MultipartFile.fromFile(
+            e.path,
+            filename: e.path.split('/').last,
+          );
+        }),
+      );
+      final response = await api.post(
+        EndPoints.editEmployeeTaskImages,
+        data: {
+          'employee_task_id': taskId,
+          ...subEmployeeTasksMap,
+        },
+        isFormData: true,
+      );
+
       final data = response.data;
       // print('Response data: $response');
       return data;

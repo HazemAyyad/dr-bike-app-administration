@@ -4,11 +4,16 @@ import 'package:get/get.dart';
 
 import '../../data/repositorie_imp/employee_implement.dart';
 import '../../domain/usecases/add_points_usecase.dart';
+import '../../domain/usecases/approve_employee_order_usecase.dart';
+import '../../domain/usecases/cancel_log_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
+import '../../domain/usecases/get_logs_usecase.dart';
+import '../../domain/usecases/overtime_and_loan_usecase.dart';
 import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
 import '../../domain/usecases/qr_generation_usecase.dart';
+import '../../domain/usecases/reject_order_usecase.dart';
 import '../../domain/usecases/working_times_usecase.dart';
 import '../controllers/add_employee_controller.dart';
 import '../controllers/employee_section_controller.dart';
@@ -39,6 +44,21 @@ class EmployeeSectionBinding extends Bindings {
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         qrGenerationUsecase: QrGenerationUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        overtimeAndLoanUsecase: OvertimeAndLoanUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        rejectOrderUsecase: RejectOrderUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        approveEmployeeOrderUsecase: ApproveEmployeeOrderUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getLogsUsecase: GetLogsUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        cancelLogUsecase: CancelLogUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
       ),

@@ -1,14 +1,17 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_chechbox.dart';
+import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
+import '../../../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../controllers/employee_tasks_controller.dart';
 
 class TaskDetailsScreen extends GetView<EmployeeTasksController> {
@@ -16,37 +19,45 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
 
   @override
   Widget build(BuildContext context) {
+    // final taskId = Get.arguments['taskId'];
+
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
       appBar: CustomAppBar(
         title: 'employeeTaskDetails',
-        actions: [
-          TextButton.icon(
-            icon: Icon(
-              Icons.edit_calendar_outlined,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-              size: 25.sp,
-            ),
-            onPressed: () {
-              Get.toNamed(
-                AppRoutes.CREATETASKSCREEN,
-                arguments: {'title': 'createNewEmployeeTask', 'isEdit': true},
-              );
-            },
-            label: Text(
-              'edit'.tr,
-              style: theme.copyWith(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w700,
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
-              ),
-            ),
-          ),
-        ],
+        action: false,
+        // actions: [
+        // userType == 'admin'
+        //       ? TextButton.icon(
+        //           icon: Icon(
+        //             Icons.edit_calendar_outlined,
+        //             color: ThemeService.isDark.value
+        //                 ? AppColors.primaryColor
+        //                 : AppColors.secondaryColor,
+        //             size: 25.sp,
+        //           ),
+        //           onPressed: () {
+        //             Get.toNamed(
+        //               AppRoutes.CREATETASKSCREEN,
+        //               arguments: {
+        //                 'title': 'createNewEmployeeTask',
+        //                 'isEdit': true
+        //               },
+        //             );
+        //           },
+        //           label: Text(
+        //             'edit'.tr,
+        //             style: theme.copyWith(
+        //               fontSize: 15.sp,
+        //               fontWeight: FontWeight.w700,
+        //               color: ThemeService.isDark.value
+        //                   ? AppColors.primaryColor
+        //                   : AppColors.secondaryColor,
+        //             ),
+        //           ),
+        //         )
+        //       : SizedBox.shrink(),
+        // ],
       ),
       body: Obx(
         () {
@@ -95,20 +106,37 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                               padding: EdgeInsets.symmetric(horizontal: 5.w),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(5.r),
-                                child: CachedNetworkImage(
-                                  imageUrl: e,
-                                  height: 200.h,
-                                  width: 200.w,
-                                  fit: BoxFit.fill,
-                                  fadeInDuration:
-                                      const Duration(milliseconds: 200),
-                                  fadeOutDuration:
-                                      const Duration(milliseconds: 200),
-                                  placeholder: (context, url) => const Center(
-                                    child: CircularProgressIndicator(),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    showGeneralDialog(
+                                      context: context,
+                                      barrierDismissible: true,
+                                      barrierLabel: 'Dismiss',
+                                      barrierColor: Colors.black.withAlpha(128),
+                                      transitionDuration:
+                                          const Duration(milliseconds: 300),
+                                      pageBuilder: (context, anim1, anim2) {
+                                        return FullScreenZoomImage(
+                                          imageUrl: e,
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: CachedNetworkImage(
+                                    imageUrl: e,
+                                    height: 200.h,
+                                    width: 200.w,
+                                    fit: BoxFit.fill,
+                                    fadeInDuration:
+                                        const Duration(milliseconds: 200),
+                                    fadeOutDuration:
+                                        const Duration(milliseconds: 200),
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error),
                                   ),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
                                 ),
                               ),
                             ),
@@ -132,7 +160,21 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                             : AppColors.customGreyColor4,
                       ),
                     ),
-                    SizedBox(height: 5.h),
+                    userType != 'admin'
+                        ? Column(
+                            children: [
+                              SizedBox(height: 10.h),
+                              MediaUploadButton(
+                                allowedType: MediaType.image,
+                                onFilesChanged: (files) {
+                                  controller.selectedFile = files;
+                                },
+                                title: 'employeeImage'.tr,
+                              ),
+                            ],
+                          )
+                        : SizedBox(),
+                    SizedBox(height: 10.h),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -142,20 +184,37 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                               padding: EdgeInsets.symmetric(horizontal: 5.w),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(5.r),
-                                child: CachedNetworkImage(
-                                  imageUrl: e,
-                                  height: 200.h,
-                                  width: 200.w,
-                                  fit: BoxFit.fill,
-                                  fadeInDuration:
-                                      const Duration(milliseconds: 200),
-                                  fadeOutDuration:
-                                      const Duration(milliseconds: 200),
-                                  placeholder: (context, url) => const Center(
-                                    child: CircularProgressIndicator(),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    showGeneralDialog(
+                                      context: context,
+                                      barrierDismissible: true,
+                                      barrierLabel: 'Dismiss',
+                                      barrierColor: Colors.black.withAlpha(128),
+                                      transitionDuration:
+                                          const Duration(milliseconds: 300),
+                                      pageBuilder: (context, anim1, anim2) {
+                                        return FullScreenZoomImage(
+                                          imageUrl: e,
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: CachedNetworkImage(
+                                    imageUrl: e,
+                                    height: 200.h,
+                                    width: 200.w,
+                                    fit: BoxFit.fill,
+                                    fadeInDuration:
+                                        const Duration(milliseconds: 200),
+                                    fadeOutDuration:
+                                        const Duration(milliseconds: 200),
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error),
                                   ),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
                                 ),
                               ),
                             ),
@@ -275,7 +334,23 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                       value: tasks.status == 'ongoing'
                                           ? false.obs
                                           : true.obs,
-                                      onChanged: (value) {},
+                                      onChanged: userType == 'admin'
+                                          ? (value) {}
+                                          : (value) {
+                                              final args = Get.arguments
+                                                  as Map<String, dynamic>?;
+                                              final EmployeeDashbordController
+                                                  controller1 = args?[
+                                                      'EmployeeDashbordController'];
+                                              controller.uploadTaskImage(
+                                                taskId: tasks.id.toString(),
+                                              );
+                                              controller1.changeTaskToCompleted(
+                                                taskId: tasks.id,
+                                                isSubTask: true,
+                                                context: context,
+                                              );
+                                            },
                                     ),
                                   ),
                                   tasks.adminImg!.isEmpty
@@ -283,21 +358,40 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                       : ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(10.r),
-                                          child: CachedNetworkImage(
-                                            imageUrl: tasks.adminImg!
-                                                .map((e) => e)
-                                                .toList()[0],
-                                            placeholder: (context, url) =>
-                                                Center(
-                                              child:
-                                                  const CircularProgressIndicator(),
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              showGeneralDialog(
+                                                context: context,
+                                                barrierDismissible: true,
+                                                barrierLabel: 'Dismiss',
+                                                barrierColor:
+                                                    Colors.black.withAlpha(128),
+                                                transitionDuration:
+                                                    const Duration(
+                                                        milliseconds: 300),
+                                                pageBuilder:
+                                                    (context, anim1, anim2) {
+                                                  return FullScreenZoomImage(
+                                                    imageUrl:
+                                                        tasks.adminImg!.first,
+                                                  );
+                                                },
+                                              );
+                                            },
+                                            child: CachedNetworkImage(
+                                              imageUrl: tasks.adminImg!.first,
+                                              placeholder: (context, url) =>
+                                                  Center(
+                                                child:
+                                                    const CircularProgressIndicator(),
+                                              ),
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      const Icon(Icons.error),
+                                              fit: BoxFit.fill,
+                                              height: double.infinity,
+                                              width: 60.w,
                                             ),
-                                            errorWidget:
-                                                (context, url, error) =>
-                                                    const Icon(Icons.error),
-                                            fit: BoxFit.fill,
-                                            height: double.infinity,
-                                            width: 60.w,
                                           ),
                                         ),
                                 ],
@@ -333,14 +427,36 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   ),
                 ),
                 SizedBox(height: 15.h),
+                // userType == 'admin'
+                // ?
                 AppButton(
+                  isLoading: controller.isLoading,
                   text: 'cancelTask',
-                  onPressed: () => controller.cancelEmployeeTask(
-                    context: context,
-                    taskId: data.taskId.toString(),
-                    cancelWithRepetition: false,
-                  ),
-                ),
+                  onPressed: userType == 'admin'
+                      ? () {
+                          controller.cancelEmployeeTask(
+                            context: context,
+                            taskId: data.taskId.toString(),
+                            cancelWithRepetition: false,
+                            isCompleted: true,
+                          );
+                        }
+                      : () {
+                          final args = Get.arguments as Map<String, dynamic>?;
+                          final EmployeeDashbordController controller1 =
+                              args?['EmployeeDashbordController'];
+                          controller.uploadTaskImage(
+                            taskId: data.taskId.toString(),
+                          );
+                          controller1.changeTaskToCompleted(
+                            taskId: data.taskId,
+                            isSubTask: false,
+                            context: context,
+                          );
+                          Get.back();
+                        },
+                )
+                // : SizedBox.shrink(),
               ],
             ),
           );
@@ -354,6 +470,7 @@ class SupTextAndDis extends StatelessWidget {
   const SupTextAndDis({
     Key? key,
     required this.title,
+    this.titleColor,
     required this.discription,
     this.noSized = false,
   }) : super(key: key);
@@ -361,6 +478,7 @@ class SupTextAndDis extends StatelessWidget {
   final String title;
   final String discription;
   final bool noSized;
+  final Color? titleColor;
   @override
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
@@ -375,9 +493,10 @@ class SupTextAndDis extends StatelessWidget {
                 style: theme.copyWith(
                   fontSize: 17.sp,
                   fontWeight: FontWeight.w700,
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor6
-                      : AppColors.customGreyColor4,
+                  color: titleColor ??
+                      (ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor4),
                 ),
               ),
               TextSpan(

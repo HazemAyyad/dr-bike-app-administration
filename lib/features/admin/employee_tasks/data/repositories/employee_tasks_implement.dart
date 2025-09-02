@@ -11,7 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../domain/repositories/employee_tasks_repository.dart';
-import '../datasources/employee_tasks_remote_datasource.dart';
+import '../datasources/employee_tasks_datasource.dart';
 
 class EmployeeTasksImplement implements EmployeeTasksRepository {
   final NetworkInfo networkInfo;
@@ -20,6 +20,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
   EmployeeTasksImplement(
       {required this.networkInfo, required this.employeeTasksDataSource});
 
+  // create employee task
   @override
   Future<Either<Failure, String>> creatEmployeeTasks({
     required String name,
@@ -71,6 +72,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
     }
   }
 
+  // get employee tasks
   @override
   Future<List<EmployeeTaskModel>> getEmployeeTasks({required int page}) async {
     if (await networkInfo.isConnected) {
@@ -87,10 +89,12 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
     }
   }
 
+  // cancel employee task
   @override
   Future<Either<Failure, String>> cancelEmployeeTask({
     required String employeeTaskId,
     required bool cancelWithRepetition,
+    required bool isCompleted,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -99,6 +103,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
       final result = await employeeTasksDataSource.cancelEmployeeTask(
         employeeTaskId: employeeTaskId,
         cancelWithRepetition: cancelWithRepetition,
+        isCompleted: isCompleted,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -114,6 +119,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
     }
   }
 
+  // get task details
   @override
   Future<dynamic> getTaskDetails({required String taskId}) async {
     if (await networkInfo.isConnected) {
@@ -126,6 +132,26 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
       }
     } else {
       throw [];
+    }
+  }
+
+  // uplode task image
+  @override
+  Future uplodeTaskImage({
+    required String taskId,
+    required List<File> image,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeTasksDataSource.uplodeTaskImage(
+        taskId: taskId,
+        image: image,
+      );
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 }

@@ -255,38 +255,35 @@ class EmployeeFinancialDetails extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 5.h),
-              Form(
-                key: controller.formKey,
-                child: Column(
-                  children: [
-                    CustomTextField(
-                      labelTextstyle: textStyle.copyWith(
-                        color: Colors.green,
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      label: 'paySalary',
-                      hintText: 'salary',
-                      hintStyle: textStyle.copyWith(
-                        color: Colors.grey,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      controller: controller.paySalaryController,
+              Column(
+                children: [
+                  CustomTextField(
+                    labelTextstyle: textStyle.copyWith(
+                      color: Colors.green,
+                      fontSize: 17.sp,
+                      fontWeight: FontWeight.w700,
                     ),
-                    SizedBox(height: 10.h),
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10.h),
-                      child: AppButton(
-                        isLoading: controller.isLoading,
-                        text: 'apply',
-                        onPressed: () => controller.isLoading.value
-                            ? null
-                            : controller.paySalaryToEmployee(context, '9'),
-                      ),
-                    )
-                  ],
-                ),
+                    label: 'paySalary',
+                    hintText: 'salary',
+                    hintStyle: textStyle.copyWith(
+                      color: Colors.grey,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    controller: controller.paySalaryController,
+                  ),
+                  SizedBox(height: 10.h),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10.h),
+                    child: AppButton(
+                      isLoading: controller.isLoading,
+                      text: 'apply',
+                      onPressed: () => controller.isLoading.value
+                          ? null
+                          : controller.paySalaryToEmployee(context, '9'),
+                    ),
+                  )
+                ],
               ),
             ],
           ),

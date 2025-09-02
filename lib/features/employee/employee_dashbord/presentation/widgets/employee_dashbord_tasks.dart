@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
+import '../controllers/employee_dashbord_controller.dart';
 
-class EmployeeDashbordTasks extends StatelessWidget {
+class EmployeeDashbordTasks extends GetView<EmployeeDashbordController> {
   const EmployeeDashbordTasks({Key? key, required this.e}) : super(key: key);
 
   final Task e;
@@ -13,7 +16,15 @@ class EmployeeDashbordTasks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        Get.toNamed(
+          AppRoutes.TASKDETAILS,
+          arguments: {
+            'taskId': e.id.toString(),
+            'EmployeeDashbordController': controller
+          },
+        );
+      },
       child: Container(
         margin: EdgeInsets.only(bottom: 10.h),
         padding: EdgeInsets.all(5),
@@ -109,7 +120,13 @@ class EmployeeDashbordTasks extends StatelessWidget {
                 ),
                 side: BorderSide(color: AppColors.primaryColor),
                 value: false,
-                onChanged: (value) {},
+                onChanged: (value) {
+                  controller.changeTaskToCompleted(
+                    context: context,
+                    isSubTask: false,
+                    taskId: e.id,
+                  );
+                },
               ),
               // ),
             ),
