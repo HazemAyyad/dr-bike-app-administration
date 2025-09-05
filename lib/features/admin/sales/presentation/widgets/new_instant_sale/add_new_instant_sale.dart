@@ -72,7 +72,7 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                                       removedItem.selectedItem.value = value!;
                                     },
                                   ),
-                                  SizedBox(height: 20.h),
+                                  SizedBox(height: 10.h),
                                   BuildItem(
                                     item: removedItem,
                                     index: index,
@@ -87,9 +87,9 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                       ),
                   ],
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 10.h),
                 BuildItem(item: item, index: index, animation: animation),
-                SizedBox(height: 20.h),
+                SizedBox(height: 10.h),
                 Obx(
                   () => Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -141,7 +141,7 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                         )
                       : SizedBox.shrink(),
                 ),
-                SizedBox(height: 20.h),
+                // SizedBox(height: 10.h),
                 if (index == controller.items.length - 1)
                   Column(
                     children: [

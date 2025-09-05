@@ -63,7 +63,9 @@ class SalesController extends GetxController
   final items = <ItemModel>[ItemModel()].obs;
 
   void addItem() {
-    items.add(ItemModel());
+    ItemModel newItem = ItemModel();
+    newItem.total.listen((_) => calculateGrandTotal());
+    items.add(newItem);
     listKey.currentState?.insertItem(
       items.length - 1,
       duration: const Duration(milliseconds: 300),
@@ -74,6 +76,18 @@ class SalesController extends GetxController
     if (items.length > 1) {
       items.removeAt(index);
     }
+    calculateGrandTotal();
+  }
+
+  final RxInt totalCost = 0.obs;
+  void calculateGrandTotal() {
+    int total = 0;
+    for (ItemModel item in items) {
+      (total += item.total.value);
+    }
+    final discount = int.tryParse(discountController.text.trim()) ?? 0;
+
+    totalCost.value = total - discount;
   }
 
   // متغير للتحكم في قائمة الإضافة
@@ -176,7 +190,7 @@ class SalesController extends GetxController
         quantity: items.first.quantityController.text,
         cost: items.first.priceController.text,
         discount: discountController.text,
-        totalCost: totalController.text,
+        totalCost: totalCost.value.toString(),
         note: noteController.text,
         type: items.first.selectedCustomersSellers.value ? 'project' : 'normal',
         projectId: items.first.selectedCustomersSellers.value
@@ -338,6 +352,7 @@ class SalesController extends GetxController
         return MapEntry(entry.key, list);
       }).where((e) => e.value.isNotEmpty),
     );
+    
     final Map<String, List<InstantSalesModel>> newMap2 = Map.fromEntries(
       salesService.instantSalesTasks.entries.map((entry) {
         final list = entry.value.where((task) {
@@ -415,6 +430,7 @@ class SalesController extends GetxController
         animController.reverse();
       }
     });
+    ever(items, (_) => calculateGrandTotal());
   }
 
   @override
@@ -430,6 +446,9 @@ class SalesController extends GetxController
       item.quantityController.dispose();
       item.priceController.dispose();
     }
+    for (ItemModel item in items) {
+      item.dispose();
+    }
     super.dispose();
   }
 }
@@ -440,4 +459,22 @@ class ItemModel {
   final RxnString selectedValue = RxnString();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+
+  final RxInt total = 0.obs;
+
+  ItemModel() {
+    priceController.addListener(_updateTotal);
+    quantityController.addListener(_updateTotal);
+  }
+
+  void _updateTotal() {
+    final price = int.tryParse(priceController.text.trim()) ?? 0;
+    final quantity = int.tryParse(quantityController.text.trim()) ?? 0;
+    total.value = price * quantity;
+  }
+
+  void dispose() {
+    priceController.dispose();
+    quantityController.dispose();
+  }
 }

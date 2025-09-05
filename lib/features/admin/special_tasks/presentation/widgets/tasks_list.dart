@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_calendar.dart';
+import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:doctorbike/features/admin/special_tasks/data/models/special_task_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -28,31 +29,7 @@ class TasksList extends GetView<SpecialTasksController> {
             ),
           );
         } else if (controller.filteredTasks.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 200.h),
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 100.h,
-                    color: AppColors.graywhiteColor,
-                  ),
-                  SizedBox(height: 10.h),
-                  Text(
-                    'noData'.tr,
-                    style: theme.copyWith(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.graywhiteColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return SliverFillRemaining(child: ShowNoData());
         }
 
         return SliverList.builder(
@@ -63,9 +40,10 @@ class TasksList extends GetView<SpecialTasksController> {
                 controller.filteredTasks[date]!;
 
             return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
                 children: [
+                  SizedBox(height: index == 0 ? 20.h : 0.h),
                   controller.currentTab.value == 1
                       ? SizedBox.shrink()
                       : Column(

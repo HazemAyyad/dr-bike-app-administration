@@ -100,7 +100,7 @@ class SalesDatasource {
     }
   }
 
-  //
+  // add instant sale
   Future<dynamic> addInstantSales({
     required String productId,
     required String quantity,

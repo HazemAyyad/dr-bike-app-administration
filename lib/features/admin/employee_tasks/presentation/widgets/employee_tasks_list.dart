@@ -21,8 +21,8 @@ class EmployeeTasks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme.bodyMedium!;
-    return Obx(
-      () {
+    return GetBuilder<EmployeeTasksController>(
+      builder: (controller) {
         if (controller.isLoading.value) {
           return SliverFillRemaining(
             hasScrollBody: false,
@@ -30,17 +30,18 @@ class EmployeeTasks extends StatelessWidget {
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
-        } else if (controller.employeeTasks.isEmpty) {
+        } else if (controller.employeeTasksFilter.isEmpty) {
           return SliverFillRemaining(
             hasScrollBody: false,
             child: ShowNoData(),
           );
         }
         return SliverList.builder(
-          itemCount: controller.employeeTasks.length,
+          itemCount: controller.employeeTasksFilter.length,
           itemBuilder: (context, index) {
-            final month = controller.employeeTasks.keys.toList()[index];
-            List<EmployeeTaskModel> date = controller.employeeTasks[month]!;
+            final month = controller.employeeTasksFilter.keys.toList()[index];
+            List<EmployeeTaskModel> date =
+                controller.employeeTasksFilter[month]!;
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
@@ -325,9 +326,6 @@ class EmployeeTasksLists extends StatelessWidget {
             ),
           ),
         ),
-        // SizedBox(
-        //   height: index == controller.employeeTasks.length - 1 ? 60.h : 0.h,
-        // ),
       ],
     );
   }

@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/custom_chechbox.dart';
+import 'package:doctorbike/core/helpers/show_no_data.dart';
+import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -22,6 +24,9 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
           if (controller.isGetLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
+          if (controller.specialTasksService.specialTaskDetails.value == null) {
+            return ShowNoData();
+          }
           final data = controller.specialTasksService.specialTaskDetails.value!;
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -33,7 +38,9 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(5.r),
                   child: CachedNetworkImage(
-                    imageUrl: data.adminImg.first,
+                    imageUrl: data.adminImg.isNotEmpty
+                        ? data.adminImg.first
+                        : AssetsManger.noImageNet,
                     placeholder: (context, url) => Center(
                       child: const CircularProgressIndicator(),
                     ),
@@ -82,7 +89,7 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                       borderRadius: BorderRadius.circular(11.r),
                       border: Border.all(color: AppColors.customGreyColor6),
                     ),
-                    height: 70.h,
+                    height: 55.h,
                     width: double.infinity,
                     child: Row(
                       children: [
@@ -118,7 +125,9 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10.r),
                           child: CachedNetworkImage(
-                            imageUrl: tasks.adminImg.first,
+                            imageUrl: tasks.adminImg.isNotEmpty
+                                ? tasks.adminImg.first
+                                : AssetsManger.noImageNet,
                             placeholder: (context, url) => Center(
                               child: const CircularProgressIndicator(),
                             ),

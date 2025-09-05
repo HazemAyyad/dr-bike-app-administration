@@ -23,8 +23,12 @@ class SpecialTaskModel extends SpecialTaskEntity {
     return SpecialTaskModel(
       id: json[ApiKey.id] ?? 0,
       name: json[ApiKey.name] ?? 'Unknown',
-      startDate: DateTime.parse(json[ApiKey.start_date]),
-      endDate: DateTime.parse(json[ApiKey.end_date]),
+      startDate: json[ApiKey.start_date] != null
+          ? DateTime.parse(json[ApiKey.start_date])
+          : DateTime.now(),
+      endDate: json[ApiKey.end_date] != null
+          ? DateTime.parse(json[ApiKey.end_date])
+          : DateTime.now(),
       isCanceled: json[ApiKey.is_canceled] == "1",
       status: json[ApiKey.status] ?? '',
     );

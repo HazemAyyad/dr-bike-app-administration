@@ -116,6 +116,8 @@ class BoxesController extends GetxController {
 
       result.fold(
         (failure) {
+          isAddBoxLoading(false);
+
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
@@ -160,6 +162,8 @@ class BoxesController extends GetxController {
 
       result.fold(
         (failure) {
+          isAddBoxLoading(false);
+
           final errors = failure.data != null ? failure.data['errors'] : null;
 
           if (errors is Map<String, dynamic>) {
@@ -213,6 +217,8 @@ class BoxesController extends GetxController {
 
       result.fold(
         (failure) {
+          isAddBoxLoading(false);
+
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
@@ -254,6 +260,8 @@ class BoxesController extends GetxController {
 
       result.fold(
         (failure) {
+          isAddBoxLoading(false);
+
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,

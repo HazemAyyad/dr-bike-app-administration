@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_tab_bar.dart';
@@ -37,6 +38,7 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
             ),
           ),
           TasksList(),
+          SliverToBoxAdapter(child: SizedBox(height: 40.h)),
         ],
       ),
     );

@@ -66,11 +66,15 @@ class Debt {
       customerName: json[ApiKey.customer_name] ?? '',
       isCanceledCustomer: json[ApiKey.customer_is_canceled] == '1',
       debtType: json[ApiKey.debt_type] ?? '',
-      dueDate: DateTime.parse(json[ApiKey.due_date]),
+      dueDate: json[ApiKey.due_date] != null
+          ? DateTime.parse(json[ApiKey.due_date])
+          : DateTime.now(),
       total: json[ApiKey.total] ?? '0',
       receiptImage: ShowNetImage.getPhoto(json[ApiKey.receipt_image]),
       notes: json[ApiKey.notes] ?? '',
-      debtCreatedAt: DateTime.parse(json[ApiKey.debt_created_at]),
+      debtCreatedAt: json[ApiKey.debt_created_at] != null
+          ? DateTime.parse(json[ApiKey.debt_created_at])
+          : DateTime.now(),
       status: json[ApiKey.status] ?? '',
     );
   }

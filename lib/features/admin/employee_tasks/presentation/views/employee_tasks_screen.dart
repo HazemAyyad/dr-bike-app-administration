@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:doctorbike/routes/app_routes.dart';
@@ -19,6 +20,10 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
         employeeNameController: controller.employeeNameController,
+        onPressedFilter: () {
+          controller.filterEmployeeTasks();
+          Get.back();
+        },
         onPressedAdd: () {
           // Handle add button press
           Get.toNamed(
@@ -41,6 +46,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
             ),
           ),
           EmployeeTasks(controller: controller),
+          SliverToBoxAdapter(child: SizedBox(height: 40.h)),
         ],
       ),
     );

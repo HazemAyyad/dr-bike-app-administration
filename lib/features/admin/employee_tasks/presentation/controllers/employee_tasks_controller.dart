@@ -48,25 +48,94 @@ class EmployeeTasksController extends GetxController {
   final RxBool deleteTask = false.obs;
 
   final RxBool deleteTasDuplicate = false.obs;
-
   Map<String, List<EmployeeTaskModel>> employeeTasks = {};
+  Map<String, List<EmployeeTaskModel>> employeeTasksFilter = {};
 
-  // get employee tasks
+// get employee tasks
   Future<void> getEmployeeTasks() async {
     employeeTasks.clear();
+    employeeTasksFilter.clear();
     isLoading(true);
+
     final result = await employeeTasksUsecase.call(page: currentTab.value);
+
     for (var task in result) {
       String dateKey = "${task.endTime.year}-${task.endTime.month}";
-      if (employeeTasks.containsKey(dateKey)) {
-        if (!employeeTasks[dateKey]!.any((t) => t.taskId == task.taskId)) {
-          employeeTasks[dateKey]!.add(task);
-        }
-      } else {
-        employeeTasks[dateKey] = [task];
+
+      employeeTasks.putIfAbsent(dateKey, () => []);
+      if (!employeeTasks[dateKey]!.any((t) => t.taskId == task.taskId)) {
+        employeeTasks[dateKey]!.add(task);
+      }
+
+      // خلي الفلتر نسخة طبق الأصل من الأصل
+      employeeTasksFilter.putIfAbsent(dateKey, () => []);
+      if (!employeeTasksFilter[dateKey]!.any((t) => t.taskId == task.taskId)) {
+        employeeTasksFilter[dateKey]!.add(task);
       }
     }
+
     isLoading(false);
+    update();
+  }
+
+  void filterEmployeeTasks() {
+    final from = DateTime.tryParse(fromDateController.text);
+    final to = DateTime.tryParse(toDateController.text);
+    final name = employeeNameController.text.trim();
+
+    final allTasks = employeeTasks.values.expand((tasks) => tasks).toList();
+
+    if (from == null && to == null && name.isEmpty) {
+      employeeTasksFilter = Map.from(employeeTasks);
+      update();
+      return;
+    }
+
+    final filtered = allTasks.where((task) {
+      bool matchesDate = true;
+      bool matchesName = true;
+
+      if (from != null && to != null && from.isAtSameMomentAs(to)) {
+        // 🔹 البحث في نفس اليوم فقط
+        final sameDay = task.endTime.year == from.year &&
+            task.endTime.month == from.month &&
+            task.endTime.day == from.day;
+        if (!sameDay) matchesDate = false;
+      } else {
+        // 🔹 المدى الزمني (من → إلى)
+        if (from != null) {
+          final isSameDayAsFrom = task.endTime.year == from.year &&
+              task.endTime.month == from.month &&
+              task.endTime.day == from.day;
+          if (task.endTime.isBefore(from) && !isSameDayAsFrom)
+            matchesDate = false;
+        }
+        if (to != null) {
+          final isSameDayAsTo = task.endTime.year == to.year &&
+              task.endTime.month == to.month &&
+              task.endTime.day == to.day;
+          if (task.endTime.isAfter(to) && !isSameDayAsTo) matchesDate = false;
+        }
+      }
+
+      // 🔹 فلترة الاسم
+      if (name.isNotEmpty &&
+          !task.employeeName.toLowerCase().contains(name.toLowerCase())) {
+        matchesName = false;
+      }
+
+      return matchesDate && matchesName;
+    }).toList();
+
+    // إعادة التجميع
+    final Map<String, List<EmployeeTaskModel>> grouped = {};
+    for (var task in filtered) {
+      String dateKey = "${task.endTime.year}-${task.endTime.month}";
+      grouped.putIfAbsent(dateKey, () => []).add(task);
+    }
+
+    employeeTasksFilter = grouped;
+    update();
   }
 
   // cancel employee task
@@ -111,15 +180,12 @@ class EmployeeTasksController extends GetxController {
         );
       },
     );
-    // Get.find<EmployeeTasksController>().getEmployeeTasks();
-
     deleteTasDuplicate.value = false;
     deleteTask.value = false;
-    // isLoading(false);
     update();
   }
 
-  // task details
+  // upload task image
   void uploadTaskImage({required String taskId}) async {
     selectedFile.isNotEmpty
         ? {

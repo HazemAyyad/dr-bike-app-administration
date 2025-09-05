@@ -370,7 +370,9 @@ class EmployeeSectionController extends GetxController
   void getLogs() async {
     employeeService.logsMap.isEmpty ? isLoading(true) : isLoading(false);
     employeeService.logsMap.clear();
-    for (var task in await getLogsUsecase.call()) {
+
+    final result = await getLogsUsecase.call();
+    for (var task in result) {
       String dateKey =
           "${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
       if (employeeService.logsMap.containsKey(dateKey)) {

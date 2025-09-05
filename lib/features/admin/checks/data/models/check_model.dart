@@ -48,14 +48,20 @@ class CheckModel extends CheckEntity {
       customerId: json['customer_id']?.toString(),
       status: json['status'] ?? '',
       total: json['total'] ?? '0.00',
-      dueDate: DateTime.parse(json['due_date']),
+      dueDate: json['due_date'] != null
+          ? DateTime.parse(json['due_date'])
+          : DateTime.now(),
       currency: json['currency'] ?? '',
       checkId: json['check_id'] ?? '',
       bankName: json['bank_name'] ?? '',
       img: ShowNetImage.getPhoto(
           json['img'] == null ? '' : '$imgPath/${json['img']}'),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
       sellerId: json['seller_id']?.toString(),
       customer: json['customer'] != null
           ? SellerModel.fromJson(json['customer'])

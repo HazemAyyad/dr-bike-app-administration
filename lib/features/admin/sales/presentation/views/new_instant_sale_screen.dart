@@ -32,7 +32,7 @@ class NewInstantSaleScreen extends GetView<SalesController> {
                 thickness: 0.8,
                 height: 1,
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 10.h),
               DiscountWidget(),
               SizedBox(height: 20.h),
               AppButton(

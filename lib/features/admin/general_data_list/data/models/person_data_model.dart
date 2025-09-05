@@ -46,21 +46,21 @@ class PersonDataModel extends AddPersonEntity {
 
   factory PersonDataModel.fromJson(Map<String, dynamic> json) {
     return PersonDataModel(
-      id: json['id'],
-      name: json['name'],
-      address: json['address'],
-      phone: json['phone'],
-      subPhone: json['sub_phone'],
-      jobTitle: json['job_title'],
-      personType: json['type'],
-      facebookUsername: json['facebook_username'],
-      facebookLink: json['facebook_link'],
-      instagramUsername: json['instagram_username'],
-      instagramLink: json['instagram_link'],
-      relatedPeople: json['related_people'],
-      relativePhone: json['relative_phone'],
-      relativeJobTitle: json['relative_job_title'],
-      workAddress: json['work_address'],
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      address: json['address'] ?? '',
+      phone: json['phone'] ?? '',
+      subPhone: json['sub_phone'] ?? '',
+      jobTitle: json['job_title'] ?? '',
+      personType: json['type'] ?? '',
+      facebookUsername: json['facebook_username'] ?? '',
+      facebookLink: json['facebook_link'] ?? '',
+      instagramUsername: json['instagram_username'] ?? '',
+      instagramLink: json['instagram_link'] ?? '',
+      relatedPeople: json['related_people'] ?? '',
+      relativePhone: json['relative_phone'] ?? '',
+      relativeJobTitle: json['relative_job_title'] ?? '',
+      workAddress: json['work_address'] ?? '',
       iDImage: (json['ID_image'] as List<dynamic>?)
               ?.map((e) => File(ShowNetImage.getPhoto(e)))
               .toList() ??

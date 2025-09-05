@@ -8,10 +8,9 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../controllers/debts_controller.dart';
 
-class UserAccount extends StatelessWidget {
-  const UserAccount({Key? key, required this.controller}) : super(key: key);
+class UserAccount extends GetView<DebtsController> {
+  const UserAccount({Key? key}) : super(key: key);
 
-  final DebtsController controller;
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -72,49 +71,54 @@ class UserAccount extends StatelessWidget {
           ),
         ),
         SizedBox(width: 10.w),
+        // Column(
+        //   children: [
+        //     GestureDetector(
+        //       onTap: () {
+        //         print('Share button pressed');
+        //       },
+        //       child: Container(
+        //         height: 45.h,
+        //         width: 45.w,
+        //         decoration: BoxDecoration(
+        //           color: ThemeService.isDark.value
+        //               ? AppColors.customGreyColor
+        //               : AppColors.whiteColor2,
+        //           shape: BoxShape.circle,
+        //         ),
+        //         child: Icon(
+        //           Icons.share_outlined,
+        //           size: 30.h,
+        //           color: ThemeService.isDark.value
+        //               ? AppColors.primaryColor
+        //               : AppColors.secondaryColor,
+        //         ),
+        //       ),
+        //     ),
+        //     SizedBox(height: 5.h),
+        //     Text(
+        //       'Share'.tr,
+        //       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+        //             fontSize: 13.sp,
+        //             fontWeight: FontWeight.w700,
+        //             color: ThemeService.isDark.value
+        //                 ? AppColors.primaryColor
+        //                 : AppColors.secondaryColor,
+        //           ),
+        //     ),
+        //   ],
+        // ),
+        // SizedBox(width: 10.w),
         Column(
           children: [
             GestureDetector(
               onTap: () {
-                print('Share button pressed');
-              },
-              child: Container(
-                height: 45.h,
-                width: 45.w,
-                decoration: BoxDecoration(
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.share_outlined,
-                  size: 30.h,
-                  color: ThemeService.isDark.value
-                      ? AppColors.primaryColor
-                      : AppColors.secondaryColor,
-                ),
-              ),
-            ),
-            SizedBox(height: 5.h),
-            Text(
-              'Share'.tr,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    color: ThemeService.isDark.value
-                        ? AppColors.primaryColor
-                        : AppColors.secondaryColor,
-                  ),
-            ),
-          ],
-        ),
-        SizedBox(width: 10.w),
-        Column(
-          children: [
-            GestureDetector(
-              onTap: () {
-                print('Report button pressed');
+                controller.downloadReport(
+                  customerId: controller.dataService.userTransactionsDataModel
+                      .value!.customerDebts.first.customerId
+                      .toString(),
+                  context: context,
+                );
               },
               child: Container(
                 height: 45.h,

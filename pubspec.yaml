@@ -47,6 +47,11 @@ dependencies:
   http_parser: ^4.1.2
   image_gallery_saver_plus: ^4.0.1
   audioplayers: ^6.5.0
+  carousel_slider: ^5.1.1
+  open_filex: ^4.7.0
+  webview_flutter: ^4.13.0
+  just_audio: ^0.10.5
+  audio_video_progress_bar: ^2.0.3
 
 dev_dependencies:
   build_runner:

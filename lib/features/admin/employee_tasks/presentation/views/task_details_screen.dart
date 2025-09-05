@@ -13,6 +13,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../controllers/employee_tasks_controller.dart';
+import '../widgets/audio_player.dart';
 
 class TaskDetailsScreen extends GetView<EmployeeTasksController> {
   const TaskDetailsScreen({Key? key}) : super(key: key);
@@ -61,7 +62,8 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
       ),
       body: Obx(
         () {
-          if (controller.isTaskDetailsLoading.value) {
+          if (controller.isTaskDetailsLoading.value ||
+              controller.isLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
           final data = controller.employeeTaskService.taskDetails.value!;
@@ -224,6 +226,10 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                     ),
                   ],
                 ),
+                SizedBox(height: 10.h),
+                data.audio!.isNotEmpty && data.audio != null
+                    ? AudioPlayerWidget(url: data.audio!)
+                    : SizedBox.shrink(),
                 // Row(
                 //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 //   children: [
@@ -291,7 +297,16 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   ),
                 ),
                 data.subTasks.isEmpty
-                    ? SizedBox.shrink()
+                    ? Center(
+                        child: Text(
+                          'لا يوجد مهام فرعية'.tr,
+                          style: theme.copyWith(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.customGreyColor4,
+                          ),
+                        ),
+                      )
                     : Column(
                         children: [
                           ...data.subTasks.map(

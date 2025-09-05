@@ -10,12 +10,13 @@ class ShowNetImage {
         photoUrl == '' ||
         photoUrl == 'no img' ||
         photoUrl == 'no images' ||
+        photoUrl == 'no image' ||
         photoUrl == 'no admin image' ||
         photoUrl == 'no employee image' ||
         photoUrl == 'no audio') {
       return AssetsManger.noImageNet; // صورة افتراضية إذا كانت الصورة غير متاحة
     }
 
-    return "${EndPoints.baserUrlForImage}$photoUrl/";
+    return "${EndPoints.baserUrlForImage}$photoUrl";
   }
 }

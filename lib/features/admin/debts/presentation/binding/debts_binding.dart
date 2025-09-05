@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../domain/usecases/add_debt_usecase.dart';
 import '../../domain/usecases/debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/debts_we_owe_usecase.dart';
+import '../../domain/usecases/get_debts_reports_usecase.dart';
 import '../../domain/usecases/total_debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/user_debts_data_usecase.dart';
 import '../controllers/debts_controller.dart';
@@ -38,6 +39,9 @@ class DebtsBinding extends Bindings {
         ),
         allCustomersSellersUsecase: AllCustomersSellersUsecase(
           checksRepository: Get.find<ChecksImplement>(),
+        ),
+        getDebtsReports: GetDebtsReportsUsecase(
+          debtsRepository: Get.find<DebtsImplement>(),
         ),
       ),
     );

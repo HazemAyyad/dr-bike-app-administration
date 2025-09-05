@@ -38,6 +38,7 @@ class GeneralDataListDatasource {
     }
   }
 
+  // add person
   Future<dynamic> addPerson({
     required AddPersonEntity data,
     required String customerId,
@@ -73,17 +74,12 @@ class GeneralDataListDatasource {
         }),
       );
 
-      print(iDImage);
-      print(licenseImage);
       final response = await api.post(
-        customerId.isNotEmpty || sellerId.isNotEmpty
-            ? EndPoints.editPerson
-            : EndPoints.createPerson,
+        data.isEdit! ? EndPoints.editPerson : EndPoints.createPerson,
         data: {
           if (customerId.isNotEmpty) 'customer_id': customerId,
           if (sellerId.isNotEmpty) 'seller_id': sellerId,
-          if (customerId.isEmpty || sellerId.isEmpty)
-            'person_type': data.personType,
+          if (!data.isEdit!) 'person_type': data.personType,
           'type': data.personType,
           'name': data.name,
           'address': data.address,
@@ -103,7 +99,6 @@ class GeneralDataListDatasource {
         },
         isFormData: true,
       );
-
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

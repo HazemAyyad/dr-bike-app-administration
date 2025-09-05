@@ -30,6 +30,7 @@ class CustomTextField extends StatelessWidget {
     this.minLines,
     this.maxLines,
     this.sizedBox,
+    this.onChanged,
   }) : super(key: key);
 
   final String label;
@@ -54,6 +55,7 @@ class CustomTextField extends StatelessWidget {
   final int? minLines;
   final int? maxLines;
   final bool? sizedBox;
+  final Function(String)? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +96,7 @@ class CustomTextField extends StatelessWidget {
         Container(
           decoration: decoration,
           child: TextFormField(
+            onChanged: onChanged,
             minLines: minLines ?? 1,
             maxLines: maxLines ?? 1,
             obscureText: obscureText,

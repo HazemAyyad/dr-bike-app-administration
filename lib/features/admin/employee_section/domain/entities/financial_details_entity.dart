@@ -7,7 +7,7 @@ class FinancialDetailsEntity {
   final String hourWorkPrice;
   final String totalWorkHours;
   final String numberOfWorkHours;
-  final int pointsRevenue;
+  final dynamic pointsRevenue;
   final dynamic total;
 
   const FinancialDetailsEntity({

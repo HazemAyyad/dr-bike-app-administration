@@ -10,7 +10,9 @@ class ProductModel {
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
       id: json['id']?.toString() ?? '',
-      nameAr: json['nameAr'] ?? '',
+      nameAr: json['nameAr'] != null && json['nameAr'].isNotEmpty
+          ? json['nameAr']
+          : json['name'] ?? '',
     );
   }
 

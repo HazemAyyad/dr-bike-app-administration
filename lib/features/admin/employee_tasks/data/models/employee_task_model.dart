@@ -34,8 +34,12 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       taskName: json[ApiKey.task_name] ?? 'Unknown',
       employeeId: json[ApiKey.employee_id] ?? 'Unknown',
       employeeName: json[ApiKey.employee_name] ?? 'Unknown',
-      startTime: DateTime.parse(json[ApiKey.start_time] ?? DateTime.now()),
-      endTime: DateTime.parse(json[ApiKey.end_time] ?? DateTime.now()),
+      startTime: json[ApiKey.start_time] != null
+          ? DateTime.parse(json[ApiKey.start_time] ?? DateTime.now())
+          : DateTime.now(),
+      endTime: json[ApiKey.end_time] != null
+          ? DateTime.parse(json[ApiKey.end_time] ?? DateTime.now())
+          : DateTime.now(),
       isCanceled: (json[ApiKey.is_canceled] ?? '0') == '1',
       employeeImg: ShowNetImage.getPhoto(json[ApiKey.employee_img]),
       adminImg: ShowNetImage.getPhoto(json[ApiKey.admin_img]),

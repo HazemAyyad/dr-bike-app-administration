@@ -19,8 +19,15 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
 
   @override
   Widget build(BuildContext context) {
+    final sellerId = Get.arguments['sellerId'];
+    final employeeId = Get.arguments['employeeId'];
+    final employeeType = Get.arguments['employeeType'];
+
     return Scaffold(
-      appBar: CustomAppBar(title: 'addNewCustomer', action: false),
+      appBar: CustomAppBar(
+        title: controller.isEdit.value ? 'editCustomer' : 'addNewCustomer',
+        action: false,
+      ),
       body: Form(
         key: controller.formKey,
         child: GetBuilder<GeneralDataListController>(
@@ -101,10 +108,10 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                   children: [
                     Flexible(
                       child: CustomTextField(
-                        isRequired: true,
                         label: 'instagramName',
                         hintText: 'instagramNameExample',
                         controller: controller.instagramNameController,
+                        validator: (p0) => null,
                       ),
                     ),
                     SizedBox(width: 10.w),
@@ -403,13 +410,32 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                 SizedBox(height: 20.h),
                 AppButton(
                   isLoading: controller.isLoading,
-                  text: 'addCustomer',
+                  text:
+                      controller.isEdit.value ? 'editCustomer' : 'addCustomer',
                   textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
-                  onPressed: () => controller.addPerson(context: context),
+                  onPressed: () {
+                    if (controller.isEdit.value) {
+                      controller.addPerson(
+                        context: context,
+                        customerId: controller.currentTab.value == 1
+                            ? employeeId
+                            : employeeType == 'customer'
+                                ? employeeId
+                                : '',
+                        sellerId: controller.currentTab.value == 0
+                            ? sellerId
+                            : employeeType == 'seller'
+                                ? sellerId
+                                : '',
+                      );
+                    } else {
+                      controller.addPerson(context: context);
+                    }
+                  },
                 ),
               ],
             );

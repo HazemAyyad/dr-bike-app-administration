@@ -26,7 +26,14 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
           controller.clearForm();
 
           // Handle add button press
-          Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN);
+          Get.toNamed(
+            AppRoutes.ADDNEWCUSTOMERSCREEN,
+            arguments: {
+              'employeeType': '',
+              'employeeId': '',
+              'sellerId': '',
+            },
+          );
         },
       ),
       body: CustomScrollView(

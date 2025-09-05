@@ -72,16 +72,14 @@ class GeneralDataListController extends GetxController {
   // add person
   void addPerson({
     required BuildContext context,
-    bool isEdit = false,
     String? customerId,
     String? sellerId,
   }) async {
     if (formKey.currentState!.validate()) {
       isLoading(true);
-
       final result = await addPersonUseCase.call(
         data: AddPersonEntity(
-          isEdit: isEdit,
+          isEdit: isEdit.value,
           name: customerNameController.text,
           personType:
               selectedCustomerType.text == 'wholesale' ? 'seller' : 'customer',
@@ -197,8 +195,11 @@ class GeneralDataListController extends GetxController {
     closestPersonWorkController.text = personData.value!.relativeJobTitle;
     personalIdImage = personData.value!.iDImage;
     licenseImage = personData.value!.licenseImage;
-    selectedCustomerType.text =
-        personData.value!.personType == 'seller' ? 'wholesale' : 'retail';
+    selectedCustomerType.text = personData.value!.personType.isNotEmpty
+        ? personData.value!.personType == 'seller'
+            ? 'wholesale'
+            : 'retail'
+        : '';
     isEditLoading(false);
     update();
   }

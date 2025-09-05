@@ -225,7 +225,7 @@ class EmployeeRequstes extends GetView<EmployeeDashbordController> {
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w700,
                   ),
-              hintText: 'projectCostExample',
+              hintText: 'discountExample',
               controller: textController,
             ),
             SizedBox(height: 20.h),

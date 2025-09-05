@@ -77,7 +77,7 @@ class ProfitSaleCard extends GetView<SalesController> {
           // الإجمالي
           Container(
             width: 60.w,
-            height: 80.h,
+            height: 60.h,
             decoration: BoxDecoration(
               color: AppColors.customGreen1,
               borderRadius: Get.locale!.languageCode == 'en'

@@ -19,6 +19,8 @@ import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/create_boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/edit_boxes_screen.dart';
+import '../features/admin/buying/presentation/binding/buying_binding.dart';
+import '../features/admin/buying/presentation/views/buying_screen.dart';
 import '../features/admin/checks/presentation/binding/checks_binding.dart';
 import '../features/admin/checks/presentation/views/checks_screen.dart';
 import '../features/admin/checks/presentation/views/incoming_checks_screen.dart';
@@ -32,6 +34,10 @@ import '../features/admin/--/presentation/current_follow_up/binding/current_foll
 import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
+import '../features/admin/stock/presentation/views/add_combination_screen.dart';
+import '../features/admin/stock/presentation/views/closeouts_screen.dart';
+import '../features/admin/stock/presentation/views/edit_product_screen.dart';
+import '../features/admin/stock/presentation/views/product_details_screen.dart';
 import '../features/employee/scan_qrcode/presentation/binding/qrcode_bideing.dart';
 import '../features/admin/employee_section/presentation/views/activity_log_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
@@ -456,6 +462,38 @@ class AppPages {
       name: AppRoutes.STOCKSCREEN,
       page: () => const StockScreen(),
       binding: StockBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.PRODUCTDETAILSSCREEN,
+      page: () => ProductDetailsScreen(),
+      binding: StockBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EDITPRODUCTSCREEN,
+      page: () => EditProductScreen(),
+      binding: StockBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.CLOSEOUTSSCREEN,
+      page: () => const CloseoutsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.ADDCOMBINATIONSCREEN,
+      page: () => const AddCombinationScreen(),
+      transition: _transitionFadeIn,
+    ),
+
+    // Buying
+    GetPage(
+      name: AppRoutes.BUYINGSCREEN,
+      page: () => const BuyingScreen(),
+      binding: BuyingBinding(),
       transition: _transitionFadeIn,
     ),
 

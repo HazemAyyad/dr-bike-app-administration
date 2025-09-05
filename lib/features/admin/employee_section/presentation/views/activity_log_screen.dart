@@ -39,7 +39,7 @@ class ActivityLogScreen extends StatelessWidget {
                           children: [
                             CustomText(title: 'activity'),
                             CustomText(title: 'description'),
-                            SizedBox(width: 20.w),
+                            SizedBox(width: 0.w),
                           ],
                         ),
                       ),
@@ -51,19 +51,24 @@ class ActivityLogScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: GetBuilder<EmployeeSectionController>(
                 builder: (controller) {
+                  if (controller.isLoading.value) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
                   return Column(
                     children: [
                       ...controller.employeeService.logsMap.entries
-                          .take(100)
+                          .toList()
+                          .reversed
+                          .take(30)
                           .map(
                         (entry) {
                           final dateKey = entry.key;
                           final logs = entry.value;
-
                           if (logs.isEmpty) {
                             return ShowNoData();
                           }
-
                           if (controller.isDialogLoading.value) {
                             return const Center(
                               child: CircularProgressIndicator(),
@@ -72,85 +77,80 @@ class ActivityLogScreen extends StatelessWidget {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // لو حابب تعرض التاريخ كعنوان
-                              Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8.h),
-                                child: Text(
-                                  dateKey,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        color: AppColors.primaryColor,
-                                        fontWeight: FontWeight.w400,
-                                        fontSize: 14.sp,
-                                      ),
-                                ),
+                              SizedBox(height: 10.h),
+                              Text(
+                                dateKey,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: AppColors.primaryColor,
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 14.sp,
+                                    ),
                               ),
-                              ...logs.take(100).map(
-                                    (log) => GestureDetector(
-                                      onTap: () {
-                                        Get.dialog(
-                                          ShowLogDetails(log: log),
-                                        );
-                                      },
-                                      child: Container(
-                                        margin:
-                                            EdgeInsets.symmetric(vertical: 5.h),
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 10.w),
-                                        height: 40.h,
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: AppColors.primaryColor,
-                                            width: 1.w,
-                                          ),
-                                          borderRadius:
-                                              BorderRadius.circular(8.r),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            CustomText(
-                                              title: log.name,
-                                              color: AppColors.customGreyColor2,
-                                            ),
-                                            SizedBox(width: 5.w),
-                                            Container(
-                                              width: 1.w,
-                                              height: 20.h,
-                                              color: AppColors.primaryColor,
-                                            ),
-                                            SizedBox(width: 5.w),
-                                            CustomText(
-                                              title: log.description,
-                                              color: AppColors.customGreyColor2,
-                                            ),
-                                            Container(
-                                              width: 1.w,
-                                              height: 20.h,
-                                              color: AppColors.primaryColor,
-                                            ),
-                                            IconButton(
-                                              onPressed: () {
-                                                controller.cancelLog(
-                                                  context: context,
-                                                  logId: log.id.toString(),
-                                                );
-                                              },
-                                              icon: const Icon(
-                                                Icons.delete_outline_rounded,
-                                                color: Colors.red,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                              ...logs.map(
+                                (log) => GestureDetector(
+                                  onTap: () {
+                                    Get.dialog(
+                                      ShowLogDetails(log: log),
+                                    );
+                                  },
+                                  child: Container(
+                                    margin: EdgeInsets.symmetric(vertical: 5.h),
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 10.w),
+                                    height: 40.h,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: AppColors.primaryColor,
+                                        width: 1.w,
                                       ),
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        CustomText(
+                                          title: log.name,
+                                          color: AppColors.customGreyColor2,
+                                        ),
+                                        SizedBox(width: 5.w),
+                                        Container(
+                                          width: 1.w,
+                                          height: 20.h,
+                                          color: AppColors.primaryColor,
+                                        ),
+                                        SizedBox(width: 5.w),
+                                        CustomText(
+                                          title: log.description,
+                                          color: AppColors.customGreyColor2,
+                                        ),
+                                        Container(
+                                          width: 1.w,
+                                          height: 20.h,
+                                          color: AppColors.primaryColor,
+                                        ),
+                                        IconButton(
+                                          onPressed: () {
+                                            controller.cancelLog(
+                                              context: context,
+                                              logId: log.id.toString(),
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
+                                ),
+                              ),
                             ],
                           );
                         },
@@ -219,7 +219,7 @@ class ShowLogDetails extends StatelessWidget {
                       onPressed: () => Get.back(),
                       icon: Icon(
                         Icons.close,
-                        color: AppColors.primaryColor,
+                        color: AppColors.redColor,
                         size: 30.sp,
                       ),
                     ),

@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -7,7 +8,6 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../admin/--/presentation/admin_dashbord/widgets/actions_buttons.dart';
-import '../../../../admin/--/presentation/admin_dashbord/widgets/search_bar.dart';
 import '../controllers/employee_dashbord_controller.dart';
 import '../widgets/employee_dashbord_tasks.dart';
 import '../widgets/employee_floating_action_button.dart';
@@ -22,7 +22,9 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
       appBar: AppBar(
         elevation: 0,
         title: Text(
-          '${'welcomeBack.'.tr} Mohamed',
+          userName.isEmpty
+              ? 'welcomeBack.'.tr
+              : '${'welcomeBack.'.tr}  $userName',
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w700,
@@ -34,8 +36,11 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CustomSearchBar(),
-            SizedBox(height: 20.h),
+            SizedBox(
+              height: 10.h,
+            ),
+            // CustomSearchBar(),
+            // SizedBox(height: 20.h),
             // بطاقات الإحصائيات
             EmployeeHomeStatisticsCard(),
             SizedBox(height: 15.h),

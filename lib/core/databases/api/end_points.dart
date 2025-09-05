@@ -12,7 +12,7 @@ class EndPoints {
   static const String changePassword = 'change/password';
   static const String updateProfile = 'update/profile';
 
-// employee Dashboard
+  // employee Dashboard
   static const String employeeHomeData = 'employee/home/data';
   static const String changeEmployeeTaskToCompleted =
       'change/employee/task/to/completed';
@@ -29,6 +29,7 @@ class EndPoints {
   static const String getDebtsWeOwe = 'get/debts/we/owe';
   static const String personDebts = 'person/debts';
   static const String addDebt = 'add/debt';
+  static const String getDebtsReports = 'get/debts/reports';
 
   // employees section
   static const String createEmployee = 'create/employee';
@@ -132,6 +133,16 @@ class EndPoints {
 
   // stock
   static const String getProductsList = 'get/products/list';
+  static const String getUnarchivedCloseouts = 'get/unarchived/closeouts';
+  static const String getAllCombinations = 'get/all/combinations';
+  static const String getProductDetails = 'get/product/details';
+  static const String archiveCloseout = 'archive/closeout';
+  static const String addProductToCloseouts = 'add/product/to/closeouts';
+  static const String getArchivedCloseouts = 'get/archived/closeouts';
+  static const String getCategories = 'get/all/subcategories';
+  static const String getProjects = 'get/all/projects';
+  static const String searchProducts = 'search/products/by/name';
+  static const String addCombination = 'add/combination';
 
   // sales
   static const String allProducts = 'all/products';

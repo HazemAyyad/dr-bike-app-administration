@@ -28,6 +28,8 @@ import '../../features/admin/sales/data/repositories/sales_implement.dart';
 import '../../features/admin/special_tasks/data/datasources/special_tasks_datasource.dart';
 import '../../features/admin/special_tasks/data/repositories/special_tasks_implement.dart';
 import '../../features/admin/special_tasks/presentation/controllers/special_tasks_service.dart';
+import '../../features/admin/stock/data/datasources/stock_datasource.dart';
+import '../../features/admin/stock/data/repositories/stock_implement.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repo_impl.dart';
 import '../../features/common_feature/data/datasources/common_datasource.dart';
@@ -46,6 +48,7 @@ String userType = '';
 
 // list of permissions
 List<int> employeePermissions = [];
+String userName = '';
 
 class InitialBindings implements Bindings {
   @override
@@ -70,6 +73,7 @@ class InitialBindings implements Bindings {
           userdata.employeePermissions.map((p) => p.permissionId).toList();
       employeePermissions.addAll(permissionIds);
       userType = userdata.user.type;
+      userName = userdata.user.name;
       print('User Type: $userType');
       print('User Type: $employeePermissions');
     }
@@ -266,5 +270,18 @@ class InitialBindings implements Bindings {
       fenix: true,
     );
     Get.lazyPut<GeneralDataServes>(() => GeneralDataServes(), fenix: true);
+
+    // stock
+    Get.lazyPut<StockDataSource>(
+      () => StockDataSource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<StockImplement>(
+      () => StockImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        stockDataSource: Get.find<StockDataSource>(),
+      ),
+      fenix: true,
+    );
   }
 }

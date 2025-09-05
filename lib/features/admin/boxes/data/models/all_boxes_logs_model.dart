@@ -37,8 +37,12 @@ class BoxLogModel extends BoxLog {
       description: json['description'] ?? '',
       value: double.tryParse(json['value'].toString()) ?? 0.0,
       boxId: json['box_id']?.toString(),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
       type: json['type'],
       fromBox:
           json['from_box'] != null ? BoxModel.fromJson(json['from_box']) : null,

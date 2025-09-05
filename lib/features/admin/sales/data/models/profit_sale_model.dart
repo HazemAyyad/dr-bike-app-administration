@@ -18,8 +18,12 @@ class ProfitSale {
       id: json['id'] ?? 0,
       totalCost: json['total_cost'] ?? '0',
       notes: json['notes'] ?? 'no notes',
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : DateTime.now(),
     );
   }
 

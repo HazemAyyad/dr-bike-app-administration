@@ -145,6 +145,8 @@ class ChecksController extends GetxController
       );
       result.fold(
         (failure) {
+          isLoading(false);
+
           final errors = failure.data['errors'];
           String errorMessage = '';
           if (errors is Map) {
@@ -210,6 +212,8 @@ class ChecksController extends GetxController
     );
     result.fold(
       (failure) {
+        isLoading(false);
+
         Get.snackbar(
           'error'.tr,
           failure.errMessage,
@@ -253,6 +257,8 @@ class ChecksController extends GetxController
     );
     result.fold(
       (failure) {
+        isLoading(false);
+
         Get.snackbar(
           'error'.tr,
           failure.errMessage,
@@ -295,6 +301,8 @@ class ChecksController extends GetxController
     );
     result.fold(
       (failure) {
+        isLoading(false);
+
         Get.snackbar(
           'error'.tr,
           failure.errMessage,

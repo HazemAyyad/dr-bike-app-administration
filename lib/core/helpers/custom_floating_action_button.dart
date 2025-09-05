@@ -55,16 +55,16 @@ class CustomFloatingActionButton extends StatelessWidget {
             }),
 
             Positioned(
-              bottom: 40.h,
-              left: Get.locale!.languageCode == 'ar' ? 0.w : 180.w,
-              right: Get.locale!.languageCode == 'ar' ? 180.w : 0.w,
+              bottom: 50.h,
+              left: Get.locale!.languageCode == 'ar' ? 0.w : 150.w,
+              right: Get.locale!.languageCode == 'ar' ? 150.w : 0.w,
               child: SizeTransition(
                 sizeFactor: sizeAnimation,
                 axisAlignment: -1.0,
                 child: FadeTransition(
                   opacity: sizeAnimation,
                   child: Container(
-                    width: 200.w,
+                    width: 250.w,
                     // height: 211.h,
                     padding: EdgeInsets.symmetric(vertical: 8.h),
                     decoration: BoxDecoration(
@@ -163,31 +163,34 @@ class BuildAddMenuItem extends StatelessWidget {
     return InkWell(
       overlayColor: WidgetStatePropertyAll(Colors.transparent),
       onTap: () {
-        route.isEmpty
-            ? null
-            : Get.toNamed(
-                route,
-                arguments: {
-                  'isNewCheck': title == 'newCheck',
-                  'isPenaltyTitle': title,
-                },
-              );
-        onTap?.call();
+        if (route.isNotEmpty) {
+          Get.toNamed(
+            route,
+            arguments: {
+              'isNewCheck': title == 'newCheck',
+              'isPenaltyTitle': title,
+            },
+          );
+        } else {
+          onTap?.call();
+        }
       },
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.h),
+        padding: EdgeInsets.symmetric(vertical: 5.h),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Flexible(child: Image.asset(iconAsset, height: 24.h, width: 24.w)),
             SizedBox(width: 8.w),
-            Text(
-              title.tr,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: Get.isDarkMode ? Colors.white : Colors.black,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
+            Flexible(
+              child: Text(
+                title.tr,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: Get.isDarkMode ? Colors.white : Colors.black,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
             ),
           ],
         ),

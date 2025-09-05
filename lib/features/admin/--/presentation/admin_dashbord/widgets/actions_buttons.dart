@@ -28,7 +28,7 @@ class BuildActionButtons extends StatelessWidget {
                     fontSize: 17.sp,
                     fontWeight: FontWeight.w700,
                     color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor
+                        ? AppColors.customGreyColor6
                         : AppColors.secondaryColor,
                   ),
             ),
@@ -95,6 +95,7 @@ Widget _buildActionButton(String title, String route) {
       route == '' ? null : Get.toNamed(route);
     },
     child: Container(
+      padding: EdgeInsets.symmetric(horizontal: 5.w),
       decoration: BoxDecoration(
         color: AppColors.primaryColor,
         borderRadius: BorderRadius.circular(10.r),

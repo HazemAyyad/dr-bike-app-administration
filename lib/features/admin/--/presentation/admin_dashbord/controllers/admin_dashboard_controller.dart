@@ -1,10 +1,8 @@
-import 'package:doctorbike/core/services/user_data.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
-import '../../../../../auth/data/models/user_model.dart';
 import '../../../../employee_section/domain/usecases/get_all_employee.dart';
 
 class DashboardController extends GetxController
@@ -57,7 +55,11 @@ class DashboardController extends GetxController
     {'id': '32', 'title': 'partnersDepartment', 'route': ''},
     {'id': '33', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
     {'id': '34', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
-    {'id': '35', 'title': 'purchasingDepartment', 'route': ''},
+    {
+      'id': '35',
+      'title': 'purchasesandReturns',
+      'route': AppRoutes.BUYINGSCREEN
+    },
     {'id': '36', 'title': 'financialMatters', 'route': ''},
     {
       'id': '37',

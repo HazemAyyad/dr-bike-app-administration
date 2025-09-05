@@ -65,7 +65,13 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.numberOfWorkHours,
-                    subtitle: 'currency',
+                    subtitle: controller.employeeData.value == null
+                        ? '0'
+                        : int.parse(controller
+                                    .employeeData.value!.numberOfWorkHours) >
+                                10
+                            ? 'hour'.tr
+                            : 'hours'.tr,
                   ),
                   SizedBox(width: 8.w),
                   StatCard(
@@ -96,6 +102,16 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                         ? '0'
                         : controller.employeeData.value!.salary.toString(),
                     subtitle: 'currency',
+                  ),
+                  SizedBox(width: 8.w),
+                  StatCard(
+                    show: true,
+                    title: 'points',
+                    imageicon: AssetsManger.cashIcon,
+                    value: controller.employeeData.value == null
+                        ? '0'
+                        : controller.employeeData.value!.points.toString(),
+                    subtitle: 'point',
                   ),
                 ],
               );

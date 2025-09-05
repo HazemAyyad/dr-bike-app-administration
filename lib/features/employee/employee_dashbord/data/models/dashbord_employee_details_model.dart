@@ -5,6 +5,7 @@ class DashbordEmployeeDetailsModel {
   final String hourWorkPrice;
   final String debts;
   final String salary;
+  final String points;
   final List<Permission> permissions;
   final User user;
   final List<Task> tasks;
@@ -16,6 +17,7 @@ class DashbordEmployeeDetailsModel {
     required this.hourWorkPrice,
     required this.debts,
     required this.salary,
+    required this.points,
     required this.permissions,
     required this.user,
     required this.tasks,
@@ -29,6 +31,7 @@ class DashbordEmployeeDetailsModel {
       hourWorkPrice: json['hour_work_price'] ?? '',
       debts: json['debts'] ?? '',
       salary: json['salary'] ?? '',
+      points: json['points'] ?? '0',
       permissions: (json['permissions'] as List<dynamic>)
           .map((e) => Permission.fromJson(e))
           .toList(),
@@ -88,8 +91,12 @@ class Task {
       id: json['id'],
       employeeId: int.parse(json['employee_id']),
       name: json['name'],
-      startTime: DateTime.parse(json['start_time']),
-      endTime: DateTime.parse(json['end_time']),
+      startTime: json['start_time'] != null
+          ? DateTime.parse(json['start_time'])
+          : DateTime.now(),
+      endTime: json['end_time'] != null
+          ? DateTime.parse(json['end_time'])
+          : DateTime.now(),
     );
   }
 }

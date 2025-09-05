@@ -63,8 +63,7 @@ class AddBalanceWidget extends GetView<BoxesController> {
             //     controller.addBalanceBoxNameController.text = value!;
             //   },
             // ),
-            Text(boxId.toString(), style: textStyle.copyWith(fontSize: 15.sp)),
-            SizedBox(height: 10.h),
+            // SizedBox(height: 10.h),
             Form(
               key: controller.formKey,
               child: CustomTextField(

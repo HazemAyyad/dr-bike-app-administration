@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
@@ -140,6 +141,29 @@ class DebetDatasource {
       );
       // final data = response.data;
       // print('Response data: $response');
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Uint8List> getDebtsReports({required String customerId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.getDebtsReports,
+        data: {
+          'customer_id': customerId,
+        },
+        options: Options(responseType: ResponseType.bytes),
+        isFormData: true,
+      );
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

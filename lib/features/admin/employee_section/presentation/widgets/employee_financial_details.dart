@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -71,45 +70,46 @@ class EmployeeFinancialDetails extends StatelessWidget {
                   ],
                 ),
               ),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'employeeName'.tr,
-                      labelTextstyle: textStyle.copyWith(
-                        color: AppColors.primaryColor,
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      hintText: employee.employeeName,
-                      hintStyle: textStyle.copyWith(
-                        color: Colors.grey,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      enabled: false,
-                      sizedBox: false,
-                      fillColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
-                          : AppColors.whiteColor,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomDropdownField(
-                      label: 'selectMonth',
-                      labelTextStyle: textStyle.copyWith(
-                        color: AppColors.primaryColor,
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      hint: 'employee',
-                      items: controller.daysList,
-                      onChanged: (value) {},
-                    ),
-                  )
-                ],
+              CustomTextField(
+                label: 'employeeName'.tr,
+                labelTextstyle: textStyle.copyWith(
+                  color: AppColors.primaryColor,
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+                hintText: employee.employeeName,
+                hintStyle: textStyle.copyWith(
+                  color: Colors.grey,
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+                enabled: false,
+                sizedBox: false,
+                fillColor: ThemeService.isDark.value
+                    ? AppColors.darckColor
+                    : AppColors.whiteColor,
               ),
+              // Row(
+              //   children: [
+              //     Flexible(
+              //       child:
+              //     ),
+              //     SizedBox(width: 10.w),
+              // Flexible(
+              //   child: CustomDropdownField(
+              //     label: 'selectMonth',
+              //     labelTextStyle: textStyle.copyWith(
+              //       color: AppColors.primaryColor,
+              //       fontSize: 17.sp,
+              //       fontWeight: FontWeight.w700,
+              //     ),
+              //     hint: 'employee',
+              //     items: controller.daysList,
+              //     onChanged: (value) {},
+              //   ),
+              // )
+              // ],
+              // ),
               SizedBox(height: 5.h),
               Row(
                 children: [

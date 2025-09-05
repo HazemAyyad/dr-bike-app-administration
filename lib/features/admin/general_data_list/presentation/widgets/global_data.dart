@@ -24,12 +24,25 @@ class GlobalData extends GetView<GeneralDataListController> {
           controller.clearForm();
           controller.isEdit.value = true;
           controller.getPersonData(
-            customerId:
-                controller.currentTab.value == 1 ? employee.id.toString() : '',
-            sellerId:
-                controller.currentTab.value == 0 ? employee.id.toString() : '',
+            customerId: controller.currentTab.value == 1
+                ? employee.id.toString()
+                : employee.type == 'customer'
+                    ? employee.id.toString()
+                    : '',
+            sellerId: controller.currentTab.value == 0
+                ? employee.id.toString()
+                : employee.type == 'seller'
+                    ? employee.id.toString()
+                    : '',
           );
-          Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN);
+          Get.toNamed(
+            AppRoutes.ADDNEWCUSTOMERSCREEN,
+            arguments: {
+              'employeeType': employee.type,
+              'employeeId': employee.id.toString(),
+              'sellerId': employee.id.toString(),
+            },
+          );
         },
         onLongPress: () {
           Get.dialog(

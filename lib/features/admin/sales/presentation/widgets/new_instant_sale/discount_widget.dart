@@ -21,21 +21,30 @@ class DiscountWidget extends GetView<SalesController> {
                 hintText: 'discountExample',
                 controller: controller.discountController,
                 keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  controller.calculateGrandTotal();
+                },
               ),
             ),
             SizedBox(width: 10.w),
             Expanded(
-              child: CustomTextField(
-                isRequired: true,
-                label: 'totalBill',
-                hintText: 'totalExample',
-                controller: controller.totalController,
-                keyboardType: TextInputType.number,
+              child: Obx(
+                () => CustomTextField(
+                  enabled: false,
+                  label: 'totalBill',
+                  hintText: controller.totalCost.value.toString(),
+                  controller: controller.totalController,
+                  keyboardType: TextInputType.number,
+                  validator: (p0) => null,
+                  onChanged: (value) {
+                    controller.calculateGrandTotal();
+                  },
+                ),
               ),
             ),
           ],
         ),
-        SizedBox(height: 20.h),
+        SizedBox(height: 10.h),
         CustomTextField(
           minLines: 3,
           maxLines: 5,

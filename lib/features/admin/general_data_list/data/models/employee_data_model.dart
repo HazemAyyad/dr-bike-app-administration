@@ -7,6 +7,7 @@ class GeneralDataModel {
   final String name;
   final String isCanceled;
   final String? idImage;
+  final String? type;
 
   GeneralDataModel({
     required this.id,
@@ -15,6 +16,7 @@ class GeneralDataModel {
     required this.name,
     required this.isCanceled,
     this.idImage,
+    this.type,
   });
 
   factory GeneralDataModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +29,7 @@ class GeneralDataModel {
       idImage: json['ID_image'] is String
           ? ShowNetImage.getPhoto(json['ID_image'])
           : '',
+      type: json['type'] ?? '',
     );
   }
 
@@ -38,6 +41,7 @@ class GeneralDataModel {
       'name': name,
       'is_canceled': isCanceled,
       'ID_image': idImage,
+      'type': type,
     };
   }
 }

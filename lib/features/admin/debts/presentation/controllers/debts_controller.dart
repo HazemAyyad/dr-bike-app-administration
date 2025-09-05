@@ -1,8 +1,11 @@
 import 'dart:io';
 
-import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:open_filex/open_filex.dart';
+
+import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
@@ -10,6 +13,7 @@ import '../../../checks/data/models/check_model.dart';
 import '../../domain/usecases/add_debt_usecase.dart';
 import '../../domain/usecases/debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/debts_we_owe_usecase.dart';
+import '../../domain/usecases/get_debts_reports_usecase.dart';
 import '../../domain/usecases/total_debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/total_debts_we_owe_usecase.dart';
 import '../../domain/usecases/user_debts_data_usecase.dart';
@@ -21,6 +25,7 @@ class DebtsController extends GetxController {
   final DebtsOwedToUsUsecase debtsOwedToUs;
   final AddDebtUsecase addDebtUsecase;
   final DebtsWeOweUsecase debtsWeOwe;
+  final GetDebtsReportsUsecase getDebtsReports;
 
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final UserTransactionsUsecase userTransactionsData;
@@ -36,6 +41,7 @@ class DebtsController extends GetxController {
     required this.addDebtUsecase,
     required this.allCustomersSellersUsecase,
     required this.dataService,
+    required this.getDebtsReports,
   });
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -266,6 +272,39 @@ class DebtsController extends GetxController {
         await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
     allSellersList.assignAll(resultSellers);
     allCustomersList.assignAll(resultCustomers);
+  }
+
+  // download report
+  Future<void> downloadReport({
+    required String customerId,
+    required BuildContext context,
+  }) async {
+    final response = await getDebtsReports.call(customerId: customerId);
+
+    response.fold((failure) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: failure.errMessage,
+        message: failure.data['message'] ?? 'Unknown error',
+      );
+    }, (success) async {
+      final status = await Permission.storage.request();
+      if (status.isGranted) {
+        final downloadsDir = Directory('/storage/emulated/0/Download');
+        final filePath = "${downloadsDir.path}/report.pdf";
+
+        final file = File(filePath);
+        await file.writeAsBytes(success, flush: true);
+
+        await OpenFilex.open(filePath);
+        Get.snackbar(
+          'fileDownloadedSuccessfully'.tr,
+          filePath,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      }
+    });
   }
 
   @override

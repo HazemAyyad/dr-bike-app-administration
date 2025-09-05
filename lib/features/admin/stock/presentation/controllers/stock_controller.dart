@@ -1,24 +1,62 @@
+import 'package:doctorbike/routes/app_routes.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class Product {
-  final String id;
-  final String name;
-  final String? imageUrl;
-  final int quantity;
-  final double price;
-  final String category;
+import '../../../../../core/utils/assets_manger.dart';
+import '../../../sales/data/models/product_model.dart';
+import '../../data/models/all_stock_products_model.dart';
+import '../../data/models/product_details_model.dart';
+import '../../domain/usecases/add_combination_usecase.dart';
+import '../../domain/usecases/get_all_stock_usecase.dart';
+import '../../domain/usecases/get_archived_usecase.dart';
+import '../../domain/usecases/get_categories_usecase.dart';
+import '../../domain/usecases/get_product_details_usecase.dart';
+import '../../domain/usecases/move_to_archive_usecase.dart';
+import '../../domain/usecases/search_products_usecase.dart';
+import 'stock_services.dart';
 
-  Product({
-    required this.id,
-    required this.name,
-    this.imageUrl,
-    required this.quantity,
-    required this.price,
-    required this.category,
+class StockController extends GetxController with GetTickerProviderStateMixin {
+  final GetAllStockUsecase getAllStockUsecase;
+  final GetProductDetailsUsecase getProductDetailsUsecase;
+  final MoveToArchiveUsecase moveToArchiveUsecase;
+  final GetArchivedUsecase getArchivedUsecase;
+  final GetCategoriesUsecase getCategoriesUsecase;
+  final SearchProductsUsecase searchProductsUsecase;
+  final AddCombinationUsecase addCombinationUsecase;
+
+  StockController({
+    required this.getAllStockUsecase,
+    required this.getProductDetailsUsecase,
+    required this.moveToArchiveUsecase,
+    required this.getArchivedUsecase,
+    required this.getCategoriesUsecase,
+    required this.searchProductsUsecase,
+    required this.addCombinationUsecase,
   });
-}
 
-class StockController extends GetxController {
+  final TextEditingController productNameController = TextEditingController();
+  final TextEditingController productDetailsController =
+      TextEditingController();
+  final TextEditingController subCategoryController = TextEditingController();
+  final TextEditingController stockController = TextEditingController();
+  final TextEditingController minimumStockController = TextEditingController();
+  final TextEditingController wholesalePricesController =
+      TextEditingController();
+  final TextEditingController retailPricesController = TextEditingController();
+  final TextEditingController discountPercentageController =
+      TextEditingController();
+  final TextEditingController selectPurchaseController =
+      TextEditingController();
+  final TextEditingController purchasePriceController = TextEditingController();
+  final RxBool isForcedSale = false.obs;
+
+  final TextEditingController closeoutsMinimumSaleController =
+      TextEditingController();
+  final TextEditingController closeoutsProductNameController =
+      TextEditingController();
+  final scrollController = ScrollController();
+  final showScrollToTopButton = false.obs;
+
   final tabs = ['products', 'clearance', 'productComposition'].obs;
 
   final currentTab = 0.obs;
@@ -27,131 +65,536 @@ class StockController extends GetxController {
     currentTab.value = index;
   }
 
-  // State variables
-  final RxList<Product> _products = <Product>[].obs;
-  final RxList<String> categories = <String>[
-    'الكل',
-    'قطع غيار',
-    'إطارات',
-    'زيوت',
-    'إكسسوارات',
-  ].obs;
+  late AnimationController animController;
+  late Animation<double> opacityAnimation;
+  late Animation<double> sizeAnimation;
 
-  final RxInt selectedCategoryIndex = 0.obs;
+  void toggleAddMenu() {
+    isAddMenuOpen.value = !isAddMenuOpen.value;
+  }
+
+  final items = <SizedModel>[SizedModel()].obs;
+
+  void addSized() {
+    items.add(SizedModel());
+    update();
+  }
+
+  void removeItem(int index) {
+    if (items.length > 1) {
+      items.removeAt(index);
+    }
+    update();
+  }
+
+  void addColorToSize(int sizeIndex) {
+    items[sizeIndex].colors.add(ColorModel());
+    update();
+  }
+
+  void removeColorFromSize(int sizeIndex, int colorIndex) {
+    if (items[sizeIndex].colors.length > 1) {
+      items[sizeIndex].colors.removeAt(colorIndex);
+    }
+    update();
+  }
+
+  final newComposition = <NewCompositionModel>[NewCompositionModel()].obs;
+
+  void addComposition() {
+    newComposition.add(NewCompositionModel());
+    update();
+  }
+
+  void removeComposition(int index) {
+    if (newComposition.length > 1) {
+      newComposition.removeAt(index);
+    }
+    update();
+  }
+
+  final RxInt totalCost = 0.obs;
+  final RxInt totalQuantity = 0.obs;
+
+  void calculateGrandTotal() {
+    int cost = 0;
+    int quantity = 0;
+
+    for (NewCompositionModel item in newComposition) {
+      cost += item.totalPrice.value.toInt();
+    }
+    for (NewCompositionModel item in newComposition) {
+      quantity += item.totalQuantity.value;
+    }
+
+    totalCost.value = cost;
+    totalQuantity.value = quantity;
+  }
+
+  List<Map<String, String>> addList = [
+    {
+      'title': 'newClearance',
+      'icon': AssetsManger.invoiceIcon,
+      'route': AppRoutes.CLOSEOUTSSCREEN,
+    },
+    {
+      'title': 'newProductComposition',
+      'icon': AssetsManger.invoiceIcon,
+      'route': AppRoutes.ADDCOMBINATIONSCREEN,
+    },
+  ];
+
   final RxBool isLoading = false.obs;
-  final RxString searchQuery = ''.obs;
 
-  // Getters
-  List<Product> get products => _products;
+  final RxBool isProductLoading = false.obs;
+
+  final RxBool isLoadingMore = false.obs;
+
+  final RxBool isAddMenuOpen = false.obs;
+
+  void scrollToTop() {
+    scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _onScroll() {
+    if (scrollController.position.pixels >=
+        scrollController.position.maxScrollExtent - 1) {
+      StockServices().page++;
+      getAllProducts(isRefresh: true);
+    }
+  }
+
+  final RxList<AllStockProductsModel> allProducts =
+      <AllStockProductsModel>[].obs;
+
+  final RxList<AllStockProductsModel> allClearances =
+      <AllStockProductsModel>[].obs;
+
+  final RxList<AllStockProductsModel> allCombinations =
+      <AllStockProductsModel>[].obs;
+  int page = 1;
+
+  // Get all products
+  void getAllProducts({bool isRefresh = false}) async {
+    isRefresh
+        ? isLoadingMore(true)
+        : allProducts.isEmpty
+            ? isLoading(true)
+            : isLoading(false);
+
+    // 1- المنتجات العادية
+    final result = await getAllStockUsecase.call(
+      page: page,
+      ifCombinations: false,
+      ifCloseouts: false,
+    );
+    for (var product in result) {
+      if (!allProducts.any((p) => p.productId == product.productId)) {
+        allProducts.add(product);
+        // filteredProducts.add(product);
+      } else {
+        // filteredProducts.value = StockServices().allProducts;
+      }
+    }
+    final getClearances = await getAllStockUsecase.call(
+      page: page,
+      ifCombinations: false,
+      ifCloseouts: true,
+    );
+    for (var product in getClearances) {
+      if (!allClearances.any((p) => p.productId == product.productId)) {
+        allClearances.add(product);
+        // filteredClearances.add(product);
+      } else {
+        // filteredClearances.value = StockServices().allClearances;
+      }
+    }
+
+    // 3- الكومبينيشن
+    final getCombinations = await getAllStockUsecase.call(
+      page: page,
+      ifCombinations: true,
+      ifCloseouts: false,
+    );
+    for (var product in getCombinations) {
+      if (!allCombinations.any((p) => p.productId == product.productId)) {
+        allCombinations.add(product);
+        // filteredCombinations.add(product);
+      } else {
+        // filteredCombinations.value = StockServices().allCombinations;
+      }
+    }
+    page++;
+    isLoadingMore(false);
+    isLoading(false);
+  }
+
+  Rxn<ProductDetailsModel> productDetails = Rxn<ProductDetailsModel>();
+  // get product details
+  Future<void> getProductDetails({required String productId}) async {
+    isProductLoading(true);
+    productDetails.value =
+        await getProductDetailsUsecase.call(productId: productId);
+    isProductLoading(false);
+    update();
+  }
+
+  // get product
+  List<AllStockProductsModel> archived = [];
+  void getArchived() async {
+    archived.isNotEmpty ? isProductLoading(false) : isProductLoading(true);
+    archived.assignAll(await getArchivedUsecase.call());
+    isProductLoading(false);
+    update();
+  }
+
+  // search products
+  List<AllStockProductsModel> searchProducts = [];
+  void getSearchProducts({required String name}) async {
+    searchProducts.clear();
+
+    isProductLoading(true);
+    searchProducts.clear();
+
+    final result = await searchProductsUsecase.call(name: name);
+    searchProducts.assignAll(result);
+    isProductLoading(false);
+    update();
+  }
+
+  // get categories & projects
+  List<ProductModel> categories = [];
+  List<ProductModel> projects = [];
+
+  void getCategories() async {
+    categories.assignAll(await getCategoriesUsecase.call(isProject: false));
+
+    projects.assignAll(await getCategoriesUsecase.call(isProject: true));
+    isProductLoading(false);
+    update();
+  }
+
+  // move product to archive
+  void moveProductToArchive({
+    required BuildContext context,
+    required String productId,
+    required bool isMove,
+  }) async {
+    isLoading(true);
+    final result = await moveToArchiveUsecase.call(
+      productId: productId,
+      isMove: isMove,
+    );
+
+    result.fold(
+      (failure) {
+        isLoading(false);
+
+        Get.back();
+        Get.snackbar(
+          failure.errMessage,
+          failure.data['message'],
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+      (success) async {
+        getAllProducts();
+        Get.back();
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            Get.back();
+          },
+        );
+      },
+    );
+    isLoading(false);
+  }
+
+  // Add combination
+  void addCombination() async {
+    isLoading(true);
+    final result = await addCombinationUsecase.call(
+      productId: closeoutsProductsId,
+      combination: newComposition,
+    );
+
+    result.fold(
+      (failure) {
+        isLoading(false);
+
+        Get.back();
+        Get.snackbar(
+          failure.errMessage,
+          failure.data['message'],
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+      (success) async {
+        getAllProducts();
+        Get.back();
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            Get.back();
+          },
+        );
+      },
+    );
+    isLoading(false);
+  }
+
+  String closeoutsProductsId = '';
+  void initProductDetails() {
+    isLoading(true);
+    productNameController.text = productDetails.value!.nameAr;
+    productDetailsController.text = productDetails.value!.descriptionAr!;
+    subCategoryController.text =
+        productDetails.value!.productSubCategories!.isNotEmpty &&
+                productDetails.value!.productSubCategories != null
+            ? productDetails.value!.productSubCategories!.first.subCategoryId
+                .toString()
+            : '';
+    stockController.text = productDetails.value!.stock.toString();
+    minimumStockController.text = productDetails.value!.minSalePrice.toString();
+    purchasePriceController.text =
+        productDetails.value!.normailPrice!.isNotEmpty &&
+                productDetails.value!.purchasePrices != null
+            ? productDetails.value!.normailPrice.toString()
+            : '';
+    discountPercentageController.text =
+        productDetails.value!.discount.toString();
+    retailPricesController.text = productDetails.value!.normailPrice.toString();
+
+    for (var sizeJson in productDetails.value!.sizes!) {
+      items.clear();
+      final sizeModel = SizedModel();
+      sizeModel.sizeController.text = sizeJson.size!;
+
+      final colorsJson = sizeJson.colorSizes!;
+      for (var colorJson in colorsJson) {
+        final colorModel = ColorModel();
+        colorModel.colorController.text = colorJson.colorAr!;
+        colorModel.priceController.text = colorJson.normailPrice!;
+        colorModel.quantityController.text = colorJson.stock!;
+        sizeModel.colors.add(colorModel);
+      }
+      items.add(sizeModel);
+    }
+    isForcedSale.value = productDetails.value!.isSoldWithPaper == '1';
+    isLoading(false);
+    update();
+  }
 
   @override
   void onInit() {
     super.onInit();
-    // Load initial data
-    loadProducts();
-  }
-
-  // Load products from repository/API
-  Future<void> loadProducts() async {
-    try {
-      isLoading.value = true;
-      // TODO: Replace with actual API call
-      await Future.delayed(
-          const Duration(seconds: 1)); // Simulate network delay
-
-      // Mock data - replace with actual data from your data source
-      _products.assignAll([
-        Product(
-          id: '1',
-          name: 'إطار دراجة هوائية',
-          quantity: 15,
-          price: 199.99,
-          category: 'إطارات',
-          imageUrl: 'https://example.com/tire.jpg',
-        ),
-        Product(
-          id: '2',
-          name: 'زيت محرك دراجة',
-          quantity: 30,
-          price: 49.99,
-          category: 'زيوت',
-        ),
-        // Add more mock products as needed
-      ]);
-    } catch (e) {
-      Get.snackbar('خطأ', 'فشل في تحميل المنتجات');
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Filter products by selected category
-  List<Product> get filteredProducts {
-    if (selectedCategoryIndex.value == 0) {
-      return _products;
-    }
-    final selectedCategory = categories[selectedCategoryIndex.value];
-    return _products
-        .where((product) => product.category == selectedCategory)
-        .toList();
-  }
-
-  // Search products
-  List<Product> get searchedProducts {
-    if (searchQuery.value.isEmpty) return filteredProducts;
-    return filteredProducts
-        .where((product) => product.name
-            .toLowerCase()
-            .contains(searchQuery.value.toLowerCase()))
-        .toList();
-  }
-
-  // Category selection
-  void selectCategory(int index) {
-    selectedCategoryIndex.value = index;
-  }
-
-  // Update search query
-  void updateSearchQuery(String query) {
-    searchQuery.value = query;
-  }
-
-  // Add new product
-  Future<void> addProduct(Product product) async {
-    try {
-      // TODO: Implement add product to API
-      _products.add(product);
-      Get.back(); // Close add product dialog
-      Get.snackbar('نجاح', 'تمت إضافة المنتج بنجاح');
-    } catch (e) {
-      Get.snackbar('خطأ', 'فشل في إضافة المنتج');
-    }
-  }
-
-  // Update product
-  Future<void> updateProduct(Product updatedProduct) async {
-    try {
-      // TODO: Implement update product in API
-      final index = _products.indexWhere((p) => p.id == updatedProduct.id);
-      if (index != -1) {
-        _products[index] = updatedProduct;
-        _products.refresh();
-        Get.back(); // Close edit dialog
-        Get.snackbar('نجاح', 'تم تحديث المنتج بنجاح');
+    getAllProducts();
+    getCategories();
+    scrollController.addListener(_onScroll);
+    scrollController.addListener(() {
+      if (scrollController.offset > 100) {
+        showScrollToTopButton.value = true;
+      } else {
+        showScrollToTopButton.value = false;
       }
-    } catch (e) {
-      Get.snackbar('خطأ', 'فشل في تحديث المنتج');
-    }
+    });
+    animController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
+
+    opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);
+    sizeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: animController, curve: Curves.fastOutSlowIn),
+    );
+
+    ever(isAddMenuOpen, (bool open) {
+      if (open) {
+        animController.forward();
+      } else {
+        animController.reverse();
+      }
+    });
   }
 
-  // Delete product
-  Future<void> deleteProduct(String productId) async {
-    try {
-      // TODO: Implement delete product from API
-      _products.removeWhere((p) => p.id == productId);
-      Get.snackbar('نجاح', 'تم حذف المنتج بنجاح');
-    } catch (e) {
-      Get.snackbar('خطأ', 'فشل في حذف المنتج');
+  @override
+  void dispose() {
+    scrollController.removeListener(_onScroll);
+    scrollController.removeListener(() {
+      if (scrollController.offset > 100) {
+        showScrollToTopButton.value = true;
+      } else {
+        showScrollToTopButton.value = false;
+      }
+    });
+    scrollController.dispose();
+    for (var element in items) {
+      element.dispose();
     }
+    animController.dispose();
+    productNameController.dispose();
+    productDetailsController.dispose();
+    subCategoryController.dispose();
+    stockController.dispose();
+    minimumStockController.dispose();
+    wholesalePricesController.dispose();
+    retailPricesController.dispose();
+    discountPercentageController.dispose();
+    selectPurchaseController.dispose();
+    purchasePriceController.dispose();
+    closeoutsMinimumSaleController.dispose();
+    super.dispose();
   }
 }
+
+class SizedModel {
+  final TextEditingController sizeController = TextEditingController();
+  final RxList<ColorModel> colors = <ColorModel>[].obs;
+  SizedModel() {
+    colors.add(ColorModel());
+  }
+  void dispose() {
+    sizeController.dispose();
+  }
+}
+
+class ColorModel {
+  final TextEditingController colorController = TextEditingController();
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  void dispose() {
+    colorController.dispose();
+    quantityController.dispose();
+    priceController.dispose();
+  }
+}
+
+class NewCompositionModel {
+  final TextEditingController productIdController = TextEditingController();
+  final TextEditingController productNameController = TextEditingController();
+  final TextEditingController quantityController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+
+  final RxDouble totalPrice = 0.0.obs;
+
+  final RxInt totalQuantity = 0.obs;
+
+  NewCompositionModel() {
+    priceController.addListener(_updateTotal);
+    quantityController.addListener(_updateTotal);
+  }
+
+  // Map<String, dynamic> toJson() {
+  //   return {
+  //     "product_id": productIdController.text,
+  //     "quantity": quantityController.text,
+  //   };
+  // }
+
+  void _updateTotal() {
+    final price = double.tryParse(priceController.text.trim()) ?? 0;
+    final quantity = double.tryParse(quantityController.text.trim()) ?? 0;
+    totalPrice.value = price * quantity;
+    totalQuantity.value = quantity.toInt();
+  }
+
+  void dispose() {
+    productIdController.dispose();
+    quantityController.dispose();
+    priceController.dispose();
+  }
+}
+
+
+  // final RxList<AllStockProductsModel> filteredProducts =
+  //     <AllStockProductsModel>[].obs;
+  // final RxList<AllStockProductsModel> filteredClearances =
+  //     <AllStockProductsModel>[].obs;
+  // final RxList<AllStockProductsModel> filteredCombinations =
+  //     <AllStockProductsModel>[].obs;
+
+  // Search products
+  // void searchedProducts(String searchQuery) {
+  //   if (searchQuery.isEmpty) filteredProducts;
+  //   if (searchQuery.isEmpty) filteredClearances;
+  //   if (searchQuery.isEmpty) filteredCombinations;
+  //   filteredProducts.value = StockServices()
+  //       .allProducts
+  //       .where((product) =>
+  //           product.name.toLowerCase().contains(searchQuery.toLowerCase()))
+  //       .toList();
+
+  //   filteredClearances.value = StockServices()
+  //       .allClearances
+  //       .where((product) =>
+  //           product.name.toLowerCase().contains(searchQuery.toLowerCase()))
+  //       .toList();
+
+  //   filteredCombinations.value = StockServices()
+  //       .allCombinations
+  //       .where((product) =>
+  //           product.name.toLowerCase().contains(searchQuery.toLowerCase()))
+  //       .toList();
+  // }
+  // move product to archive
+  // void moveProductToArchive({
+  //   required BuildContext context,
+  //   required String productId,
+  //   required bool isMove,
+  // }) async {
+  //   isLoading(true);
+  //   final result = await moveToArchiveUsecase.call(
+  //     productId: productId,
+  //     isMove: isMove,
+  //   );
+
+  //   result.fold(
+  //     (failure) {
+  //       isLoading(false);
+
+  //       Get.back();
+  //       Get.snackbar(
+  //         failure.errMessage,
+  //         failure.data['message'],
+  //         snackPosition: SnackPosition.BOTTOM,
+  //         duration: const Duration(milliseconds: 1500),
+  //       );
+  //     },
+  //     (success) async {
+  //       getAllProducts();
+  //       Get.back();
+  //       Get.snackbar(
+  //         'success'.tr,
+  //         success,
+  //         snackPosition: SnackPosition.BOTTOM,moveToArchive
+  //         duration: const Duration(milliseconds: 1500),
+  //       );
+  //       Future.delayed(
+  //         const Duration(milliseconds: 1500),
+  //         () {
+  //           Get.back();
+  //         },
+  //       );
+  //     },
+  //   );
+  //   isLoading(false);
+  // }

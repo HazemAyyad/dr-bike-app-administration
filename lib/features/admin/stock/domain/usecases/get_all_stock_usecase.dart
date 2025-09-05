@@ -1,3 +1,4 @@
+import '../../data/models/all_stock_products_model.dart';
 import '../repositories/stock_repository.dart';
 
 class GetAllStockUsecase {
@@ -5,7 +6,14 @@ class GetAllStockUsecase {
 
   GetAllStockUsecase({required this.stockRepository});
 
-  Future<dynamic> call({required int page}) async {
-    return await stockRepository.getAllStock(page: page);
+  Future<List<AllStockProductsModel>> call(
+      {required int page,
+      required bool ifCombinations,
+      required bool ifCloseouts}) async {
+    return await stockRepository.getAllStock(
+      page: page,
+      ifCombinations: ifCombinations,
+      ifCloseouts: ifCloseouts,
+    );
   }
 }

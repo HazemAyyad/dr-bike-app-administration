@@ -60,13 +60,16 @@ class DebtsWeOwe {
       sellerId: json['seller_id'] ?? 0,
       sellerName: json['seller_name'] ?? '',
       sellerIsCanceled: json['seller_is_canceled'] == '1',
-      dueDate: DateTime.parse(json[ApiKey.due_date]),
+      dueDate: json[ApiKey.due_date] != null
+          ? DateTime.parse(json[ApiKey.due_date])
+          : DateTime.now(),
       total: json[ApiKey.total] ?? '0',
       status: json[ApiKey.status] ?? 'unpaid',
       receiptImage: ShowNetImage.getPhoto(json[ApiKey.receipt_image]),
       debtType: json[ApiKey.debt_type] ?? '',
-      debtCreatedAt: DateTime.parse(
-          json[ApiKey.debt_created_at] ?? DateTime.now().toIso8601String()),
+      debtCreatedAt: json[ApiKey.debt_created_at] != null
+          ? DateTime.parse(json[ApiKey.debt_created_at])
+          : DateTime.now(),
       notes: json[ApiKey.notes] ?? '',
     );
   }

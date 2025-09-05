@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/debts/domain/repositories/debts_repositories.dart';
@@ -160,6 +161,22 @@ class DebtsImplement implements DebtsRepository {
           result,
         ),
       );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Uint8List>> getDebtsReports(
+      {required String customerId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await debetDatasource.getDebtsReports(
+        customerId: customerId,
+      );
+      return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }

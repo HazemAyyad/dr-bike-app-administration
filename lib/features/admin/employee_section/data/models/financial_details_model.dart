@@ -12,7 +12,7 @@ class FinancialDetailsModel extends FinancialDetailsEntity {
     required String hourWorkPrice,
     required String totalWorkHours,
     required String numberOfWorkHours,
-    required int pointsRevenue,
+    required dynamic pointsRevenue,
     required dynamic total,
   }) : super(
           employeeId: employeeId,
@@ -37,7 +37,7 @@ class FinancialDetailsModel extends FinancialDetailsEntity {
       hourWorkPrice: json[ApiKey.hour_work_price] ?? '0',
       totalWorkHours: json[ApiKey.total_work_hours] ?? '0',
       numberOfWorkHours: json[ApiKey.number_of_work_hours] ?? '0',
-      pointsRevenue: json[ApiKey.points_revenue] ?? 0,
+      pointsRevenue: json[ApiKey.points_revenue] ?? '0',
       total: json[ApiKey.total] ?? 0,
     );
   }

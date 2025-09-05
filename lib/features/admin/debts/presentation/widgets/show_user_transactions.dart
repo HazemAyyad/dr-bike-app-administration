@@ -36,7 +36,7 @@ class ShowUserTransactions extends GetView<DebtsController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 20.h),
-              UserAccount(controller: controller),
+              UserAccount(),
               SizedBox(height: 20.h),
               Obx(
                 () => Text(

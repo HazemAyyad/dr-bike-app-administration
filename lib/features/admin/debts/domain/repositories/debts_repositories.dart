@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 
@@ -29,4 +30,7 @@ abstract class DebtsRepository {
     required List<File> receiptImage,
     required String notes,
   });
+
+  Future<Either<Failure, Uint8List>> getDebtsReports(
+      {required String customerId});
 }

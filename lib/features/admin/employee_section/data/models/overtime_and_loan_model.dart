@@ -33,7 +33,9 @@ class OvertimeAndLoanModel {
       overtimeValue: json['overtime_value'] ?? '',
       loanValue: json['loan_value'] ?? '',
       extraWorkHoursValue: json['extra_work_hours'] ?? '',
-      orderDate: DateTime.parse(json['order_date'] ?? DateTime.now()),
+      orderDate: json['order_date'] != null
+          ? DateTime.parse(json['order_date'])
+          : DateTime.now(),
     );
   }
 

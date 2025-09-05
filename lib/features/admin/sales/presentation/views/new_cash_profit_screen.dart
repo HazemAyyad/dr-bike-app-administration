@@ -39,26 +39,41 @@ class NewCashProfitScreen extends GetView<SalesController> {
                   return null;
                 },
               ),
+              SizedBox(height: 50.h),
+              AppButton(
+                isLoading: controller.isLoading,
+                height: 45.h,
+                width: 382.w,
+                text: 'complete'.tr,
+                textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                onPressed: () {
+                  controller.addProfitSale(context: context);
+                },
+              ),
             ],
           ),
         ),
       ),
-      floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: AppButton(
-        isLoading: controller.isLoading,
-        height: 45.h,
-        width: 382.w,
-        text: 'complete'.tr,
-        textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-        onPressed: () {
-          controller.addProfitSale(context: context);
-        },
-      ),
+      // floatingActionButtonAnimator: FloatingActionButtonAnimator.scaling,
+      // floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      // floatingActionButton: AppButton(
+      //   isLoading: controller.isLoading,
+      //   height: 45.h,
+      //   width: 382.w,
+      //   text: 'complete'.tr,
+      //   textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+      //         fontSize: 16.sp,
+      //         fontWeight: FontWeight.w700,
+      //         color: Colors.white,
+      //       ),
+      //   onPressed: () {
+      //     controller.addProfitSale(context: context);
+      //   },
+      // ),
     );
   }
 }

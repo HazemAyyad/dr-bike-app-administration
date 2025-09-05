@@ -76,4 +76,11 @@ class AppRoutes {
 
   // Stock
   static const STOCKSCREEN = '/StockScreen';
+  static const PRODUCTDETAILSSCREEN = '/ProductDetailsScreen';
+  static const EDITPRODUCTSCREEN = '/EditProductScreen';
+  static const CLOSEOUTSSCREEN = '/CloseoutsScreen';
+  static const ADDCOMBINATIONSCREEN = '/AddCombinationScreen';
+
+  // Buying
+  static const BUYINGSCREEN = '/BuyingScreen';
 }
