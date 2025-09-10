@@ -40,7 +40,7 @@ class CreateQrcode extends GetView<EmployeeSectionController> {
               () => controller.isDialogLoading.value
                   ? SizedBox(
                       height: 200.h,
-                      child: Center(child: const CircularProgressIndicator()))
+                      child: const Center(child: CircularProgressIndicator()))
                   : ClipRRect(
                       borderRadius: BorderRadius.circular(5.r),
                       child: Center(

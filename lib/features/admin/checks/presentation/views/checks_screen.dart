@@ -23,7 +23,7 @@ class ChecksScreen extends GetView<ChecksController> {
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [
           SizedBox(height: 10.h),
-          ChecksInformaiton(),
+          const ChecksInformaiton(),
           SizedBox(height: 30.h),
           AppButton(
             isSafeArea: false,

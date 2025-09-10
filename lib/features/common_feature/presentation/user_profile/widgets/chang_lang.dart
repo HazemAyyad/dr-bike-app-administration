@@ -21,14 +21,14 @@ Widget changLang(ProfileController controller) {
             changLangBottomSheet(controller);
           },
         ),
-        Spacer(),
+        const Spacer(),
         Row(
           children: [
             Text(
               controller.languageController.getLang() == 'ar'
                   ? 'العربية'
                   : 'English',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),

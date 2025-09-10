@@ -40,7 +40,7 @@ class CustomFloatingActionButton extends StatelessWidget {
               : Alignment.bottomRight,
           children: [
             Obx(() {
-              if (!isAddMenuOpen.value) return SizedBox.shrink();
+              if (!isAddMenuOpen.value) return const SizedBox.shrink();
               return Positioned.fill(
                 child: GestureDetector(
                   onTap: onTap,
@@ -122,7 +122,7 @@ class CustomFloatingActionButton extends StatelessWidget {
                 onPressed: onTap,
                 backgroundColor: AppColors.secondaryColor,
                 elevation: 2.0,
-                shape: CircleBorder(),
+                shape: const CircleBorder(),
                 child: Obx(
                   () => AnimatedRotation(
                     turns: isAddMenuOpen.value ? -0.125 : 0, // 0.125 = 45 درجة
@@ -161,7 +161,7 @@ class BuildAddMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      overlayColor: WidgetStatePropertyAll(Colors.transparent),
+      overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       onTap: () {
         if (route.isNotEmpty) {
           Get.toNamed(
@@ -171,9 +171,10 @@ class BuildAddMenuItem extends StatelessWidget {
               'isPenaltyTitle': title,
             },
           );
-        } else {
-          onTap?.call();
         }
+        //  else {
+        onTap?.call();
+        // }
       },
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 5.h),

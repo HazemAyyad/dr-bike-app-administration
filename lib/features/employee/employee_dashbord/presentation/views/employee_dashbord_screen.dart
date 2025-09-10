@@ -7,7 +7,7 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../admin/--/presentation/admin_dashbord/widgets/actions_buttons.dart';
+import '../../../../admin/admin_dashbord/presentation/widgets/actions_buttons.dart';
 import '../controllers/employee_dashbord_controller.dart';
 import '../widgets/employee_dashbord_tasks.dart';
 import '../widgets/employee_floating_action_button.dart';
@@ -42,15 +42,15 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
             // CustomSearchBar(),
             // SizedBox(height: 20.h),
             // بطاقات الإحصائيات
-            EmployeeHomeStatisticsCard(),
+            const EmployeeHomeStatisticsCard(),
             SizedBox(height: 15.h),
             // أزرار الوظائف
             Obx(
               () {
                 if (controller.isLoading.value) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 } else if (controller.employeeData.value == null) {
-                  return ShowNoData();
+                  return const ShowNoData();
                 }
                 return Column(
                   children: [
@@ -60,7 +60,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                           return Column(
                             children: [
                               SizedBox(height: 52.h),
-                              Center(child: CircularProgressIndicator()),
+                              const Center(child: CircularProgressIndicator()),
                             ],
                           );
                         }
@@ -110,7 +110,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                             ],
                           );
                         }
-                        return SizedBox.shrink();
+                        return const SizedBox.shrink();
                       },
                     ),
                     controller.employeeData.value!.permissions.isNotEmpty
@@ -121,7 +121,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                 .map((e) => e.id)
                                 .toList(),
                           )
-                        : SizedBox.shrink(),
+                        : const SizedBox.shrink(),
                   ],
                 );
               },
@@ -130,7 +130,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
           ],
         ),
       ),
-      floatingActionButton: EmployeeFloatingActionButton(),
+      floatingActionButton: const EmployeeFloatingActionButton(),
     );
   }
 }

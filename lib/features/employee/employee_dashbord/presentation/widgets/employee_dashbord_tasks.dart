@@ -27,7 +27,7 @@ class EmployeeDashbordTasks extends GetView<EmployeeDashbordController> {
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 10.h),
-        padding: EdgeInsets.all(5),
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(9.r),
           border: Border.all(color: AppColors.primaryColor),
@@ -118,7 +118,7 @@ class EmployeeDashbordTasks extends GetView<EmployeeDashbordController> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4.r),
                 ),
-                side: BorderSide(color: AppColors.primaryColor),
+                side: const BorderSide(color: AppColors.primaryColor),
                 value: false,
                 onChanged: (value) {
                   controller.changeTaskToCompleted(

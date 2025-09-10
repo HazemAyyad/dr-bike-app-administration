@@ -44,7 +44,7 @@ class BoxesScreen extends GetView<BoxesController> {
               ),
             ),
           ),
-          VeiwBoxes(),
+          const VeiwBoxes(),
         ],
       ),
     );

@@ -107,8 +107,9 @@ class EmployeeTasksController extends GetxController {
           final isSameDayAsFrom = task.endTime.year == from.year &&
               task.endTime.month == from.month &&
               task.endTime.day == from.day;
-          if (task.endTime.isBefore(from) && !isSameDayAsFrom)
+          if (task.endTime.isBefore(from) && !isSameDayAsFrom) {
             matchesDate = false;
+          }
         }
         if (to != null) {
           final isSameDayAsTo = task.endTime.year == to.year &&
@@ -225,8 +226,8 @@ class EmployeeTasksController extends GetxController {
   }
 
   @override
-  void dispose() {
-    super.dispose();
+  void onClose() {
+    super.onClose();
     fromDateController.dispose();
     toDateController.dispose();
     employeeNameController.dispose();

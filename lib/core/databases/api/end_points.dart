@@ -22,6 +22,9 @@ class EndPoints {
   static const String addOvertimeOrder = 'employee/add/overtime/order';
   static const String addLoanOrder = 'employee/add/loan/order';
 
+  // admin dashboard
+  static const String adminLogs = 'all/logs';
+
   // debts section
   static const String totalDebtsWeOwe = 'total/debts/we/owe';
   static const String totalDebtsOwedToUs = 'total/debts/owed/to/us';
@@ -164,6 +167,21 @@ class EndPoints {
   static const String mainPageCustomers = 'main/page/customers';
   static const String mainPageSellers = 'main/page/sellers';
   static const String mainPageInComplete = 'main/page/incomplete/persons';
+
+  // financial affairs
+  static const String addNewAsset = 'add/asset';
+  static const String editAsset = 'edit/asset';
+  static const String depreciateAssets = 'depreciate/all/assets';
+  static const String assetsDetails = 'show/asset';
+  static const String getAllAssets = 'get/all/assets';
+  static const String getAssetsLogs = 'get/all/asset/logs';
+
+  static const String getAllExpenses = 'get/all/expenses';
+  static const String getAllDestructions = 'get/all/destructions';
+  static const String addDestruction = 'store/destruction';
+  static const String addExpense = 'store/expense';
+  static const String editExpense = 'edit/expense';
+  static const String showExpense = 'show/expense';
 }
 
 class ApiKey {

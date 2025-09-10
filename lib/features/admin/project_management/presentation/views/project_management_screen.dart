@@ -34,7 +34,7 @@ class ProjectManagementScreen extends GetView<ProjectManagementController> {
               ),
               SizedBox(height: 15.h),
               // project Management View
-              ProjectManagementView(),
+              const ProjectManagementView(),
             ],
           ),
         ),

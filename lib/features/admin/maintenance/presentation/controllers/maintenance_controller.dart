@@ -32,13 +32,13 @@ class MaintenanceController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     employeeNameController.dispose();
     fromDateController.dispose();
     toDateController.dispose();
     customerNameController.dispose();
     detailsController.dispose();
-    super.dispose();
+    super.onClose();
   }
 
   void fetchOrders() {
@@ -54,7 +54,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '2',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '2',
@@ -63,7 +63,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '1',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '3',
@@ -72,7 +72,7 @@ class MaintenanceController extends GetxController {
             'days': 'الاربعاء',
             'time': '-3',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
         ],
       );
@@ -86,7 +86,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '2',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '2',
@@ -95,7 +95,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '1',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '3',
@@ -104,7 +104,7 @@ class MaintenanceController extends GetxController {
             'days': 'الاربعاء',
             'time': '-3',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
         ],
       );
@@ -118,7 +118,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '2',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '2',
@@ -127,7 +127,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '1',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '3',
@@ -136,7 +136,7 @@ class MaintenanceController extends GetxController {
             'days': 'الاربعاء',
             'time': '-3',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
         ],
       );
@@ -150,7 +150,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '2',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '2',
@@ -159,7 +159,7 @@ class MaintenanceController extends GetxController {
             'days': 'الثلاثاء',
             'time': '1',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
           {
             'id': '3',
@@ -168,7 +168,7 @@ class MaintenanceController extends GetxController {
             'days': 'الاربعاء',
             'time': '-3',
             'archive': 'تم التسليم',
-            'image': AssetsManger.noImageNet,
+            'image': AssetsManager.noImageNet,
           },
         ],
       );

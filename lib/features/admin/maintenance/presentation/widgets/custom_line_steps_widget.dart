@@ -73,7 +73,7 @@ class CustomLineSteps extends StatelessWidget {
                         ),
                       ),
                       step == 3
-                          ? SizedBox()
+                          ? const SizedBox()
                           : Container(
                               height: 2.h,
                               width: 80.w,

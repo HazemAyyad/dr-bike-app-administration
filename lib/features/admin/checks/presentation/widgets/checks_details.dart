@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
-import '../../../--/presentation/admin_dashbord/widgets/stat_card.dart';
+import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
 
 class ChecksDetails extends StatelessWidget {
@@ -34,7 +34,7 @@ class ChecksDetails extends StatelessWidget {
                   child: StatCard(
                     show: true,
                     title: 'numberOfChecks',
-                    imageicon: AssetsManger.cashIcon,
+                    imageicon: AssetsManager.cashIcon,
                     value: isOutGoing
                         ? controller.generalOutgoing.value == null
                             ? '0'
@@ -54,7 +54,7 @@ class ChecksDetails extends StatelessWidget {
                   child: StatCard(
                     show: true,
                     title: 'total',
-                    imageicon: AssetsManger.cashIcon,
+                    imageicon: AssetsManager.cashIcon,
                     value: isOutGoing
                         ? controller.generalOutgoing.value == null
                             ? '0.0'
@@ -88,7 +88,7 @@ class ChecksDetails extends StatelessWidget {
                         child: StatCard(
                           show: true,
                           title: 'totalFunds',
-                          imageicon: AssetsManger.moneyIcon,
+                          imageicon: AssetsManager.moneyIcon,
                           value: controller.generalOutgoing.value!.totalBoxes
                               .toString(),
                           subtitle: '',
@@ -144,7 +144,8 @@ class ChecksDetails extends StatelessWidget {
                                           100,
                                       strokeWidth: 4.w,
                                       backgroundColor: Colors.grey[500],
-                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                      valueColor:
+                                          const AlwaysStoppedAnimation<Color>(
                                         AppColors.primaryColor,
                                       ),
                                     ),

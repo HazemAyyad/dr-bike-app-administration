@@ -48,7 +48,7 @@ class SalesScreen extends GetView<SalesController> {
                 sliver: Obx(
                   () {
                     if (controller.isLoading.value) {
-                      return SliverFillRemaining(
+                      return const SliverFillRemaining(
                         hasScrollBody: true,
                         child: Center(child: CircularProgressIndicator()),
                       );
@@ -56,12 +56,12 @@ class SalesScreen extends GetView<SalesController> {
                     if (controller.currentTab.value == 0) {
                       if (controller
                           .salesService.filterInstantSalesTasks.isEmpty) {
-                        return SliverFillRemaining(child: ShowNoData());
+                        return const SliverFillRemaining(child: ShowNoData());
                       }
                     } else if (controller.currentTab.value == 1) {
                       if (controller
                           .salesService.filterProfitSalesTasks.isEmpty) {
-                        return SliverFillRemaining(child: ShowNoData());
+                        return const SliverFillRemaining(child: ShowNoData());
                       }
                     }
                     return SliverList(
@@ -166,7 +166,8 @@ class SalesScreen extends GetView<SalesController> {
           ),
           Obx(
             () {
-              if (!controller.isAddMenuOpen.value) return SizedBox.shrink();
+              if (!controller.isAddMenuOpen.value)
+                return const SizedBox.shrink();
               return Positioned.fill(
                 child: GestureDetector(
                   onTap: controller.toggleAddMenu,
@@ -180,7 +181,7 @@ class SalesScreen extends GetView<SalesController> {
               );
             },
           ),
-          AddList(),
+          const AddList(),
         ],
       ),
     );

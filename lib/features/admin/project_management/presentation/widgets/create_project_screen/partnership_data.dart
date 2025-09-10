@@ -45,7 +45,7 @@ Obx partnershipData(controller) {
                 ],
               ),
             )
-          : SizedBox.shrink();
+          : const SizedBox.shrink();
     },
   );
 }

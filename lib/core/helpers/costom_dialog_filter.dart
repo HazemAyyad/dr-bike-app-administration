@@ -144,7 +144,7 @@ void showCustomDialog(
                     hintText: 'employeeNameExample',
                     controller: employeeNameController,
                   )
-                : SizedBox.shrink(),
+                : const SizedBox.shrink(),
             // SizedBox(height: 10.h),
 
             SizedBox(height: 10.h),
@@ -175,6 +175,7 @@ void showCustomDialog(
                       fromDateController?.clear();
                       toDateController?.clear();
                       employeeNameController?.clear();
+                      onPressed();
                     },
                   ),
                 ),

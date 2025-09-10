@@ -11,8 +11,8 @@ class AppLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       ThemeService.isDark.value
-          ? AssetsManger.logoNoNameDark
-          : AssetsManger.logoNoNameWhite,
+          ? AssetsManager.logoNoNameDark
+          : AssetsManager.logoNoNameWhite,
       height: 137.h,
       width: 191.w,
     );

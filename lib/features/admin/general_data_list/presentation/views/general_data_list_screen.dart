@@ -51,9 +51,9 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
           Obx(
             () {
               if (controller.isLoading.value) {
-                return SliverFillRemaining(
+                return const SliverFillRemaining(
                   hasScrollBody: true,
-                  child: const Center(
+                  child: Center(
                     child: CircularProgressIndicator(),
                   ),
                 );
@@ -64,7 +64,7 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                       ? controller.generalDataServes.sellersDataList.isEmpty
                       : controller
                           .generalDataServes.inCompleteDataList.isEmpty) {
-                return SliverFillRemaining(
+                return const SliverFillRemaining(
                   hasScrollBody: true,
                   child: ShowNoData(),
                 );

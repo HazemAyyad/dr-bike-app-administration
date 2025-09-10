@@ -34,7 +34,7 @@ class OnboardingController extends GetxController {
 
   void finishOnboarding() {
     Get.offAll(
-      () => LoginOrSignUpScreen(),
+      () => const LoginOrSignUpScreen(),
       transition: languageController.currentLocale.value == 'ar'
           ? Transition.leftToRight
           : Transition.rightToLeft,

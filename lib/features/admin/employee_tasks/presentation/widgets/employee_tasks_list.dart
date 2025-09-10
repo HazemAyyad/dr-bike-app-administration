@@ -24,14 +24,14 @@ class EmployeeTasks extends StatelessWidget {
     return GetBuilder<EmployeeTasksController>(
       builder: (controller) {
         if (controller.isLoading.value) {
-          return SliverFillRemaining(
+          return const SliverFillRemaining(
             hasScrollBody: false,
-            child: const Center(
+            child: Center(
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
         } else if (controller.employeeTasksFilter.isEmpty) {
-          return SliverFillRemaining(
+          return const SliverFillRemaining(
             hasScrollBody: false,
             child: ShowNoData(),
           );
@@ -118,7 +118,7 @@ class EmployeeTasksLists extends StatelessWidget {
                               children: [
                                 Center(
                                   heightFactor: 3.7.h,
-                                  child: CircularProgressIndicator(
+                                  child: const CircularProgressIndicator(
                                     color: AppColors.primaryColor,
                                   ),
                                 ),
@@ -197,13 +197,13 @@ class EmployeeTasksLists extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(8),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(5.r),
                     child: CachedNetworkImage(
                       imageUrl: order.adminImg!,
-                      placeholder: (context, url) => Center(
-                        child: const CircularProgressIndicator(),
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(),
                       ),
                       errorWidget: (context, url, error) =>
                           const Icon(Icons.error),

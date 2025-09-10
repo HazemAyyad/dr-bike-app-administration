@@ -206,7 +206,7 @@ class AddEmployeeController extends GetxController {
                   }
                 : Get.find<EmployeeSectionController>().getEmployee();
             Future.delayed(
-              Duration(milliseconds: 1500),
+              const Duration(milliseconds: 1500),
               () {
                 Get.back();
                 Get.back();
@@ -249,7 +249,7 @@ class AddEmployeeController extends GetxController {
         },
         (success) {
           Future.delayed(
-            Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1500),
             () {
               Get.back();
               Get.back();
@@ -270,7 +270,7 @@ class AddEmployeeController extends GetxController {
   RxBool deleteImage = false.obs;
 
   @override
-  void dispose() {
+  void onClose() {
     phoneNumberController.dispose();
     emailController.dispose();
     subPhoneController.dispose();
@@ -284,6 +284,6 @@ class AddEmployeeController extends GetxController {
     employeeConroller.dispose();
     pointsConroller.dispose();
 
-    super.dispose();
+    super.onClose();
   }
 }

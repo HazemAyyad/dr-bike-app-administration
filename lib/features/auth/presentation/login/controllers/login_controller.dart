@@ -28,10 +28,10 @@ class LoginController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     emailController.dispose();
     passwordController.dispose();
-    super.dispose();
+    super.onClose();
   }
 
   void sendOtp(BuildContext context) async {
@@ -57,7 +57,7 @@ class LoginController extends GetxController {
             message: 'success'.tr,
           );
           Future.delayed(
-            Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1500),
             () {
               if (isRemember.value) {
                 UserData.saveIsRememberUser(isRemember.value);

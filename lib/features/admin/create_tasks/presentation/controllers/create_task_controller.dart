@@ -345,7 +345,7 @@ class CreateTaskController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     taskNameController.dispose();
     taskDescriptionController.dispose();
     taskNotesController.dispose();
@@ -355,6 +355,6 @@ class CreateTaskController extends GetxController {
     pointsController.dispose();
     subTasks.clear();
     selectedDaysList.clear();
-    super.dispose();
+    super.onClose();
   }
 }

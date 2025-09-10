@@ -108,7 +108,7 @@ class CustomTimePicker extends StatelessWidget {
                                 },
                               ),
                             )
-                          : SizedBox(),
+                          : const SizedBox(),
                     ),
                   ),
                 ],
@@ -223,7 +223,7 @@ class _CustomTimePickerState extends State<TimePicker> {
         Container(
           width: 10.w,
           height: 10.h,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.primaryColor,
             shape: BoxShape.circle,
           ),

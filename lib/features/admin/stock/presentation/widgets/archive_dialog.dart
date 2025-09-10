@@ -76,7 +76,7 @@ class ArchiveDialog extends GetView<StockController> {
                 );
               }
               if (controller.archived.isEmpty) {
-                return ShowNoData();
+                return const ShowNoData();
               }
               return SingleChildScrollView(
                 child: Column(
@@ -101,7 +101,7 @@ class ArchiveDialog extends GetView<StockController> {
                               product.image.isEmpty ||
                                       product.image == 'no image'
                                   ? Image.asset(
-                                      AssetsManger.stockImage,
+                                      AssetsManager.stockImage,
                                       height: 25.h,
                                       width: 35.w,
                                     )
@@ -137,7 +137,7 @@ class ArchiveDialog extends GetView<StockController> {
                                           ),
                                           errorWidget: (context, url, error) =>
                                               Image.asset(
-                                            AssetsManger.stockImage,
+                                            AssetsManager.stockImage,
                                             height: 25.h,
                                           ),
                                         ),

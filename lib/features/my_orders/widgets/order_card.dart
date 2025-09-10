@@ -109,7 +109,7 @@ Widget orderCard(BuildContext context, Map<String, dynamic> order) {
           ],
         ),
       ),
-      Divider(color: const Color.fromRGBO(217, 217, 217, 1), thickness: 1),
+      const Divider(color: Color.fromRGBO(217, 217, 217, 1), thickness: 1),
     ],
   );
 }

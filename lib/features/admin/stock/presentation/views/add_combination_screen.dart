@@ -15,7 +15,7 @@ class AddCombinationScreen extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'newProductComposition',
         action: false,
       ),
@@ -24,7 +24,7 @@ class AddCombinationScreen extends GetView<StockController> {
         child: Column(
           children: [
             SizedBox(height: 10.h),
-            SearchWidget(isCloseouts: true),
+            const SearchWidget(isCloseouts: true),
             SizedBox(height: 10.h),
             CustomTextField(
               enabled: false,

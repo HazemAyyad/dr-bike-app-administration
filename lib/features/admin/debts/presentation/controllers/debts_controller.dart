@@ -1,11 +1,12 @@
 import 'dart:io';
 
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
@@ -56,7 +57,6 @@ class DebtsController extends GetxController {
   final TextEditingController moreDetailsController = TextEditingController();
   final TextEditingController dueDateController = TextEditingController();
 
-  // String customerName = '';
   // Rx<File?> selectedFile = Rx<File?>(null);
   List<File> selectedFile = [];
 
@@ -246,7 +246,7 @@ class DebtsController extends GetxController {
         Get.back();
 
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             Get.back();
           },
@@ -288,22 +288,27 @@ class DebtsController extends GetxController {
         message: failure.data['message'] ?? 'Unknown error',
       );
     }, (success) async {
+      // اطلب صلاحية التخزين
       final status = await Permission.storage.request();
-      if (status.isGranted) {
-        final downloadsDir = Directory('/storage/emulated/0/Download');
-        final filePath = "${downloadsDir.path}/report.pdf";
-
-        final file = File(filePath);
-        await file.writeAsBytes(success, flush: true);
-
-        await OpenFilex.open(filePath);
-        Get.snackbar(
-          'fileDownloadedSuccessfully'.tr,
-          filePath,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
-        );
+      if (!status.isGranted) {
+        Get.snackbar("error".tr, "Storage permission denied");
+        return;
       }
+      // استخدم FileSaver لحفظ الملف في Downloads
+      final path = await FileSaver.instance.saveAs(
+        name: "report",
+        bytes: success,
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+      Get.snackbar(
+        "fileDownloadedSuccessfully".tr,
+        path!,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 1500),
+      );
+      // افتح الملف
+      await OpenFilex.open(path);
     });
   }
 
@@ -315,10 +320,10 @@ class DebtsController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     totalDebtController.dispose();
     moreDetailsController.dispose();
     dueDateController.dispose();
-    super.dispose();
+    super.onClose();
   }
 }

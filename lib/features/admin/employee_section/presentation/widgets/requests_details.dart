@@ -47,8 +47,8 @@ class RequestsDetails extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      SizedBox(),
-                      SizedBox(),
+                      const SizedBox(),
+                      const SizedBox(),
                       Text(
                         'requestDetails'.tr,
                         style: textStyle.copyWith(
@@ -147,7 +147,7 @@ class RequestsDetails extends StatelessWidget {
                         children: [
                           CustomCheckBox(
                             title: 'AddRegularWorkingHours',
-                            shape: CircleBorder(),
+                            shape: const CircleBorder(),
                             style: textStyle.copyWith(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.w700,
@@ -169,11 +169,11 @@ class RequestsDetails extends StatelessWidget {
                                     controller:
                                         controller.extraWorkHoursController,
                                   )
-                                : SizedBox.shrink(),
+                                : const SizedBox.shrink(),
                           ),
                           CustomCheckBox(
                             title: 'addOvertime',
-                            shape: CircleBorder(),
+                            shape: const CircleBorder(),
                             style: textStyle.copyWith(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.w700,
@@ -195,15 +195,15 @@ class RequestsDetails extends StatelessWidget {
                                     controller:
                                         controller.overtimeValueController,
                                   )
-                                : SizedBox.shrink(),
+                                : const SizedBox.shrink(),
                           ),
                         ],
                       )
-                    : SizedBox.shrink(),
+                    : const SizedBox.shrink(),
                 !isOvertime!
                     ? CustomCheckBox(
                         title: 'acceptOrder',
-                        shape: CircleBorder(),
+                        shape: const CircleBorder(),
                         style: textStyle.copyWith(
                           color: Colors.green,
                           fontSize: 16.sp,
@@ -213,7 +213,7 @@ class RequestsDetails extends StatelessWidget {
                         onChanged: (value) =>
                             controller.setOnlyOneTrue('loanValue'),
                       )
-                    : SizedBox.shrink(),
+                    : const SizedBox.shrink(),
                 Obx(
                   () => controller.loanValue.value
                       ? CustomTextField(
@@ -226,11 +226,11 @@ class RequestsDetails extends StatelessWidget {
                           hintText: 'debtValue',
                           controller: controller.loanValueController,
                         )
-                      : SizedBox.shrink(),
+                      : const SizedBox.shrink(),
                 ),
                 CustomCheckBox(
                   title: 'rejectOrder',
-                  shape: CircleBorder(),
+                  shape: const CircleBorder(),
                   style: textStyle.copyWith(
                     color: Colors.red,
                     fontSize: 16.sp,

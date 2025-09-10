@@ -33,7 +33,7 @@ class UserAccount extends GetView<DebtsController> {
                 Row(
                   children: [
                     Image.asset(
-                      AssetsManger.cashIcon,
+                      AssetsManager.cashIcon,
                       width: 30.w,
                       color: ThemeService.isDark.value
                           ? AppColors.primaryColor

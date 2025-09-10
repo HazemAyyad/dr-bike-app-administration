@@ -24,7 +24,7 @@ class NewInstantSaleScreen extends GetView<SalesController> {
           child: Column(
             children: [
               SizedBox(height: 5.h),
-              AddNewInstantSaleWidget(),
+              const AddNewInstantSaleWidget(),
               Divider(
                 color: ThemeService.isDark.value
                     ? AppColors.primaryColor
@@ -33,7 +33,7 @@ class NewInstantSaleScreen extends GetView<SalesController> {
                 height: 1,
               ),
               SizedBox(height: 10.h),
-              DiscountWidget(),
+              const DiscountWidget(),
               SizedBox(height: 20.h),
               AppButton(
                 isLoading: controller.isLoading,

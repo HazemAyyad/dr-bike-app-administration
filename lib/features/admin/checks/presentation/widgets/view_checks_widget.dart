@@ -34,7 +34,7 @@ class ViewChecksWidget extends StatelessWidget {
                   color: Colors.grey.withAlpha(32),
                   blurRadius: 5.r,
                   spreadRadius: 2.r,
-                  offset: Offset(0, 0),
+                  offset: const Offset(0, 0),
                 ),
               ]
             : [],
@@ -61,7 +61,7 @@ class ViewChecksWidget extends StatelessWidget {
                             color: Colors.grey.withAlpha(30),
                             blurRadius: 5.r,
                             spreadRadius: 2.r,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),

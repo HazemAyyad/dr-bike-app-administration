@@ -47,7 +47,7 @@ class AdminImplement implements AdminRepository {
         subSpecialTaskDescription: subSpecialTaskDescription,
       );
       if (result['status'] == 'success') {
-        return Right(true);
+        return const Right(true);
       }
       return Left(
         ValidationFailure(

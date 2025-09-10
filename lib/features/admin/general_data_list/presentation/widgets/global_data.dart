@@ -62,7 +62,7 @@ class GlobalData extends GetView<GeneralDataListController> {
                     child: Row(
                       children: [
                         SizedBox(width: 5.h),
-                        Icon(
+                        const Icon(
                           Icons.phone_outlined,
                           color: AppColors.primaryColor,
                         ),
@@ -87,7 +87,7 @@ class GlobalData extends GetView<GeneralDataListController> {
                     child: Row(
                       children: [
                         Image.asset(
-                          AssetsManger.whatsapp,
+                          AssetsManager.whatsapp,
                           height: 30.h,
                           width: 30.w,
                         ),
@@ -121,7 +121,7 @@ class GlobalData extends GetView<GeneralDataListController> {
               BoxShadow(
                 color: Colors.grey.withAlpha(32),
                 blurRadius: 5.r,
-                offset: Offset(0, 2),
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -130,7 +130,7 @@ class GlobalData extends GetView<GeneralDataListController> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(5.r),
                 child: Image.asset(
-                  AssetsManger.generalDataImage,
+                  AssetsManager.generalDataImage,
                   height: 70.h,
                   width: 70.w,
                 ),

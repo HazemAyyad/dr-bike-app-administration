@@ -18,7 +18,7 @@ class CreateProjectScreen extends GetView<ProjectManagementController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'createProject', action: false),
+      appBar: const CustomAppBar(title: 'createProject', action: false),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Column(

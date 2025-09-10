@@ -9,7 +9,6 @@ import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../data/models/archive_data_modell.dart';
 import '../../data/models/cashed_to_person_outgoing_model.dart';
 import '../../data/models/check_model.dart';
-import '../../data/models/general_checks_data_model.dart';
 import '../../data/models/general_incoming_model.dart';
 import '../../data/models/general_outgoing_data_model.dart';
 import '../../domain/usecases/add_checks_usecase.dart';
@@ -20,6 +19,7 @@ import '../../domain/usecases/general_outgoing_data_usecase.dart';
 import '../../domain/usecases/get_checks_usecase.dart';
 import '../../domain/usecases/return_check_usercase.dart';
 import '../../domain/usecases/chash_to_box_usecase.dart';
+import 'checks_serves.dart';
 
 class ChecksController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -179,7 +179,7 @@ class ChecksController extends GetxController
           isCalendarVisible.value = false;
           Get.back();
           Future.delayed(
-            Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1500),
             () {
               Get.back();
             },
@@ -231,7 +231,7 @@ class ChecksController extends GetxController
           getArchive(),
         ]);
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             Get.back();
           },
@@ -276,7 +276,7 @@ class ChecksController extends GetxController
           getArchive(),
         ]);
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             Get.back();
           },
@@ -320,7 +320,7 @@ class ChecksController extends GetxController
           getArchive(),
         ]);
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             Get.back();
           },
@@ -339,7 +339,7 @@ class ChecksController extends GetxController
 
   // get all not cashed outgoing checks
   final Rxn<NotCashedModel> inComingChecksList = Rxn<NotCashedModel>(null);
-  Map<String, List<CheckModel>> inComingTasks = {};
+  final Map<String, List<CheckModel>> inComingTasks = {};
 
   Future<void> getNotCashed() async {
     isLoading(true);
@@ -418,12 +418,12 @@ class ChecksController extends GetxController
   }
 
   // get general checks data
-  final Rxn<GeneralChecksDataModel> generalChecksData =
-      Rxn<GeneralChecksDataModel>(null);
+  // final Rxn<GeneralChecksDataModel> generalChecksData =
+  //     Rxn<GeneralChecksDataModel>(null);
 
   Future<void> getGeneralChecksData() async {
     final result = await generalChecksDataUsecase.call();
-    generalChecksData.value = result;
+    ChecksServes().generalChecksData.value = result;
     update();
   }
 
@@ -489,11 +489,11 @@ class ChecksController extends GetxController
   }
 
   @override
-  void dispose() {
+  void onClose() {
     checkValueController.dispose();
     currencyController.dispose();
     checkNumberController.dispose();
     bankNameController.dispose();
-    super.dispose();
+    super.onClose();
   }
 }

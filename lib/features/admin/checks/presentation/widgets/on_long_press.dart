@@ -295,7 +295,7 @@ class CashTheCheck extends GetView<ChecksController> {
             ),
           ),
           Container(
-            padding: EdgeInsets.all(25),
+            padding: const EdgeInsets.all(25),
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
                   ? AppColors.customGreyColor
@@ -397,7 +397,7 @@ class CashToBox extends GetView<ChecksController> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.all(25),
+            padding: const EdgeInsets.all(25),
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
                   ? AppColors.customGreyColor

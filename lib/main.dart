@@ -1,23 +1,17 @@
 import 'package:device_preview/device_preview.dart';
-import 'package:doctorbike/core/services/user_data.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'core/connection/network_info.dart';
 import 'core/services/languague_service.dart';
-import 'core/services/notification_firebase_service.dart';
 import 'core/services/theme_service.dart';
 import 'core/services/translations_service.dart';
-import 'firebase_options.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import 'core/services/initial_bindings.dart';
 import 'core/theme/themes.dart';
 import 'core/utils/screen_util_new.dart';
-import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

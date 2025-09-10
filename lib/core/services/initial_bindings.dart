@@ -7,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import '../../features/admin/admin_dashbord/data/datasources/admin_dashboard_datasource.dart';
+import '../../features/admin/admin_dashbord/data/repositories/admin_dashboard_implement.dart';
 import '../../features/admin/boxes/data/datasources/boxes_datasource.dart';
 import '../../features/admin/boxes/data/repositories/boxes_implement.dart';
 import '../../features/admin/checks/data/datasources/checks_datasource.dart';
@@ -22,6 +24,8 @@ import '../../features/admin/employee_section/presentation/controllers/employee_
 import '../../features/admin/employee_tasks/data/datasources/employee_tasks_datasource.dart';
 import '../../features/admin/employee_tasks/data/repositories/employee_tasks_implement.dart';
 import '../../features/admin/employee_tasks/presentation/controllers/employee_task_service.dart';
+import '../../features/admin/financial_affairs/data/datasources/financial_affairs_datasource.dart';
+import '../../features/admin/financial_affairs/data/repositories/financial_affairs_implement.dart';
 import '../../features/admin/general_data_list/data/datasources/general_data_list_datasource.dart';
 import '../../features/admin/general_data_list/data/repositories/general_data_list_implement.dart';
 import '../../features/admin/sales/data/repositories/sales_implement.dart';
@@ -80,6 +84,19 @@ class InitialBindings implements Bindings {
     print('User Token: $userToken');
     Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
     Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true);
+
+    // admin dashbord
+    Get.lazyPut<AdminDashboardDataSource>(
+      () => AdminDashboardDataSource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<AdminDashboardImplement>(
+      () => AdminDashboardImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        adminDashboardDataSource: Get.find<AdminDashboardDataSource>(),
+      ),
+      fenix: true,
+    );
 
     // employee dashbord
     Get.lazyPut<EmployeeDashbordDatasource>(
@@ -280,6 +297,19 @@ class InitialBindings implements Bindings {
       () => StockImplement(
         networkInfo: Get.find<NetworkInfo>(),
         stockDataSource: Get.find<StockDataSource>(),
+      ),
+      fenix: true,
+    );
+
+    // financial affairs
+    Get.lazyPut<FinancialAffairsDatasource>(
+      () => FinancialAffairsDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<FinancialAffairsImplement>(
+      () => FinancialAffairsImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        financialAffairsDatasource: Get.find<FinancialAffairsDatasource>(),
       ),
       fenix: true,
     );

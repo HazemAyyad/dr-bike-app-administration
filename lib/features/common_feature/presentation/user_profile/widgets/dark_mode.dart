@@ -10,7 +10,7 @@ Row darkMode(ProfileController controller) {
   return Row(
     children: [
       buildSidebarItem('darkMode'.tr, Icons.dark_mode_outlined, null),
-      Spacer(),
+      const Spacer(),
       Obx(
         () => Switch(
           value: ThemeService.isDark.value,

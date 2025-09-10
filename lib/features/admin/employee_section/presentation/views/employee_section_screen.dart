@@ -304,12 +304,12 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
         addList: controller.addList,
         customWidget: BuildAddMenuItem(
           title: 'barcode',
-          iconAsset: AssetsManger.qrcode,
+          iconAsset: AssetsManager.qrcode,
           route: '',
           onTap: () {
             controller.generateQrCode(false);
             controller.toggleAddMenu();
-            Get.dialog(CreateQrcode());
+            Get.dialog(const CreateQrcode());
           },
         ),
       ),

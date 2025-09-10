@@ -39,7 +39,7 @@ Column addressField(controller) {
                   color: AppColors.customGreyColor2,
                 ),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.all(16),
+            contentPadding: const EdgeInsets.all(16),
           ),
         ),
       ),

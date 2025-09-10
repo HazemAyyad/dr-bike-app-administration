@@ -25,7 +25,7 @@ class SignUpScreen extends GetView<SignUpController> {
               children: [
                 SizedBox(height: 80.h),
                 // Logo
-                AppLogo(),
+                const AppLogo(),
                 SizedBox(height: 25.h),
                 // Title
                 Text(
@@ -61,7 +61,7 @@ class SignUpScreen extends GetView<SignUpController> {
 
                 SizedBox(height: 16.h),
                 // Bottom Text
-                AlreadyHaveAccount(),
+                const AlreadyHaveAccount(),
                 SizedBox(height: 30.h),
               ],
             ),

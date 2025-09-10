@@ -75,7 +75,7 @@ class MovementsWidget extends StatelessWidget {
                     ),
             ],
           ),
-          Spacer(),
+          const Spacer(),
           Container(
             width: 60.w,
             height: 70.h,

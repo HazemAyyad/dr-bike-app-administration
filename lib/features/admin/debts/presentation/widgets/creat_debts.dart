@@ -118,7 +118,7 @@ class CreateDebts extends GetView<DebtsController> {
                         ? 'endDateExample'
                         : showData(controller.dueDateController.text),
                     controller: controller.dueDateController,
-                    suffixIcon: Icon(
+                    suffixIcon: const Icon(
                       Icons.calendar_today_outlined,
                       color: AppColors.primaryColor,
                     ),

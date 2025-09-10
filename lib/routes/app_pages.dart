@@ -15,11 +15,13 @@ import '../features/App_entr/on_boarding/widgets/chose_lang.dart';
 import '../features/App_entr/on_boarding/view/on_boarding_screen.dart';
 import '../features/App_entr/splash/binding/splash_binding.dart';
 import '../features/App_entr/splash/view/splash_screen.dart';
+import '../features/admin/admin_dashbord/presentation/views/admin_activti_log_screen.dart';
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/create_boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/edit_boxes_screen.dart';
 import '../features/admin/buying/presentation/binding/buying_binding.dart';
+import '../features/admin/buying/presentation/views/bills_screen.dart';
 import '../features/admin/buying/presentation/views/buying_screen.dart';
 import '../features/admin/checks/presentation/binding/checks_binding.dart';
 import '../features/admin/checks/presentation/views/checks_screen.dart';
@@ -34,6 +36,16 @@ import '../features/admin/--/presentation/current_follow_up/binding/current_foll
 import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
+import '../features/admin/financial_affairs/presentation/binding/assets_binding.dart';
+import '../features/admin/financial_affairs/presentation/binding/expenses_binding.dart';
+import '../features/admin/financial_affairs/presentation/views/assets_screens/add_new_assets_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/assets_screens/assets_log_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/assets_screens/assets_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/expenses_screens/add_expense_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/expenses_screens/destruction_products_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/expenses_screens/expenses_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/financial_affairs_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/official_papers_screens/official_papers.dart';
 import '../features/admin/stock/presentation/views/add_combination_screen.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
@@ -79,8 +91,8 @@ import '../features/auth/presentation/sign_up_otp/views/sign_up_otp_screen.dart'
 import '../features/auth/presentation/success/views/success_screen.dart';
 import '../features/bottom_nav_bar/binding/binding.dart';
 import '../features/bottom_nav_bar/views/bottom_nav_bar_screen.dart';
-import '../features/admin/--/presentation/admin_dashbord/binding/admin_dashboard_binding.dart';
-import '../features/admin/--/presentation/admin_dashbord/views/admin_dashboard_screen.dart';
+import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_binding.dart';
+import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../features/common_feature/presentation/change_password/binding/change_password_binding.dart';
 import '../features/common_feature/presentation/change_password/views/change_password_screen.dart';
 import '../features/common_feature/presentation/contact_us/views/contact_us_screen.dart';
@@ -99,7 +111,7 @@ const _defaultTransition = Transition.native;
 // const _transitionZoom = Transition.zoom;
 const _transitionFade = Transition.fade;
 const _transitionFadeIn = Transition.fadeIn;
-// const _transitionSize = Transition.size;
+const _transitionSize = Transition.size;
 const _transitionRightToLeft = Transition.rightToLeft;
 const _transitionLeftToRight = Transition.leftToRight;
 const _transitionDownToUp = Transition.downToUp;
@@ -107,7 +119,7 @@ const _transitionUpToDown = Transition.upToDown;
 // const _transitionCupertino = Transition.cupertino;
 // const _transitionTopLevel = Transition.topLevel;
 const _transitionCircularReveal = Transition.circularReveal;
-// const _transitionCupertinoDialog = Transition.cupertinoDialog;
+const _transitionCupertinoDialog = Transition.cupertinoDialog;
 
 class AppPages {
   static final splashScreen = GetPage(
@@ -137,7 +149,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.LOGINORSIGNUPSCREEN,
-      page: () => LoginOrSignUpScreen(),
+      page: () => const LoginOrSignUpScreen(),
     ),
     GetPage(
       name: AppRoutes.SIGNUPSCREEN,
@@ -161,7 +173,7 @@ class AppPages {
       name: AppRoutes.SIGNUPSUCCESSSCREEN,
       page: () => const SignUpSuccessScreen(),
       transition: _transitionFadeIn,
-      transitionDuration: Duration(milliseconds: 500),
+      transitionDuration: const Duration(milliseconds: 500),
     ),
     GetPage(
       name: AppRoutes.LOGINSCREEN,
@@ -186,7 +198,13 @@ class AppPages {
     GetPage(
       name: AppRoutes.ADMINDASHBOARDSCREEN,
       page: () => const AdminDashboardScreen(),
-      binding: DashboardBinding(),
+      binding: AdminDashboardBinding(),
+      transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.ADMINACTIVTILOGSCREEN,
+      page: () => const AdminActivtiLogScreen(),
+      binding: AdminDashboardBinding(),
       transition: _transitionDownToUp,
     ),
 
@@ -466,13 +484,13 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.PRODUCTDETAILSSCREEN,
-      page: () => ProductDetailsScreen(),
+      page: () => const ProductDetailsScreen(),
       binding: StockBinding(),
-      transition: _transitionFadeIn,
+      transition: _transitionSize,
     ),
     GetPage(
       name: AppRoutes.EDITPRODUCTSCREEN,
-      page: () => EditProductScreen(),
+      page: () => const EditProductScreen(),
       binding: StockBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
@@ -481,12 +499,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.CLOSEOUTSSCREEN,
       page: () => const CloseoutsScreen(),
-      transition: _transitionFadeIn,
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
     ),
     GetPage(
       name: AppRoutes.ADDCOMBINATIONSCREEN,
       page: () => const AddCombinationScreen(),
-      transition: _transitionFadeIn,
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
     ),
 
     // Buying
@@ -494,7 +516,72 @@ class AppPages {
       name: AppRoutes.BUYINGSCREEN,
       page: () => const BuyingScreen(),
       binding: BuyingBinding(),
+      transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.BILLSSCREEN,
+      page: () => const BillsScreen(),
+      binding: BuyingBinding(),
       transition: _transitionFadeIn,
+    ),
+
+    // Financial Affairs
+    GetPage(
+      name: AppRoutes.FINANCIALAFFAIRSSCREEN,
+      page: () => const FinancialAffairsScreen(),
+      binding: AssetsBinding(),
+      transition: _transitionFadeIn,
+    ),
+    // Assets
+    GetPage(
+      name: AppRoutes.ASSETSSCREEN,
+      page: () => const AssetsScreen(),
+      binding: AssetsBinding(),
+      transition: _transitionUpToDown,
+    ),
+    GetPage(
+      name: AppRoutes.ASSETLOGSCREEN,
+      page: () => const AssetsLogScreen(),
+      binding: AssetsBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.ADDNEWASSETSCREEN,
+      page: () => const AddNewAssetsScreen(),
+      binding: AssetsBinding(),
+      transition: _transitionSize,
+    ),
+    // Expenses
+    GetPage(
+      name: AppRoutes.THEEXPENSESSCREEN,
+      page: () => const ExpensesScreen(),
+      binding: ExpensesBinding(),
+      transition: _transitionCupertinoDialog,
+    ),
+    GetPage(
+      name: AppRoutes.DESTRUCTIONPRODUCTSSCREEN,
+      page: () => const DestructionProductsScreen(),
+      binding: ExpensesBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.ADDEXPENSESCREEN,
+      page: () => const AddExpenseScreen(),
+      binding: ExpensesBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+
+    GetPage(
+      name: AppRoutes.OFFICIALPAPERSSCREEN,
+      page: () => const OfficialPapersScreen(),
+      // binding: FinancialAffairsBinding(),
+      transition: _transitionDownToUp,
     ),
 
     // Profile Screen

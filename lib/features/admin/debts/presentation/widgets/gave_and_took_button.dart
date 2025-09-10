@@ -20,7 +20,7 @@ class GaveAndTookButton extends StatelessWidget {
             child: GestureDetector(
               onTap: () {
                 Get.bottomSheet(
-                  CreateDebts(
+                  const CreateDebts(
                     title: 'create_debt_for_us',
                     supTitle: 'gave',
                     color: Colors.red,
@@ -56,7 +56,7 @@ class GaveAndTookButton extends StatelessWidget {
             child: GestureDetector(
               onTap: () {
                 Get.bottomSheet(
-                  CreateDebts(
+                  const CreateDebts(
                     title: 'create_debt_on_us',
                     supTitle: 'took',
                     color: Colors.green,

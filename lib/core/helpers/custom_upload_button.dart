@@ -78,11 +78,11 @@ class UploadImageButton extends StatelessWidget {
       children: [
         SizedBox(height: 15.h),
         Image.asset(
-          AssetsManger.upLoadIcon,
+          AssetsManager.upLoadIcon,
           height: 32.h,
           width: 37.w,
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Text(
           title.tr,
           style: titleStyle ??
@@ -302,11 +302,11 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
       children: [
         SizedBox(height: 15.h),
         Image.asset(
-          AssetsManger.upLoadIcon,
+          AssetsManager.upLoadIcon,
           height: 32.h,
           width: 37.w,
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Text(
           title.tr,
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(

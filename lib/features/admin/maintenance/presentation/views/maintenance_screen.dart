@@ -38,7 +38,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
               ),
             ),
           ),
-          MaintenanceDataWidget(),
+          const MaintenanceDataWidget(),
         ],
       ),
     );

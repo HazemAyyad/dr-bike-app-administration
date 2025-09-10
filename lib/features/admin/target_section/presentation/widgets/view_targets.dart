@@ -50,7 +50,7 @@ Expanded viewTargets(controller) {
                             ),
                           ),
                         ),
-                        if (Get.locale!.languageCode == 'en') SizedBox(),
+                        if (Get.locale!.languageCode == 'en') const SizedBox(),
                         if (controller.currentTab.value == 2)
                           Text(
                             order['targetType'],
@@ -66,7 +66,7 @@ Expanded viewTargets(controller) {
                                   color: AppColors.customGreyColor5,
                                 ),
                           ),
-                        if (controller.currentTab.value == 2) SizedBox(),
+                        if (controller.currentTab.value == 2) const SizedBox(),
                         Text(
                           '${order['completionPercentage']}%',
                           style:
@@ -76,7 +76,7 @@ Expanded viewTargets(controller) {
                                     color: AppColors.customGreyColor5,
                                   ),
                         ),
-                        SizedBox(),
+                        const SizedBox(),
                         Text(
                           '${order['targetValue']} ${'currency'.tr}',
                           style:

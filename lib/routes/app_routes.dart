@@ -14,7 +14,7 @@ class AppRoutes {
   static const BOTTOMNAVBARSCREEN = '/bottomnavbarscreen';
   static const HOMEPAGESCREEN = '/homepagescreen';
 
-  // Dashboard
+  // Admin Dashboard
   static const ADMINDASHBOARDSCREEN = '/dashboardscreen';
   static const EMPLOYEEDASHBOARDSCREEN = '/EmployeeDashbordScreen';
   static const EMPLOYEETASKSSCREEN = '/employeetasksscreen';
@@ -36,6 +36,7 @@ class AppRoutes {
   static const GLOBALCUSTOMERDATASCREEN = '/GlobalCustomerDataScreen';
   static const ADDNEWCUSTOMERSCREEN = '/AddNewCustomerScreen';
   static const DEBTSSCREEN = '/DebtsScreen';
+  static const ADMINACTIVTILOGSCREEN = '/AdminActivtiLogScreen';
 
   // EMPLOYEE TASKS SCREEN
   static const EMPLOYEEDETAILSSCREEN = '/EmployeeDetailsScreen';
@@ -83,4 +84,16 @@ class AppRoutes {
 
   // Buying
   static const BUYINGSCREEN = '/BuyingScreen';
+  static const BILLSSCREEN = '/BillsScreen';
+
+  // Financial Affairs
+  static const FINANCIALAFFAIRSSCREEN = '/FinancialAffairsScreen';
+  static const ASSETSSCREEN = '/AssetsScreen';
+  static const THEEXPENSESSCREEN = '/TheExpensesScreen';
+  static const OFFICIALPAPERSSCREEN = '/OfficialPapersScreen';
+
+  static const ASSETLOGSCREEN = '/AssetsLog';
+  static const ADDNEWASSETSCREEN = '/AddNewAssetsScreen';
+  static const DESTRUCTIONPRODUCTSSCREEN = '/DestructionProductsScreen';
+  static const ADDEXPENSESCREEN = '/AddExpenseScreen';
 }

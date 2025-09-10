@@ -29,7 +29,7 @@ class ContactUsScreen extends StatelessWidget {
               ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Get.back(),
         ),
         centerTitle: true,
@@ -101,7 +101,7 @@ class ContactUsScreen extends StatelessWidget {
               children: [
                 buildSocialIcon(
                   context,
-                  iconAsset: AssetsManger.x,
+                  iconAsset: AssetsManager.x,
                   onTap: () async {
                     urlLauncher(Constants.xUrl);
                   },
@@ -109,7 +109,7 @@ class ContactUsScreen extends StatelessWidget {
                 SizedBox(width: 20.w),
                 buildSocialIcon(
                   context,
-                  iconAsset: AssetsManger.instagram,
+                  iconAsset: AssetsManager.instagram,
                   onTap: () async {
                     urlLauncher(Constants.instagramUrl);
                   },
@@ -117,7 +117,7 @@ class ContactUsScreen extends StatelessWidget {
                 SizedBox(width: 20.w),
                 buildSocialIcon(
                   context,
-                  iconAsset: AssetsManger.whatsapp,
+                  iconAsset: AssetsManager.whatsapp,
                   onTap: () async {
                     urlLauncher(Constants.whatsAppUrl);
                   },

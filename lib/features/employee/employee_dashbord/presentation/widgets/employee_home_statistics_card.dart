@@ -8,7 +8,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../../admin/--/presentation/admin_dashbord/widgets/stat_card.dart';
+import '../../../../admin/admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/employee_dashbord_controller.dart';
 
 class EmployeeHomeStatisticsCard extends StatelessWidget {
@@ -48,7 +48,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
         ),
         SizedBox(height: 20.h),
         Container(
-          padding: EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(9.r),
             color: ThemeService.isDark.value
@@ -61,7 +61,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                 children: [
                   StatCard(
                     title: 'workingHours',
-                    imageicon: AssetsManger.cashIcon,
+                    imageicon: AssetsManager.cashIcon,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.numberOfWorkHours,
@@ -77,7 +77,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                   StatCard(
                     show: true,
                     title: 'hourlyRate',
-                    imageicon: AssetsManger.cashIcon,
+                    imageicon: AssetsManager.cashIcon,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.hourWorkPrice
@@ -87,7 +87,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                   StatCard(
                     show: true,
                     title: 'advancesAndDebts',
-                    imageicon: AssetsManger.cashIcon,
+                    imageicon: AssetsManager.cashIcon,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.debts,
@@ -97,7 +97,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                   StatCard(
                     show: true,
                     title: 'remainingBalance',
-                    imageicon: AssetsManger.cashIcon,
+                    imageicon: AssetsManager.cashIcon,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.salary.toString(),
@@ -107,7 +107,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                   StatCard(
                     show: true,
                     title: 'points',
-                    imageicon: AssetsManger.cashIcon,
+                    imageicon: AssetsManager.cashIcon,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.points.toString(),

@@ -22,7 +22,7 @@ class SignUpSuccessScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Image.asset(
-                AssetsManger.sucessImage,
+                AssetsManager.sucessImage,
                 height: 160.h,
                 width: 160.w,
                 fit: BoxFit.contain,

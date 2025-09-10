@@ -14,7 +14,7 @@ class FullScreenQRScanner extends GetView<QrCodeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Scan QR Code', action: false),
+      appBar: const CustomAppBar(title: 'Scan QR Code', action: false),
       body: Stack(
         children: [
           // BackdropFilter(
@@ -53,7 +53,7 @@ class FullScreenQRScanner extends GetView<QrCodeController> {
                 child: Icon(Icons.qr_code_scanner,
                     color: Colors.white, size: 24.sp),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
             ],
           ),
         ],

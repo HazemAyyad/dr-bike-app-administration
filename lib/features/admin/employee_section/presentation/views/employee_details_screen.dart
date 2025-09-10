@@ -63,7 +63,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
             );
           }
           return controller.isDialogLoading.value
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: 24.w),
                   child: Column(

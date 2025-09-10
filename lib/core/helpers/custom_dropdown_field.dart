@@ -65,7 +65,7 @@ class CustomDropdownField extends StatelessWidget {
                       : Container(),
                 ],
               ),
-        label == '' ? const SizedBox.shrink() : SizedBox(height: 5.h),
+        label == '' ? const SizedBox.shrink() : SizedBox(height: 10.h),
         Container(
           decoration: BoxDecoration(
             color: ThemeService.isDark.value

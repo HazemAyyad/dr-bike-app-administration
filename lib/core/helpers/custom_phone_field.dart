@@ -80,15 +80,15 @@ class CustomPhoneField extends StatelessWidget {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(11.r),
                 gapPadding: 1.w,
-                borderSide: BorderSide(color: Colors.transparent),
+                borderSide: const BorderSide(color: Colors.transparent),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(11.r),
-                borderSide: BorderSide(color: Colors.transparent, width: 0),
+                borderSide: const BorderSide(color: Colors.transparent, width: 0),
               ),
               suffixIcon: hintText != null
                   ? null
-                  : Icon(Icons.phone, color: AppColors.primaryColor),
+                  : const Icon(Icons.phone, color: AppColors.primaryColor),
               filled: true,
               fillColor: (ThemeService.isDark.value
                   ? AppColors.customGreyColor
@@ -98,7 +98,7 @@ class CustomPhoneField extends StatelessWidget {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.r),
                 gapPadding: 1,
-                borderSide: BorderSide(color: AppColors.customGreyColor3),
+                borderSide: const BorderSide(color: AppColors.customGreyColor3),
               ),
               labelStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     color: (ThemeService.isDark.value

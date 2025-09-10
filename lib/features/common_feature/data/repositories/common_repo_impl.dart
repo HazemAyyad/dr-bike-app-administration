@@ -34,7 +34,7 @@ class CommonImplement implements CommonRepository {
         address: address,
       );
       if (result['status'] == 'success') {
-        return Right(true);
+        return const Right(true);
       }
       return Left(
         ValidationFailure(

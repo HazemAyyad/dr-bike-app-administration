@@ -22,7 +22,7 @@ class LoginOrSignUpScreen extends StatelessWidget {
             children: [
               SizedBox(height: 50.h),
               Expanded(
-                child: Image.asset(AssetsManger.onBoardingScreenFour),
+                child: Image.asset(AssetsManager.onBoardingScreenFour),
               ),
               SizedBox(height: 30.h),
               SizedBox(

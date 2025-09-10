@@ -75,6 +75,6 @@ Color getButtonTheme() {
 
 Color getTextTheme() {
   final bool isDarkMode = Theme.of(Get.context!).brightness == Brightness.dark;
-  final buttonColor = isDarkMode ? Color(0xFF0F0F31) : Color(0xFFFFFFFF);
+  final buttonColor = isDarkMode ? const Color(0xFF0F0F31) : const Color(0xFFFFFFFF);
   return buttonColor;
 }

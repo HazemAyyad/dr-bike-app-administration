@@ -29,7 +29,7 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
           children: [
             Obx(() {
               if (!controller.isAddMenuOpen.value) {
-                return SizedBox.shrink();
+                return const SizedBox.shrink();
               }
               return Positioned.fill(
                 child: GestureDetector(
@@ -77,7 +77,7 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
                         ...controller.employeeAddList.map(
                           (e) => InkWell(
                             overlayColor:
-                                WidgetStatePropertyAll(Colors.transparent),
+                                const WidgetStatePropertyAll(Colors.transparent),
                             onTap: () {
                               Get.dialog(
                                 e['title'] == 'overtimeRequest'
@@ -158,7 +158,7 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
                 onPressed: () => controller.toggleAddMenu(),
                 backgroundColor: AppColors.secondaryColor,
                 elevation: 2.0,
-                shape: CircleBorder(),
+                shape: const CircleBorder(),
                 child: Obx(
                   () => AnimatedRotation(
                     turns: controller.isAddMenuOpen.value

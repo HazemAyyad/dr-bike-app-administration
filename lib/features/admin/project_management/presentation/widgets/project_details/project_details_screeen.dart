@@ -15,7 +15,7 @@ class ProjectDetailsScreeen extends StatelessWidget {
   Widget build(BuildContext context) {
     dynamic ordar = Get.arguments;
     return Scaffold(
-      appBar: CustomAppBar( title: 'projectDetails', action: false),
+      appBar: const CustomAppBar(title: 'projectDetails', action: false),
       body: ListView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         children: [
@@ -29,7 +29,7 @@ class ProjectDetailsScreeen extends StatelessWidget {
           supTextAndDis(context, 'paymentMethod', ordar['paymentMethod']),
           supTextAndDis(context, 'projectPartners', ordar['projectPartners']),
           ordar['projectPartners'].isEmpty
-              ? SizedBox.shrink()
+              ? const SizedBox.shrink()
               : Padding(
                   padding: EdgeInsets.only(
                     right: Get.locale!.languageCode == 'ar' ? 50.w : 0.w,

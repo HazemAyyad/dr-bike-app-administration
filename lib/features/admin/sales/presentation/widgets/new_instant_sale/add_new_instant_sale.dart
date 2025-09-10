@@ -51,7 +51,7 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                     SizedBox(width: 10.w),
                     if (controller.items.length > 1 && index != 0)
                       IconButton(
-                        icon: Icon(Icons.delete, color: Colors.red),
+                        icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           final removedItem = controller.items[index];
                           controller.removeItem(index);
@@ -81,7 +81,7 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                                 ],
                               ),
                             ),
-                            duration: Duration(milliseconds: 300),
+                            duration: const Duration(milliseconds: 300),
                           );
                         },
                       ),
@@ -139,7 +139,7 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                             item.selectedValue.value = val!;
                           },
                         )
-                      : SizedBox.shrink(),
+                      : const SizedBox.shrink(),
                 ),
                 // SizedBox(height: 10.h),
                 if (index == controller.items.length - 1)

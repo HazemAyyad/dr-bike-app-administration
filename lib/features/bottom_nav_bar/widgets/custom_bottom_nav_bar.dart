@@ -33,21 +33,21 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   BuildNavItem(
-                    assetImage: AssetsManger.homeIcon,
+                    assetImage: AssetsManager.homeIcon,
                     isSelected: controller.currentIndex.value == 0,
                     label: 'home'.tr,
                     onTap: () => controller.changePage(0),
                   ),
                   userType == 'admin'
-                      ? SizedBox.shrink()
+                      ? const SizedBox.shrink()
                       : BuildNavItem(
-                          assetImage: AssetsManger.qrCode,
+                          assetImage: AssetsManager.qrCode,
                           isSelected: controller.currentIndex.value == 1,
                           label: 'scanQrCode'.tr,
                           onTap: () => controller.changePage(1),
                         ),
                   BuildNavItem(
-                    assetImage: AssetsManger.profileIcon,
+                    assetImage: AssetsManager.profileIcon,
                     isSelected: controller.currentIndex.value == 2,
                     label: 'profile'.tr,
                     onTap: () => controller.changePage(2),

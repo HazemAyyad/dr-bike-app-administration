@@ -134,12 +134,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   List<Map<String, String>> addList = [
     {
       'title': 'newClearance',
-      'icon': AssetsManger.invoiceIcon,
+      'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.CLOSEOUTSSCREEN,
     },
     {
       'title': 'newProductComposition',
-      'icon': AssetsManger.invoiceIcon,
+      'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.ADDCOMBINATIONSCREEN,
     },
   ];
@@ -419,7 +419,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     });
     animController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
 
     opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);
@@ -437,7 +437,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     scrollController.removeListener(_onScroll);
     scrollController.removeListener(() {
       if (scrollController.offset > 100) {
@@ -448,7 +448,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     });
     scrollController.dispose();
     for (var element in items) {
-      element.dispose();
+      element.onClose();
     }
     animController.dispose();
     productNameController.dispose();
@@ -462,7 +462,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     selectPurchaseController.dispose();
     purchasePriceController.dispose();
     closeoutsMinimumSaleController.dispose();
-    super.dispose();
+    super.onClose();
   }
 }
 
@@ -472,7 +472,7 @@ class SizedModel {
   SizedModel() {
     colors.add(ColorModel());
   }
-  void dispose() {
+  void onClose() {
     sizeController.dispose();
   }
 }
@@ -481,7 +481,7 @@ class ColorModel {
   final TextEditingController colorController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
-  void dispose() {
+  void onClose() {
     colorController.dispose();
     quantityController.dispose();
     priceController.dispose();
@@ -517,7 +517,7 @@ class NewCompositionModel {
     totalQuantity.value = quantity.toInt();
   }
 
-  void dispose() {
+  void onClose() {
     productIdController.dispose();
     quantityController.dispose();
     priceController.dispose();

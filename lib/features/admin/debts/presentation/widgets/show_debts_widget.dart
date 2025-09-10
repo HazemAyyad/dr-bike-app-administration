@@ -19,9 +19,9 @@ class ShowDebtsWidget extends GetView<DebtsController> {
     return Obx(
       () {
         if (controller.isDebtsWeOweLoading.value) {
-          return SliverFillRemaining(
+          return const SliverFillRemaining(
             hasScrollBody: false,
-            child: const Center(
+            child: Center(
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
@@ -98,7 +98,7 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                           child: SizedBox(
                             height: 30.h,
                             child: Image.asset(
-                              AssetsManger.userIconNew,
+                              AssetsManager.userIconNew,
                               fit: BoxFit.contain,
                               color: AppColors.primaryColor,
                             ),

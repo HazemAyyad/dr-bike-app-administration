@@ -41,7 +41,7 @@ class LogOutController extends GetxController {
           message: 'logoutSuccess'.tr,
         );
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             Get.back();
           },

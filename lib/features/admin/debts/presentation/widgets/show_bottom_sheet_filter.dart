@@ -94,11 +94,11 @@ Widget buildSortOption(
     },
     child: Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      margin: EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: isSelected
-            ? Color(0xFF1E3A8A).withValues(alpha: 0.2)
+            ? const Color(0xFF1E3A8A).withValues(alpha: 0.2)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
       ),
@@ -117,7 +117,7 @@ Widget buildSortOption(
             ),
           ),
           if (isSelected)
-            Icon(
+            const Icon(
               Icons.check,
               color: Color(0xFF1E3A8A),
               size: 20,

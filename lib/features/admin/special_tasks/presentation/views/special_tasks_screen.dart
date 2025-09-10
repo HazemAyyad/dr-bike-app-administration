@@ -37,7 +37,7 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
               changeTab: controller.changeTab,
             ),
           ),
-          TasksList(),
+          const TasksList(),
           SliverToBoxAdapter(child: SizedBox(height: 40.h)),
         ],
       ),

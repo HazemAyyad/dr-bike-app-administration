@@ -54,7 +54,7 @@ class ChangePasswordController extends GetxController {
               message: 'passwordChangedSuccessfully'.tr,
             );
             Future.delayed(
-              Duration(milliseconds: 2000),
+              const Duration(milliseconds: 2000),
               () {
                 Get.back();
               },

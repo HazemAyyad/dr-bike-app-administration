@@ -50,10 +50,10 @@ class CustomCalendar extends StatelessWidget {
                                     fontWeight: FontWeight.w700,
                                   ),
                         )
-                      : SizedBox.shrink(),
+                      : const SizedBox.shrink(),
                 ],
               )
-            : SizedBox.shrink(),
+            : const SizedBox.shrink(),
         SizedBox(height: 10.h),
         Obx(
           () => GestureDetector(
@@ -112,7 +112,7 @@ class CustomCalendar extends StatelessWidget {
                                 },
                               ),
                             )
-                          : SizedBox(),
+                          : const SizedBox(),
                     ),
                   ),
                 ],
@@ -180,7 +180,7 @@ class CalendarState extends State<Calendar> {
   @override
   Widget build(BuildContext context) {
     final locale =
-        Get.locale == const Locale('ar') ? Locale('ar') : Locale('en');
+        Get.locale == const Locale('ar') ? const Locale('ar') : const Locale('en');
     final daysList = getDaysInMonth(displayedMonth);
     final now = DateTime.now();
 
@@ -235,9 +235,9 @@ class CalendarState extends State<Calendar> {
         SizedBox(height: 8.h),
         GridView.builder(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           gridDelegate:
-              SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7),
+              const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7),
           itemCount: daysList.length,
           itemBuilder: (_, idx) {
             final day = daysList[idx];

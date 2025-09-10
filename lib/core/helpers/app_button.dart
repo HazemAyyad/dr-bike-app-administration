@@ -28,7 +28,7 @@ class AppButton extends StatelessWidget {
   }) : super(key: key);
 
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color? color;
   final Color? textColor;
   final double? size;
@@ -81,7 +81,7 @@ class AppButton extends StatelessWidget {
                                 return isLoading!.value
                                     ? SizedBox(
                                         height: 25.h,
-                                        child: Center(
+                                        child: const Center(
                                           child: CircularProgressIndicator(
                                             color: Colors.white,
                                           ),
@@ -94,7 +94,9 @@ class AppButton extends StatelessWidget {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              isRtl! ? widget! : SizedBox(),
+                                              isRtl!
+                                                  ? widget!
+                                                  : const SizedBox(),
                                               Text(
                                                 text.tr,
                                                 style: textStyle ??
@@ -110,7 +112,9 @@ class AppButton extends StatelessWidget {
                                                               FontWeight.w400,
                                                         ),
                                               ),
-                                              isRtl! ? SizedBox() : widget!,
+                                              isRtl!
+                                                  ? const SizedBox()
+                                                  : widget!,
                                             ],
                                           )
                                         : Text(
@@ -135,7 +139,7 @@ class AppButton extends StatelessWidget {
                                       MainAxisAlignment.spaceEvenly,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    isRtl! ? widget! : SizedBox(),
+                                    isRtl! ? widget! : const SizedBox(),
                                     Text(
                                       text.tr,
                                       style: textStyle ??
@@ -149,7 +153,7 @@ class AppButton extends StatelessWidget {
                                                 fontWeight: FontWeight.w400,
                                               ),
                                     ),
-                                    isRtl! ? SizedBox() : widget!,
+                                    isRtl! ? const SizedBox() : widget!,
                                   ],
                                 )
                               : Text(
@@ -159,9 +163,10 @@ class AppButton extends StatelessWidget {
                                           .textTheme
                                           .bodyMedium!
                                           .copyWith(
-                                            color: textColor ?? getTextTheme(),
+                                            color: textColor ??
+                                                AppColors.whiteColor,
                                             fontSize: size ?? 16.sp,
-                                            fontWeight: FontWeight.w400,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                 ),
                     ),
@@ -197,7 +202,7 @@ class AppButton extends StatelessWidget {
                     ? Obx(
                         () {
                           return isLoading!.value
-                              ? Center(
+                              ? const Center(
                                   child: CircularProgressIndicator(
                                       color: Colors.white),
                                 )
@@ -208,7 +213,7 @@ class AppButton extends StatelessWidget {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        isRtl! ? widget! : SizedBox(),
+                                        isRtl! ? widget! : const SizedBox(),
                                         Text(
                                           text.tr,
                                           style: textStyle ??
@@ -222,7 +227,7 @@ class AppButton extends StatelessWidget {
                                                     fontWeight: FontWeight.w400,
                                                   ),
                                         ),
-                                        isRtl! ? SizedBox() : widget!,
+                                        isRtl! ? const SizedBox() : widget!,
                                       ],
                                     )
                                   : Text(
@@ -245,7 +250,7 @@ class AppButton extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              isRtl! ? widget! : SizedBox(),
+                              isRtl! ? widget! : const SizedBox(),
                               Text(
                                 text.tr,
                                 style: textStyle ??
@@ -258,7 +263,7 @@ class AppButton extends StatelessWidget {
                                           fontWeight: FontWeight.w400,
                                         ),
                               ),
-                              isRtl! ? SizedBox() : widget!,
+                              isRtl! ? const SizedBox() : widget!,
                             ],
                           )
                         : Text(

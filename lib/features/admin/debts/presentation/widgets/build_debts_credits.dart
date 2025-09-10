@@ -47,7 +47,7 @@ class BuildDebtsAndCredits extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Image.asset(
-                AssetsManger.cashIcon,
+                AssetsManager.cashIcon,
                 width: 20.w,
                 height: 20.h,
                 color: color,

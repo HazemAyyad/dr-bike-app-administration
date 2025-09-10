@@ -131,13 +131,13 @@ class GeneralDataListController extends GetxController {
         (success) {
           clearForm();
           Future.delayed(
-            Duration(milliseconds: 500),
+            const Duration(milliseconds: 500),
             () {
               getGeneralDataList(loding: true);
             },
           );
           Future.delayed(
-            Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1500),
             () {
               Get.back();
               Get.back();
@@ -211,8 +211,8 @@ class GeneralDataListController extends GetxController {
   }
 
   @override
-  void dispose() {
-    super.dispose();
+  void onClose() {
+    super.onClose();
     fromDateController.dispose();
     toDateController.dispose();
     employeeNameController.dispose();

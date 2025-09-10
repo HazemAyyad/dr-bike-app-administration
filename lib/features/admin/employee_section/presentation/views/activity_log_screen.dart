@@ -17,7 +17,7 @@ class ActivityLogScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'activityLog', action: false),
+      appBar: const CustomAppBar(title: 'activityLog', action: false),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: CustomScrollView(
@@ -37,8 +37,8 @@ class ActivityLogScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            CustomText(title: 'activity'),
-                            CustomText(title: 'description'),
+                            const CustomText(title: 'activity'),
+                            const CustomText(title: 'description'),
                             SizedBox(width: 0.w),
                           ],
                         ),
@@ -67,7 +67,7 @@ class ActivityLogScreen extends StatelessWidget {
                           final dateKey = entry.key;
                           final logs = entry.value;
                           if (logs.isEmpty) {
-                            return ShowNoData();
+                            return const ShowNoData();
                           }
                           if (controller.isDialogLoading.value) {
                             return const Center(
@@ -204,7 +204,7 @@ class ShowLogDetails extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    SizedBox(),
+                    const SizedBox(),
                     Text(
                       'details'.tr,
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(

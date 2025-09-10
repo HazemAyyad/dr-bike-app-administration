@@ -45,7 +45,7 @@ Container projectsDetails(BuildContext context, order,
         SizedBox(height: 5.h),
         rowText(
           context,
-          icon == AssetsManger.frameIcon
+          icon == AssetsManager.frameIcon
               ? order[tital].toString()
               : '${order[tital]}%',
           color: AppColors.primaryColor,

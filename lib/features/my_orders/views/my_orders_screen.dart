@@ -27,7 +27,7 @@ class MyOrdersScreen extends GetView<MyOrdersController> {
               ),
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Get.back(),
         ),
         centerTitle: true,

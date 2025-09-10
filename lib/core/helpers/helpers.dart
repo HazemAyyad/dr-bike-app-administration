@@ -45,7 +45,7 @@ class Helpers {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.asset(
-                      AssetsManger.errorAnimationImage,
+                      AssetsManager.errorAnimationImage,
                       height: 90.h,
                       width: 90.w,
                       fit: BoxFit.contain,
@@ -135,7 +135,7 @@ class Helpers {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Image.asset(
-                    AssetsManger.successAnimation,
+                    AssetsManager.successAnimation,
                     height: ScreenUtilNew.height(89),
                     width: ScreenUtilNew.width(89),
                     fit: BoxFit.contain,
@@ -203,7 +203,7 @@ class Helpers {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SvgPicture.asset(
-                    AssetsManger.sucessImageSvg,
+                    AssetsManager.sucessImageSvg,
                     height: ScreenUtilNew.height(89),
                     width: ScreenUtilNew.width(89),
                     fit: BoxFit.contain,
@@ -268,7 +268,7 @@ class Helpers {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SvgPicture.asset(
-                    AssetsManger.errorImage,
+                    AssetsManager.errorImage,
                     height: ScreenUtilNew.height(89),
                     width: ScreenUtilNew.width(89),
                     fit: BoxFit.contain,

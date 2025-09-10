@@ -84,7 +84,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
               // ),
               SizedBox(height: controller.isEditEmployee ? 0 : 15.h),
               controller.isEditEmployee
-                  ? SizedBox()
+                  ? const SizedBox()
                   : Row(
                       children: [
                         Flexible(
@@ -154,7 +154,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         controller.documentsImageList.isEmpty
-                            ? SizedBox.shrink()
+                            ? const SizedBox.shrink()
                             : Text(
                                 'documentsImages'.tr,
                                 style: Theme.of(context)
@@ -173,7 +173,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                           scrollDirection: Axis.horizontal,
                           child: Obx(
                             () => controller.deleteImage.value
-                                ? SizedBox.shrink()
+                                ? const SizedBox.shrink()
                                 : Row(
                                     children: [
                                       ...controller.documentsImageList
@@ -245,7 +245,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                         SizedBox(height: 15.h),
                       ],
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
               MediaUploadButton(
                 title: 'documentsImages',
                 onFilesChanged: (val) {
@@ -259,7 +259,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         controller.employeeImageList.isEmpty
-                            ? SizedBox.shrink()
+                            ? const SizedBox.shrink()
                             : Text(
                                 'employeeImage'.tr,
                                 style: Theme.of(context)
@@ -278,7 +278,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                           scrollDirection: Axis.horizontal,
                           child: Obx(
                             () => controller.deleteImage.value
-                                ? SizedBox.shrink()
+                                ? const SizedBox.shrink()
                                 : Row(
                                     children: [
                                       ...controller.employeeImageList
@@ -352,7 +352,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                         SizedBox(height: 15.h),
                       ],
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
               MediaUploadButton(
                 title: 'employeeImage',
                 onFilesChanged: (val) {
@@ -373,7 +373,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                           fontWeight: FontWeight.w700,
                         ),
                   ),
-                  Spacer(),
+                  const Spacer(),
                   TextButton(
                     onPressed: () => controller.isAllPermissionsSelected.value
                         ? controller.setAllPermissionsFalse()

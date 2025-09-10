@@ -65,7 +65,7 @@ class NotificationFirebaseService {
         AndroidInitializationSettings('@mipmap/ic_launcher'); //ic_launcher
 
     // ios Setup
-    final initializationSettingsDarwin = DarwinInitializationSettings();
+    final initializationSettingsDarwin = const DarwinInitializationSettings();
 
     final initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,

@@ -25,7 +25,7 @@ class StockScreen extends GetView<StockController> {
             icon: const Icon(Icons.archive_outlined),
             onPressed: () {
               controller.getArchived();
-              Get.dialog(ArchiveDialog());
+              Get.dialog(const ArchiveDialog());
             },
           ),
         ],
@@ -48,9 +48,9 @@ class StockScreen extends GetView<StockController> {
               SliverToBoxAdapter(
                   child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 50.w, vertical: 16.h),
-                child: SearchWidget(isCloseouts: false),
+                child: const SearchWidget(isCloseouts: false),
               )),
-              GridViewItems(),
+              const GridViewItems(),
             ],
           ),
           Positioned(
@@ -97,11 +97,11 @@ class StockScreen extends GetView<StockController> {
         addList: controller.addList,
         customWidget: BuildAddMenuItem(
           title: 'addProduct',
-          iconAsset: AssetsManger.invoiceIcon,
+          iconAsset: AssetsManager.invoiceIcon,
           route: '',
           onTap: () {
             controller.toggleAddMenu();
-            Get.to(() => EditProductWebView());
+            Get.to(() => const EditProductWebView());
           },
         ),
       ),

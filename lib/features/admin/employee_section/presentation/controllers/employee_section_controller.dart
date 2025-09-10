@@ -127,17 +127,17 @@ class EmployeeSectionController extends GetxController
   List<Map<String, String>> addList = [
     {
       'title': 'newEmployee',
-      'icon': AssetsManger.userIcon,
+      'icon': AssetsManager.userIcon,
       'route': AppRoutes.ADDNEWEMPLOYEESCREEN
     },
     {
       'title': 'penalty',
-      'icon': AssetsManger.invoiceIcon,
+      'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
     },
     {
       'title': 'reward',
-      'icon': AssetsManger.moneyIcon,
+      'icon': AssetsManager.moneyIcon,
       'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
     },
   ];
@@ -162,7 +162,7 @@ class EmployeeSectionController extends GetxController
         (success) {
           Get.back();
           Future.delayed(
-            Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1500),
             () {
               Get.back();
             },
@@ -195,7 +195,7 @@ class EmployeeSectionController extends GetxController
       (success) {
         Get.back();
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             getOvertimeAndLoan();
             Get.back();
@@ -246,7 +246,7 @@ class EmployeeSectionController extends GetxController
         overtimeValue.value = false;
         Get.back();
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             getOvertimeAndLoan();
             Get.back();
@@ -279,7 +279,7 @@ class EmployeeSectionController extends GetxController
       },
       (success) {
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             getLogs();
             Get.back();
@@ -458,7 +458,7 @@ class EmployeeSectionController extends GetxController
     getLogs();
     animController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
 
     opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);
@@ -502,7 +502,7 @@ class EmployeeSectionController extends GetxController
   }
 
   @override
-  void dispose() {
+  void onClose() {
     // fromDateController.dispose();
     // toDateController.dispose();
     employeeNameController.dispose();
@@ -512,6 +512,6 @@ class EmployeeSectionController extends GetxController
     animController.dispose();
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;
-    super.dispose();
+    super.onClose();
   }
 }

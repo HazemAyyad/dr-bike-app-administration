@@ -18,14 +18,14 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
-      appBar: CustomAppBar(title: 'privateTaskDetails', action: false),
+      appBar: const CustomAppBar(title: 'privateTaskDetails', action: false),
       body: Obx(
         () {
           if (controller.isGetLoading.value) {
             return const Center(child: CircularProgressIndicator());
           }
           if (controller.specialTasksService.specialTaskDetails.value == null) {
-            return ShowNoData();
+            return const ShowNoData();
           }
           final data = controller.specialTasksService.specialTaskDetails.value!;
           return SingleChildScrollView(
@@ -40,9 +40,9 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                   child: CachedNetworkImage(
                     imageUrl: data.adminImg.isNotEmpty
                         ? data.adminImg.first
-                        : AssetsManger.noImageNet,
-                    placeholder: (context, url) => Center(
-                      child: const CircularProgressIndicator(),
+                        : AssetsManager.noImageNet,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(),
                     ),
                     errorWidget: (context, url, error) =>
                         const Icon(Icons.error),
@@ -79,7 +79,7 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                 ...data.subTasks.map(
                   (tasks) => Container(
                     margin: EdgeInsets.symmetric(vertical: 5.h),
-                    padding: EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: tasks.status == 'ongoing'
                           ? null
@@ -96,7 +96,7 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                         Flexible(
                           child: CustomCheckBox(
                             scale: 1.5,
-                            shape: CircleBorder(
+                            shape: const CircleBorder(
                               side: BorderSide(color: AppColors.primaryColor),
                             ),
                             title:
@@ -127,9 +127,9 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                           child: CachedNetworkImage(
                             imageUrl: tasks.adminImg.isNotEmpty
                                 ? tasks.adminImg.first
-                                : AssetsManger.noImageNet,
-                            placeholder: (context, url) => Center(
-                              child: const CircularProgressIndicator(),
+                                : AssetsManager.noImageNet,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(),
                             ),
                             errorWidget: (context, url, error) =>
                                 const Icon(Icons.error),
@@ -143,7 +143,7 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                 ),
                 SizedBox(height: 15.h),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(11.r),
                     border: Border.all(color: AppColors.customGreyColor6),
@@ -158,7 +158,7 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                         discription: data.taskRecurrence.tr,
                       ),
                       data.taskRecurrence == 'noRepeat'
-                          ? SizedBox.shrink()
+                          ? const SizedBox.shrink()
                           : SupTextAndDis(
                               title: 'taskRepeatDate',
                               discription: data.taskRecurrenceTime

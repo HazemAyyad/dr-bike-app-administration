@@ -39,7 +39,7 @@ class NewCheckScreen extends GetView<ChecksController> {
               ),
               SizedBox(height: isNewCheck ? 0 : 16.h),
               isNewCheck
-                  ? SizedBox()
+                  ? const SizedBox()
                   : Column(
                       children: [
                         Obx(
@@ -186,7 +186,7 @@ class NewCheckScreen extends GetView<ChecksController> {
               // ),
               SizedBox(height: 30.h),
               isNewCheck
-                  ? SizedBox()
+                  ? const SizedBox()
                   : UploadImageButton(
                       selectedFile: controller.checkBackImage,
                       title: 'checkBackImage',

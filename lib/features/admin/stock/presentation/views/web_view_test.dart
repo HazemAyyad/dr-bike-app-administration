@@ -33,7 +33,7 @@ class _EditProductWebViewState extends State<EditProductWebView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
           title: '',
           //  'addProduct'
           action: false),

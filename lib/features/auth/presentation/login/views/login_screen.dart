@@ -28,7 +28,7 @@ class LoginScreen extends GetView<LoginController> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: 64.h),
-                AppLogo(),
+                const AppLogo(),
                 SizedBox(height: 56.h),
                 Text(
                   'welcomeBack'.tr,
@@ -62,7 +62,7 @@ class LoginScreen extends GetView<LoginController> {
                   height: 48.h,
                 ),
                 SizedBox(height: 15.h),
-                DontHaveAccount(),
+                const DontHaveAccount(),
                 SizedBox(height: 30.h),
               ],
             ),

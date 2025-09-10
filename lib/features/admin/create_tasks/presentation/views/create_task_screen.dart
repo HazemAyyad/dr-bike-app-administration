@@ -127,7 +127,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                       keyboardType: TextInputType.number,
                       validator: (p0) => null,
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
               SizedBox(height: 15.h),
               // تاريخ البدء
               SelectDate(
@@ -156,7 +156,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                       value: controller.hideTask,
                       onChanged: (value) => controller.hideTask.value = value!,
                     )
-                  : SizedBox.shrink(),
+                  : const SizedBox.shrink(),
               // التكرار
               CustomDropdownField(
                 label: 'taskRepeat'.tr,
@@ -317,7 +317,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                             controller.requireImage.value = value!;
                           },
                         )
-                      : SizedBox.shrink(),
+                      : const SizedBox.shrink(),
                 ],
               ),
               SizedBox(height: 10.h),

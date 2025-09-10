@@ -30,12 +30,12 @@ Column dropdownButton(controller) {
         ),
         child: Obx(
           () => DropdownButtonFormField<String>(
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(horizontal: 16),
             ),
             isExpanded: true,
-            icon: Icon(
+            icon: const Icon(
               Icons.keyboard_arrow_down,
               color: AppColors.primaryColor,
             ),

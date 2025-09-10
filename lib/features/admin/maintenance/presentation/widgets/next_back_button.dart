@@ -81,7 +81,7 @@ class NextBackButton extends StatelessWidget {
                     onPressed: () {
                       controller.nextStep();
                     },
-                    widget: Icon(
+                    widget: const Icon(
                       Icons.arrow_forward_rounded,
                       color: AppColors.whiteColor,
                     ),

@@ -17,7 +17,7 @@ class EditProductScreen extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'editProduct',
         action: false,
         // actions: [],
@@ -293,7 +293,7 @@ class EditProductScreen extends GetView<StockController> {
                           : AppColors.customGreyColor),
                 ),
                 SizedBox(width: 10.w),
-                Icon(
+                const Icon(
                   Icons.calendar_today,
                   color: AppColors.primaryColor,
                 ),

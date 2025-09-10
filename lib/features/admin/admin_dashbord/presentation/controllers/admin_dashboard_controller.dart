@@ -1,0 +1,214 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/utils/assets_manger.dart';
+import '../../../../../routes/app_routes.dart';
+import '../../../employee_section/data/models/logs_model.dart';
+import '../../../employee_section/domain/usecases/cancel_log_usecase.dart';
+import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../domain/usecases/get_admin_logs_usecase.dart';
+
+class AdminDashboardController extends GetxController
+    with GetTickerProviderStateMixin {
+  final GetAllEmployeeUsecase getAllEmployeeUsecase;
+  final GetAdminLogsUsecase getAdminLogsUsecase;
+  final CancelLogUsecase cancelLogUsecase;
+
+  AdminDashboardController({
+    required this.getAllEmployeeUsecase,
+    required this.getAdminLogsUsecase,
+    required this.cancelLogUsecase,
+  });
+
+  List<Map<String, dynamic>> buttons = [
+    {
+      'id': '21',
+      'title': 'employeeTasks',
+      'route': AppRoutes.EMPLOYEETASKSSCREEN
+    },
+    {
+      'id': '22',
+      'title': 'privateTasks',
+      'route': AppRoutes.PRIVATETASKSSCREEN
+    },
+    {
+      'id': '23',
+      'title': 'employeeDepartment',
+      'route': AppRoutes.EMPLOYEESECTIONSCREEN
+    },
+    {
+      'id': '24',
+      'title': 'projectManagement',
+      'route': AppRoutes.PROJECTMANAGEMENTSCREEN
+    },
+    {'id': '25', 'title': 'messagesDepartment', 'route': ''},
+    {'id': '26', 'title': 'infoCompletion', 'route': ''},
+    {
+      'id': '27',
+      'title': 'targetSetting',
+      'route': AppRoutes.TARGETSECTIONSCREEN
+    },
+    {
+      'id': '28',
+      'title': 'followUpDepartment',
+      'route': AppRoutes.CURRENTFOLLOWUPSCREEN
+    },
+    {'id': '29', 'title': 'debts', 'route': AppRoutes.DEBTSSCREEN},
+    {'id': '30', 'title': 'sales', 'route': AppRoutes.SALESSCREEN},
+    {
+      'id': '31',
+      'title': 'generalData',
+      'route': AppRoutes.GENERALDATALISTSCREEN
+    },
+    {'id': '32', 'title': 'partnersDepartment', 'route': ''},
+    {'id': '33', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
+    {'id': '34', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
+    {
+      'id': '35',
+      'title': 'purchasesandReturns',
+      'route': AppRoutes.BUYINGSCREEN
+    },
+    {
+      'id': '36',
+      'title': 'financialMatters',
+      'route': AppRoutes.FINANCIALAFFAIRSSCREEN
+    },
+    {
+      'id': '37',
+      'title': 'checksandCommitments',
+      'route': AppRoutes.CHECKSSCREEN
+    },
+    {'id': '38', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
+  ];
+
+  // متغيرات للإحصائيات
+  final RxInt debtToUs = 100.obs;
+  final RxInt debtOnUs = 20.obs;
+  final RxInt products = 150.obs;
+  final RxInt completedTasks = 30.obs;
+  final RxInt pendingTasks = 5.obs;
+  final RxInt expenses = 1200.obs;
+
+  // متغير للتحكم في قائمة الإضافة
+  final RxBool isAddMenuOpen = false.obs;
+
+  late AnimationController animController;
+  late Animation<double> opacityAnimation;
+  late Animation<double> sizeAnimation;
+
+  void toggleAddMenu() {
+    isAddMenuOpen.value = !isAddMenuOpen.value;
+  }
+
+  List<Map<String, String>> adminAddList = [
+    {
+      'title': 'newInvoice',
+      'icon': AssetsManager.invoiceIcon,
+      'route': AppRoutes.ADDNEWEMPLOYEESCREEN
+    },
+    {
+      'title': 'newEmployee',
+      'icon': AssetsManager.userIcon,
+      'route': AppRoutes.ADDNEWEMPLOYEESCREEN,
+    },
+    {
+      'title': 'newExpense',
+      'icon': AssetsManager.moneyIcon,
+      'route': AppRoutes.ADDNEWEMPLOYEESCREEN,
+    },
+    {
+      'title': 'newCustomer',
+      'icon': AssetsManager.userIcon,
+      'route': AppRoutes.ADDNEWCUSTOMERSCREEN,
+    },
+  ];
+
+  final RxBool isLoading = false.obs;
+
+  final Map<String, List<LogsModel>> logsMap = {};
+
+  // Get Logs
+  void getLogs() async {
+    isLoading(true);
+    logsMap.clear();
+    final result = await getAdminLogsUsecase.call();
+    for (var task in result) {
+      String dateKey =
+          "${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
+      if (logsMap.containsKey(dateKey)) {
+        if (!logsMap[dateKey]!.any((t) => t.id == task.id)) {
+          logsMap[dateKey]!.add(task);
+        }
+      } else {
+        logsMap[dateKey] = [task];
+      }
+    }
+    isLoading(false);
+    update();
+  }
+
+  // cancel Log
+  void cancelLog({
+    required BuildContext context,
+    required String logId,
+  }) async {
+    isLoading(true);
+    final result = await cancelLogUsecase.call(logId: logId);
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'],
+        );
+      },
+      (success) {
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            getLogs();
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isLoading(false);
+    update();
+  }
+
+  @override
+  void onInit() async {
+    super.onInit();
+    animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);
+    sizeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: animController, curve: Curves.fastOutSlowIn),
+    );
+
+    ever(isAddMenuOpen, (bool open) {
+      if (open) {
+        animController.forward();
+      } else {
+        animController.reverse();
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    animController.dispose();
+    opacityAnimation.isDismissed;
+    sizeAnimation.isDismissed;
+    super.onClose();
+  }
+}

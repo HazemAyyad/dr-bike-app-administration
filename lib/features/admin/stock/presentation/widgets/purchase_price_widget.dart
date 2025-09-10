@@ -66,7 +66,7 @@ class ShowPurchasePrice extends StatelessWidget {
               ],
             ),
           ),
-          if (product.purchasePrices!.isEmpty) ShowNoData(),
+          if (product.purchasePrices!.isEmpty) const ShowNoData(),
           SingleChildScrollView(
             child: Column(
               children: [

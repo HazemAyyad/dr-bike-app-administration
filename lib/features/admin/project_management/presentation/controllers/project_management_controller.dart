@@ -48,7 +48,7 @@ class ProjectManagementController extends GetxController {
             'projectDocuments': 'اوراق الشركة',
             'totalSales': '20',
             'projectStatus': '',
-            'projectOrProductsImages': AssetsManger.rectangle,
+            'projectOrProductsImages': AssetsManager.rectangle,
           },
           {
             'projectName': 'عمل صفقة موتور',
@@ -62,7 +62,7 @@ class ProjectManagementController extends GetxController {
             'projectDocuments': 'اوراق الشركة',
             'totalSales': '20',
             'projectStatus': '',
-            'projectOrProductsImages': AssetsManger.rectangle,
+            'projectOrProductsImages': AssetsManager.rectangle,
           },
         ],
       );
@@ -81,7 +81,7 @@ class ProjectManagementController extends GetxController {
             'projectDocuments': 'اوراق الشركة',
             'totalSales': '20',
             'projectStatus': '',
-            'projectOrProductsImages': AssetsManger.rectangle,
+            'projectOrProductsImages': AssetsManager.rectangle,
           },
           {
             'projectName': 'عمل صفقة موتور',
@@ -95,7 +95,7 @@ class ProjectManagementController extends GetxController {
             'projectDocuments': 'اوراق الشركة',
             'totalSales': '20',
             'projectStatus': '1',
-            'projectOrProductsImages': AssetsManger.rectangle,
+            'projectOrProductsImages': AssetsManager.rectangle,
           },
           {
             'projectName': 'عمل صفقة موتور',
@@ -109,7 +109,7 @@ class ProjectManagementController extends GetxController {
             'projectDocuments': 'اوراق الشركة',
             'totalSales': '20',
             'projectStatus': '1',
-            'projectOrProductsImages': AssetsManger.rectangle,
+            'projectOrProductsImages': AssetsManager.rectangle,
           },
           {
             'projectName': 'عمل صفقة موتور',
@@ -123,7 +123,7 @@ class ProjectManagementController extends GetxController {
             'projectDocuments': 'اوراق الشركة',
             'totalSales': '20',
             'projectStatus': '1',
-            'projectOrProductsImages': AssetsManger.rectangle,
+            'projectOrProductsImages': AssetsManager.rectangle,
           },
         ],
       );
@@ -155,12 +155,12 @@ class ProjectManagementController extends GetxController {
   List<File> selectedFile = [];
 
   @override
-  void dispose() {
+  void onClose() {
     fromDateController.dispose();
     toDateController.dispose();
     projectNameController.dispose();
     projectPartners == ''.obs;
     projectCost == '';
-    super.dispose();
+    super.onClose();
   }
 }

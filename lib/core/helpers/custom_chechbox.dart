@@ -40,7 +40,7 @@ class CustomCheckBox extends StatelessWidget {
                   RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(4.r),
                   ),
-              side: BorderSide(color: AppColors.primaryColor),
+              side: const BorderSide(color: AppColors.primaryColor),
               value: value.value,
               onChanged: onChanged,
             ),

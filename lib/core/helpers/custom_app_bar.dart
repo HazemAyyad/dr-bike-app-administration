@@ -90,13 +90,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     onPressed: onPressedAdd,
                   )
-                : SizedBox(),
+                : const SizedBox(),
             SizedBox(width: 10.w)
           ],
     );
   }
 
   @override
-  // TODO: implement preferredSize
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

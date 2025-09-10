@@ -17,7 +17,7 @@ class AddCustomerFollowUpScreen extends GetView<CurrentFollowUpController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'createFollowUp',
         action: false,
       ),

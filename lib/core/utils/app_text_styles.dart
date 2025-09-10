@@ -56,7 +56,7 @@ class AppTextStyles {
 
   //text style 14
   static final TextStyle textStyle14 = GoogleFonts.almarai(
-      fontSize: 14.sp, fontWeight: FontWeight.w500, color: Color(0xff9C9C9C));
+      fontSize: 14.sp, fontWeight: FontWeight.w500, color: const Color(0xff9C9C9C));
   static final TextStyle button14Text = GoogleFonts.almarai(
       fontSize: 14.sp, fontWeight: FontWeight.w500, color: Colors.white);
 
@@ -94,7 +94,7 @@ class AppTextStyles {
 
   //text style 18
   static final TextStyle boldtextStyle18 = GoogleFonts.almarai(
-      fontSize: 18.sp, fontWeight: FontWeight.w800, color: Color(0xff4B4B4B));
+      fontSize: 18.sp, fontWeight: FontWeight.w800, color: const Color(0xff4B4B4B));
   // static final TextStyle textStyle18 = GoogleFonts.almarai(
   //     fontSize: 18.sp,
   //     fontWeight: FontWeight.w700,

@@ -142,7 +142,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           controller.personalIdImage.isEmpty
-                              ? SizedBox.shrink()
+                              ? const SizedBox.shrink()
                               : Text(
                                   'personalIdImage'.tr,
                                   style: Theme.of(context)
@@ -160,7 +160,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: controller.personalIdImage.isEmpty
-                                ? SizedBox.shrink()
+                                ? const SizedBox.shrink()
                                 : Row(
                                     children: [
                                       ...controller.personalIdImage
@@ -227,7 +227,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                           SizedBox(height: 15.h),
                         ],
                       )
-                    : SizedBox.shrink(),
+                    : const SizedBox.shrink(),
 
                 SizedBox(height: 0.h),
                 controller.isEdit.value
@@ -235,7 +235,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           controller.personalIdImage.isEmpty
-                              ? SizedBox.shrink()
+                              ? const SizedBox.shrink()
                               : Text(
                                   'carLicenseImage'.tr,
                                   style: Theme.of(context)
@@ -253,7 +253,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: controller.licenseImage.isEmpty
-                                ? SizedBox.shrink()
+                                ? const SizedBox.shrink()
                                 : Row(
                                     children: [
                                       ...controller.licenseImage
@@ -320,7 +320,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                           SizedBox(height: 15.h),
                         ],
                       )
-                    : SizedBox.shrink(),
+                    : const SizedBox.shrink(),
 
                 Row(
                   children: [

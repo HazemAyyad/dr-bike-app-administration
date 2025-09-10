@@ -18,16 +18,16 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
     return Scaffold(
       appBar: CustomAppBar(
           title: 'outgoingChecks'.tr,
-          actions: [CustomActionsAppBar(isNewCheck: true)]),
+          actions: const [CustomActionsAppBar(isNewCheck: true)]),
       body: Stack(
         children: [
           Obx(
             () => CustomScrollView(
               slivers: [
                 controller.isLoading.value
-                    ? SliverFillRemaining(
+                    ? const SliverFillRemaining(
                         hasScrollBody: true,
-                        child: const Center(child: CircularProgressIndicator()),
+                        child: Center(child: CircularProgressIndicator()),
                       )
                     : SliverAppBar(
                         expandedHeight: 270.h,
@@ -36,7 +36,7 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                           background: Column(
                             children: [
                               SizedBox(height: 10.h),
-                              ChecksDetails(isOutGoing: true),
+                              const ChecksDetails(isOutGoing: true),
                               SizedBox(height: 20.h),
                               AppTabs(
                                 tabs: controller.tabs,
@@ -47,7 +47,7 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                           ),
                         ),
                       ),
-                CustomListVeiwBuilder(),
+                const CustomListVeiwBuilder(),
                 SliverToBoxAdapter(child: SizedBox(height: 50.h)),
               ],
             ),

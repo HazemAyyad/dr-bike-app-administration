@@ -183,7 +183,7 @@ class AddSubTask extends StatelessWidget {
                         ),
                       ],
                     )
-                  : SizedBox(key: const ValueKey('empty')),
+                  : const SizedBox(key: ValueKey('empty')),
             ),
           ),
         ),

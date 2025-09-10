@@ -15,8 +15,8 @@ class SplashScreen extends GetView<SplashController> {
       body: Center(
         child: Image.asset(
           ThemeService.isDark.value
-              ? AssetsManger.darkLogo
-              : AssetsManger.whiteLogo,
+              ? AssetsManager.darkLogo
+              : AssetsManager.whiteLogo,
           height: double.infinity,
           width: double.infinity,
           fit: BoxFit.contain,

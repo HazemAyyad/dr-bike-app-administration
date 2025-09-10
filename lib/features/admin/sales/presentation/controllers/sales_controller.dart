@@ -104,17 +104,17 @@ class SalesController extends GetxController
   List<Map<String, String>> addList = [
     {
       'title': 'newInstantSale',
-      'icon': AssetsManger.invoiceIcon,
+      'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.NEWINSTANTSALESCREEN
     },
     {
       'title': 'newCashProfit',
-      'icon': AssetsManger.moneyIcon,
+      'icon': AssetsManager.moneyIcon,
       'route': AppRoutes.NEWCASHPROFITSCREEN,
     },
     {
       'title': 'receiveMaintenance',
-      'icon': AssetsManger.userIcon,
+      'icon': AssetsManager.userIcon,
       'route': AppRoutes.NEWMAINTENANCESCREEN,
     },
   ];
@@ -159,13 +159,13 @@ class SalesController extends GetxController
           totalCostController.clear();
           Get.back();
           Future.delayed(
-            Duration(milliseconds: 500),
+            const Duration(milliseconds: 500),
             () {
               getProfitSales(loding: true);
             },
           );
           Future.delayed(
-            Duration(milliseconds: 1000),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
             },
@@ -236,13 +236,13 @@ class SalesController extends GetxController
           discountController.clear();
           totalController.clear();
           Future.delayed(
-            Duration(milliseconds: 500),
+            const Duration(milliseconds: 500),
             () {
               getProfitSales(loding: true);
             },
           );
           Future.delayed(
-            Duration(milliseconds: 1000),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
               Get.back();
@@ -352,7 +352,7 @@ class SalesController extends GetxController
         return MapEntry(entry.key, list);
       }).where((e) => e.value.isNotEmpty),
     );
-    
+
     final Map<String, List<InstantSalesModel>> newMap2 = Map.fromEntries(
       salesService.instantSalesTasks.entries.map((entry) {
         final list = entry.value.where((task) {
@@ -415,7 +415,7 @@ class SalesController extends GetxController
     getAllProducts();
     animController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
 
     opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);
@@ -434,7 +434,7 @@ class SalesController extends GetxController
   }
 
   @override
-  void dispose() {
+  void onClose() {
     animController.dispose();
     discountController.dispose();
     totalController.dispose();
@@ -447,9 +447,9 @@ class SalesController extends GetxController
       item.priceController.dispose();
     }
     for (ItemModel item in items) {
-      item.dispose();
+      item.onClose();
     }
-    super.dispose();
+    super.onClose();
   }
 }
 
@@ -473,7 +473,7 @@ class ItemModel {
     total.value = price * quantity;
   }
 
-  void dispose() {
+  void onClose() {
     priceController.dispose();
     quantityController.dispose();
   }

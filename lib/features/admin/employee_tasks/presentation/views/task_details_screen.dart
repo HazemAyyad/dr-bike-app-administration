@@ -24,7 +24,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
 
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'employeeTaskDetails',
         action: false,
         // actions: [
@@ -175,7 +175,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                               ),
                             ],
                           )
-                        : SizedBox(),
+                        : const SizedBox(),
                     SizedBox(height: 10.h),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -229,7 +229,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                 SizedBox(height: 10.h),
                 data.audio!.isNotEmpty && data.audio != null
                     ? AudioPlayerWidget(url: data.audio!)
-                    : SizedBox.shrink(),
+                    : const SizedBox.shrink(),
                 // Row(
                 //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 //   children: [
@@ -312,7 +312,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                           ...data.subTasks.map(
                             (tasks) => Container(
                               margin: EdgeInsets.symmetric(vertical: 5.h),
-                              padding: EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 color: tasks.status == 'ongoing'
                                     ? null
@@ -330,7 +330,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                   Flexible(
                                     child: CustomCheckBox(
                                       scale: 1.5,
-                                      shape: CircleBorder(
+                                      shape: const CircleBorder(
                                         side: BorderSide(
                                             color: AppColors.primaryColor),
                                       ),
@@ -396,9 +396,9 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                             child: CachedNetworkImage(
                                               imageUrl: tasks.adminImg!.first,
                                               placeholder: (context, url) =>
-                                                  Center(
+                                                  const Center(
                                                 child:
-                                                    const CircularProgressIndicator(),
+                                                    CircularProgressIndicator(),
                                               ),
                                               errorWidget:
                                                   (context, url, error) =>
@@ -417,7 +417,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                       ),
                 SizedBox(height: 15.h),
                 Container(
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(11.r),
                     border: Border.all(color: AppColors.customGreyColor6),
@@ -515,7 +515,7 @@ class SupTextAndDis extends StatelessWidget {
                 ),
               ),
               TextSpan(
-                text: discription,
+                text: discription.tr,
                 style: theme.copyWith(
                   fontSize: 17.sp,
                   fontWeight: FontWeight.w400,

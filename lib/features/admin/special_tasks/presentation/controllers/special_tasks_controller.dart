@@ -295,9 +295,9 @@ class SpecialTasksController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     fromDateController.dispose();
     toDateController.dispose();
-    super.dispose();
+    super.onClose();
   }
 }

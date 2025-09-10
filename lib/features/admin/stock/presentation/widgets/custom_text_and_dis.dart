@@ -82,7 +82,7 @@ class CustomTextAndDis extends StatelessWidget {
                 ),
               ),
         noSized
-            ? SizedBox.shrink()
+            ? const SizedBox.shrink()
             : Center(
                 child: Container(
                   margin: EdgeInsets.symmetric(vertical: 10.h),

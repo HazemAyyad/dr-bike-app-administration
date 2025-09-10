@@ -99,13 +99,13 @@ class CurrentFollowUpController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     fromDateController.dispose();
     toDateController.dispose();
     customerNameController.dispose();
     customerphoneNumberController.dispose();
     customerNotesController.dispose();
     selectedCustomerName = '';
-    super.dispose();
+    super.onClose();
   }
 }

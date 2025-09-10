@@ -23,11 +23,11 @@ class BuildProfileSidebar extends GetView<ProfileController> {
         // شعار التطبيق
         Image.asset(
           ThemeService.isDark.value
-              ? AssetsManger.logoNoNameDark
-              : AssetsManger.logoNoNameWhite,
+              ? AssetsManager.logoNoNameDark
+              : AssetsManager.logoNoNameWhite,
           width: 100.w,
           height: 72.h,
-          errorBuilder: (context, error, stackTrace) => Icon(
+          errorBuilder: (context, error, stackTrace) => const Icon(
             Icons.electric_scooter,
             size: 80,
             color: AppColors.primaryColor,
@@ -94,7 +94,7 @@ class BuildProfileSidebar extends GetView<ProfileController> {
           },
           child: Row(
             children: [
-              Icon(Icons.logout, color: Colors.red),
+              const Icon(Icons.logout, color: Colors.red),
               SizedBox(width: 8.w),
               Text(
                 'logout'.tr,

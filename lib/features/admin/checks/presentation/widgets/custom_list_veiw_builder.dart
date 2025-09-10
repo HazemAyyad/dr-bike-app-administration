@@ -16,15 +16,15 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
     return Obx(
       () {
         if (controller.isLoading.value) {
-          return SliverFillRemaining(
+          return const SliverFillRemaining(
             hasScrollBody: true,
-            child: const Center(child: CircularProgressIndicator()),
+            child: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (controller.currentTab.value == 0) {
           if (controller.inComingChecksList.value!.inComingChecksList.isEmpty) {
-            return SliverFillRemaining(
+            return const SliverFillRemaining(
               hasScrollBody: true,
               child: ShowNoData(),
             );
@@ -32,7 +32,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
         }
         if (controller.currentTab.value == 1) {
           if (controller.cashedToPerson.value!.cashedToPerson.isEmpty) {
-            return SliverFillRemaining(
+            return const SliverFillRemaining(
               hasScrollBody: true,
               child: ShowNoData(),
             );
@@ -40,7 +40,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
         }
         if (controller.currentTab.value == 2) {
           if (controller.archiveData.value!.archiveData.isEmpty) {
-            return SliverFillRemaining(
+            return const SliverFillRemaining(
               hasScrollBody: true,
               child: ShowNoData(),
             );

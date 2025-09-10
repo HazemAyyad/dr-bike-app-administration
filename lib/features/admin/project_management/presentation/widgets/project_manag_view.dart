@@ -34,7 +34,7 @@ class ProjectManagementView extends GetView<ProjectManagementController> {
                   arguments: order,
                 ),
                 child: Container(
-                  padding: EdgeInsets.all(15),
+                  padding: const EdgeInsets.all(15),
                   // margin: EdgeInsets.symmetric(vertical: 5.h,),
                   decoration: BoxDecoration(
                     color: ThemeService.isDark.value
@@ -55,7 +55,7 @@ class ProjectManagementView extends GetView<ProjectManagementController> {
                                 value: (50 / 100),
                                 strokeWidth: 5.w,
                                 backgroundColor: Colors.grey[500],
-                                valueColor: AlwaysStoppedAnimation<Color>(
+                                valueColor: const AlwaysStoppedAnimation<Color>(
                                   AppColors.primaryColor,
                                 ),
                               ),

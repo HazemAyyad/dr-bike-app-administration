@@ -22,14 +22,14 @@ class TasksList extends GetView<SpecialTasksController> {
     return Obx(
       () {
         if (controller.isLoading.value) {
-          return SliverFillRemaining(
+          return const SliverFillRemaining(
             hasScrollBody: false,
-            child: const Center(
+            child: Center(
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
         } else if (controller.filteredTasks.isEmpty) {
-          return SliverFillRemaining(child: ShowNoData());
+          return const SliverFillRemaining(child: ShowNoData());
         }
 
         return SliverList.builder(
@@ -45,7 +45,7 @@ class TasksList extends GetView<SpecialTasksController> {
                 children: [
                   SizedBox(height: index == 0 ? 20.h : 0.h),
                   controller.currentTab.value == 1
-                      ? SizedBox.shrink()
+                      ? const SizedBox.shrink()
                       : Column(
                           children: [
                             Row(
@@ -112,7 +112,7 @@ class TasksList extends GetView<SpecialTasksController> {
                                                   selectedDay:
                                                       controller.selectedDay,
                                                 )
-                                              : SizedBox.shrink(),
+                                              : const SizedBox.shrink(),
                                         ),
                                         SizedBox(height: 3.h),
                                         CustomCheckBox(

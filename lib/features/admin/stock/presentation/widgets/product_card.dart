@@ -17,11 +17,16 @@ class BuildProductCard extends GetView<StockController> {
     required this.product,
     required this.isCloseouts,
     this.newComposition,
+    this.productIdController,
+    this.productNameController,
   }) : super(key: key);
 
   final AllStockProductsModel product;
   final bool isCloseouts;
   final NewCompositionModel? newComposition;
+  final TextEditingController? productIdController;
+  final TextEditingController? productNameController;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -43,6 +48,9 @@ class BuildProductCard extends GetView<StockController> {
                     controller.productDetails.value!.nameAr;
                 controller.calculateGrandTotal();
               }
+              productIdController!.text = product.productId.toString();
+              productNameController!.text =
+                  controller.productDetails.value!.nameAr.toString();
 
               Get.back();
               controller.update();
@@ -102,7 +110,7 @@ class BuildProductCard extends GetView<StockController> {
               color: Colors.grey.withAlpha(80),
               spreadRadius: 1,
               blurRadius: 2,
-              offset: Offset(0, 1),
+              offset: const Offset(0, 1),
             ),
           ],
         ),
@@ -112,7 +120,7 @@ class BuildProductCard extends GetView<StockController> {
             // صورة المنتج
             product.image.isEmpty || product.image == 'no image'
                 ? Image.asset(
-                    AssetsManger.stockImage,
+                    AssetsManager.stockImage,
                     height: 65.h,
                     width: 90.w,
                   )
@@ -128,7 +136,7 @@ class BuildProductCard extends GetView<StockController> {
                             color: AppColors.primaryColor),
                       ),
                       errorWidget: (context, url, error) => Image.asset(
-                        AssetsManger.stockImage,
+                        AssetsManager.stockImage,
                         height: 65.h,
                         width: 90.w,
                       ),

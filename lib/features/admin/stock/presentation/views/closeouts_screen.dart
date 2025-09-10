@@ -14,17 +14,18 @@ class CloseoutsScreen extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'newCloseouts',
         action: false,
       ),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-              child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 16.h),
-            child: SearchWidget(isCloseouts: true),
-          )),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 30.w, vertical: 16.h),
+              child: const SearchWidget(isCloseouts: true),
+            ),
+          ),
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),

@@ -25,7 +25,7 @@ class ProfitSaleCard extends GetView<SalesController> {
           BoxShadow(
             color: Colors.grey.withAlpha(32),
             blurRadius: 5.r,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -40,7 +40,7 @@ class ProfitSaleCard extends GetView<SalesController> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4.r),
                     child: Image.asset(
-                      AssetsManger.salesImage,
+                      AssetsManager.salesImage,
                       width: 50.w,
                       fit: BoxFit.cover,
                     ),
@@ -81,11 +81,11 @@ class ProfitSaleCard extends GetView<SalesController> {
             decoration: BoxDecoration(
               color: AppColors.customGreen1,
               borderRadius: Get.locale!.languageCode == 'en'
-                  ? BorderRadius.only(
+                  ? const BorderRadius.only(
                       topRight: Radius.circular(10),
                       bottomRight: Radius.circular(10),
                     )
-                  : BorderRadius.only(
+                  : const BorderRadius.only(
                       topLeft: Radius.circular(10),
                       bottomLeft: Radius.circular(10),
                     ),

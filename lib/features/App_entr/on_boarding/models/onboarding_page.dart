@@ -2,22 +2,22 @@ import '../../../../core/utils/assets_manger.dart';
 
 final List<Map<String, String>> onboardingData = [
   {
-    'image': AssetsManger.onBoardingScreenOne,
+    'image': AssetsManager.onBoardingScreenOne,
     'title': 'welcomeTitle',
     'desc': 'welcomeDesc',
   },
   {
-    'image': AssetsManger.onBoardingScreenOne,
+    'image': AssetsManager.onBoardingScreenOne,
     'title': 'welcomeTitle',
     'desc': 'welcomeDesc',
   },
   {
-    'image': AssetsManger.onBoardingScreenTwo,
+    'image': AssetsManager.onBoardingScreenTwo,
     'title': 'onboardingSecondTitle',
     'desc': 'onboardingSecondDesc',
   },
   {
-    'image': AssetsManger.onBoardingScreenThree,
+    'image': AssetsManager.onBoardingScreenThree,
     'title': 'onboardingThirdTitle',
     'desc': 'onboardingThirdDesc',
   },

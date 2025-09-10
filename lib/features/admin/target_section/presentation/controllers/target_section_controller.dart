@@ -127,8 +127,8 @@ class TargetSectionController extends GetxController {
   }
 
   @override
-  void dispose() {
-    super.dispose();
+  void onClose() {
+    super.onClose();
     fromDateController.dispose();
     toDateController.dispose();
     targetNameController.dispose();

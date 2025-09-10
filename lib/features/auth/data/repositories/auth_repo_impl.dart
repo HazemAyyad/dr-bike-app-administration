@@ -33,7 +33,7 @@ class AuthImplement implements AuthRepository {
         confirmPassword: confirmPassword,
       );
       if (result['status'] == 'success') {
-        return Right(true);
+        return const Right(true);
       }
       return Left(
         ValidationFailure(
@@ -54,7 +54,7 @@ class AuthImplement implements AuthRepository {
     try {
       final result = await remoteDataSource.sendOtpToEmail(email: email);
       if (result['status'] == 'success') {
-        return Right(true);
+        return const Right(true);
       }
       return Left(
         ValidationFailure(
@@ -78,7 +78,7 @@ class AuthImplement implements AuthRepository {
           await remoteDataSource.verifyOtp(email: email, otpCode: otpCode);
 
       if (result['status'] == 'success') {
-        return Right(true);
+        return const Right(true);
       }
       return Left(
         ValidationFailure(
@@ -139,7 +139,7 @@ class AuthImplement implements AuthRepository {
     try {
       final result = await remoteDataSource.logout(token: token);
       if (result['status'] == 'success') {
-        return Right(true);
+        return const Right(true);
       } else {
         return Left(
           ValidationFailure(
@@ -212,7 +212,7 @@ class AuthImplement implements AuthRepository {
         confirmPassword: confirmPassword,
       );
       if (result['status'] == 'success') {
-        return Right(true);
+        return const Right(true);
       }
       return Left(
         ValidationFailure(

@@ -14,9 +14,9 @@ class DioConsumer extends ApiConsumer {
   DioConsumer({required this.dio}) {
     dio.options.baseUrl = EndPoints.baserUrl;
     // بعض الخيارات الافتراضية
-    dio.options.connectTimeout = Duration(seconds: 15);
-    dio.options.sendTimeout = Duration(seconds: 30);
-    dio.options.receiveTimeout = Duration(seconds: 60);
+    dio.options.connectTimeout = const Duration(seconds: 15);
+    dio.options.sendTimeout = const Duration(seconds: 30);
+    dio.options.receiveTimeout = const Duration(seconds: 60);
     dio.options.headers = {
       'Accept': 'application/json',
       'lang': getx.Get.find<LanguageController>().getLang(),

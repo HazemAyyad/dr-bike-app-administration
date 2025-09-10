@@ -18,7 +18,7 @@ class IncomingChecksScreen extends GetView<ChecksController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'incomingChecks'.tr,
-        actions: [CustomActionsAppBar(isNewCheck: false)],
+        actions: const [CustomActionsAppBar(isNewCheck: false)],
       ),
       body: Stack(
         children: [
@@ -31,7 +31,7 @@ class IncomingChecksScreen extends GetView<ChecksController> {
                   background: Column(
                     children: [
                       SizedBox(height: 10.h),
-                      ChecksDetails(isOutGoing: false),
+                      const ChecksDetails(isOutGoing: false),
                       SizedBox(height: 20.h),
                       AppTabs(
                         tabs: controller.tabs,
@@ -42,7 +42,7 @@ class IncomingChecksScreen extends GetView<ChecksController> {
                   ),
                 ),
               ),
-              CustomListVeiwBuilder(),
+              const CustomListVeiwBuilder(),
               SliverToBoxAdapter(child: SizedBox(height: 50.h)),
             ],
           ),

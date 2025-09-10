@@ -14,10 +14,16 @@ class SearchWidget extends GetView<StockController> {
     required this.isCloseouts,
     this.borderRadius,
     this.newComposition,
+    this.productIdController,
+    this.productNameController,
   }) : super(key: key);
+
   final bool isCloseouts;
   final BorderRadius? borderRadius;
   final NewCompositionModel? newComposition;
+  final TextEditingController? productIdController;
+  final TextEditingController? productNameController;
+
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -104,6 +110,8 @@ class SearchWidget extends GetView<StockController> {
                               product: product,
                               isCloseouts: isCloseouts,
                               newComposition: newComposition,
+                              productIdController: productIdController,
+                              productNameController: productNameController,
                             );
                           },
                           childCount: controller.searchProducts.length,

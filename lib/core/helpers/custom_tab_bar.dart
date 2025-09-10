@@ -21,31 +21,33 @@ class AppTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Container(
-        margin: width != null ? null : EdgeInsets.symmetric(horizontal: 5.w),
-        padding: width != null ? null : EdgeInsets.symmetric(horizontal: 5.w),
-        height: 48.h,
-        width: width,
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(31.r),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ...tabs.map(
-              (e) => CustomTabBar(
-                label: e,
-                index: tabs.indexOf(e),
-                currentTab: currentTab,
-                onTap: () => changeTab(tabs.indexOf(e)),
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          margin: width != null ? null : EdgeInsets.symmetric(horizontal: 5.w),
+          padding: width != null ? null : EdgeInsets.symmetric(horizontal: 2.w),
+          height: 48.h,
+          width: width,
+          decoration: BoxDecoration(
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : AppColors.whiteColor2,
+            borderRadius: BorderRadius.circular(31.r),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ...tabs.map(
+                (e) => CustomTabBar(
+                  label: e,
+                  index: tabs.indexOf(e),
+                  currentTab: currentTab,
+                  onTap: () => changeTab(tabs.indexOf(e)),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -74,6 +76,7 @@ class CustomTabBar extends StatelessWidget {
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 5.w),
             key: ValueKey<int>(currentTab.value),
             padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 20.w),
             decoration: BoxDecoration(

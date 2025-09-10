@@ -6,9 +6,12 @@ import 'package:doctorbike/features/common_feature/presentation/user_profile/vie
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../admin/--/presentation/admin_dashbord/controllers/admin_dashboard_controller.dart';
-import '../../admin/--/presentation/admin_dashbord/views/admin_dashboard_screen.dart';
+import '../../admin/admin_dashbord/data/repositories/admin_dashboard_implement.dart';
+import '../../admin/admin_dashbord/domain/usecases/get_admin_logs_usecase.dart';
+import '../../admin/admin_dashbord/presentation/controllers/admin_dashboard_controller.dart';
+import '../../admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../../admin/employee_section/data/repositorie_imp/employee_implement.dart';
+import '../../admin/employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
 import '../../employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
 import '../../employee/employee_dashbord/domain/usecases/change_task_completed_uasecase.dart';
@@ -32,7 +35,7 @@ class BottomNavBarController extends GetxController {
   Widget animatedSwitch() {
     return Obx(
       () => AnimatedSwitcher(
-        duration: Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 300),
         transitionBuilder: (Widget child, Animation<double> animation) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -45,17 +48,23 @@ class BottomNavBarController extends GetxController {
     switch (index) {
       case 0:
         if (userType == 'admin') {
-          if (!Get.isRegistered<DashboardController>()) {
+          if (!Get.isRegistered<AdminDashboardController>()) {
             Get.put(
-              DashboardController(
+              AdminDashboardController(
                 getAllEmployeeUsecase: GetAllEmployeeUsecase(
+                  employeeRepository: Get.find<EmployeeImplement>(),
+                ),
+                getAdminLogsUsecase: GetAdminLogsUsecase(
+                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+                ),
+                cancelLogUsecase: CancelLogUsecase(
                   employeeRepository: Get.find<EmployeeImplement>(),
                 ),
               ),
             );
-            return AdminDashboardScreen();
+            return const AdminDashboardScreen();
           }
-          return AdminDashboardScreen();
+          return const AdminDashboardScreen();
         } else {
           if (!Get.isRegistered<EmployeeDashbordController>()) {
             Get.put(
@@ -75,7 +84,7 @@ class BottomNavBarController extends GetxController {
               ),
             );
           }
-          return EmployeeDashbordScreen();
+          return const EmployeeDashbordScreen();
         }
       case 1:
         if (!Get.isRegistered<QrCodeController>()) {
@@ -87,14 +96,14 @@ class BottomNavBarController extends GetxController {
             ),
           );
         }
-        return FullScreenQRScanner(key: ValueKey(1));
+        return const FullScreenQRScanner(key: ValueKey(1));
       case 2:
         if (!Get.isRegistered<ProfileController>()) {
           Get.put(ProfileController());
         }
-        return ProfileScreen(key: ValueKey(2));
+        return const ProfileScreen(key: ValueKey(2));
       default:
-        return HomePageScreen(key: ValueKey(1));
+        return const HomePageScreen(key: ValueKey(1));
     }
   }
 }

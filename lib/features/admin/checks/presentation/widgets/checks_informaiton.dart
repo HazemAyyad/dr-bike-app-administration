@@ -5,8 +5,9 @@ import 'package:get/get_state_manager/get_state_manager.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
-import '../../../--/presentation/admin_dashbord/widgets/stat_card.dart';
+import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
+import '../controllers/checks_serves.dart';
 
 class ChecksInformaiton extends StatelessWidget {
   const ChecksInformaiton({Key? key}) : super(key: key);
@@ -25,15 +26,16 @@ class ChecksInformaiton extends StatelessWidget {
         builder: (controller) {
           return Column(
             children: [
-              // الصف الأول: ديون لنا وديون علينا
               Row(
                 children: [
                   Expanded(
                     child: StatCard(
                       title: 'youOwe',
-                      imageicon: AssetsManger.cashIcon,
-                      value: controller
-                              .generalChecksData.value?.outgoingChecksCount
+                      imageicon: AssetsManager.cashIcon,
+                      value: ChecksServes()
+                              .generalChecksData
+                              .value
+                              ?.outgoingChecksCount
                               .toString() ??
                           '0',
                       subtitle: '',
@@ -43,9 +45,11 @@ class ChecksInformaiton extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       title: 'forYou',
-                      imageicon: AssetsManger.cashIcon,
-                      value: controller
-                              .generalChecksData.value?.incomingChecksCount
+                      imageicon: AssetsManager.cashIcon,
+                      value: ChecksServes()
+                              .generalChecksData
+                              .value
+                              ?.incomingChecksCount
                               .toString() ??
                           '0',
                       subtitle: '',
@@ -59,12 +63,16 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'all',
-                      imageicon: AssetsManger.productIcon,
-                      value: (int.parse(controller.generalChecksData.value
+                      imageicon: AssetsManager.productIcon,
+                      value: (int.parse(ChecksServes()
+                                      .generalChecksData
+                                      .value
                                       ?.incomingChecksCount
                                       .toString() ??
                                   '0') +
-                              int.parse(controller.generalChecksData.value
+                              int.parse(ChecksServes()
+                                      .generalChecksData
+                                      .value
                                       ?.outgoingChecksCount
                                       .toString() ??
                                   '0'))
@@ -80,9 +88,11 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'totalDebts',
-                      imageicon: AssetsManger.moneyIcon,
-                      value: controller
-                              .generalChecksData.value?.totalOutgoingChecks ??
+                      imageicon: AssetsManager.moneyIcon,
+                      value: ChecksServes()
+                              .generalChecksData
+                              .value
+                              ?.totalOutgoingChecks ??
                           '0',
                       subtitle: '',
                     ),
@@ -92,9 +102,11 @@ class ChecksInformaiton extends StatelessWidget {
                     child: StatCard(
                       show: true,
                       title: 'totalOwed',
-                      imageicon: AssetsManger.moneyIcon,
-                      value: controller
-                              .generalChecksData.value?.totalIncomingChecks ??
+                      imageicon: AssetsManager.moneyIcon,
+                      value: ChecksServes()
+                              .generalChecksData
+                              .value
+                              ?.totalIncomingChecks ??
                           '0',
                       subtitle: '',
                     ),

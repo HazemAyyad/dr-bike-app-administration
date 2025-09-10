@@ -28,7 +28,7 @@ class OnLongPressInBox extends GetView<BoxesController> {
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.all(25),
+            padding: const EdgeInsets.all(25),
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
                   ? AppColors.customGreyColor

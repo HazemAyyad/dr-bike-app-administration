@@ -93,12 +93,12 @@ class EmployeeDashbordController extends GetxController
     {
       'title': 'overtimeRequest',
       'label': 'numbeOfOvertimeHours',
-      'icon': AssetsManger.invoiceIcon,
+      'icon': AssetsManager.invoiceIcon,
     },
     {
       'title': 'loanRequest',
       'label': 'debtValue',
-      'icon': AssetsManger.moneyIcon,
+      'icon': AssetsManager.moneyIcon,
     },
   ];
 
@@ -147,7 +147,7 @@ class EmployeeDashbordController extends GetxController
         (success) {
           Get.back();
           Future.delayed(
-            Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1500),
             () {
               Get.back();
             },
@@ -206,7 +206,7 @@ class EmployeeDashbordController extends GetxController
       (success) {
         // Get.back();
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             getEmployeeData();
             Get.back();
@@ -238,7 +238,7 @@ class EmployeeDashbordController extends GetxController
     getEmployeeData();
     animController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 300),
     );
 
     opacityAnimation = Tween<double>(begin: 0, end: 1).animate(animController);

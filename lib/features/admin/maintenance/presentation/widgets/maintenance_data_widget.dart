@@ -77,7 +77,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                       color: Colors.grey.withAlpha(32),
                                       blurRadius: 5.r,
                                       spreadRadius: 2.r,
-                                      offset: Offset(0, 0),
+                                      offset: const Offset(0, 0),
                                     ),
                                   ],
                                 ),
@@ -199,7 +199,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             ),
                                             SizedBox(height: 5.h),
                                             controller.currentTab.value == 3
-                                                ? SizedBox()
+                                                ? const SizedBox()
                                                 : Text(
                                                     int.parse(item['time']) >
                                                                 10 ||

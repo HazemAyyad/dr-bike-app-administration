@@ -66,7 +66,7 @@ class ShowWholesalePrices extends StatelessWidget {
               ],
             ),
           ),
-          if (product.sizes!.isEmpty) ShowNoData(),
+          if (product.sizes!.isEmpty) const ShowNoData(),
           SingleChildScrollView(
             child: Column(
               children: [

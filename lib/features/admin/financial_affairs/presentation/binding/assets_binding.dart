@@ -1,0 +1,34 @@
+import 'package:doctorbike/features/admin/financial_affairs/data/repositories/financial_affairs_implement.dart';
+import 'package:get/get.dart';
+
+import '../../domain/usecases/assets_usecases/add_new_assers_usecase.dart';
+import '../../domain/usecases/assets_usecases/assets_detials_usecase.dart';
+import '../../domain/usecases/assets_usecases/depreciate_assets_usecase.dart';
+import '../../domain/usecases/assets_usecases/get_all_assets_usecase.dart';
+import '../../domain/usecases/assets_usecases/get_assets_logs_usecase.dart';
+import '../controllers/assets_controller.dart';
+
+class AssetsBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut(
+      () => AssetsController(
+        getAllFinancialUsecase: GetAllFinancialUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        getAssetsLogsUsecase: GetAssetsLogsUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        addNewAssetsUsecase: AddNewAssetsUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        depreciateAssetsUsecase: DepreciateAssetsUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        assetsDetialsUsecase: AssetsDetialsUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+      ),
+    );
+  }
+}

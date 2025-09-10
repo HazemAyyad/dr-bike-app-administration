@@ -41,7 +41,7 @@ class QrCodeController extends GetxController {
       (success) {
         Get.back();
         Future.delayed(
-          Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1500),
           () {
             Get.back();
           },

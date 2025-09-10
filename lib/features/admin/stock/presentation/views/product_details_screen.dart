@@ -350,7 +350,7 @@ class ProductDetailsScreen extends GetView<StockController> {
                                         : AppColors.customGreyColor),
                           ),
                           SizedBox(width: 10.w),
-                          Icon(
+                          const Icon(
                             Icons.calendar_today,
                             color: AppColors.primaryColor,
                           ),
@@ -370,20 +370,20 @@ class ProductDetailsScreen extends GetView<StockController> {
                               title: 'productImages',
                               images: product.viewImages!,
                             )
-                          : SizedBox.shrink(),
+                          : const SizedBox.shrink(),
                       product.normalImages != null &&
                               product.normalImages!.isNotEmpty
                           ? ProductImagesSlider(
                               title: 'naturalImages',
                               images: product.normalImages!,
                             )
-                          : SizedBox.shrink(),
+                          : const SizedBox.shrink(),
                       product.image3d != null && product.image3d!.isNotEmpty
                           ? ProductImagesSlider(
                               title: 'dimensionImages',
                               images: product.image3d!,
                             )
-                          : SizedBox.shrink(),
+                          : const SizedBox.shrink(),
                       SizedBox(height: 50.h),
                     ],
                   ),

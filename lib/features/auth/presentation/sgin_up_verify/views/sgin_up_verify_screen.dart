@@ -54,7 +54,7 @@ class SginupVerifyScreen extends GetView<SginupVerifyController> {
               SizedBox(height: 30.h),
 
               // Terms and conditions
-              TermsAndConditions(),
+              const TermsAndConditions(),
               SizedBox(height: 20.h),
 
               // Next Button

@@ -107,7 +107,7 @@ class VeiwBoxes extends GetView<BoxesController> {
                         color: Colors.grey.withAlpha(32),
                         blurRadius: 2.r,
                         spreadRadius: 1.r,
-                        offset: Offset(0, 0),
+                        offset: const Offset(0, 0),
                       ),
                     ],
                   ),
@@ -116,7 +116,7 @@ class VeiwBoxes extends GetView<BoxesController> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(5.r),
                         child: Image.asset(
-                          AssetsManger.boxesImage,
+                          AssetsManager.boxesImage,
                           height: 70.h,
                           width: 70.w,
                           fit: BoxFit.cover,

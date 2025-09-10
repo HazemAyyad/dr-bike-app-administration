@@ -330,7 +330,7 @@ class BoxesController extends GetxController {
   }
 
   @override
-  void dispose() {
+  void onClose() {
     boxNameController.dispose();
     // fromDateController.dispose();
     // toDateController.dispose();
@@ -344,6 +344,6 @@ class BoxesController extends GetxController {
     // transferFromBoxIdController.dispose();
     transferToBoxIdController.dispose();
     transferTotalController.dispose();
-    super.dispose();
+    super.onClose();
   }
 }
