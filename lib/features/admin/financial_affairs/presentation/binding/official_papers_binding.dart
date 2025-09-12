@@ -1,0 +1,29 @@
+import 'package:get/get.dart';
+import '../../data/repositories/financial_affairs_implement.dart';
+import '../../domain/usecases/get_all_dinancial_usecase.dart';
+import '../../domain/usecases/paper_usecase/add_document_usecase.dart';
+import '../../domain/usecases/paper_usecase/add_paper_usecase.dart';
+import '../../domain/usecases/paper_usecase/cancel_paper_usecase.dart';
+import '../controllers/official_papers_controller.dart';
+
+class OfficialPapersBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut(
+      () => OfficialPapersController(
+        getAllFinancialUsecase: GetAllFinancialUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        cancelPaperUsecase: CancelPaperUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        addPictureUsecase: AddPictureUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        addPaperUsecase: AddPaperUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+      ),
+    );
+  }
+}

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../services/theme_service.dart';
 
@@ -73,8 +72,8 @@ Color getButtonTheme() {
       : AppColors.secondaryColor;
 }
 
-Color getTextTheme() {
-  final bool isDarkMode = Theme.of(Get.context!).brightness == Brightness.dark;
-  final buttonColor = isDarkMode ? const Color(0xFF0F0F31) : const Color(0xFFFFFFFF);
-  return buttonColor;
-}
+// Color getTextTheme() {
+//   // final bool isDarkMode = Theme.of(Get.context!).brightness == Brightness.dark;
+//   final buttonColor = const Color(0xFFFFFFFF);
+//   return buttonColor;
+// }

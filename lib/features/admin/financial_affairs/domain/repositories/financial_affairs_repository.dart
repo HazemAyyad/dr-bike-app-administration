@@ -46,4 +46,20 @@ abstract class FinancialAffairsRepository {
   });
 
   Future<ExpenseDetailModel> getExpensesData({required String expenseId});
+
+  // official papers
+  Future<Either<Failure, String>> cancelPaper({required String? paperId});
+
+  Future<Either<Failure, String>> addPicture({
+    required String name,
+    required String description,
+    required List<File?> media,
+  });
+
+  Future<Either<Failure, String>> addPaper({
+    required String name,
+    required String fileId,
+    required List<File?> media,
+    required String notes,
+  });
 }

@@ -452,6 +452,7 @@ class EmployeeSectionController extends GetxController
   void onInit() {
     super.onInit();
     getEmployee();
+    filteredEmployees.assignAll(employeeService.employeeList);
     getWorkingTimes();
     getFinancialDues();
     getOvertimeAndLoan();

@@ -3,9 +3,9 @@ import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:omni_datetime_picker/omni_datetime_picker.dart';
 
 import '../../../../../core/helpers/custom_calendar.dart';
-import '../../../../../core/helpers/custom_time_picker.dart';
 import '../../../../../core/services/theme_service.dart';
 
 class SelectDate extends StatelessWidget {
@@ -174,10 +174,19 @@ class SelectDate extends StatelessWidget {
                                           },
                                           selectedDay: date.value,
                                         )
-                                      : TimePicker(
-                                          initialTime: TimeOfDay.now(),
-                                          onTimeChanged: (TimeOfDay value) {
-                                            time.value = value;
+                                      : OmniDateTimePicker(
+                                          initialDate: DateTime.now(),
+                                          firstDate: DateTime(2020),
+                                          lastDate: DateTime(2100),
+                                          is24HourMode: false,
+                                          isShowSeconds: false,
+                                          minutesInterval: 1,
+                                          amText: 'morning'.tr,
+                                          pmText: 'evening'.tr,
+                                          type: OmniDateTimePickerType.time,
+                                          onDateTimeChanged: (selectedTime) {
+                                            time.value = TimeOfDay.fromDateTime(
+                                                selectedTime);
                                           },
                                         ),
                                 ],

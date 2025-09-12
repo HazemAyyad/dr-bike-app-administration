@@ -38,6 +38,7 @@ import '../features/admin/--/presentation/current_follow_up/widgets/add_customer
 import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
 import '../features/admin/financial_affairs/presentation/binding/assets_binding.dart';
 import '../features/admin/financial_affairs/presentation/binding/expenses_binding.dart';
+import '../features/admin/financial_affairs/presentation/binding/official_papers_binding.dart';
 import '../features/admin/financial_affairs/presentation/views/assets_screens/add_new_assets_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/assets_screens/assets_log_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/assets_screens/assets_screen.dart';
@@ -45,7 +46,7 @@ import '../features/admin/financial_affairs/presentation/views/expenses_screens/
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/destruction_products_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/expenses_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/financial_affairs_screen.dart';
-import '../features/admin/financial_affairs/presentation/views/official_papers_screens/official_papers.dart';
+import '../features/admin/financial_affairs/presentation/views/official_papers_screens/official_papers_screen.dart';
 import '../features/admin/stock/presentation/views/add_combination_screen.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
@@ -577,10 +578,11 @@ class AppPages {
           : _transitionRightToLeft,
     ),
 
+    // official papers
     GetPage(
       name: AppRoutes.OFFICIALPAPERSSCREEN,
       page: () => const OfficialPapersScreen(),
-      // binding: FinancialAffairsBinding(),
+      binding: OfficialPapersBinding(),
       transition: _transitionDownToUp,
     ),
 

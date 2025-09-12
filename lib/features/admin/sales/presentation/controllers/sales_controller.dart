@@ -112,11 +112,6 @@ class SalesController extends GetxController
       'icon': AssetsManager.moneyIcon,
       'route': AppRoutes.NEWCASHPROFITSCREEN,
     },
-    {
-      'title': 'receiveMaintenance',
-      'icon': AssetsManager.userIcon,
-      'route': AppRoutes.NEWMAINTENANCESCREEN,
-    },
   ];
 
   // add profit sale
@@ -442,13 +437,6 @@ class SalesController extends GetxController
     totalCostController.dispose();
     fromDateController.dispose();
     toDateController.dispose();
-    for (var item in items) {
-      item.quantityController.dispose();
-      item.priceController.dispose();
-    }
-    for (ItemModel item in items) {
-      item.onClose();
-    }
     super.onClose();
   }
 }

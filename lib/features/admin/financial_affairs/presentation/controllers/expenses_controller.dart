@@ -9,7 +9,7 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/expenses_models/destruction_model.dart';
 import '../../data/models/expenses_models/expense_data_model.dart';
-import '../../domain/usecases/assets_usecases/get_all_assets_usecase.dart';
+import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_destruction_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_expense_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expenses_data_usecase.dart';

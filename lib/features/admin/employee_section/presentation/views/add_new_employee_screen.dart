@@ -64,7 +64,7 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 hintText: '58458XXXXX',
                 controller: controller.phoneNumberController,
               ),
-              SizedBox(height: 10.h),
+              // SizedBox(height: 10.h),
 
               CustomPhoneField(
                 label: 'alternatePhone',
@@ -426,9 +426,11 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                       color: Colors.white,
                     ),
                 height: 50.h,
-                onPressed: () => controller.isLoading.value
-                    ? null
-                    : controller.addNewEmployee(context),
+                onPressed: () {
+                  controller.isLoading.value
+                      ? null
+                      : controller.addNewEmployee(context);
+                },
               ),
             ],
           ),

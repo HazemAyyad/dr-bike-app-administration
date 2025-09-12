@@ -1,4 +1,4 @@
-import '../../repositories/financial_affairs_repository.dart';
+import '../repositories/financial_affairs_repository.dart';
 
 class GetAllFinancialUsecase {
   final FinancialAffairsRepository financialAffairsRepository;

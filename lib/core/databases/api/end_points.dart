@@ -169,6 +169,7 @@ class EndPoints {
   static const String mainPageInComplete = 'main/page/incomplete/persons';
 
   // financial affairs
+  // assets
   static const String addNewAsset = 'add/asset';
   static const String editAsset = 'edit/asset';
   static const String depreciateAssets = 'depreciate/all/assets';
@@ -176,12 +177,21 @@ class EndPoints {
   static const String getAllAssets = 'get/all/assets';
   static const String getAssetsLogs = 'get/all/asset/logs';
 
+  // expenses
   static const String getAllExpenses = 'get/all/expenses';
   static const String getAllDestructions = 'get/all/destructions';
   static const String addDestruction = 'store/destruction';
   static const String addExpense = 'store/expense';
   static const String editExpense = 'edit/expense';
   static const String showExpense = 'show/expense';
+
+  // papers
+  static const String getAllPapers = 'get/all/papers';
+  static const String getAllPictures = 'get/all/pictures';
+  static const String cancelPaper = 'cancel/paper';
+  static const String addPicture = 'store/picture';
+  static const String addPaper = 'store/paper';
+  static const String getAllFiles = 'get/all/files';
 }
 
 class ApiKey {

@@ -141,7 +141,6 @@ class EmployeeTasksController extends GetxController {
 
   // cancel employee task
   void cancelEmployeeTask({
-    required BuildContext context,
     required String taskId,
     required bool cancelWithRepetition,
     bool isCompleted = false,

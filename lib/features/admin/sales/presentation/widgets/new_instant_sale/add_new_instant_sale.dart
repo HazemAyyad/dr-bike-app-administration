@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/custom_chechbox.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -6,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../data/models/product_model.dart';
 import '../../controllers/sales_controller.dart';
 import 'build_item.dart';
 
@@ -27,25 +29,80 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
             child: Column(
               children: [
                 Row(
+                  children: [
+                    Text(
+                      'item'.tr,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: ThemeService.isDark.value
+                                ? AppColors.customGreyColor6
+                                : AppColors.customGreyColor,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
+                    ),
+                    Text(
+                      '*',
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: Colors.red,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    )
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Flexible(
-                      child: CustomDropdownField(
-                        label: 'item',
-                        hint: 'itemExample',
-                        dropdownField: controller.products.map((e) {
-                          return DropdownMenuItem<String>(
-                            value: e.id.toString(),
-                            child: Text(e.nameAr),
-                          );
-                        }).toList(),
-                        value: controller.products.any((e) =>
-                                e.id.toString() == item.selectedItem.value)
-                            ? item.selectedItem.value
-                            : null,
-                        onChanged: (value) {
-                          item.selectedItem.value = value!;
-                        },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor
+                              : AppColors.whiteColor2,
+                          border: Border.all(color: Colors.transparent),
+                          borderRadius: BorderRadius.circular(11.r),
+                        ),
+                        child: DropdownSearch<ProductModel>(
+                          items: (filter, infiniteScrollProps) =>
+                              controller.products,
+                          itemAsString: (u) => u.nameAr,
+                          compareFn: (a, b) => a.id == b.id,
+                          validator: (value) {
+                            if (value == null) {
+                              return 'item'.tr;
+                            }
+                            return null;
+                          },
+                          decoratorProps: DropDownDecoratorProps(
+                            decoration: InputDecoration(
+                              hoverColor: Colors.transparent,
+                              focusColor: Colors.transparent,
+                              fillColor: Colors.transparent,
+                              border: InputBorder.none,
+                              contentPadding:
+                                  EdgeInsets.symmetric(horizontal: 15.w),
+                              labelText: 'itemExample'.tr,
+                              labelStyle: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.customGreyColor2
+                                        : AppColors.customGreyColor6,
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                            ),
+                          ),
+                          popupProps:
+                              const PopupProps.menu(showSearchBox: true),
+                          onChanged: (value) {
+                            if (value != null) {
+                              item.selectedItem.value = value.id;
+                            }
+                          },
+                        ),
                       ),
                     ),
                     SizedBox(width: 10.w),
@@ -141,10 +198,10 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                         )
                       : const SizedBox.shrink(),
                 ),
-                // SizedBox(height: 10.h),
                 if (index == controller.items.length - 1)
                   Column(
                     children: [
+                      SizedBox(height: 10.h),
                       GestureDetector(
                         onTap: () {
                           controller.addItem();

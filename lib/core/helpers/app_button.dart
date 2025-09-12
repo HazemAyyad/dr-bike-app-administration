@@ -105,7 +105,8 @@ class AppButton extends StatelessWidget {
                                                         .bodyMedium!
                                                         .copyWith(
                                                           color: textColor ??
-                                                              getTextTheme(),
+                                                              AppColors
+                                                                  .whiteColor,
                                                           fontSize:
                                                               size ?? 16.sp,
                                                           fontWeight:
@@ -125,7 +126,7 @@ class AppButton extends StatelessWidget {
                                                     .bodyMedium!
                                                     .copyWith(
                                                       color: textColor ??
-                                                          getTextTheme(),
+                                                          AppColors.whiteColor,
                                                       fontSize: size ?? 16.sp,
                                                       fontWeight:
                                                           FontWeight.w400,
@@ -147,8 +148,8 @@ class AppButton extends StatelessWidget {
                                               .textTheme
                                               .bodyMedium!
                                               .copyWith(
-                                                color:
-                                                    textColor ?? getTextTheme(),
+                                                color: textColor ??
+                                                    AppColors.whiteColor,
                                                 fontSize: size ?? 16.sp,
                                                 fontWeight: FontWeight.w400,
                                               ),
@@ -222,7 +223,7 @@ class AppButton extends StatelessWidget {
                                                   .bodyMedium!
                                                   .copyWith(
                                                     color: textColor ??
-                                                        getTextTheme(),
+                                                        AppColors.whiteColor,
                                                     fontSize: size ?? 16.sp,
                                                     fontWeight: FontWeight.w400,
                                                   ),
@@ -237,8 +238,8 @@ class AppButton extends StatelessWidget {
                                               .textTheme
                                               .bodyMedium!
                                               .copyWith(
-                                                color:
-                                                    textColor ?? getTextTheme(),
+                                                color: textColor ??
+                                                    AppColors.whiteColor,
                                                 fontSize: size ?? 16.sp,
                                                 fontWeight: FontWeight.w400,
                                               ),
@@ -258,7 +259,8 @@ class AppButton extends StatelessWidget {
                                         .textTheme
                                         .bodyMedium!
                                         .copyWith(
-                                          color: textColor ?? getTextTheme(),
+                                          color:
+                                              textColor ?? AppColors.whiteColor,
                                           fontSize: size ?? 16.sp,
                                           fontWeight: FontWeight.w400,
                                         ),
@@ -273,7 +275,7 @@ class AppButton extends StatelessWidget {
                                     .textTheme
                                     .bodyMedium!
                                     .copyWith(
-                                      color: textColor ?? getTextTheme(),
+                                      color: textColor ?? AppColors.whiteColor,
                                       fontSize: size ?? 16.sp,
                                       fontWeight: FontWeight.w400,
                                     ),

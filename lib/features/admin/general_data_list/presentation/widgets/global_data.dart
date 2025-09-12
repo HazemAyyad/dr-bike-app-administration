@@ -143,17 +143,22 @@ class GlobalData extends GetView<GeneralDataListController> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          employee.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.customGreyColor5,
-                                  ),
+                        SizedBox(
+                          width: 100.w,
+                          child: Text(
+                            employee.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.customGreyColor5,
+                                ),
+                          ),
                         ),
                         SizedBox(height: 10.h),
                         Text(

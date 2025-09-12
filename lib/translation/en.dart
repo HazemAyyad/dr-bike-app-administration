@@ -734,7 +734,7 @@ const Map<String, String> en = {
   "safe": "Safe",
   "delete_document": "Delete Document",
   "mission_image": "Mission Image",
-  // "image_description": "Image Description",
+  "image_description": "Image Description",
   "add_document": "Add Document",
   "add_new_document": "Add New Document",
   "document_name": "Document Name",

@@ -66,7 +66,7 @@ class SubProductsModel {
   factory SubProductsModel.fromJson(Map<String, dynamic> json) {
     return SubProductsModel(
       id: json['id'] ?? 0,
-      productName: json['product_id'] ?? '',
+      productName: json['product_name'] ?? '',
       cost: json['cost'] ?? '0',
       quantity: json['quantity'] ?? '0',
     );
@@ -75,7 +75,7 @@ class SubProductsModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'product_id': productName,
+      'product_name': productName,
       'cost': cost,
       'quantity': quantity,
     };

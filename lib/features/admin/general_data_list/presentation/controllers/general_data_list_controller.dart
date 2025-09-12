@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../data/models/employee_data_model.dart';
 import '../../data/models/person_data_model.dart';
 import '../../domain/entity/add_person_entity.dart';
 import '../../domain/usecases/add_person_usecase.dart';
@@ -27,8 +28,8 @@ class GeneralDataListController extends GetxController {
   final isEdit = false.obs;
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  TextEditingController toDateController = TextEditingController();
-  TextEditingController fromDateController = TextEditingController();
+  // TextEditingController toDateController = TextEditingController();
+  // TextEditingController fromDateController = TextEditingController();
   TextEditingController employeeNameController = TextEditingController();
 
   final currentTab = 0.obs;
@@ -68,6 +69,51 @@ class GeneralDataListController extends GetxController {
   List<String> customerTypeList = ['wholesale', 'retail'];
 
   List<String> closePeopleList = ['محمد علي', 'محمود علي', 'محمد رفعت'];
+
+  List<GeneralDataModel> employeeSearch = [];
+  List<GeneralDataModel> sellersSearch = [];
+  List<GeneralDataModel> inCompleteDataSearch = [];
+
+  void searchBar() {
+    isLoading(true);
+    String value = employeeNameController.text.toLowerCase();
+    if (value.isNotEmpty) {
+      // الموظفين
+      employeeSearch = generalDataServes.employeeDataList
+          .where(
+            (element) => element.name.toLowerCase().contains(
+                  value,
+                ),
+          )
+          .toList();
+
+      // التجار
+      sellersSearch = generalDataServes.sellersDataList
+          .where(
+            (element) => element.name.toLowerCase().contains(
+                  value,
+                ),
+          )
+          .toList();
+
+      // البيانات غير المكتملة
+      inCompleteDataSearch = generalDataServes.inCompleteDataList
+          .where(
+            (element) => element.name.toLowerCase().contains(
+                  value,
+                ),
+          )
+          .toList();
+    } else {
+      // لو السيرش فاضي رجع القوائم الأصلية كلها
+      employeeSearch = generalDataServes.employeeDataList;
+      sellersSearch = generalDataServes.sellersDataList;
+      inCompleteDataSearch = generalDataServes.inCompleteDataList;
+    }
+    isLoading(false);
+    Get.back();
+    update();
+  }
 
   // add person
   void addPerson({
@@ -208,13 +254,16 @@ class GeneralDataListController extends GetxController {
   void onInit() {
     super.onInit();
     getGeneralDataList();
+    employeeSearch = generalDataServes.employeeDataList;
+    sellersSearch = generalDataServes.sellersDataList;
+    inCompleteDataSearch = generalDataServes.inCompleteDataList;
   }
 
   @override
   void onClose() {
     super.onClose();
-    fromDateController.dispose();
-    toDateController.dispose();
+    // fromDateController.dispose();
+    // toDateController.dispose();
     employeeNameController.dispose();
     customerNameController.dispose();
     phoneNumberController.dispose();

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../../core/errors/failure.dart';
 
 abstract class CreateEmployeeTasksRepository {
@@ -20,7 +19,7 @@ abstract class CreateEmployeeTasksRepository {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
-    required XFile? adminImg,
+    required List<File> adminImg,
     required File audio,
   });
 
@@ -34,7 +33,7 @@ abstract class CreateEmployeeTasksRepository {
     required String taskRecurrence,
     required List<String> taskRecurrenceTime,
     required bool forceEmployeeToAddImg,
-    required XFile? adminImg,
+    required List<File> adminImg,
     required File audio,
     required RxList subSpecialTasks,
   });

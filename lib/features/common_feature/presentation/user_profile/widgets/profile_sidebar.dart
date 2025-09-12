@@ -79,7 +79,7 @@ class BuildProfileSidebar extends GetView<ProfileController> {
           },
         ),
         changLang(controller),
-        darkMode(controller),
+        const DarkMode(),
         SizedBox(height: 70.h),
         // زر تسجيل الخروج
         GestureDetector(

@@ -736,7 +736,7 @@ const Map<String, String> ar = {
   "safe": "خزينة",
   "delete_document": "حذف الورقة",
   "mission_image": "صورة المهمة",
-  // "image_description": "وصف الصورة",
+  "image_description": "وصف الصورة",
   "add_document": "إضافة ورق",
   "add_new_document": "إضافة ورق جديد",
   "document_name": "اسم الورقة",

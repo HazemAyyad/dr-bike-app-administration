@@ -10,7 +10,7 @@ import '../../../stock/domain/usecases/get_categories_usecase.dart';
 import '../../../stock/domain/usecases/move_to_archive_usecase.dart';
 import '../../../stock/presentation/controllers/stock_controller.dart';
 import '../../data/repositories/financial_affairs_implement.dart';
-import '../../domain/usecases/assets_usecases/get_all_assets_usecase.dart';
+import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_destruction_usecase.dart';
 import '../../domain/usecases/expenses_usecases/add_expense_usecase.dart';
 import '../../domain/usecases/expenses_usecases/get_expenses_data_usecase.dart';

@@ -288,24 +288,33 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               Column(
                 children: [
                   controller.isEdit && controller.title == 'editPrivateTask'
-                      ? controller.selectedFile.value != null
-                          ? controller.selectedFile.value!.path.contains('http')
+                      ? controller.selectedFile.isNotEmpty
+                          ? controller.selectedFile.first.path.contains('http')
                               ? CachedNetworkImage(
-                                  imageUrl: controller.selectedFile.value!.path,
+                                  imageUrl: controller.selectedFile.first.path,
                                   height: 350.h,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
                                 )
-                              : UploadImageButton(
-                                  selectedFile: controller.selectedFile,
+                              : MediaUploadButton(
+                                  allowedType: MediaType.image,
+                                  onFilesChanged: (files) {
+                                    controller.selectedFile = files;
+                                  },
                                   title: 'uploadImage',
                                 )
-                          : UploadImageButton(
-                              selectedFile: controller.selectedFile,
+                          : MediaUploadButton(
+                              allowedType: MediaType.image,
+                              onFilesChanged: (files) {
+                                controller.selectedFile = files;
+                              },
                               title: 'uploadImage',
                             )
-                      : UploadImageButton(
-                          selectedFile: controller.selectedFile,
+                      : MediaUploadButton(
+                          allowedType: MediaType.image,
+                          onFilesChanged: (files) {
+                            controller.selectedFile = files;
+                          },
                           title: 'uploadImage',
                         ),
                   SizedBox(height: 10.h),

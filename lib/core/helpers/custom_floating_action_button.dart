@@ -14,7 +14,7 @@ class CustomFloatingActionButton extends StatelessWidget {
     required this.onTap,
     required this.sizeAnimation,
     required this.opacityAnimation,
-    required this.addList,
+    this.addList,
     this.customWidget,
   }) : super(key: key);
 
@@ -22,7 +22,7 @@ class CustomFloatingActionButton extends StatelessWidget {
   final void Function()? onTap;
   final Animation<double> sizeAnimation;
   final Animation<double> opacityAnimation;
-  final List<Map<String, String>> addList;
+  final List<Map<String, String>>? addList;
   final Widget? customWidget;
 
   @override
@@ -98,14 +98,15 @@ class CustomFloatingActionButton extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 8.h),
-                        ...addList.map(
-                          (e) => BuildAddMenuItem(
-                            title: e['title']!,
-                            iconAsset: e['icon']!,
-                            route: e['route']!,
-                            onTap: () => onTap!(),
+                        if (addList?.isNotEmpty ?? false)
+                          ...addList!.map(
+                            (e) => BuildAddMenuItem(
+                              title: e['title']!,
+                              iconAsset: e['icon']!,
+                              route: e['route']!,
+                              onTap: () => onTap!(),
+                            ),
                           ),
-                        ),
                         customWidget ?? const SizedBox.shrink(),
                       ],
                     ),
@@ -182,7 +183,7 @@ class BuildAddMenuItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Flexible(child: Image.asset(iconAsset, height: 24.h, width: 24.w)),
-            SizedBox(width: 8.w),
+            SizedBox(width: 5.w),
             Flexible(
               child: Text(
                 title.tr,

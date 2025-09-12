@@ -78,7 +78,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                 ),
                 SupTextAndDis(
                   title: 'employeeName'.tr,
-                  discription: data.taskName,
+                  discription: data.employeeName,
                 ),
                 SupTextAndDis(
                   title: 'numberOfPoints'.tr,
@@ -227,7 +227,9 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   ],
                 ),
                 SizedBox(height: 10.h),
-                data.audio!.isNotEmpty && data.audio != null
+                data.audio!.isNotEmpty &&
+                        data.audio != null &&
+                        data.audio!.contains('.aac')
                     ? AudioPlayerWidget(url: data.audio!)
                     : const SizedBox.shrink(),
                 // Row(
@@ -274,6 +276,10 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                 SupTextAndDis(
                   title: 'taskDescription',
                   discription: data.taskDescription,
+                ),
+                SupTextAndDis(
+                  title: 'notes',
+                  discription: data.notes,
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 15.h),
@@ -450,7 +456,6 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   onPressed: userType == 'admin'
                       ? () {
                           controller.cancelEmployeeTask(
-                            context: context,
                             taskId: data.taskId.toString(),
                             cancelWithRepetition: false,
                             isCompleted: true,

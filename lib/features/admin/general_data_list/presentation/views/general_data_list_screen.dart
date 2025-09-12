@@ -17,10 +17,13 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'generalDataList',
-        toDateController: controller.toDateController,
-        fromDateController: controller.fromDateController,
+        // toDateController: controller.toDateController,
+        // fromDateController: controller.fromDateController,
         employeeNameController: controller.employeeNameController,
         label: 'customerName',
+        onPressedFilter: () {
+          controller.searchBar();
+        },
         onPressedAdd: () {
           controller.isEdit.value = false;
           controller.clearForm();
@@ -59,11 +62,10 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                 );
               }
               if (controller.currentTab.value == 0
-                  ? controller.generalDataServes.employeeDataList.isEmpty
+                  ? controller.employeeSearch.isEmpty
                   : controller.currentTab.value == 1
-                      ? controller.generalDataServes.sellersDataList.isEmpty
-                      : controller
-                          .generalDataServes.inCompleteDataList.isEmpty) {
+                      ? controller.sellersSearch.isEmpty
+                      : controller.inCompleteDataSearch.isEmpty) {
                 return const SliverFillRemaining(
                   hasScrollBody: true,
                   child: ShowNoData(),
@@ -73,14 +75,10 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final employee = controller.currentTab.value == 0
-                        ? controller.generalDataServes.employeeDataList.reversed
-                            .toList()[index]
+                        ? controller.employeeSearch.reversed.toList()[index]
                         : controller.currentTab.value == 1
-                            ? controller
-                                .generalDataServes.sellersDataList.reversed
-                                .toList()[index]
-                            : controller
-                                .generalDataServes.inCompleteDataList.reversed
+                            ? controller.sellersSearch.reversed.toList()[index]
+                            : controller.inCompleteDataSearch.reversed
                                 .toList()[index];
                     return Column(
                       children: [
@@ -90,11 +88,10 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                     );
                   },
                   childCount: controller.currentTab.value == 0
-                      ? controller.generalDataServes.employeeDataList.length
+                      ? controller.employeeSearch.length
                       : controller.currentTab.value == 1
-                          ? controller.generalDataServes.sellersDataList.length
-                          : controller
-                              .generalDataServes.inCompleteDataList.length,
+                          ? controller.sellersSearch.length
+                          : controller.inCompleteDataSearch.length,
                 ),
               );
             },

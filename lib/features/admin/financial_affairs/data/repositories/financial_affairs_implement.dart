@@ -109,6 +109,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     }
   }
 
+  // add picture
   @override
   Future<AssetDetailsModel> assetsDetails({required String assetId}) async {
     if (!await networkInfo.isConnected) {
@@ -123,6 +124,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     }
   }
 
+  // add destruction
   @override
   Future<Either<Failure, String>> addDestruction({
     required String productId,
@@ -154,6 +156,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     }
   }
 
+  // add expense
   @override
   Future<Either<Failure, String>> addExpense({
     required String name,
@@ -191,6 +194,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     }
   }
 
+  // get expenses data
   @override
   Future<ExpenseDetailModel> getExpensesData(
       {required String expenseId}) async {
@@ -203,6 +207,91 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  // cancel paper
+  @override
+  Future<Either<Failure, String>> cancelPaper(
+      {required String? paperId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result =
+          await financialAffairsDatasource.cancelPaper(paperId: paperId);
+      if (result['status'] == 'success') {
+        return Right(result['message']!);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  // add picture
+  @override
+  Future<Either<Failure, String>> addPicture({
+    required String name,
+    required String description,
+    required List<File?> media,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await financialAffairsDatasource.addPicture(
+        name: name,
+        description: description,
+        media: media,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']!);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> addPaper({
+    required String name,
+    required String fileId,
+    required List<File?> media,
+    required String notes,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await financialAffairsDatasource.addPaper(
+        name: name,
+        fileId: fileId,
+        media: media,
+        notes: notes,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']!);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }

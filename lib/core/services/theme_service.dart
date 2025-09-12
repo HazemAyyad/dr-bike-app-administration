@@ -21,6 +21,13 @@ class ThemeService {
     Get.changeThemeMode(themeMode);
   }
 
+  static void toggleTheme(bool isDarkMode) {
+    isDark.value = isDarkMode;
+    final mode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    instance.themeMode = mode;
+    Get.changeThemeMode(mode);
+  }
+
   ThemeMode get themeMode {
     switch (FinalClasses.getStorage.read(_storageKey)) {
       case true:

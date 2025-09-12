@@ -179,8 +179,9 @@ class CalendarState extends State<Calendar> {
 
   @override
   Widget build(BuildContext context) {
-    final locale =
-        Get.locale == const Locale('ar') ? const Locale('ar') : const Locale('en');
+    final locale = Get.locale == const Locale('ar')
+        ? const Locale('ar')
+        : const Locale('en');
     final daysList = getDaysInMonth(displayedMonth);
     final now = DateTime.now();
 
@@ -236,8 +237,8 @@ class CalendarState extends State<Calendar> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7),
           itemCount: daysList.length,
           itemBuilder: (_, idx) {
             final day = daysList[idx];

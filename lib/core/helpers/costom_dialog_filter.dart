@@ -152,6 +152,7 @@ void showCustomDialog(
               children: [
                 Expanded(
                   child: AppButton(
+                    isSafeArea: false,
                     text: 'apply',
                     textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                           fontSize: 15.sp,
@@ -164,6 +165,7 @@ void showCustomDialog(
                 SizedBox(width: 10.w),
                 Expanded(
                   child: AppButton(
+                    isSafeArea: false,
                     color: Colors.red,
                     text: 'clear',
                     textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(

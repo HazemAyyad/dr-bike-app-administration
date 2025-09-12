@@ -58,6 +58,8 @@ dependencies:
   http_parser: any
   flutter_cache_manager: any
   video_player: ^2.10.0
+  omni_datetime_picker: ^2.3.1
+  dropdown_search: ^6.0.2
 dev_dependencies:
   build_runner:
   freezed: ^3.0.6

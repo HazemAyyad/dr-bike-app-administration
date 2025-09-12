@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../repositories/employee_tasks_repository.dart';
@@ -26,7 +25,7 @@ class CreateTaskUsecase {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
-    required XFile? adminImg,
+    required List<File> adminImg,
     required File audio,
   }) {
     return employeeTasksRepository.creatEmployeeTasks(

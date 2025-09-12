@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide MultipartFile;
 import 'package:http_parser/http_parser.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
@@ -30,7 +29,7 @@ class CreateEmployeeTasksDataSource {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
-    required XFile? adminImg,
+    required List<File> adminImg,
     required File audio,
   }) async {
     try {
@@ -79,13 +78,20 @@ class CreateEmployeeTasksDataSource {
           ...subEmployeeTasksMap,
           'not_shown_for_employee': notShownForEmployee,
           'is_forced_to_upload_img': isForcedToUploadImg,
-          if (adminImg != null)
-            'admin_img[]': adminImg.path.startsWith('http')
-                ? adminImg
-                : await MultipartFile.fromFile(
-                    adminImg.path,
-                    filename: adminImg.path.split('/').last,
-                  ),
+          'admin_img[]': await Future.wait(
+            adminImg.map((e) async {
+              if (e.path.startsWith('http')) {
+                // صورة جاية من السيرفر → رجعها كـ string
+                return e.path;
+              } else {
+                // صورة محلية → حولها لـ MultipartFile
+                return await MultipartFile.fromFile(
+                  e.path,
+                  filename: e.path.split('/').last,
+                );
+              }
+            }),
+          ),
           'audio': audio.path.isEmpty
               ? ''
               : audio.path.startsWith('http')
@@ -128,7 +134,7 @@ class CreateEmployeeTasksDataSource {
     required String taskRecurrence,
     required List<String> taskRecurrenceTime,
     required bool forceEmployeeToAddImg,
-    required XFile? adminImg,
+    required List<File> adminImg,
     required File audio,
     required RxList subSpecialTasks,
   }) async {
@@ -166,11 +172,21 @@ class CreateEmployeeTasksDataSource {
           'task_recurrence_time[]': taskRecurrenceTime,
           ...subSpecialTasksMap,
           'force_employee_to_add_img': forceEmployeeToAddImg ? 1 : 0,
-          if (adminImg != null)
-            'admin_img[]': await MultipartFile.fromFile(
-              adminImg.path,
-              filename: adminImg.name,
-            ),
+          'admin_img[]': await Future.wait(
+            adminImg.map((e) async {
+              if (e.path.startsWith('http://') ||
+                  e.path.startsWith('https://')) {
+                // صورة جاية من السيرفر → رجعها كـ string
+                return e.path;
+              } else {
+                // صورة محلية → حولها لـ MultipartFile
+                return await MultipartFile.fromFile(
+                  e.path,
+                  filename: e.path.split('/').last,
+                );
+              }
+            }),
+          ),
           'audio': audio.path.isEmpty
               ? ''
               : await MultipartFile.fromFile(

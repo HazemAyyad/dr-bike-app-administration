@@ -24,6 +24,9 @@ class DiscountWidget extends GetView<SalesController> {
                 onChanged: (value) {
                   controller.calculateGrandTotal();
                 },
+                validator: (value) {
+                  return null;
+                },
               ),
             ),
             SizedBox(width: 10.w),

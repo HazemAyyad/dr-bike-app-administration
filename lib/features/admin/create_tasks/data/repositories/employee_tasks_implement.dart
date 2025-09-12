@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'package:doctorbike/core/errors/failure.dart';
 
@@ -35,7 +34,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
-    required XFile? adminImg,
+    required List<File> adminImg,
     required File audio,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -84,7 +83,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     required String taskRecurrence,
     required List<String> taskRecurrenceTime,
     required bool forceEmployeeToAddImg,
-    required XFile? adminImg,
+    required List<File> adminImg,
     required File audio,
     required RxList subSpecialTasks,
   }) async {

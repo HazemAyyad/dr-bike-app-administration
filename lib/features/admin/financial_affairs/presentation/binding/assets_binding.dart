@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../../domain/usecases/assets_usecases/add_new_assers_usecase.dart';
 import '../../domain/usecases/assets_usecases/assets_detials_usecase.dart';
 import '../../domain/usecases/assets_usecases/depreciate_assets_usecase.dart';
-import '../../domain/usecases/assets_usecases/get_all_assets_usecase.dart';
+import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/assets_usecases/get_assets_logs_usecase.dart';
 import '../controllers/assets_controller.dart';
 

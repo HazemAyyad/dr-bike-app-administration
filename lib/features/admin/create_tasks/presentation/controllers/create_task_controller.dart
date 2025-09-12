@@ -134,7 +134,7 @@ class CreateTaskController extends GetxController {
   // متغير للصورة
   final subTaskFile = Rx<XFile?>(null);
 
-  final selectedFile = Rx<XFile?>(null);
+  List<File> selectedFile = [];
 
   final RxBool requireSubTasImage = false.obs;
 
@@ -163,7 +163,7 @@ class CreateTaskController extends GetxController {
         subEmployeeTasks: subTasks,
         notShownForEmployee: hideTask.value ? '1' : '0',
         isForcedToUploadImg: requireImage.value ? '1' : '0',
-        adminImg: selectedFile.value,
+        adminImg: selectedFile,
         audio: File(recordedPath.value),
       );
       result.fold(
@@ -216,7 +216,7 @@ class CreateTaskController extends GetxController {
         subSpecialTasks: subTasks,
         notShownForEmployee: hideTask.value ? '1' : '0',
         forceEmployeeToAddImg: requireImage.value,
-        adminImg: selectedFile.value,
+        adminImg: selectedFile,
         audio: File(recordedPath.value),
       );
       result.fold(
@@ -330,7 +330,7 @@ class CreateTaskController extends GetxController {
       selectedDaysList.add(element);
     }
     recordedPath.value = File(data.audio!).path;
-    selectedFile.value = XFile(data.adminImg!.first);
+    selectedFile = data.adminImg?.map((e) => File(e)).toList() ?? [];
     selectedDays.value = data.taskRecurrence;
   }
 

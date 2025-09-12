@@ -25,7 +25,13 @@ class FinancialAffairsDatasource {
                 ? EndPoints.getAllExpenses
                 : page == '3'
                     ? EndPoints.getAllDestructions
-                    : EndPoints.getAllAssets,
+                    : page == '4'
+                        ? EndPoints.getAllPapers
+                        : page == '5'
+                            ? EndPoints.getAllPictures
+                            : page == '6'
+                                ? EndPoints.getAllFiles
+                                : EndPoints.getAllAssets,
       );
       return response.data;
     } on DioException catch (e) {
@@ -257,6 +263,108 @@ class FinancialAffairsDatasource {
       final response = await api
           .post(EndPoints.showExpense, data: {'expense_id': expenseId});
       return ExpenseDetailModel.fromJson(response.data['expense']);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // cancel paper
+  Future<Map<String, dynamic>> cancelPaper({required String? paperId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.cancelPaper,
+        data: {'paper_id': paperId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // add picture
+  Future<Map<String, dynamic>> addPicture({
+    required String name,
+    required String description,
+    required List<File?> media,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.addPicture,
+        data: {
+          'name': name,
+          'description': description,
+          if (media.isNotEmpty)
+            'file': await Future.wait(
+              media.map((file) async {
+                if (file!.path.contains('http')) {
+                  return file.path;
+                }
+                return await MultipartFile.fromFile(
+                  file.path,
+                  filename: file.path.split('/').last,
+                );
+              }),
+            ),
+        },
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // add document
+  Future<Map<String, dynamic>> addPaper({
+    required String name,
+    required String fileId,
+    required List<File?> media,
+    required String notes,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.addPaper,
+        data: {
+          'name': name,
+          'file_id': fileId,
+          if (media.isNotEmpty)
+            'img[]': await Future.wait(
+              media.map((file) async {
+                if (file!.path.contains('http')) {
+                  return file.path;
+                }
+                return await MultipartFile.fromFile(
+                  file.path,
+                  filename: file.path.split('/').last,
+                );
+              }),
+            ),
+          'notes': notes,
+        },
+        isFormData: true,
+      );
+      return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

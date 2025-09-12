@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/special_tasks_controller.dart';
@@ -35,20 +36,51 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
               children: [
                 SupTextAndDis(title: 'taskName'.tr, discription: data.taskName),
                 SizedBox(height: 10.h),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(5.r),
-                  child: CachedNetworkImage(
-                    imageUrl: data.adminImg.isNotEmpty
-                        ? data.adminImg.first
-                        : AssetsManager.noImageNet,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error),
-                    fit: BoxFit.fill,
-                    width: double.infinity,
-                    height: 250.h,
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ...data.adminImg.map(
+                        (e) => Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 5.w),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(5.r),
+                            child: GestureDetector(
+                              onTap: () {
+                                showGeneralDialog(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  barrierLabel: 'Dismiss',
+                                  barrierColor: Colors.black.withAlpha(128),
+                                  transitionDuration:
+                                      const Duration(milliseconds: 300),
+                                  pageBuilder: (context, anim1, anim2) {
+                                    return FullScreenZoomImage(
+                                      imageUrl: e,
+                                    );
+                                  },
+                                );
+                              },
+                              child: CachedNetworkImage(
+                                imageUrl: e,
+                                height: 200.h,
+                                width: 200.w,
+                                fit: BoxFit.fill,
+                                fadeInDuration:
+                                    const Duration(milliseconds: 200),
+                                fadeOutDuration:
+                                    const Duration(milliseconds: 200),
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 SupTextAndDis(
