@@ -4,6 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_detials_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_log_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/expenses_models/expense_detail_model.dart';
+import 'package:doctorbike/features/admin/financial_affairs/presentation/views/official_papers_screens/file_data_model.dart';
 
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
@@ -292,6 +293,73 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
       );
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  // add safe
+  @override
+  Future<Either<Failure, String>> addSafe({
+    required String name,
+    required String fileBoxId,
+    required String treasuryId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await financialAffairsDatasource.addSafe(
+        name: name,
+        fileBoxId: fileBoxId,
+        treasuryId: treasuryId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']!);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  // delete file
+  @override
+  Future<Either<Failure, String>> deleteFile({required String fileId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result =
+          await financialAffairsDatasource.deleteFile(fileId: fileId);
+      if (result['status'] == 'success') {
+        return Right(result['message']!);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<List<FilePapersModel>> getFilePapers({required String fileId}) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result =
+          await financialAffairsDatasource.getFilePapers(fileId: fileId);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 }

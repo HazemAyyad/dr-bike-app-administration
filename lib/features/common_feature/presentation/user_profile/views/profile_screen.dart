@@ -15,7 +15,8 @@ class ProfileScreen extends GetView<ProfileController> {
         builder: (controller) {
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: const BuildProfileSidebar(),
+            // ignore: prefer_const_constructors
+            child: BuildProfileSidebar(),
           );
         },
       ),

@@ -412,6 +412,7 @@ const Map<String, String> en = {
   'completionPercentage': 'Percentage',
 
   'createProject': 'Create New Project',
+  'partnerData': 'Partner Data',
   'projectNameExample': 'Example: Engine Deal Project',
   'uploadProjectImages': 'Upload Project or Product Images',
   'projectCost': 'Project Cost',
@@ -420,7 +421,7 @@ const Map<String, String> en = {
   'paymentMethodExample': 'Example: Cash',
   'cash': 'Cash',
   'visa': 'Visa',
-  'projectPartners': 'Project Partners',
+  'partnerName': 'Partner Name',
   'projectPartnersExample': 'Example: None',
   'noPartners': 'No Partners',
   'partnerShare': 'Partner Share',
@@ -439,6 +440,9 @@ const Map<String, String> en = {
   'ended': 'Ended',
   'ongoing': 'Ongoing',
   'projectOrProductsImages': 'Project Images or Products',
+  'projectExpenses': 'Project Expenses',
+  'projectSales': 'Project Sales',
+  'endProject': 'End Project',
 
   // قسم صناعة الاهداف
   'targetSection': 'Goal Creation',

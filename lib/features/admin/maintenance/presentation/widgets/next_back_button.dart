@@ -5,15 +5,24 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../controllers/maintenance_controller.dart';
 
 class NextBackButton extends StatelessWidget {
   const NextBackButton({
     Key? key,
-    required this.controller,
+    required this.selectedStep,
+    required this.onPressedBack,
+    required this.onPressedNext,
+    required this.totalSteps,
+    required this.endTitle,
+    this.isLoading,
   }) : super(key: key);
 
-  final MaintenanceController controller;
+  final RxInt selectedStep;
+  final RxInt totalSteps;
+  final String endTitle;
+  final Function() onPressedBack;
+  final Function() onPressedNext;
+  final RxBool? isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +31,11 @@ class NextBackButton extends StatelessWidget {
     return Obx(
       () => Row(
         children: [
-          if (controller.selectedStep.value > 1)
+          if (selectedStep.value > 1)
             Expanded(
               child: AppButton(
                 text: 'back',
-                onPressed: () {
-                  controller.prevStep();
-                },
+                onPressed: onPressedBack,
                 isRtl: true,
                 color: ThemeService.isDark.value
                     ? AppColors.customGreyColor4
@@ -52,11 +59,12 @@ class NextBackButton extends StatelessWidget {
                 ),
               ),
             ),
-          if (controller.selectedStep.value > 1) SizedBox(width: 15.w),
-          controller.selectedStep.value == 3
+          if (selectedStep.value > 1) SizedBox(width: 15.w),
+          selectedStep.value >= totalSteps.value
               ? Expanded(
                   child: AppButton(
-                    text: 'delivered',
+                    isLoading: isLoading,
+                    text: endTitle.tr,
                     borderWidth: 1.w,
                     color: Colors.green,
                     textStyle: textTheme.copyWith(
@@ -64,9 +72,7 @@ class NextBackButton extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       fontSize: 16.sp,
                     ),
-                    onPressed: () {
-                      controller.nextStep();
-                    },
+                    onPressed: onPressedNext,
                   ),
                 )
               : Expanded(
@@ -78,9 +84,7 @@ class NextBackButton extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       fontSize: 16.sp,
                     ),
-                    onPressed: () {
-                      controller.nextStep();
-                    },
+                    onPressed: onPressedNext,
                     widget: const Icon(
                       Icons.arrow_forward_rounded,
                       color: AppColors.whiteColor,

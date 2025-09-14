@@ -3,7 +3,10 @@ import '../../data/repositories/financial_affairs_implement.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/paper_usecase/add_document_usecase.dart';
 import '../../domain/usecases/paper_usecase/add_paper_usecase.dart';
+import '../../domain/usecases/paper_usecase/add_safe_usecase.dart';
 import '../../domain/usecases/paper_usecase/cancel_paper_usecase.dart';
+import '../../domain/usecases/paper_usecase/delete_file.dart';
+import '../../domain/usecases/paper_usecase/get_file_papers_usecase.dart';
 import '../controllers/official_papers_controller.dart';
 
 class OfficialPapersBinding extends Bindings {
@@ -21,6 +24,15 @@ class OfficialPapersBinding extends Bindings {
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
         addPaperUsecase: AddPaperUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        addSafeUsecase: AddSafeUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        deleteFileUsecase: DeleteFileUsecase(
+          financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        getFilePapersUsecase: GetFilePapersUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
       ),

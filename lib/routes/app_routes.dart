@@ -96,4 +96,7 @@ class AppRoutes {
   static const ADDNEWASSETSCREEN = '/AddNewAssetsScreen';
   static const DESTRUCTIONPRODUCTSSCREEN = '/DestructionProductsScreen';
   static const ADDEXPENSESCREEN = '/AddExpenseScreen';
+  static const SAFESSCREEN = '/SafesScreen';
+  static const FILEBOXSCREEN = '/FileBoxScreen';
+  static const FILESSCREEN = '/FilesScreen';
 }

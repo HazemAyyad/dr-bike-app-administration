@@ -59,7 +59,7 @@ class AddPaper extends GetView<OfficialPapersController> {
                 label: 'select_file'.tr,
                 hint: 'select_file'.tr,
                 dropdownField: FinacialService()
-                    .files
+                    .filesData
                     .map(
                       (e) => DropdownMenuItem<String>(
                         value: e.id.toString(),
@@ -67,7 +67,7 @@ class AddPaper extends GetView<OfficialPapersController> {
                       ),
                     )
                     .toList(),
-                items: FinacialService().files.map((e) => e.name).toList(),
+                items: FinacialService().filesData.map((e) => e.name).toList(),
                 onChanged: (value) {
                   controller.fileController.text = value!;
                 },

@@ -4,9 +4,10 @@ import '../../data/models/assets_models/assets_data_model.dart';
 import '../../data/models/assets_models/assets_log_model.dart';
 import '../../data/models/expenses_models/destruction_model.dart';
 import '../../data/models/expenses_models/expense_data_model.dart';
-import '../../data/models/official_papers_models/files_model.dart';
 import '../../data/models/official_papers_models/papers_model.dart';
 import '../../data/models/official_papers_models/pictures_model.dart';
+import '../../data/models/official_papers_models/safes_model.dart';
+import '../views/official_papers_screens/file_data_model.dart';
 
 class FinacialService {
   // assets
@@ -30,7 +31,13 @@ class FinacialService {
 
   List<PictureModel> pictures = [];
 
-  List<FilesModel> files = [];
+  List<FilesModel> filesData = [];
+
+  List<SafesModel> safes = [];
+
+  List<FilePapersModel> filesPapers = [];
+
+  // List<FilesModel> files = [];
 
   // singleton pattern
   static final FinacialService _instance = FinacialService._internal();

@@ -28,6 +28,8 @@ import '../../features/admin/financial_affairs/data/datasources/financial_affair
 import '../../features/admin/financial_affairs/data/repositories/financial_affairs_implement.dart';
 import '../../features/admin/general_data_list/data/datasources/general_data_list_datasource.dart';
 import '../../features/admin/general_data_list/data/repositories/general_data_list_implement.dart';
+import '../../features/admin/projects/data/datasources/project_datasource.dart';
+import '../../features/admin/projects/data/repositories/project_implement.dart';
 import '../../features/admin/sales/data/repositories/sales_implement.dart';
 import '../../features/admin/special_tasks/data/datasources/special_tasks_datasource.dart';
 import '../../features/admin/special_tasks/data/repositories/special_tasks_implement.dart';
@@ -85,19 +87,6 @@ class InitialBindings implements Bindings {
     Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
     Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true);
 
-    // admin dashbord
-    Get.lazyPut<AdminDashboardDataSource>(
-      () => AdminDashboardDataSource(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut<AdminDashboardImplement>(
-      () => AdminDashboardImplement(
-        networkInfo: Get.find<NetworkInfo>(),
-        adminDashboardDataSource: Get.find<AdminDashboardDataSource>(),
-      ),
-      fenix: true,
-    );
-
     // employee dashbord
     Get.lazyPut<EmployeeDashbordDatasource>(
       () => EmployeeDashbordDatasource(api: Get.find<DioConsumer>()),
@@ -107,6 +96,19 @@ class InitialBindings implements Bindings {
       () => EmployeeDashbordImplement(
         networkInfo: Get.find<NetworkInfo>(),
         employeeDashbordDatasource: Get.find<EmployeeDashbordDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // admin dashbord
+    Get.lazyPut<AdminDashboardDataSource>(
+      () => AdminDashboardDataSource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<AdminDashboardImplement>(
+      () => AdminDashboardImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        adminDashboardDataSource: Get.find<AdminDashboardDataSource>(),
       ),
       fenix: true,
     );
@@ -123,10 +125,7 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-    Get.lazyPut<EmployeeService>(
-      () => EmployeeService(),
-      fenix: true,
-    );
+    Get.lazyPut<EmployeeService>(() => EmployeeService(), fenix: true);
 
     // auth feature
     Get.lazyPut<AuthRemoteDataSource>(
@@ -217,10 +216,7 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-    Get.lazyPut<SpecialTasksService>(
-      () => SpecialTasksService(),
-      fenix: true,
-    );
+    Get.lazyPut<SpecialTasksService>(() => SpecialTasksService(), fenix: true);
 
     // scan qrcode
     Get.lazyPut<ScanQrCodeDatasource>(
@@ -310,6 +306,19 @@ class InitialBindings implements Bindings {
       () => FinancialAffairsImplement(
         networkInfo: Get.find<NetworkInfo>(),
         financialAffairsDatasource: Get.find<FinancialAffairsDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // projects
+    Get.lazyPut<ProjectDataSource>(
+      () => ProjectDataSource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<ProjectImplement>(
+      () => ProjectImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        projectDataSource: Get.find<ProjectDataSource>(),
       ),
       fenix: true,
     );

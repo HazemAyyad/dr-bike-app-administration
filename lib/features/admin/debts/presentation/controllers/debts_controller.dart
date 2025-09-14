@@ -268,10 +268,10 @@ class DebtsController extends GetxController {
   void getAllCustomersAndSellers() async {
     final resultCustomers = await allCustomersSellersUsecase.call(
         endPoint: EndPoints.all_customers);
+    allCustomersList.assignAll(resultCustomers);
     final resultSellers =
         await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
     allSellersList.assignAll(resultSellers);
-    allCustomersList.assignAll(resultCustomers);
   }
 
   // download report

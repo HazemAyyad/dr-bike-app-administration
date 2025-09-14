@@ -117,7 +117,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                     ),
               SizedBox(height: 15.h),
               // إضافة مهمة فرعية
-              AddSubTask(controller: controller, title: title),
+              AddSubTask(title: title),
               SizedBox(height: 10.h),
               title == 'createNewEmployeeTask'
                   ? CustomTextField(
@@ -160,12 +160,13 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               // التكرار
               CustomDropdownField(
                 label: 'taskRepeat'.tr,
-                hint:
-                    // controller.isEdit && controller.title == 'editPrivateTask'
-                    //     ? controller.specialTasksService.specialTaskDetails.value!
-                    //         .taskRecurrence
-                    //     :
-                    controller.isEdit && controller.title != 'editPrivateTask'
+                value: controller.selectedDays.value.isEmpty
+                    ? null
+                    : controller.selectedDays.value,
+                hint: controller.isEdit && controller.title == 'editPrivateTask'
+                    ? controller.specialTasksService.specialTaskDetails.value!
+                        .taskRecurrence
+                    : controller.isEdit && controller.title != 'editPrivateTask'
                         ? controller.employeeTaskService.taskDetails.value!
                             .taskRecurrence
                         : 'taskRepeatExample'.tr,
@@ -188,103 +189,102 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               ),
               SizedBox(height: 20.h),
               // صورة المهمة
-              // controller.isEdit
-              //     ? Column(
-              //         crossAxisAlignment: CrossAxisAlignment.start,
-              //         children: [
-              //           controller.documentsImageList.isEmpty
-              //               ? SizedBox.shrink()
-              //               : Text(
-              //                   'documentsImages'.tr,
-              //                   style: Theme.of(context)
-              //                       .textTheme
-              //                       .bodyMedium!
-              //                       .copyWith(
-              //                         color: (ThemeService.isDark.value
-              //                             ? AppColors.customGreyColor6
-              //                             : AppColors.customGreyColor),
-              //                         fontSize: 15.sp,
-              //                         fontWeight: FontWeight.w400,
-              //                       ),
-              //                 ),
-              //           SizedBox(height: 5.h),
-              //           SingleChildScrollView(
-              //             scrollDirection: Axis.horizontal,
-              //             child: Obx(
-              //               () => controller.deleteImage.value
-              //                   ? SizedBox.shrink()
-              //                   : Row(
-              //                       children: [
-              //                         ...controller.documentsImageList
-              //                             .asMap()
-              //                             .entries
-              //                             .map(
-              //                           (entry) {
-              //                             final index = entry.key;
-              //                             final file = entry.value;
-              //                             return Padding(
-              //                               padding: EdgeInsets.symmetric(
-              //                                   horizontal: 5.w),
-              //                               child: Stack(
-              //                                 children: [
-              //                                   ClipRRect(
-              //                                     borderRadius:
-              //                                         BorderRadius.circular(
-              //                                             5.r),
-              //                                     child: CachedNetworkImage(
-              //                                       imageUrl: file.path,
-              //                                       height: 200.h,
-              //                                       width: 200.w,
-              //                                       fit: BoxFit.fill,
-              //                                       fadeInDuration:
-              //                                           const Duration(
-              //                                               milliseconds: 200),
-              //                                       fadeOutDuration:
-              //                                           const Duration(
-              //                                               milliseconds: 200),
-              //                                       placeholder:
-              //                                           (context, url) =>
-              //                                               const Center(
-              //                                         child:
-              //                                             CircularProgressIndicator(),
-              //                                       ),
-              //                                       errorWidget: (context, url,
-              //                                               error) =>
-              //                                           const Icon(Icons.error),
-              //                                     ),
-              //                                   ),
-              //                                   // زرار فوق الصورة
-              //                                   Positioned(
-              //                                     right: 8,
-              //                                     top: 8,
-              //                                     child: IconButton(
-              //                                       icon: const Icon(
-              //                                           Icons.delete,
-              //                                           color: Colors.red),
-              //                                       onPressed: () {
-              //                                         controller
-              //                                             .deleteImage(true);
-              //                                         controller
-              //                                             .documentsImageList
-              //                                             .removeAt(index);
-              //                                         controller
-              //                                             .deleteImage(false);
-              //                                       },
-              //                                     ),
-              //                                   ),
-              //                                 ],
-              //                               ),
-              //                             );
-              //                           },
-              //                         ),
-              //                       ],
-              //                     ),
-              //             ),
-              //           ),
-              //           SizedBox(height: 15.h),
-              // ],
-              // )
-              // : SizedBox.shrink(),
+              controller.isEdit
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        controller.selectedFile.isEmpty
+                            ? const SizedBox.shrink()
+                            : Text(
+                                'documentsImages'.tr,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: (ThemeService.isDark.value
+                                          ? AppColors.customGreyColor6
+                                          : AppColors.customGreyColor),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                        SizedBox(height: 5.h),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Obx(
+                            () => controller.deleteImage.value
+                                ? const SizedBox.shrink()
+                                : Row(
+                                    children: [
+                                      ...controller.selectedFile
+                                          .asMap()
+                                          .entries
+                                          .map(
+                                        (entry) {
+                                          final index = entry.key;
+                                          final file = entry.value;
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 5.w),
+                                            child: Stack(
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          5.r),
+                                                  child: CachedNetworkImage(
+                                                    imageUrl: file.path,
+                                                    height: 200.h,
+                                                    width: 200.w,
+                                                    fit: BoxFit.fill,
+                                                    fadeInDuration:
+                                                        const Duration(
+                                                            milliseconds: 200),
+                                                    fadeOutDuration:
+                                                        const Duration(
+                                                            milliseconds: 200),
+                                                    placeholder:
+                                                        (context, url) =>
+                                                            const Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    ),
+                                                    errorWidget: (context, url,
+                                                            error) =>
+                                                        const Icon(Icons.error),
+                                                  ),
+                                                ),
+                                                // زرار فوق الصورة
+                                                Positioned(
+                                                  right: 8,
+                                                  top: 8,
+                                                  child: IconButton(
+                                                    icon: const Icon(
+                                                        Icons.delete,
+                                                        color: Colors.red),
+                                                    onPressed: () {
+                                                      controller
+                                                          .deleteImage(true);
+                                                      controller.selectedFile
+                                                          .removeAt(index);
+                                                      controller
+                                                          .deleteImage(false);
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        SizedBox(height: 15.h),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
               Column(
                 children: [
                   controller.isEdit && controller.title == 'editPrivateTask'

@@ -10,11 +10,9 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
 import 'build_sub_task_image.dart';
 
-class AddSubTask extends StatelessWidget {
-  const AddSubTask({Key? key, required this.controller, required this.title})
-      : super(key: key);
+class AddSubTask extends GetView<CreateTaskController> {
+  const AddSubTask({Key? key, required this.title}) : super(key: key);
 
-  final CreateTaskController controller;
   final String title;
 
   @override
@@ -55,47 +53,51 @@ class AddSubTask extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: controller.subTasks
                 .map(
-                  (task) => Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.close, size: 20.sp, color: Colors.red),
-                        onPressed: () => controller.subTasks.remove(task),
-                      ),
-                      buildSubTaskImage(task['subTaskImage']),
-                      SizedBox(width: 10.w),
-                      Flexible(
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          visualDensity:
-                              const VisualDensity(horizontal: -4, vertical: -4),
-                          minLeadingWidth: 0,
-                          minVerticalPadding: 0,
-                          horizontalTitleGap: 0,
-                          title: Text(
-                            task['subTaskName'] ?? '',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: AppColors.primaryColor,
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                          subtitle: Text(
-                            task['subTaskdescription'] ?? '',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: AppColors.customGreyColor5,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                  (task) => Padding(
+                    padding: EdgeInsets.symmetric(vertical: 5.h),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon:
+                              Icon(Icons.close, size: 20.sp, color: Colors.red),
+                          onPressed: () => controller.subTasks.remove(task),
+                        ),
+                        buildSubTaskImage(task['subTaskImage']),
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            visualDensity: const VisualDensity(
+                                horizontal: -4, vertical: -4),
+                            minLeadingWidth: 0,
+                            minVerticalPadding: 0,
+                            horizontalTitleGap: 0,
+                            title: Text(
+                              task['subTaskName'] ?? '',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: AppColors.primaryColor,
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            subtitle: Text(
+                              task['subTaskdescription'] ?? '',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: AppColors.customGreyColor5,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 )
                 .toList(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:photo_view/photo_view.dart';
 
 class FullScreenZoomImage extends StatelessWidget {
@@ -9,31 +10,42 @@ class FullScreenZoomImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onVerticalDragUpdate: (details) {
-        if (details.delta.dy > 12) {
-          Navigator.of(context).pop();
-        }
-      },
-      child: Dismissible(
-        key: const Key('dismiss'),
-        direction: DismissDirection.down,
-        onDismissed: (_) => Navigator.of(context).pop(),
-        child: Container(
-          color: Colors.transparent,
-          child: Center(
-            child: PhotoView(
-              imageProvider: NetworkImage(imageUrl),
-              backgroundDecoration: const BoxDecoration(
-                color: Colors.transparent,
+    return Stack(
+      children: [
+        GestureDetector(
+          onVerticalDragUpdate: (details) {
+            if (details.delta.dy > 12) {
+              Navigator.of(context).pop();
+            }
+          },
+          child: Container(
+            color: Colors.transparent,
+            child: Center(
+              child: PhotoView(
+                imageProvider: NetworkImage(imageUrl),
+                backgroundDecoration: const BoxDecoration(
+                  color: Colors.transparent,
+                ),
+                minScale: PhotoViewComputedScale.contained,
+                maxScale: PhotoViewComputedScale.covered * 2.5,
+                enableRotation: false,
               ),
-              minScale: PhotoViewComputedScale.contained,
-              maxScale: PhotoViewComputedScale.covered * 2.5,
-              enableRotation: false,
             ),
           ),
         ),
-      ),
+        Positioned(
+          top: 80.h,
+          right: 20.w,
+          child: IconButton(
+            icon: Icon(
+              Icons.close,
+              color: Colors.red,
+              size: 30.sp,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -6,6 +6,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../presentation/views/official_papers_screens/file_data_model.dart';
 import '../models/assets_models/assets_detials_model.dart';
 import '../models/assets_models/assets_log_model.dart';
 import '../models/expenses_models/expense_detail_model.dart';
@@ -31,7 +32,9 @@ class FinancialAffairsDatasource {
                             ? EndPoints.getAllPictures
                             : page == '6'
                                 ? EndPoints.getAllFiles
-                                : EndPoints.getAllAssets,
+                                : page == '7'
+                                    ? EndPoints.getAllTreasuries
+                                    : EndPoints.getAllAssets,
       );
       return response.data;
     } on DioException catch (e) {
@@ -365,6 +368,79 @@ class FinancialAffairsDatasource {
         isFormData: true,
       );
       return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // add safe
+  Future<Map<String, dynamic>> addSafe({
+    required String name,
+    required String fileBoxId,
+    required String treasuryId,
+  }) async {
+    try {
+      final response = await api.post(
+        fileBoxId.isNotEmpty
+            ? EndPoints.storeFile
+            : treasuryId.isNotEmpty
+                ? EndPoints.storeFileBox
+                : EndPoints.storeTreasury,
+        data: {
+          'name': name,
+          if (treasuryId.isNotEmpty) 'treasury_id': treasuryId,
+          if (fileBoxId.isNotEmpty) 'file_box_id': fileBoxId,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // delete file
+  Future<Map<String, dynamic>> deleteFile({required String fileId}) async {
+    try {
+      final response =
+          await api.post(EndPoints.deleteFile, data: {'file_id': fileId});
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // get file papers
+  Future<List<FilePapersModel>> getFilePapers({required String fileId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.getFilePapers,
+        data: {'file_id': fileId},
+      );
+      final data = response.data['file_papers'] as List;
+      return data
+          .map((e) => FilePapersModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

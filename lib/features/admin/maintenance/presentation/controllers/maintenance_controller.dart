@@ -187,7 +187,7 @@ class MaintenanceController extends GetxController {
   void changeSelected(int index) => selectedStep.value = index;
 
   void nextStep() {
-    if (selectedStep.value < 3) {
+    if (selectedStep.value < timeLineSteps.length) {
       selectedStep.value += 1;
     } else {
       Get.back();

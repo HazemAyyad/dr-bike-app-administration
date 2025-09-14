@@ -9,6 +9,7 @@ import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/assets_manger.dart';
+import '../../../../../../routes/app_routes.dart';
 import '../../controllers/official_papers_controller.dart';
 import '../../widgets/official_papers_widgets/add_paper.dart';
 import '../../widgets/official_papers_widgets/add_picture.dart';
@@ -33,7 +34,10 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
             color: ThemeService.isDark.value
                 ? AppColors.primaryColor
                 : AppColors.secondaryColor,
-            onPressed: () {},
+            onPressed: () {
+              controller.getSafes();
+              Get.toNamed(AppRoutes.SAFESSCREEN);
+            },
           ),
           SizedBox(width: 15.w),
         ],
@@ -102,7 +106,7 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                       crossAxisCount: 3,
                       crossAxisSpacing: 10.h,
                       mainAxisSpacing: 10.h,
-                      childAspectRatio: 0.8,
+                      childAspectRatio: 0.75.h,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {

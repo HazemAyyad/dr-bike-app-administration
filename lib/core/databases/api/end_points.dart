@@ -156,9 +156,6 @@ class EndPoints {
   static const String createInstantSale = 'create/instant/sale';
   static const String allInstantSales = 'all/instant/sales';
 
-  // projects
-  static const String ongoingProjects = 'ongoing/project';
-
   // general data list
   static const String createPerson = 'create/person';
   static const String editPerson = 'edit/person';
@@ -176,6 +173,8 @@ class EndPoints {
   static const String assetsDetails = 'show/asset';
   static const String getAllAssets = 'get/all/assets';
   static const String getAssetsLogs = 'get/all/asset/logs';
+  static const String getAllTreasuries = 'get/all/treasuries';
+  static const String getFilePapers = 'file/papers';
 
   // expenses
   static const String getAllExpenses = 'get/all/expenses';
@@ -191,7 +190,17 @@ class EndPoints {
   static const String cancelPaper = 'cancel/paper';
   static const String addPicture = 'store/picture';
   static const String addPaper = 'store/paper';
+  static const String storeTreasury = 'store/treasury';
+  static const String storeFileBox = 'store/file-box';
+  static const String storeFile = 'store/file';
   static const String getAllFiles = 'get/all/files';
+  static const String deleteFile = 'delete/file';
+
+  // projects
+  static const String ongoingProjects = 'ongoing/project';
+  static const String completedProjects = 'completed/project';
+  static const String createProject = 'create/project'; 
+  static const String showProject = 'show/project';
 }
 
 class ApiKey {

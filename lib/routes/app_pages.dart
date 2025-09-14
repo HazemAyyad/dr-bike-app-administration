@@ -46,7 +46,10 @@ import '../features/admin/financial_affairs/presentation/views/expenses_screens/
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/destruction_products_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/expenses_screens/expenses_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/financial_affairs_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/official_papers_screens/file_box_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/official_papers_screens/files_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/official_papers_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/official_papers_screens/safes_screen.dart';
 import '../features/admin/stock/presentation/views/add_combination_screen.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
@@ -70,10 +73,10 @@ import '../features/admin/sales/presentation/binding/sales_binding.dart';
 import '../features/admin/sales/presentation/views/sales_screen.dart';
 import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
 import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
-import '../features/admin/project_management/presentation/binding/project_management_binding.dart';
-import '../features/admin/project_management/presentation/views/project_management_screen.dart';
-import '../features/admin/project_management/presentation/widgets/create_project_screen/create_project_screen.dart';
-import '../features/admin/project_management/presentation/widgets/project_details/project_details_screeen.dart';
+import '../features/admin/projects/presentation/binding/project_binding.dart';
+import '../features/admin/projects/presentation/views/project_screen.dart';
+import '../features/admin/projects/presentation/views/create_project_screen.dart';
+import '../features/admin/projects/presentation/views/project_details_screeen.dart';
 import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
 import '../features/admin/target_section/presentation/binding/target_section_binding.dart';
 import '../features/admin/target_section/presentation/views/target_section_screen.dart';
@@ -302,8 +305,8 @@ class AppPages {
     // قسم ادارة المشاريع
     GetPage(
       name: AppRoutes.PROJECTMANAGEMENTSCREEN,
-      page: () => const ProjectManagementScreen(),
-      binding: ProjectManagementBinding(),
+      page: () => const ProjectScreen(),
+      binding: ProjectBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(
@@ -577,13 +580,30 @@ class AppPages {
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
-
     // official papers
     GetPage(
       name: AppRoutes.OFFICIALPAPERSSCREEN,
       page: () => const OfficialPapersScreen(),
       binding: OfficialPapersBinding(),
       transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.SAFESSCREEN,
+      page: () => const SafesScreen(),
+      binding: OfficialPapersBinding(),
+      transition: _transitionUpToDown,
+    ),
+    GetPage(
+      name: AppRoutes.FILEBOXSCREEN,
+      page: () => const FileBoxScreen(),
+      binding: OfficialPapersBinding(),
+      transition: _transitionCupertinoDialog,
+    ),
+    GetPage(
+      name: AppRoutes.FILESSCREEN,
+      page: () => const FilesScreen(),
+      binding: OfficialPapersBinding(),
+      transition: _transitionSize,
     ),
 
     // Profile Screen

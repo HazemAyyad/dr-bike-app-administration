@@ -148,7 +148,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                   width: 50.w,
                   child: Center(
                     child: Text(
-                      data.fileBoxName,
+                      data.treasuryName,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             color: AppColors.secondaryColor,
@@ -168,7 +168,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                   width: 50.w,
                   child: Center(
                     child: Text(
-                      data.fileName,
+                      data.fileBoxName,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             color: AppColors.secondaryColor,
@@ -197,7 +197,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                   width: 50.w,
                   child: Center(
                     child: Text(
-                      data.treasuryName,
+                      data.fileName,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             color: AppColors.secondaryColor,

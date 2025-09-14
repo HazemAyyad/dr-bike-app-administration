@@ -3,13 +3,16 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../data/models/official_papers_models/files_model.dart';
 import '../../data/models/official_papers_models/papers_model.dart';
 import '../../data/models/official_papers_models/pictures_model.dart';
+import '../../data/models/official_papers_models/safes_model.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/paper_usecase/add_document_usecase.dart';
 import '../../domain/usecases/paper_usecase/add_paper_usecase.dart';
+import '../../domain/usecases/paper_usecase/add_safe_usecase.dart';
 import '../../domain/usecases/paper_usecase/cancel_paper_usecase.dart';
+import '../../domain/usecases/paper_usecase/delete_file.dart';
+import '../../domain/usecases/paper_usecase/get_file_papers_usecase.dart';
 import 'finacial_service.dart';
 
 class OfficialPapersController extends GetxController
@@ -18,12 +21,18 @@ class OfficialPapersController extends GetxController
   final CancelPaperUsecase cancelPaperUsecase;
   final AddPaperUsecase addPaperUsecase;
   final AddPictureUsecase addPictureUsecase;
+  final AddSafeUsecase addSafeUsecase;
+  final DeleteFileUsecase deleteFileUsecase;
+  final GetFilePapersUsecase getFilePapersUsecase;
 
   OfficialPapersController({
     required this.getAllFinancialUsecase,
     required this.cancelPaperUsecase,
     required this.addPictureUsecase,
     required this.addPaperUsecase,
+    required this.addSafeUsecase,
+    required this.deleteFileUsecase,
+    required this.getFilePapersUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -38,6 +47,8 @@ class OfficialPapersController extends GetxController
   final pictureNameController = TextEditingController();
   final pictureDescriptionController = TextEditingController();
   List<File> pictureFiles = [];
+
+  final TextEditingController safeNameController = TextEditingController();
 
   final RxInt currentTab = 0.obs;
   final tabs = ['company_documents', 'important_images'].obs;
@@ -114,9 +125,32 @@ class OfficialPapersController extends GetxController
     final filesList = filesJson
         .map((e) => FilesModel.fromJson(e as Map<String, dynamic>))
         .toList();
-    FinacialService().files.assignAll(filesList);
+    FinacialService().filesData.assignAll(filesList);
     // filesSearch = FinacialService().files;
+    isLoading(false);
+    update();
+  }
 
+  RxBool isFilesLoading = false.obs;
+  // get safes
+  void getSafes() async {
+    isFilesLoading(true);
+    final safes = await getAllFinancialUsecase.call(page: '7');
+    final safesJson = safes['treasuries'] as List;
+    final safesList = safesJson
+        .map((e) => SafesModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    FinacialService().safes.assignAll(safesList);
+
+    isFilesLoading(false);
+    update();
+  }
+
+  // get file Data
+  void getFileData({required String fileId}) async {
+    isLoading(true);
+    final filePapers = await getFilePapersUsecase.call(fileId: fileId);
+    FinacialService().filesPapers.assignAll(filePapers);
     isLoading(false);
     update();
   }
@@ -161,9 +195,7 @@ class OfficialPapersController extends GetxController
   }
 
   // add document
-  void addPaper({
-    required String fileId,
-  }) async {
+  void addPaper({required String fileId}) async {
     isLoading(true);
     if (formKey.currentState!.validate()) {
       final result = await addPaperUsecase.call(
@@ -236,6 +268,74 @@ class OfficialPapersController extends GetxController
         },
       );
     }
+    isLoading(false);
+    update();
+  }
+
+  // add safe
+  void addSafe({String? fileBoxId, String? treasuryId}) async {
+    isLoading(true);
+    if (formKey.currentState!.validate()) {
+      final result = await addSafeUsecase.call(
+        name: safeNameController.text,
+        fileBoxId: fileBoxId ?? '',
+        treasuryId: treasuryId ?? '',
+      );
+
+      result.fold(
+        (failure) {
+          Get.back();
+          Get.snackbar(
+            failure.errMessage,
+            failure.data['message'],
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(milliseconds: 1500),
+          );
+        },
+        (success) async {
+          safeNameController.clear();
+
+          Get.back();
+          getSafes();
+          Get.snackbar(
+            'success'.tr,
+            success,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(milliseconds: 1500),
+          );
+        },
+      );
+    }
+    isLoading(false);
+    update();
+  }
+
+  // delete File
+  void deleteFile({required String fileId}) async {
+    isLoading(true);
+    final result = await deleteFileUsecase.call(fileId: fileId);
+
+    result.fold(
+      (failure) {
+        Get.back();
+        Get.snackbar(
+          failure.errMessage,
+          failure.data['message'],
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+      (success) async {
+        Get.back();
+        getSafes();
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+    );
     isLoading(false);
     update();
   }

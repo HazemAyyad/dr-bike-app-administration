@@ -46,10 +46,12 @@ class StockScreen extends GetView<StockController> {
                 ),
               ),
               SliverToBoxAdapter(
-                  child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 50.w, vertical: 16.h),
-                child: const SearchWidget(isCloseouts: false),
-              )),
+                child: Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 50.w, vertical: 16.h),
+                  child: const SearchWidget(isCloseouts: false),
+                ),
+              ),
               const GridViewItems(),
             ],
           ),

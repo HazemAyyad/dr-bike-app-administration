@@ -21,7 +21,11 @@ class DarkMode extends GetView<ProfileController> {
             activeColor: AppColors.primaryColor,
             inactiveThumbColor: AppColors.secondaryColor,
             onChanged: (value) {
-              ThemeService.toggleTheme(value);
+              ThemeService.isDark.value = value;
+              final mode = value ? ThemeMode.dark : ThemeMode.light;
+              Get.changeThemeMode(mode);
+              ThemeService.instance.themeMode = mode;
+              controller.update();
             },
           ),
         )

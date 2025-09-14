@@ -410,6 +410,7 @@ const Map<String, String> ar = {
   'completionPercentage': 'نسبة الانجاز',
 
   'createProject': 'إنشاء مشروع جديد',
+  'partnerData': 'معلومات الشراكة',
   'projectNameExample': 'مثال: عمل صفقة موتور',
   'uploadProjectImages': 'تحميل صور للمشروع او المنتج',
   'projectCost': 'سعر تكلفة المشروع',
@@ -418,11 +419,13 @@ const Map<String, String> ar = {
   'paymentMethodExample': 'مثال: كاش',
   'cash': 'كاش',
   'visa': 'فيزا',
-  'projectPartners': 'شركاء المشروع',
+  'partnerName': 'اسم الشريك',
   'projectPartnersExample': 'مثال: بدون',
   'noPartners': 'بدون',
   'partnerShare': 'حصة الشريك',
   'partnerShareExample': 'مثال: 500 شيكل',
+  'partnerSharePercentage': 'نسبة ربح الشريك',
+  'partnerSharePercentageExample': 'مثال: 50%',
   'partnerPercentage': 'نسبة الشراكة',
   'partnerPercentageExample': 'مثال: 50%',
   'projectNotesExample': 'أكتب ملاحظاتك',
@@ -437,6 +440,9 @@ const Map<String, String> ar = {
   'ended': 'منتهية',
   'ongoing': 'قائمة',
   'projectOrProductsImages': 'صور المشروع او المنتج',
+  'projectExpenses': 'مصاريف المشروع',
+  'projectSales': 'مبيعات المشروع',
+  'endProject': 'إنهاء المشروع',
 
   // قسم صناعة الاهداف
   'targetSection': 'قسم صناعة الاهداف',

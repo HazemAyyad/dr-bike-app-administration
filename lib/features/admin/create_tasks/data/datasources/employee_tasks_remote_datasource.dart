@@ -36,27 +36,48 @@ class CreateEmployeeTasksDataSource {
       final subEmployeeTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subEmployeeTasks.length; i++) {
+        // الاسم
         subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
             subEmployeeTasks[i]['subTaskName'];
+
+        // الصور
         final imgList = subEmployeeTasks[i]['subTaskImage'];
-
         if (imgList != null) {
-          // final img = imgList.first; // أول صورة فقط
-
-          if (imgList.toString().startsWith('http')) {
-            subEmployeeTasksMap[
-                'sub_employee_tasks[$i][admin_subtask__img][]'] = [imgList];
+          if (imgList is List) {
+            for (var img in imgList) {
+              if (img.toString().startsWith('http')) {
+                subEmployeeTasksMap[
+                    'sub_employee_tasks[$i][admin_subtask__img][]'] = img;
+              } else {
+                subEmployeeTasksMap[
+                        'sub_employee_tasks[$i][admin_subtask__img][]'] =
+                    await MultipartFile.fromFile(
+                  img,
+                  filename: img.split('/').last,
+                );
+              }
+            }
           } else {
-            subEmployeeTasksMap[
-                    'sub_employee_tasks[$i][admin_subtask__img][]'] =
-                await MultipartFile.fromFile(
-              imgList,
-              filename: imgList.split('/').last,
-            );
+            // حالة صورة واحدة فقط
+            if (imgList.toString().startsWith('http')) {
+              subEmployeeTasksMap[
+                  'sub_employee_tasks[$i][admin_subtask__img][]'] = imgList;
+            } else {
+              subEmployeeTasksMap[
+                      'sub_employee_tasks[$i][admin_subtask__img][]'] =
+                  await MultipartFile.fromFile(
+                imgList,
+                filename: imgList.split('/').last,
+              );
+            }
           }
         }
+
+        // الوصف
         subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
             subEmployeeTasks[i]['subTaskdescription'];
+
+        // مطلوب صورة أو لا
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
             subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
@@ -174,8 +195,7 @@ class CreateEmployeeTasksDataSource {
           'force_employee_to_add_img': forceEmployeeToAddImg ? 1 : 0,
           'admin_img[]': await Future.wait(
             adminImg.map((e) async {
-              if (e.path.startsWith('http://') ||
-                  e.path.startsWith('https://')) {
+              if (e.path.startsWith('http')) {
                 // صورة جاية من السيرفر → رجعها كـ string
                 return e.path;
               } else {

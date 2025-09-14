@@ -35,7 +35,7 @@ class CustomLineSteps extends StatelessWidget {
                       GestureDetector(
                         onTap: () => changeSelected(step),
                         child: Container(
-                          height: 50.h,
+                          height: 45.h,
                           width: 50.w,
                           decoration: BoxDecoration(
                             color: selectedStep.value == step
@@ -72,7 +72,7 @@ class CustomLineSteps extends StatelessWidget {
                           ),
                         ),
                       ),
-                      step == 3
+                      step > timeLineSteps.length - 1
                           ? const SizedBox()
                           : Container(
                               height: 2.h,

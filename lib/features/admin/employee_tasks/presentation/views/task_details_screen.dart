@@ -11,6 +11,7 @@ import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/audio_player.dart';
@@ -24,41 +25,41 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
 
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
-      appBar: const CustomAppBar(
+      appBar: CustomAppBar(
         title: 'employeeTaskDetails',
         action: false,
-        // actions: [
-        // userType == 'admin'
-        //       ? TextButton.icon(
-        //           icon: Icon(
-        //             Icons.edit_calendar_outlined,
-        //             color: ThemeService.isDark.value
-        //                 ? AppColors.primaryColor
-        //                 : AppColors.secondaryColor,
-        //             size: 25.sp,
-        //           ),
-        //           onPressed: () {
-        //             Get.toNamed(
-        //               AppRoutes.CREATETASKSCREEN,
-        //               arguments: {
-        //                 'title': 'createNewEmployeeTask',
-        //                 'isEdit': true
-        //               },
-        //             );
-        //           },
-        //           label: Text(
-        //             'edit'.tr,
-        //             style: theme.copyWith(
-        //               fontSize: 15.sp,
-        //               fontWeight: FontWeight.w700,
-        //               color: ThemeService.isDark.value
-        //                   ? AppColors.primaryColor
-        //                   : AppColors.secondaryColor,
-        //             ),
-        //           ),
-        //         )
-        //       : SizedBox.shrink(),
-        // ],
+        actions: [
+          userType == 'admin'
+              ? TextButton.icon(
+                  icon: Icon(
+                    Icons.edit_calendar_outlined,
+                    color: ThemeService.isDark.value
+                        ? AppColors.primaryColor
+                        : AppColors.secondaryColor,
+                    size: 25.sp,
+                  ),
+                  onPressed: () {
+                    Get.toNamed(
+                      AppRoutes.CREATETASKSCREEN,
+                      arguments: {
+                        'title': 'createNewEmployeeTask',
+                        'isEdit': true
+                      },
+                    );
+                  },
+                  label: Text(
+                    'edit'.tr,
+                    style: theme.copyWith(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ],
       ),
       body: Obx(
         () {
@@ -273,14 +274,16 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                 //     ),
                 //   ],
                 // ),
-                SupTextAndDis(
-                  title: 'taskDescription',
-                  discription: data.taskDescription,
-                ),
-                SupTextAndDis(
-                  title: 'notes',
-                  discription: data.notes,
-                ),
+                if (data.taskDescription.isNotEmpty)
+                  SupTextAndDis(
+                    title: 'taskDescription',
+                    discription: data.taskDescription,
+                  ),
+                if (data.notes.isNotEmpty)
+                  SupTextAndDis(
+                    title: 'notes',
+                    discription: data.notes,
+                  ),
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 15.h),
                   child: Column(

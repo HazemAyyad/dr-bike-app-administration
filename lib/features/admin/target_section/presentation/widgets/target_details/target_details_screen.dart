@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../project_management/presentation/widgets/project_details/sup_text_and_dis.dart';
+import '../../../../projects/presentation/widgets/project_details/sup_text_and_dis.dart';
 import '../../controllers/target_section_controller.dart';
 
 class TargetDetailsScreen extends GetView<TargetSectionController> {
@@ -53,26 +53,26 @@ class TargetDetailsScreen extends GetView<TargetSectionController> {
         children: [
           // target details view
           SizedBox(height: 10.w),
-          supTextAndDis(context, 'targetName', target['targetName']),
+          SupTextAndDis(title: 'targetName', discription: target['targetName']),
           SizedBox(height: 10.w),
-          supTextAndDis(context, 'targetType', target['targetType']),
+          SupTextAndDis(title: 'targetType', discription: target['targetType']),
           SizedBox(height: 10.w),
-          supTextAndDis(context, 'mainValue', target['mainValue']),
+          SupTextAndDis(title: 'mainValue', discription: target['mainValue']),
           SizedBox(height: 10.w),
-          supTextAndDis(context, 'targetValue', target['targetValue']),
+          SupTextAndDis(
+              title: 'targetValue', discription: target['targetValue']),
           SizedBox(height: 10.w),
-          supTextAndDis(context, 'notes', target['notes']),
+          SupTextAndDis(title: 'notes', discription: target['notes']),
           SizedBox(height: 10.w),
-          supTextAndDis(context, 'followUp', target['followUp']),
+          SupTextAndDis(title: 'followUp', discription: target['followUp']),
           SizedBox(height: 10.w),
           Row(
             children: [
               SizedBox(width: 30.w),
               Flexible(
-                child: supTextAndDis(
-                  context,
-                  'targetName',
-                  target['targetName'],
+                child: SupTextAndDis(
+                  title: 'targetName',
+                  discription: target['targetName'],
                 ),
               ),
             ],

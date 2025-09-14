@@ -9,6 +9,7 @@ import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../employee_section/presentation/controllers/employee_service.dart';
 import '../../../employee_tasks/presentation/controllers/employee_task_service.dart';
 import '../../../special_tasks/presentation/controllers/special_tasks_controller.dart';
+import '../../../special_tasks/presentation/controllers/special_tasks_service.dart';
 import '../../domain/usecases/creat_special_tasks_usecase.dart';
 import '../../domain/usecases/create_task_usecase.dart';
 import '../../../employee_tasks/presentation/controllers/employee_tasks_controller.dart';
@@ -18,7 +19,7 @@ class CreateTaskController extends GetxController {
   GetAllEmployeeUsecase getAllEmployeeUsecase;
   CreatSpecialTasksUsecase creatSpecialTasksUsecase;
   EmployeeService employeeService;
-  // SpecialTasksService specialTasksService;
+  SpecialTasksService specialTasksService;
   EmployeeTaskService employeeTaskService;
 
   CreateTaskController({
@@ -26,7 +27,7 @@ class CreateTaskController extends GetxController {
     required this.getAllEmployeeUsecase,
     required this.creatSpecialTasksUsecase,
     required this.employeeService,
-    // required this.specialTasksService,
+    required this.specialTasksService,
     required this.employeeTaskService,
   });
 
@@ -168,20 +169,24 @@ class CreateTaskController extends GetxController {
       );
       result.fold(
         (failure) {
-          final errors = failure.data['errors'] as Map<String, dynamic>;
-          final messages = errors.values
-              .expand((list) => list)
-              .cast<String>()
-              .join('')
-              .replaceAll('.', '- \n');
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: messages,
-          );
+          print(failure);
+          // final errors = failure.data['errors'] as Map<String, dynamic>;
+          // final messages = errors.values
+          //     .expand((list) => list)
+          //     .cast<String>()
+          //     .join('')
+          //     .replaceAll('.', '- \n');
+          // Helpers.showCustomDialogError(
+          //   context: context,
+          //   title: failure.errMessage,
+          //   message: messages,
+          // );
         },
         (success) {
           Get.find<EmployeeTasksController>().getEmployeeTasks();
+          Get.find<EmployeeTasksController>()
+              .getTaskDetails(taskId: employeeTaskId.toString());
+
           Future.delayed(
             const Duration(seconds: 2),
             () {
@@ -281,31 +286,32 @@ class CreateTaskController extends GetxController {
   final bool isEdit = Get.arguments['isEdit'];
   final String title = Get.arguments['title'];
 
-  // void updatePrivateTask() {
-  //   taskNameController.text =
-  //       specialTasksService.specialTaskDetails.value!.taskName;
-  //   taskDescriptionController.text =
-  //       specialTasksService.specialTaskDetails.value!.taskDescription;
-  //   //  taskNotesController.text = specialTasksService.specialTaskDetails.value!.;
-  //   selectedDays.value =
-  //       specialTasksService.specialTaskDetails.value!.taskRecurrence;
-  //   for (var element
-  //       in specialTasksService.specialTaskDetails.value!.taskRecurrenceTime) {
-  //     selectedDaysList.add(element);
-  //   }
-  //   selectedFile.value =
-  //       XFile(specialTasksService.specialTaskDetails.value!.adminImg);
-
-  //   for (var element
-  //       in specialTasksService.specialTaskDetails.value!.subTasks) {
-  //     subTasks.add({
-  //       'subTaskName': element.subTaskName,
-  //       'subTaskdescription': element.subTaskDescription,
-  //       'subTaskImage': element.adminImg,
-  //       'imageIsRequired': element.forceEmployeeToAddImg,
-  //     });
-  //   }
-  // }
+  final RxBool deleteImage = false.obs;
+  void updatePrivateTask() {
+    taskNameController.text =
+        specialTasksService.specialTaskDetails.value!.taskName;
+    taskDescriptionController.text =
+        specialTasksService.specialTaskDetails.value!.taskDescription;
+    //  taskNotesController.text = specialTasksService.specialTaskDetails.value!.;
+    selectedDays.value =
+        specialTasksService.specialTaskDetails.value!.taskRecurrence;
+    for (var element
+        in specialTasksService.specialTaskDetails.value!.taskRecurrenceTime) {
+      selectedDaysList.add(element);
+    }
+    selectedFile = specialTasksService.specialTaskDetails.value!.adminImg
+        .map((e) => File(e))
+        .toList();
+    for (var element
+        in specialTasksService.specialTaskDetails.value!.subTasks) {
+      subTasks.add({
+        'subTaskName': element.subTaskName,
+        'subTaskdescription': element.subTaskDescription,
+        'subTaskImage': element.adminImg,
+        'imageIsRequired': element.forceEmployeeToAddImg,
+      });
+    }
+  }
 
   void updateEmployeeTask() {
     final data = employeeTaskService.taskDetails.value!;
