@@ -10,6 +10,7 @@ const Map<String, String> ar = {
   'info': 'معلومات',
   'failed': 'فشل',
   'edit': 'تعديل',
+  'late': 'متاخر',
 
   // messages
   'noInternetConnection': 'لا يوجد اتصال بالانترنت',
@@ -104,12 +105,14 @@ const Map<String, String> ar = {
   'currency1': 'دولار',
   'currency2': 'دينار',
   'check': 'شيك',
+  'deb': 'دين',
   'rejectedd': 'معدم',
   'reference': 'مرجع',
   'cashed': 'مقبول',
   'pending': 'قيد الانتظار',
   'approved': 'مقبول',
   'rejected': 'مرفوض',
+  'addPaymentMethod': '+ أضف طريقة دفع اخرى',
 
   'employeeTasks': 'مهام الموظفين',
   'privateTasks': 'المهام الخاصة',
@@ -129,6 +132,7 @@ const Map<String, String> ar = {
   'financialMatters': 'المصاريف والأمور المالية',
   'maintenance': 'قسم الصيانة',
   'checksandCommitments': 'الشيكات والالتزامات',
+  'countersAndStatisticsAndReports': 'العدادات والاحصائيات والتقارير',
 
   'add': 'إضافة',
   'newInvoice': 'فاتورة جديدة',
@@ -228,6 +232,7 @@ const Map<String, String> ar = {
 
   // add Task
   'createNewEmployeeTask': 'إنشاء مهمة موظفين جديدة',
+  'editEmployeeTask': 'تعديل مهمة الموظف',
   'addNewPravateTask': 'إنشاء مهمة خاصة جديدة',
   'employeeSection': 'قسم الموظفين',
 
@@ -410,12 +415,14 @@ const Map<String, String> ar = {
   'completionPercentage': 'نسبة الانجاز',
 
   'createProject': 'إنشاء مشروع جديد',
+  'editProject': 'تعديل المشروع',
   'partnerData': 'معلومات الشراكة',
   'projectNameExample': 'مثال: عمل صفقة موتور',
   'uploadProjectImages': 'تحميل صور للمشروع او المنتج',
   'projectCost': 'سعر تكلفة المشروع',
   'projectCostExample': 'مثال: 2000 شيكل',
   'paymentMethod': 'طريقة الدفع',
+  'paymentMethodReceive': 'طريقة القبض',
   'paymentMethodExample': 'مثال: كاش',
   'cash': 'كاش',
   'visa': 'فيزا',
@@ -443,6 +450,9 @@ const Map<String, String> ar = {
   'projectExpenses': 'مصاريف المشروع',
   'projectSales': 'مبيعات المشروع',
   'endProject': 'إنهاء المشروع',
+  'endProjectText': 'هل انت متاكد من انهاء المشروع؟',
+  'addProjectExpenses': 'إضافة مصروف جديد',
+  'totalSalesValue': 'إجمالي المبيعات:',
 
   // قسم صناعة الاهداف
   'targetSection': 'قسم صناعة الاهداف',
@@ -574,6 +584,7 @@ const Map<String, String> ar = {
   'complete': 'إتمام عملية البيع',
   'newCashProfit': 'بيع ربحي جديد',
   'totalCost': 'التكلفة الاجمالية',
+  'cashValue': 'قيمة المبلغ النقدي',
 
   // قسم المبيعات
   'youOwe': 'عليك',
@@ -607,6 +618,7 @@ const Map<String, String> ar = {
   'newReceipt': 'قبض شيك جديد',
   'newCheck': 'إنشاء شيك جديد',
   'checkValue': 'قيمة الشيك',
+  'debtValue2': 'قيمة الدين',
   'beneficiaryName': 'اسم صاحب الشيك',
   'currencyy': 'العملة',
   'currencyExample': 'مثال: شيكل',
@@ -652,7 +664,9 @@ const Map<String, String> ar = {
   "deliveryTime": "وقت التسليم",
   "uploadMedia": "تحميل صور او فيديو",
   "selectVideo": "أختيار فيديو",
+  "takeVideo": "تصوير فيديو",
   "selectImage": "أختيار صورة",
+  "takeImage": "تصوير صورة",
   'filesSelected': 'الملفات المحددة',
   "back": "رجوع",
   "delivered": "تم التسليم",
@@ -704,6 +718,7 @@ const Map<String, String> ar = {
   // قسم المصاريف والامور المالية
   'assets': 'الأصول',
   'theExpenses': 'المصاريف',
+  'totalExpenses': 'إجمالي المصاريف:',
   'officialPapers': 'الأوراق الرسمية',
 
   // قسم الأصول
@@ -729,6 +744,8 @@ const Map<String, String> ar = {
   "addExpense": "إضافة مصروف",
   "expenseName": "أسم المصروف",
   // "paymentMethod": "طريقة الدفع",
+  "payment": "دفع",
+  "receiptt": "قبض",
   "invoiceImage": "صورة الفاتورة",
   "submitExpense": "إضافة المصروف",
   "damageReason": "سبب الاتلاف",
@@ -761,5 +778,26 @@ const Map<String, String> ar = {
   "file_box_name": "اسم الفايل بوكس",
   "create_file": "إنشاء فايل",
   "file_name": "اسم الفايل",
-  "delete_file": "حذف الفايل"
+  "delete_file": "حذف الفايل",
+
+  // قسم العدادات والاحصائيات والتقارير
+  "statistics": "الإحصائيات",
+  "totalSaless": "إجمالي المبيعات",
+  "debtsWeOwe": "ديون علينا",
+  "totalBoxes": "مجموع الصناديق",
+  "netProfit": "صافي الأرباح",
+  "purchasesValue": "قيمة المشتريات",
+  "totalChecks": "إجمالي الشيكات",
+  "numberOfProjects": "عدد المشاريع",
+  "numberOfPeople": "عدد الأشخاص",
+  "totalExpensess": "إجمالي المصاريف",
+  "numberOfEmployees": "عدد الموظفين",
+  "costOfGoods": "تكلفة البضاعة",
+  // "purchaseReturns": "مردودات مشتريات",
+  "netShopCapital": "رأس مال المحل (صافي)",
+  "shopCapital": "رأس مال المحل",
+  "completedDailyTasks": "مهام الموظفين المنجزة (يومي)",
+  "incompletedDailyTasks": "مهام الموظفين الغير منجزة (يومي)",
+  "completedMonthlyTasks": "مهام الموظفين المنجزة (شهري)",
+  "incompletedMonthlyTasks": "مهام الموظفين الغير منجزة (شهري)"
 };

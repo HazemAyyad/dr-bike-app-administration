@@ -7,10 +7,10 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 
-class AdminRemoteDataSource {
+class AdminRemoteDatasource {
   final ApiConsumer api;
 
-  AdminRemoteDataSource({required this.api});
+  AdminRemoteDatasource({required this.api});
 
   Future<Map<String, dynamic>> creatSpecialTasks({
     required String token,

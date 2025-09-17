@@ -1,21 +1,28 @@
 import 'dart:ui';
 
+import 'package:get/get.dart';
+
 import 'package:doctorbike/features/App_entr/on_boarding/widgets/login_or_sign_up.dart';
 import 'package:doctorbike/features/admin/stock/presentation/binding/stock_binding.dart';
 import 'package:doctorbike/features/admin/stock/presentation/views/stock_screen.dart';
 import 'package:doctorbike/features/auth/presentation/login/views/login_screen.dart';
 import 'package:doctorbike/features/employee/employee_dashbord/presentation/binding/employee_dashbord_binding.dart';
 import 'package:doctorbike/features/employee/employee_dashbord/presentation/views/employee_dashbord_screen.dart';
-import 'package:get/get.dart';
-
 import 'package:doctorbike/features/home/views/home_page_screen.dart';
+
 import '../features/App_entr/no_internet/view/no_internet_screen.dart';
 import '../features/App_entr/on_boarding/binding/onboarding_binding.dart';
-import '../features/App_entr/on_boarding/widgets/chose_lang.dart';
 import '../features/App_entr/on_boarding/view/on_boarding_screen.dart';
+import '../features/App_entr/on_boarding/widgets/chose_lang.dart';
 import '../features/App_entr/splash/binding/splash_binding.dart';
 import '../features/App_entr/splash/view/splash_screen.dart';
+import '../features/admin/--/presentation/current_follow_up/binding/current_follow_up_binding.dart';
+import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
+import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
+import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
+import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_binding.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_activti_log_screen.dart';
+import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/create_boxes_screen.dart';
@@ -28,14 +35,22 @@ import '../features/admin/checks/presentation/views/checks_screen.dart';
 import '../features/admin/checks/presentation/views/incoming_checks_screen.dart';
 import '../features/admin/checks/presentation/views/new_check_screen.dart';
 import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart';
-import '../features/admin/debts/presentation/binding/debts_binding.dart';
-import '../features/admin/debts/presentation/views/debts_screen.dart';
+import '../features/admin/counters/presentation/binding/counters_binding.dart';
+import '../features/admin/counters/presentation/views/counters_screen.dart';
 import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
 import '../features/admin/create_tasks/presentation/views/create_task_screen.dart';
-import '../features/admin/--/presentation/current_follow_up/binding/current_follow_up_binding.dart';
-import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
-import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
-import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
+import '../features/admin/debts/presentation/binding/debts_binding.dart';
+import '../features/admin/debts/presentation/views/debts_screen.dart';
+import '../features/admin/employee_section/presentation/binding/employee_section_binding.dart';
+import '../features/admin/employee_section/presentation/views/activity_log_screen.dart';
+import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
+import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
+import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
+import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
+import '../features/admin/employee_section/presentation/views/working_bonuses_screen.dart';
+import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
+import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
+import '../features/admin/employee_tasks/presentation/views/task_details_screen.dart';
 import '../features/admin/financial_affairs/presentation/binding/assets_binding.dart';
 import '../features/admin/financial_affairs/presentation/binding/expenses_binding.dart';
 import '../features/admin/financial_affairs/presentation/binding/official_papers_binding.dart';
@@ -50,41 +65,31 @@ import '../features/admin/financial_affairs/presentation/views/official_papers_s
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/files_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/official_papers_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/safes_screen.dart';
+import '../features/admin/general_data_list/presentation/binding/general_data_list_binding.dart';
+import '../features/admin/general_data_list/presentation/views/add_new_customer_screen.dart';
+import '../features/admin/general_data_list/presentation/views/general_data_list_screen.dart';
+import '../features/admin/maintenance/presentation/binding/maintenance_binding.dart';
+import '../features/admin/maintenance/presentation/views/maintenance_screen.dart';
+import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
+import '../features/admin/projects/presentation/binding/project_binding.dart';
+import '../features/admin/projects/presentation/views/create_project_screen.dart';
+import '../features/admin/projects/presentation/views/project_details_screeen.dart';
+import '../features/admin/projects/presentation/views/project_screen.dart';
+import '../features/admin/sales/presentation/binding/sales_binding.dart';
+import '../features/admin/sales/presentation/views/new_cash_profit_screen.dart';
+import '../features/admin/sales/presentation/views/new_instant_sale_screen.dart';
+import '../features/admin/sales/presentation/views/sales_screen.dart';
+import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
+import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
+import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
 import '../features/admin/stock/presentation/views/add_combination_screen.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
 import '../features/admin/stock/presentation/views/product_details_screen.dart';
-import '../features/employee/scan_qrcode/presentation/binding/qrcode_bideing.dart';
-import '../features/admin/employee_section/presentation/views/activity_log_screen.dart';
-import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
-import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
-import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
-import '../features/employee/scan_qrcode/presentation/views/qr_code_screen.dart';
-import '../features/admin/employee_section/presentation/views/working_bonuses_screen.dart';
-import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
-import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
-import '../features/admin/general_data_list/presentation/binding/general_data_list_binding.dart';
-import '../features/admin/general_data_list/presentation/views/general_data_list_screen.dart';
-import '../features/admin/general_data_list/presentation/views/add_new_customer_screen.dart';
-import '../features/admin/maintenance/presentation/binding/maintenance_binding.dart';
-import '../features/admin/maintenance/presentation/views/maintenance_screen.dart';
-import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
-import '../features/admin/sales/presentation/binding/sales_binding.dart';
-import '../features/admin/sales/presentation/views/sales_screen.dart';
-import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
-import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
-import '../features/admin/projects/presentation/binding/project_binding.dart';
-import '../features/admin/projects/presentation/views/project_screen.dart';
-import '../features/admin/projects/presentation/views/create_project_screen.dart';
-import '../features/admin/projects/presentation/views/project_details_screeen.dart';
-import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
 import '../features/admin/target_section/presentation/binding/target_section_binding.dart';
 import '../features/admin/target_section/presentation/views/target_section_screen.dart';
 import '../features/admin/target_section/presentation/widgets/add_new_target/add_new_target_screen.dart';
 import '../features/admin/target_section/presentation/widgets/target_details/target_details_screen.dart';
-import '../features/admin/employee_tasks/presentation/views/task_details_screen.dart';
-import '../features/admin/sales/presentation/views/new_cash_profit_screen.dart';
-import '../features/admin/sales/presentation/views/new_instant_sale_screen.dart';
 import '../features/auth/presentation/login/binding/login_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/binding/sgin_up_verify_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/views/sgin_up_verify_screen.dart';
@@ -95,8 +100,6 @@ import '../features/auth/presentation/sign_up_otp/views/sign_up_otp_screen.dart'
 import '../features/auth/presentation/success/views/success_screen.dart';
 import '../features/bottom_nav_bar/binding/binding.dart';
 import '../features/bottom_nav_bar/views/bottom_nav_bar_screen.dart';
-import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_binding.dart';
-import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../features/common_feature/presentation/change_password/binding/change_password_binding.dart';
 import '../features/common_feature/presentation/change_password/views/change_password_screen.dart';
 import '../features/common_feature/presentation/contact_us/views/contact_us_screen.dart';
@@ -104,8 +107,8 @@ import '../features/common_feature/presentation/personal_details/binding/persona
 import '../features/common_feature/presentation/personal_details/views/personal_details_screen.dart';
 import '../features/common_feature/presentation/user_profile/binding/profile_binding.dart';
 import '../features/common_feature/presentation/user_profile/views/profile_screen.dart';
-import '../features/admin/employee_section/presentation/binding/employee_section_binding.dart';
-import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
+import '../features/employee/scan_qrcode/presentation/binding/qrcode_bideing.dart';
+import '../features/employee/scan_qrcode/presentation/views/qr_code_screen.dart';
 import '../features/home/binding/home_page_binding.dart';
 import '../features/my_orders/binding/my_orders_binding.dart';
 import '../features/my_orders/views/my_orders_screen.dart';
@@ -313,7 +316,7 @@ class AppPages {
       name: AppRoutes.PROJECTDETAILSSCREEN,
       page: () => const ProjectDetailsScreeen(),
       // binding: ,
-      transition: _transitionFade,
+      transition: _transitionFadeIn,
     ),
     GetPage(
       name: AppRoutes.CREATEPROJECTSCREEN,
@@ -520,7 +523,7 @@ class AppPages {
       name: AppRoutes.BUYINGSCREEN,
       page: () => const BuyingScreen(),
       binding: BuyingBinding(),
-      transition: _transitionDownToUp,
+      transition: _transitionFadeIn,
     ),
     GetPage(
       name: AppRoutes.BILLSSCREEN,
@@ -604,6 +607,14 @@ class AppPages {
       page: () => const FilesScreen(),
       binding: OfficialPapersBinding(),
       transition: _transitionSize,
+    ),
+
+    // Counters
+    GetPage(
+      name: AppRoutes.COUNTERSSCREEN,
+      page: () => const CountersScreen(),
+      binding: CountersBinding(),
+      transition: _transitionDownToUp,
     ),
 
     // Profile Screen

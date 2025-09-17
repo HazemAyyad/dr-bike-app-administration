@@ -20,7 +20,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Padding(
         padding: const EdgeInsets.all(16.0),

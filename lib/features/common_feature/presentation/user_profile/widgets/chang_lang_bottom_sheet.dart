@@ -25,7 +25,7 @@ Future<dynamic> changLangBottomSheet(ProfileController controller) {
               height: 120.h,
               decoration: BoxDecoration(
                 color: ThemeService.isDark.value
-                    ? AppColors.darckColor
+                    ? AppColors.darkColor
                     : Colors.white,
                 borderRadius: BorderRadius.all(
                   Radius.circular(25.r),
@@ -125,7 +125,7 @@ Future<dynamic> changLangBottomSheet(ProfileController controller) {
               height: 55.h,
               decoration: BoxDecoration(
                 color: ThemeService.isDark.value
-                    ? AppColors.darckColor
+                    ? AppColors.darkColor
                     : Colors.white,
                 borderRadius: BorderRadius.all(
                   Radius.circular(25.r),

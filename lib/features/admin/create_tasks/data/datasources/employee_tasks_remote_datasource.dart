@@ -9,10 +9,10 @@ import '../../../../../../core/databases/api/end_points.dart';
 import '../../../../../../core/errors/error_model.dart';
 import '../../../../../../core/errors/expentions.dart';
 
-class CreateEmployeeTasksDataSource {
+class CreateEmployeeTasksDatasource {
   final ApiConsumer api;
 
-  CreateEmployeeTasksDataSource({required this.api});
+  CreateEmployeeTasksDatasource({required this.api});
 
   // create employee task
   Future<Map<String, dynamic>> creatEmployeeTasks({
@@ -36,50 +36,53 @@ class CreateEmployeeTasksDataSource {
       final subEmployeeTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subEmployeeTasks.length; i++) {
-        // الاسم
-        subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
-            subEmployeeTasks[i]['subTaskName'];
-
-        // الصور
-        final imgList = subEmployeeTasks[i]['subTaskImage'];
-        if (imgList != null) {
-          if (imgList is List) {
-            for (var img in imgList) {
-              if (img.toString().startsWith('http')) {
+        if (subEmployeeTasks[i]['subTaskId'] != null) {
+          subEmployeeTasksMap['sub_employee_tasks[$i][id]'] =
+              subEmployeeTasks[i]['subTaskId'];
+        } else {
+          // الاسم
+          subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
+              subEmployeeTasks[i]['subTaskName'];
+          // الصور
+          final imgList = subEmployeeTasks[i]['subTaskImage'];
+          if (imgList != null) {
+            if (imgList is List) {
+              for (var img in imgList) {
+                if (img.toString().startsWith('http')) {
+                  subEmployeeTasksMap[
+                      'sub_employee_tasks[$i][admin_subtask__img][]'] = img;
+                } else {
+                  subEmployeeTasksMap[
+                          'sub_employee_tasks[$i][admin_subtask__img][]'] =
+                      await MultipartFile.fromFile(
+                    img,
+                    filename: img.split('/').last,
+                  );
+                }
+              }
+            } else {
+              // حالة صورة واحدة فقط
+              if (imgList.toString().contains('http')) {
                 subEmployeeTasksMap[
-                    'sub_employee_tasks[$i][admin_subtask__img][]'] = img;
+                    'sub_employee_tasks[$i][admin_subtask__img][]'] = imgList;
               } else {
                 subEmployeeTasksMap[
                         'sub_employee_tasks[$i][admin_subtask__img][]'] =
                     await MultipartFile.fromFile(
-                  img,
-                  filename: img.split('/').last,
+                  imgList,
+                  filename: imgList.split('/').last,
                 );
               }
             }
-          } else {
-            // حالة صورة واحدة فقط
-            if (imgList.toString().startsWith('http')) {
-              subEmployeeTasksMap[
-                  'sub_employee_tasks[$i][admin_subtask__img][]'] = imgList;
-            } else {
-              subEmployeeTasksMap[
-                      'sub_employee_tasks[$i][admin_subtask__img][]'] =
-                  await MultipartFile.fromFile(
-                imgList,
-                filename: imgList.split('/').last,
-              );
-            }
           }
+          // الوصف
+          subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
+              subEmployeeTasks[i]['subTaskdescription'];
+          // مطلوب صورة أو لا
+          subEmployeeTasksMap[
+                  'sub_employee_tasks[$i][is_forced_to_upload_img]'] =
+              subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
         }
-
-        // الوصف
-        subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
-            subEmployeeTasks[i]['subTaskdescription'];
-
-        // مطلوب صورة أو لا
-        subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
-            subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
       final response = await api.post(
         employeeTaskId != 0
@@ -99,36 +102,31 @@ class CreateEmployeeTasksDataSource {
           ...subEmployeeTasksMap,
           'not_shown_for_employee': notShownForEmployee,
           'is_forced_to_upload_img': isForcedToUploadImg,
-          'admin_img[]': await Future.wait(
-            adminImg.map((e) async {
-              if (e.path.startsWith('http')) {
-                // صورة جاية من السيرفر → رجعها كـ string
-                return e.path;
-              } else {
-                // صورة محلية → حولها لـ MultipartFile
-                return await MultipartFile.fromFile(
-                  e.path,
-                  filename: e.path.split('/').last,
-                );
-              }
-            }),
-          ),
-          'audio': audio.path.isEmpty
-              ? ''
-              : audio.path.startsWith('http')
-                  ? audio.path
-                  : await MultipartFile.fromFile(
-                      audio.path,
-                      filename: audio.path.split('/').last,
-                      contentType: MediaType("audio", "x-m4a"),
-                    ),
+          if (employeeTaskId == 0)
+            'admin_img[]': await Future.wait(
+              adminImg.map((e) async {
+                if (e.path.startsWith('http')) {
+                  return e.path;
+                } else {
+                  return await MultipartFile.fromFile(
+                    e.path,
+                    filename: e.path.split('/').last,
+                  );
+                }
+              }),
+            ),
+          if (employeeTaskId == 0)
+            'audio': audio.path.isEmpty
+                ? ''
+                : audio.path.startsWith('http')
+                    ? audio.path
+                    : await MultipartFile.fromFile(
+                        audio.path,
+                        filename: audio.path.split('/').last,
+                        contentType: MediaType("audio", "x-m4a"),
+                      ),
         },
         isFormData: true,
-        options: Options(
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        ),
       );
       final data = response.data;
       return data;

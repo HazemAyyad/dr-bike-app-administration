@@ -70,7 +70,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(height: 10.h, width: double.infinity),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'employeeName',
                         discription: controller
                             .employeeService.employeeDetails.value!.name,
@@ -203,20 +203,20 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                         ),
                       ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'email',
                         discription: controller
                             .employeeService.employeeDetails.value!.email,
                       ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'phoneNumber',
                         discription: controller
                             .employeeService.employeeDetails.value!.phone
                             .replaceAll(' ', ''),
                       ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'alternatePhone',
                         discription: controller
                             .employeeService.employeeDetails.value!.subPhone
@@ -228,19 +228,19 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                       //   discription: arguments.,
                       // ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'hourlyRate',
                         discription:
                             '${controller.employeeService.employeeDetails.value!.hourWorkPrice} ${'currency'.tr}',
                       ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'overTimeRate',
                         discription:
                             '${controller.employeeService.employeeDetails.value!.overtimeWorkPrice} ${'currency'.tr}',
                       ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'workHoursOfDay',
                         discription: int.parse(controller.employeeService
                                     .employeeDetails.value!.numberOfWorkHours) >
@@ -249,13 +249,13 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                             : '${controller.employeeService.employeeDetails.value!.numberOfWorkHours} ${'hours'.tr}',
                       ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         title: 'regularWorkingHours',
                         discription:
                             "${'from'.tr} ${formatTimeTo12Hour(controller.employeeService.employeeDetails.value!.startWorkTime)} ${'to'.tr} ${formatTimeTo12Hour(controller.employeeService.employeeDetails.value!.endWorkTime)}",
                       ),
                       SizedBox(height: 10.h),
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                           title: 'permissions',
                           discription:
                               "\n -${controller.employeeService.employeeDetails.value!.permissions.map((e) => e.permissionName).join(', ').replaceAll(', ', '\n-')}"),

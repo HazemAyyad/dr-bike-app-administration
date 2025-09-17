@@ -23,63 +23,59 @@ class AdminDashboardController extends GetxController
 
   List<Map<String, dynamic>> buttons = [
     {
-      'id': '21',
+      'id': '7',
       'title': 'employeeTasks',
       'route': AppRoutes.EMPLOYEETASKSSCREEN
     },
+    {'id': '6', 'title': 'privateTasks', 'route': AppRoutes.PRIVATETASKSSCREEN},
     {
-      'id': '22',
-      'title': 'privateTasks',
-      'route': AppRoutes.PRIVATETASKSSCREEN
-    },
-    {
-      'id': '23',
+      'id': '5',
       'title': 'employeeDepartment',
       'route': AppRoutes.EMPLOYEESECTIONSCREEN
     },
     {
-      'id': '24',
+      'id': '4',
       'title': 'projectManagement',
       'route': AppRoutes.PROJECTMANAGEMENTSCREEN
     },
-    {'id': '25', 'title': 'messagesDepartment', 'route': ''},
-    {'id': '26', 'title': 'infoCompletion', 'route': ''},
+    {'id': '17', 'title': 'messagesDepartment', 'route': ''},
     {
-      'id': '27',
+      'id': '3',
       'title': 'targetSetting',
       'route': AppRoutes.TARGETSECTIONSCREEN
     },
     {
-      'id': '28',
+      'id': '2',
       'title': 'followUpDepartment',
       'route': AppRoutes.CURRENTFOLLOWUPSCREEN
     },
-    {'id': '29', 'title': 'debts', 'route': AppRoutes.DEBTSSCREEN},
-    {'id': '30', 'title': 'sales', 'route': AppRoutes.SALESSCREEN},
+    {'id': '1', 'title': 'debts', 'route': AppRoutes.DEBTSSCREEN},
+    {'id': '8', 'title': 'sales', 'route': AppRoutes.SALESSCREEN},
     {
-      'id': '31',
+      'id': '9',
       'title': 'generalData',
       'route': AppRoutes.GENERALDATALISTSCREEN
     },
-    {'id': '32', 'title': 'partnersDepartment', 'route': ''},
-    {'id': '33', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
-    {'id': '34', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
+    {'id': '10', 'title': 'partnersDepartment', 'route': ''},
+    {'id': '16', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
+    {'id': '11', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
     {
-      'id': '35',
+      'id': '12',
       'title': 'purchasesandReturns',
       'route': AppRoutes.BUYINGSCREEN
     },
     {
-      'id': '36',
+      'id': '13',
       'title': 'financialMatters',
       'route': AppRoutes.FINANCIALAFFAIRSSCREEN
     },
     {
-      'id': '37',
+      'id': '14',
       'title': 'checksandCommitments',
       'route': AppRoutes.CHECKSSCREEN
     },
-    {'id': '38', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
+    {'id': '15', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
+    // {'id': '18', 'title': 'countersAndStatisticsAndReports', 'route': ''},
   ];
 
   // متغيرات للإحصائيات
@@ -115,7 +111,7 @@ class AdminDashboardController extends GetxController
     {
       'title': 'newExpense',
       'icon': AssetsManager.moneyIcon,
-      'route': AppRoutes.ADDNEWEMPLOYEESCREEN,
+      'route': AppRoutes.ADDEXPENSESCREEN,
     },
     {
       'title': 'newCustomer',

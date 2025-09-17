@@ -80,8 +80,8 @@ class ProjectDetailsModel {
 }
 
 class PartnershipModel {
-  final String customerId;
-  final String customerName;
+  final String? customerId;
+  final String? customerName;
   final String? sellerId;
   final String? sellerName;
   final String share;
@@ -120,17 +120,17 @@ class PartnershipModel {
 }
 
 class ProjectProductModel {
-  final int productId;
-  final String? productName;
+  final String productId;
+  final String productName;
 
   ProjectProductModel({
     required this.productId,
-    this.productName,
+    required this.productName,
   });
 
   factory ProjectProductModel.fromJson(Map<String, dynamic> json) {
     return ProjectProductModel(
-      productId: json['product_id'] ?? 0,
+      productId: json['product_id'] ?? '0',
       productName: json['product_name'] ?? "",
     );
   }

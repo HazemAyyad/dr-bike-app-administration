@@ -70,8 +70,6 @@ class SalesScreen extends GetView<SalesController> {
                               (context, index) {
                                 final month = controller
                                     .salesService.filterInstantSalesTasks.keys
-                                    .toList()
-                                    .reversed
                                     .toList()[index];
 
                                 final sales = controller.salesService
@@ -117,7 +115,6 @@ class SalesScreen extends GetView<SalesController> {
                                 final month = controller
                                     .salesService.filterProfitSalesTasks.keys
                                     .toList()
-                                    .reversed
                                     .toList()[index];
 
                                 final sales = controller.salesService
@@ -166,8 +163,9 @@ class SalesScreen extends GetView<SalesController> {
           ),
           Obx(
             () {
-              if (!controller.isAddMenuOpen.value)
+              if (!controller.isAddMenuOpen.value) {
                 return const SizedBox.shrink();
+              }
               return Positioned.fill(
                 child: GestureDetector(
                   onTap: controller.toggleAddMenu,

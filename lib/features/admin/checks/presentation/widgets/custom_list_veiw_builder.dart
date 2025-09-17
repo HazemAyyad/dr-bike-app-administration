@@ -23,7 +23,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
         }
 
         if (controller.currentTab.value == 0) {
-          if (controller.inComingChecksList.value!.inComingChecksList.isEmpty) {
+          if (controller.inComingChecksList.value == null) {
             return const SliverFillRemaining(
               hasScrollBody: true,
               child: ShowNoData(),
@@ -31,7 +31,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
           }
         }
         if (controller.currentTab.value == 1) {
-          if (controller.cashedToPerson.value!.cashedToPerson.isEmpty) {
+          if (controller.cashedToPerson.value == null) {
             return const SliverFillRemaining(
               hasScrollBody: true,
               child: ShowNoData(),
@@ -39,7 +39,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
           }
         }
         if (controller.currentTab.value == 2) {
-          if (controller.archiveData.value!.archiveData.isEmpty) {
+          if (controller.archiveData.value == null) {
             return const SliverFillRemaining(
               hasScrollBody: true,
               child: ShowNoData(),

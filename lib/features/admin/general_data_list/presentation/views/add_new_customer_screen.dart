@@ -126,14 +126,24 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                   ],
                 ),
                 SizedBox(height: 10.h),
-                CustomDropdownField(
-                  label: 'closeContacts',
-                  hint: 'customerNameExample',
+                CustomDropdownFieldWithSearch(
+                  tital: 'closeContacts',
+                  hint: controller.closePeopleController.text.isEmpty
+                      ? 'customerNameExample'
+                      : controller.closePeopleController.text,
+                  labelStyle: controller.closePeopleController.text.isEmpty
+                      ? null
+                      : Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: AppColors.blackColor,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
                   items: controller.closePeopleList,
                   onChanged: (value) {
-                    controller.closePeople.text = value!;
+                    controller.closePeopleController.text = value!.name;
                   },
-                  border: Border.all(color: AppColors.customGreyColor3),
+                  itemAsString: (item) => item.name,
+                  compareFn: (item, value) => item.id == value.id,
                   validator: (p0) => null,
                 ),
                 SizedBox(height: 20.h),

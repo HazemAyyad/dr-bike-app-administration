@@ -10,7 +10,7 @@ class AppThemes {
     shadowColor: Colors.grey,
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.whiteColor,
-      foregroundColor: AppColors.darckColor,
+      foregroundColor: AppColors.darkColor,
       elevation: 0,
     ),
     textTheme: TextTheme(
@@ -55,11 +55,11 @@ class AppThemes {
 
   static final ThemeData darkTheme = ThemeData.dark().copyWith(
     primaryColor: AppColors.primaryColor,
-    scaffoldBackgroundColor: AppColors.darckColor,
+    scaffoldBackgroundColor: AppColors.darkColor,
     cardColor: Colors.grey[900],
     shadowColor: Colors.grey,
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.darckColor,
+      backgroundColor: AppColors.darkColor,
       foregroundColor: AppColors.whiteColor,
       elevation: 0,
     ),

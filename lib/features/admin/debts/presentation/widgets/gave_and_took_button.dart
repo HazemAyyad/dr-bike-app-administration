@@ -28,7 +28,7 @@ class GaveAndTookButton extends StatelessWidget {
                   ignoreSafeArea: false,
                   isScrollControlled: true,
                   backgroundColor: ThemeService.isDark.value
-                      ? AppColors.darckColor
+                      ? AppColors.darkColor
                       : Colors.white,
                 );
               },
@@ -64,7 +64,7 @@ class GaveAndTookButton extends StatelessWidget {
                   ignoreSafeArea: false,
                   isScrollControlled: true,
                   backgroundColor: ThemeService.isDark.value
-                      ? AppColors.darckColor
+                      ? AppColors.darkColor
                       : Colors.white,
                 );
               },

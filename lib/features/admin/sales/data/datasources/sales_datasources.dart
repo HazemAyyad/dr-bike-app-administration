@@ -125,6 +125,7 @@ class SalesDatasource {
       //   otherProductsMap['other_products[$i][type]'] = 'normal';
       // }
       final otherProductsList = otherProducts
+          .skip(1)
           .map((item) => {
                 'product_id': item.selectedItem.value,
                 'cost': item.priceController.text,

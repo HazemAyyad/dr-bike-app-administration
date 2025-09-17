@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../data/models/project_details_model.dart';
 import '../repositories/project_repository.dart';
 
 class CreateProjectUsecase {
@@ -11,9 +12,10 @@ class CreateProjectUsecase {
   CreateProjectUsecase({required this.projectRepository});
 
   Future<Either<Failure, String>> call({
+    required String projectId,
     required String name,
     required String projectCost,
-    required String productId,
+    required List<ProjectProductModel> productId,
     required List<File> projectImages,
     required String partnerShare,
     required String partnerPercentage,
@@ -25,6 +27,7 @@ class CreateProjectUsecase {
     String? sellerId,
   }) {
     return projectRepository.createProject(
+      projectId: projectId,
       name: name,
       projectCost: projectCost,
       productId: productId,

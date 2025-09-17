@@ -25,7 +25,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.r),
       ),
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
       // insetPadding: EdgeInsets.symmetric(vertical: 120.h, horizontal: 30.w),
@@ -86,7 +86,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                 enabled: false,
                 sizedBox: false,
                 fillColor: ThemeService.isDark.value
-                    ? AppColors.darckColor
+                    ? AppColors.darkColor
                     : AppColors.whiteColor,
               ),
               // Row(
@@ -130,7 +130,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                       enabled: false,
                       sizedBox: false,
                       fillColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
+                          ? AppColors.darkColor
                           : AppColors.whiteColor,
                     ),
                   ),
@@ -152,7 +152,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                       enabled: false,
                       sizedBox: false,
                       fillColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
+                          ? AppColors.darkColor
                           : AppColors.whiteColor,
                     ),
                   ),
@@ -178,7 +178,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                       enabled: false,
                       sizedBox: false,
                       fillColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
+                          ? AppColors.darkColor
                           : AppColors.whiteColor,
                     ),
                   ),
@@ -200,7 +200,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                       enabled: false,
                       sizedBox: false,
                       fillColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
+                          ? AppColors.darkColor
                           : AppColors.whiteColor,
                     ),
                   ),
@@ -226,7 +226,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                       enabled: false,
                       sizedBox: false,
                       fillColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
+                          ? AppColors.darkColor
                           : AppColors.whiteColor,
                     ),
                   ),
@@ -248,7 +248,7 @@ class EmployeeFinancialDetails extends StatelessWidget {
                       enabled: false,
                       sizedBox: false,
                       fillColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
+                          ? AppColors.darkColor
                           : AppColors.whiteColor,
                     ),
                   ),

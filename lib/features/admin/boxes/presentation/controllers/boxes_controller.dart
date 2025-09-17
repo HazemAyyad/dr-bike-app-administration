@@ -61,11 +61,9 @@ class BoxesController extends GetxController {
   List<String> appears = ['visible', 'notVisible'];
 
   // اضافة رصيد
-  // TextEditingController addBalanceBoxNameController = TextEditingController();
   TextEditingController addBalanceValueController = TextEditingController();
 
   // نقل رصيد
-  // TextEditingController transferFromBoxIdController = TextEditingController();
   TextEditingController transferToBoxIdController = TextEditingController();
   TextEditingController transferTotalController = TextEditingController();
 

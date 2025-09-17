@@ -21,7 +21,7 @@ class AddPaper extends GetView<OfficialPapersController> {
         borderRadius: BorderRadius.circular(10.r),
       ),
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Padding(
         padding: EdgeInsets.symmetric(

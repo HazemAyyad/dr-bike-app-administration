@@ -11,10 +11,10 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../models/employee_task_model.dart';
 
-class EmployeeTasksDataSource {
+class EmployeeTasksDatasource {
   final ApiConsumer api;
 
-  EmployeeTasksDataSource({required this.api});
+  EmployeeTasksDatasource({required this.api});
 
   // create employee task
   Future<Map<String, dynamic>> creatEmployeeTasks({
@@ -110,7 +110,6 @@ class EmployeeTasksDataSource {
                 ? EndPoints.getCompletedTasks
                 : EndPoints.getCanceledTasks,
       );
-      print(response.data);
       List<EmployeeTaskModel> tasks = (response.data[page == 0
               ? 'ongoing employee tasks'
               : page == 1

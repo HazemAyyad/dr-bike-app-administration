@@ -31,7 +31,7 @@ class RequestsDetails extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.r),
       ),
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10.w),
@@ -86,7 +86,7 @@ class RequestsDetails extends StatelessWidget {
                   enabled: false,
                   sizedBox: false,
                   fillColor: ThemeService.isDark.value
-                      ? AppColors.darckColor
+                      ? AppColors.darkColor
                       : AppColors.whiteColor,
                   validator: (value) {
                     return null;
@@ -114,7 +114,7 @@ class RequestsDetails extends StatelessWidget {
                   enabled: false,
                   sizedBox: false,
                   fillColor: ThemeService.isDark.value
-                      ? AppColors.darckColor
+                      ? AppColors.darkColor
                       : AppColors.whiteColor,
                   validator: (value) {
                     return null;
@@ -136,7 +136,7 @@ class RequestsDetails extends StatelessWidget {
                   enabled: false,
                   sizedBox: false,
                   fillColor: ThemeService.isDark.value
-                      ? AppColors.darckColor
+                      ? AppColors.darkColor
                       : AppColors.whiteColor,
                   validator: (value) {
                     return null;

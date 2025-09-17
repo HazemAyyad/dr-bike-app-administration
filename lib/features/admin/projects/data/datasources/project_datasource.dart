@@ -10,10 +10,10 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../models/project_details_model.dart';
 
-class ProjectDataSource {
+class ProjectDatasource {
   final ApiConsumer api;
 
-  ProjectDataSource({required this.api});
+  ProjectDatasource({required this.api});
 
   // get projects
   Future<dynamic> getProjects({required bool isCompleted}) async {
@@ -36,9 +36,10 @@ class ProjectDataSource {
 
   // create project
   Future<Map<String, dynamic>> createProject({
+    required String projectId,
     required String projectName,
     required String projectCost,
-    required String productId,
+    required List<ProjectProductModel> productId,
     required List<File> projectImages,
     required String partnerShare,
     required String partnerPercentage,
@@ -50,12 +51,19 @@ class ProjectDataSource {
     String? sellerId,
   }) async {
     try {
+      print("projectId $projectImages");
+      final productIdList = <String, dynamic>{};
+
+      for (int i = 0; i < productId.length; i++) {
+        productIdList['products[$i][product_id]'] = productId[i].productId;
+      }
       final response = await api.post(
-        EndPoints.createProject,
+        projectId.isNotEmpty ? EndPoints.editProject : EndPoints.createProject,
         data: {
+          if (projectId.isNotEmpty) 'project_id': projectId,
           'name': projectName,
           'project_cost': projectCost,
-          'products[0][product_id]': productId,
+          ...productIdList,
           'images[]': await Future.wait(
             projectImages.map((e) async {
               if (e.path.startsWith('http')) {
@@ -113,6 +121,67 @@ class ProjectDataSource {
         data: {'project_id': projectId},
       );
       return ProjectDetailsModel.fromJson(response.data['project']);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // add product to project
+  Future<Map<String, dynamic>> addProductToProject({
+    required int projectId,
+    required String productId,
+  }) async {
+    try {
+      final response = await api.post(
+        productId.isEmpty
+            ? EndPoints.completeProject
+            : EndPoints.addProductToProject,
+        data: {
+          'project_id': projectId,
+          if (productId.isNotEmpty) 'product_id': productId
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // get project expenses and sales
+  Future<dynamic> getProjectExpensesAndSales({
+    required bool isSales,
+    required String projectId,
+    required String expenses,
+    required String notes,
+  }) async {
+    try {
+      final response = await api.post(
+        isSales
+            ? EndPoints.projectSales
+            : expenses.isEmpty
+                ? EndPoints.getProjectExpenses
+                : EndPoints.addProjectExpense,
+        data: {
+          'project_id': projectId,
+          if (expenses.isNotEmpty) 'expenses': expenses,
+          if (notes.isNotEmpty) 'notes': notes,
+        },
+      );
+      return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

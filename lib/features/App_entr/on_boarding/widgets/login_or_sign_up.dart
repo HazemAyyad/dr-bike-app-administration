@@ -76,7 +76,7 @@ class LoginOrSignUpScreen extends StatelessWidget {
                   Get.toNamed(AppRoutes.LOGINSCREEN);
                 },
                 color: ThemeService.isDark.value
-                    ? AppColors.darckColor
+                    ? AppColors.darkColor
                     : AppColors.whiteColor,
                 borderColor: ThemeService.isDark.value
                     ? AppColors.primaryColor

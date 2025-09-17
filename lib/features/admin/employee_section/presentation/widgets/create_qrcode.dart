@@ -18,7 +18,7 @@ class CreateQrcode extends GetView<EmployeeSectionController> {
         borderRadius: BorderRadius.circular(8.r),
       ),
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Column(
         mainAxisSize: MainAxisSize.min,

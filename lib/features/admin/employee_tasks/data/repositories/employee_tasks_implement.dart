@@ -15,7 +15,7 @@ import '../datasources/employee_tasks_datasource.dart';
 
 class EmployeeTasksImplement implements EmployeeTasksRepository {
   final NetworkInfo networkInfo;
-  final EmployeeTasksDataSource employeeTasksDataSource;
+  final EmployeeTasksDatasource employeeTasksDataSource;
 
   EmployeeTasksImplement(
       {required this.networkInfo, required this.employeeTasksDataSource});

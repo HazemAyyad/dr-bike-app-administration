@@ -272,10 +272,11 @@ class ExpensesController extends GetxController
     }
   }
 
+  RxBool isAddLoading = false.obs;
   // add expense
   void addExpense(BuildContext context) async {
     if (formKey.currentState!.validate()) {
-      isLoading(true);
+      isAddLoading(true);
       final result = await addExpenseUsecase.call(
         expenseId: isEditing.value ? expenseId : null,
         name: expenseNameController.text,
@@ -316,7 +317,7 @@ class ExpensesController extends GetxController
           );
         },
       );
-      isLoading(false);
+      isAddLoading(false);
     }
   }
 

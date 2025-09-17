@@ -128,7 +128,7 @@ class AddExpenseScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 50.h),
                   AppButton(
-                    isLoading: controller.isLoading,
+                    isLoading: controller.isAddLoading,
                     text: 'submitExpense',
                     onPressed: () {
                       controller.addExpense(context);

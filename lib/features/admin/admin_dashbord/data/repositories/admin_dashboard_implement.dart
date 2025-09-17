@@ -7,7 +7,7 @@ import '../datasources/admin_dashboard_datasource.dart';
 
 class AdminDashboardImplement implements AdminDashboardRepository {
   final NetworkInfo networkInfo;
-  final AdminDashboardDataSource adminDashboardDataSource;
+  final AdminDashboardDatasource adminDashboardDataSource;
 
   AdminDashboardImplement(
       {required this.networkInfo, required this.adminDashboardDataSource});

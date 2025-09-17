@@ -10,6 +10,11 @@ import '../../admin/admin_dashbord/data/repositories/admin_dashboard_implement.d
 import '../../admin/admin_dashbord/domain/usecases/get_admin_logs_usecase.dart';
 import '../../admin/admin_dashbord/presentation/controllers/admin_dashboard_controller.dart';
 import '../../admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
+import '../../admin/counters/data/repositories/countrers_implement.dart';
+import '../../admin/counters/domain/usecases/get_report_by_type_usecase.dart';
+import '../../admin/counters/domain/usecases/get_report_information_usecase.dart';
+import '../../admin/counters/presentation/controllers/counters_controller.dart';
+import '../../admin/counters/presentation/views/counters_screen.dart';
 import '../../admin/employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../admin/employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
@@ -87,16 +92,32 @@ class BottomNavBarController extends GetxController {
           return const EmployeeDashbordScreen();
         }
       case 1:
-        if (!Get.isRegistered<QrCodeController>()) {
-          Get.put(
-            QrCodeController(
-              qrScanUsecase: QrScanUsecase(
-                scanQrCodeRepository: Get.find<ScanQrCodeImplement>(),
+        if (userType == 'admin') {
+          if (!Get.isRegistered<CountersController>()) {
+            Get.put(
+              CountersController(
+                getReportInformationUsecase: GetReportInformationUsecase(
+                  countersRepository: Get.find<CountrersImplement>(),
+                ),
+                getReportByType: GetReportByTypeUsecase(
+                  countersRepository: Get.find<CountrersImplement>(),
+                ),
               ),
-            ),
-          );
+            );
+          }
+          return const CountersScreen();
+        } else {
+          if (!Get.isRegistered<QrCodeController>()) {
+            Get.put(
+              QrCodeController(
+                qrScanUsecase: QrScanUsecase(
+                  scanQrCodeRepository: Get.find<ScanQrCodeImplement>(),
+                ),
+              ),
+            );
+          }
+          return const FullScreenQRScanner(key: ValueKey(1));
         }
-        return const FullScreenQRScanner(key: ValueKey(1));
       case 2:
         if (!Get.isRegistered<ProfileController>()) {
           Get.put(ProfileController());

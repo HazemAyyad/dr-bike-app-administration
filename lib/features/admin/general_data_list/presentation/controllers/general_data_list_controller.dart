@@ -43,7 +43,7 @@ class GeneralDataListController extends GetxController {
   TextEditingController facebookLinkController = TextEditingController();
   TextEditingController instagramNameController = TextEditingController();
   TextEditingController instagramLinkController = TextEditingController();
-  TextEditingController closePeople = TextEditingController();
+  TextEditingController closePeopleController = TextEditingController();
 
   List<File> personalIdImage = [];
   List<File> licenseImage = [];
@@ -68,7 +68,7 @@ class GeneralDataListController extends GetxController {
 
   List<String> customerTypeList = ['wholesale', 'retail'];
 
-  List<String> closePeopleList = ['محمد علي', 'محمود علي', 'محمد رفعت'];
+  List<GeneralDataModel> closePeopleList = [];
 
   List<GeneralDataModel> employeeSearch = [];
   List<GeneralDataModel> sellersSearch = [];
@@ -135,7 +135,7 @@ class GeneralDataListController extends GetxController {
           facebookLink: facebookLinkController.text,
           instagramUsername: instagramNameController.text,
           instagramLink: instagramLinkController.text,
-          relatedPeople: closePeople.text,
+          relatedPeople: closePeopleController.text,
           iDImage: personalIdImage,
           licenseImage: licenseImage,
           address: residenceLocationController.text,
@@ -179,7 +179,7 @@ class GeneralDataListController extends GetxController {
           Future.delayed(
             const Duration(milliseconds: 500),
             () {
-              getGeneralDataList(loding: true);
+              getGeneralData(loding: true);
             },
           );
           Future.delayed(
@@ -201,7 +201,7 @@ class GeneralDataListController extends GetxController {
   }
 
   //Get General Data List
-  void getGeneralDataList({bool loding = false}) async {
+  void getGeneralData({bool loding = false}) async {
     generalDataServes.employeeDataList.isEmpty ||
             generalDataServes.sellersDataList.isEmpty ||
             generalDataServes.inCompleteDataList.isEmpty
@@ -215,6 +215,11 @@ class GeneralDataListController extends GetxController {
         .assignAll(await getCustomersUseCase.call(tab: 1));
     generalDataServes.inCompleteDataList
         .assignAll(await getCustomersUseCase.call(tab: 2));
+    closePeopleList.assignAll([
+      ...generalDataServes.employeeDataList,
+      ...generalDataServes.sellersDataList,
+      ...generalDataServes.inCompleteDataList,
+    ]);
     isLoading(false);
   }
 
@@ -233,7 +238,7 @@ class GeneralDataListController extends GetxController {
     facebookLinkController.text = personData.value!.facebookLink;
     instagramNameController.text = personData.value!.instagramUsername;
     instagramLinkController.text = personData.value!.instagramLink;
-    closePeople.text = personData.value!.relatedPeople;
+    closePeopleController.text = personData.value!.relatedPeople;
     residenceLocationController.text = personData.value!.address;
     workController.text = personData.value!.jobTitle;
     workLocationController.text = personData.value!.workAddress;
@@ -246,6 +251,7 @@ class GeneralDataListController extends GetxController {
             ? 'wholesale'
             : 'retail'
         : '';
+    closePeopleController.text = personData.value!.relatedPeople;
     isEditLoading(false);
     update();
   }
@@ -253,7 +259,7 @@ class GeneralDataListController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    getGeneralDataList();
+    getGeneralData();
     employeeSearch = generalDataServes.employeeDataList;
     sellersSearch = generalDataServes.sellersDataList;
     inCompleteDataSearch = generalDataServes.inCompleteDataList;
@@ -273,7 +279,7 @@ class GeneralDataListController extends GetxController {
     facebookLinkController.dispose();
     instagramNameController.dispose();
     instagramLinkController.dispose();
-    closePeople.dispose();
+    closePeopleController.dispose();
     residenceLocationController.dispose();
     workController.dispose();
     workLocationController.dispose();
@@ -290,7 +296,7 @@ class GeneralDataListController extends GetxController {
     facebookLinkController.clear();
     instagramNameController.clear();
     instagramLinkController.clear();
-    closePeople.clear();
+    closePeopleController.clear();
     residenceLocationController.clear();
     workController.clear();
     workLocationController.clear();

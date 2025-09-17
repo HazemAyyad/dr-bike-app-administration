@@ -48,7 +48,7 @@ class GlobalData extends GetView<GeneralDataListController> {
           Get.dialog(
             AlertDialog(
               backgroundColor: ThemeService.isDark.value
-                  ? AppColors.darckColor
+                  ? AppColors.darkColor
                   : AppColors.whiteColor,
               content: Column(
                 mainAxisSize: MainAxisSize.min,

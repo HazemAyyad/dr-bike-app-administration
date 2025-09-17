@@ -14,7 +14,7 @@ import '../models/all_stock_products_model.dart';
 
 class StockImplement implements StockRepository {
   final NetworkInfo networkInfo;
-  final StockDataSource stockDataSource;
+  final StockDatasource stockDataSource;
 
   StockImplement({required this.networkInfo, required this.stockDataSource});
 

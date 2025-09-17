@@ -11,7 +11,7 @@ import '../models/user_model.dart';
 
 class AuthImplement implements AuthRepository {
   final NetworkInfo networkInfo;
-  final AuthRemoteDataSource remoteDataSource;
+  final AuthRemoteDatasource remoteDataSource;
 
   AuthImplement({required this.networkInfo, required this.remoteDataSource});
 

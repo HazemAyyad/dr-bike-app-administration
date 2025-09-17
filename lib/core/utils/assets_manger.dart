@@ -67,6 +67,12 @@ class AssetsManager {
   static const String solarIcon = "$iconsPath/solar_documents.png";
   static const String percentageIcon2 = "$iconsPath/mdi_percent.png";
   static const String clipartIcon = "$iconsPath/clipart.png";
+  static const String cashIcon2 = "$iconsPath/material_money-bag.png";
+  static const String cashIcon3 = "$iconsPath/fluent_check.png";
+  static const String cashIcon4 = "$iconsPath/bx_purchase-tag.png";
+  static const String cashIcon5 = "$iconsPath/ix_projects.png";
+  static const String cashIcon6 = "$iconsPath/money-bag-broken.png";
+  static const String cashIcon7 = "$iconsPath/money-bag.png";
 
   static const String noImageNet =
       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMmyTPv4M5fFPvYLrMzMQcPD_VO34ByNjouQ&s';

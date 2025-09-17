@@ -6,8 +6,9 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../maintenance/presentation/widgets/custom_line_steps_widget.dart';
 import '../../../maintenance/presentation/widgets/next_back_button.dart';
 import '../controllers/project_controller.dart';
-import '../widgets/first_step.dart';
-import '../widgets/second_step.dart';
+import '../controllers/project_service.dart';
+import '../widgets/creat_project_widgets/first_step.dart';
+import '../widgets/creat_project_widgets/second_step.dart';
 
 class CreateProjectScreen extends GetView<ProjectController> {
   const CreateProjectScreen({Key? key}) : super(key: key);
@@ -15,7 +16,10 @@ class CreateProjectScreen extends GetView<ProjectController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'createProject', action: false),
+      appBar: CustomAppBar(
+        title: controller.isEdit.value ? 'editProject' : 'createProject',
+        action: false,
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Form(
@@ -30,7 +34,9 @@ class CreateProjectScreen extends GetView<ProjectController> {
               ),
               SizedBox(height: 20.h),
               Obx(() {
-                if (controller.selectedStep.value == 1) return const FirstStep();
+                if (controller.selectedStep.value == 1) {
+                  return const FirstStep();
+                }
                 return const SecondStep();
               }),
               SizedBox(height: 40.h),
@@ -40,7 +46,9 @@ class CreateProjectScreen extends GetView<ProjectController> {
                 totalSteps: controller.timeLineSteps.length.obs,
                 selectedStep: controller.selectedStep,
                 onPressedBack: controller.prevStep,
-                onPressedNext: controller.nextStep,
+                onPressedNext: () => controller.nextStep(
+                  ProjectService().projectDetails.value!.id.toString(),
+                ),
               ),
             ],
           ),

@@ -19,7 +19,7 @@ class OnLongPressInBox extends GetView<BoxesController> {
 
     return Dialog(
       backgroundColor:
-          ThemeService.isDark.value ? AppColors.darckColor : Colors.white,
+          ThemeService.isDark.value ? AppColors.darkColor : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.r),
       ),

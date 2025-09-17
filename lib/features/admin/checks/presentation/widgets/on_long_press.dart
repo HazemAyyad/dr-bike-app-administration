@@ -33,7 +33,7 @@ class OnLongPress extends GetView<ChecksController> {
         ),
         Dialog(
           backgroundColor: ThemeService.isDark.value
-              ? AppColors.darckColor
+              ? AppColors.darkColor
               : AppColors.whiteColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.r),
@@ -147,7 +147,7 @@ class IfCancelCheck extends GetView<ChecksController> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.r),
@@ -252,7 +252,7 @@ class CashTheCheck extends GetView<ChecksController> {
     final RxnString selectedValue = RxnString();
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.r),
@@ -386,7 +386,7 @@ class CashToBox extends GetView<ChecksController> {
     final RxnString selectedValue = RxnString();
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.r),

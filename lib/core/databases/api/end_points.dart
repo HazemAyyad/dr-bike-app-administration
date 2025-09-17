@@ -199,8 +199,27 @@ class EndPoints {
   // projects
   static const String ongoingProjects = 'ongoing/project';
   static const String completedProjects = 'completed/project';
-  static const String createProject = 'create/project'; 
+  static const String createProject = 'create/project';
+  static const String editProject = 'edit/project';
   static const String showProject = 'show/project';
+  static const String addProductToProject = 'add/product/to/project';
+  static const String completeProject = 'complete/a/project';
+  static const String projectSales = 'project/sales';
+  static const String getProjectExpenses = 'get/project/expenses';
+  static const String addProjectExpense = 'add/project/expense';
+
+  // report information
+  static const String getAllReportInformation = 'get/all/report/information';
+  static const String getReportByType = 'get/reprot/by/type';
+
+  // payment
+  static const String addTransaction = 'add/transaction';
+
+  // maintenance
+  static const String getNewMaintenances = 'get/new/maintenances';
+  static const String getOngoingMaintenances = 'get/ongoing/maintenances';
+  static const String getReadyMaintenances = 'get/ready/maintenances';
+  static const String getDeliveredMaintenances = 'get/delivered/maintenances';
 }
 
 class ApiKey {

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
+import '../../../payment_method/presentation/views/payment_screen.dart';
 import '../controllers/sales_controller.dart';
 
 class NewCashProfitScreen extends GetView<SalesController> {
@@ -51,7 +52,20 @@ class NewCashProfitScreen extends GetView<SalesController> {
                       color: Colors.white,
                     ),
                 onPressed: () {
-                  controller.addProfitSale(context: context);
+                  if (controller.formKey.currentState!.validate()) {
+                    Get.bottomSheet(
+                      const PaymentScreen(
+                        type: 'receive',
+                      ),
+                      backgroundColor: Colors.white,
+                      isScrollControlled: true,
+                    ).then((value) {
+                      if (value == true) {
+                        // ignore: use_build_context_synchronously
+                        controller.addProfitSale(context);
+                      }
+                    });
+                  }
                 },
               ),
             ],

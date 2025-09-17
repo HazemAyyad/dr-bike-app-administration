@@ -175,24 +175,53 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
 
   Future<void> _pickFiles() async {
     final picker = ImagePicker();
-    List<XFile>? picked = [];
+    List<XFile> picked = [];
 
     switch (widget.allowedType) {
       case MediaType.image:
-        picked = await picker.pickMultiImage();
-        break;
-      case MediaType.video:
-        final video = await picker.pickVideo(source: ImageSource.gallery);
-        if (video != null) picked.add(video);
-        break;
-      case MediaType.both:
-        final choice = await showModalBottomSheet<MediaType>(
+        final choice = await showModalBottomSheet<String>(
           context: context,
-          builder: (_) => _buildSourceOptions(),
+          builder: (_) => _buildImageOptions(),
         );
-        if (choice == MediaType.image) {
-          picked = await picker.pickMultiImage();
-        } else if (choice == MediaType.video) {
+        if (choice == 'camera') {
+          final image = await picker.pickImage(source: ImageSource.camera);
+          if (image != null) picked.add(image);
+        } else if (choice == 'gallery') {
+          final images = await picker.pickMultiImage();
+          picked.addAll(images);
+        }
+        break;
+
+      case MediaType.video:
+        final choice = await showModalBottomSheet<String>(
+          context: context,
+          builder: (_) => _buildVideoOptions(),
+        );
+        if (choice == 'camera') {
+          final video = await picker.pickVideo(source: ImageSource.camera);
+          if (video != null) picked.add(video);
+        } else if (choice == 'gallery') {
+          final video = await picker.pickVideo(source: ImageSource.gallery);
+          if (video != null) picked.add(video);
+        }
+        break;
+
+      case MediaType.both:
+        final choice = await showModalBottomSheet<String>(
+          context: context,
+          builder: (_) => _buildSourceOptionsBoth(),
+        );
+
+        if (choice == 'camera_image') {
+          final image = await picker.pickImage(source: ImageSource.camera);
+          if (image != null) picked.add(image);
+        } else if (choice == 'gallery_image') {
+          final images = await picker.pickMultiImage();
+          picked.addAll(images);
+        } else if (choice == 'camera_video') {
+          final video = await picker.pickVideo(source: ImageSource.camera);
+          if (video != null) picked.add(video);
+        } else if (choice == 'gallery_video') {
           final video = await picker.pickVideo(source: ImageSource.gallery);
           if (video != null) picked.add(video);
         }
@@ -201,38 +230,72 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
 
     if (picked.isNotEmpty) {
       setState(() {
-        _files.addAll(picked!.map((e) => File(e.path)));
+        _files.addAll(picked.map((e) => File(e.path)));
       });
       widget.onFilesChanged(_files);
       _generateThumbnails();
     }
   }
 
-  Widget _buildSourceOptions() {
+  Widget _buildImageOptions() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         ListTile(
-          leading: const Icon(Icons.image),
-          title: Text(
-            "selectImage".tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          onTap: () => Navigator.pop(context, MediaType.image),
+          leading: const Icon(Icons.camera_alt),
+          title: Text("takeImage".tr),
+          onTap: () => Navigator.pop(context, 'camera'),
         ),
         ListTile(
-          leading: const Icon(Icons.video_collection),
-          title: Text(
-            "selectVideo".tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          onTap: () => Navigator.pop(context, MediaType.video),
+          leading: const Icon(Icons.image),
+          title: Text("selectImage".tr),
+          onTap: () => Navigator.pop(context, 'gallery'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVideoOptions() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.videocam),
+          title: Text("takeVideo".tr),
+          onTap: () => Navigator.pop(context, 'camera'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.video_library),
+          title: Text("selectVideo".tr),
+          onTap: () => Navigator.pop(context, 'gallery'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSourceOptionsBoth() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.camera_alt),
+          title: Text("takeImage".tr),
+          onTap: () => Navigator.pop(context, 'camera_image'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.image),
+          title: Text("selectImage".tr),
+          onTap: () => Navigator.pop(context, 'gallery_image'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.videocam),
+          title: Text("takeVideo".tr),
+          onTap: () => Navigator.pop(context, 'camera_video'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.video_library),
+          title: Text("selectVideo".tr),
+          onTap: () => Navigator.pop(context, 'gallery_video'),
         ),
       ],
     );

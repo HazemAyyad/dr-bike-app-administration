@@ -66,19 +66,19 @@ class CreateTaskController extends GetxController {
       requireSubTasImage.value = false;
       isSubtasksListVisible.value = false;
       cancelButtonColor.value =
-          Get.isDarkMode ? AppColors.darckColor : AppColors.whiteColor;
+          Get.isDarkMode ? AppColors.darkColor : AppColors.whiteColor;
     }
   }
 
   Rx<Color> cancelButtonColor =
-      Get.isDarkMode ? AppColors.darckColor.obs : AppColors.whiteColor.obs;
+      Get.isDarkMode ? AppColors.darkColor.obs : AppColors.whiteColor.obs;
 
   // دالة لإظهار/إخفاء قائمة المهام الفرعية
   void toggleSubtasksList() {
     isSubtasksListVisible.value = !isSubtasksListVisible.value;
     if (!isSubtasksListVisible.value) {
       cancelButtonColor.value =
-          Get.isDarkMode ? AppColors.darckColor : AppColors.whiteColor;
+          Get.isDarkMode ? AppColors.darkColor : AppColors.whiteColor;
     } else {
       Future.delayed(const Duration(milliseconds: 300), () {
         cancelButtonColor.value = AppColors.primaryColor;
@@ -156,7 +156,7 @@ class CreateTaskController extends GetxController {
         description: taskDescriptionController.text,
         notes: taskNotesController.text,
         employeeId: employeeIdConroller.text,
-        points: pointsController.text,
+        points: pointsController.text.isEmpty ? '0' : pointsController.text,
         startTime: startDate.value,
         endTime: endDate.value,
         taskRecurrence: selectedDays.value,
@@ -169,26 +169,20 @@ class CreateTaskController extends GetxController {
       );
       result.fold(
         (failure) {
-          print(failure);
-          // final errors = failure.data['errors'] as Map<String, dynamic>;
-          // final messages = errors.values
-          //     .expand((list) => list)
-          //     .cast<String>()
-          //     .join('')
-          //     .replaceAll('.', '- \n');
-          // Helpers.showCustomDialogError(
-          //   context: context,
-          //   title: failure.errMessage,
-          //   message: messages,
-          // );
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: failure.data['message'] ?? 'Unknown error',
+          );
         },
         (success) {
           Get.find<EmployeeTasksController>().getEmployeeTasks();
-          Get.find<EmployeeTasksController>()
-              .getTaskDetails(taskId: employeeTaskId.toString());
-
+          if (isEdit) {
+            Get.find<EmployeeTasksController>()
+                .getTaskDetails(taskId: employeeTaskId.toString());
+          }
           Future.delayed(
-            const Duration(seconds: 2),
+            const Duration(milliseconds: 1500),
             () {
               Get.back();
               Get.back();
@@ -251,7 +245,7 @@ class CreateTaskController extends GetxController {
         (success) {
           Get.find<SpecialTasksController>().getSpecialTasks();
           Future.delayed(
-            const Duration(seconds: 2),
+            const Duration(milliseconds: 1500),
             () {
               Get.back();
               Get.back();
@@ -305,6 +299,7 @@ class CreateTaskController extends GetxController {
     for (var element
         in specialTasksService.specialTaskDetails.value!.subTasks) {
       subTasks.add({
+        'subTaskId': element.subTaskId,
         'subTaskName': element.subTaskName,
         'subTaskdescription': element.subTaskDescription,
         'subTaskImage': element.adminImg,
@@ -321,6 +316,7 @@ class CreateTaskController extends GetxController {
     employeeIdConroller.text = data.employeeId.toString();
     for (var element in data.subTasks) {
       subTasks.add({
+        'subTaskId': element.id,
         'subTaskName': element.name,
         'subTaskdescription': element.description,
         'subTaskImage': element.adminImg,
@@ -335,8 +331,12 @@ class CreateTaskController extends GetxController {
     for (var element in data.taskRecurrenceTime) {
       selectedDaysList.add(element);
     }
-    recordedPath.value = File(data.audio!).path;
-    selectedFile = data.adminImg?.map((e) => File(e)).toList() ?? [];
+    recordedPath.value = data.audio!.isNotEmpty &&
+            data.audio != null &&
+            data.audio!.contains('.aac')
+        ? data.audio!
+        : '';
+    selectedFile.addAll(data.adminImg?.map((e) => File(e)).toList() ?? []);
     selectedDays.value = data.taskRecurrence;
   }
 

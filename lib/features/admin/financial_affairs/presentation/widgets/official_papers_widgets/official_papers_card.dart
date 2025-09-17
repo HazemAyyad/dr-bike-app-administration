@@ -21,7 +21,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
         Get.dialog(
           Dialog(
             backgroundColor: ThemeService.isDark.value
-                ? AppColors.darckColor
+                ? AppColors.darkColor
                 : AppColors.whiteColor,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.r),

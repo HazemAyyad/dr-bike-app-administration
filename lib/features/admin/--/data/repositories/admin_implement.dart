@@ -8,7 +8,7 @@ import '../datasources/admin_remote_datasource.dart';
 
 class AdminImplement implements AdminRepository {
   final NetworkInfo networkInfo;
-  final AdminRemoteDataSource adminRemoteDataSource;
+  final AdminRemoteDatasource adminRemoteDataSource;
 
   AdminImplement(
       {required this.networkInfo, required this.adminRemoteDataSource});

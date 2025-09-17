@@ -22,7 +22,7 @@ class SupTextAndDis extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 15.h),
+        SizedBox(height: 5.h),
         Text.rich(
           TextSpan(
             children: <TextSpan>[
@@ -49,18 +49,21 @@ class SupTextAndDis extends StatelessWidget {
             ],
           ),
         ),
+        SizedBox(height: 5.h),
         showLine
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    margin: EdgeInsets.symmetric(vertical: 10.h),
-                    height: 1.h,
-                    width: 300.w,
-                    color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor6
-                        : AppColors.customGreyColor3,
+                  Flexible(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(
+                          vertical: 10.h, horizontal: 50.w),
+                      height: 1.h,
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor3,
+                    ),
                   ),
                 ],
               )

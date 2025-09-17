@@ -12,7 +12,7 @@ import '../datasources/employee_tasks_remote_datasource.dart';
 
 class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
   final NetworkInfo networkInfo;
-  final CreateEmployeeTasksDataSource employeeTasksDataSource;
+  final CreateEmployeeTasksDatasource employeeTasksDataSource;
 
   CreateEmployeeTasksImplement({
     required this.networkInfo,

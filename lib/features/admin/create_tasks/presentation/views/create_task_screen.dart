@@ -1,4 +1,5 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -68,7 +69,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               ),
               SizedBox(height: 15.h),
               // ملاحظات عن المهمة
-              title == 'createNewEmployeeTask'
+              title == 'createNewEmployeeTask' || title == 'editEmployeeTask'
                   ? Row(
                       children: [
                         Flexible(
@@ -119,7 +120,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               // إضافة مهمة فرعية
               AddSubTask(title: title),
               SizedBox(height: 10.h),
-              title == 'createNewEmployeeTask'
+              title == 'editEmployeeTask' || title == 'createNewEmployeeTask'
                   ? CustomTextField(
                       label: 'taskPoints',
                       hintText: 'taskPointsExample',
@@ -150,7 +151,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               ),
               SizedBox(height: 10.h),
               // إشعار بدأ المهمة
-              title == 'createNewEmployeeTask'
+              title == 'editEmployeeTask' || title == 'createNewEmployeeTask'
                   ? CustomCheckBox(
                       title: 'hideTask',
                       value: controller.hideTask,
@@ -182,143 +183,165 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 isRecurrenceVisible: controller.isRecurrenceVisible,
                 label: 'taskRepeatDate',
               ),
-              SizedBox(height: 20.h),
-              AudioRecorderButton(
-                label: 'recordAudio',
-                recordedPath: controller.recordedPath,
-              ),
-              SizedBox(height: 20.h),
+              if (!controller.isEdit) SizedBox(height: 20.h),
+              if (!controller.isEdit)
+                AudioRecorderButton(
+                  label: 'recordAudio',
+                  recordedPath: controller.recordedPath,
+                ),
+              if (!controller.isEdit) SizedBox(height: 20.h),
               // صورة المهمة
-              controller.isEdit
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        controller.selectedFile.isEmpty
-                            ? const SizedBox.shrink()
-                            : Text(
-                                'documentsImages'.tr,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: (ThemeService.isDark.value
-                                          ? AppColors.customGreyColor6
-                                          : AppColors.customGreyColor),
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                              ),
-                        SizedBox(height: 5.h),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Obx(
-                            () => controller.deleteImage.value
-                                ? const SizedBox.shrink()
-                                : Row(
-                                    children: [
-                                      ...controller.selectedFile
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                        (entry) {
-                                          final index = entry.key;
-                                          final file = entry.value;
-                                          return Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 5.w),
-                                            child: Stack(
-                                              children: [
-                                                ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5.r),
-                                                  child: CachedNetworkImage(
-                                                    imageUrl: file.path,
-                                                    height: 200.h,
-                                                    width: 200.w,
-                                                    fit: BoxFit.fill,
-                                                    fadeInDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    fadeOutDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    placeholder:
-                                                        (context, url) =>
-                                                            const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                    errorWidget: (context, url,
-                                                            error) =>
-                                                        const Icon(Icons.error),
-                                                  ),
-                                                ),
-                                                // زرار فوق الصورة
-                                                Positioned(
-                                                  right: 8,
-                                                  top: 8,
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.delete,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      controller
-                                                          .deleteImage(true);
-                                                      controller.selectedFile
-                                                          .removeAt(index);
-                                                      controller
-                                                          .deleteImage(false);
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                        SizedBox(height: 15.h),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
+              // controller.isEdit
+              //     ? Column(
+              //         crossAxisAlignment: CrossAxisAlignment.start,
+              //         children: [
+              //           controller.selectedFile.isEmpty
+              //               ? const SizedBox.shrink()
+              //               : Text(
+              //                   'documentsImages'.tr,
+              //                   style: Theme.of(context)
+              //                       .textTheme
+              //                       .bodyMedium!
+              //                       .copyWith(
+              //                         color: (ThemeService.isDark.value
+              //                             ? AppColors.customGreyColor6
+              //                             : AppColors.customGreyColor),
+              //                         fontSize: 15.sp,
+              //                         fontWeight: FontWeight.w400,
+              //                       ),
+              //                 ),
+              //           SizedBox(height: 5.h),
+              //           SingleChildScrollView(
+              //             scrollDirection: Axis.horizontal,
+              //             child: Obx(
+              //               () => controller.deleteImage.value
+              //                   ? const SizedBox.shrink()
+              //                   : Row(
+              //                       children: [
+              //                         ...controller.selectedFile
+              //                             .asMap()
+              //                             .entries
+              //                             .map(
+              //                           (entry) {
+              //                             final index = entry.key;
+              //                             final file = entry.value;
+              //                             return Padding(
+              //                               padding: EdgeInsets.symmetric(
+              //                                   horizontal: 5.w),
+              //                               child: Stack(
+              //                                 children: [
+              //                                   ClipRRect(
+              //                                     borderRadius:
+              //                                         BorderRadius.circular(
+              //                                             5.r),
+              //                                     child: file.path
+              //                                             .contains('http')
+              //                                         ? CachedNetworkImage(
+              //                                             imageUrl: file.path,
+              //                                             height: 200.h,
+              //                                             width: 200.w,
+              //                                             fit: BoxFit.fill,
+              //                                             fadeInDuration:
+              //                                                 const Duration(
+              //                                                     milliseconds:
+              //                                                         200),
+              //                                             fadeOutDuration:
+              //                                                 const Duration(
+              //                                                     milliseconds:
+              //                                                         200),
+              //                                             placeholder:
+              //                                                 (context, url) =>
+              //                                                     const Center(
+              //                                               child:
+              //                                                   CircularProgressIndicator(),
+              //                                             ),
+              //                                             errorWidget: (context,
+              //                                                     url, error) =>
+              //                                                 const Icon(
+              //                                                     Icons.error),
+              //                                           )
+              //                                         : Image.file(
+              //                                             file,
+              //                                             height: 200.h,
+              //                                             width: 200.w,
+              //                                             fit: BoxFit.fill,
+              //                                           ),
+              //                                   ),
+              //                                   // زرار فوق الصورة
+              //                                   Positioned(
+              //                                     right: 8,
+              //                                     top: 8,
+              //                                     child: IconButton(
+              //                                       icon: const Icon(
+              //                                           Icons.delete,
+              //                                           color: Colors.red),
+              //                                       onPressed: () {
+              //                                         controller
+              //                                             .deleteImage(true);
+              //                                         controller.selectedFile
+              //                                             .removeAt(index);
+              //                                         controller
+              //                                             .deleteImage(false);
+              //                                       },
+              //                                     ),
+              //                                   ),
+              //                                 ],
+              //                               ),
+              //                             );
+              //                           },
+              //                         ),
+              //                       ],
+              //                     ),
+              //             ),
+              //           ),
+              //           SizedBox(height: 15.h),
+              //         ],
+              //       )
+              //     : const SizedBox.shrink(),
               Column(
                 children: [
-                  controller.isEdit && controller.title == 'editPrivateTask'
-                      ? controller.selectedFile.isNotEmpty
-                          ? controller.selectedFile.first.path.contains('http')
-                              ? CachedNetworkImage(
-                                  imageUrl: controller.selectedFile.first.path,
-                                  height: 350.h,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                )
-                              : MediaUploadButton(
-                                  allowedType: MediaType.image,
-                                  onFilesChanged: (files) {
-                                    controller.selectedFile = files;
-                                  },
-                                  title: 'uploadImage',
-                                )
-                          : MediaUploadButton(
-                              allowedType: MediaType.image,
-                              onFilesChanged: (files) {
-                                controller.selectedFile = files;
-                              },
-                              title: 'uploadImage',
-                            )
-                      : MediaUploadButton(
-                          allowedType: MediaType.image,
-                          onFilesChanged: (files) {
-                            controller.selectedFile = files;
-                          },
-                          title: 'uploadImage',
-                        ),
+                  // controller.isEdit && controller.title == 'editPrivateTask'
+                  //     ? controller.selectedFile.isNotEmpty
+                  //         ? controller.selectedFile.first.path.contains('http')
+                  //             ? CachedNetworkImage(
+                  //                 imageUrl: controller.selectedFile.first.path,
+                  //                 height: 350.h,
+                  //                 width: double.infinity,
+                  //                 fit: BoxFit.cover,
+                  //               )
+                  //             : MediaUploadButton(
+                  //                 allowedType: MediaType.image,
+                  //                 onFilesChanged: (files) {
+                  //                   controller.selectedFile.addAll(files);
+                  //                 },
+                  //                 title: 'uploadImage',
+                  //               )
+                  //         : MediaUploadButton(
+                  //             allowedType: MediaType.image,
+                  //             onFilesChanged: (files) {
+                  //               controller.selectedFile.addAll(files);
+                  //             },
+                  //             title: 'uploadImage',
+                  //           )
+                  //     :
+                  if (!controller.isEdit)
+                    MediaUploadButton(
+                      allowedType: MediaType.image,
+                      onFilesChanged: (files) {
+                        controller.selectedFile
+                          ..clear()
+                          ..addAll(files);
+                        controller.selectedFile.addAll(controller
+                                .employeeTaskService.taskDetails.value!.adminImg
+                                ?.map((e) => File(e))
+                                .toList() ??
+                            []);
+                      },
+                      title: 'uploadImage',
+                    ),
                   SizedBox(height: 10.h),
-                  title == 'createNewEmployeeTask'
+                  title == 'editEmployeeTask' ||
+                          title == 'createNewEmployeeTask'
                       ? CustomCheckBox(
                           title: 'requireImage',
                           value: controller.requireImage,
@@ -334,7 +357,9 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 () => controller.isLoding.value
                     ? lodingIndicator()
                     : AppButton(
-                        text: 'createTask'.tr,
+                        text: title == 'editEmployeeTask'
+                            ? 'editEmployeeTask'.tr
+                            : 'createTask'.tr,
                         textStyle:
                             Theme.of(context).textTheme.bodyMedium!.copyWith(
                                   fontSize: 16.sp,
@@ -343,7 +368,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                                 ),
                         onPressed: () {
                           if (controller.isEdit) {
-                            // controller.title == 'editPrivateTask'
+                            // title == 'editPrivateTask'
                             //     ? controller.createSpecialTask(context)
                             //     :
                             controller.createTask(

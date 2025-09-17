@@ -17,7 +17,7 @@ class ArchiveDialog extends GetView<StockController> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Column(
         mainAxisSize: MainAxisSize.min,

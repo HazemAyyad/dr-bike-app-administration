@@ -175,7 +175,7 @@ class AddSubTask extends GetView<CreateTaskController> {
                                       false;
                                   controller.cancelButtonColor.value =
                                       Get.isDarkMode
-                                          ? AppColors.darckColor
+                                          ? AppColors.darkColor
                                           : AppColors.whiteColor;
                                 },
                                 color: controller.cancelButtonColor.value,

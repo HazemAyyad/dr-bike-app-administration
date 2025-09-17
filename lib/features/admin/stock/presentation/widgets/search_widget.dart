@@ -131,7 +131,7 @@ class SearchWidget extends GetView<StockController> {
           ),
           isScrollControlled: true,
           backgroundColor: ThemeService.isDark.value
-              ? AppColors.darckColor
+              ? AppColors.darkColor
               : AppColors.whiteColor,
         );
       },

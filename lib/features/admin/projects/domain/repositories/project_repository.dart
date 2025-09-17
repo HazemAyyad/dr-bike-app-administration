@@ -9,9 +9,10 @@ abstract class ProjectRepository {
   Future<dynamic> getProjects({required bool isCompleted});
 
   Future<Either<Failure, String>> createProject({
+    required String projectId,
     required String name,
     required String projectCost,
-    required String productId,
+    required List<ProjectProductModel> productId,
     required List<File> projectImages,
     required String partnerShare,
     required String partnerPercentage,
@@ -24,4 +25,16 @@ abstract class ProjectRepository {
   });
 
   Future<ProjectDetailsModel> getProjectDetails({required int projectId});
+
+  Future<Either<Failure, String>> addProductToProject({
+    required int projectId,
+    required String productId,
+  });
+
+  Future<dynamic> getProjectExpensesAndSales({
+    required bool isSales,
+    required String projectId,
+    required String expenses,
+    required String notes,
+  });
 }

@@ -13,10 +13,10 @@ import '../../presentation/controllers/stock_controller.dart';
 import '../models/all_stock_products_model.dart';
 import '../models/product_details_model.dart';
 
-class StockDataSource {
+class StockDatasource {
   final ApiConsumer api;
 
-  StockDataSource({required this.api});
+  StockDatasource({required this.api});
 
   // Get all products
   Future<List<AllStockProductsModel>> getAllStock({

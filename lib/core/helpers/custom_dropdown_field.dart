@@ -131,29 +131,31 @@ class CustomDropdownField extends StatelessWidget {
 }
 
 class CustomDropdownFieldWithSearch extends StatelessWidget {
-  final String label;
+  final String tital;
   final String hint;
-  final List<dynamic>? items;
+  final List<dynamic> items;
   final Function(dynamic) onChanged;
   final bool isRequired;
-  final TextStyle? labelTextStyle;
+  final TextStyle? titalTextStyle;
   final bool isEnabled;
   final String Function(dynamic) itemAsString;
   final bool Function(dynamic, dynamic) compareFn;
   final FormFieldValidator<dynamic>? validator;
+  final TextStyle? labelStyle;
 
   const CustomDropdownFieldWithSearch({
     Key? key,
-    required this.label,
+    required this.tital,
     required this.hint,
-    this.items,
+    required this.items,
     required this.onChanged,
     this.isRequired = false,
-    this.labelTextStyle,
+    this.titalTextStyle,
     this.isEnabled = true,
     required this.itemAsString,
     required this.compareFn,
     this.validator,
+    this.labelStyle,
   }) : super(key: key);
 
   @override
@@ -161,13 +163,13 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        label == ''
+        tital == ''
             ? const SizedBox.shrink()
             : Row(
                 children: [
                   Text(
-                    label.tr,
-                    style: labelTextStyle ??
+                    tital.tr,
+                    style: titalTextStyle ??
                         Theme.of(context).textTheme.bodyMedium!.copyWith(
                               color: ThemeService.isDark.value
                                   ? AppColors.customGreyColor6
@@ -189,7 +191,7 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
                       : Container(),
                 ],
               ),
-        label == '' ? const SizedBox.shrink() : SizedBox(height: 10.h),
+        tital == '' ? const SizedBox.shrink() : SizedBox(height: 10.h),
         Container(
           decoration: BoxDecoration(
             color: ThemeService.isDark.value
@@ -199,13 +201,13 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
             borderRadius: BorderRadius.circular(11.r),
           ),
           child: DropdownSearch<dynamic>(
-            items: (filter, infiniteScrollProps) => items!,
+            items: (filter, infiniteScrollProps) => items,
             itemAsString: itemAsString,
             compareFn: compareFn,
             validator: validator ??
                 (value) {
-                  if (value == null || value.isEmpty) {
-                    return label.tr;
+                  if (value == null) {
+                    return tital.tr;
                   }
                   return null;
                 },
@@ -217,13 +219,14 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(horizontal: 15.w),
                 labelText: hint.tr,
-                labelStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor2
-                          : AppColors.customGreyColor6,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
+                labelStyle: labelStyle ??
+                    Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor2
+                              : AppColors.customGreyColor6,
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w400,
+                        ),
               ),
             ),
             popupProps: const PopupProps.menu(showSearchBox: true),

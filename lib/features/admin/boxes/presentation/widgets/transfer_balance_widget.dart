@@ -20,7 +20,7 @@ class TransferBalanceWidget extends GetView<BoxesController> {
 
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8.r),

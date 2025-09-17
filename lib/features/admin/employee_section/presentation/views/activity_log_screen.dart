@@ -183,7 +183,7 @@ class ShowLogDetails extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.r),
       ),
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -226,22 +226,22 @@ class ShowLogDetails extends StatelessWidget {
                   ],
                 ),
               ),
-              SupTextAndDis(
+              SupTextAndDiscr(
                 title: 'activity',
                 titleColor: AppColors.primaryColor,
                 discription: log.name,
               ),
-              SupTextAndDis(
+              SupTextAndDiscr(
                 title: 'description',
                 titleColor: AppColors.primaryColor,
                 discription: log.description,
               ),
-              SupTextAndDis(
+              SupTextAndDiscr(
                 title: 'details',
                 titleColor: AppColors.primaryColor,
                 discription: log.type,
               ),
-              SupTextAndDis(
+              SupTextAndDiscr(
                 title: 'day',
                 titleColor: AppColors.primaryColor,
                 discription: showDataAndTime(log.createdAt),

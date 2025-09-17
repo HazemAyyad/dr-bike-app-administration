@@ -15,7 +15,7 @@ class ShowPurchasePrice extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -57,11 +57,7 @@ class AdminActivtiLogScreen extends GetView<AdminDashboardController> {
                 return SliverToBoxAdapter(
                   child: Column(
                     children: [
-                      ...controller.logsMap.entries
-                          .toList()
-                          .reversed
-                          .take(30)
-                          .map(
+                      ...controller.logsMap.entries.take(30).map(
                         (entry) {
                           final dateKey = entry.key;
                           final logs = entry.value;

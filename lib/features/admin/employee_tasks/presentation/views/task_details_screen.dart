@@ -41,10 +41,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   onPressed: () {
                     Get.toNamed(
                       AppRoutes.CREATETASKSCREEN,
-                      arguments: {
-                        'title': 'createNewEmployeeTask',
-                        'isEdit': true
-                      },
+                      arguments: {'title': 'editEmployeeTask', 'isEdit': true},
                     );
                   },
                   label: Text(
@@ -73,15 +70,15 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SupTextAndDis(
+                SupTextAndDiscr(
                   title: 'taskName'.tr,
                   discription: data.taskName,
                 ),
-                SupTextAndDis(
+                SupTextAndDiscr(
                   title: 'employeeName'.tr,
                   discription: data.employeeName,
                 ),
-                SupTextAndDis(
+                SupTextAndDiscr(
                   title: 'numberOfPoints'.tr,
                   discription: data.points.toString(),
                 ),
@@ -275,12 +272,12 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                 //   ],
                 // ),
                 if (data.taskDescription.isNotEmpty)
-                  SupTextAndDis(
+                  SupTextAndDiscr(
                     title: 'taskDescription',
                     discription: data.taskDescription,
                   ),
                 if (data.notes.isNotEmpty)
-                  SupTextAndDis(
+                  SupTextAndDiscr(
                     title: 'notes',
                     discription: data.notes,
                   ),
@@ -435,13 +432,13 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SupTextAndDis(
+                      SupTextAndDiscr(
                         noSized: true,
                         title: 'taskRepeat'.tr,
                         discription: data.taskRecurrence.tr,
                       ),
                       if (data.taskRecurrence != 'noRepeat')
-                        SupTextAndDis(
+                        SupTextAndDiscr(
                           title: 'taskRepeatDate'.tr,
                           discription: data.taskRecurrenceTime
                               .map((e) => e.tr)
@@ -489,8 +486,8 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
   }
 }
 
-class SupTextAndDis extends StatelessWidget {
-  const SupTextAndDis({
+class SupTextAndDiscr extends StatelessWidget {
+  const SupTextAndDiscr({
     Key? key,
     required this.title,
     this.titleColor,

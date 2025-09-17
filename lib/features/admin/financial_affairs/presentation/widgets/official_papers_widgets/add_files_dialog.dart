@@ -28,7 +28,7 @@ class AddFilesDialog extends GetView<OfficialPapersController> {
       key: controller.formKey,
       child: Dialog(
         backgroundColor: ThemeService.isDark.value
-            ? AppColors.darckColor
+            ? AppColors.darkColor
             : AppColors.whiteColor,
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 15.h),

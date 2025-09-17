@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
-import '../controllers/project_service.dart';
 
 class ProjectView extends GetView<ProjectController> {
   const ProjectView({Key? key}) : super(key: key);
@@ -22,11 +21,11 @@ class ProjectView extends GetView<ProjectController> {
           );
         }
         if (controller.currentTab.value == 0 &&
-            ProjectService().ongoingProjects.isEmpty) {
+            controller.ongoingProjectsSearch.isEmpty) {
           return const SliverFillRemaining(child: ShowNoData());
         }
         if (controller.currentTab.value == 1 &&
-            ProjectService().completedProjects.isEmpty) {
+            controller.completedProjectsSearch.isEmpty) {
           return const SliverFillRemaining(child: ShowNoData());
         }
         return SliverPadding(
@@ -42,8 +41,9 @@ class ProjectView extends GetView<ProjectController> {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final project = controller.currentTab.value == 0
-                    ? ProjectService().ongoingProjects[index]
-                    : ProjectService().completedProjects[index];
+                    ? controller.ongoingProjectsSearch.reversed.toList()[index]
+                    : controller.completedProjectsSearch.reversed
+                        .toList()[index];
                 return GestureDetector(
                   onTap: () => {
                     controller.getProjectDetails(project.id),
@@ -122,8 +122,8 @@ class ProjectView extends GetView<ProjectController> {
                 );
               },
               childCount: controller.currentTab.value == 0
-                  ? ProjectService().ongoingProjects.length
-                  : ProjectService().completedProjects.length,
+                  ? controller.ongoingProjectsSearch.length
+                  : controller.completedProjectsSearch.length,
             ),
           ),
         );

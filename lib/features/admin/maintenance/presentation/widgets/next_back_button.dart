@@ -32,47 +32,66 @@ class NextBackButton extends StatelessWidget {
       () => Row(
         children: [
           if (selectedStep.value > 1)
-            Expanded(
-              child: AppButton(
-                text: 'back',
-                onPressed: onPressedBack,
-                isRtl: true,
+            AppButton(
+              text: 'back',
+              onPressed: onPressedBack,
+              isRtl: true,
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor4
+                  : AppColors.whiteColor,
+              borderColor: ThemeService.isDark.value
+                  ? AppColors.customGreyColor2
+                  : AppColors.secondaryColor,
+              borderWidth: 1.w,
+              textStyle: textTheme.copyWith(
                 color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor4
-                    : AppColors.whiteColor,
-                borderColor: ThemeService.isDark.value
-                    ? AppColors.customGreyColor2
+                    ? AppColors.whiteColor
+                    : AppColors.customGreyColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 16.sp,
+              ),
+              widget: Icon(
+                Icons.arrow_back_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.whiteColor
                     : AppColors.secondaryColor,
-                borderWidth: 1.w,
-                textStyle: textTheme.copyWith(
-                  color: ThemeService.isDark.value
-                      ? AppColors.whiteColor
-                      : AppColors.customGreyColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16.sp,
-                ),
-                widget: Icon(
-                  Icons.arrow_back_rounded,
-                  color: ThemeService.isDark.value
-                      ? AppColors.whiteColor
-                      : AppColors.secondaryColor,
-                ),
               ),
             ),
-          if (selectedStep.value > 1) SizedBox(width: 15.w),
+          if (selectedStep.value > 1) SizedBox(width: 5.w),
           selectedStep.value >= totalSteps.value
-              ? Expanded(
-                  child: AppButton(
-                    isLoading: isLoading,
-                    text: endTitle.tr,
-                    borderWidth: 1.w,
-                    color: Colors.green,
-                    textStyle: textTheme.copyWith(
-                      color: AppColors.whiteColor,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16.sp,
-                    ),
-                    onPressed: onPressedNext,
+              ? Flexible(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          isLoading: isLoading,
+                          text: 'جاهز للتسليم',
+                          borderWidth: 1.w,
+                          color: Colors.green,
+                          textStyle: textTheme.copyWith(
+                            color: AppColors.whiteColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15.sp,
+                          ),
+                          onPressed: onPressedNext,
+                        ),
+                      ),
+                      SizedBox(width: 5.w),
+                      Expanded(
+                        child: AppButton(
+                          isLoading: isLoading,
+                          text: endTitle.tr,
+                          borderWidth: 1.w,
+                          color: Colors.green,
+                          textStyle: textTheme.copyWith(
+                            color: AppColors.whiteColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15.sp,
+                          ),
+                          onPressed: onPressedNext,
+                        ),
+                      ),
+                    ],
                   ),
                 )
               : Expanded(

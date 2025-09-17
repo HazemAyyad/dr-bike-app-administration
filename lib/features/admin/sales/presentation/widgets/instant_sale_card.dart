@@ -52,7 +52,11 @@ class InstantSaleCard extends GetView<SalesController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ...instantSale.subProducts.take(3).map(
+                        InfoRow(
+                          label: instantSale.product,
+                          value: '${instantSale.cost} ${'currency'.tr}',
+                        ),
+                        ...instantSale.subProducts.take(2).map(
                               (entry) => InfoRow(
                                 label: entry.productName,
                                 value: '${entry.cost} ${'currency'.tr}',

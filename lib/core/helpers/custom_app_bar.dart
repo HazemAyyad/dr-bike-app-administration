@@ -18,6 +18,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onPressedAdd,
     this.label,
     this.action = true,
+    this.dsibalBack = false,
   }) : super(key: key);
 
   final String title;
@@ -29,10 +30,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onPressedAdd;
   final bool? action;
   final List<Widget>? actions;
-
+  final bool dsibalBack;
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      automaticallyImplyLeading: false,
       scrolledUnderElevation: 0,
       title: Text(
         title.tr,
@@ -44,15 +46,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   : AppColors.secondaryColor,
             ),
       ),
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back_ios_new_rounded,
-          color: ThemeService.isDark.value
-              ? AppColors.primaryColor
-              : AppColors.secondaryColor,
-        ),
-        onPressed: () => Get.back(),
-      ),
+      leading: dsibalBack
+          ? const SizedBox.shrink()
+          : IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+              onPressed: () => Get.back(),
+            ),
       actions: actions ??
           [
             if (fromDateController != null ||

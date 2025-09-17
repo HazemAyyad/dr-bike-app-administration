@@ -8,10 +8,10 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../employee_section/data/models/logs_model.dart';
 
-class AdminDashboardDataSource {
+class AdminDashboardDatasource {
   final ApiConsumer api;
 
-  AdminDashboardDataSource({required this.api});
+  AdminDashboardDatasource({required this.api});
 
   Future<List<LogsModel>> getAdminLogs() async {
     try {

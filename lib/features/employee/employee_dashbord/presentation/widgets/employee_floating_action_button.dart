@@ -76,8 +76,8 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
                       children: [
                         ...controller.employeeAddList.map(
                           (e) => InkWell(
-                            overlayColor:
-                                const WidgetStatePropertyAll(Colors.transparent),
+                            overlayColor: const WidgetStatePropertyAll(
+                                Colors.transparent),
                             onTap: () {
                               Get.dialog(
                                 e['title'] == 'overtimeRequest'
@@ -200,7 +200,7 @@ class EmployeeRequstes extends GetView<EmployeeDashbordController> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: ThemeService.isDark.value
-          ? AppColors.darckColor
+          ? AppColors.darkColor
           : AppColors.whiteColor,
       child: Padding(
         padding: const EdgeInsets.all(20),

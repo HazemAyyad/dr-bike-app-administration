@@ -99,4 +99,7 @@ class AppRoutes {
   static const SAFESSCREEN = '/SafesScreen';
   static const FILEBOXSCREEN = '/FileBoxScreen';
   static const FILESSCREEN = '/FilesScreen';
+
+  // Counters
+  static const COUNTERSSCREEN = '/CountersScreen';
 }

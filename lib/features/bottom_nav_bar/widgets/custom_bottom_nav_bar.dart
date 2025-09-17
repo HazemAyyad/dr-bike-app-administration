@@ -6,6 +6,10 @@ import '../../../core/services/initial_bindings.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../../core/utils/assets_manger.dart';
+import '../../admin/counters/data/repositories/countrers_implement.dart';
+import '../../admin/counters/domain/usecases/get_report_by_type_usecase.dart';
+import '../../admin/counters/domain/usecases/get_report_information_usecase.dart';
+import '../../admin/counters/presentation/controllers/counters_controller.dart';
 import '../controllers/bottom_nav_bar_controller.dart';
 import 'build_nav_item.dart';
 
@@ -39,7 +43,25 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                     onTap: () => controller.changePage(0),
                   ),
                   userType == 'admin'
-                      ? const SizedBox.shrink()
+                      ? BuildNavItem(
+                          assetImage: AssetsManager.taskIcon,
+                          isSelected: controller.currentIndex.value == 1,
+                          label: 'statistics'.tr,
+                          onTap: () {
+                            CountersController(
+                              getReportInformationUsecase:
+                                  GetReportInformationUsecase(
+                                countersRepository:
+                                    Get.find<CountrersImplement>(),
+                              ),
+                              getReportByType: GetReportByTypeUsecase(
+                                countersRepository:
+                                    Get.find<CountrersImplement>(),
+                              ),
+                            ).getReportInformation();
+                            controller.changePage(1);
+                          },
+                        )
                       : BuildNavItem(
                           assetImage: AssetsManager.qrCode,
                           isSelected: controller.currentIndex.value == 1,

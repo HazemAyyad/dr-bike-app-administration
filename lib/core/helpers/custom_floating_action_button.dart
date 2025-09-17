@@ -56,15 +56,15 @@ class CustomFloatingActionButton extends StatelessWidget {
 
             Positioned(
               bottom: 50.h,
-              left: Get.locale!.languageCode == 'ar' ? 0.w : 150.w,
-              right: Get.locale!.languageCode == 'ar' ? 150.w : 0.w,
+              left: Get.locale!.languageCode == 'ar' ? 0.w : 100.w,
+              right: Get.locale!.languageCode == 'ar' ? 100.w : 0.w,
               child: SizeTransition(
                 sizeFactor: sizeAnimation,
                 axisAlignment: -1.0,
                 child: FadeTransition(
                   opacity: sizeAnimation,
                   child: Container(
-                    width: 250.w,
+                    // width: 250.w,
                     // height: 211.h,
                     padding: EdgeInsets.symmetric(vertical: 8.h),
                     decoration: BoxDecoration(
@@ -178,7 +178,7 @@ class BuildAddMenuItem extends StatelessWidget {
         // }
       },
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 5.h),
+        padding: EdgeInsets.symmetric(vertical: 8.h),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

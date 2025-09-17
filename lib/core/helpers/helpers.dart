@@ -31,7 +31,7 @@ class Helpers {
             width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
-                  ? AppColors.darckColor
+                  ? AppColors.darkColor
                   : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(20),
             ),
@@ -122,7 +122,7 @@ class Helpers {
             width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
-                  ? AppColors.darckColor
+                  ? AppColors.darkColor
                   : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(20),
             ),
@@ -190,7 +190,7 @@ class Helpers {
             width: MediaQuery.of(context).size.width * 0.8, // 80% من عرض الشاشة
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
-                  ? AppColors.darckColor
+                  ? AppColors.darkColor
                   : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(20),
             ),

@@ -115,7 +115,7 @@ class SalesController extends GetxController
   ];
 
   // add profit sale
-  Future<void> addProfitSale({required BuildContext context}) async {
+  Future<void> addProfitSale(BuildContext context) async {
     if (formKey.currentState!.validate()) {
       isLoading(true);
       final result = await addProfitSaleUsecase.call(
@@ -177,80 +177,80 @@ class SalesController extends GetxController
   }
 
   // add instant sale
-  Future<void> addInstantSale({required BuildContext context}) async {
-    if (formKey.currentState!.validate()) {
-      isLoading(true);
-      final result = await addInstantSalesUsecase.call(
-        productId: items.first.selectedItem.value,
-        quantity: items.first.quantityController.text,
-        cost: items.first.priceController.text,
-        discount: discountController.text,
-        totalCost: totalCost.value.toString(),
-        note: noteController.text,
-        type: items.first.selectedCustomersSellers.value ? 'project' : 'normal',
-        projectId: items.first.selectedCustomersSellers.value
-            ? items.first.selectedValue.value!
-            : '',
-        otherProducts: items,
-      );
-      result.fold(
-        (failure) {
-          String errorMessages = '';
-          bool permissionsAdded = false;
-          final errors = failure.data?['errors'] as Map<String, dynamic>?;
-          if (errors != null) {
-            errors.forEach(
-              (key, value) {
-                if (key.startsWith('permissions')) {
-                  if (!permissionsAdded) {
-                    errorMessages += "Permissions: ${value.first}\n";
-                    permissionsAdded = true;
-                  }
-                } else {
-                  for (var msg in value) {
-                    errorMessages += "- $key: $msg\n";
-                  }
+  Future<void> addInstantSale(BuildContext context) async {
+    isLoading(true);
+    final result = await addInstantSalesUsecase.call(
+      productId: items.first.selectedItem.value,
+      quantity: items.first.quantityController.text,
+      cost: items.first.priceController.text,
+      discount: discountController.text.isEmpty ? '0' : discountController.text,
+      totalCost: totalCost.value.toString(),
+      note: noteController.text,
+      type: items.first.selectedCustomersSellers.value ? 'project' : 'normal',
+      projectId: items.first.selectedCustomersSellers.value
+          ? items.first.selectedValue.value!
+          : '',
+      otherProducts: items,
+    );
+    result.fold(
+      (failure) {
+        String errorMessages = '';
+        bool permissionsAdded = false;
+        final errors = failure.data?['errors'] as Map<String, dynamic>?;
+        if (errors != null) {
+          errors.forEach(
+            (key, value) {
+              if (key.startsWith('permissions')) {
+                if (!permissionsAdded) {
+                  errorMessages += "Permissions: ${value.first}\n";
+                  permissionsAdded = true;
                 }
-              },
-            );
-          } else {
-            errorMessages = failure.data?['message'] ?? failure.errMessage;
-          }
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: errorMessages,
-          );
-        },
-        (success) async {
-          noteController.clear();
-          totalCostController.clear();
-          items.map((e) => e.quantityController.clear());
-          items.map((e) => e.priceController.clear());
-          items.map((e) => e.selectedItem.value = '');
-          discountController.clear();
-          totalController.clear();
-          Future.delayed(
-            const Duration(milliseconds: 500),
-            () {
-              getProfitSales(loding: true);
+              } else {
+                for (var msg in value) {
+                  errorMessages += "- $key: $msg\n";
+                }
+              }
             },
           );
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-              Get.back();
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-        },
-      );
-    }
+        } else {
+          errorMessages = failure.data?['message'] ?? failure.errMessage;
+        }
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: errorMessages,
+        );
+      },
+      (success) async {
+        noteController.clear();
+        totalCostController.clear();
+        items.map((e) => e.quantityController.clear());
+        items.map((e) => e.priceController.clear());
+        items.map((e) => e.selectedItem.value = '');
+        discountController.clear();
+        totalController.clear();
+        Future.delayed(
+          const Duration(milliseconds: 500),
+          () {
+            getInstantSales(loding: true);
+            getProfitSales(loding: true);
+          },
+        );
+        Future.delayed(
+          const Duration(milliseconds: 1000),
+          () {
+            Get.back();
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+
     isLoading(false);
   }
 

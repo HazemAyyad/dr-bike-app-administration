@@ -182,6 +182,7 @@ class EmployeeTasksController extends GetxController {
     );
     deleteTasDuplicate.value = false;
     deleteTask.value = false;
+    isLoading(false);
     update();
   }
 

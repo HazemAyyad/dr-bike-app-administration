@@ -14,7 +14,7 @@ class AppColors {
   /// #09113394
   static const Color dubleColor = Color.fromRGBO(17, 51, 148, 0.035);
 
-  static const Color darckColor = Color(0XFF121212);
+  static const Color darkColor = Color(0XFF121212);
 
   /// #FFFFFF
   static const Color whiteColor = Color(0XFFFFFFFF);

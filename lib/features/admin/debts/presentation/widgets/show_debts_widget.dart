@@ -76,7 +76,7 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                       ignoreSafeArea: false,
                       isScrollControlled: true,
                       backgroundColor: ThemeService.isDark.value
-                          ? AppColors.darckColor
+                          ? AppColors.darkColor
                           : Colors.white,
                     );
                   },

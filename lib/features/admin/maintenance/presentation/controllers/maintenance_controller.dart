@@ -3,9 +3,17 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/utils/assets_manger.dart';
+import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/maintenances_model.dart';
+import '../../domain/usecases/maintenance_usecase.dart';
 
 class MaintenanceController extends GetxController {
+  final MaintenanceUsecase maintenanceUsecase;
+
+  MaintenanceController({
+    required this.maintenanceUsecase,
+  });
+
   TextEditingController employeeNameController = TextEditingController();
   TextEditingController fromDateController = TextEditingController();
   TextEditingController toDateController = TextEditingController();
@@ -18,18 +26,11 @@ class MaintenanceController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
+    // getMaintenancesData();
+    update();
   }
 
   List<String> tabs = ['newRequest', 'inProgress', 'readyToDeliver', 'archive'];
-
-  final RxList<Map<String, dynamic>> maintenanceList =
-      <Map<String, dynamic>>[].obs;
-
-  @override
-  void onInit() {
-    super.onInit();
-    fetchOrders();
-  }
 
   @override
   void onClose() {
@@ -39,140 +40,6 @@ class MaintenanceController extends GetxController {
     customerNameController.dispose();
     detailsController.dispose();
     super.onClose();
-  }
-
-  void fetchOrders() {
-    // Simulate fetching orders based on the current tab
-    maintenanceList.clear();
-    if (currentTab.value == 0) {
-      maintenanceList.addAll(
-        [
-          {
-            'id': '1',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '2',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '2',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '1',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '3',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الاربعاء',
-            'time': '-3',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-        ],
-      );
-    } else if (currentTab.value == 1) {
-      maintenanceList.addAll(
-        [
-          {
-            'id': '1',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '2',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '2',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '1',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '3',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الاربعاء',
-            'time': '-3',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-        ],
-      );
-    } else if (currentTab.value == 2) {
-      maintenanceList.addAll(
-        [
-          {
-            'id': '1',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '2',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '2',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '1',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '3',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الاربعاء',
-            'time': '-3',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-        ],
-      );
-    } else if (currentTab.value == 3) {
-      maintenanceList.addAll(
-        [
-          {
-            'id': '1',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '2',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '2',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الثلاثاء',
-            'time': '1',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-          {
-            'id': '3',
-            'name': 'محمد على',
-            'date': '2025/07/25',
-            'days': 'الاربعاء',
-            'time': '-3',
-            'archive': 'تم التسليم',
-            'image': AssetsManager.noImageNet,
-          },
-        ],
-      );
-    }
   }
 
   // متغير لاظهار الخطوات
@@ -222,4 +89,98 @@ class MaintenanceController extends GetxController {
 
   // final Rx<File?> selectedImage = Rx<File?>(null);
   List<File> selectedMedia = [];
+  final RxBool isLoading = false.obs;
+
+  final List<MaintenanceDataModel> maintenancesList = [];
+  final List<MaintenanceDataModel> ongoingMaintenancesList = [];
+  final List<MaintenanceDataModel> readyMaintenancesList = [];
+  final List<MaintenanceDataModel> archiveMaintenancesList = [];
+
+  void getMaintenancesData() async {
+    isLoading(true);
+    update();
+
+    final maintenancesData = await maintenanceUsecase.call(tab: 0);
+    final maintenances = maintenancesData['maintenance_details'] as List;
+    final maintenancesList =
+        maintenances.map((e) => MaintenanceDataModel.fromJson(e)).toList();
+    this.maintenancesList.assignAll(maintenancesList);
+
+    final ongoingMaintenancesData = await maintenanceUsecase.call(tab: 1);
+    final ongoingMaintenances =
+        ongoingMaintenancesData['maintenance_details'] as List;
+    final ongoingMaintenancesList = ongoingMaintenances
+        .map((e) => MaintenanceDataModel.fromJson(e))
+        .toList();
+    this.ongoingMaintenancesList.assignAll(ongoingMaintenancesList);
+
+    final readyMaintenancesData = await maintenanceUsecase.call(tab: 2);
+    final readyMaintenances =
+        readyMaintenancesData['maintenance_details'] as List;
+    final readyMaintenancesList =
+        readyMaintenances.map((e) => MaintenanceDataModel.fromJson(e)).toList();
+    this.readyMaintenancesList.assignAll(readyMaintenancesList);
+
+    final archiveMaintenancesData = await maintenanceUsecase.call(tab: 3);
+    final archiveMaintenances =
+        archiveMaintenancesData['maintenance_details'] as List;
+    final archiveMaintenancesList = archiveMaintenances
+        .map((e) => MaintenanceDataModel.fromJson(e))
+        .toList();
+    this.archiveMaintenancesList.assignAll(archiveMaintenancesList);
+    isLoading(false);
+    update();
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    getMaintenancesData();
+  }
+}
+
+Color getStatusColor({
+  required String receiptDate,
+  required String receiptTime,
+  required int currentTab,
+}) {
+  // لو التاب الحالي هو 3 يبقى أخضر على طول
+  if (currentTab == 3) return AppColors.customGreen1;
+
+  // دمج التاريخ مع الوقت وتحويله لـ DateTime
+  final DateTime receiptDateTime = DateTime.parse("$receiptDate $receiptTime");
+
+  // الفرق بين وقت الاستلام والوقت الحالي
+  final Duration diff = receiptDateTime.difference(DateTime.now());
+
+  if (diff.inHours > 1) {
+    return AppColors.customGreen1; // باقي أكتر من ساعة
+  } else if (diff.inMinutes > 0) {
+    return AppColors.customOrange3; // باقي أقل من ساعة (لكن لسه ما جاش)
+  } else {
+    return AppColors.redColor; // الوقت فات
+  }
+}
+
+String getStatusText({
+  required String receiptDate,
+  required String receiptTime,
+}) {
+  final DateTime receiptDateTime = DateTime.parse("$receiptDate $receiptTime");
+  final Duration diff = receiptDateTime.difference(DateTime.now());
+
+  // عدد الساعات (ممكن يكون بالسالب لو متأخر)
+  final int hours = diff.inHours;
+
+  // لو باقي وقت
+  if (hours > 0) {
+    return "$hours ${hours == 1 ? 'hour'.tr : 'hours'.tr}";
+  }
+  // لو متأخر
+  else if (hours < 0) {
+    return "${hours.abs()} ${hours.abs() == 1 ? 'hour'.tr : 'hours'.tr}";
+  }
+
+  // لو بالظبط دلوقتي
+  return 'late'.tr;
 }

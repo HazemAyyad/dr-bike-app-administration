@@ -11,7 +11,7 @@ import '../datasources/project_datasource.dart';
 
 class ProjectImplement implements ProjectRepository {
   final NetworkInfo networkInfo;
-  final ProjectDataSource projectDataSource;
+  final ProjectDatasource projectDataSource;
 
   ProjectImplement({
     required this.networkInfo,
@@ -36,9 +36,10 @@ class ProjectImplement implements ProjectRepository {
   // create project
   @override
   Future<Either<Failure, String>> createProject({
+    required String projectId,
     required String name,
     required String projectCost,
-    required String productId,
+    required List<ProjectProductModel> productId,
     required List<File> projectImages,
     required String partnerShare,
     required String partnerPercentage,
@@ -54,6 +55,7 @@ class ProjectImplement implements ProjectRepository {
     }
     try {
       final result = await projectDataSource.createProject(
+        projectId: projectId,
         projectName: name,
         projectCost: projectCost,
         productId: productId,
@@ -90,6 +92,56 @@ class ProjectImplement implements ProjectRepository {
     try {
       final result =
           await projectDataSource.getProjectDetails(projectId: projectId);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> addProductToProject({
+    required int projectId,
+    required String productId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await projectDataSource.addProductToProject(
+        projectId: projectId,
+        productId: productId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<dynamic> getProjectExpensesAndSales({
+    required bool isSales,
+    required String projectId,
+    required String expenses,
+    required String notes,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await projectDataSource.getProjectExpensesAndSales(
+        isSales: isSales,
+        projectId: projectId,
+        expenses: expenses,
+        notes: notes,
+      );
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);

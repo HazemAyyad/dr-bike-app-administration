@@ -7,6 +7,7 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../payment_method/presentation/views/payment_screen.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/new_instant_sale/add_new_instant_sale.dart';
 import '../widgets/new_instant_sale/discount_widget.dart';
@@ -45,7 +46,18 @@ class NewInstantSaleScreen extends GetView<SalesController> {
                       color: Colors.white,
                     ),
                 onPressed: () {
-                  controller.addInstantSale(context: context);
+                  if (controller.formKey.currentState!.validate()) {
+                    Get.bottomSheet(
+                      const PaymentScreen(type: 'receive'),
+                      backgroundColor: Colors.white,
+                      isScrollControlled: true,
+                    ).then((value) {
+                      if (value == true) {
+                        // ignore: use_build_context_synchronously
+                        controller.addInstantSale(context);
+                      }
+                    });
+                  }
                 },
               ),
             ],

@@ -10,6 +10,7 @@ const Map<String, String> en = {
   'info': 'Info',
   'failed': 'Failed',
   'edit': 'Edit',
+  'late': 'Late',
 
   // messages
   'noInternetConnection': 'No Internet Connection',
@@ -104,12 +105,14 @@ const Map<String, String> en = {
   'currency1': 'Dollar',
   'currency2': 'Dinar',
   'check': 'Check',
+  'deb': 'debt',
   'rejectedd': 'Rejected',
   'reference': 'Reference',
   'cashed': 'Cashed',
   'pending': 'قيد الانتظار',
   'approved': 'مقبول',
   'rejected': 'مرفوض',
+  'addPaymentMethod': '+ Add Payment Method',
 
   'employeeTasks': 'Employee Tasks',
   'privateTasks': 'Special Tasks',
@@ -129,6 +132,7 @@ const Map<String, String> en = {
   'financialMatters': 'Expenses and Financial Affairs',
   'maintenance': 'Maintenance',
   'checksandCommitments': 'Checks and commitments',
+  'countersAndStatisticsAndReports': 'Counters and Statistics and Reports',
 
   'add': 'Add',
   'newInvoice': 'New Invoice',
@@ -229,6 +233,7 @@ const Map<String, String> en = {
 
   // add Task
   'createNewEmployeeTask': 'Create New Employee Task',
+  'editEmployeeTask': 'Edit Employee Task',
   'addNewPravateTask': 'Add New Private Task',
   'employeeSection': 'Employee Section',
 
@@ -412,12 +417,14 @@ const Map<String, String> en = {
   'completionPercentage': 'Percentage',
 
   'createProject': 'Create New Project',
+  'editProject': 'Edit Project',
   'partnerData': 'Partner Data',
   'projectNameExample': 'Example: Engine Deal Project',
   'uploadProjectImages': 'Upload Project or Product Images',
   'projectCost': 'Project Cost',
   'projectCostExample': 'Example: 2000 Shekels',
   'paymentMethod': 'Payment Method',
+  'paymentMethodReceive': 'Payment Method Receive',
   'paymentMethodExample': 'Example: Cash',
   'cash': 'Cash',
   'visa': 'Visa',
@@ -443,6 +450,9 @@ const Map<String, String> en = {
   'projectExpenses': 'Project Expenses',
   'projectSales': 'Project Sales',
   'endProject': 'End Project',
+  'endProjectText': 'Are you sure you want to end the project?',
+  'addProjectExpenses': 'Add Project Expenses',
+  'totalSalesValue': 'Total Sales:',
 
   // قسم صناعة الاهداف
   'targetSection': 'Goal Creation',
@@ -573,6 +583,8 @@ const Map<String, String> en = {
   'readQuantity': '*Only quantity and discount (if any) are filled in',
   'complete': 'Complete Sale',
   'newCashProfit': 'New Cash Profit',
+  'totalCost': 'Total Cost',
+  'cashValue': 'Cash Value',
 
   // قسم المبيعات
   'forYou': 'For You',
@@ -606,6 +618,7 @@ const Map<String, String> en = {
   'newReceipt': 'New Check Receipt',
   'newCheck': 'Create New Check',
   'checkValue': 'Check Amount',
+  'debtValue2': 'Debt Value',
   'beneficiaryName': 'Payee Name',
   'currencyy': 'Currency',
   'currencyExample': 'Example: Shekel',
@@ -652,7 +665,9 @@ const Map<String, String> en = {
   "deliveryTime": "Delivery Time",
   "uploadMedia": "Upload product images or video",
   "selectVideo": "Select Video",
+  "takeVideo": "Take Video",
   "selectImage": "Select Image",
+  "takeImage": "Take Image",
   'filesSelected': 'Files Selected',
   "back": "Back",
   "delivered": "Delivered",
@@ -703,6 +718,7 @@ const Map<String, String> en = {
   // قسم المصاريف والامور المالية
   'assets': 'Assets',
   'theExpenses': 'The Expenses',
+  'totalExpenses': 'Total Expenses:',
   'officialPapers': 'Official Papers',
 
   'totalAssets': 'Total Assets',
@@ -725,6 +741,8 @@ const Map<String, String> en = {
   "destructionValue": "Destruction Value",
   "addExpense": "Add Expense",
   "expenseName": "Expense Name",
+  "payment": "Payment",
+  "receiptt": "Receipt",
   "invoiceImage": "Invoice Image",
   "submitExpense": "Submit Expense",
   "damageReason": "Reason for Damage",
@@ -757,5 +775,25 @@ const Map<String, String> en = {
   "file_box_name": "File Box Name",
   "create_file": "Create File",
   "file_name": "File Name",
-  "delete_file": "Delete File"
+  "delete_file": "Delete File",
+
+  // قسم العدادات والاحصائيات والتقارير
+  "statistics": "Statistics",
+  "totalSaless": "Total Sales",
+  "debtsWeOwe": "Debts We Owe",
+  "totalBoxes": "Total Boxes",
+  "netProfit": "Net Profit",
+  "purchasesValue": "Purchases Value",
+  "totalChecks": "Total Checks",
+  "numberOfProjects": "Number of Projects",
+  "numberOfPeople": "Number of People",
+  "totalExpensess": "Total Expenses",
+  "numberOfEmployees": "Number of Employees",
+  "costOfGoods": "Cost of Goods",
+  "netShopCapital": "Net Shop Capital",
+  "shopCapital": "Shop Capital",
+  "completedDailyTasks": "Completed Employee Tasks (Daily)",
+  "incompletedDailyTasks": "Incompleted Employee Tasks (Daily)",
+  "completedMonthlyTasks": "Completed Employee Tasks (Monthly)",
+  "incompletedMonthlyTasks": "Incompleted Employee Tasks (Monthly)"
 };

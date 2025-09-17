@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
@@ -25,17 +24,11 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            expandedHeight: 80.h,
-            automaticallyImplyLeading: false,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Center(
-                child: AppTabs(
-                  tabs: controller.tabs,
-                  currentTab: controller.currentTab,
-                  changeTab: controller.changeTab,
-                ),
-              ),
+          SliverToBoxAdapter(
+            child: AppTabs(
+              tabs: controller.tabs,
+              currentTab: controller.currentTab,
+              changeTab: controller.changeTab,
             ),
           ),
           const MaintenanceDataWidget(),

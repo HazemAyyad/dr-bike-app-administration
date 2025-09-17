@@ -7,10 +7,10 @@ import '../../../../core/databases/api/end_points.dart';
 import '../../../../core/errors/error_model.dart';
 import '../../../../core/errors/expentions.dart';
 
-class AuthRemoteDataSource {
+class AuthRemoteDatasource {
   final ApiConsumer api;
 
-  AuthRemoteDataSource({required this.api});
+  AuthRemoteDatasource({required this.api});
 
   Future<Map<String, dynamic>> register({
     required String name,

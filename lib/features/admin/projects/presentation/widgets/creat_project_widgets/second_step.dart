@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/custom_dropdown_field.dart';
-import '../../../../../core/helpers/custom_text_field.dart';
-import '../controllers/project_controller.dart';
+import '../../../../../../core/helpers/custom_dropdown_field.dart';
+import '../../../../../../core/helpers/custom_text_field.dart';
+import '../../controllers/project_controller.dart';
 
 class SecondStep extends GetView<ProjectController> {
   const SecondStep({Key? key}) : super(key: key);
@@ -20,6 +20,9 @@ class SecondStep extends GetView<ProjectController> {
                 label: 'paymentMethod',
                 hint: 'paymentMethodExample',
                 items: controller.paymentMethodList,
+                value: controller.paymentMethodController.text.isEmpty
+                    ? null
+                    : controller.paymentMethodController.text,
                 onChanged: (value) {
                   controller.paymentMethodController.text = value!;
                 },

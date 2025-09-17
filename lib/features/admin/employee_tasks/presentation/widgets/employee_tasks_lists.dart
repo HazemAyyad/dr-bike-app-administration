@@ -36,7 +36,7 @@ class EmployeeTasksLists extends StatelessWidget {
               ? Get.dialog(
                   AlertDialog(
                     backgroundColor: ThemeService.isDark.value
-                        ? AppColors.darckColor
+                        ? AppColors.darkColor
                         : AppColors.whiteColor,
                     content: Obx(
                       () => controller.isLoading.value
