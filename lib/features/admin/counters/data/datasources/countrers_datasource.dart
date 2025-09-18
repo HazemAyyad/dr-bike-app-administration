@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
+import 'dart:typed_data';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -44,8 +42,10 @@ class CountrersDatasource {
           'from_date': fromDate,
           'to_date': toDate,
         },
+        options: Options(responseType: ResponseType.bytes),
+        isFormData: true,
       );
-      return Uint8List.fromList(utf8.encode(response.data));
+      return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

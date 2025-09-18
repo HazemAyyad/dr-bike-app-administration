@@ -6,7 +6,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../data/models/assets_models/assets_detials_model.dart';
 import '../../data/models/assets_models/assets_log_model.dart';
 import '../../data/models/expenses_models/expense_detail_model.dart';
-import '../../presentation/views/official_papers_screens/file_data_model.dart';
+import '../../data/models/official_papers_models/file_data_model.dart';
 
 abstract class FinancialAffairsRepository {
   // assets
@@ -70,7 +70,11 @@ abstract class FinancialAffairsRepository {
     required String treasuryId,
   });
 
-  Future<Either<Failure, String>> deleteFile({required String fileId});
+  Future<Either<Failure, String>> deleteFiles({
+    required String? fileId,
+    required String? treasuryId,
+    required String? fileBoxId,
+  });
 
   Future<List<FilePapersModel>> getFilePapers({required String fileId});
 }

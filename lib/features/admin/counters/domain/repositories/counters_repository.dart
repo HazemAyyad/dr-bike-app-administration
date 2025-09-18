@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:flutter/services.dart';
+import 'dart:typed_data';
 
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/report_information_model.dart';

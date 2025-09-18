@@ -13,14 +13,14 @@ class CustomCalendar extends StatelessWidget {
     required this.onTap,
     required this.selectedDay,
     this.label,
-    this.isrequired = false,
+    this.isRequired = false,
   }) : super(key: key);
 
   final Function() onTap;
   final Rx<DateTime> selectedDay;
   final RxBool isVisible;
   final String? label;
-  final bool? isrequired;
+  final bool? isRequired;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class CustomCalendar extends StatelessWidget {
                           fontWeight: FontWeight.w400,
                         ),
                   ),
-                  isrequired!
+                  isRequired!
                       ? Text(
                           '*',
                           style:
@@ -61,9 +61,12 @@ class CustomCalendar extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: AppColors.customGreyColor2,
-                ),
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : AppColors.whiteColor2,
+                // border: Border.all(
+                //   color: AppColors.customGreyColor2,
+                // ),
                 borderRadius: BorderRadius.circular(11.r),
               ),
               child: Column(

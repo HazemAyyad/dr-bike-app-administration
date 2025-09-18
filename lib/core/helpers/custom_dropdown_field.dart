@@ -72,7 +72,7 @@ class CustomDropdownField extends StatelessWidget {
             color: ThemeService.isDark.value
                 ? AppColors.customGreyColor
                 : AppColors.whiteColor2,
-            border: border ?? Border.all(color: Colors.transparent),
+            // border: border ?? Border.all(color: Colors.transparent),
             borderRadius: BorderRadius.circular(11.r),
           ),
           child: DropdownButtonFormField<String>(
@@ -142,6 +142,7 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
   final bool Function(dynamic, dynamic) compareFn;
   final FormFieldValidator<dynamic>? validator;
   final TextStyle? labelStyle;
+  final dynamic value;
 
   const CustomDropdownFieldWithSearch({
     Key? key,
@@ -156,6 +157,7 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
     required this.compareFn,
     this.validator,
     this.labelStyle,
+    this.value,
   }) : super(key: key);
 
   @override
@@ -201,6 +203,7 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
             borderRadius: BorderRadius.circular(11.r),
           ),
           child: DropdownSearch<dynamic>(
+            selectedItem: value,
             items: (filter, infiniteScrollProps) => items,
             itemAsString: itemAsString,
             compareFn: compareFn,

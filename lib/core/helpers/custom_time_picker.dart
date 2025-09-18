@@ -7,127 +7,158 @@ import 'package:omni_datetime_picker/omni_datetime_picker.dart';
 
 import '../services/theme_service.dart';
 
-class CustomTimePicker extends StatelessWidget {
-  const CustomTimePicker({
+class CustomTimePicker extends FormField<TimeOfDay?> {
+  CustomTimePicker({
     Key? key,
-    required this.isVisible,
-    required this.onTap,
-    required this.selectedTime,
-    required this.label,
-    this.isRequired = false,
-  }) : super(key: key);
+    required RxBool isVisible,
+    required Rx<TimeOfDay> selectedTime,
+    required String label,
+    required VoidCallback onTap,
+    bool isRequired = false,
+    FormFieldValidator<TimeOfDay?>? validator,
+  }) : super(
+          key: key,
+          validator: validator ??
+              (value) {
+                if (isRequired && (value == null)) {
+                  return label.tr;
+                }
+                return null;
+              },
+          initialValue: selectedTime.value,
+          builder: (FormFieldState<TimeOfDay?> state) {
+            final textTheme = Theme.of(state.context).textTheme.bodyMedium!;
 
-  final Function() onTap;
-  final Rx<TimeOfDay> selectedTime;
-  final RxBool isVisible;
-  final String label;
-  final bool? isRequired;
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme.bodyMedium!;
-
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Text(
-              label.tr,
-              style: textTheme.copyWith(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor6
-                    : AppColors.customGreyColor,
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-            isRequired!
-                ? Text(
-                    '*',
-                    style: textTheme.copyWith(
-                      color: Colors.red,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Label
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      label.tr,
+                      style: textTheme.copyWith(
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor6
+                            : AppColors.customGreyColor,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                  )
-                : const SizedBox.shrink(),
-          ],
-        ),
-        SizedBox(height: 10.h),
-        Obx(
-          () => GestureDetector(
-            onTap: onTap,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor
-                    : AppColors.whiteColor2,
-                borderRadius: BorderRadius.circular(11.r),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+                    if (isRequired)
                       Text(
-                        '${(selectedTime.value.hour % 12 == 0 ? 12 : selectedTime.value.hour % 12).toString().padLeft(2, '0')}:${selectedTime.value.minute.toString().padLeft(2, '0')} ${selectedTime.value.hour < 12 ? 'morning'.tr : 'evening'.tr}',
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor2
-                                  : AppColors.customGreyColor5,
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w400,
-                            ),
+                        '*',
+                        style: textTheme.copyWith(
+                          color: Colors.red,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        color: AppColors.primaryColor,
-                        size: 20.sp,
+                  ],
+                ),
+                SizedBox(height: 10.h),
+
+                // Picker
+                Obx(
+                  () => GestureDetector(
+                    onTap: onTap,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 16.w, vertical: 12.h),
+                      decoration: BoxDecoration(
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.whiteColor2,
+                        borderRadius: BorderRadius.circular(11.r),
                       ),
-                    ],
-                  ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.decelerate,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) {
-                        return SizeTransition(
-                          sizeFactor: animation,
-                          child: child,
-                        );
-                      },
-                      child: isVisible.value
-                          ? Padding(
-                              padding: EdgeInsets.only(top: 20.h),
-                              child: OmniDateTimePicker(
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2100),
-                                is24HourMode: false,
-                                isShowSeconds: false,
-                                minutesInterval: 1,
-                                amText: 'morning'.tr,
-                                pmText: 'evening'.tr,
-                                type: OmniDateTimePickerType.time,
-                                onDateTimeChanged: (selectedTime) {
-                                  this.selectedTime.value =
-                                      TimeOfDay.fromDateTime(selectedTime);
-                                },
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${(selectedTime.value.hour % 12 == 0 ? 12 : selectedTime.value.hour % 12).toString().padLeft(2, '0')}:${selectedTime.value.minute.toString().padLeft(2, '0')} ${selectedTime.value.hour < 12 ? 'morning'.tr : 'evening'.tr}',
+                                style: Theme.of(state.context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: ThemeService.isDark.value
+                                          ? AppColors.customGreyColor2
+                                          : AppColors.customGreyColor5,
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
                               ),
-                            )
-                          : const SizedBox(),
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                color: AppColors.primaryColor,
+                                size: 20.sp,
+                              ),
+                            ],
+                          ),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.decelerate,
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder: (child, animation) {
+                                return SizeTransition(
+                                  sizeFactor: animation,
+                                  child: child,
+                                );
+                              },
+                              child: isVisible.value
+                                  ? Padding(
+                                      padding: EdgeInsets.only(top: 20.h),
+                                      child: OmniDateTimePicker(
+                                        initialDate: DateTime(
+                                          DateTime.now().year,
+                                          DateTime.now().month,
+                                          DateTime.now().day,
+                                          selectedTime.value.hour,
+                                          selectedTime.value.minute,
+                                        ),
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime(2100),
+                                        is24HourMode: false,
+                                        isShowSeconds: false,
+                                        minutesInterval: 1,
+                                        amText: 'morning'.tr,
+                                        pmText: 'evening'.tr,
+                                        type: OmniDateTimePickerType.time,
+                                        onDateTimeChanged: (pickedDateTime) {
+                                          final newTime =
+                                              TimeOfDay.fromDateTime(
+                                                  pickedDateTime);
+                                          selectedTime.value = newTime;
+                                          state.didChange(newTime);
+                                        },
+                                      ),
+                                    )
+                                  : const SizedBox(),
+                            ),
+                          ),
+
+                          // Error Text
+                          if (state.hasError)
+                            Padding(
+                              padding: EdgeInsets.only(top: 5.h),
+                              child: Text(
+                                state.errorText!,
+                                style: const TextStyle(
+                                    color: Colors.red, fontSize: 12),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+                ),
+              ],
+            );
+          },
+        );
 }
 
 // class TimePicker extends StatefulWidget {

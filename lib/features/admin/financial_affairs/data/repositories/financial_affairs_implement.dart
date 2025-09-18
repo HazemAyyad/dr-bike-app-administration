@@ -4,7 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_detials_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_log_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/expenses_models/expense_detail_model.dart';
-import 'package:doctorbike/features/admin/financial_affairs/presentation/views/official_papers_screens/file_data_model.dart';
+import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/file_data_model.dart';
 
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
@@ -328,13 +328,20 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
 
   // delete file
   @override
-  Future<Either<Failure, String>> deleteFile({required String fileId}) async {
+  Future<Either<Failure, String>> deleteFiles({
+    required String? fileId,
+    required String? treasuryId,
+    required String? fileBoxId,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
-      final result =
-          await financialAffairsDatasource.deleteFile(fileId: fileId);
+      final result = await financialAffairsDatasource.deleteFiles(
+        fileId: fileId,
+        treasuryId: treasuryId,
+        fileBoxId: fileBoxId,
+      );
       if (result['status'] == 'success') {
         return Right(result['message']!);
       }

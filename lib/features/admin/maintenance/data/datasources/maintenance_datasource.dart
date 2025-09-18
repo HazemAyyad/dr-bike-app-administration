@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
@@ -34,98 +36,79 @@ class MaintenanceDatasource {
     }
   }
 
-  // // add person
-  // Future<dynamic> addPerson({
-  //   required AddPersonEntity data,
-  //   required String customerId,
-  //   required String sellerId,
-  // }) async {
-  //   try {
-  //     Map<String, dynamic> iDImage = {};
-  //     iDImage['ID_image[]'] = await Future.wait(
-  //       data.iDImage.map((e) async {
-  //         if (e.path.startsWith('http')) {
-  //           return e.path.split('http://doctorbike.mj-sall.com/').last;
-  //         } else {
-  //           // لو ملف جديد → Multipart
-  //           return await MultipartFile.fromFile(
-  //             e.path,
-  //             filename: e.path.split('/').last,
-  //           );
-  //         }
-  //       }),
-  //     );
+  // add maintenance
+  Future<dynamic> creatMaintenance({
+    String? maintenanceId,
+    required String customerId,
+    required String sellerId,
+    required String description,
+    required String receipDate,
+    required String receiptTime,
+    required List<File> files,
+    required String status,
+  }) async {
+    try {
+      Map<String, dynamic> maintenanceFiles = {};
+      await Future.wait(
+        List.generate(files.length, (i) async {
+          if (files[i].path.contains('http')) {
+            maintenanceFiles['files[$i]'] = files[i].path;
+          } else {
+            maintenanceFiles['files[$i]'] = await MultipartFile.fromFile(
+              files[i].path,
+              filename: files[i].path.split('/').last,
+            );
+          }
+        }),
+      );
 
-  //     Map<String, dynamic> licenseImage = {};
-  //     licenseImage['license_image[]'] = await Future.wait(
-  //       data.licenseImage.map((e) async {
-  //         if (e.path.startsWith('http')) {
-  //           return e.path.split('http://doctorbike.mj-sall.com/').last;
-  //         } else {
-  //           return await MultipartFile.fromFile(
-  //             e.path,
-  //             filename: e.path.split('http://doctorbike.mj-sall.com/').last,
-  //           );
-  //         }
-  //       }),
-  //     );
+      final response = await api.post(
+        status.isNotEmpty
+            ? EndPoints.changeMaintenanceStatus
+            : EndPoints.addMaintenance,
+        data: {
+          if (maintenanceId != null) 'maintenance_id': maintenanceId,
+          'customer_id': customerId,
+          'seller_id': sellerId,
+          'description': description,
+          'receipt_date': receipDate,
+          'receipt_time': receiptTime,
+          ...maintenanceFiles,
+          if (status.isNotEmpty) 'status': status,
+        },
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
 
-  //     final response = await api.post(
-  //       data.isEdit! ? EndPoints.editPerson : EndPoints.createPerson,
-  //       data: {
-  //         if (customerId.isNotEmpty) 'customer_id': customerId,
-  //         if (sellerId.isNotEmpty) 'seller_id': sellerId,
-  //         if (!data.isEdit!) 'person_type': data.personType,
-  //         'type': data.personType,
-  //         'name': data.name,
-  //         'address': data.address,
-  //         'phone': data.phone,
-  //         'sub_phone': data.subPhone,
-  //         'job_title': data.jobTitle,
-  //         'facebook_username': data.facebookUsername,
-  //         'facebook_link': data.facebookLink,
-  //         'instagram_username': data.instagramUsername,
-  //         'instagram_link': data.instagramLink,
-  //         'related_people': data.relatedPeople,
-  //         'relative_phone': data.relativePhone,
-  //         'relative_job_title': data.relativeJobTitle,
-  //         'work_address': data.workAddress,
-  //         ...iDImage,
-  //         ...licenseImage,
-  //       },
-  //       isFormData: true,
-  //     );
-  //     return response.data;
-  //   } on DioException catch (e) {
-  //     final data = e.response?.data;
-  //     throw ServerException(
-  //       ErrorModel(
-  //         errorMessage: data['message'] ?? 'Unknown error',
-  //         status: data['status'] ?? 500,
-  //         data: data['data'] ?? {},
-  //       ),
-  //     );
-  //   }
-  // }
-
-  // // get person data
-  // Future<PersonDataModel> getPersonData({
-  //   required String customerId,
-  //   required String sellerId,
-  // }) async {
-  //   try {
-  //     final response = await api.post(EndPoints.showPerson,
-  //         data: {'customer_id': customerId, 'seller_id': sellerId});
-  //     return PersonDataModel.fromJson(response.data['person_details']);
-  //   } on DioException catch (e) {
-  //     final data = e.response?.data;
-  //     throw ServerException(
-  //       ErrorModel(
-  //         errorMessage: data['message'] ?? 'Unknown error',
-  //         status: data['status'] ?? 500,
-  //         data: data['data'] ?? {},
-  //       ),
-  //     );
-  //   }
-  // }
+  // get maintenance details
+  Future<dynamic> getMaintenancesDetails(
+      {required String maintenanceId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.showMaintenance,
+        data: {'maintenance_id': maintenanceId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
 }

@@ -195,6 +195,8 @@ class EndPoints {
   static const String storeFile = 'store/file';
   static const String getAllFiles = 'get/all/files';
   static const String deleteFile = 'delete/file';
+  static const String deleteFileBox = 'cancel/file-box';
+  static const String deleteTreasury = 'cancel/treasury';
 
   // projects
   static const String ongoingProjects = 'ongoing/project';
@@ -216,10 +218,13 @@ class EndPoints {
   static const String addTransaction = 'add/transaction';
 
   // maintenance
+  static const String addMaintenance = 'add/maintenance';
+  static const String changeMaintenanceStatus = 'change/maintenance/status';
   static const String getNewMaintenances = 'get/new/maintenances';
   static const String getOngoingMaintenances = 'get/ongoing/maintenances';
   static const String getReadyMaintenances = 'get/ready/maintenances';
   static const String getDeliveredMaintenances = 'get/delivered/maintenances';
+  static const String showMaintenance = 'show/maintenance';
 }
 
 class ApiKey {

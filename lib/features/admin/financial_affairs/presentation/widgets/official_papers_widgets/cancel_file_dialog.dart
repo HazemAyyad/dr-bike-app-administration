@@ -8,9 +8,18 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/official_papers_controller.dart';
 
 class CancelFileDialog extends GetView<OfficialPapersController> {
-  const CancelFileDialog({Key? key, required this.fileId}) : super(key: key);
+  const CancelFileDialog({
+    Key? key,
+    this.fileId,
+    this.fileBoxId,
+    this.treasuryId,
+    required this.fileName,
+  }) : super(key: key);
 
-  final String fileId;
+  final String? fileId;
+  final String? fileBoxId;
+  final String? treasuryId;
+  final String fileName;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +35,7 @@ class CancelFileDialog extends GetView<OfficialPapersController> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'delete_file'.tr,
+              '${'clear'.tr} $fileName',
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                     color: ThemeService.isDark.value
                         ? AppColors.whiteColor
@@ -56,8 +65,10 @@ class CancelFileDialog extends GetView<OfficialPapersController> {
                     color: Colors.red,
                     text: 'clear'.tr,
                     onPressed: () {
-                      controller.deleteFile(
+                      controller.deleteFiles(
                         fileId: fileId,
+                        fileBoxId: fileBoxId,
+                        treasuryId: treasuryId,
                       );
                     },
                   ),

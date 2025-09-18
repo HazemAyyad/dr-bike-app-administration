@@ -10,10 +10,11 @@ import '../../../../../../routes/app_routes.dart';
 import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
 import '../../widgets/official_papers_widgets/add_files_dialog.dart';
+import '../../widgets/official_papers_widgets/cancel_file_dialog.dart';
 import '../../widgets/official_papers_widgets/custom_data_widget.dart';
 
-class SafesScreen extends GetView<OfficialPapersController> {
-  const SafesScreen({Key? key}) : super(key: key);
+class TreasuryScreen extends GetView<OfficialPapersController> {
+  const TreasuryScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +50,14 @@ class SafesScreen extends GetView<OfficialPapersController> {
                     (context, index) {
                       final safe = FinacialService().safes[index];
                       return CustomDataWidget(
+                        onLongPress: () {
+                          Get.dialog(
+                            CancelFileDialog(
+                              treasuryId: safe.id.toString(),
+                              fileName: safe.name,
+                            ),
+                          );
+                        },
                         onTap: () {
                           Get.toNamed(
                             AppRoutes.FILEBOXSCREEN,

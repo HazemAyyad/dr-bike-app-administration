@@ -35,7 +35,7 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                 ? AppColors.primaryColor
                 : AppColors.secondaryColor,
             onPressed: () {
-              controller.getSafes();
+              controller.getTreasury();
               Get.toNamed(AppRoutes.SAFESSCREEN);
             },
           ),

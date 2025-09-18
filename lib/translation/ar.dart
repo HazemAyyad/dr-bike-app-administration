@@ -11,6 +11,7 @@ const Map<String, String> ar = {
   'failed': 'فشل',
   'edit': 'تعديل',
   'late': 'متاخر',
+  'now': 'الآن',
 
   // messages
   'noInternetConnection': 'لا يوجد اتصال بالانترنت',
@@ -670,7 +671,6 @@ const Map<String, String> ar = {
   'filesSelected': 'الملفات المحددة',
   "back": "رجوع",
   "delivered": "تم التسليم",
-
   // قسم المخزون
   'clearance': 'التصفيات',
   'productComposition': 'تركيب منتج',

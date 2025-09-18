@@ -117,6 +117,8 @@ class UserAccount extends GetView<DebtsController> {
                   customerId: controller.dataService.userTransactionsDataModel
                       .value!.customerDebts.first.customerId
                       .toString(),
+                  customerName: controller.dataService.userTransactionsDataModel
+                      .value!.customerDebts.first.customerName,
                   context: context,
                 );
               },

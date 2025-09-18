@@ -37,7 +37,7 @@ class SalesDatasource {
         ErrorModel(
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          data: data['errors'] ?? {},
         ),
       );
     }

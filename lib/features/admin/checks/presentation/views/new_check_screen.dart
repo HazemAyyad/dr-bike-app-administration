@@ -113,7 +113,7 @@ class NewCheckScreen extends GetView<ChecksController> {
                 onTap: () => controller.toggleCalendar(),
                 selectedDay: controller.selectedDay,
                 label: 'due_date',
-                isrequired: true,
+                isRequired: true,
               ),
               SizedBox(height: 16.h),
               CustomDropdownField(

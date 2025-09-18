@@ -64,7 +64,7 @@ import '../features/admin/financial_affairs/presentation/views/financial_affairs
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/file_box_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/files_screen.dart';
 import '../features/admin/financial_affairs/presentation/views/official_papers_screens/official_papers_screen.dart';
-import '../features/admin/financial_affairs/presentation/views/official_papers_screens/safes_screen.dart';
+import '../features/admin/financial_affairs/presentation/views/official_papers_screens/treasury_screen.dart';
 import '../features/admin/general_data_list/presentation/binding/general_data_list_binding.dart';
 import '../features/admin/general_data_list/presentation/views/add_new_customer_screen.dart';
 import '../features/admin/general_data_list/presentation/views/general_data_list_screen.dart';
@@ -592,7 +592,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.SAFESSCREEN,
-      page: () => const SafesScreen(),
+      page: () => const TreasuryScreen(),
       binding: OfficialPapersBinding(),
       transition: _transitionUpToDown,
     ),

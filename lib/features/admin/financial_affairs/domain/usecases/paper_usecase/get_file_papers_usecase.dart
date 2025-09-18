@@ -1,4 +1,4 @@
-import '../../../presentation/views/official_papers_screens/file_data_model.dart';
+import '../../../data/models/official_papers_models/file_data_model.dart';
 import '../../repositories/financial_affairs_repository.dart';
 
 class GetFilePapersUsecase {

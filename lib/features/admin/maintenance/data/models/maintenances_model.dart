@@ -24,8 +24,8 @@ class MaintenanceDataModel {
   factory MaintenanceDataModel.fromJson(Map<String, dynamic> json) {
     return MaintenanceDataModel(
       id: json['id'],
-      customerName: json['customer_name'] ?? '',
-      sellerName: json['seller_name'],
+      customerName: json['customer_name'] ?? 'No Name',
+      sellerName: json['seller_name'] ?? 'No Name',
       receiptDate: json['receipt_date'] ?? '',
       receiptTime: json['receipt_time'] ?? '',
       createdAt: json['created_at'] ?? '',

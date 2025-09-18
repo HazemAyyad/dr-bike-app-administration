@@ -29,7 +29,7 @@ class OfficialPapersBinding extends Bindings {
         addSafeUsecase: AddSafeUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
-        deleteFileUsecase: DeleteFileUsecase(
+        deleteFileUsecase: DeleteFilesUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
         ),
         getFilePapersUsecase: GetFilePapersUsecase(

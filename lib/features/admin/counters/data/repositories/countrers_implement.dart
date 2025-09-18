@@ -1,12 +1,12 @@
 import 'package:dartz/dartz.dart';
-import 'package:doctorbike/features/admin/counters/data/models/report_information_model.dart';
-import 'package:flutter/services.dart';
+import 'dart:typed_data';
 
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/counters_repository.dart';
 import '../datasources/countrers_datasource.dart';
+import '../models/report_information_model.dart';
 
 class CountrersImplement implements CountersRepository {
   final NetworkInfo networkInfo;

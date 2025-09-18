@@ -49,7 +49,7 @@ class EmployeeDashbordController extends GetxController
       'title': 'projectManagement',
       'route': AppRoutes.PROJECTMANAGEMENTSCREEN
     },
-    {'id': '17', 'title': 'messagesDepartment', 'route': ''},
+    // {'id': '17', 'title': 'messagesDepartment', 'route': ''},
     {
       'id': '3',
       'title': 'targetSetting',
@@ -67,7 +67,7 @@ class EmployeeDashbordController extends GetxController
       'title': 'generalData',
       'route': AppRoutes.GENERALDATALISTSCREEN
     },
-    {'id': '10', 'title': 'partnersDepartment', 'route': ''},
+    // {'id': '10', 'title': 'partnersDepartment', 'route': ''},
     {'id': '16', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
     {'id': '11', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
     {

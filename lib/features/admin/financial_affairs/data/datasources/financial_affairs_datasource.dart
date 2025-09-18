@@ -6,7 +6,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
-import '../../presentation/views/official_papers_screens/file_data_model.dart';
+import '../models/official_papers_models/file_data_model.dart';
 import '../models/assets_models/assets_detials_model.dart';
 import '../models/assets_models/assets_log_model.dart';
 import '../models/expenses_models/expense_detail_model.dart';
@@ -413,10 +413,23 @@ class FinancialAffairsDatasource {
   }
 
   // delete file
-  Future<Map<String, dynamic>> deleteFile({required String fileId}) async {
+  Future<Map<String, dynamic>> deleteFiles({
+    required String? fileId,
+    required String? treasuryId,
+    required String? fileBoxId,
+  }) async {
     try {
-      final response =
-          await api.post(EndPoints.deleteFile, data: {'file_id': fileId});
+      final response = await api.post(
+          fileId != null
+              ? EndPoints.deleteFile
+              : treasuryId != null
+                  ? EndPoints.deleteTreasury
+                  : EndPoints.deleteFileBox,
+          data: {
+            if (fileId != null) 'file_id': fileId,
+            if (treasuryId != null) 'treasury_id': treasuryId,
+            if (fileBoxId != null) 'file_box_id': fileBoxId,
+          });
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

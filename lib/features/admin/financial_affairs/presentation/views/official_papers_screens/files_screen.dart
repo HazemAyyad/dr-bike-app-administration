@@ -73,7 +73,10 @@ class FilesScreen extends GetView<OfficialPapersController> {
                       return CustomDataWidget(
                         onLongPress: () {
                           Get.dialog(
-                            CancelFileDialog(fileId: data.id.toString()),
+                            CancelFileDialog(
+                              fileId: data.id.toString(),
+                              fileName: data.name,
+                            ),
                           );
                         },
                         onTap: () {

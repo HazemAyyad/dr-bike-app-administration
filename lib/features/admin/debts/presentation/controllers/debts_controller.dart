@@ -1,10 +1,8 @@
 import 'dart:io';
 
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 
@@ -277,39 +275,47 @@ class DebtsController extends GetxController {
   // download report
   Future<void> downloadReport({
     required String customerId,
+    required String customerName,
     required BuildContext context,
   }) async {
-    final response = await getDebtsReports.call(customerId: customerId);
-
-    response.fold((failure) {
-      Helpers.showCustomDialogError(
-        context: context,
-        title: failure.errMessage,
-        message: failure.data['message'] ?? 'Unknown error',
-      );
-    }, (success) async {
-      // اطلب صلاحية التخزين
-      final status = await Permission.storage.request();
-      if (!status.isGranted) {
-        Get.snackbar("error".tr, "Storage permission denied");
-        return;
-      }
-      // استخدم FileSaver لحفظ الملف في Downloads
-      final path = await FileSaver.instance.saveAs(
-        name: "report",
-        bytes: success,
-        fileExtension: 'pdf',
-        mimeType: MimeType.pdf,
-      );
+    try {
+      // نطلب من المستخدم يختار فولدر
       Get.snackbar(
-        "fileDownloadedSuccessfully".tr,
-        path!,
+        "info".tr,
+        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
         snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1500),
+        duration: const Duration(milliseconds: 2500),
       );
-      // افتح الملف
-      await OpenFilex.open(path);
-    });
+      // نجيب الداتا من API
+      final response = await getDebtsReports.call(customerId: customerId);
+
+      response.fold((failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'] ?? 'Unknown error',
+        );
+      }, (success) async {
+        final directory = Directory("/storage/emulated/0/Download");
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        final filePath =
+            "${directory.path}/تقرير ديون $customerName ${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+        final file = File(filePath);
+        await file.writeAsBytes(success);
+        Get.snackbar(
+          "fileDownloadedSuccessfully".tr,
+          filePath,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 2000),
+        );
+
+        await OpenFilex.open(filePath);
+      });
+    } catch (e) {
+      Get.snackbar("error".tr, e.toString());
+    }
   }
 
   @override

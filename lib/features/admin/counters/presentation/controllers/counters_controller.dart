@@ -1,12 +1,13 @@
-import 'package:file_saver/file_saver.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../../../core/helpers/helpers.dart';
-import '../../domain/usecases/get_report_information_usecase.dart';
 import '../../domain/usecases/get_report_by_type_usecase.dart';
+import '../../domain/usecases/get_report_information_usecase.dart';
 import 'counters_serves.dart';
 
 class CountersController extends GetxController {
@@ -38,51 +39,50 @@ class CountersController extends GetxController {
     required String type,
     required BuildContext context,
   }) async {
-    Get.snackbar(
-      "info".tr,
-      "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(milliseconds: 1500),
-    );
-    final response = await getReportByType.call(
-      type: type,
-      fromDate: fromDateController.text.isEmpty
-          ? null
-          : DateTime.parse(fromDateController.text),
-      toDate: toDateController.text.isEmpty
-          ? null
-          : DateTime.parse(toDateController.text),
-    );
-
-    response.fold((failure) {
-      Helpers.showCustomDialogError(
-        context: context,
-        title: failure.errMessage,
-        message: failure.data['message'] ?? 'Unknown error',
-      );
-    }, (success) async {
-      // اطلب صلاحية التخزين
-      final status = await Permission.storage.request();
-      if (!status.isGranted) {
-        Get.snackbar("error".tr, "Storage permission denied");
-        return;
-      }
-      // استخدم FileSaver لحفظ الملف في Downloads
-      final path = await FileSaver.instance.saveAs(
-        name: "report",
-        bytes: success,
-        fileExtension: 'pdf',
-        mimeType: MimeType.pdf,
-      );
+    try {
       Get.snackbar(
-        "fileDownloadedSuccessfully".tr,
-        path!,
+        "info".tr,
+        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
         snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1500),
+        duration: const Duration(milliseconds: 2500),
       );
-      // افتح الملف
-      await OpenFilex.open(path);
-    });
+      final response = await getReportByType.call(
+        type: type,
+        fromDate: fromDateController.text.isEmpty
+            ? null
+            : DateTime.parse(fromDateController.text),
+        toDate: toDateController.text.isEmpty
+            ? null
+            : DateTime.parse(toDateController.text),
+      );
+
+      response.fold((failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'] ?? 'Unknown error',
+        );
+      }, (success) async {
+        final directory = Directory("/storage/emulated/0/Download");
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        final filePath =
+            "${directory.path}/${p.basename(type)} Report ${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+        final file = File(filePath);
+        await file.writeAsBytes(success);
+        Get.snackbar(
+          "fileDownloadedSuccessfully".tr,
+          filePath,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 2000),
+        );
+
+        await OpenFilex.open(filePath);
+      });
+    } catch (e) {
+      Get.snackbar("error".tr, e.toString());
+    }
   }
 
   @override

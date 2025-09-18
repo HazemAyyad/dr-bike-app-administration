@@ -322,7 +322,9 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
                 TextSpan(
                   text: widget.label.tr,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: Colors.grey.shade600,
+                        color: (ThemeService.isDark.value
+                            ? AppColors.customGreyColor6
+                            : AppColors.customGreyColor),
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w400,
                       ),

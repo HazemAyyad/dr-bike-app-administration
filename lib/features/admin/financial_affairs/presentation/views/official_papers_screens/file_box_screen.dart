@@ -10,6 +10,7 @@ import '../../../../../../routes/app_routes.dart';
 import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
 import '../../widgets/official_papers_widgets/add_files_dialog.dart';
+import '../../widgets/official_papers_widgets/cancel_file_dialog.dart';
 import '../../widgets/official_papers_widgets/custom_data_widget.dart';
 
 class FileBoxScreen extends GetView<OfficialPapersController> {
@@ -62,6 +63,14 @@ class FileBoxScreen extends GetView<OfficialPapersController> {
                     (context, index) {
                       final data = fileBoxes.fileBoxes[index];
                       return CustomDataWidget(
+                        onLongPress: () {
+                          Get.dialog(
+                            CancelFileDialog(
+                              fileBoxId: data.id.toString(),
+                              fileName: data.name,
+                            ),
+                          );
+                        },
                         onTap: () {
                           Get.toNamed(AppRoutes.FILESSCREEN, arguments: {
                             'fileBoxId': data.id.toString(),

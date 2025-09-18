@@ -11,6 +11,7 @@ const Map<String, String> en = {
   'failed': 'Failed',
   'edit': 'Edit',
   'late': 'Late',
+  'now': 'Now',
 
   // messages
   'noInternetConnection': 'No Internet Connection',

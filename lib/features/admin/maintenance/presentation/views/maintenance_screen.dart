@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
@@ -19,7 +20,11 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
         onPressedAdd: () {
+          controller.clearControllers();
           Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+        },
+        onPressedFilter: () {
+          controller.filterAllMaintenances();
         },
       ),
       body: CustomScrollView(
@@ -32,6 +37,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
             ),
           ),
           const MaintenanceDataWidget(),
+          SliverToBoxAdapter(child: SizedBox(height: 50.h)),
         ],
       ),
     );

@@ -22,7 +22,7 @@ class OfficialPapersController extends GetxController
   final AddPaperUsecase addPaperUsecase;
   final AddPictureUsecase addPictureUsecase;
   final AddSafeUsecase addSafeUsecase;
-  final DeleteFileUsecase deleteFileUsecase;
+  final DeleteFilesUsecase deleteFileUsecase;
   final GetFilePapersUsecase getFilePapersUsecase;
 
   OfficialPapersController({
@@ -133,7 +133,7 @@ class OfficialPapersController extends GetxController
 
   RxBool isFilesLoading = false.obs;
   // get safes
-  void getSafes() async {
+  void getTreasury() async {
     isFilesLoading(true);
     final safes = await getAllFinancialUsecase.call(page: '7');
     final safesJson = safes['treasuries'] as List;
@@ -296,7 +296,7 @@ class OfficialPapersController extends GetxController
           safeNameController.clear();
 
           Get.back();
-          getSafes();
+          getTreasury();
           Get.snackbar(
             'success'.tr,
             success,
@@ -311,9 +311,17 @@ class OfficialPapersController extends GetxController
   }
 
   // delete File
-  void deleteFile({required String fileId}) async {
+  void deleteFiles({
+    String? fileId,
+    String? fileBoxId,
+    String? treasuryId,
+  }) async {
     isLoading(true);
-    final result = await deleteFileUsecase.call(fileId: fileId);
+    final result = await deleteFileUsecase.call(
+      fileId: fileId,
+      treasuryId: treasuryId,
+      fileBoxId: fileBoxId,
+    );
 
     result.fold(
       (failure) {
@@ -327,7 +335,9 @@ class OfficialPapersController extends GetxController
       },
       (success) async {
         Get.back();
-        getSafes();
+        Future.delayed(const Duration(milliseconds: 10), () {
+          getTreasury();
+        });
         Get.snackbar(
           'success'.tr,
           success,

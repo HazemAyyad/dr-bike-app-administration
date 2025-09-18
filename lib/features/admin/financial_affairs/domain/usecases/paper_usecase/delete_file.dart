@@ -3,12 +3,20 @@ import 'package:dartz/dartz.dart';
 import '../../../../../../core/errors/failure.dart';
 import '../../repositories/financial_affairs_repository.dart';
 
-class DeleteFileUsecase {
+class DeleteFilesUsecase {
   final FinancialAffairsRepository financialAffairsRepository;
 
-  DeleteFileUsecase({required this.financialAffairsRepository});
+  DeleteFilesUsecase({required this.financialAffairsRepository});
 
-  Future<Either<Failure, String>> call({required String fileId}) {
-    return financialAffairsRepository.deleteFile(fileId: fileId);
+  Future<Either<Failure, String>> call({
+    required String? fileId,
+    required String? treasuryId,
+    required String? fileBoxId,
+  }) {
+    return financialAffairsRepository.deleteFiles(
+      fileId: fileId,
+      treasuryId: treasuryId,
+      fileBoxId: fileBoxId,
+    );
   }
 }

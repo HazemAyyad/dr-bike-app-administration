@@ -1,17 +1,22 @@
+import 'dart:io';
+
+import 'package:dartz/dartz.dart';
+
+import '../../../../../core/errors/failure.dart';
+
 abstract class MaintenanceRepository {
   Future<dynamic> getMaintenances({required int tab});
-  // Future<Either<Failure, bool>> creatSpecialTasks({
-  //   required String token,
-  //   required String name,
-  //   required String description,
-  //   required String notes,
-  //   required String points,
-  //   required String startDate,
-  //   required String endDate,
-  //   required String notShownForEmployee,
-  //   required String taskRecurrence,
-  //   required String taskRecurrenceTime,
-  //   required String subSpecialTaskName,
-  //   required String subSpecialTaskDescription,
-  // });
+
+  Future<dynamic> getMaintenancesDetails({required String maintenanceId});
+
+  Future<Either<Failure, String>> creatMaintenance({
+    String? maintenanceId,
+    required String customerId,
+    required String sellerId,
+    required String description,
+    required String receipDate,
+    required String receiptTime,
+    required List<File> files,
+    required String status,
+  });
 }

@@ -238,7 +238,6 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                         ],
                       )
                     : const SizedBox.shrink(),
-
                 SizedBox(height: 0.h),
                 controller.isEdit.value
                     ? Column(
@@ -331,7 +330,6 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                         ],
                       )
                     : const SizedBox.shrink(),
-
                 Row(
                   children: [
                     Flexible(
@@ -378,44 +376,34 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                   ],
                 ),
                 SizedBox(height: 10.h),
-                // Row(
-                //   children: [
-                //     Flexible(
-                //       child: CustomTextField(
-                //         label: 'workLocation',
-                //         hintText: 'residenceLocationExample',
-                //         controller: controller.workLocationController,
-                //         validator: (p0) => null,
-                //       ),
-                //     ),
-                //     SizedBox(width: 10.w),
-                //     Flexible(
-                //       child: CustomPhoneField(
-                //         label: 'closestPersonNumber',
-                //         hintText: 'phoneNumberExample',
-                //         controller: controller.closestPersonNumberController,
-                //       ),
-                //     ),
-                //   ],
-                // ),
-                CustomTextField(
-                  label: 'workLocation',
-                  hintText: 'residenceLocationExample',
-                  controller: controller.workLocationController,
-                  validator: (p0) => null,
+                Row(
+                  children: [
+                    Flexible(
+                      child: CustomTextField(
+                        label: 'closestPersonWork',
+                        hintText: 'workTitleExample',
+                        controller: controller.closestPersonWorkController,
+                        validator: (p0) => null,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 10.w,
+                    ),
+                    Flexible(
+                      child: CustomTextField(
+                        label: 'workLocation',
+                        hintText: 'residenceLocationExample',
+                        controller: controller.workLocationController,
+                        validator: (p0) => null,
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 10.h),
                 CustomPhoneField(
                   label: 'closestPersonNumber',
                   hintText: 'phoneNumberExample',
                   controller: controller.closestPersonNumberController,
-                ),
-                SizedBox(height: 10.h),
-                CustomTextField(
-                  label: 'closestPersonWork',
-                  hintText: 'workTitleExample',
-                  controller: controller.closestPersonWorkController,
-                  validator: (p0) => null,
                 ),
                 SizedBox(height: 20.h),
                 AppButton(
