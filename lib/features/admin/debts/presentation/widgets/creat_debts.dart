@@ -76,33 +76,20 @@ class CreateDebts extends GetView<DebtsController> {
                 ),
                 SizedBox(height: 10.h),
                 Obx(
-                  () => CustomDropdownField(
-                    label: controller.selectedCustomersSellers.value == false
+                  () => CustomDropdownFieldWithSearch(
+                    tital: controller.selectedCustomersSellers.value == false
                         ? 'customerName'.tr
                         : 'sellerName'.tr,
                     hint: 'employeeNameExample',
-                    dropdownField:
-                        controller.selectedCustomersSellers.value == false
-                            ? controller.allCustomersList
-                                .map(
-                                  (e) => DropdownMenuItem<String>(
-                                    value: e.id.toString(),
-                                    child: Text(e.name),
-                                  ),
-                                )
-                                .toList()
-                            : controller.allSellersList
-                                .map(
-                                  (e) => DropdownMenuItem<String>(
-                                    value: e.id.toString(),
-                                    child: Text(e.name),
-                                  ),
-                                )
-                                .toList(),
+                    items: controller.selectedCustomersSellers.value == false
+                        ? controller.allCustomersList
+                        : controller.allSellersList,
                     value: selectedValue.value,
                     onChanged: (val) {
                       selectedValue.value = val!;
                     },
+                    itemAsString: (f) => f.name,
+                    compareFn: (a, b) => a.id == b.id,
                   ),
                 ),
                 SizedBox(height: 20.h),

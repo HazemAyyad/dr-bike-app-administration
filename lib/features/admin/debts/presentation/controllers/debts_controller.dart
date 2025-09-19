@@ -4,11 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
 
-import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
-
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../checks/data/models/check_model.dart';
+import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/add_debt_usecase.dart';
 import '../../domain/usecases/debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/debts_we_owe_usecase.dart';

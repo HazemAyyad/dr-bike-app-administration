@@ -28,6 +28,8 @@ import '../../features/admin/employee_tasks/data/repositories/employee_tasks_imp
 import '../../features/admin/employee_tasks/presentation/controllers/employee_task_service.dart';
 import '../../features/admin/financial_affairs/data/datasources/financial_affairs_datasource.dart';
 import '../../features/admin/financial_affairs/data/repositories/financial_affairs_implement.dart';
+import '../../features/admin/follow_up/data/datasources/followup_datasource.dart';
+import '../../features/admin/follow_up/data/repositories/followup_implement.dart';
 import '../../features/admin/general_data_list/data/datasources/general_data_list_datasource.dart';
 import '../../features/admin/general_data_list/data/repositories/general_data_list_implement.dart';
 import '../../features/admin/maintenance/data/datasources/maintenance_datasource.dart';
@@ -42,6 +44,8 @@ import '../../features/admin/special_tasks/data/repositories/special_tasks_imple
 import '../../features/admin/special_tasks/presentation/controllers/special_tasks_service.dart';
 import '../../features/admin/stock/data/datasources/stock_datasource.dart';
 import '../../features/admin/stock/data/repositories/stock_implement.dart';
+import '../../features/admin/goals_section/data/datasources/goals_datasource.dart';
+import '../../features/admin/goals_section/data/repositories/goals_implement.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repo_impl.dart';
 import '../../features/common_feature/data/datasources/common_datasource.dart';
@@ -364,6 +368,32 @@ class InitialBindings implements Bindings {
       () => MaintenanceImplement(
         networkInfo: Get.find<NetworkInfo>(),
         maintenanceDatasource: Get.find<MaintenanceDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // goals
+    Get.lazyPut<GoalsDatasource>(
+      () => GoalsDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<GoalsImplement>(
+      () => GoalsImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        goalsDatasource: Get.find<GoalsDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // FollowUp
+    Get.lazyPut<FollowupDatasource>(
+      () => FollowupDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<FollowupImplement>(
+      () => FollowupImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        followupDataSource: Get.find<FollowupDatasource>(),
       ),
       fenix: true,
     );

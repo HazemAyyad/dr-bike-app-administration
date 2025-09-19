@@ -1,0 +1,333 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/helpers.dart';
+import '../../../../../routes/app_routes.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import '../../../checks/data/models/check_model.dart';
+import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
+import '../../../employee_section/domain/entities/employee_entity.dart';
+import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../data/models/goals_details_model.dart' hide SellerModel;
+import '../../domain/usecases/add_goal_usecase.dart';
+import '../../domain/usecases/get_goal_details_usecase.dart';
+import '../../domain/usecases/get_goals_usecase.dart';
+import 'goals_services.dart';
+
+class TargetSectionController extends GetxController {
+  final GetGoalsUsecase getGoalsUsecase;
+  final GetAllEmployeeUsecase getAllEmployeeUsecase;
+  final AllCustomersSellersUsecase allCustomersSellersUsecase;
+  final GetShownBoxUsecase getShownBoxUsecase;
+  final AddGoalUsecase addGoalUsecase;
+  final GetGoalDetailsUsecase getGoalDetailsUsecase;
+
+  TargetSectionController({
+    required this.getGoalsUsecase,
+    required this.getAllEmployeeUsecase,
+    required this.allCustomersSellersUsecase,
+    required this.getShownBoxUsecase,
+    required this.addGoalUsecase,
+    required this.getGoalDetailsUsecase,
+  });
+
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  final TextEditingController toDateController = TextEditingController();
+  final TextEditingController fromDateController = TextEditingController();
+
+  final TextEditingController targetNameController = TextEditingController();
+  final TextEditingController targetTypeController = TextEditingController();
+  final TextEditingController optionsController = TextEditingController();
+
+  final TextEditingController targetTypeFormatController =
+      TextEditingController();
+  final TextEditingController customerAndSellerIdController =
+      TextEditingController();
+  final TextEditingController mainValueController = TextEditingController();
+  final TextEditingController targetValueController = TextEditingController();
+  final TextEditingController currentValueController = TextEditingController();
+  final TextEditingController notesController = TextEditingController();
+  final TextEditingController employeeIdController = TextEditingController();
+  final TextEditingController boxIdController = TextEditingController();
+
+  final currentTab = 0.obs;
+  final tabs = ['generalTarget', 'specialTarget', 'archive'].obs;
+
+  final isLoading = false.obs;
+
+  final isAddLoading = false.obs;
+
+  void changeTab(int index) {
+    currentTab.value = index;
+    update();
+  }
+
+  final RxBool isDelete = true.obs;
+
+  List<String> targetTypes = ['private', 'public'];
+
+  List<String> targetTypeFormat = [
+    'total_profit_values',
+    'net_profit',
+    'sell_pieces',
+    'purchase_pieces',
+    'finish_tasks',
+    'pay_person',
+    'deposit_to_box'
+  ];
+
+  List<String> options = [
+    'main_categories',
+    'sub_categories',
+    'product',
+    'employee',
+    'person',
+    'box'
+  ];
+  void getAllGoal() async {
+    GoalsServices().globalGoalsList.isEmpty
+        ? isLoading(true)
+        : isLoading(false);
+    update();
+    final response = await getGoalsUsecase.call();
+
+    GoalsServices().globalGoalsList.assignAll(
+          response.where((goal) =>
+              goal.type == 'public' &&
+              double.parse(goal.achievementPercentage) < 100 &&
+              !goal.isCanceled),
+        );
+
+    GoalsServices().privateGoalsList.assignAll(
+          response.where((goal) =>
+              !goal.isCanceled &&
+              double.parse(goal.achievementPercentage) < 100 &&
+              goal.type == 'private'),
+        );
+
+    GoalsServices().archiveGoalsList.assignAll(response.where((goal) =>
+        goal.isCanceled || double.parse(goal.achievementPercentage) >= 100));
+    isLoading(false);
+    update();
+  }
+
+  final RxList<EmployeeEntity> employeeList = <EmployeeEntity>[].obs;
+  void getEmployee() async {
+    final result = await getAllEmployeeUsecase.call();
+    employeeList.assignAll(result);
+    isLoading(false);
+  }
+
+  final RxBool isCustomer = true.obs;
+  final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;
+  final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
+
+  void getAllCustomersAndSellers() async {
+    final resultCustomers = await allCustomersSellersUsecase.call(
+        endPoint: EndPoints.all_customers);
+    allCustomersList.assignAll(resultCustomers);
+    final resultSellers =
+        await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
+    allSellersList.assignAll(resultSellers);
+    isLoading(false);
+  }
+
+  // get shown boxes
+  final RxList<GetShownBoxesModel> shownBoxes = <GetShownBoxesModel>[].obs;
+  void getShowBoxes() async {
+    final boxes = await getShownBoxUsecase.call(screen: currentTab.value);
+    shownBoxes.value = boxes;
+    isLoading(false);
+  }
+
+  // get goals details
+  GoalDetailsModel? goalDetailsList;
+  void getGoalDetails({
+    required String goalId,
+    bool? isCancel,
+    bool? isTransfer,
+  }) async {
+    isCancel == true || isTransfer == true
+        ? isLoading(true)
+        : isAddLoading(true);
+    update();
+    final goalDetails = await getGoalDetailsUsecase.call(
+      goalId: goalId,
+      isCancel: isCancel,
+      isTransfer: isTransfer,
+    );
+    if (isCancel == null && isTransfer == null) {
+      goalDetailsList = GoalDetailsModel.fromJson(goalDetails['goal']);
+    } else {
+      Get.back();
+      getAllGoal();
+      Get.snackbar(
+        'success'.tr,
+        goalDetails['message'],
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+    isLoading(false);
+    isAddLoading(false);
+    update();
+  }
+
+  final RxBool isEdit = false.obs;
+  // Edit Goal
+  void editGoal() {
+    isEdit(true);
+    update();
+    Get.toNamed(AppRoutes.ADDNEWTARGETSCREEN);
+    isAddLoading(true);
+    update();
+    targetNameController.text = goalDetailsList!.name;
+    targetTypeController.text = goalDetailsList!.type;
+    targetTypeFormatController.text = goalDetailsList!.form;
+    targetValueController.text = goalDetailsList!.targetedValue;
+    currentValueController.text = goalDetailsList!.currentValue;
+    notesController.text = goalDetailsList!.notes;
+    optionsController.text = goalDetailsList!.scope;
+
+    if (goalDetailsList!.employee != null) {
+      employeeIdController.text = goalDetailsList!.employee!.id.toString();
+    }
+    if (goalDetailsList!.customer != null) {
+      isCustomer.value = false;
+      customerAndSellerIdController.text =
+          goalDetailsList!.customer!.id.toString();
+    }
+    if (goalDetailsList!.seller != null) {
+      isCustomer.value = true;
+      customerAndSellerIdController.text =
+          goalDetailsList!.seller!.id.toString();
+    }
+
+    if (goalDetailsList!.box != null) {
+      boxIdController.text = goalDetailsList!.box!.id.toString();
+    }
+    isAddLoading(false);
+    update();
+  }
+
+  // reset Data
+  void reset() {
+    isEdit(false);
+    update();
+    Get.toNamed(AppRoutes.ADDNEWTARGETSCREEN);
+    targetNameController.clear();
+    targetTypeController.clear();
+    targetTypeFormatController.clear();
+    targetValueController.clear();
+    currentValueController.clear();
+    notesController.clear();
+    optionsController.clear();
+    employeeIdController.clear();
+    customerAndSellerIdController.clear();
+    boxIdController.clear();
+  }
+
+  // add Goal
+  void addGoal(BuildContext context) async {
+    isAddLoading(true);
+    final result = await addGoalUsecase.call(
+      goalId: isEdit.value ? goalDetailsList!.id.toString() : '',
+      name: targetNameController.text,
+      type: targetTypeController.text,
+      form: targetTypeFormatController.text,
+      targetedValue: targetValueController.text,
+      currentValue: currentValueController.text,
+      notes: notesController.text,
+      scope: optionsController.text,
+      employeeId: employeeIdController.text,
+      sellerId: isCustomer.value ? customerAndSellerIdController.text : '',
+      customerId: !isCustomer.value ? customerAndSellerIdController.text : '',
+      boxId: boxIdController.text,
+    );
+
+    result.fold(
+      (failure) {
+        String errorMessages = '';
+        bool data = false;
+        final errors = failure.data?['errors'] as Map<String, dynamic>?;
+        if (errors != null) {
+          errors.forEach((key, value) {
+            if (key.startsWith('permissions')) {
+              if (!data) {
+                errorMessages += "Permissions: ${value.first}\n";
+                data = true;
+              }
+            } else {
+              for (var msg in value) {
+                errorMessages += "- $key: $msg\n";
+              }
+            }
+          });
+        } else {
+          errorMessages = failure.data?['message'] ?? failure.errMessage;
+        }
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: errorMessages,
+        );
+        isAddLoading(false);
+      },
+      (success) {
+        targetNameController.clear();
+        targetTypeController.clear();
+        targetTypeFormatController.clear();
+        targetValueController.clear();
+        optionsController.clear();
+        customerAndSellerIdController.clear();
+        notesController.clear();
+        employeeIdController.clear();
+        boxIdController.clear();
+        getAllGoal();
+        getGoalDetails(goalId: goalDetailsList!.id.toString());
+        Future.delayed(
+          const Duration(milliseconds: 1000),
+          () {
+            Get.back();
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isAddLoading(false);
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    getAllGoal();
+    getEmployee();
+    getAllCustomersAndSellers();
+    getShowBoxes();
+  }
+
+  @override
+  void onClose() {
+    super.onClose();
+    fromDateController.dispose();
+    toDateController.dispose();
+    targetNameController.dispose();
+    targetValueController.dispose();
+    targetTypeFormatController.dispose();
+    customerAndSellerIdController.dispose();
+    currentValueController.dispose();
+    mainValueController.dispose();
+    notesController.dispose();
+    targetTypeController.dispose();
+    employeeIdController.dispose();
+    boxIdController.dispose();
+    optionsController.dispose();
+  }
+}

@@ -504,8 +504,6 @@ class EmployeeSectionController extends GetxController
 
   @override
   void onClose() {
-    // fromDateController.dispose();
-    // toDateController.dispose();
     employeeNameController.dispose();
     paySalaryController.dispose();
     addRegularWorkingHoursController.dispose();

@@ -66,37 +66,35 @@ class ChecksImplement implements ChecksRepository {
   // get not cashed
   @override
   Future<dynamic> getChecks({required String endPoint}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await checksDatasource.getChecks(endPoint: endPoint);
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await checksDatasource.getChecks(endPoint: endPoint);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   // general checks
   @override
   Future<GeneralChecksDataModel> generalChecksData() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await checksDatasource.generalChecksData();
-        return result;
-      } on ServerException catch (e) {
-        Get.snackbar(
-          "error".tr,
-          e.errorModel.errorMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await checksDatasource.generalChecksData();
+      return result;
+    } on ServerException catch (e) {
+      Get.snackbar(
+        "error".tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
@@ -138,31 +136,29 @@ class ChecksImplement implements ChecksRepository {
   @override
   Future<List<SellerModel>> allCustomersSellers(
       {required String endPoint}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result =
-            await checksDatasource.allCustomersSellers(endPoint: endPoint);
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result =
+          await checksDatasource.allCustomersSellers(endPoint: endPoint);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   @override
   Future<dynamic> generalOutgoingData({required bool isInComing}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result =
-            await checksDatasource.generalOutgoingData(isInComing: isInComing);
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result =
+          await checksDatasource.generalOutgoingData(isInComing: isInComing);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

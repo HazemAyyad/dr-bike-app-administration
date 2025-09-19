@@ -22,7 +22,7 @@ class SupTextAndDis extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 5.h),
+        SizedBox(height: 10.h),
         Text.rich(
           TextSpan(
             children: <TextSpan>[

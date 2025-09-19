@@ -75,17 +75,16 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
   // get employee tasks
   @override
   Future<List<EmployeeTaskModel>> getEmployeeTasks({required int page}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await employeeTasksDataSource.getEmployeeTasks(
-          page: page,
-        );
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await employeeTasksDataSource.getEmployeeTasks(
+        page: page,
+      );
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
@@ -122,16 +121,15 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
   // get task details
   @override
   Future<dynamic> getTaskDetails({required String taskId}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result =
-            await employeeTasksDataSource.getTaskDetails(taskId: taskId);
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result =
+          await employeeTasksDataSource.getTaskDetails(taskId: taskId);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

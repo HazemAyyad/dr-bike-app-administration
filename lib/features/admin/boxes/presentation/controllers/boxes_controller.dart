@@ -45,7 +45,7 @@ class BoxesController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
-    currentTab.value == 1 ? getAllBoxesLogs() : showBoxes();
+    currentTab.value == 1 ? getAllBoxesLogs() : getShowBoxes();
   }
 
   // انشاء الصناديق
@@ -69,9 +69,8 @@ class BoxesController extends GetxController {
 
   // get shown boxes
   final RxList<GetShownBoxesModel> shownBoxes = <GetShownBoxesModel>[].obs;
-
-  void showBoxes() async {
-    shownBoxes.isEmpty ? isLoading(true) : isLoading(true);
+  void getShowBoxes() async {
+    shownBoxes.isEmpty ? isLoading(true) : isLoading(false);
     final boxes = await getShownBoxUsecase.call(screen: currentTab.value);
     shownBoxes.value = boxes;
     isLoading(false);
@@ -79,9 +78,8 @@ class BoxesController extends GetxController {
 
   // get all boxes
   final RxList<BoxLogModel> allBoxesLogs = <BoxLogModel>[].obs;
-
   void getAllBoxesLogs() async {
-    allBoxesLogs.isEmpty ? isLoading(true) : isLoading(true);
+    allBoxesLogs.isEmpty ? isLoading(true) : isLoading(false);
     final boxes = await allBoxesLogsUsecase.call();
     allBoxesLogs.value = boxes;
     isLoading(false);
@@ -111,11 +109,9 @@ class BoxesController extends GetxController {
         toBoxId: transferToBoxIdController.text,
         total: transferTotalController.text,
       );
-
       result.fold(
         (failure) {
           isAddBoxLoading(false);
-
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
@@ -124,12 +120,10 @@ class BoxesController extends GetxController {
         },
         (success) {
           Get.back();
-          showBoxes();
-
+          getShowBoxes();
           // transferFromBoxIdController.clear();
           transferToBoxIdController.clear();
           createStartBalanceController.clear();
-
           Future.delayed(
             const Duration(milliseconds: 1500),
             () {
@@ -144,7 +138,6 @@ class BoxesController extends GetxController {
         },
       );
     }
-
     isAddBoxLoading(false);
   }
 
@@ -225,7 +218,7 @@ class BoxesController extends GetxController {
         },
         (success) {
           Get.back();
-          showBoxes();
+          getShowBoxes();
           addBalanceValueController.clear();
           Future.delayed(
             const Duration(milliseconds: 1500),
@@ -268,7 +261,7 @@ class BoxesController extends GetxController {
         },
         (success) {
           Get.back();
-          showBoxes();
+          getShowBoxes();
           addBalanceValueController.clear();
           Future.delayed(
             const Duration(milliseconds: 1500),
@@ -322,7 +315,7 @@ class BoxesController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    showBoxes();
+    getShowBoxes();
     filteredallBoxesLogs.value = allBoxesLogs;
     filteredshownBoxes.value = shownBoxes;
   }

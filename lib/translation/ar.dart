@@ -381,14 +381,22 @@ const Map<String, String> ar = {
   'regularWorkingHoursExample': 'مثال: 08:00',
   'editEmployee': 'تعديل بيانات الموظف',
 
-  // follow Up Department
+  // follow Up
   'currentFollowUps': 'متابعات جارية',
-  'completedFollowUps': 'متابعات منتهية',
+  'initialFollowUp': 'المتابعة الاولية',
   'customerName': 'أسم الزبون',
   'sellerName': 'أسم البائع',
   'productDetails': 'تفاصيل المنتج',
   'notifyCustomer': 'ابلاغ الزبون بالمنتج',
-  'cancelFollowUp': 'الغاء المتابعة',
+  'cancelFollowUp': 'إلغاء المتابعة',
+  "notify_customer": "ابلاغ الزبون",
+  "completion_and_agreement": "الانتهاء والاتفاق",
+  "sale_completed": "تم البيع",
+  "sale_rejected": "تم الرفض",
+  "step_one": "الخطوة الاولي: اخذ بيانات المنتج والزبون",
+  "step_two": "الخطوة الثانية: الاتصال بالزبون وابلاغه بتوفر منتج او عدمه",
+  "step_three": "الخطوة الثالثة: توضيح تفاصيل المتابعة وبيان هل تم البيع ام لا",
+  "cancel_followup_confirmation": "هل انت متاكد انك تريد إلغاء المتابعة؟",
 
   'createFollowUp': 'إنشاء متابعة جديدة',
   'productDetailsTitle': 'تفاصيل المنتج المطلوب',
@@ -441,6 +449,7 @@ const Map<String, String> ar = {
   'projectDocumentsExample': 'مثال: اوراق الشراكة',
   'addProject': 'إضافة المشروع',
   'projectAddedSuccessfully': 'تم إضافة المشروع بنجاح',
+  'options': 'الاختيارات',
 
   'projectDetails': 'تفاصيل المشروع',
   'totalSales': 'كمية مبيعات المشروع',
@@ -462,13 +471,16 @@ const Map<String, String> ar = {
   'endedTarget': 'أهداف منتهية',
   'targetName': 'أسم الهدف',
   'targetValue': 'القيمة المستهدفة',
+  'targetTypeFormat': 'صيغة الهدف',
+  'currentValue': 'القيمة الحالية',
   'thousand': 'الف',
   'targetDetails': 'تفاصيل الهدف',
   'targetType': 'نوع الهدف',
   'mainValue': 'القيمة الرئيسية',
   'followUp': 'الهدف تابع لـ',
   'productName': 'أسم المنتج',
-  'cancelTarget': 'الغاء الهدف',
+  'cancelTarget': 'إلغاء الهدف',
+  'transferGoal': 'نقل الهدف',
 
   // إنشاء هدف جديد
   'addNewTarget': 'إنشاء هدف جديد',
@@ -481,6 +493,23 @@ const Map<String, String> ar = {
   'personExample': 'مثال: زبون',
   'addTarget': 'إضافة الهدف',
   'targetAddedSuccessfully': 'تم اضافة الهدف بنجاح',
+  'private': 'خاص',
+  'public': 'عام',
+
+  "total_profit_values": "مجموع قيمة البيع",
+  "net_profit": "صافي ربح",
+  "sell_pieces": "بيع عدد معين من القطع",
+  "purchase_pieces": "شراء عدد معين من القطع",
+  "finish_tasks": "إنجاز عدد مهمات أساسية",
+  "pay_person": "دفع قيمة معينة لشخص",
+  "deposit_to_box": "ترصيد مبلغ في صندوق معين",
+
+  "main_categories": "التصنيفات الرئيسية",
+  "sub_categories": "التصنيفات الفرعية",
+  // "product": "المنتج",
+  // "employee": "الموظف",
+  // "person": "الشخص",
+  "box": "صندوق",
 
   // قائمة البيانات العامة
   'generalDataList': 'قائمة البيانات العامة',
@@ -490,7 +519,8 @@ const Map<String, String> ar = {
   'customerPhoneNumber': 'الرقم الشخصي',
   'job': 'العمل',
 
-  'directContact': 'الاتصال المباشر',
+  'directContact': 'اتصال مباشر',
+  'whatsappCall': 'اتصال واتساب',
 
   // تفاصيل الزبون
   'customerDetails': 'تفاصيل الزبون',

@@ -24,42 +24,38 @@ class StockImplement implements StockRepository {
     required bool ifCombinations,
     required bool ifCloseouts,
   }) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await stockDataSource.getAllStock(
-            page: page,
-            ifCombinations: ifCombinations,
-            ifCloseouts: ifCloseouts);
-        return result;
-      } on ServerException catch (e) {
-        Get.snackbar(
-          "error".tr,
-          e.errorModel.errorMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await stockDataSource.getAllStock(
+          page: page, ifCombinations: ifCombinations, ifCloseouts: ifCloseouts);
+      return result;
+    } on ServerException catch (e) {
+      Get.snackbar(
+        "error".tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   @override
   Future<ProductDetailsModel> getProductDetails(
       {required String productId}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await stockDataSource.getProductDetails(
-          productId: productId,
-        );
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await stockDataSource.getProductDetails(
+        productId: productId,
+      );
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
@@ -68,63 +64,58 @@ class StockImplement implements StockRepository {
     required String productId,
     required bool isMove,
   }) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await stockDataSource.moveToArchive(
-          productId: productId,
-          isMove: isMove,
-        );
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await stockDataSource.moveToArchive(
+        productId: productId,
+        isMove: isMove,
+      );
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   // get archived products
   @override
   Future<List<AllStockProductsModel>> getArchived() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await stockDataSource.getArchived();
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await stockDataSource.getArchived();
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   @override
   Future<List<ProductModel>> getCategories({required bool isProject}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result =
-            await stockDataSource.getCategories(isProject: isProject);
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await stockDataSource.getCategories(isProject: isProject);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   @override
   Future<List<AllStockProductsModel>> searchProducts(
       {required String name}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await stockDataSource.searchProducts(name: name);
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await stockDataSource.searchProducts(name: name);
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
@@ -133,18 +124,17 @@ class StockImplement implements StockRepository {
     required String productId,
     required RxList<NewCompositionModel> combinationId,
   }) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await stockDataSource.addCombination(
-          productId: productId,
-          combinationList: combinationId,
-        );
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await stockDataSource.addCombination(
+        productId: productId,
+        combinationList: combinationId,
+      );
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 }

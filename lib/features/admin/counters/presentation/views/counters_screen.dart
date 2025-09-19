@@ -67,8 +67,7 @@ class CountersScreen extends GetView<CountersController> {
                               },
                               title: 'debtsWeOwe',
                               imageicon: AssetsManager.cashIcon,
-                              value: reportInformationData.totalDebtsWeOwe
-                                  .toString(),
+                              value: reportInformationData.totalDebtsWeOwe,
                               subtitle: '',
                             ),
                           ),
@@ -99,10 +98,9 @@ class CountersScreen extends GetView<CountersController> {
                                 //   context: context,
                                 // );
                               },
-                              show: true,
                               title: 'netProfit',
                               imageicon: AssetsManager.cashIcon7,
-                              value: reportInformationData.profits.toString(),
+                              value: reportInformationData.profits,
                               subtitle: '',
                             ),
                           ),
@@ -115,7 +113,6 @@ class CountersScreen extends GetView<CountersController> {
                                   context: context,
                                 );
                               },
-                              show: true,
                               title: 'totalBoxes',
                               imageicon: AssetsManager.cashIcon5,
                               value: reportInformationData.totalBoxes,
@@ -134,11 +131,9 @@ class CountersScreen extends GetView<CountersController> {
                                   context: context,
                                 );
                               },
-                              show: true,
                               title: 'totalChecks',
                               imageicon: AssetsManager.cashIcon3,
-                              value:
-                                  reportInformationData.totalChecks.toString(),
+                              value: reportInformationData.totalChecks,
                               subtitle: '',
                             ),
                           ),
@@ -173,8 +168,7 @@ class CountersScreen extends GetView<CountersController> {
                               show: true,
                               title: 'numberOfPeople',
                               imageicon: AssetsManager.usersIcon,
-                              value: reportInformationData.numberOfPeople
-                                  .toString(),
+                              value: reportInformationData.numberOfPeople,
                               subtitle: '',
                             ),
                           ),
@@ -190,8 +184,7 @@ class CountersScreen extends GetView<CountersController> {
                               show: true,
                               title: 'numberOfProjects',
                               imageicon: AssetsManager.cashIcon5,
-                              value: reportInformationData.numberOfProjects
-                                  .toString(),
+                              value: reportInformationData.numberOfProjects,
                               subtitle: '',
                             ),
                           ),
@@ -210,8 +203,7 @@ class CountersScreen extends GetView<CountersController> {
                               show: true,
                               title: 'numberOfEmployees',
                               imageicon: AssetsManager.usersIcon,
-                              value: reportInformationData.numberOfEmployees
-                                  .toString(),
+                              value: reportInformationData.numberOfEmployees,
                               subtitle: '',
                             ),
                           ),
@@ -224,7 +216,6 @@ class CountersScreen extends GetView<CountersController> {
                                   context: context,
                                 );
                               },
-                              show: true,
                               title: 'totalExpensess',
                               imageicon: AssetsManager.cashIcon6,
                               value: reportInformationData.totalExpenses,
@@ -246,8 +237,7 @@ class CountersScreen extends GetView<CountersController> {
                               show: true,
                               title: 'purchaseReturns',
                               imageicon: AssetsManager.cashIcon3,
-                              value:
-                                  reportInformationData.totalReturns.toString(),
+                              value: reportInformationData.totalReturns,
                               subtitle: '',
                             ),
                           ),
@@ -263,8 +253,7 @@ class CountersScreen extends GetView<CountersController> {
                               show: true,
                               title: 'costOfGoods',
                               imageicon: AssetsManager.cashIcon2,
-                              value:
-                                  reportInformationData.totalGoods.toString(),
+                              value: reportInformationData.totalGoods,
                               subtitle: '',
                             ),
                           ),
@@ -280,11 +269,9 @@ class CountersScreen extends GetView<CountersController> {
                                 //   context: context,
                                 // );
                               },
-                              show: true,
                               title: 'shopCapital',
                               imageicon: AssetsManager.cashIcon,
-                              value:
-                                  reportInformationData.shopCapital.toString(),
+                              value: reportInformationData.shopCapital,
                               subtitle: '',
                             ),
                           ),
@@ -297,11 +284,9 @@ class CountersScreen extends GetView<CountersController> {
                                 //   context: context,
                                 // );
                               },
-                              show: true,
                               title: 'netShopCapital',
                               imageicon: AssetsManager.cashIcon,
-                              value: reportInformationData.netShopCapital
-                                  .toString(),
+                              value: reportInformationData.netShopCapital,
                               subtitle: '',
                             ),
                           ),
@@ -317,12 +302,10 @@ class CountersScreen extends GetView<CountersController> {
                                   context: context,
                                 );
                               },
-                              show: true,
                               title: 'completedDailyTasks',
                               imageicon: AssetsManager.cashIcon3,
                               value: reportInformationData
-                                  .completedEmployeeTasksDaily
-                                  .toString(),
+                                  .completedEmployeeTasksDaily,
                               subtitle: '',
                             ),
                           ),
@@ -335,12 +318,10 @@ class CountersScreen extends GetView<CountersController> {
                                   context: context,
                                 );
                               },
-                              show: true,
                               title: 'incompletedDailyTasks',
                               imageicon: AssetsManager.cashIcon3,
                               value: reportInformationData
-                                  .incompletedEmployeeTasksDaily
-                                  .toString(),
+                                  .incompletedEmployeeTasksDaily,
                               subtitle: '',
                             ),
                           ),
@@ -356,12 +337,10 @@ class CountersScreen extends GetView<CountersController> {
                                   context: context,
                                 );
                               },
-                              show: true,
                               title: 'completedMonthlyTasks',
                               imageicon: AssetsManager.cashIcon3,
                               value: reportInformationData
-                                  .completedEmployeeTasksMonthly
-                                  .toString(),
+                                  .completedEmployeeTasksMonthly,
                               subtitle: '',
                             ),
                           ),
@@ -374,12 +353,10 @@ class CountersScreen extends GetView<CountersController> {
                                   context: context,
                                 );
                               },
-                              show: true,
                               title: 'incompletedMonthlyTasks',
                               imageicon: AssetsManager.cashIcon3,
                               value: reportInformationData
-                                  .incompletedEmployeeTasksMonthly
-                                  .toString(),
+                                  .incompletedEmployeeTasksMonthly,
                               subtitle: '',
                             ),
                           ),

@@ -16,8 +16,8 @@ import '../features/App_entr/on_boarding/view/on_boarding_screen.dart';
 import '../features/App_entr/on_boarding/widgets/chose_lang.dart';
 import '../features/App_entr/splash/binding/splash_binding.dart';
 import '../features/App_entr/splash/view/splash_screen.dart';
-import '../features/admin/--/presentation/current_follow_up/binding/current_follow_up_binding.dart';
-import '../features/admin/--/presentation/current_follow_up/views/current_follow_up_screen.dart';
+import '../features/admin/follow_up/presentation/binding/follow_up_binding.dart';
+import '../features/admin/follow_up/presentation/views/follow_up_screen.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
 import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
 import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_binding.dart';
@@ -86,10 +86,10 @@ import '../features/admin/stock/presentation/views/add_combination_screen.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
 import '../features/admin/stock/presentation/views/product_details_screen.dart';
-import '../features/admin/target_section/presentation/binding/target_section_binding.dart';
-import '../features/admin/target_section/presentation/views/target_section_screen.dart';
-import '../features/admin/target_section/presentation/widgets/add_new_target/add_new_target_screen.dart';
-import '../features/admin/target_section/presentation/widgets/target_details/target_details_screen.dart';
+import '../features/admin/goals_section/presentation/binding/target_section_binding.dart';
+import '../features/admin/goals_section/presentation/views/target_section_screen.dart';
+import '../features/admin/goals_section/presentation/views/add_new_target_screen.dart';
+import '../features/admin/goals_section/presentation/views/target_details_screen.dart';
 import '../features/auth/presentation/login/binding/login_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/binding/sgin_up_verify_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/views/sgin_up_verify_screen.dart';
@@ -258,6 +258,7 @@ class AppPages {
       binding: SpecialTasksBinding(),
       transition: _transitionFade,
     ),
+
     // قسم الموظفين
     GetPage(
       name: AppRoutes.EMPLOYEESECTIONSCREEN,
@@ -326,6 +327,7 @@ class AppPages {
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
+
     // قسم صناعة الاهداف
     GetPage(
       name: AppRoutes.TARGETSECTIONSCREEN,
@@ -341,17 +343,18 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.ADDNEWTARGETSCREEN,
-      page: () => const AddNewTargetScreen(),
-      // binding: ,
+      page: () => const AddNewGoalScreen(),
+      binding: TargetSectionBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
+
     // قسم المتابعة
     GetPage(
       name: AppRoutes.CURRENTFOLLOWUPSCREEN,
       page: () => const CurrentFollowUpScreen(),
-      binding: CurrentFollowUpBinding(),
+      binding: FollowUpBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(

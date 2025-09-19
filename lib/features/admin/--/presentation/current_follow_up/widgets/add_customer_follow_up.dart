@@ -9,9 +9,9 @@ import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
-import '../controllers/current_follow_up_controller.dart';
+import '../../../../follow_up/presentation/controllers/follow_up_controller.dart';
 
-class AddCustomerFollowUpScreen extends GetView<CurrentFollowUpController> {
+class AddCustomerFollowUpScreen extends GetView<FollowUpController> {
   const AddCustomerFollowUpScreen({Key? key}) : super(key: key);
 
   @override

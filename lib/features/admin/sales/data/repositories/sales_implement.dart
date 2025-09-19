@@ -48,45 +48,42 @@ class SalesImplement implements SalesRepository {
   // get profit sales
   @override
   Future<List<ProfitSale>> getProfitSales() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await salesDatasource.getProfitSales();
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await salesDatasource.getProfitSales();
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   // get instant sales
   @override
   Future<List<InstantSalesModel>> getInstantSales() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await salesDatasource.getInstantSales();
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await salesDatasource.getInstantSales();
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   // get all products
   @override
   Future<List<ProductModel>> getAllProducts() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await salesDatasource.getAllProducts();
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await salesDatasource.getAllProducts();
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

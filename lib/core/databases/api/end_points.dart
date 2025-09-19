@@ -225,6 +225,17 @@ class EndPoints {
   static const String getReadyMaintenances = 'get/ready/maintenances';
   static const String getDeliveredMaintenances = 'get/delivered/maintenances';
   static const String showMaintenance = 'show/maintenance';
+
+  // goals
+  static const String getAllGoals = 'get/all/goals';
+  static const String addGoal = 'add/goal';
+  static const String editGoal = 'edit/goal';
+  static const String showGoal = 'show/goal';
+  static const String transferGoal = 'transfer/goal';
+  static const String cancelGoal = 'cancel/goal';
+
+  // followups
+  static const String getFollowups = 'get/initial/followups';
 }
 
 class ApiKey {

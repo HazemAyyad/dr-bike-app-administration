@@ -29,9 +29,6 @@ class AppRoutes {
   static const PROJECTMANAGEMENTSCREEN = '/ProjectManagementScreen';
   static const PROJECTDETAILSSCREEN = '/ProjectDetailsScreeen';
   static const CREATEPROJECTSCREEN = '/CreateProjectScreen';
-  static const TARGETSECTIONSCREEN = '/TargetSectionScreen';
-  static const TARGETDETAILSSCREEN = '/TargetDetailsScreen';
-  static const ADDNEWTARGETSCREEN = '/AddNewTargetScreen';
   static const GENERALDATALISTSCREEN = '/GeneralDataListScreen';
   static const GLOBALCUSTOMERDATASCREEN = '/GlobalCustomerDataScreen';
   static const ADDNEWCUSTOMERSCREEN = '/AddNewCustomerScreen';
@@ -102,4 +99,9 @@ class AppRoutes {
 
   // Counters
   static const COUNTERSSCREEN = '/CountersScreen';
+
+  // Goals
+  static const TARGETSECTIONSCREEN = '/TargetSectionScreen';
+  static const TARGETDETAILSSCREEN = '/TargetDetailsScreen';
+  static const ADDNEWTARGETSCREEN = '/AddNewTargetScreen';
 }

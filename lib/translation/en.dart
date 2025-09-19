@@ -385,13 +385,23 @@ const Map<String, String> en = {
 
   // follow Up Department
   'currentFollowUps': 'Ongoing Follow-Ups',
-  'completedFollowUps': 'Completed Follow-Ups',
+  'initialFollowUp': 'Initial Follow-Up',
   'customerName': 'Customer Name',
   'sellerName': 'Seller Name',
   'productDetails': 'Details',
   'notifyCustomer': 'Notify Customer',
   'cancelFollowUp': 'Cancel Follow',
-
+  "notify_customer": "Notify Customer",
+  "completion_and_agreement": "Completion and Agreement",
+  "sale_completed": "Sale Completed",
+  "sale_rejected": "Sale Rejected",
+  "step_one": "Step One: Collect product and customer information",
+  "step_two":
+      "Step Two: Contact the customer and inform them whether the product is available or not",
+  "step_three":
+      "Step Three: Clarify follow-up details and indicate whether the sale was completed or not",
+  "cancel_followup_confirmation":
+      "Are you sure you want to cancel the follow-up?",
   'createFollowUp': 'Create New Follow-Up',
   'productDetailsTitle': 'Requested Product Details',
   'productDetailsExample': 'Example: Car Engine Model 211',
@@ -441,6 +451,7 @@ const Map<String, String> en = {
   'projectDocumentsExample': 'Example: Partnership Papers',
   'addProject': 'Add Project',
   'projectAddedSuccessfully': 'Project added successfully',
+  'options': 'Options',
 
   'projectDetails': 'Project Details',
   'totalSales': 'كمية مبيعات المشروع',
@@ -462,6 +473,7 @@ const Map<String, String> en = {
   'endedTarget': 'Ended',
   'goalName': 'Target Name',
   'targetValue': 'Target Value',
+  'currentValue': 'Current Value',
   'thousand': 'Thousand',
   'targetDetails': 'Target Details',
   'targetType': 'Target Type',
@@ -469,6 +481,22 @@ const Map<String, String> en = {
   'followUp': 'Target Follow Up',
   'productName': 'Product Name',
   'cancelTarget': 'Delete Target',
+  'transferGoal': 'Transfer Goal',
+
+  "total_profit_values": "Total Sales Value",
+  "net_profit": "Net Profit",
+  "sell_pieces": "Sell a Specific Number of Pieces",
+  "purchase_pieces": "Purchase a Specific Number of Pieces",
+  "finish_tasks": "Complete a Number of Main Tasks",
+  "pay_person": "Pay a Specific Amount to a Person",
+  "deposit_to_box": "Deposit an Amount in a Specific Box",
+
+  "main_categories": "Main Categories",
+  "sub_categories": "Sub Categories",
+  // "product": "Product",
+  // "employee": "Employee",
+  // "person": "Person",
+  "box": "Box",
 
   // إنشاء هدف جديد
   'addNewTarget': 'Add New Target',
@@ -481,6 +509,8 @@ const Map<String, String> en = {
   'personExample': 'Example: Customer',
   'addTarget': 'Add Target',
   'targetAddedSuccessfully': 'Target added successfully',
+  'private': 'Private',
+  'public': 'Public',
 
   // قائمة البيانات العامة
   'generalDataList': 'General Data List',
@@ -491,6 +521,7 @@ const Map<String, String> en = {
   'job': 'Job',
 
   'directContact': 'Direct Contact',
+  'whatsappCall': 'WhatsApp call',
 
 // Customer Details
   'customerDetails': 'Customer Details',

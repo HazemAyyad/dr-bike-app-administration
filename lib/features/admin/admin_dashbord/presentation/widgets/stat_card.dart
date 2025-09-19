@@ -79,7 +79,7 @@ class StatCard extends StatelessWidget {
                     show
                         ? value.toString()
                         : NumberFormat('#,###')
-                            .format(int.parse(value.toString())),
+                            .format(double.parse(value.toString())),
                     style: theme.textTheme.bodyMedium!.copyWith(
                       color: AppColors.primaryColor,
                       fontSize: 15.sp,

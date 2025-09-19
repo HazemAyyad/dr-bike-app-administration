@@ -8,9 +8,9 @@ import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../controllers/current_follow_up_controller.dart';
+import '../../../../follow_up/presentation/controllers/follow_up_controller.dart';
 
-class AddNewFollowCustomerScreen extends GetView<CurrentFollowUpController> {
+class AddNewFollowCustomerScreen extends GetView<FollowUpController> {
   const AddNewFollowCustomerScreen({Key? key}) : super(key: key);
 
   @override

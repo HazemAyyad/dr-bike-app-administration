@@ -51,7 +51,6 @@ class ProjectDatasource {
     String? sellerId,
   }) async {
     try {
-      print("projectId $projectImages");
       final productIdList = <String, dynamic>{};
 
       for (int i = 0; i < productId.length; i++) {

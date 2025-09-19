@@ -18,16 +18,15 @@ class SpecialTasksImplement implements SpecialTasksRepository {
   // get special tasks
   @override
   Future<List<SpecialTaskModel>> specialTasks({required String page}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await specialTasksDatasource.getSpecialTasks(page: page);
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await specialTasksDatasource.getSpecialTasks(page: page);
 
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
@@ -58,17 +57,16 @@ class SpecialTasksImplement implements SpecialTasksRepository {
   @override
   Future<SpecialTaskDetailsModel> getSpecialTasksDetails(
       {required String specialTaskId}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await specialTasksDatasource.getSpecialTasksDetails(
-            specialTaskId: specialTaskId);
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await specialTasksDatasource.getSpecialTasksDetails(
+          specialTaskId: specialTaskId);
 
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

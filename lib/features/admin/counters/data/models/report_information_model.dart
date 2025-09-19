@@ -1,22 +1,22 @@
 class ReportInformationModel {
-  final int totalDebtsWeOwe;
+  final String totalDebtsWeOwe;
   final String totalSales;
-  final int profits;
+  final String profits;
   final String totalBoxes;
-  final int totalChecks;
-  final int totalBills;
-  final int numberOfPeople;
-  final int numberOfProjects;
-  final int numberOfEmployees;
+  final String totalChecks;
+  final String totalBills;
+  final String numberOfPeople;
+  final String numberOfProjects;
+  final String numberOfEmployees;
   final String totalExpenses;
-  final int totalReturns;
-  final int totalGoods;
-  final int shopCapital;
-  final int netShopCapital;
-  final int completedEmployeeTasksDaily;
-  final int incompletedEmployeeTasksDaily;
-  final int completedEmployeeTasksMonthly;
-  final int incompletedEmployeeTasksMonthly;
+  final String totalReturns;
+  final String totalGoods;
+  final String shopCapital;
+  final String netShopCapital;
+  final String completedEmployeeTasksDaily;
+  final String incompletedEmployeeTasksDaily;
+  final String completedEmployeeTasksMonthly;
+  final String incompletedEmployeeTasksMonthly;
 
   ReportInformationModel({
     required this.totalDebtsWeOwe,
@@ -41,27 +41,28 @@ class ReportInformationModel {
 
   factory ReportInformationModel.fromJson(Map<String, dynamic> json) {
     return ReportInformationModel(
-      totalDebtsWeOwe: json['total_debts_we_owe'] ?? 0,
-      totalSales: json['total_sales'] ?? "0",
-      profits: json['profits'] ?? 0,
-      totalBoxes: json['total_boxes'] ?? "0",
-      totalChecks: json['total_checks'] ?? 0,
-      totalBills: json['total_bills'] ?? 0,
-      numberOfPeople: json['number_of_people'] ?? 0,
-      numberOfProjects: json['number_of_projects'] ?? 0,
-      numberOfEmployees: json['number_of_employees'] ?? 0,
-      totalExpenses: json['total_expenses'] ?? "0",
-      totalReturns: json['total_returns'] ?? 0,
-      totalGoods: json['total_goods'] ?? 0,
-      shopCapital: json['shop_capital'] ?? 0,
-      netShopCapital: json['net_shop_capital'] ?? 0,
-      completedEmployeeTasksDaily: json['completed_employee_tasks_daily'] ?? 0,
+      totalDebtsWeOwe: json['total_debts_we_owe']?.toString() ?? "0",
+      totalSales: json['total_sales']?.toString() ?? "0",
+      profits: json['profits']?.toString() ?? "0",
+      totalBoxes: json['total_boxes']?.toString() ?? "0",
+      totalChecks: json['total_checks']?.toString() ?? "0",
+      totalBills: json['total_bills']?.toString() ?? "0",
+      numberOfPeople: json['number_of_people']?.toString() ?? "0",
+      numberOfProjects: json['number_of_projects']?.toString() ?? "0",
+      numberOfEmployees: json['number_of_employees']?.toString() ?? "0",
+      totalExpenses: json['total_expenses']?.toString() ?? "0",
+      totalReturns: json['total_returns']?.toString() ?? "0",
+      totalGoods: json['total_goods']?.toString() ?? "0",
+      shopCapital: json['shop_capital']?.toString() ?? "0",
+      netShopCapital: json['net_shop_capital']?.toString() ?? "0",
+      completedEmployeeTasksDaily:
+          json['completed_employee_tasks_daily']?.toString() ?? "0",
       incompletedEmployeeTasksDaily:
-          json['incompleted_employee_tasks_daily'] ?? 0,
+          json['incompleted_employee_tasks_daily']?.toString() ?? "0",
       completedEmployeeTasksMonthly:
-          json['completed_employee_tasks_monthly'] ?? 0,
+          json['completed_employee_tasks_monthly']?.toString() ?? "0",
       incompletedEmployeeTasksMonthly:
-          json['incompleted_employee_tasks_monthly'] ?? 0,
+          json['incompleted_employee_tasks_monthly']?.toString() ?? "0",
     );
   }
 

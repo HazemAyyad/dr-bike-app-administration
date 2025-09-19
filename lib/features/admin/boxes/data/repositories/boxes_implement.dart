@@ -42,32 +42,30 @@ class BoxesImplement implements BoxesRepository {
   // get all boxes
   @override
   Future<List<GetShownBoxesModel>> getShownBoxes({required int screen}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await boxesDatasource.getShownBoxes(screen: screen);
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await boxesDatasource.getShownBoxes(screen: screen);
 
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
   // get all logs
   @override
   Future<List<BoxLogModel>> getAllBoxesLogs() async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result = await boxesDatasource.getAllBoxesLogs();
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await boxesDatasource.getAllBoxesLogs();
 
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 
@@ -104,17 +102,15 @@ class BoxesImplement implements BoxesRepository {
   // box details
   @override
   Future<BoxDetailsModel> boxDetails({required String boxId}) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final result =
-            await boxesDatasource.boxDetails(boxId: boxId.toString());
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await boxesDatasource.boxDetails(boxId: boxId.toString());
 
-        return result;
-      } on ServerException catch (e) {
-        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-      }
-    } else {
-      throw [];
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

@@ -42,246 +42,89 @@ class AppButton extends StatelessWidget {
   final double? borderWidth;
   final BorderRadius? borderRadius;
   final Widget? widget;
-  final bool? isRtl;
+  final bool isRtl;
   final RxBool? isLoading;
   final bool isSafeArea;
 
   @override
   Widget build(BuildContext context) {
+    buttonBuilder() {
+      final loading = isLoading?.value ?? false;
+
+      return InkWell(
+        onTap: loading ? null : onPressed,
+        overlayColor: WidgetStateProperty.all(Colors.transparent),
+        borderRadius: BorderRadius.circular(5.r),
+        splashColor: loading ? Colors.transparent : Colors.white.withAlpha(76),
+        highlightColor:
+            loading ? Colors.transparent : Colors.white.withAlpha(51),
+        child: Ink(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: borderColor ?? Colors.transparent,
+              width: borderWidth ?? 0,
+            ),
+            color: loading ? Colors.grey : (color ?? getButtonTheme()),
+            borderRadius: borderRadius ?? BorderRadius.circular(11.r),
+          ),
+          child: Container(
+            height: height,
+            width: width,
+            alignment: Alignment.center,
+            padding: padding ??
+                EdgeInsets.symmetric(
+                  vertical: 10.h,
+                  horizontal: 10.w,
+                ),
+            margin: margin,
+            child: loading
+                ? SizedBox(
+                    height: 22.h,
+                    width: 22.h,
+                    child: const CircularProgressIndicator(strokeWidth: 3),
+                  )
+                : _buildContent(context),
+          ),
+        ),
+      );
+    }
+
+    final button = isLoading != null ? Obx(buttonBuilder) : buttonBuilder();
+
     return isSafeArea
-        ? SafeArea(
-            child: Column(
-              children: [
-                InkWell(
-                  onTap: onPressed,
-                  overlayColor: WidgetStateProperty.all(Colors.transparent),
-                  borderRadius: BorderRadius.circular(5.r),
-                  splashColor: Colors.white.withAlpha(76),
-                  highlightColor: Colors.white.withAlpha(51),
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: borderColor ?? Colors.transparent,
-                        width: borderWidth ?? 0,
-                      ),
-                      color: color ?? getButtonTheme(),
-                      borderRadius: borderRadius ?? BorderRadius.circular(11.r),
+        ? SafeArea(child: Column(children: [button, SizedBox(height: 20.h)]))
+        : button;
+  }
+
+  Widget _buildContent(BuildContext context) {
+    if (widget != null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (isRtl) widget!,
+          Text(
+            text.tr,
+            style: textStyle ??
+                Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: textColor ?? AppColors.whiteColor,
+                      fontSize: size ?? 16.sp,
+                      fontWeight: fontWeight ?? FontWeight.w400,
                     ),
-                    child: Container(
-                      height: height,
-                      width: width,
-                      alignment: Alignment.center,
-                      padding: padding ??
-                          EdgeInsets.symmetric(
-                              vertical: 10.h, horizontal: 10.w),
-                      margin: margin,
-                      child: isLoading != null
-                          ? Obx(
-                              () {
-                                return isLoading!.value
-                                    ? SizedBox(
-                                        height: 25.h,
-                                        child: const Center(
-                                          child: CircularProgressIndicator(
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      )
-                                    : widget != null
-                                        ? Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              isRtl!
-                                                  ? widget!
-                                                  : const SizedBox(),
-                                              Text(
-                                                text.tr,
-                                                style: textStyle ??
-                                                    Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium!
-                                                        .copyWith(
-                                                          color: textColor ??
-                                                              AppColors
-                                                                  .whiteColor,
-                                                          fontSize:
-                                                              size ?? 16.sp,
-                                                          fontWeight:
-                                                              FontWeight.w400,
-                                                        ),
-                                              ),
-                                              isRtl!
-                                                  ? const SizedBox()
-                                                  : widget!,
-                                            ],
-                                          )
-                                        : Text(
-                                            text.tr,
-                                            style: textStyle ??
-                                                Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium!
-                                                    .copyWith(
-                                                      color: textColor ??
-                                                          AppColors.whiteColor,
-                                                      fontSize: size ?? 16.sp,
-                                                      fontWeight:
-                                                          FontWeight.w400,
-                                                    ),
-                                          );
-                              },
-                            )
-                          : widget != null
-                              ? Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    isRtl! ? widget! : const SizedBox(),
-                                    Text(
-                                      text.tr,
-                                      style: textStyle ??
-                                          Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium!
-                                              .copyWith(
-                                                color: textColor ??
-                                                    AppColors.whiteColor,
-                                                fontSize: size ?? 16.sp,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                    ),
-                                    isRtl! ? const SizedBox() : widget!,
-                                  ],
-                                )
-                              : Text(
-                                  text.tr,
-                                  style: textStyle ??
-                                      Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium!
-                                          .copyWith(
-                                            color: textColor ??
-                                                AppColors.whiteColor,
-                                            fontSize: size ?? 16.sp,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                ),
-                    ),
-                  ),
+          ),
+          if (!isRtl) widget!,
+        ],
+      );
+    } else {
+      return Text(
+        text.tr,
+        style: textStyle ??
+            Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: textColor ?? AppColors.whiteColor,
+                  fontSize: size ?? 16.sp,
+                  fontWeight: fontWeight ?? FontWeight.w500,
                 ),
-                SizedBox(height: 20.h)
-              ],
-            ),
-          )
-        : InkWell(
-            onTap: onPressed,
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            borderRadius: BorderRadius.circular(5.r),
-            splashColor: Colors.white.withAlpha(76),
-            highlightColor: Colors.white.withAlpha(51),
-            child: Ink(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: borderColor ?? Colors.transparent,
-                  width: borderWidth ?? 0,
-                ),
-                color: color ?? getButtonTheme(),
-                borderRadius: borderRadius ?? BorderRadius.circular(11.r),
-              ),
-              child: Container(
-                height: height,
-                width: width,
-                alignment: Alignment.center,
-                padding: padding ??
-                    EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
-                margin: margin,
-                child: isLoading != null
-                    ? Obx(
-                        () {
-                          return isLoading!.value
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                      color: Colors.white),
-                                )
-                              : widget != null
-                                  ? Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        isRtl! ? widget! : const SizedBox(),
-                                        Text(
-                                          text.tr,
-                                          style: textStyle ??
-                                              Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
-                                                    color: textColor ??
-                                                        AppColors.whiteColor,
-                                                    fontSize: size ?? 16.sp,
-                                                    fontWeight: FontWeight.w400,
-                                                  ),
-                                        ),
-                                        isRtl! ? const SizedBox() : widget!,
-                                      ],
-                                    )
-                                  : Text(
-                                      text.tr,
-                                      style: textStyle ??
-                                          Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium!
-                                              .copyWith(
-                                                color: textColor ??
-                                                    AppColors.whiteColor,
-                                                fontSize: size ?? 16.sp,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                    );
-                        },
-                      )
-                    : widget != null
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              isRtl! ? widget! : const SizedBox(),
-                              Text(
-                                text.tr,
-                                style: textStyle ??
-                                    Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(
-                                          color:
-                                              textColor ?? AppColors.whiteColor,
-                                          fontSize: size ?? 16.sp,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                              ),
-                              isRtl! ? const SizedBox() : widget!,
-                            ],
-                          )
-                        : Text(
-                            text.tr,
-                            style: textStyle ??
-                                Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: textColor ?? AppColors.whiteColor,
-                                      fontSize: size ?? 16.sp,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                          ),
-              ),
-            ),
-          );
+      );
+    }
   }
 }
