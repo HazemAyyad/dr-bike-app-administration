@@ -11,6 +11,7 @@ import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../../employee_section/domain/entities/employee_entity.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../data/models/goals_details_model.dart' hide SellerModel;
+import '../../data/models/goals_model.dart';
 import '../../domain/usecases/add_goal_usecase.dart';
 import '../../domain/usecases/get_goal_details_usecase.dart';
 import '../../domain/usecases/get_goals_usecase.dart';
@@ -93,23 +94,27 @@ class TargetSectionController extends GetxController {
         : isLoading(false);
     update();
     final response = await getGoalsUsecase.call();
-
     GoalsServices().globalGoalsList.assignAll(
           response.where((goal) =>
               goal.type == 'public' &&
               double.parse(goal.achievementPercentage) < 100 &&
               !goal.isCanceled),
         );
-
+    globalGoalsFilterList.assignAll(GoalsServices().globalGoalsList);
+    isLoading(false);
+    update();
     GoalsServices().privateGoalsList.assignAll(
           response.where((goal) =>
               !goal.isCanceled &&
               double.parse(goal.achievementPercentage) < 100 &&
               goal.type == 'private'),
         );
+    privateGoalsFilterList.assignAll(GoalsServices().privateGoalsList);
 
     GoalsServices().archiveGoalsList.assignAll(response.where((goal) =>
         goal.isCanceled || double.parse(goal.achievementPercentage) >= 100));
+    archiveGoalsFilterList.assignAll(GoalsServices().archiveGoalsList);
+
     isLoading(false);
     update();
   }
@@ -190,7 +195,6 @@ class TargetSectionController extends GetxController {
     currentValueController.text = goalDetailsList!.currentValue;
     notesController.text = goalDetailsList!.notes;
     optionsController.text = goalDetailsList!.scope;
-
     if (goalDetailsList!.employee != null) {
       employeeIdController.text = goalDetailsList!.employee!.id.toString();
     }
@@ -304,6 +308,40 @@ class TargetSectionController extends GetxController {
     isAddLoading(false);
   }
 
+  final List<GoalsModel> globalGoalsFilterList = <GoalsModel>[].obs;
+  final List<GoalsModel> privateGoalsFilterList = <GoalsModel>[].obs;
+  final List<GoalsModel> archiveGoalsFilterList = <GoalsModel>[].obs;
+
+  void filterGoals() {
+    final fromDate = fromDateController.text.trim();
+    final toDate = toDateController.text.trim();
+
+    List<GoalsModel> applyFilter(List<GoalsModel> sourceList) {
+      return sourceList.where((item) {
+        // ✅ فلترة بالتاريخ
+        final itemDate = item.createdAt;
+        final from = (fromDate.isNotEmpty) ? DateTime.tryParse(fromDate) : null;
+        final to = (toDate.isNotEmpty) ? DateTime.tryParse(toDate) : null;
+        bool matchesDate = true;
+        if (from != null && itemDate.isBefore(from)) matchesDate = false;
+        if (to != null && itemDate.isAfter(to)) matchesDate = false;
+        return matchesDate;
+      }).toList();
+    }
+
+    globalGoalsFilterList
+      ..clear()
+      ..addAll(applyFilter(GoalsServices().globalGoalsList));
+    privateGoalsFilterList
+      ..clear()
+      ..addAll(applyFilter(GoalsServices().privateGoalsList));
+    archiveGoalsFilterList
+      ..clear()
+      ..addAll(applyFilter(GoalsServices().archiveGoalsList));
+    Get.back();
+    update();
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -311,6 +349,9 @@ class TargetSectionController extends GetxController {
     getEmployee();
     getAllCustomersAndSellers();
     getShowBoxes();
+    globalGoalsFilterList.assignAll(GoalsServices().globalGoalsList);
+    privateGoalsFilterList.assignAll(GoalsServices().privateGoalsList);
+    archiveGoalsFilterList.assignAll(GoalsServices().archiveGoalsList);
   }
 
   @override

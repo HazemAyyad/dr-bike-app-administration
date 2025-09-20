@@ -347,7 +347,7 @@ class MaintenanceController extends GetxController {
     List<MaintenanceDataModel> applyFilter(
         List<MaintenanceDataModel> sourceList) {
       return sourceList.where((item) {
-        final name = (item.customerName.isNotEmpty == true
+        final name = (item.customerName.isNotEmpty && item.sellerName != null
                 ? item.customerName
                 : item.sellerName ?? "")
             .toLowerCase();

@@ -46,21 +46,24 @@ class GoalsDatasource {
     required String boxId,
   }) async {
     try {
-      final response = await api
-          .post(goalId != null ? EndPoints.editGoal : EndPoints.addGoal, data: {
-        if (goalId != null) 'goal_id': goalId,
-        'name': name,
-        'type': type,
-        'form': form,
-        'targeted_value': targetedValue,
-        if (currentValue.isNotEmpty) 'current_value': currentValue,
-        'notes': notes,
-        'scope': scope,
-        if (customerId != '') 'customer_id': customerId,
-        if (employeeId != '') 'employee_id': employeeId,
-        if (sellerId != '') 'seller_id': sellerId,
-        if (boxId != '') 'box_id': boxId
-      });
+      final response = await api.post(
+          goalId != null && goalId != '' && goalId.isNotEmpty
+              ? EndPoints.editGoal
+              : EndPoints.addGoal,
+          data: {
+            if (goalId != null) 'goal_id': goalId,
+            'name': name,
+            'type': type,
+            'form': form,
+            'targeted_value': targetedValue,
+            if (currentValue.isNotEmpty) 'current_value': currentValue,
+            'notes': notes,
+            'scope': scope,
+            if (customerId != '') 'customer_id': customerId,
+            if (employeeId != '') 'employee_id': employeeId,
+            if (sellerId != '') 'seller_id': sellerId,
+            if (boxId != '') 'box_id': boxId
+          });
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

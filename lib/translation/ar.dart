@@ -204,9 +204,8 @@ const Map<String, String> ar = {
   'or': 'أو',
 
   // my Orders
-  'completedOrders': 'طلبات مكتملة',
-  'activeOrders': 'طلبات جارية',
-  'cancelledOrders': 'طلبات ملغية',
+  'loanRequests': 'طلبات سلفة',
+  'overtimeRequests': 'طلبات اوفرتايم',
   'creationDate': 'تاريخ انشاء الطلب',
   'status': 'حالة الطلب',
   'completed': 'مكتملة',
@@ -343,6 +342,7 @@ const Map<String, String> ar = {
   'submitRequest': 'تقديم الطلب',
 
   'loanRequest': 'طلب سلفة',
+  'approvedValue': 'القيمة المعتمدة',
 
   'hourlyRate': 'سعر ساعة العمل',
   'points': 'عدد النقاط',
@@ -641,6 +641,7 @@ const Map<String, String> ar = {
   'sortByAmount': 'حسب المبلغ',
   'sortByAmountDesc': '(من الاكبر : الاقل)',
   'sortByDate': 'حسب التاريخ',
+  'date': 'التاريخ',
   'sortByDateDesc': '(من الاقدم : الاحدث)',
 
   'boxName': 'أسم الصندوق',

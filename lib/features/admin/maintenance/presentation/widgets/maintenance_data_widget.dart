@@ -52,14 +52,23 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
           delegate: SliverChildBuilderDelegate(
             (context, index) {
               final month = controller.currentTab.value == 0
-                  ? controller.maintenancesSearch.keys.toList()[index]
+                  ? controller.maintenancesSearch.keys
+                      .toList()
+                      .reversed
+                      .toList()[index]
                   : controller.currentTab.value == 1
                       ? controller.ongoingMaintenancesSearch.keys
+                          .toList()
+                          .reversed
                           .toList()[index]
                       : controller.currentTab.value == 2
                           ? controller.readyMaintenancesSearch.keys
+                              .toList()
+                              .reversed
                               .toList()[index]
                           : controller.archiveMaintenancesSearch.keys
+                              .toList()
+                              .reversed
                               .toList()[index];
 
               final assets = controller.currentTab.value == 0
@@ -161,7 +170,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            item.sellerName != null
+                                            item.sellerName!.isNotEmpty &&
+                                                    item.sellerName != null
                                                 ? item.sellerName!
                                                 : item.customerName,
                                             maxLines: 2,

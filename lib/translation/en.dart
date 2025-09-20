@@ -204,10 +204,10 @@ const Map<String, String> en = {
   'or': 'or',
 
   // my Orders
-  'completedOrders': 'Completed',
-  'activeOrders': 'Active',
-  'cancelledOrders': 'Cancelled',
-  // 'products': 'Products',
+  'loanRequests': 'Loan Requests',
+  'approvedValue': 'Approved Value',
+
+  'overtimeRequests': 'Overtime Requests',
   'creationDate': 'Creation Date',
   'status': 'Order Status',
   'completed': 'Completed',
@@ -642,6 +642,7 @@ const Map<String, String> en = {
   'sortByAmount': 'Sort by Amount',
   'sortByAmountDesc': '(From largest to smallest)',
   'sortByDate': 'Sort by Date',
+  'date': 'Date',
   'sortByDateDesc': '(From oldest to newest)',
 
   'boxName': 'Box Name',

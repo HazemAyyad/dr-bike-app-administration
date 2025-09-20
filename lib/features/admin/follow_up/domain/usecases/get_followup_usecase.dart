@@ -6,7 +6,7 @@ class GetFollowupUsecase {
 
   GetFollowupUsecase({required this.followupRepository});
 
-  Future<List<FollowupModel>> call() {
-    return followupRepository.getFollowup();
+  Future<List<FollowupModel>> call({required int page}) {
+    return followupRepository.getFollowup(page: page);
   }
 }

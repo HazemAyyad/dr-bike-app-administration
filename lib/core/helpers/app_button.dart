@@ -99,7 +99,7 @@ class AppButton extends StatelessWidget {
   Widget _buildContent(BuildContext context) {
     if (widget != null) {
       return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (isRtl) widget!,
@@ -109,7 +109,7 @@ class AppButton extends StatelessWidget {
                 Theme.of(context).textTheme.bodyMedium!.copyWith(
                       color: textColor ?? AppColors.whiteColor,
                       fontSize: size ?? 16.sp,
-                      fontWeight: fontWeight ?? FontWeight.w400,
+                      fontWeight: fontWeight ?? FontWeight.w700,
                     ),
           ),
           if (!isRtl) widget!,
@@ -122,7 +122,7 @@ class AppButton extends StatelessWidget {
             Theme.of(context).textTheme.bodyMedium!.copyWith(
                   color: textColor ?? AppColors.whiteColor,
                   fontSize: size ?? 16.sp,
-                  fontWeight: fontWeight ?? FontWeight.w500,
+                  fontWeight: fontWeight ?? FontWeight.w700,
                 ),
       );
     }

@@ -13,7 +13,11 @@ class DarkMode extends GetView<ProfileController> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        buildSidebarItem('darkMode'.tr, Icons.dark_mode_outlined, null),
+        BuildSidebarItem(
+          title: 'darkMode'.tr,
+          icon: Icons.dark_mode_outlined,
+          route: null,
+        ),
         const Spacer(),
         Obx(
           () => Switch(

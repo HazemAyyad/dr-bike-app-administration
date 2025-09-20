@@ -52,7 +52,7 @@ class Helpers {
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      title,
+                      title.tr,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                             color: const Color(0XFFC01A1A),
@@ -105,10 +105,11 @@ class Helpers {
   }
 
 //showCustomDialogSuccess
-  static void showCustomDialogSuccess(
-      {required BuildContext context,
-      required String title,
-      required String message}) {
+  static void showCustomDialogSuccess({
+    required BuildContext context,
+    required String title,
+    required String message,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -142,7 +143,7 @@ class Helpers {
                   ),
                   SizedBox(height: ScreenUtilNew.height(4)),
                   Text(
-                    title,
+                    title.tr,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.cairo(
                       fontSize: 24.sp,
@@ -210,7 +211,7 @@ class Helpers {
                   ),
                   SizedBox(height: ScreenUtilNew.height(4)),
                   Text(
-                    title,
+                    title.tr,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.cairo(
                       fontSize: 20.sp,
@@ -275,7 +276,7 @@ class Helpers {
                   ),
                   SizedBox(height: ScreenUtilNew.height(4)),
                   Text(
-                    title,
+                    title.tr,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.cairo(
                       fontSize: 20.sp,

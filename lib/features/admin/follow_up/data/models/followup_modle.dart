@@ -2,19 +2,21 @@ class FollowupModel {
   final int id;
   final String customerName;
   final String customerPhone;
-  final String? sellerName;
-  final String? sellerPhone;
+  final String sellerName;
+  final String sellerPhone;
   final String productName;
   final String followupStatus;
+  final DateTime createdAt;
 
   FollowupModel({
     required this.id,
     required this.customerName,
     required this.customerPhone,
-    this.sellerName,
-    this.sellerPhone,
+    required this.sellerName,
+    required this.sellerPhone,
     required this.productName,
     required this.followupStatus,
+    required this.createdAt,
   });
 
   factory FollowupModel.fromJson(Map<String, dynamic> json) {
@@ -22,10 +24,13 @@ class FollowupModel {
       id: json['id'] ?? 0,
       customerName: json['customer_name'] ?? '',
       customerPhone: json['customer_phone'] ?? '',
-      sellerName: json['seller_name'],
-      sellerPhone: json['seller_phone'],
+      sellerName: json['seller_name'] ?? '',
+      sellerPhone: json['seller_phone'] ?? '',
       productName: json['product_name'] ?? '',
       followupStatus: json['followup_status'] ?? '',
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
     );
   }
 

@@ -1,11 +1,14 @@
 class DashbordEmployeeDetailsModel {
   final int id;
-  final int userId;
+  final String userId;
   final String numberOfWorkHours;
   final String hourWorkPrice;
   final String debts;
   final String salary;
   final String points;
+  final String startWorkTime;
+  final String endWorkTime;
+  final String totalWorkHours;
   final List<Permission> permissions;
   final User user;
   final List<Task> tasks;
@@ -18,6 +21,9 @@ class DashbordEmployeeDetailsModel {
     required this.debts,
     required this.salary,
     required this.points,
+    required this.startWorkTime,
+    required this.endWorkTime,
+    required this.totalWorkHours,
     required this.permissions,
     required this.user,
     required this.tasks,
@@ -25,13 +31,16 @@ class DashbordEmployeeDetailsModel {
 
   factory DashbordEmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
     return DashbordEmployeeDetailsModel(
-      id: json['id'],
-      userId: int.parse(json['user_id']),
-      numberOfWorkHours: json['number_of_work_hours'] ?? '',
-      hourWorkPrice: json['hour_work_price'] ?? '',
-      debts: json['debts'] ?? '',
-      salary: json['salary'] ?? '',
+      id: json['id'] ?? 0,
+      userId: json['user_id'] ?? '0',
+      numberOfWorkHours: json['number_of_work_hours'] ?? '0',
+      hourWorkPrice: json['hour_work_price'] ?? '0',
+      debts: json['debts'] ?? '0',
+      salary: json['salary'] ?? '0',
       points: json['points'] ?? '0',
+      startWorkTime: json['start_work_time'] ?? '0',
+      endWorkTime: json['end_work_time'] ?? '0',
+      totalWorkHours: json['total_work_hours'] ?? '0',
       permissions: (json['permissions'] as List<dynamic>)
           .map((e) => Permission.fromJson(e))
           .toList(),

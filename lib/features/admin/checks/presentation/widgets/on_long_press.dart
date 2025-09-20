@@ -335,6 +335,7 @@ class CashTheCheck extends GetView<ChecksController> {
             ),
           ),
           AppButton(
+            isSafeArea: false,
             isLoading: controller.isLoading,
             height: 48.h,
             width: double.infinity,

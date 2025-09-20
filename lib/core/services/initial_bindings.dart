@@ -1,6 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:doctorbike/features/admin/--/data/datasources/admin_remote_datasource.dart';
-import 'package:doctorbike/features/admin/--/data/repositories/admin_implement.dart';
 import 'package:doctorbike/features/admin/general_data_list/presentation/controllers/general_data_serves.dart';
 import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -52,6 +50,8 @@ import '../../features/common_feature/data/datasources/common_datasource.dart';
 import '../../features/common_feature/data/repositories/common_repo_impl.dart';
 import '../../features/employee/employee_dashbord/data/datasources/employee_dashbord_datasource.dart';
 import '../../features/employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
+import '../../features/employee/my_orders/data/datasources/my_orders_datasource.dart';
+import '../../features/employee/my_orders/data/repositories/common_repo_impl.dart';
 import '../../features/employee/scan_qrcode/data/datasources/scan_qrcode_datasource.dart';
 import '../../features/employee/scan_qrcode/data/repositories/scan_qrcode_implement.dart';
 import '../../firebase_options.dart';
@@ -161,18 +161,7 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-    // admin feature
-    Get.lazyPut<AdminRemoteDatasource>(
-      () => AdminRemoteDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut<AdminImplement>(
-      () => AdminImplement(
-        networkInfo: Get.find<NetworkInfo>(),
-        adminRemoteDataSource: Get.find<AdminRemoteDatasource>(),
-      ),
-      fenix: true,
-    );
+
     // debts feature
     Get.lazyPut<DebetDatasource>(
       () => DebetDatasource(api: Get.find<DioConsumer>()),
@@ -394,6 +383,19 @@ class InitialBindings implements Bindings {
       () => FollowupImplement(
         networkInfo: Get.find<NetworkInfo>(),
         followupDataSource: Get.find<FollowupDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // my Orders
+    Get.lazyPut<MyOrdersDatasource>(
+      () => MyOrdersDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<MyOrdersImplement>(
+      () => MyOrdersImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        myOrdersDatasource: Get.find<MyOrdersDatasource>(),
       ),
       fenix: true,
     );

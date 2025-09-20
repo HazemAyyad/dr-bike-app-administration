@@ -196,9 +196,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (!allProducts.any((p) => p.productId == product.productId)) {
         allProducts.add(product);
         // filteredProducts.add(product);
-      } else {
-        // filteredProducts.value = StockServices().allProducts;
       }
+      // else {
+      // filteredProducts.value = StockServices().allProducts;
+      // }
     }
     final getClearances = await getAllStockUsecase.call(
       page: page,
@@ -209,9 +210,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (!allClearances.any((p) => p.productId == product.productId)) {
         allClearances.add(product);
         // filteredClearances.add(product);
-      } else {
-        // filteredClearances.value = StockServices().allClearances;
       }
+      // else {
+      // filteredClearances.value = StockServices().allClearances;
+      // }
     }
 
     // 3- الكومبينيشن
@@ -224,9 +226,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (!allCombinations.any((p) => p.productId == product.productId)) {
         allCombinations.add(product);
         // filteredCombinations.add(product);
-      } else {
-        // filteredCombinations.value = StockServices().allCombinations;
       }
+      // else {
+      // filteredCombinations.value = StockServices().allCombinations;
+      // }
     }
     page++;
     isLoadingMore(false);
@@ -502,13 +505,6 @@ class NewCompositionModel {
     priceController.addListener(_updateTotal);
     quantityController.addListener(_updateTotal);
   }
-
-  // Map<String, dynamic> toJson() {
-  //   return {
-  //     "product_id": productIdController.text,
-  //     "quantity": quantityController.text,
-  //   };
-  // }
 
   void _updateTotal() {
     final price = double.tryParse(priceController.text.trim()) ?? 0;

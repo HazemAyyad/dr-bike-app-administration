@@ -212,6 +212,9 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
             CustomDropdownField(
               label: 'options',
               hint: 'options',
+              value: controller.optionsController.text.isEmpty
+                  ? null
+                  : controller.optionsController.text,
               items: controller.options,
               onChanged: (value) {
                 controller.optionsController.text = value!;

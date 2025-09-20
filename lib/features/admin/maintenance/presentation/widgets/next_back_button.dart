@@ -52,11 +52,14 @@ class NextBackButton extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   fontSize: 16.sp,
                 ),
-                widget: Icon(
-                  Icons.arrow_back_rounded,
-                  color: ThemeService.isDark.value
-                      ? AppColors.whiteColor
-                      : AppColors.secondaryColor,
+                widget: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w),
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: ThemeService.isDark.value
+                        ? AppColors.whiteColor
+                        : AppColors.secondaryColor,
+                  ),
                 ),
               ),
             ),
@@ -66,7 +69,8 @@ class NextBackButton extends StatelessWidget {
                   child: AppButton(
                     isLoading: isLoading,
                     text: endTitle.tr,
-                    borderWidth: 1.w,
+                    height: 40.h,
+                    borderWidth: 3.w,
                     color: Colors.green,
                     textStyle: textTheme.copyWith(
                       color: AppColors.whiteColor,
@@ -87,9 +91,13 @@ class NextBackButton extends StatelessWidget {
                       fontSize: 16.sp,
                     ),
                     onPressed: onPressedNext,
-                    widget: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: AppColors.whiteColor,
+                    widget: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10.w),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.whiteColor,
+                        size: 25.sp,
+                      ),
                     ),
                   ),
                 )

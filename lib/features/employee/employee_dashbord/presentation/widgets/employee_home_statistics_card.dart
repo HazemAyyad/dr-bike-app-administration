@@ -60,11 +60,12 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
               return Column(
                 children: [
                   StatCard(
+                    // show: true,
                     title: 'workingHours',
                     imageicon: AssetsManager.cashIcon,
                     value: controller.employeeData.value == null
                         ? '0'
-                        : controller.employeeData.value!.numberOfWorkHours,
+                        : controller.employeeData.value!.totalWorkHours,
                     subtitle: controller.employeeData.value == null
                         ? '0'
                         : int.parse(controller

@@ -17,9 +17,9 @@ import '../features/App_entr/on_boarding/widgets/chose_lang.dart';
 import '../features/App_entr/splash/binding/splash_binding.dart';
 import '../features/App_entr/splash/view/splash_screen.dart';
 import '../features/admin/follow_up/presentation/binding/follow_up_binding.dart';
+import '../features/admin/follow_up/presentation/views/add_new_follow_customer.dart';
 import '../features/admin/follow_up/presentation/views/follow_up_screen.dart';
-import '../features/admin/--/presentation/current_follow_up/widgets/add_customer_follow_up.dart';
-import '../features/admin/--/presentation/current_follow_up/widgets/add_new_follow_customer.dart';
+import '../features/admin/follow_up/presentation/views/add_new_follow_up.dart';
 import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_binding.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_activti_log_screen.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
@@ -87,9 +87,9 @@ import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
 import '../features/admin/stock/presentation/views/product_details_screen.dart';
 import '../features/admin/goals_section/presentation/binding/target_section_binding.dart';
-import '../features/admin/goals_section/presentation/views/target_section_screen.dart';
-import '../features/admin/goals_section/presentation/views/add_new_target_screen.dart';
-import '../features/admin/goals_section/presentation/views/target_details_screen.dart';
+import '../features/admin/goals_section/presentation/views/goals_section_screen.dart';
+import '../features/admin/goals_section/presentation/views/add_new_goals_screen.dart';
+import '../features/admin/goals_section/presentation/views/goals_details_screen.dart';
 import '../features/auth/presentation/login/binding/login_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/binding/sgin_up_verify_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/views/sgin_up_verify_screen.dart';
@@ -110,8 +110,8 @@ import '../features/common_feature/presentation/user_profile/views/profile_scree
 import '../features/employee/scan_qrcode/presentation/binding/qrcode_bideing.dart';
 import '../features/employee/scan_qrcode/presentation/views/qr_code_screen.dart';
 import '../features/home/binding/home_page_binding.dart';
-import '../features/my_orders/binding/my_orders_binding.dart';
-import '../features/my_orders/views/my_orders_screen.dart';
+import '../features/employee/my_orders/presentation/binding/my_orders_binding.dart';
+import '../features/employee/my_orders/presentation/views/my_orders_screen.dart';
 import 'app_routes.dart';
 
 const _defaultTransition = Transition.native;
@@ -331,13 +331,13 @@ class AppPages {
     // قسم صناعة الاهداف
     GetPage(
       name: AppRoutes.TARGETSECTIONSCREEN,
-      page: () => const TargetSectionScreen(),
+      page: () => const GoalsSectionScreen(),
       binding: TargetSectionBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(
       name: AppRoutes.TARGETDETAILSSCREEN,
-      page: () => const TargetDetailsScreen(),
+      page: () => const GoalsDetailsScreen(),
       // binding: ,
       transition: _transitionFade,
     ),
@@ -358,8 +358,8 @@ class AppPages {
       transition: _transitionFadeIn,
     ),
     GetPage(
-      name: AppRoutes.ADDCUSTOMERFOLLOWUPSCREEN,
-      page: () => const AddCustomerFollowUpScreen(),
+      name: AppRoutes.ADDFOLLOWUPSCREEN,
+      page: () => const AddNewFollowUpScreen(),
       // binding:
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight

@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -28,54 +29,25 @@ class DialogUtils {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      Flexible(
-                        child: TextButton(
-                          style: TextButton.styleFrom(
-                            fixedSize: Size(130.w, 30.h),
-                            backgroundColor: Colors.red,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20.r),
-                            ),
-                          ),
+                      Expanded(
+                        child: AppButton(
+                          isSafeArea: false,
+                          text: 'yes',
                           onPressed: onConfirm,
-                          child: Text(
-                            'yes'.tr,
-                            style: Theme.of(Get.context!)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: Colors.white,
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                          ),
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(20.r),
                         ),
                       ),
                       SizedBox(width: 10.w),
-                      Flexible(
-                        child: TextButton(
-                          style: TextButton.styleFrom(
-                            fixedSize: Size(130.w, 30.h),
-                            side: BorderSide(
-                              color: Colors.red,
-                              width: 1.w,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20.r),
-                            ),
-                          ),
+                      Expanded(
+                        child: AppButton(
+                          isSafeArea: false,
+                          text: 'cancel',
                           onPressed: () => Get.back(),
-                          child: Text(
-                            'cancel'.tr,
-                            style: Theme.of(Get.context!)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: Colors.red,
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                          ),
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(20.r),
+                          textColor: Colors.red,
+                          borderColor: Colors.red,
                         ),
                       ),
                     ],

@@ -7,43 +7,49 @@ import '../controllers/profile_controller.dart';
 import 'build_sidebar_item.dart';
 import 'chang_lang_bottom_sheet.dart';
 
-Widget changLang(ProfileController controller) {
-  return GestureDetector(
-    onTap: () {
-      changLangBottomSheet(controller);
-    },
-    child: Row(
-      children: [
-        buildSidebarItem(
-          'language'.tr,
-          Icons.language,
-          () {
-            changLangBottomSheet(controller);
-          },
-        ),
-        const Spacer(),
-        Row(
-          children: [
-            Text(
-              controller.languageController.getLang() == 'ar'
-                  ? 'العربية'
-                  : 'English',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+class ChangLang extends GetView<ProfileController> {
+  const ChangLang({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      overlayColor: WidgetStateProperty.all(Colors.transparent),
+      onTap: () {
+        changLangBottomSheet(controller);
+      },
+      child: Row(
+        children: [
+          BuildSidebarItem(
+            title: 'language'.tr,
+            icon: Icons.language,
+            route: () {
+              changLangBottomSheet(controller);
+            },
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Text(
+                controller.languageController.getLang() == 'ar'
+                    ? 'العربية'
+                    : 'English',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            SizedBox(width: 8.w),
-            Icon(
-              controller.languageController.getLang() == 'ar'
-                  ? Icons.keyboard_arrow_left_sharp
-                  : Icons.keyboard_arrow_right_sharp,
-              size: 30.sp,
-              color: AppColors.primaryColor,
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+              SizedBox(width: 8.w),
+              Icon(
+                controller.languageController.getLang() == 'ar'
+                    ? Icons.keyboard_arrow_left_sharp
+                    : Icons.keyboard_arrow_right_sharp,
+                size: 30.sp,
+                color: AppColors.primaryColor,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

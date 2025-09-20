@@ -22,6 +22,7 @@ class LanguageController extends GetxController {
 
     // Persist the selected language
     setLang(languageCode);
+    Get.back();
   }
 
   String getLang() {

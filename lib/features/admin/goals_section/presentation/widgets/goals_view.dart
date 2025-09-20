@@ -10,7 +10,6 @@ import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
-import '../controllers/goals_services.dart';
 import '../controllers/target_section_controller.dart';
 
 class GoalsView extends StatelessWidget {
@@ -26,15 +25,15 @@ class GoalsView extends StatelessWidget {
           );
         }
         if (controller.currentTab.value == 0 &&
-            GoalsServices().globalGoalsList.isEmpty) {
+            controller.globalGoalsFilterList.isEmpty) {
           return const SliverFillRemaining(child: ShowNoData());
         }
         if (controller.currentTab.value == 1 &&
-            GoalsServices().privateGoalsList.isEmpty) {
+            controller.privateGoalsFilterList.isEmpty) {
           return const SliverFillRemaining(child: ShowNoData());
         }
         if (controller.currentTab.value == 2 &&
-            GoalsServices().archiveGoalsList.isEmpty) {
+            controller.archiveGoalsFilterList.isEmpty) {
           return const SliverFillRemaining(child: ShowNoData());
         }
 
@@ -51,15 +50,11 @@ class GoalsView extends StatelessWidget {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final goal = controller.currentTab.value == 0
-                    ? GoalsServices().globalGoalsList.reversed.toList()[index]
+                    ? controller.globalGoalsFilterList.reversed.toList()[index]
                     : controller.currentTab.value == 1
-                        ? GoalsServices()
-                            .privateGoalsList
-                            .reversed
+                        ? controller.privateGoalsFilterList.reversed
                             .toList()[index]
-                        : GoalsServices()
-                            .archiveGoalsList
-                            .reversed
+                        : controller.archiveGoalsFilterList.reversed
                             .toList()[index];
                 return GestureDetector(
                   onLongPress: () {
@@ -188,10 +183,10 @@ class GoalsView extends StatelessWidget {
                 );
               },
               childCount: controller.currentTab.value == 0
-                  ? GoalsServices().globalGoalsList.toList().length
+                  ? controller.globalGoalsFilterList.toList().length
                   : controller.currentTab.value == 1
-                      ? GoalsServices().privateGoalsList.toList().length
-                      : GoalsServices().archiveGoalsList.toList().length,
+                      ? controller.privateGoalsFilterList.toList().length
+                      : controller.archiveGoalsFilterList.toList().length,
             ),
           ),
         );

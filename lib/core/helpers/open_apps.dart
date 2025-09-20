@@ -1,7 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
 Future<void> launchWhatsApp({
-  required String phoneNumber, 
+  required String phoneNumber,
   String message = '',
 }) async {
   final uri = Uri.parse(
@@ -14,7 +14,7 @@ Future<void> launchWhatsApp({
   }
 }
 
-Future<void> launchDialer(String phoneNumber) async {
+Future<void> launchDialer({required String phoneNumber}) async {
   final uri = Uri.parse('tel:$phoneNumber');
   if (await canLaunchUrl(uri)) {
     await launchUrl(uri, mode: LaunchMode.externalApplication);

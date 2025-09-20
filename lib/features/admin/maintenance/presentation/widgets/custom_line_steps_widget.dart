@@ -6,16 +6,18 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 
 class CustomLineSteps extends StatelessWidget {
-  const CustomLineSteps(
-      {Key? key,
-      required this.timeLineSteps,
-      required this.selectedStep,
-      required this.changeSelected})
-      : super(key: key);
+  const CustomLineSteps({
+    Key? key,
+    required this.timeLineSteps,
+    required this.selectedStep,
+    required this.changeSelected,
+    this.isTaped = false,
+  }) : super(key: key);
 
   final List<Map<int, String>> timeLineSteps;
   final RxInt selectedStep;
   final Function(int index) changeSelected;
+  final bool isTaped;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,7 @@ class CustomLineSteps extends StatelessWidget {
                   return Row(
                     children: [
                       GestureDetector(
-                        onTap: () => changeSelected(step),
+                        onTap: () => isTaped ? changeSelected(step) : null,
                         child: Container(
                           height: 45.h,
                           width: 50.w,

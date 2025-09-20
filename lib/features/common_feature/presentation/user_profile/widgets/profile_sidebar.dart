@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -36,7 +37,7 @@ class BuildProfileSidebar extends GetView<ProfileController> {
         SizedBox(height: 30.h),
         Text(
           'profile'.tr,
-          style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 color: ThemeService.isDark.value
                     ? Colors.white
                     : AppColors.secondaryColor,
@@ -47,38 +48,46 @@ class BuildProfileSidebar extends GetView<ProfileController> {
         SizedBox(height: 30.h),
 
         // قائمة الخيارات
-        buildSidebarItem(
-          'personalDetails'.tr,
-          Icons.person,
-          () {
+        BuildSidebarItem(
+          title: 'personalDetails'.tr,
+          icon: Icons.person,
+          route: () {
             Get.toNamed(AppRoutes.PERSONALDETAILSSCREEN);
           },
         ),
-        buildSidebarItem(
-          'changePassword'.tr,
-          Icons.lock_outline_rounded,
-          () {
+        BuildSidebarItem(
+          title: 'changePassword'.tr,
+          icon: Icons.lock_outline_rounded,
+          route: () {
             Get.toNamed(AppRoutes.CHANGEPASSWORDSCREEN);
           },
         ),
-        buildSidebarItem(
-          'myOrders'.tr,
-          Icons.shopping_bag_outlined,
-          () {
-            Get.toNamed(AppRoutes.MYORDERSSCREEN);
-          },
+        if (userType != 'admin')
+          BuildSidebarItem(
+            title: 'myOrders'.tr,
+            icon: Icons.shopping_bag_outlined,
+            route: () {
+              Get.toNamed(AppRoutes.MYORDERSSCREEN);
+            },
+          ),
+        BuildSidebarItem(
+          title: 'termsAndConditions'.tr,
+          icon: Icons.description_outlined,
+          route: null,
         ),
-        buildSidebarItem(
-            'termsAndConditions'.tr, Icons.description_outlined, null),
-        buildSidebarItem('aboutUs'.tr, Icons.help_outline_rounded, null),
-        buildSidebarItem(
-          'contactUs'.tr,
-          Icons.phone_outlined,
-          () {
+        BuildSidebarItem(
+          title: 'aboutUs'.tr,
+          icon: Icons.help_outline_rounded,
+          route: null,
+        ),
+        BuildSidebarItem(
+          title: 'contactUs'.tr,
+          icon: Icons.phone_outlined,
+          route: () {
             Get.toNamed(AppRoutes.CONTACTUSSCREEN);
           },
         ),
-        changLang(controller),
+        const ChangLang(),
         // ignore: prefer_const_constructors
         DarkMode(),
         SizedBox(height: 70.h),
@@ -99,7 +108,7 @@ class BuildProfileSidebar extends GetView<ProfileController> {
               SizedBox(width: 8.w),
               Text(
                 'logout'.tr,
-                style: Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       color: Colors.red,
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w700,

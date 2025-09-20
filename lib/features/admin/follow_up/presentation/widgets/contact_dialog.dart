@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/open_apps.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 
 class ContactDialog extends StatelessWidget {
-  const ContactDialog({Key? key}) : super(key: key);
+  const ContactDialog({Key? key, required this.phone}) : super(key: key);
 
+  final String phone;
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -28,9 +30,10 @@ class ContactDialog extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 20.h),
-            GestureDetector(
+            InkWell(
               onTap: () {
-                // launchDialer(employee.phone);
+                Get.back();
+                launchDialer(phoneNumber: phone);
               },
               child: Row(
                 children: [
@@ -53,11 +56,10 @@ class ContactDialog extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20.h),
-            GestureDetector(
+            InkWell(
               onTap: () {
-                // launchWhatsApp(
-                //     phoneNumber:
-                //         employee.phone);
+                Get.back();
+                launchWhatsApp(phoneNumber: phone);
               },
               child: Row(
                 children: [

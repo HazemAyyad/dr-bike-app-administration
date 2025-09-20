@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
-import '../../../../../routes/app_routes.dart';
 import '../controllers/follow_up_controller.dart';
 import '../widgets/follow_up_widget.dart';
 
@@ -19,9 +18,9 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
         onPressedAdd: () {
-          // Handle add button press
-          Get.toNamed(AppRoutes.ADDCUSTOMERFOLLOWUPSCREEN);
+          controller.resetData();
         },
+        onPressedFilter: () => controller.filterGoals(),
       ),
       body: CustomScrollView(
         slivers: [

@@ -22,6 +22,8 @@ class EndPoints {
   static const String addOvertimeOrder = 'employee/add/overtime/order';
   static const String addLoanOrder = 'employee/add/loan/order';
 
+  static const String getMyOrders = 'employee/orders';
+
   // admin dashboard
   static const String adminLogs = 'all/logs';
 
@@ -235,7 +237,16 @@ class EndPoints {
   static const String cancelGoal = 'cancel/goal';
 
   // followups
-  static const String getFollowups = 'get/initial/followups';
+  static const String addFollowup = 'add/followup';
+  static const String updateFollowup = 'update/followup';
+  static const String showFollowup = 'show/followup';
+  static const String storeCustomer = 'followup/store/customer';
+  static const String cancelFollowup = 'cancel/followup';
+  static const String getInitialFollowups = 'get/initial/followups';
+  static const String getInformPersonFollowups = 'get/inform/person/followups';
+  static const String getFinishAndAgreementFollowups =
+      'get/finish/and/agreement/followups';
+  static const String getArchivedFollowups = 'get/archived/followups';
 }
 
 class ApiKey {

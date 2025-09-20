@@ -57,7 +57,7 @@ class GlobalData extends GetView<GeneralDataListController> {
                   SizedBox(height: 20.h),
                   GestureDetector(
                     onTap: () {
-                      launchDialer(employee.phone);
+                      launchDialer(phoneNumber: employee.phone);
                     },
                     child: Row(
                       children: [

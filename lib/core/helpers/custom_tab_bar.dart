@@ -25,7 +25,7 @@ class AppTabs extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Container(
-          margin: width != null ? null : EdgeInsets.symmetric(horizontal: 5.w),
+          margin: width != null ? null : EdgeInsets.symmetric(horizontal: 10.w),
           padding: width != null ? null : EdgeInsets.symmetric(horizontal: 2.w),
           height: 48.h,
           width: width,
