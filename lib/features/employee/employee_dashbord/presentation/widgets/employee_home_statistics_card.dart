@@ -62,7 +62,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                   StatCard(
                     // show: true,
                     title: 'workingHours',
-                    imageicon: AssetsManager.cashIcon,
+                    imageicon: AssetsManager.doneIcon,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.totalWorkHours,
@@ -78,7 +78,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                   StatCard(
                     show: true,
                     title: 'hourlyRate',
-                    imageicon: AssetsManager.cashIcon,
+                    imageicon: AssetsManager.moneyIcon,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.hourWorkPrice
@@ -108,7 +108,7 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
                   StatCard(
                     show: true,
                     title: 'points',
-                    imageicon: AssetsManager.cashIcon,
+                    imageicon: AssetsManager.cashIcon4,
                     value: controller.employeeData.value == null
                         ? '0'
                         : controller.employeeData.value!.points.toString(),

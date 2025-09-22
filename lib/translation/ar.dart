@@ -98,7 +98,7 @@ const Map<String, String> ar = {
   'products': 'المنتجات',
   'product': 'منتج',
   'uncompletedTasks': 'مهام غير منجزة',
-  'tasks': 'مهمات',
+  'tasks': 'المهمات',
   'completedTasks': 'مهام منجزة',
   'task': 'مهمة',
   'expenses': 'مصاريف',
@@ -165,6 +165,7 @@ const Map<String, String> ar = {
   'logoutConfirmation': 'هل أنت متأكد أنك تريد تسجيل الخروج؟',
   'yes': 'نعم',
   'cancel': 'إلغاء',
+  'loginSuccess': 'تم تسجيل الدخول بنجاح',
   'logoutSuccess': 'تم تسجيل الخروج بنجاح',
   'logoutError': 'حدث خطأ أثناء تسجيل الخروج، حاول مرة أخرى لاحقاً',
   'areYouSure': 'هل أنت متأكد؟',
@@ -229,6 +230,8 @@ const Map<String, String> ar = {
   'deleteRepeatedTask': 'حذف المهمة مع التكرار',
   'subTasks': 'المهام الفرعية',
   'cancelTask': 'إنهاء المهمة',
+  'taskNotCompleted': 'مهام غير مكتملة',
+  'taskCompleted': 'مهام مكتملة',
 
   // add Task
   'createNewEmployeeTask': 'إنشاء مهمة موظفين جديدة',
@@ -322,7 +325,6 @@ const Map<String, String> ar = {
   'activityLog': 'سجل النشاط',
   'activity': 'الحدث',
   'description': 'وصف الحدث',
-  // 'details': 'تفاصيل',
 
   // المهام الخاصة
   'weeklyTasks': 'مهمات الأسبوع',
@@ -506,9 +508,6 @@ const Map<String, String> ar = {
 
   "main_categories": "التصنيفات الرئيسية",
   "sub_categories": "التصنيفات الفرعية",
-  // "product": "المنتج",
-  // "employee": "الموظف",
-  // "person": "الشخص",
   "box": "صندوق",
 
   // قائمة البيانات العامة
@@ -607,7 +606,7 @@ const Map<String, String> ar = {
   'addNewItem': 'إضافة صنف جديد',
   'discount': 'الخصم',
   'discountExample': 'مثال : 10',
-  'totalBill': 'اجمالي الفاتورة',
+  'totalBill': 'إجمالي الفاتورة',
   'details': 'تفاصيل',
   'detailsExample': 'مثال : تفاصيل عن المنتج',
   'readItem': '*يتم قراءة تكلفة الصنف واجمالي الفاتورة بشكل تلقائي',
@@ -702,6 +701,7 @@ const Map<String, String> ar = {
   'filesSelected': 'الملفات المحددة',
   "back": "رجوع",
   "delivered": "تم التسليم",
+
   // قسم المخزون
   'clearance': 'التصفيات',
   'productComposition': 'تركيب منتج',
@@ -744,7 +744,6 @@ const Map<String, String> ar = {
   'purchaseOrders': 'إستلام طلبات الشراء',
   'purchaseReturns': 'مردودات مشتريات',
   'bills': 'الفواتير',
-  // 'archive': 'الآرشيف',
 
   // قسم المصاريف والامور المالية
   'assets': 'الأصول',
@@ -774,7 +773,6 @@ const Map<String, String> ar = {
   "destructionValue": "قيمة الاتلاف",
   "addExpense": "إضافة مصروف",
   "expenseName": "أسم المصروف",
-  // "paymentMethod": "طريقة الدفع",
   "payment": "دفع",
   "receiptt": "قبض",
   "invoiceImage": "صورة الفاتورة",
@@ -824,11 +822,48 @@ const Map<String, String> ar = {
   "totalExpensess": "إجمالي المصاريف",
   "numberOfEmployees": "عدد الموظفين",
   "costOfGoods": "تكلفة البضاعة",
-  // "purchaseReturns": "مردودات مشتريات",
   "netShopCapital": "رأس مال المحل (صافي)",
   "shopCapital": "رأس مال المحل",
   "completedDailyTasks": "مهام الموظفين المنجزة (يومي)",
   "incompletedDailyTasks": "مهام الموظفين الغير منجزة (يومي)",
   "completedMonthlyTasks": "مهام الموظفين المنجزة (شهري)",
-  "incompletedMonthlyTasks": "مهام الموظفين الغير منجزة (شهري)"
+  "incompletedMonthlyTasks": "مهام الموظفين الغير منجزة (شهري)",
+
+  // bill
+  'billNumber': 'رقم الفاتورة',
+  'sellerName1': 'اسم التاجر',
+  'addNewBill': 'إنشاء فاتورة جديدة',
+  'addNewQuantityBill': 'إنشاء فاتورة كميات جديدة',
+  'specialDiscount': 'خصم خاص',
+  'addNewProduct': '+ إضافة منتج اخر',
+  'createBill': 'إنشاء الفاتورة',
+  'billDetails': 'تفاصيل الفاتورة',
+
+  "purchase_requests": "إستلام طلبات الشراء",
+  "unprocessed": "غير معالجة",
+  "not_matched": "غير متطابقة",
+  "deposits": "الامانات",
+  "return_full_order": "إرجاع الطلبية بالكامل",
+  "deliver_product": "تسليم المنتج",
+  "purchase": "شراء",
+  "purchase_new_price": "شراء سعر جديد",
+//   "delivered": "تم التسليم",
+  "missing": "ناقص",
+  "returned_extra": "مرتجع زيادة",
+  "not_compatible": "غير متوافق",
+  "reviewed": "تم المراجعة",
+  "moved_to_delivered": "نقل لتم التسليم",
+  "finished": "مكتملة",
+  "missing_extra": "ناقص",
+  'unfinished': 'غير مكتمل',
+  'product_status': 'اختر حالة المنتج',
+  'reason': 'سبب الارجاع',
+  'extra': 'زيادة',
+  'count': 'عدد',
+
+  'returnPurchase': 'مردودات مشتريات',
+  'return': 'مردودات',
+  // 'delivered': 'تم التسليم',
+  'returnBill': 'مردودات فاتورة',
+  'returnBillDetails': 'تفاصيل مردود الفاتورة',
 };

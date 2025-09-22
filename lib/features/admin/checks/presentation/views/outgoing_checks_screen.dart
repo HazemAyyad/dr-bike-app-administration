@@ -24,29 +24,22 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
           Obx(
             () => CustomScrollView(
               slivers: [
-                controller.isLoading.value
-                    ? const SliverFillRemaining(
-                        hasScrollBody: true,
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    : SliverAppBar(
-                        expandedHeight: 270.h,
-                        automaticallyImplyLeading: false,
-                        flexibleSpace: FlexibleSpaceBar(
-                          background: Column(
-                            children: [
-                              SizedBox(height: 10.h),
-                              const ChecksDetails(isOutGoing: true),
-                              SizedBox(height: 20.h),
-                              AppTabs(
-                                tabs: controller.tabs,
-                                currentTab: controller.currentTab,
-                                changeTab: controller.changeTab,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                if (controller.isLoading.value)
+                  const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                const SliverToBoxAdapter(
+                  child: ChecksDetails(isOutGoing: true),
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 15.h)),
+                SliverToBoxAdapter(
+                  child: AppTabs(
+                    tabs: controller.tabs,
+                    currentTab: controller.currentTab,
+                    changeTab: controller.changeTab,
+                  ),
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 20.h)),
                 const CustomListVeiwBuilder(),
                 SliverToBoxAdapter(child: SizedBox(height: 50.h)),
               ],

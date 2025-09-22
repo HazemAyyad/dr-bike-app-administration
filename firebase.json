@@ -1,1 +1,25 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"allite-f3970","appId":"1:783845645727:android:9900ec262549475f10f1aa","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"allite-f3970","configurations":{"android":"1:783845645727:android:9900ec262549475f10f1aa","ios":"1:783845645727:ios:61e79cda475622e810f1aa"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "allite-f3970",
+          "appId": "1:783845645727:android:9900ec262549475f10f1aa",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "allite-f3970",
+          "configurations": {
+            "android": "1:783845645727:android:9900ec262549475f10f1aa",
+            "ios": "1:783845645727:ios:61e79cda475622e810f1aa"
+          }
+        }
+      }
+    }
+  },
+  "storage": {
+    "rules": "storage"
+  }
+}

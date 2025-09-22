@@ -80,7 +80,7 @@ class ViewChecksWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: 20.w),
+                  SizedBox(width: 10.w),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -103,24 +103,31 @@ class ViewChecksWidget extends StatelessWidget {
                       ),
                       if (currentTab != 0) SizedBox(height: 5.h),
                       if (currentTab == 1)
-                        Text(
-                          check.customer != null
-                              ? check.customer!.name
-                              : check.seller != null
-                                  ? check.seller!.name
-                                  : check.fromCustomer != null
-                                      ? check.toCustomer != null
-                                          ? '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toCustomer!.name}'
-                                          : '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toSeller!.name}'
-                                      : check.toSeller != null
-                                          ? '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toSeller!.name}'
-                                          : '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toCustomer!.name}',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.grey.withAlpha(500),
-                                  ),
+                        SizedBox(
+                          width: 200.w,
+                          child: Text(
+                            check.customer != null
+                                ? check.customer!.name
+                                : check.seller != null
+                                    ? check.seller!.name
+                                    : check.fromCustomer != null
+                                        ? check.toCustomer != null
+                                            ? '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toCustomer!.name}'
+                                            : '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toSeller!.name}'
+                                        : check.toSeller != null
+                                            ? '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toSeller!.name}'
+                                            : '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toCustomer!.name}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.grey.withAlpha(500),
+                                ),
+                          ),
                         ),
                       if (currentTab == 2)
                         Text(

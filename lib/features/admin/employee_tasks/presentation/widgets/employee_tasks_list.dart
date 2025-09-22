@@ -25,18 +25,45 @@ class EmployeeTasks extends StatelessWidget {
               child: CircularProgressIndicator(color: AppColors.primaryColor),
             ),
           );
-        } else if (controller.employeeTasksFilter.isEmpty) {
+        }
+        if (controller.currentTab.value == 0 &&
+            controller.ongoingTasksFilter.isEmpty) {
+          return const SliverFillRemaining(
+            hasScrollBody: false,
+            child: ShowNoData(),
+          );
+        }
+        if (controller.currentTab.value == 1 &&
+            controller.completedTasksFilter.isEmpty) {
+          return const SliverFillRemaining(
+            hasScrollBody: false,
+            child: ShowNoData(),
+          );
+        }
+        if (controller.currentTab.value == 2 &&
+            controller.canceledTasksFilter.isEmpty) {
           return const SliverFillRemaining(
             hasScrollBody: false,
             child: ShowNoData(),
           );
         }
         return SliverList.builder(
-          itemCount: controller.employeeTasksFilter.length,
+          itemCount: controller.currentTab.value == 0
+              ? controller.ongoingTasksFilter.length
+              : controller.currentTab.value == 1
+                  ? controller.completedTasksFilter.length
+                  : controller.canceledTasksFilter.length,
           itemBuilder: (context, index) {
-            final month = controller.employeeTasksFilter.keys.toList()[index];
-            List<EmployeeTaskModel> date =
-                controller.employeeTasksFilter[month]!;
+            final month = controller.currentTab.value == 0
+                ? controller.ongoingTasksFilter.keys.toList()[index]
+                : controller.currentTab.value == 1
+                    ? controller.completedTasksFilter.keys.toList()[index]
+                    : controller.canceledTasksFilter.keys.toList()[index];
+            List<EmployeeTaskModel> date = controller.currentTab.value == 0
+                ? controller.ongoingTasksFilter[month]!.reversed.toList()
+                : controller.currentTab.value == 1
+                    ? controller.completedTasksFilter[month]!.reversed.toList()
+                    : controller.canceledTasksFilter[month]!.reversed.toList();
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),

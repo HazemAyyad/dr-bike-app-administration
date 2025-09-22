@@ -6,8 +6,11 @@ import '../../data/models/box_details_model.dart';
 import '../../data/models/get_shown_boxes_model.dart';
 
 abstract class BoxesRepository {
-  Future<Either<Failure, String>> addBox(
-      {required String boxName, required String total});
+  Future<Either<Failure, String>> addBox({
+    required String boxName,
+    required String total,
+    required String currency,
+  });
 
   Future<List<GetShownBoxesModel>> getShownBoxes({required int screen});
 
@@ -31,5 +34,6 @@ abstract class BoxesRepository {
     required String name,
     required String total,
     required String isShown,
+    required String currency,
   });
 }

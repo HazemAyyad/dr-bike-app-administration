@@ -79,10 +79,6 @@ class AppRoutes {
   static const CLOSEOUTSSCREEN = '/CloseoutsScreen';
   static const ADDCOMBINATIONSCREEN = '/AddCombinationScreen';
 
-  // Buying
-  static const BUYINGSCREEN = '/BuyingScreen';
-  static const BILLSSCREEN = '/BillsScreen';
-
   // Financial Affairs
   static const FINANCIALAFFAIRSSCREEN = '/FinancialAffairsScreen';
   static const ASSETSSCREEN = '/AssetsScreen';
@@ -104,4 +100,15 @@ class AppRoutes {
   static const TARGETSECTIONSCREEN = '/TargetSectionScreen';
   static const TARGETDETAILSSCREEN = '/TargetDetailsScreen';
   static const ADDNEWTARGETSCREEN = '/AddNewTargetScreen';
+
+  // Buying
+  static const BUYINGSCREEN = '/BuyingScreen';
+  static const BILLSSCREEN = '/BillsScreen';
+  // bill
+  static const ADDNEWBILLSCREEN = '/AddNewBillScreen';
+  static const BILLDETAILSSCREEN = '/BillDetailsScreen';
+  // purchase orders
+  static const PURCHASEORDERSSCREEN = '/PurchaseOrdersScreen';
+  // return purchases
+  static const RETURNPURCHASESSCREEN = '/ReturnPurchasesScreen';
 }

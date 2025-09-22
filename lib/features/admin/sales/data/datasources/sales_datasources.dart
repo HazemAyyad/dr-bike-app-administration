@@ -10,6 +10,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../models/invoice_model.dart';
 import '../models/product_model.dart';
 
 class SalesDatasource {
@@ -151,8 +152,25 @@ class SalesDatasource {
         },
         isFormData: true,
       );
-      // print("==================== ${response.data}");
       return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // get Invoice
+  Future<InvoiceModel> getInvoice({required String invoiceId}) async {
+    try {
+      final response = await api.post(EndPoints.getInstantSaleInvoice,
+          data: {'instant_sale_id': invoiceId});
+      return InvoiceModel.fromJson(response.data['instant_sale_invoice']);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -22,8 +22,6 @@ void main() async {
   final width = window.physicalSize.width / window.devicePixelRatio;
   final height = window.physicalSize.height / window.devicePixelRatio;
 
-  print('Screen Width: $width');
-  print('Screen Height: $height');
   runApp(
     DevicePreview(
       enabled: kDebugMode,
@@ -43,7 +41,6 @@ class MyApp extends StatelessWidget {
     return ScreenUtilInit(
       builder: (_, __) {
         return GetMaterialApp(
-          title: 'Doctorbike',
           debugShowCheckedModeBanner: false,
           theme: AppThemes.lightTheme,
           darkTheme: AppThemes.darkTheme,

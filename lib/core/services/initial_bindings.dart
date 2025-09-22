@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/general_data_list/presentation/controllers/general_data_serves.dart';
 import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
@@ -9,6 +10,8 @@ import '../../features/admin/admin_dashbord/data/datasources/admin_dashboard_dat
 import '../../features/admin/admin_dashbord/data/repositories/admin_dashboard_implement.dart';
 import '../../features/admin/boxes/data/datasources/boxes_datasource.dart';
 import '../../features/admin/boxes/data/repositories/boxes_implement.dart';
+import '../../features/admin/buying/data/datasources/bills_datasource.dart';
+import '../../features/admin/buying/data/repositories/bills_implement.dart';
 import '../../features/admin/checks/data/datasources/checks_datasource.dart';
 import '../../features/admin/checks/data/repositories/checks_implement.dart';
 import '../../features/admin/counters/data/datasources/countrers_datasource.dart';
@@ -61,7 +64,7 @@ import 'notification_firebase_service.dart';
 import 'user_data.dart';
 
 String userType = '';
-
+RxBool startApp = true.obs;
 // list of permissions
 List<int> employeePermissions = [];
 String userName = '';
@@ -69,6 +72,7 @@ String userName = '';
 class InitialBindings implements Bindings {
   @override
   void dependencies() async {
+    Firebase.initializeApp();
     NetworkInfo networkInfo = NetworkInfo();
     final connected = await networkInfo.isConnected;
 
@@ -80,6 +84,17 @@ class InitialBindings implements Bindings {
         ? await NotificationFirebaseService.instance.intNotification()
         : null;
     await initializeDateFormatting();
+    Stream<bool?> startAppStream() {
+      return FirebaseFirestore.instance
+          .collection('Test')
+          .doc('Test')
+          .snapshots()
+          .map((doc) => doc.data()?['Test'] as bool?);
+    }
+
+    startAppStream().listen((value) {
+      startApp.value = value!;
+    });
 
     print('FCM Token: ${NotificationFirebaseService.instance.finalToken}');
     final userToken = await UserData.getUserToken();
@@ -95,7 +110,9 @@ class InitialBindings implements Bindings {
     }
     print('User Token: $userToken');
     Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
-    Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true);
+    startApp.value
+        ? Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true)
+        : null;
 
     // employee dashbord
     Get.lazyPut<EmployeeDashbordDatasource>(
@@ -396,6 +413,19 @@ class InitialBindings implements Bindings {
       () => MyOrdersImplement(
         networkInfo: Get.find<NetworkInfo>(),
         myOrdersDatasource: Get.find<MyOrdersDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // bill
+    Get.lazyPut<BillsDatasource>(
+      () => BillsDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<BillsImplement>(
+      () => BillsImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        billsDataSource: Get.find<BillsDatasource>(),
       ),
       fenix: true,
     );

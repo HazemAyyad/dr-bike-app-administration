@@ -1,5 +1,7 @@
+import 'dart:collection';
 import 'dart:io';
 
+import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/features/admin/employee_tasks/data/models/task_details_model.dart';
 import 'package:doctorbike/features/admin/employee_tasks/domain/usecases/get_task_details_usecase.dart';
 import 'package:flutter/material.dart';
@@ -42,100 +44,200 @@ class EmployeeTasksController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
-    getEmployeeTasks();
+    update();
   }
 
   final RxBool deleteTask = false.obs;
 
   final RxBool deleteTasDuplicate = false.obs;
-  Map<String, List<EmployeeTaskModel>> employeeTasks = {};
-  Map<String, List<EmployeeTaskModel>> employeeTasksFilter = {};
 
-// get employee tasks
+  Map<String, List<EmployeeTaskModel>> ongoingTasksFilter = {};
+  Map<String, List<EmployeeTaskModel>> completedTasksFilter = {};
+  Map<String, List<EmployeeTaskModel>> canceledTasksFilter = {};
+
+  // get employee tasks
   Future<void> getEmployeeTasks() async {
-    employeeTasks.clear();
-    employeeTasksFilter.clear();
-    isLoading(true);
+    if (employeeTaskService.ongoingEmployeeTasks.isEmpty) {
+      isLoading(true);
+    }
 
-    final result = await employeeTasksUsecase.call(page: currentTab.value);
+    Map<String, List<EmployeeTaskModel>> sortByMonth(
+        Map<String, List<EmployeeTaskModel>> source) {
+      final sortedKeys = source.keys.toList()
+        ..sort((a, b) {
+          final aDate = DateTime.parse("$a-01");
+          final bDate = DateTime.parse("$b-01");
+          return bDate.compareTo(aDate);
+        });
 
-    for (var task in result) {
-      String dateKey = "${task.endTime.year}-${task.endTime.month}";
+      return LinkedHashMap.fromIterable(
+        sortedKeys,
+        key: (k) => k,
+        value: (k) => source[k]!,
+      );
+    }
 
-      employeeTasks.putIfAbsent(dateKey, () => []);
-      if (!employeeTasks[dateKey]!.any((t) => t.taskId == task.taskId)) {
-        employeeTasks[dateKey]!.add(task);
-      }
-
-      // خلي الفلتر نسخة طبق الأصل من الأصل
-      employeeTasksFilter.putIfAbsent(dateKey, () => []);
-      if (!employeeTasksFilter[dateKey]!.any((t) => t.taskId == task.taskId)) {
-        employeeTasksFilter[dateKey]!.add(task);
+    // ongoing
+    final ongoing = await employeeTasksUsecase.call(page: 0);
+    for (var task in ongoing) {
+      String dateKey =
+          "${task.startTime.year}-${task.startTime.month.toString().padLeft(2, '0')}";
+      employeeTaskService.ongoingEmployeeTasks.putIfAbsent(dateKey, () => []);
+      if (!employeeTaskService.ongoingEmployeeTasks[dateKey]!
+          .any((t) => t.taskId == task.taskId)) {
+        employeeTaskService.ongoingEmployeeTasks[dateKey]!.add(task);
       }
     }
+    ongoingTasksFilter
+        .assignAll(sortByMonth(employeeTaskService.ongoingEmployeeTasks));
+
+    // completed
+    final completed = await employeeTasksUsecase.call(page: 1);
+    for (var task in completed) {
+      String dateKey =
+          "${task.startTime.year}-${task.startTime.month.toString().padLeft(2, '0')}";
+      employeeTaskService.completedEmployeeTasks.putIfAbsent(dateKey, () => []);
+      if (!employeeTaskService.completedEmployeeTasks[dateKey]!
+          .any((t) => t.taskId == task.taskId)) {
+        employeeTaskService.completedEmployeeTasks[dateKey]!.add(task);
+      }
+    }
+    completedTasksFilter
+        .assignAll(sortByMonth(employeeTaskService.completedEmployeeTasks));
+
+    // canceled
+    final canceled = await employeeTasksUsecase.call(page: 2);
+    for (var task in canceled) {
+      String dateKey =
+          "${task.startTime.year}-${task.startTime.month.toString().padLeft(2, '0')}";
+      employeeTaskService.canceledEmployeeTasks.putIfAbsent(dateKey, () => []);
+      if (!employeeTaskService.canceledEmployeeTasks[dateKey]!
+          .any((t) => t.taskId == task.taskId)) {
+        employeeTaskService.canceledEmployeeTasks[dateKey]!.add(task);
+      }
+    }
+    canceledTasksFilter
+        .assignAll(sortByMonth(employeeTaskService.canceledEmployeeTasks));
 
     isLoading(false);
     update();
   }
 
+  // filter employee tasks
   void filterEmployeeTasks() {
     final from = DateTime.tryParse(fromDateController.text);
     final to = DateTime.tryParse(toDateController.text);
     final name = employeeNameController.text.trim();
 
-    final allTasks = employeeTasks.values.expand((tasks) => tasks).toList();
-
+    // ✅ لو مفيش أي شرط فلترة، رجع البيانات الأصلية
     if (from == null && to == null && name.isEmpty) {
-      employeeTasksFilter = Map.from(employeeTasks);
+      ongoingTasksFilter.assignAll(
+          sortTasksByMonth(employeeTaskService.ongoingEmployeeTasks));
+      completedTasksFilter.assignAll(
+          sortTasksByMonth(employeeTaskService.completedEmployeeTasks));
+      canceledTasksFilter.assignAll(
+          sortTasksByMonth(employeeTaskService.canceledEmployeeTasks));
       update();
       return;
     }
 
-    final filtered = allTasks.where((task) {
-      bool matchesDate = true;
-      bool matchesName = true;
+    // filter tasks
+    Map<String, List<EmployeeTaskModel>> filterTasks(
+      Map<String, List<EmployeeTaskModel>> source,
+    ) {
+      final allTasks = source.values.expand((tasks) => tasks).toList();
 
-      if (from != null && to != null && from.isAtSameMomentAs(to)) {
-        // 🔹 البحث في نفس اليوم فقط
-        final sameDay = task.endTime.year == from.year &&
-            task.endTime.month == from.month &&
-            task.endTime.day == from.day;
-        if (!sameDay) matchesDate = false;
-      } else {
-        // 🔹 المدى الزمني (من → إلى)
-        if (from != null) {
-          final isSameDayAsFrom = task.endTime.year == from.year &&
-              task.endTime.month == from.month &&
-              task.endTime.day == from.day;
-          if (task.endTime.isBefore(from) && !isSameDayAsFrom) {
-            matchesDate = false;
+      final filtered = allTasks.where((task) {
+        bool matchesDate = true;
+        bool matchesName = true;
+
+        // // البحث في نفس اليوم
+        if (from != null && to != null && from.isAtSameMomentAs(to)) {
+          final isSameDay = (task.startTime.year == from.year &&
+                  task.startTime.month == from.month &&
+                  task.startTime.day == from.day) ||
+              (task.endTime.year == from.year &&
+                  task.endTime.month == from.month &&
+                  task.endTime.day == from.day);
+
+          if (!isSameDay) matchesDate = false;
+        }
+        // البحث في نفس الشهر
+        else if (from != null &&
+            to != null &&
+            from.year == to.year &&
+            from.month == to.month) {
+          final isSameMonth = (task.startTime.year == from.year &&
+                  task.startTime.month == from.month) ||
+              (task.endTime.year == from.year &&
+                  task.endTime.month == from.month);
+
+          if (!isSameMonth) matchesDate = false;
+        }
+        //  البحث بالمدى الزمني
+        else {
+          if (from != null) {
+            final isSameDayAsFrom = task.startTime.year == from.year &&
+                task.startTime.month == from.month &&
+                task.startTime.day == from.day;
+
+            if (task.endTime.isBefore(from) && !isSameDayAsFrom) {
+              matchesDate = false;
+            }
+          }
+          if (to != null) {
+            final isSameDayAsTo = task.endTime.year == to.year &&
+                task.endTime.month == to.month &&
+                task.endTime.day == to.day;
+
+            if (task.startTime.isAfter(to) && !isSameDayAsTo) {
+              matchesDate = false;
+            }
           }
         }
-        if (to != null) {
-          final isSameDayAsTo = task.endTime.year == to.year &&
-              task.endTime.month == to.month &&
-              task.endTime.day == to.day;
-          if (task.endTime.isAfter(to) && !isSameDayAsTo) matchesDate = false;
+
+        // 🔹 فلترة بالاسم
+        if (name.isNotEmpty &&
+            !task.employeeName.toLowerCase().contains(name.toLowerCase())) {
+          matchesName = false;
         }
+
+        return matchesDate && matchesName;
+      }).toList();
+
+      // ✅ ترتيب التاسكات حسب startTime
+      filtered.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+      // 🔹 إعادة التجميع: باليوم
+      final Map<String, List<EmployeeTaskModel>> grouped = {};
+      for (var task in filtered) {
+        String dateKey =
+            "${task.startTime.year}-${task.startTime.month.toString().padLeft(2, '0')}-${task.startTime.day.toString().padLeft(2, '0')}";
+        grouped.putIfAbsent(dateKey, () => []).add(task);
       }
 
-      // 🔹 فلترة الاسم
-      if (name.isNotEmpty &&
-          !task.employeeName.toLowerCase().contains(name.toLowerCase())) {
-        matchesName = false;
-      }
+      // ✅ ترتيب الأيام (من الأحدث للأقدم)
+      final sortedKeys = grouped.keys.toList()
+        ..sort((a, b) {
+          final aDate = DateTime.parse(a);
+          final bDate = DateTime.parse(b);
+          return bDate.compareTo(aDate); // تنازلي
+        });
 
-      return matchesDate && matchesName;
-    }).toList();
-
-    // إعادة التجميع
-    final Map<String, List<EmployeeTaskModel>> grouped = {};
-    for (var task in filtered) {
-      String dateKey = "${task.endTime.year}-${task.endTime.month}";
-      grouped.putIfAbsent(dateKey, () => []).add(task);
+      return LinkedHashMap.fromIterable(
+        sortedKeys,
+        key: (k) => k,
+        value: (k) => grouped[k]!,
+      );
     }
 
-    employeeTasksFilter = grouped;
+    // ✅ تطبيق الفلترة على التلات مابات
+    ongoingTasksFilter = filterTasks(employeeTaskService.ongoingEmployeeTasks);
+    completedTasksFilter =
+        filterTasks(employeeTaskService.completedEmployeeTasks);
+    canceledTasksFilter =
+        filterTasks(employeeTaskService.canceledEmployeeTasks);
+
     update();
   }
 
@@ -208,17 +310,40 @@ class EmployeeTasksController extends GetxController {
     taskId == employeeTaskService.taskDetails.value?.taskId.toString()
         ? isTaskDetailsLoading(false)
         : isTaskDetailsLoading(true);
-
     final result = await getTaskDetailsUsecase.call(taskId: taskId);
     employeeTaskService.taskDetails.value =
         TaskDetailsModel.fromJson(result['employee_task']);
     isTaskDetailsLoading(false);
   }
 
+  Map<String, List<EmployeeTaskModel>> sortTasksByMonth(
+    Map<String, List<EmployeeTaskModel>> source,
+  ) {
+    final sortedKeys = source.keys.toList()
+      ..sort((a, b) {
+        final dateA = DateTime.parse("$a-01");
+        final dateB = DateTime.parse("$b-01");
+        return dateB.compareTo(dateA); // ترتيب تنازلي (الأحدث الأول)
+      });
+
+    final Map<String, List<EmployeeTaskModel>> sorted = {};
+    for (var key in sortedKeys) {
+      sorted[key] = source[key]!;
+    }
+    return sorted;
+  }
+
   @override
   void onInit() {
     super.onInit();
-    getEmployeeTasks();
+    userType == 'admin' ? getEmployeeTasks() : null;
+    ongoingTasksFilter
+        .assignAll(sortTasksByMonth(employeeTaskService.ongoingEmployeeTasks));
+    completedTasksFilter.assignAll(
+        sortTasksByMonth(employeeTaskService.completedEmployeeTasks));
+    canceledTasksFilter
+        .assignAll(sortTasksByMonth(employeeTaskService.canceledEmployeeTasks));
+    update();
     final String taskId = args?['taskId'] ?? '';
     if (taskId.isNotEmpty) {
       getTaskDetails(taskId: taskId);

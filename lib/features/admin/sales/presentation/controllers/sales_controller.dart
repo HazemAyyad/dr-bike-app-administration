@@ -12,10 +12,12 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/instant_sales_model.dart';
+import '../../data/models/invoice_model.dart';
 import '../../data/models/ongoing_project_model.dart';
 import '../../domain/usecases/add_profit_sale.dart';
 import '../../domain/usecases/get_all_products_usecase.dart';
 import '../../domain/usecases/get_profit_sales_usecase.dart';
+import '../../domain/usecases/invoice_model_usecase.dart';
 import 'sales_service.dart';
 
 class SalesController extends GetxController
@@ -25,6 +27,7 @@ class SalesController extends GetxController
   final GetInstantSalesUsecase getInstantSalesUsecase;
   final GetAllProductsUsecase getAllProductsUsecase;
   final AddInstantSalesUsecase addInstantSalesUsecase;
+  final InvoiceModelUsecase invoiceModelUsecase;
   final SalesService salesService;
 
   SalesController({
@@ -34,6 +37,7 @@ class SalesController extends GetxController
     required this.getInstantSalesUsecase,
     required this.getAllProductsUsecase,
     required this.addInstantSalesUsecase,
+    required this.invoiceModelUsecase,
   });
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -303,6 +307,24 @@ class SalesController extends GetxController
       }
     }
     isLoading(false);
+  }
+
+  InvoiceModel? invoiceModel;
+  // get invoice
+  void getInvoice({required String invoiceId}) async {
+    if (invoiceModel != null) {
+      invoiceId == invoiceModel!.id.toString()
+          ? isLoading(false)
+          : isLoading(true);
+      update();
+    } else {
+      isLoading(true);
+      update();
+    }
+    final invoice = await invoiceModelUsecase.call(invoiceId: invoiceId);
+    invoiceModel = invoice;
+    isLoading(false);
+    update();
   }
 
   // بيانات العرض بعد الفلترة

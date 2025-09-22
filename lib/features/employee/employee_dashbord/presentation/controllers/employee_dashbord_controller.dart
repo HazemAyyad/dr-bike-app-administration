@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks_controller.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../../domain/usecases/change_task_completed_uasecase.dart';
 import '../../domain/usecases/get_employee_data_usecase.dart';
@@ -96,6 +98,14 @@ class EmployeeDashbordController extends GetxController
     isAddMenuOpen.value = !isAddMenuOpen.value;
   }
 
+  final currentTab = 0.obs;
+  final tabs = ['taskNotCompleted', 'taskCompleted'].obs;
+
+  void changeTab(int index) {
+    currentTab.value = index;
+    update();
+  }
+
   List<Map<String, String>> employeeAddList = [
     {
       'title': 'overtimeRequest',
@@ -177,6 +187,7 @@ class EmployeeDashbordController extends GetxController
     required BuildContext context,
     required bool isSubTask,
     required int taskId,
+    String? mainTaskId,
   }) async {
     isTaskLoading(true);
     final result = await changeTaskCompletedUasecase.call(
@@ -208,9 +219,14 @@ class EmployeeDashbordController extends GetxController
           'error'.tr,
           errorMessages,
           snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
         );
       },
       (success) {
+        if (mainTaskId != null) {
+          Get.find<EmployeeTasksController>()
+              .getTaskDetails(taskId: mainTaskId.toString());
+        }
         // Get.back();
         Future.delayed(
           const Duration(milliseconds: 1500),
@@ -223,6 +239,7 @@ class EmployeeDashbordController extends GetxController
           'success'.tr,
           success,
           snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
         );
       },
     );
@@ -231,11 +248,21 @@ class EmployeeDashbordController extends GetxController
 
   // get employee data
   final Rxn<DashbordEmployeeDetailsModel> employeeData = Rxn();
+  final Map<String, List<Task>> tasksData = {};
   void getEmployeeData() async {
     employeeData.value != null ? isLoading(false) : isLoading(true);
     final result = await getEmployeeDataUsecase.call();
     employeeData.value = result;
     isLoading(false);
+
+    for (var task in employeeData.value!.tasks) {
+      String dateKey =
+          "${DateFormat.E('ar').format(task.endTime)} ${task.endTime.year}/${task.endTime.month.toString().padLeft(2, '0')}/${task.endTime.day.toString().padLeft(2, '0')}";
+      tasksData.putIfAbsent(dateKey, () => []);
+      if (!tasksData[dateKey]!.any((t) => t.id == task.id)) {
+        tasksData[dateKey]!.add(task);
+      }
+    }
     update();
   }
 

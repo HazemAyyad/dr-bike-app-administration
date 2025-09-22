@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
+import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -34,7 +35,18 @@ class CreateBoxesScreen extends GetView<BoxesController> {
               keyboardType: TextInputType.number,
               // validator: (p0) => null,
             ),
-            SizedBox(height: 30.h),
+            SizedBox(height: 20.h),
+            CustomDropdownField(
+              label: 'currencyy'.tr,
+              hint: 'currency'.tr,
+              value: controller.currencyController.text.isEmpty
+                  ? null
+                  : controller.currencyController.text,
+              onChanged: (value) {
+                controller.currencyController.text = value!;
+              },
+              items: controller.currency,
+            ),
             SizedBox(height: 30.h),
             AppButton(
               isLoading: controller.isAddBoxLoading,

@@ -16,11 +16,12 @@ class MovementsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
 
-    return Flexible(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 10.w),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -64,7 +65,7 @@ class MovementsWidget extends StatelessWidget {
                       ],
                     )
                   : Text(
-                      box.box!.name,
+                      'box.box!.name',
                       style: textStyle.copyWith(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w400,
@@ -75,43 +76,43 @@ class MovementsWidget extends StatelessWidget {
                     ),
             ],
           ),
-          const Spacer(),
-          Container(
-            width: 60.w,
-            height: 70.h,
-            decoration: BoxDecoration(
-              color: box.type == 'transfer'
-                  ? AppColors.customOrange3
-                  : box.type != 'add'
-                      ? AppColors.redColor
-                      : AppColors.customGreen1,
-              borderRadius: Get.locale!.languageCode == 'en'
-                  ? BorderRadius.only(
-                      topRight: Radius.circular(4.r),
-                      bottomRight: Radius.circular(4.r),
-                    )
-                  : BorderRadius.only(
-                      topLeft: Radius.circular(4.r),
-                      bottomLeft: Radius.circular(4.r),
-                    ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  NumberFormat('#,###').format(box.value),
-                  textAlign: TextAlign.center,
-                  style: textStyle.copyWith(
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+        ),
+        const Spacer(),
+        Container(
+          width: 60.w,
+          height: 70.h,
+          decoration: BoxDecoration(
+            color: box.type == 'transfer'
+                ? AppColors.customOrange3
+                : box.type != 'add'
+                    ? AppColors.redColor
+                    : AppColors.customGreen1,
+            borderRadius: Get.locale!.languageCode == 'en'
+                ? BorderRadius.only(
+                    topRight: Radius.circular(4.r),
+                    bottomRight: Radius.circular(4.r),
+                  )
+                : BorderRadius.only(
+                    topLeft: Radius.circular(4.r),
+                    bottomLeft: Radius.circular(4.r),
                   ),
-                ),
-              ],
-            ),
           ),
-        ],
-      ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                NumberFormat('#,###').format(box.value),
+                textAlign: TextAlign.center,
+                style: textStyle.copyWith(
+                  fontSize: 17.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

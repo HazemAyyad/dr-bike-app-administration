@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/utils/app_colors.dart';
+
 import '../../../../../core/helpers/custom_tab_bar.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/add_list.dart';
+import 'bill_details_screen.dart';
 import '../widgets/profit_sale_card.dart';
 
 class SalesScreen extends GetView<SalesController> {
@@ -100,8 +102,17 @@ class SalesScreen extends GetView<SalesController> {
                                     ),
                                     SizedBox(height: 10.h),
                                     ...sales.map(
-                                      (instantSales) => InstantSaleCard(
-                                        instantSale: instantSales,
+                                      (instantSales) => GestureDetector(
+                                        onTap: () {
+                                          controller.getInvoice(
+                                              invoiceId:
+                                                  instantSales.id.toString());
+                                          Get.to(
+                                              () => const BillDetailsScreen());
+                                        },
+                                        child: InstantSaleCard(
+                                          instantSale: instantSales,
+                                        ),
                                       ),
                                     ),
                                   ],

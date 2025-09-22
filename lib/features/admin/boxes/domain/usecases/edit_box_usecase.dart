@@ -12,12 +12,14 @@ class EditBoxUsecase {
     required String name,
     required String total,
     required String isShown,
+    required String currency,
   }) {
     return boxesRepository.editBox(
       boxId: boxId,
       name: name,
       total: total,
       isShown: isShown,
+      currency: currency,
     );
   }
 }

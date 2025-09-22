@@ -1,12 +1,14 @@
-import 'package:doctorbike/core/helpers/app_button.dart';
-import 'package:doctorbike/core/helpers/custom_app_bar.dart';
-import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
-import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import 'package:doctorbike/core/helpers/app_button.dart';
+import 'package:doctorbike/core/helpers/custom_app_bar.dart';
+import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
+import 'package:doctorbike/core/helpers/custom_text_field.dart';
+
 import '../controllers/boxes_controller.dart';
+import '../widgets/task_details_transfer.dart';
 
 class EditBoxesScreen extends GetView<BoxesController> {
   const EditBoxesScreen({Key? key}) : super(key: key);
@@ -33,31 +35,42 @@ class EditBoxesScreen extends GetView<BoxesController> {
                         hintText: 'BalanceTransferExample',
                         controller: controller.editBoxNameController,
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 10.h),
                       CustomTextField(
                         label: 'startBalance'.tr,
                         hintText: 'startBalanceExample',
                         controller: controller.editStartBalanceController,
                         keyboardType: TextInputType.number,
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: 10.h),
                       CustomDropdownField(
                         label: 'appear',
                         hint: 'visible',
-                        value: controller.appearController.text,
+                        value: controller.editAppearController.text,
                         items: controller.appears,
                         onChanged: (value) {
-                          controller.appearController.text = value!;
+                          controller.editAppearController.text = value!;
                         },
                       ),
-                      SizedBox(height: 30.h),
-                      // if (controller.boxesServes.boxDetails.value != null &&
-                      //     controller
-                      //         .boxesServes.boxDetails.value!.boxLogs.isNotEmpty)
-                      //   ...controller.boxesServes.boxDetails.value!.boxLogs
-                      //       .map((e) => MovementsWidget(box: e)),
+                      SizedBox(height: 10.h),
+                      CustomDropdownField(
+                        label: 'currencyy'.tr,
+                        hint: 'currency'.tr,
+                        value: controller.editCurrencyController.text.isEmpty
+                            ? null
+                            : controller.currency.firstWhere(
+                                (element) =>
+                                    element.tr ==
+                                    controller.editCurrencyController.text,
+                              ),
+                        onChanged: (value) {
+                          controller.editCurrencyController.text = value!;
+                        },
+                        items: controller.currency,
+                      ),
                       SizedBox(height: 30.h),
                       AppButton(
+                        isSafeArea: false,
                         isLoading: controller.isAddBoxLoading,
                         text: 'editBox',
                         onPressed: () {
@@ -69,7 +82,8 @@ class EditBoxesScreen extends GetView<BoxesController> {
                                   fontSize: 16.sp,
                                   fontWeight: FontWeight.w700,
                                 ),
-                      )
+                      ),
+                      const TaskDetailsTransfer(),
                     ],
                   ),
                 );

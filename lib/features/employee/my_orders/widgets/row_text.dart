@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 class RowText extends StatelessWidget {
-  const RowText({Key? key, required this.title}) : super(key: key);
+  const RowText({Key? key, required this.title, style}) : super(key: key);
 
   final String title;
   @override
@@ -14,8 +14,8 @@ class RowText extends StatelessWidget {
       maxLines: 1,
       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.w400,
-            fontSize: 14.sp,
+            fontWeight: FontWeight.w700,
+            fontSize: 12.sp,
           ),
     );
   }

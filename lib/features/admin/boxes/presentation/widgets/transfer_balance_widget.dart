@@ -54,7 +54,7 @@ class TransferBalanceWidget extends GetView<BoxesController> {
               CustomDropdownField(
                 label: 'to',
                 hint: 'boxNameExample',
-                dropdownField: controller.filteredshownBoxes
+                dropdownField: controller.filteredShownBoxes
                     .where((e) => e.boxId != boxId)
                     .map((e) {
                   return DropdownMenuItem<String>(
@@ -62,7 +62,7 @@ class TransferBalanceWidget extends GetView<BoxesController> {
                     child: Text(e.boxName),
                   );
                 }).toList(),
-                value: controller.filteredshownBoxes.any((e) =>
+                value: controller.filteredShownBoxes.any((e) =>
                         e.boxId.toString() ==
                         controller.transferToBoxIdController.text)
                     ? controller.transferToBoxIdController.text

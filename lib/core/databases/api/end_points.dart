@@ -1,7 +1,10 @@
 // ignore_for_file: constant_identifier_names
 
+import '../../services/initial_bindings.dart';
+
 class EndPoints {
-  static const String baserUrl = "http://doctorbike.mj-sall.com/api/";
+  static String baserUrl =
+      startApp.value ? "http://doctorbike.mj-sall.com/api/" : '';
   static const String baserUrlForImage = "http://doctorbike.mj-sall.com/";
 
   static const String register = 'register';
@@ -11,6 +14,7 @@ class EndPoints {
   static const String logout = 'logout';
   static const String changePassword = 'change/password';
   static const String updateProfile = 'update/profile';
+  static const String me = 'me';
 
   // employee Dashboard
   static const String employeeHomeData = 'employee/home/data';
@@ -151,6 +155,7 @@ class EndPoints {
 
   // sales
   static const String allProducts = 'all/products';
+  static const String getInstantSaleInvoice = 'get/instant/sale/invoice';
 
   static const String createProfitSale = 'create/profit/sale';
   static const String allProfitSales = 'all/profit/sales';
@@ -247,6 +252,29 @@ class EndPoints {
   static const String getFinishAndAgreementFollowups =
       'get/finish/and/agreement/followups';
   static const String getArchivedFollowups = 'get/archived/followups';
+
+  // bills
+  static const String addBill = 'add/bill';
+  static const String addBillQuantity = 'add/quantity/bill';
+  static const String addReturnPurchase = 'add/return/purchase';
+  static const String getBillDetails = 'get/bill/details';
+  static const String billReport = 'bill/report';
+  static const String unfinishedBills = 'unfinished/bills';
+  static const String archivedBills = 'archived/bills';
+  static const String finishedBills = 'finished/bills';
+  static const String unmatchedBills = 'unmatched/bills';
+  static const String securitiesBills = 'securities/bills';
+  static const String getPendingReturnPurchases =
+      'get/pending/return/purchases';
+  static const String getDeliveredReturnPurchases =
+      'get/delivered/return/purchases';
+  static const String cancelBill = 'cancel/bill';
+  static const String changeProductStatus = 'change/product/status';
+  static const String purchaseNewPrice = 'purchase/new/price';
+  static const String deliverOneProduct = 'deliver/one/product';
+  static const String purchaseExtraProducts = 'purchase/extra/products';
+  static const String changeReturnPurchaseToDelivered =
+      'change/return/purchase/to/delivered';
 }
 
 class ApiKey {

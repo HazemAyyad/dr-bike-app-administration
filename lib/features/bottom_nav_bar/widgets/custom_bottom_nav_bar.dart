@@ -63,9 +63,9 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                           },
                         )
                       : BuildNavItem(
-                          assetImage: AssetsManager.qrCode,
+                          assetImage: AssetsManager.taskIcon,
                           isSelected: controller.currentIndex.value == 1,
-                          label: 'scanQrCode'.tr,
+                          label: 'tasks'.tr,
                           onTap: () => controller.changePage(1),
                         ),
                   BuildNavItem(

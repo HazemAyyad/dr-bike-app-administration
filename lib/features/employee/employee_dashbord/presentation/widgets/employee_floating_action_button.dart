@@ -230,6 +230,7 @@ class EmployeeRequstes extends GetView<EmployeeDashbordController> {
             ),
             SizedBox(height: 20.h),
             AppButton(
+              isSafeArea: false,
               isLoading: controller.isLoading,
               text: 'submitRequest'.tr,
               onPressed: () => onPressed(),

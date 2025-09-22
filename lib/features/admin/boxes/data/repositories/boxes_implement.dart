@@ -18,13 +18,20 @@ class BoxesImplement implements BoxesRepository {
 
   // add box
   @override
-  Future<Either<Failure, String>> addBox(
-      {required String boxName, required String total}) async {
+  Future<Either<Failure, String>> addBox({
+    required String boxName,
+    required String total,
+    required String currency,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
-      final result = await boxesDatasource.addBox(name: boxName, total: total);
+      final result = await boxesDatasource.addBox(
+        name: boxName,
+        total: total,
+        currency: currency,
+      );
       if (result['status'] == 'success') {
         return Right(result['message']!);
       }
@@ -147,6 +154,7 @@ class BoxesImplement implements BoxesRepository {
     required String name,
     required String total,
     required String isShown,
+    required String currency,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -157,6 +165,7 @@ class BoxesImplement implements BoxesRepository {
         isShown: isShown,
         boxId: boxId,
         total: total,
+        currency: currency,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

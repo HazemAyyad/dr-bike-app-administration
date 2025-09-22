@@ -86,6 +86,7 @@ class Task {
   final String name;
   final DateTime startTime;
   final DateTime endTime;
+  final String status;
 
   Task({
     required this.id,
@@ -93,6 +94,7 @@ class Task {
     required this.name,
     required this.startTime,
     required this.endTime,
+    required this.status,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -106,6 +108,7 @@ class Task {
       endTime: json['end_time'] != null
           ? DateTime.parse(json['end_time'])
           : DateTime.now(),
+      status: json['status'],
     );
   }
 }

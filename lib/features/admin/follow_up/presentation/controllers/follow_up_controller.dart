@@ -37,6 +37,7 @@ class FollowUpController extends GetxController {
 
   final fromDateController = TextEditingController();
   final toDateController = TextEditingController();
+  final employeeNameController = TextEditingController();
 
   final customerAndSellerIdController = TextEditingController();
   final itemIdController = TextEditingController();
@@ -345,11 +346,20 @@ class FollowUpController extends GetxController {
   final List<FollowupModel> archivedFollowupsFilterList = <FollowupModel>[].obs;
 
   void filterGoals() {
+    final nameQuery = employeeNameController.text.trim();
     final fromDate = fromDateController.text.trim();
     final toDate = toDateController.text.trim();
 
     List<FollowupModel> applyFilter(List<FollowupModel> sourceList) {
       return sourceList.where((item) {
+        final name =
+            (item.customerName.isNotEmpty ? item.customerName : item.sellerName)
+                .toLowerCase();
+
+        // ✅ فلترة بالاسم
+        final matchesName =
+            (nameQuery.isEmpty) ? true : name.contains(nameQuery.toLowerCase());
+
         // ✅ فلترة بالتاريخ
         final itemDate = item.createdAt;
         final from = (fromDate.isNotEmpty) ? DateTime.tryParse(fromDate) : null;
@@ -357,7 +367,7 @@ class FollowUpController extends GetxController {
         bool matchesDate = true;
         if (from != null && itemDate.isBefore(from)) matchesDate = false;
         if (to != null && itemDate.isAfter(to)) matchesDate = false;
-        return matchesDate;
+        return matchesName && matchesDate;
       }).toList();
     }
 

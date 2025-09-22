@@ -5,11 +5,13 @@ class BoxDetailsEntity {
   final String totalBalance;
   final String isShown;
   final List<BoxLog> boxLogs;
+  final String currency;
 
   BoxDetailsEntity({
     required this.boxName,
     required this.totalBalance,
     required this.isShown,
     required this.boxLogs,
+    required this.currency,
   });
 }

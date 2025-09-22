@@ -21,8 +21,6 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
 
   @override
   Widget build(BuildContext context) {
-    // final taskId = Get.arguments['taskId'];
-
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
       appBar: CustomAppBar(
@@ -357,21 +355,29 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                           : true.obs,
                                       onChanged: userType == 'admin'
                                           ? (value) {}
-                                          : (value) {
-                                              final args = Get.arguments
-                                                  as Map<String, dynamic>?;
-                                              final EmployeeDashbordController
-                                                  controller1 = args?[
-                                                      'EmployeeDashbordController'];
-                                              controller.uploadTaskImage(
-                                                taskId: tasks.id.toString(),
-                                              );
-                                              controller1.changeTaskToCompleted(
-                                                taskId: tasks.id,
-                                                isSubTask: true,
-                                                context: context,
-                                              );
-                                            },
+                                          : tasks.status != 'ongoing'
+                                              ? (value) {}
+                                              : (value) {
+                                                  final String mainTaskId =
+                                                      Get.arguments['taskId'];
+
+                                                  final args = Get.arguments
+                                                      as Map<String, dynamic>?;
+                                                  final EmployeeDashbordController
+                                                      controller1 = args?[
+                                                          'EmployeeDashbordController'];
+
+                                                  controller.uploadTaskImage(
+                                                    taskId: tasks.id.toString(),
+                                                  );
+                                                  controller1
+                                                      .changeTaskToCompleted(
+                                                    taskId: tasks.id,
+                                                    isSubTask: true,
+                                                    context: context,
+                                                    mainTaskId: mainTaskId,
+                                                  );
+                                                },
                                     ),
                                   ),
                                   tasks.adminImg!.isEmpty

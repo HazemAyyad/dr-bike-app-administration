@@ -17,10 +17,17 @@ class BoxesDatasource {
   Future<Map<String, dynamic>> addBox({
     required String name,
     required String total,
+    required String currency,
   }) async {
     try {
-      final response = await api
-          .post(EndPoints.addBox, data: {'name': name, 'total': total});
+      final response = await api.post(
+        EndPoints.addBox,
+        data: {
+          'name': name,
+          'total': total,
+          'currency': currency,
+        },
+      );
       final data = response.data;
       return data;
     } on DioException catch (e) {
@@ -148,6 +155,7 @@ class BoxesDatasource {
     required String name,
     required String total,
     required String isShown,
+    required String currency,
   }) async {
     try {
       final response = await api.post(EndPoints.editBox, data: {
@@ -155,6 +163,7 @@ class BoxesDatasource {
         'name': name,
         'total': total,
         'is_shown': isShown,
+        'currency': currency,
       });
       final data = response.data;
       return data;

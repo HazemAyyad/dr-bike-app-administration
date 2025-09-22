@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -19,52 +20,43 @@ class VeiwBoxes extends GetView<BoxesController> {
 
   @override
   Widget build(BuildContext context) {
-    TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
     return Obx(
       () {
         if (controller.isLoading.value) {
           return const SliverFillRemaining(
-            hasScrollBody: false,
             child: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (controller.currentTab.value == 0 ||
-            controller.currentTab.value == 2) {
-          if (controller.filteredshownBoxes.isEmpty) {
-            return SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Text(
-                  'noData'.tr,
-                  style: textStyle.copyWith(
-                    color: AppColors.customGreyColor,
-                  ),
-                ),
-              ),
-            );
-          }
-        } else {
-          if (controller.filteredallBoxesLogs.isEmpty) {
-            return SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(
-                child: Text(
-                  'noData'.tr,
-                  style: textStyle.copyWith(
-                    color: AppColors.customGreyColor,
-                  ),
-                ),
-              ),
-            );
-          }
+        if (controller.currentTab.value == 0 &&
+            controller.filteredShownBoxes.isEmpty) {
+          return const SliverFillRemaining(
+            child: Center(child: ShowNoData()),
+          );
         }
+        if (controller.currentTab.value == 1 &&
+            controller.filteredAllBoxesLogs.isEmpty) {
+          return const SliverFillRemaining(
+            child: Center(child: ShowNoData()),
+          );
+        }
+        if (controller.currentTab.value == 2 &&
+            controller.filteredShownBoxesArchive.isEmpty) {
+          return const SliverFillRemaining(
+            child: Center(child: ShowNoData()),
+          );
+        }
+
         return SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, section) {
-              final box = controller.currentTab.value == 1
-                  ? controller.filteredallBoxesLogs[section]
-                  : controller.filteredshownBoxes[section];
+              final box = controller.currentTab.value == 0
+                  ? controller.filteredShownBoxes.reversed.toList()[section]
+                  : controller.currentTab.value == 1
+                      ? controller.filteredAllBoxesLogs.reversed
+                          .toList()[section]
+                      : controller.filteredShownBoxesArchive.reversed
+                          .toList()[section];
 
               return GestureDetector(
                 onTap: controller.currentTab.value == 1
@@ -126,16 +118,21 @@ class VeiwBoxes extends GetView<BoxesController> {
                       controller.currentTab.value == 0
                           ? BoxesWidget(box: box as GetShownBoxesModel)
                           : controller.currentTab.value == 1
-                              ? MovementsWidget(box: box as BoxLogModel)
+                              ? Flexible(
+                                  child:
+                                      MovementsWidget(box: box as BoxLogModel),
+                                )
                               : ArchiveWidget(box: box as GetShownBoxesModel)
                     ],
                   ),
                 ),
               );
             },
-            childCount: controller.currentTab.value == 1
-                ? controller.filteredallBoxesLogs.length
-                : controller.filteredshownBoxes.length,
+            childCount: controller.currentTab.value == 0
+                ? controller.filteredShownBoxes.length
+                : controller.currentTab.value == 1
+                    ? controller.filteredAllBoxesLogs.length
+                    : controller.filteredShownBoxesArchive.length,
           ),
         );
       },

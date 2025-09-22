@@ -467,6 +467,43 @@ class ChecksController extends GetxController
     shownBoxesList.value = boxes;
   }
 
+// filter assets by date
+  // final assetsFilter = <String, List<Asset>>{}.obs;
+  // void filterAssetsByDate() {
+  //   final from = DateTime.tryParse(fromController.text);
+  //   final to = DateTime.tryParse(toController.text);
+
+  //   // رجع الداتا الأصلية قبل أي فلترة
+  //   assetsFilter.assignAll(FinacialService().assetsTasks);
+
+  //   final Map<String, List<Asset>> filtered = {};
+  //   assetsFilter.forEach(
+  //     (dateKey, tasks) {
+  //       for (var task in tasks) {
+  //         bool matches = true;
+  //         // لو فيه "من"
+  //         if (from != null) {
+  //           matches = task.createdAt.isAtSameMomentAs(from) ||
+  //               task.createdAt.isAfter(from);
+  //         }
+  //         // لو فيه "إلى"
+  //         if (to != null) {
+  //           matches = matches &&
+  //               (task.createdAt.isAtSameMomentAs(to) ||
+  //                   task.createdAt.isBefore(to));
+  //         }
+  //         if (matches) {
+  //           filtered.putIfAbsent(dateKey, () => []);
+  //           filtered[dateKey]!.add(task);
+  //         }
+  //       }
+  //     },
+  //   );
+  //   assetsFilter.assignAll(filtered);
+  //   update();
+  //   Get.back();
+  // }
+
   @override
   void onInit() {
     super.onInit();

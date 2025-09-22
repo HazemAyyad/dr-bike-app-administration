@@ -8,11 +8,13 @@ class BoxDetailsModel extends BoxDetailsEntity {
     required String totalBalance,
     required String isShown,
     required List<BoxLog> boxLogs,
+    required String currency,
   }) : super(
           boxName: boxName,
           totalBalance: totalBalance,
           isShown: isShown,
           boxLogs: boxLogs,
+          currency: currency,
         );
 
   factory BoxDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,7 @@ class BoxDetailsModel extends BoxDetailsEntity {
               ?.map((e) => BoxLogModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      currency: json['box_currency'] ?? '',
     );
   }
 
@@ -39,6 +42,7 @@ class BoxDetailsModel extends BoxDetailsEntity {
         // fallback لو جالك Entity مش Model
         // return (e).toJson();
       }).toList(),
+      'box_currency': currency,
     };
   }
 }

@@ -22,19 +22,7 @@ class BuildPersonalDetails extends GetView<PersonalDetailsController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(height: 20.h),
-          Text(
-            'personalDetails'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w700,
-                  color: ThemeService.isDark.value
-                      ? AppColors.primaryColor
-                      : AppColors.secondaryColor,
-                ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 30.h),
+          SizedBox(height: 10.h),
           // الاسم
           CustomTextField(
             label: 'name',

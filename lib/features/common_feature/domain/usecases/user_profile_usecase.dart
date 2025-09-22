@@ -8,7 +8,6 @@ class UserProfileUseCase {
   UserProfileUseCase({required this.commonRepository});
 
   Future<Either<Failure, bool>> call({
-    required String token,
     required String name,
     required String phone,
     required String subPhone,
@@ -16,7 +15,6 @@ class UserProfileUseCase {
     required String address,
   }) {
     return commonRepository.userProfile(
-      token: token,
       name: name,
       phone: phone,
       subPhone: subPhone,

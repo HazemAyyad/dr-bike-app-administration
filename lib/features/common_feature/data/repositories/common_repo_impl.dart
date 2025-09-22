@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:doctorbike/features/auth/data/models/user_model.dart';
 
 import '../../../../core/connection/network_info.dart';
 import '../../../../core/errors/expentions.dart';
@@ -14,7 +15,6 @@ class CommonImplement implements CommonRepository {
 
   @override
   Future<Either<Failure, bool>> userProfile({
-    required String token,
     required String name,
     required String phone,
     required String subPhone,
@@ -26,7 +26,6 @@ class CommonImplement implements CommonRepository {
     }
     try {
       final result = await commonDatasource.userProfile(
-        token: token,
         name: name,
         phone: phone,
         subPhone: subPhone,
@@ -46,4 +45,7 @@ class CommonImplement implements CommonRepository {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
+
+  @override
+  Future<UserModel> getUserData() async => await commonDatasource.getUserData();
 }

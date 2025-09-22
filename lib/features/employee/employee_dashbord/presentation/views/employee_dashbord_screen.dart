@@ -39,8 +39,6 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
             SizedBox(
               height: 10.h,
             ),
-            // CustomSearchBar(),
-            // SizedBox(height: 20.h),
             // بطاقات الإحصائيات
             const EmployeeHomeStatisticsCard(),
             SizedBox(height: 15.h),
@@ -78,14 +76,16 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                           fontSize: 17.sp,
                                           fontWeight: FontWeight.w700,
                                           color: ThemeService.isDark.value
-                                              ? AppColors.customGreyColor
+                                              ? AppColors.customGreyColor5
                                               : AppColors.secondaryColor,
                                         ),
                                   ),
                                 ],
                               ),
                               SizedBox(height: 8.h),
-                              if (controller.employeeData.value!.tasks.isEmpty)
+                              if (controller.employeeData.value!.tasks
+                                  .where((e) => e.status == 'ongoing')
+                                  .isEmpty)
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -97,16 +97,17 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                           .copyWith(
                                             fontSize: 14.sp,
                                             fontWeight: FontWeight.w400,
-                                            color: AppColors.customGreyColor,
+                                            color: ThemeService.isDark.value
+                                                ? AppColors.customGreyColor7
+                                                : AppColors.customGreyColor4,
                                           ),
                                     ),
                                   ],
                                 ),
                               ...controller.employeeData.value!.tasks
+                                  .where((e) => e.status == 'ongoing')
                                   .take(5)
-                                  .map(
-                                    (e) => EmployeeDashbordTasks(e: e),
-                                  ),
+                                  .map((e) => EmployeeDashbordTasks(task: e)),
                             ],
                           );
                         }

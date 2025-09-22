@@ -54,7 +54,7 @@ class LoginController extends GetxController {
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
-            message: 'success'.tr,
+            message: 'loginSuccess'.tr,
           );
           Future.delayed(
             const Duration(milliseconds: 1500),

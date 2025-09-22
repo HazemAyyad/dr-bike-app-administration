@@ -10,7 +10,12 @@ class AddBoxesUsecase {
   Future<Either<Failure, String>> call({
     required String boxName,
     required String total,
+    required String currency,
   }) {
-    return boxesRepository.addBox(boxName: boxName, total: total);
+    return boxesRepository.addBox(
+      boxName: boxName,
+      total: total,
+      currency: currency,
+    );
   }
 }

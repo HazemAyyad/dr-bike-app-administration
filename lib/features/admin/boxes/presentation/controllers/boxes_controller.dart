@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../data/models/all_boxes_logs_model.dart';
 import '../../data/models/get_shown_boxes_model.dart';
+import '../../domain/entity/all_boxes_logs_entity.dart';
 import '../../domain/usecases/add_box_balance_usecase.dart';
 import '../../domain/usecases/add_boxes_usecase.dart';
 import '../../domain/usecases/all_boxes_logs_usercase.dart';
@@ -11,6 +12,7 @@ import '../../domain/usecases/box_details_uesecase.dart';
 import '../../domain/usecases/edit_box_usecase.dart';
 import '../../domain/usecases/get_shown_box_usecase.dart';
 import '../../domain/usecases/transfer_box_balance_usecase.dart';
+import 'boxes_serves.dart';
 
 class BoxesController extends GetxController {
   AddBoxesUsecase boxesUsecase;
@@ -33,66 +35,79 @@ class BoxesController extends GetxController {
 
   final GlobalKey formKey = GlobalKey();
 
-  TextEditingController boxNameController = TextEditingController();
-  // TextEditingController fromDateController = TextEditingController();
-  // TextEditingController toDateController = TextEditingController();
+  final TextEditingController boxNameController = TextEditingController();
 
   final tabs = ['boxes', 'movements', 'archive'].obs;
 
-  RxInt currentTab = 0.obs;
+  final RxInt currentTab = 0.obs;
 
-  RxBool isLoading = false.obs;
+  final RxBool isLoading = false.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
-    currentTab.value == 1 ? getAllBoxesLogs() : getShowBoxes();
   }
+
+  final List<String> currency = ['currency1', 'currency2', 'currency'];
+  final TextEditingController currencyController = TextEditingController();
 
   // انشاء الصناديق
-
-  TextEditingController createBoxNameController = TextEditingController();
-  TextEditingController createStartBalanceController = TextEditingController();
+  final TextEditingController createBoxNameController = TextEditingController();
+  final TextEditingController createStartBalanceController =
+      TextEditingController();
+  final TextEditingController appearController = TextEditingController();
 
   // تعديل الصناديق
-  TextEditingController editBoxNameController = TextEditingController();
-  TextEditingController editStartBalanceController = TextEditingController();
-  TextEditingController appearController = TextEditingController();
+  final TextEditingController editBoxNameController = TextEditingController();
+  final TextEditingController editStartBalanceController =
+      TextEditingController();
+  final TextEditingController editAppearController = TextEditingController();
+  final TextEditingController editCurrencyController = TextEditingController();
+  final List<BoxLog> boxDetailsLogs = [];
 
-  List<String> appears = ['visible', 'notVisible'];
+  final List<String> appears = ['visible', 'notVisible'];
 
   // اضافة رصيد
-  TextEditingController addBalanceValueController = TextEditingController();
+  final TextEditingController addBalanceValueController =
+      TextEditingController();
 
   // نقل رصيد
-  TextEditingController transferToBoxIdController = TextEditingController();
-  TextEditingController transferTotalController = TextEditingController();
+  final TextEditingController transferToBoxIdController =
+      TextEditingController();
+  final TextEditingController transferTotalController = TextEditingController();
 
   // get shown boxes
-  final RxList<GetShownBoxesModel> shownBoxes = <GetShownBoxesModel>[].obs;
-  void getShowBoxes() async {
-    shownBoxes.isEmpty ? isLoading(true) : isLoading(false);
-    final boxes = await getShownBoxUsecase.call(screen: currentTab.value);
-    shownBoxes.value = boxes;
+
+  void getAllBoxes() async {
+    BoxesServes().shownBoxes.isEmpty ? isLoading(true) : isLoading(false);
+    final shownBoxesList = await getShownBoxUsecase.call(screen: 0);
+    BoxesServes().shownBoxes.assignAll(shownBoxesList);
+    filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
+
+    final boxesLogsList = await allBoxesLogsUsecase.call();
+    BoxesServes().allBoxesLogs.assignAll(boxesLogsList);
+    filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
+
+    final boxesArchiveList = await getShownBoxUsecase.call(screen: 2);
+    BoxesServes().shownBoxesArchive.assignAll(boxesArchiveList);
+    filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);
     isLoading(false);
   }
 
-  // get all boxes
-  final RxList<BoxLogModel> allBoxesLogs = <BoxLogModel>[].obs;
-  void getAllBoxesLogs() async {
-    allBoxesLogs.isEmpty ? isLoading(true) : isLoading(false);
-    final boxes = await allBoxesLogsUsecase.call();
-    allBoxesLogs.value = boxes;
-    isLoading(false);
-  }
-
+  String boxDetailsId = '0';
   // get box details
   void getboxDetails(String boxId) async {
-    isLoading(true);
-    final boxes = await boxDetailsUesecase.call(boxId: boxId);
-    editBoxNameController.text = boxes.boxName;
-    editStartBalanceController.text = boxes.totalBalance.toString();
-    appearController.text =
-        boxes.isShown == 1.toString() ? 'visible' : 'notVisible';
+    final sameBox = boxDetailsId == boxId;
+    if (!sameBox) {
+      isLoading(true);
+    }
+    boxDetailsId = boxId;
+    final boxDetails = await boxDetailsUesecase.call(boxId: boxId);
+    editBoxNameController.text = boxDetails.boxName;
+    editStartBalanceController.text = boxDetails.totalBalance.toString();
+    editAppearController.text =
+        boxDetails.isShown == 1.toString() ? 'visible' : 'notVisible';
+    editCurrencyController.text = boxDetails.currency;
+    boxDetailsLogs.assignAll(boxDetails.boxLogs);
     isLoading(false);
     update();
   }
@@ -120,12 +135,12 @@ class BoxesController extends GetxController {
         },
         (success) {
           Get.back();
-          getShowBoxes();
+          getAllBoxes();
           // transferFromBoxIdController.clear();
           transferToBoxIdController.clear();
           createStartBalanceController.clear();
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
             },
@@ -149,6 +164,7 @@ class BoxesController extends GetxController {
       final result = await boxesUsecase.call(
         boxName: createBoxNameController.text,
         total: createStartBalanceController.text,
+        currency: currencyController.text.tr,
       );
 
       result.fold(
@@ -178,8 +194,9 @@ class BoxesController extends GetxController {
           }
         },
         (success) {
+          getAllBoxes();
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
               Get.back();
@@ -218,10 +235,10 @@ class BoxesController extends GetxController {
         },
         (success) {
           Get.back();
-          getShowBoxes();
+          getAllBoxes();
           addBalanceValueController.clear();
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
             },
@@ -247,6 +264,7 @@ class BoxesController extends GetxController {
         name: editBoxNameController.text,
         total: editStartBalanceController.text,
         isShown: appearController.text == 'visible' ? '1' : '0',
+        currency: currencyController.text.tr,
       );
 
       result.fold(
@@ -261,10 +279,10 @@ class BoxesController extends GetxController {
         },
         (success) {
           Get.back();
-          getShowBoxes();
+          getAllBoxes();
           addBalanceValueController.clear();
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
             },
@@ -280,44 +298,57 @@ class BoxesController extends GetxController {
     isAddBoxLoading(false);
   }
 
-  final RxList<BoxLogModel> filteredallBoxesLogs = <BoxLogModel>[].obs;
-  final RxList<GetShownBoxesModel> filteredshownBoxes =
+  final RxList<GetShownBoxesModel> filteredShownBoxes =
+      <GetShownBoxesModel>[].obs;
+  final RxList<BoxLogModel> filteredAllBoxesLogs = <BoxLogModel>[].obs;
+  final RxList<GetShownBoxesModel> filteredShownBoxesArchive =
       <GetShownBoxesModel>[].obs;
 
   void filterLists() {
-    if (boxNameController.text.isEmpty) {
-      // رجع القوائم الأصلية
-      filteredallBoxesLogs.value = allBoxesLogs;
-      filteredshownBoxes.value = shownBoxes;
+    final query = boxNameController.text.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      // ✅ رجّع القوائم الأصلية
+      filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
+      filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
+      filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);
     } else {
-      final lowerQuery = boxNameController.text.toLowerCase();
-      // filter على الصناديق
-      final filteredBoxes = shownBoxes.where(
-        (e) => e.boxName.toLowerCase().contains(lowerQuery),
-      );
-      // filter على اللوجات
-      final filteredLogs = allBoxesLogs.where((log) {
+      //  فلترة الصناديق النشطة
+      final filteredBoxes = BoxesServes()
+          .shownBoxes
+          .where((e) => e.boxName.toLowerCase().contains(query))
+          .toList();
+
+      //  فلترة الصناديق الأرشيفية
+      final filteredBoxesArchive = BoxesServes()
+          .shownBoxesArchive
+          .where((e) => e.boxName.toLowerCase().contains(query))
+          .toList();
+
+      //  فلترة اللوجات
+      final filteredLogs = BoxesServes().allBoxesLogs.where((log) {
         final fromMatch =
-            log.fromBox?.name.toLowerCase().contains(lowerQuery) ?? false;
-        final toMatch =
-            log.toBox?.name.toLowerCase().contains(lowerQuery) ?? false;
-        final boxMatch =
-            log.box?.name.toLowerCase().contains(lowerQuery) ?? false;
+            log.fromBox?.name.toLowerCase().contains(query) ?? false;
+        final toMatch = log.toBox?.name.toLowerCase().contains(query) ?? false;
+        final boxMatch = log.box?.name.toLowerCase().contains(query) ?? false;
         return fromMatch || toMatch || boxMatch;
       }).toList();
-      // هنا بترجع الليستات
-      filteredshownBoxes.assignAll(filteredBoxes.toList());
-      filteredallBoxesLogs.assignAll(filteredLogs.toList());
+
+      filteredShownBoxes.assignAll(filteredBoxes);
+      filteredShownBoxesArchive.assignAll(filteredBoxesArchive);
+      filteredAllBoxesLogs.assignAll(filteredLogs);
     }
+
     Get.back();
   }
 
   @override
   void onInit() {
     super.onInit();
-    getShowBoxes();
-    filteredallBoxesLogs.value = allBoxesLogs;
-    filteredshownBoxes.value = shownBoxes;
+    getAllBoxes();
+    filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
+    filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
+    filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);
   }
 
   @override
@@ -335,6 +366,8 @@ class BoxesController extends GetxController {
     // transferFromBoxIdController.dispose();
     transferToBoxIdController.dispose();
     transferTotalController.dispose();
+    currencyController.dispose();
+
     super.onClose();
   }
 }

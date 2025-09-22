@@ -16,6 +16,10 @@ import '../features/App_entr/on_boarding/view/on_boarding_screen.dart';
 import '../features/App_entr/on_boarding/widgets/chose_lang.dart';
 import '../features/App_entr/splash/binding/splash_binding.dart';
 import '../features/App_entr/splash/view/splash_screen.dart';
+import '../features/admin/buying/presentation/views/bills_screens/add_new_bill_screen.dart';
+import '../features/admin/buying/presentation/views/bills_screens/bill_details_screen.dart';
+import '../features/admin/buying/presentation/views/purchase_orders_screen/purchase_orders_screen.dart';
+import '../features/admin/buying/presentation/views/return_purchases_screens/return_purchases_screen.dart';
 import '../features/admin/follow_up/presentation/binding/follow_up_binding.dart';
 import '../features/admin/follow_up/presentation/views/add_new_follow_customer.dart';
 import '../features/admin/follow_up/presentation/views/follow_up_screen.dart';
@@ -28,7 +32,7 @@ import '../features/admin/boxes/presentation/views/boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/create_boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/edit_boxes_screen.dart';
 import '../features/admin/buying/presentation/binding/buying_binding.dart';
-import '../features/admin/buying/presentation/views/bills_screen.dart';
+import '../features/admin/buying/presentation/views/bills_screens/bills_screen.dart';
 import '../features/admin/buying/presentation/views/buying_screen.dart';
 import '../features/admin/checks/presentation/binding/checks_binding.dart';
 import '../features/admin/checks/presentation/views/checks_screen.dart';
@@ -528,11 +532,40 @@ class AppPages {
       binding: BuyingBinding(),
       transition: _transitionFadeIn,
     ),
+    // Bills
     GetPage(
       name: AppRoutes.BILLSSCREEN,
       page: () => const BillsScreen(),
       binding: BuyingBinding(),
+      transition: _transitionUpToDown,
+    ),
+    GetPage(
+      name: AppRoutes.ADDNEWBILLSCREEN,
+      page: () => const AddNewBillScreen(),
+      binding: BuyingBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.BILLDETAILSSCREEN,
+      page: () => const BillDetailsScreen(),
+      binding: BuyingBinding(),
+      transition: _transitionSize,
+    ),
+    // Purchases
+    GetPage(
+      name: AppRoutes.PURCHASEORDERSSCREEN,
+      page: () => const PurchaseOrdersScreen(),
+      binding: BuyingBinding(),
       transition: _transitionFadeIn,
+    ),
+    // Return Purchases
+    GetPage(
+      name: AppRoutes.RETURNPURCHASESSCREEN,
+      page: () => const ReturnPurchasesScreen(),
+      binding: BuyingBinding(),
+      transition: _transitionDownToUp,
     ),
 
     // Financial Affairs

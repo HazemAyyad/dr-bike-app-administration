@@ -43,6 +43,8 @@ class AppColors {
   /// #C6C6C6
   static const Color customGreyColor6 = Color(0XFFC6C6C6);
 
+  static const Color customGreyColor7 = Color.fromARGB(255, 212, 212, 212);
+
   static const Color customGreen = Color(0XFF0A4F01);
 
   static const Color customGreen1 = Color(0XFF34C759);

@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAvMwm1A0tRCpl1susy8rPhHHUirtnvrNw',
-    appId: '1:783845645727:android:9900ec262549475f10f1aa',
+    appId: '1:903571759531:android:06947a50bebe0e6e4bb2ee',
     messagingSenderId: '783845645727',
     projectId: 'allite-f3970',
     storageBucket: 'allite-f3970.appspot.com',
@@ -59,7 +59,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCShziC95_qmfw5rs9xOfe7JdwA5jYM8F8',
-    appId: '1:783845645727:ios:61e79cda475622e810f1aa',
+    appId: '1:903571759531:android:06947a50bebe0e6e4bb2ee',
     messagingSenderId: '783845645727',
     projectId: 'allite-f3970',
     storageBucket: 'allite-f3970.appspot.com',

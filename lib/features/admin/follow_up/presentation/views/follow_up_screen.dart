@@ -17,6 +17,7 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
         title: 'followUpDepartment',
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
+        employeeNameController: controller.employeeNameController,
         onPressedAdd: () {
           controller.resetData();
         },

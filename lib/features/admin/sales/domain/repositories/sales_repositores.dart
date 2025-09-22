@@ -4,6 +4,7 @@ import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_c
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 import '../../data/models/instant_sales_model.dart';
+import '../../data/models/invoice_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/profit_sale_model.dart';
 
@@ -29,4 +30,6 @@ abstract class SalesRepository {
     required String projectId,
     required RxList<ItemModel> otherProducts,
   });
+
+  Future<InvoiceModel> getInvoice({required String invoiceId});
 }

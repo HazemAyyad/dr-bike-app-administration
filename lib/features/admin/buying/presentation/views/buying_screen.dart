@@ -7,9 +7,8 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
-import '../controllers/buying_controller.dart';
 
-class BuyingScreen extends GetView<BuyingController> {
+class BuyingScreen extends StatelessWidget {
   const BuyingScreen({Key? key}) : super(key: key);
 
   @override
@@ -30,30 +29,30 @@ class BuyingScreen extends GetView<BuyingController> {
                   ? AppColors.customGreyColor
                   : AppColors.whiteColor2,
             ),
-            child: GetBuilder<BuyingController>(
-              builder: (controller) {
-                return Column(
-                  children: [
-                    MainPageWidget(
-                      onTap: () {
-                        Get.toNamed(AppRoutes.BILLSSCREEN);
-                      },
-                      icon: AssetsManager.mingcuteIcon,
-                      title: 'newBill'.tr,
-                    ),
-                    MainPageWidget(
-                      onTap: () {},
-                      icon: AssetsManager.solarIcon,
-                      title: 'purchaseOrders'.tr,
-                    ),
-                    MainPageWidget(
-                      onTap: () {},
-                      icon: AssetsManager.designProductIcon,
-                      title: 'purchaseReturns'.tr,
-                    ),
-                  ],
-                );
-              },
+            child: Column(
+              children: [
+                MainPageWidget(
+                  onTap: () {
+                    Get.toNamed(AppRoutes.BILLSSCREEN);
+                  },
+                  icon: AssetsManager.mingcuteIcon,
+                  title: 'newBill'.tr,
+                ),
+                MainPageWidget(
+                  onTap: () {
+                    Get.toNamed(AppRoutes.PURCHASEORDERSSCREEN);
+                  },
+                  icon: AssetsManager.solarIcon,
+                  title: 'purchaseOrders'.tr,
+                ),
+                MainPageWidget(
+                  onTap: () {
+                    Get.toNamed(AppRoutes.RETURNPURCHASESSCREEN);
+                  },
+                  icon: AssetsManager.designProductIcon,
+                  title: 'purchaseReturns'.tr,
+                ),
+              ],
             ),
           ),
         ],

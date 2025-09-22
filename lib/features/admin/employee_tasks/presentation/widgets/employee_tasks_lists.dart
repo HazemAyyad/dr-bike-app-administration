@@ -133,8 +133,8 @@ class EmployeeTasksLists extends StatelessWidget {
                       errorWidget: (context, url, error) =>
                           const Icon(Icons.error),
                       fit: BoxFit.cover,
-                      width: 65.w,
-                      height: 65.h,
+                      width: 55.w,
+                      height: 55.h,
                     ),
                   ),
                 ),
@@ -192,8 +192,8 @@ class EmployeeTasksLists extends StatelessWidget {
                 controller.currentTab.value == 2
                     ? SizedBox(height: 75.h, width: 90.w)
                     : Container(
-                        width: 60.w,
-                        height: 80.h,
+                        width: 70.w,
+                        height: 70.h,
                         decoration: BoxDecoration(
                           color:
                               order.endTime.difference(DateTime.now()).inHours >
