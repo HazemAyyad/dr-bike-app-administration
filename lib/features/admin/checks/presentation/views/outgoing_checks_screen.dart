@@ -17,33 +17,37 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-          title: 'outgoingChecks'.tr,
-          actions: const [CustomActionsAppBar(isNewCheck: true)]),
+        title: 'outgoingChecks'.tr,
+        actions: const [CustomActionsAppBar(isNewCheck: true)],
+      ),
       body: Stack(
         children: [
           Obx(
-            () => CustomScrollView(
-              slivers: [
-                if (controller.isLoading.value)
-                  const SliverFillRemaining(
-                    child: Center(child: CircularProgressIndicator()),
+            () {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                  const SliverToBoxAdapter(
+                    child: ChecksDetails(isOutGoing: true),
                   ),
-                const SliverToBoxAdapter(
-                  child: ChecksDetails(isOutGoing: true),
-                ),
-                SliverToBoxAdapter(child: SizedBox(height: 15.h)),
-                SliverToBoxAdapter(
-                  child: AppTabs(
-                    tabs: controller.tabs,
-                    currentTab: controller.currentTab,
-                    changeTab: controller.changeTab,
+                  SliverToBoxAdapter(child: SizedBox(height: 20.h)),
+                  SliverToBoxAdapter(
+                    child: AppTabs(
+                      tabs: controller.tabs,
+                      currentTab: controller.currentTab,
+                      changeTab: controller.changeTab,
+                    ),
                   ),
-                ),
-                SliverToBoxAdapter(child: SizedBox(height: 20.h)),
-                const CustomListVeiwBuilder(),
-                SliverToBoxAdapter(child: SizedBox(height: 50.h)),
-              ],
-            ),
+                  SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                  const CustomListVeiwBuilder(),
+                  SliverToBoxAdapter(child: SizedBox(height: 50.h)),
+                ],
+              );
+            },
           ),
         ],
       ),

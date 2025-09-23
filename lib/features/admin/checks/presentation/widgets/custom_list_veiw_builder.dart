@@ -13,8 +13,8 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () {
+    return GetBuilder<ChecksController>(
+      builder: (controller) {
         if (controller.isLoading.value) {
           return const SliverFillRemaining(
             hasScrollBody: true,
@@ -23,42 +23,21 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
         }
 
         if (controller.currentTab.value == 0) {
-          if (controller.inComingChecksList.value == null) {
+          if (controller.filteredInComingTasks.isEmpty) {
             return const SliverFillRemaining(
               child: ShowNoData(),
             );
           }
         }
         if (controller.currentTab.value == 1) {
-          if (controller.cashedToPerson.value == null) {
+          if (controller.filteredCashedToPersonTasks.isEmpty) {
             return const SliverFillRemaining(
               child: ShowNoData(),
             );
           }
         }
         if (controller.currentTab.value == 2) {
-          if (controller.archiveData.value == null) {
-            return const SliverFillRemaining(
-              child: ShowNoData(),
-            );
-          }
-        }
-        if (controller.currentTab.value == 0) {
-          if (controller.inComingTasks.isEmpty) {
-            return const SliverFillRemaining(
-              child: ShowNoData(),
-            );
-          }
-        }
-        if (controller.currentTab.value == 1) {
-          if (controller.cashedToPersonTasks.isEmpty) {
-            return const SliverFillRemaining(
-              child: ShowNoData(),
-            );
-          }
-        }
-        if (controller.currentTab.value == 2) {
-          if (controller.archiveTasks.isEmpty) {
+          if (controller.filteredArchiveTasks.isEmpty) {
             return const SliverFillRemaining(
               child: ShowNoData(),
             );
@@ -66,25 +45,46 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
         }
         return SliverList.builder(
           itemCount: controller.currentTab.value == 0
-              ? controller.inComingTasks.length
+              ? controller.filteredInComingTasks.length
               : controller.currentTab.value == 1
-                  ? controller.cashedToPersonTasks.length
-                  : controller.archiveTasks.length,
+                  ? controller.filteredCashedToPersonTasks.length
+                  : controller.filteredArchiveTasks.length,
           itemBuilder: (context, section) {
-            final month = controller.currentTab.value == 0
-                ? controller.inComingTasks.keys.toList()[section]
+            final monthReversed = controller.currentTab.value == 0
+                ? controller.filteredInComingTasks.keys
+                    .toList()
+                    .reversed
+                    .toList()[section]
                 : controller.currentTab.value == 1
-                    ? controller.cashedToPersonTasks.keys.toList()[section]
-                    : controller.archiveTasks.keys.toList()[section];
+                    ? controller.filteredCashedToPersonTasks.keys
+                        .toList()
+                        .reversed
+                        .toList()[section]
+                    : controller.filteredArchiveTasks.keys.toList()[section];
+
+            final month = controller.currentTab.value == 0
+                ? controller.filteredInComingTasks.keys.toList()[section]
+                : controller.currentTab.value == 1
+                    ? controller.filteredCashedToPersonTasks.keys
+                        .toList()
+                        .reversed
+                        .toList()[section]
+                    : controller.filteredArchiveTasks.keys
+                        .toList()
+                        .reversed
+                        .toList()[section];
 
             final checks = controller.currentTab.value == 0
-                ? controller.inComingTasks[month]
+                ? controller.filteredInComingTasks[
+                    controller.dateFilter.value ? monthReversed : month]
                 : controller.currentTab.value == 1
-                    ? controller.cashedToPersonTasks[month]
-                    : controller.archiveTasks[month];
+                    ? controller.filteredCashedToPersonTasks[
+                        controller.dateFilter.value ? monthReversed : month]
+                    : controller.filteredArchiveTasks[
+                        controller.dateFilter.value ? monthReversed : month];
 
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -92,7 +92,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                   Row(
                     children: [
                       Text(
-                        month.split('-').reversed.join(' - '),
+                        controller.dateFilter.value ? monthReversed : month,
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium!

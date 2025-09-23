@@ -49,6 +49,12 @@ class ChecksController extends GetxController
 
   final TextEditingController checkValueController = TextEditingController();
 
+  final TextEditingController employeeNameController = TextEditingController();
+
+  final RxBool amountFilter = false.obs;
+
+  final RxBool dateFilter = false.obs;
+
   // متغيرات للتقويم
   final selectedDay = DateTime.now().obs;
   final isCalendarVisible = false.obs;
@@ -81,11 +87,7 @@ class ChecksController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
-    // currentTab.value == 0
-    //     ? getNotCashedOutgoing()
-    //     : currentTab.value == 0
-    //         ? getCashedToPerson()
-    //         : getArchiveData();
+    update();
   }
 
   RxBool selectedCustomersSellers = false.obs;
@@ -98,19 +100,6 @@ class ChecksController extends GetxController
 
   RxList<String> outgoingChecksActedOnIt =
       <String>['cashTheCheck', 'returnedCheck', 'voidTheCheck'].obs;
-
-  List<String> beneficiary = [
-    'ماجد أحمد',
-    'علي محمد',
-    'سارة خالد',
-    'أحمد علي',
-  ].obs;
-
-  String selectedBeneficiary = '';
-
-  final RxBool amountFilter = false.obs;
-
-  final RxBool dateFilter = false.obs;
 
   // الشيكات الواردة
   RxList<String> incomingChecksDidNotActOnIt =
@@ -146,6 +135,7 @@ class ChecksController extends GetxController
       result.fold(
         (failure) {
           isLoading(false);
+          update();
 
           final errors = failure.data['errors'];
           String errorMessage = '';
@@ -193,6 +183,7 @@ class ChecksController extends GetxController
       );
     }
     isLoading(false);
+    update();
   }
 
   // cash to person or cancel
@@ -213,7 +204,7 @@ class ChecksController extends GetxController
     result.fold(
       (failure) {
         isLoading(false);
-
+        update();
         Get.snackbar(
           'error'.tr,
           failure.errMessage,
@@ -245,6 +236,7 @@ class ChecksController extends GetxController
       },
     );
     isLoading(false);
+    update();
   }
 
   // return check
@@ -258,6 +250,7 @@ class ChecksController extends GetxController
     result.fold(
       (failure) {
         isLoading(false);
+        update();
 
         Get.snackbar(
           'error'.tr,
@@ -290,6 +283,7 @@ class ChecksController extends GetxController
       },
     );
     isLoading(false);
+    update();
   }
 
   // cash to box
@@ -302,6 +296,7 @@ class ChecksController extends GetxController
     result.fold(
       (failure) {
         isLoading(false);
+        update();
 
         Get.snackbar(
           'error'.tr,
@@ -335,13 +330,16 @@ class ChecksController extends GetxController
     );
 
     isLoading(false);
+    update();
   }
 
   // get all not cashed outgoing checks
   final Rxn<NotCashedModel> inComingChecksList = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> inComingTasks = {};
 
+  final Map<String, double> totalsByCurrency = {};
   Future<void> getNotCashed() async {
+    // inComingChecksList.value = null;
     isLoading(true);
     final result = await getChecksUsecase.call(
       endPoint: isInComing
@@ -351,7 +349,8 @@ class ChecksController extends GetxController
     inComingChecksList.value = NotCashedModel.fromJson(result);
     inComingTasks.clear();
     for (var task in inComingChecksList.value!.inComingChecksList) {
-      String dateKey = "${task.dueDate.year}-${task.dueDate.month}";
+      String dateKey =
+          "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
       if (inComingTasks.containsKey(dateKey)) {
         if (!inComingTasks[dateKey]!.any((a) => a.id == task.id)) {
           inComingTasks[dateKey]!.add(task);
@@ -360,13 +359,25 @@ class ChecksController extends GetxController
         inComingTasks[dateKey] = [task];
       }
     }
+    filteredInComingTasks.assignAll(inComingTasks);
+    totalsByCurrency.clear();
+    for (var task in inComingChecksList.value!.inComingChecksList) {
+      final currency = task.currency;
+      final total = double.tryParse(task.total.toString()) ?? 0.0;
+      if (totalsByCurrency.containsKey(currency)) {
+        totalsByCurrency[currency] = totalsByCurrency[currency]! + total;
+      } else {
+        totalsByCurrency[currency] = total;
+      }
+    }
     isLoading(false);
+    update();
   }
 
   // get cashed to person checks
   final Rxn<CashedToPersonOutgoingModel> cashedToPerson =
       Rxn<CashedToPersonOutgoingModel>(null);
-  Map<String, List<CheckModel>> cashedToPersonTasks = {};
+  final Map<String, List<CheckModel>> cashedToPersonTasks = {};
 
   Future<void> getCashedToPerson() async {
     isLoading(true);
@@ -375,11 +386,11 @@ class ChecksController extends GetxController
           ? EndPoints.cashedIncomingChecks
           : EndPoints.cashedOutgoingChecks,
     );
-
     cashedToPerson.value = CashedToPersonOutgoingModel.fromJson(result);
     cashedToPersonTasks.clear();
     for (var task in cashedToPerson.value!.cashedToPerson) {
-      String dateKey = "${task.dueDate.year}-${task.dueDate.month}";
+      String dateKey =
+          "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
       if (cashedToPersonTasks.containsKey(dateKey)) {
         if (!cashedToPersonTasks[dateKey]!.any((a) => a.id == task.id)) {
           cashedToPersonTasks[dateKey]!.add(task);
@@ -388,7 +399,10 @@ class ChecksController extends GetxController
         cashedToPersonTasks[dateKey] = [task];
       }
     }
+    filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+
     isLoading(false);
+    update();
   }
 
   // get cashed to person checks
@@ -405,7 +419,8 @@ class ChecksController extends GetxController
     archiveData.value = ArchiveDataModel.fromJson(result);
     archiveTasks.clear();
     for (var task in archiveData.value!.archiveData) {
-      String dateKey = "${task.dueDate.year}-${task.dueDate.month}";
+      String dateKey =
+          "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
       if (archiveTasks.containsKey(dateKey)) {
         if (!archiveTasks[dateKey]!.any((a) => a.id == task.id)) {
           archiveTasks[dateKey]!.add(task);
@@ -414,7 +429,9 @@ class ChecksController extends GetxController
         archiveTasks[dateKey] = [task];
       }
     }
+    filteredArchiveTasks.assignAll(archiveTasks);
     isLoading(false);
+    update();
   }
 
   // get general checks data
@@ -468,41 +485,96 @@ class ChecksController extends GetxController
   }
 
 // filter assets by date
-  // final assetsFilter = <String, List<Asset>>{}.obs;
-  // void filterAssetsByDate() {
-  //   final from = DateTime.tryParse(fromController.text);
-  //   final to = DateTime.tryParse(toController.text);
+  Map<String, List<CheckModel>> filterChecks(
+    Map<String, List<CheckModel>> source,
+    String nameQuery,
+    bool filterByAmount,
+  ) {
+    // لو الفلاتر كلها فاضية رجع النسخة الأصلية بالظبط
+    if (nameQuery.isEmpty && !filterByAmount) {
+      return Map.from(source);
+    }
 
-  //   // رجع الداتا الأصلية قبل أي فلترة
-  //   assetsFilter.assignAll(FinacialService().assetsTasks);
+    final allChecks = source.values.expand((tasks) => tasks).toList();
 
-  //   final Map<String, List<Asset>> filtered = {};
-  //   assetsFilter.forEach(
-  //     (dateKey, tasks) {
-  //       for (var task in tasks) {
-  //         bool matches = true;
-  //         // لو فيه "من"
-  //         if (from != null) {
-  //           matches = task.createdAt.isAtSameMomentAs(from) ||
-  //               task.createdAt.isAfter(from);
-  //         }
-  //         // لو فيه "إلى"
-  //         if (to != null) {
-  //           matches = matches &&
-  //               (task.createdAt.isAtSameMomentAs(to) ||
-  //                   task.createdAt.isBefore(to));
-  //         }
-  //         if (matches) {
-  //           filtered.putIfAbsent(dateKey, () => []);
-  //           filtered[dateKey]!.add(task);
-  //         }
-  //       }
-  //     },
-  //   );
-  //   assetsFilter.assignAll(filtered);
-  //   update();
-  //   Get.back();
-  // }
+    final filtered = allChecks.where((check) {
+      bool matchesName = true;
+      bool matchesAmount = true;
+
+      // فلترة بالاسم
+      if (nameQuery.isNotEmpty && check.customer != null) {
+        matchesName = check.customer!.name
+            .toLowerCase()
+            .contains(nameQuery.toLowerCase());
+      }
+
+      // فلترة بالمبلغ
+      if (filterByAmount) {
+        matchesAmount = (double.tryParse(check.total.toString()) ?? 0) > 0;
+      }
+
+      return matchesName && matchesAmount;
+    }).toList();
+
+    // إعادة التجميع حسب التاريخ (الشهر/السنة)
+    final Map<String, List<CheckModel>> grouped = {};
+    for (var check in filtered) {
+      final dateKey =
+          "${check.dueDate.year}/${check.dueDate.month.toString().padLeft(2, '0')}";
+      grouped.putIfAbsent(dateKey, () => []).add(check);
+    }
+
+    // الترتيب بالمبلغ داخل كل شهر فقط لو filterByAmount = true
+    if (filterByAmount) {
+      grouped.forEach((key, checks) {
+        checks.sort((a, b) {
+          final totalA = double.tryParse(a.total.toString()) ?? 0.0;
+          final totalB = double.tryParse(b.total.toString()) ?? 0.0;
+          return totalB.compareTo(totalA); // ترتيب تنازلي
+        });
+      });
+    }
+
+    // الترتيب الزمني للشهور
+    late final List<String> sortedKeys;
+
+    if (filterByAmount) {
+      // لو الفلترة بالمبلغ → رتب الشهور من الأحدث للأقدم
+      sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    } else {
+      // لو الفلترة بالاسم فقط → حافظ على ترتيب الـ source زي ما هو
+      sortedKeys =
+          source.keys.where((key) => grouped.containsKey(key)).toList();
+    }
+
+    final Map<String, List<CheckModel>> sortedGrouped = {
+      for (var key in sortedKeys) key: grouped[key]!
+    };
+
+    return sortedGrouped;
+  }
+
+  Map<String, List<CheckModel>> filteredInComingTasks = {};
+  Map<String, List<CheckModel>> filteredCashedToPersonTasks = {};
+  Map<String, List<CheckModel>> filteredArchiveTasks = {};
+
+  void applyFilters() {
+    final query = employeeNameController.text.trim();
+
+    filteredCashedToPersonTasks.assignAll(
+      filterChecks(cashedToPersonTasks, query, amountFilter.value),
+    );
+
+    filteredArchiveTasks.assignAll(
+      filterChecks(archiveTasks, query, amountFilter.value),
+    );
+
+    filteredInComingTasks.assignAll(
+      filterChecks(inComingTasks, query, amountFilter.value),
+    );
+    Get.back();
+    update();
+  }
 
   @override
   void onInit() {
@@ -511,18 +583,6 @@ class ChecksController extends GetxController
 
     getAllCustomersAndSellers();
     getShowBoxes();
-
-    // outgoing checks
-    generalData();
-    getCashedToPerson();
-    getNotCashed();
-    getArchive();
-
-    // incoming checks
-    generalData();
-    getCashedToPerson();
-    getNotCashed();
-    getArchive();
   }
 
   @override

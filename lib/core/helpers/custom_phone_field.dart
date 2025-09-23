@@ -351,7 +351,9 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 13.h),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : AppColors.whiteColor2,
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(

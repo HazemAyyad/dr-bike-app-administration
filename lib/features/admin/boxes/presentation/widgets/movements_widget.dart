@@ -65,7 +65,7 @@ class MovementsWidget extends StatelessWidget {
                       ],
                     )
                   : Text(
-                      'box.box!.name',
+                      box.box?.name ?? '',
                       style: textStyle.copyWith(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w400,

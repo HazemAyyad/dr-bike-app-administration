@@ -83,46 +83,45 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                               .archiveMaintenancesSearch[month]!.reversed
                               .toList();
 
-              return GestureDetector(
-                onTap: () {
-                  controller.getMaintenancesDetails(
-                    maintenanceId: assets[index].id.toString(),
-                  );
-                  Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 10.h),
-
-                      // separator عنوان الشهر
-                      Row(
-                        children: [
-                          Text(
-                            month,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium!
-                                .copyWith(
-                                  color: AppColors.primaryColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15.sp,
-                                ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 5.h),
-                      Container(
-                        height: 1.h,
-                        width: double.infinity,
-                        color: AppColors.primaryColor,
-                      ),
-                      SizedBox(height: 10.h),
-                      // عرض العناصر
-                      ...assets.map(
-                        (item) => Container(
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 10.h),
+                    // separator عنوان الشهر
+                    Row(
+                      children: [
+                        Text(
+                          month,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium!
+                              .copyWith(
+                                color: AppColors.primaryColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15.sp,
+                              ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 5.h),
+                    Container(
+                      height: 1.h,
+                      width: double.infinity,
+                      color: AppColors.primaryColor,
+                    ),
+                    SizedBox(height: 10.h),
+                    // عرض العناصر
+                    ...assets.map(
+                      (item) => GestureDetector(
+                        onTap: () {
+                          controller.getMaintenancesDetails(
+                            maintenanceId: item.id.toString(),
+                          );
+                          Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+                        },
+                        child: Container(
                           margin: EdgeInsets.symmetric(vertical: 5.h),
                           decoration: BoxDecoration(
                             color: ThemeService.isDark.value
@@ -253,8 +252,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             },

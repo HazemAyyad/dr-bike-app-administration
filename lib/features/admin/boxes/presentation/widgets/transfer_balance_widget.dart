@@ -71,42 +71,6 @@ class TransferBalanceWidget extends GetView<BoxesController> {
                   controller.transferToBoxIdController.text = value!;
                 },
               ),
-              // SizedBox(
-              //   height: 80.h,
-              //   child: Row(
-              //     children: [
-              //       Flexible(
-              //         child: CustomDropdownField(
-              //           label: 'from',
-              //           hint: 'اختر الصندوق',
-              //           dropdownField:
-              //               controller.boxesServes.shownBoxes.map((e) {
-              //             return DropdownMenuItem<String>(
-              //               value: e.boxId.toString(), // ✅ القيمة هنا = boxId
-              //               child: Text(e.boxName), // المعروض للمستخدم
-              //             );
-              //           }).toList(),
-              //           value: controller.boxesServes.shownBoxes.any((e) =>
-              //                   e.boxId.toString() ==
-              //                   controller.transferFromBoxIdController.text)
-              //               ? controller.transferFromBoxIdController
-              //                   .text // ✅ خليها نفس الـ id
-              //               : null,
-              //           onChanged: (value) {
-              //             if (value != null) {
-              //               controller.transferFromBoxIdController.text =
-              //                   value; // ✅ خزّن الـ id
-              //             }
-              //           },
-              //         ),
-              //       ),
-              //       SizedBox(width: 10.w),
-              //       Flexible(
-              //         child:
-              //       ),
-              //     ],
-              //   ),
-              // ),
               SizedBox(height: 10.h),
               CustomTextField(
                 label: 'total'.tr,

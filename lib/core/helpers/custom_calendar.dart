@@ -81,8 +81,8 @@ class CustomCalendar extends StatelessWidget {
                             .bodyMedium!
                             .copyWith(
                               color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor
-                                  : AppColors.customGreyColor6,
+                                  ? AppColors.customGreyColor6
+                                  : AppColors.customGreyColor,
                               fontSize: 16.sp,
                               fontWeight: FontWeight.w400,
                             ),

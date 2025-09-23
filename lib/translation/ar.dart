@@ -134,6 +134,7 @@ const Map<String, String> ar = {
   'maintenance': 'قسم الصيانة',
   'checksandCommitments': 'الشيكات والالتزامات',
   'countersAndStatisticsAndReports': 'العدادات والاحصائيات والتقارير',
+  'productManagement': 'إدارة وتطوير المنتجات',
 
   'add': 'إضافة',
   'newInvoice': 'فاتورة جديدة',
@@ -593,7 +594,7 @@ const Map<String, String> ar = {
   // قسم المبيعات
   'spotSale': 'البيع الفوري',
   'cashProfit': 'ربح نقدي',
-  'total': 'الاجمالي',
+  'total': 'الإجمالي',
   'newInstantSale': 'بيع فوري جديد',
   'saleForProject': 'بيع لمشروع',
   'instantSale': 'بيع فوري',
@@ -866,4 +867,16 @@ const Map<String, String> ar = {
   // 'delivered': 'تم التسليم',
   'returnBill': 'مردودات فاتورة',
   'returnBillDetails': 'تفاصيل مردود الفاتورة',
+
+  // قسم إدارة وتطوير المنتج
+  //   'products': 'المنتجات',
+  //   "archive": 'الارشيف',
+  "purchase_anywhere": "شراء بضاعة من أي مكان",
+  "purchase_second_hand": "شراء من يد 2",
+  "purchase_first_hand": "شراء من يد أولى",
+  "local_supplier": "توصية مستورد أو مصنع محلي",
+  "import": "استيراد",
+  "wholesale_purchase": "شروة",
+  "our_factory": "صناعة بشركتنا",
+  "purchase_price": "سعر الشراء",
 };

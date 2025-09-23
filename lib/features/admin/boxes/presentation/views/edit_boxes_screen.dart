@@ -25,66 +25,69 @@ class EditBoxesScreen extends GetView<BoxesController> {
               ? const Center(child: CircularProgressIndicator())
               : Form(
                   key: controller.formKey,
-                  child: ListView(
+                  child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(horizontal: 24.w),
-                    children: [
-                      SizedBox(height: 10.h),
-                      CustomTextField(
-                        isRequired: true,
-                        label: 'boxName'.tr,
-                        hintText: 'BalanceTransferExample',
-                        controller: controller.editBoxNameController,
-                      ),
-                      SizedBox(height: 10.h),
-                      CustomTextField(
-                        label: 'startBalance'.tr,
-                        hintText: 'startBalanceExample',
-                        controller: controller.editStartBalanceController,
-                        keyboardType: TextInputType.number,
-                      ),
-                      SizedBox(height: 10.h),
-                      CustomDropdownField(
-                        label: 'appear',
-                        hint: 'visible',
-                        value: controller.editAppearController.text,
-                        items: controller.appears,
-                        onChanged: (value) {
-                          controller.editAppearController.text = value!;
-                        },
-                      ),
-                      SizedBox(height: 10.h),
-                      CustomDropdownField(
-                        label: 'currencyy'.tr,
-                        hint: 'currency'.tr,
-                        value: controller.editCurrencyController.text.isEmpty
-                            ? null
-                            : controller.currency.firstWhere(
-                                (element) =>
-                                    element.tr ==
-                                    controller.editCurrencyController.text,
-                              ),
-                        onChanged: (value) {
-                          controller.editCurrencyController.text = value!;
-                        },
-                        items: controller.currency,
-                      ),
-                      SizedBox(height: 30.h),
-                      AppButton(
-                        isSafeArea: false,
-                        isLoading: controller.isAddBoxLoading,
-                        text: 'editBox',
-                        onPressed: () {
-                          controller.editBox(context, boxId);
-                        },
-                        textStyle:
-                            Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
+                    child: Column(
+                      children: [
+                        SizedBox(height: 10.h),
+                        CustomTextField(
+                          isRequired: true,
+                          label: 'boxName'.tr,
+                          hintText: 'BalanceTransferExample',
+                          controller: controller.editBoxNameController,
+                        ),
+                        SizedBox(height: 10.h),
+                        CustomTextField(
+                          label: 'startBalance'.tr,
+                          hintText: 'startBalanceExample',
+                          controller: controller.editStartBalanceController,
+                          keyboardType: TextInputType.number,
+                        ),
+                        SizedBox(height: 10.h),
+                        CustomDropdownField(
+                          label: 'appear',
+                          hint: 'visible',
+                          value: controller.editAppearController.text,
+                          items: controller.appears,
+                          onChanged: (value) {
+                            controller.editAppearController.text = value!;
+                          },
+                        ),
+                        SizedBox(height: 10.h),
+                        CustomDropdownField(
+                          label: 'currencyy'.tr,
+                          hint: 'currency'.tr,
+                          value: controller.editCurrencyController.text.isEmpty
+                              ? null
+                              : controller.currency.firstWhere(
+                                  (element) =>
+                                      element.tr ==
+                                      controller.editCurrencyController.text,
                                 ),
-                      ),
-                      const TaskDetailsTransfer(),
-                    ],
+                          onChanged: (value) {
+                            controller.editCurrencyController.text = value!;
+                          },
+                          items: controller.currency,
+                        ),
+                        SizedBox(height: 30.h),
+                        AppButton(
+                          isSafeArea: false,
+                          isLoading: controller.isAddBoxLoading,
+                          text: 'editBox',
+                          onPressed: () {
+                            controller.editBox(context, boxId);
+                          },
+                          textStyle:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        const TaskDetailsTransfer(),
+                        SizedBox(height: 30.h),
+                      ],
+                    ),
                   ),
                 );
         },

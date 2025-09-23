@@ -43,7 +43,7 @@ class ViewChecksWidget extends StatelessWidget {
         children: [
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 5.h),
+              padding: EdgeInsets.symmetric(horizontal: 5.w),
               child: Row(
                 children: [
                   Flexible(
@@ -67,7 +67,7 @@ class ViewChecksWidget extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          "${NumberFormat('#,###').format(double.parse(check.total))} ${'currency'.tr}",
+                          "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency}",
                           textAlign: TextAlign.center,
                           style: Theme.of(context)
                               .textTheme
@@ -89,19 +89,18 @@ class ViewChecksWidget extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                               fontSize: 12.sp,
                               fontWeight: FontWeight.w400,
-                              color: Colors.grey.withAlpha(500),
+                              // color: Colors.grey.withAlpha(500),
                             ),
                       ),
-                      SizedBox(height: 5.h),
+                      if (currentTab == 0) SizedBox(height: 10.h),
                       Text(
                         "${'due_date'.tr} : ${showData(check.dueDate)}",
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                               fontSize: 12.sp,
                               fontWeight: FontWeight.w400,
-                              color: Colors.grey.withAlpha(500),
+                              // color: Colors.grey.withAlpha(500),
                             ),
                       ),
-                      if (currentTab != 0) SizedBox(height: 5.h),
                       if (currentTab == 1)
                         SizedBox(
                           width: 200.w,
@@ -125,7 +124,7 @@ class ViewChecksWidget extends StatelessWidget {
                                 .copyWith(
                                   fontSize: 14.sp,
                                   fontWeight: FontWeight.w400,
-                                  color: Colors.grey.withAlpha(500),
+                                  // color: Colors.grey.withAlpha(500),
                                 ),
                           ),
                         ),
@@ -144,7 +143,7 @@ class ViewChecksWidget extends StatelessWidget {
                               Theme.of(context).textTheme.bodyMedium!.copyWith(
                                     fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
-                                    color: Colors.grey.withAlpha(500),
+                                    // color: Colors.grey.withAlpha(500),
                                   ),
                         ),
                     ],

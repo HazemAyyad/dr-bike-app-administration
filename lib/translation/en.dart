@@ -134,6 +134,7 @@ const Map<String, String> en = {
   'maintenance': 'Maintenance',
   'checksandCommitments': 'Checks and commitments',
   'countersAndStatisticsAndReports': 'Counters and Statistics and Reports',
+  'productManagement': 'Product Management and Development',
 
   'add': 'Add',
   'newInvoice': 'New Invoice',
@@ -867,4 +868,16 @@ const Map<String, String> en = {
   'return': 'Return',
   'returnBill': 'Return Bill',
   'returnBillDetails': 'Return Bill Details',
+
+  // قسم إدارة وتطوير المنتج
+  // 'products': 'المنتجات',
+  // "archive": 'الارشيف',
+  "purchase_anywhere": "Purchase from anywhere",
+  "purchase_second_hand": "Purchase from second hand",
+  "purchase_first_hand": "Purchase from first hand",
+  "local_supplier": "Local supplier recommendation",
+  "import": "Import",
+  "wholesale_purchase": "Wholesale",
+  "our_factory": "Manufactured by our company",
+  "purchase_price": "Purchase price"
 };

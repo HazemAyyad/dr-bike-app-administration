@@ -10,7 +10,7 @@ import '../widgets/checks_details.dart';
 import '../widgets/custom_actions_appbar.dart';
 import '../widgets/custom_list_veiw_builder.dart';
 
-class IncomingChecksScreen extends GetView<ChecksController> {
+class IncomingChecksScreen extends StatelessWidget {
   const IncomingChecksScreen({Key? key}) : super(key: key);
 
   @override
@@ -22,29 +22,32 @@ class IncomingChecksScreen extends GetView<ChecksController> {
       ),
       body: Stack(
         children: [
-          CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                expandedHeight: 200.h,
-                automaticallyImplyLeading: false,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Column(
-                    children: [
-                      SizedBox(height: 10.h),
-                      const ChecksDetails(isOutGoing: false),
-                      SizedBox(height: 20.h),
-                      AppTabs(
-                        tabs: controller.tabs,
-                        currentTab: controller.currentTab,
-                        changeTab: controller.changeTab,
-                      ),
-                    ],
+          GetBuilder<ChecksController>(
+            builder: (controller) {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                  const SliverToBoxAdapter(
+                    child: ChecksDetails(isOutGoing: false),
                   ),
-                ),
-              ),
-              const CustomListVeiwBuilder(),
-              SliverToBoxAdapter(child: SizedBox(height: 50.h)),
-            ],
+                  SliverToBoxAdapter(child: SizedBox(height: 20.h)),
+                  SliverToBoxAdapter(
+                    child: AppTabs(
+                      tabs: controller.tabs,
+                      currentTab: controller.currentTab,
+                      changeTab: controller.changeTab,
+                    ),
+                  ),
+                  SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                  const CustomListVeiwBuilder(),
+                  SliverToBoxAdapter(child: SizedBox(height: 50.h)),
+                ],
+              );
+            },
           ),
         ],
       ),

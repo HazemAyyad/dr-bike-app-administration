@@ -34,8 +34,8 @@ class BillDetailsScreen extends GetView<SalesController> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   SizedBox.shrink(),
-                  SizedBox.shrink(),
                   Flexible(child: RowText(title: 'productName')),
+                  SizedBox.shrink(),
                   Flexible(child: RowText(title: 'quantity')),
                   Flexible(child: RowText(title: 'price')),
                   Flexible(child: RowText(title: 'total')),
@@ -82,47 +82,56 @@ class BillDetailsScreen extends GetView<SalesController> {
               );
             },
           ),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                SizedBox(height: 20.h),
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: 30.w),
-                  height: 1.h,
-                  width: double.infinity,
-                  color: AppColors.primaryColor,
+          GetBuilder<SalesController>(
+            builder: (controller) {
+              if (controller.invoiceModel == null) {
+                return const SliverToBoxAdapter(
+                  child: SizedBox.shrink(),
+                );
+              }
+              return SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    SizedBox(height: 20.h),
+                    Container(
+                      margin: EdgeInsets.symmetric(horizontal: 30.w),
+                      height: 1.h,
+                      width: double.infinity,
+                      color: AppColors.primaryColor,
+                    ),
+                    SizedBox(height: 10.h),
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
+                      child: Text(
+                        '${'discount'.tr} : ${controller.invoiceModel!.discount}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.sp,
+                            ),
+                      ),
+                    ),
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
+                      child: Text(
+                        '${'totalBill'.tr} : ${NumberFormat("#,###").format(double.parse(controller.invoiceModel!.totalCost))}',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13.sp,
+                            ),
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 10.h),
-                Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
-                  child: Text(
-                    '${'discount'.tr} : ${controller.invoiceModel!.discount}',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13.sp,
-                        ),
-                  ),
-                ),
-                Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
-                  child: Text(
-                    '${'totalBill'.tr} : ${NumberFormat("#,###").format(double.parse(controller.invoiceModel!.totalCost))}',
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13.sp,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              );
+            },
+          )
         ],
       ),
     );

@@ -74,6 +74,9 @@ class MaintenanceController extends GetxController {
   String? maintenanceId;
   void nextStep() {
     if (selectedStep.value < timeLineSteps.length) {
+      if (!formKey.currentState!.validate()) {
+        return;
+      }
       if (!isEdit.value) createMaintenance(step: selectedStep.value);
       selectedStep.value += 1;
       if (isEdit.value) {

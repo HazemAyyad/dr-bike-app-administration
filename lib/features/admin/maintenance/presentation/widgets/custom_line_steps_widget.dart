@@ -37,8 +37,8 @@ class CustomLineSteps extends StatelessWidget {
                       GestureDetector(
                         onTap: () => isTaped ? changeSelected(step) : null,
                         child: Container(
-                          height: 45.h,
-                          width: 50.w,
+                          height: 45,
+                          width: 45,
                           decoration: BoxDecoration(
                             color: selectedStep.value == step
                                 ? ThemeService.isDark.value

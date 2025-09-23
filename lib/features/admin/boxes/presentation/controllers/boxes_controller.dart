@@ -263,8 +263,8 @@ class BoxesController extends GetxController {
         boxId: boxId,
         name: editBoxNameController.text,
         total: editStartBalanceController.text,
-        isShown: appearController.text == 'visible' ? '1' : '0',
-        currency: currencyController.text.tr,
+        isShown: editAppearController.text == 'visible' ? '1' : '0',
+        currency: editCurrencyController.text.tr,
       );
 
       result.fold(
@@ -274,13 +274,18 @@ class BoxesController extends GetxController {
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
-            message: "Unexpected error occurred",
+            message: failure.data['message'],
           );
         },
         (success) {
           Get.back();
           getAllBoxes();
+          boxDetailsId = '0';
           addBalanceValueController.clear();
+          editCurrencyController.clear();
+          editBoxNameController.clear();
+          editStartBalanceController.clear();
+          editAppearController.clear();
           Future.delayed(
             const Duration(milliseconds: 1000),
             () {
@@ -308,7 +313,7 @@ class BoxesController extends GetxController {
     final query = boxNameController.text.trim().toLowerCase();
 
     if (query.isEmpty) {
-      // ✅ رجّع القوائم الأصلية
+      // رجّع القوائم الأصلية
       filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
       filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
       filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);

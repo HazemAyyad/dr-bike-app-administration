@@ -32,12 +32,13 @@ class NewMaintenanceScreen extends StatelessWidget {
         child: GetBuilder<MaintenanceController>(
           builder: (controller) {
             if (controller.isEditLoading.value) {
-              return const Center(
+              return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(),
+                    SizedBox(height: 250.h),
+                    const Center(child: CircularProgressIndicator()),
                   ],
                 ),
               );
@@ -217,6 +218,7 @@ class NewMaintenanceScreen extends StatelessWidget {
           },
         ),
       ),
+      resizeToAvoidBottomInset: null,
     );
   }
 }

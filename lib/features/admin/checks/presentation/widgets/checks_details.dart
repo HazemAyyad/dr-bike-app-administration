@@ -8,6 +8,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
+import 'totals_currency_dialog.dart';
 
 class ChecksDetails extends StatelessWidget {
   const ChecksDetails({Key? key, this.isOutGoing = false}) : super(key: key);
@@ -56,32 +57,35 @@ class ChecksDetails extends StatelessWidget {
                   ),
                   SizedBox(width: 8.w),
                   Expanded(
-                    child: StatCard(
-                      show: true,
-                      title: 'total',
-                      imageicon: AssetsManager.cashIcon,
-                      value: isOutGoing
-                          ? controller.generalOutgoing.value == null
-                              ? '0.0'
-                              : NumberFormat('#,###').format(
-                                  double.tryParse(
-                                        controller.generalOutgoing.value!
-                                            .totalOutgoingChecks
-                                            .toString(),
-                                      ) ??
-                                      0.0,
-                                )
-                          : controller.generalIncoming.value == null
-                              ? '0.0'
-                              : NumberFormat('#,###').format(
-                                  double.tryParse(
-                                        controller.generalIncoming.value!
-                                            .totalIncomingChecks
-                                            .toString(),
-                                      ) ??
-                                      0.0,
-                                ),
-                      subtitle: '',
+                    child: GestureDetector(
+                      onTap: () => Get.dialog(const TotalsCurrencyDialog()),
+                      child: StatCard(
+                        show: true,
+                        title: 'total',
+                        imageicon: AssetsManager.cashIcon,
+                        value: isOutGoing
+                            ? controller.generalOutgoing.value == null
+                                ? '0.0'
+                                : NumberFormat('#,###').format(
+                                    double.tryParse(
+                                          controller.generalOutgoing.value!
+                                              .totalOutgoingChecks
+                                              .toString(),
+                                        ) ??
+                                        0.0,
+                                  )
+                            : controller.generalIncoming.value == null
+                                ? '0.0'
+                                : NumberFormat('#,###').format(
+                                    double.tryParse(
+                                          controller.generalIncoming.value!
+                                              .totalIncomingChecks
+                                              .toString(),
+                                        ) ??
+                                        0.0,
+                                  ),
+                        subtitle: '',
+                      ),
                     ),
                   ),
                 ],
