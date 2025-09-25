@@ -1,4 +1,3 @@
-import '../../../../../core/helpers/show_net_image.dart';
 import '../../domain/entity/check_entity.dart';
 
 class CheckModel extends CheckEntity {
@@ -11,7 +10,8 @@ class CheckModel extends CheckEntity {
     required String currency,
     required String checkId,
     required String bankName,
-    String? img,
+    String? frontImage,
+    String? backImage,
     required DateTime createdAt,
     required DateTime updatedAt,
     String? sellerId,
@@ -30,7 +30,8 @@ class CheckModel extends CheckEntity {
           currency: currency,
           checkId: checkId,
           bankName: bankName,
-          frontImage: img,
+          frontImage: frontImage,
+          backImage: backImage,
           createdAt: createdAt,
           updatedAt: updatedAt,
           sellerId: sellerId,
@@ -54,8 +55,8 @@ class CheckModel extends CheckEntity {
       currency: json['currency'] ?? '',
       checkId: json['check_id'] ?? '',
       bankName: json['bank_name'] ?? '',
-      img: ShowNetImage.getPhoto(
-          json['img'] == null ? '' : '$imgPath/${json['img']}'),
+      frontImage: json['front_image'] ?? json['img'],
+      backImage: json['back_image'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),

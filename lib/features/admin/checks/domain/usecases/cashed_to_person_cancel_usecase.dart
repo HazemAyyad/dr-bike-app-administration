@@ -3,21 +3,19 @@ import 'package:dartz/dartz.dart';
 import '../../../../../core/errors/failure.dart';
 import '../repositories/checks_repository.dart';
 
-class CashedToPersonCancelUsecase {
+class CashedToPersonOrCashedUsecase {
   final ChecksRepository checksRepository;
 
-  CashedToPersonCancelUsecase({required this.checksRepository});
+  CashedToPersonOrCashedUsecase({required this.checksRepository});
 
   Future<Either<Failure, String>> call({
     required bool isInComing,
-    required bool toPerson,
     required String checkId,
     String? sellerId,
     String? customerId,
   }) {
-    return checksRepository.cashedToPersonOrCancel(
+    return checksRepository.cashedToPersonOrCashed(
       isInComing: isInComing,
-      toPerson: toPerson,
       checkId: checkId,
       sellerId: sellerId,
       customerId: customerId,

@@ -37,6 +37,8 @@ import '../../features/admin/maintenance/data/datasources/maintenance_datasource
 import '../../features/admin/maintenance/data/repositories/maintenance_implement.dart';
 import '../../features/admin/payment_method/data/datasources/payment_datasource.dart';
 import '../../features/admin/payment_method/data/repositories/payment_implement.dart';
+import '../../features/admin/product_management/data/datasources/product_management_datasource.dart';
+import '../../features/admin/product_management/data/repositories/product_management_implement.dart';
 import '../../features/admin/projects/data/datasources/project_datasource.dart';
 import '../../features/admin/projects/data/repositories/project_implement.dart';
 import '../../features/admin/sales/data/repositories/sales_implement.dart';
@@ -426,6 +428,19 @@ class InitialBindings implements Bindings {
       () => BillsImplement(
         networkInfo: Get.find<NetworkInfo>(),
         billsDataSource: Get.find<BillsDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // Product Management
+    Get.lazyPut<ProductManagementDatasource>(
+      () => ProductManagementDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<ProductManagementImplement>(
+      () => ProductManagementImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        productManagementDatasource: Get.find<ProductManagementDatasource>(),
       ),
       fenix: true,
     );

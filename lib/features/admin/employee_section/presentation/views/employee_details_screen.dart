@@ -120,6 +120,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                                       height: 200.h,
                                       width: 200.w,
                                       fit: BoxFit.fill,
+                                      filterQuality: FilterQuality.medium,
                                       fadeInDuration:
                                           const Duration(milliseconds: 200),
                                       fadeOutDuration:
@@ -184,6 +185,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                                       height: 200.h,
                                       width: 200.w,
                                       fit: BoxFit.fill,
+                                      filterQuality: FilterQuality.medium,
                                       fadeInDuration:
                                           const Duration(milliseconds: 200),
                                       fadeOutDuration:

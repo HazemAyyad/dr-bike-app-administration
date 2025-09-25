@@ -129,10 +129,11 @@ const Map<String, String> ar = {
   'partnersDepartment': 'قسم الشراكات',
   'stock': 'المخزون',
   'boxes': 'الصناديق',
+  'purchasingDepartment': 'قسم الشراء',
   'purchasesandReturns': 'قسم الشراء والراجع',
   'financialMatters': 'المصاريف والأمور المالية',
   'maintenance': 'قسم الصيانة',
-  'checksandCommitments': 'الشيكات والالتزامات',
+  'checksandCommitments': 'ادارة الشيكات',
   'countersAndStatisticsAndReports': 'العدادات والاحصائيات والتقارير',
   'productManagement': 'إدارة وتطوير المنتجات',
 
@@ -848,7 +849,6 @@ const Map<String, String> ar = {
   "deliver_product": "تسليم المنتج",
   "purchase": "شراء",
   "purchase_new_price": "شراء سعر جديد",
-//   "delivered": "تم التسليم",
   "missing": "ناقص",
   "returned_extra": "مرتجع زيادة",
   "not_compatible": "غير متوافق",
@@ -864,13 +864,11 @@ const Map<String, String> ar = {
 
   'returnPurchase': 'مردودات مشتريات',
   'return': 'مردودات',
-  // 'delivered': 'تم التسليم',
   'returnBill': 'مردودات فاتورة',
   'returnBillDetails': 'تفاصيل مردود الفاتورة',
 
   // قسم إدارة وتطوير المنتج
-  //   'products': 'المنتجات',
-  //   "archive": 'الارشيف',
+  'addNewProductt': 'اضافة منتج جديد',
   "purchase_anywhere": "شراء بضاعة من أي مكان",
   "purchase_second_hand": "شراء من يد 2",
   "purchase_first_hand": "شراء من يد أولى",
@@ -879,4 +877,6 @@ const Map<String, String> ar = {
   "wholesale_purchase": "شروة",
   "our_factory": "صناعة بشركتنا",
   "purchase_price": "سعر الشراء",
+  'step': 'مرحلة',
+  "out_of_stock_products": "يوجد منتجات غير متوفرة في المخزن"
 };

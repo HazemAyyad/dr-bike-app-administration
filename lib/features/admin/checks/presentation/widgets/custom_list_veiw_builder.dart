@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -66,13 +67,8 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                 ? controller.filteredInComingTasks.keys.toList()[section]
                 : controller.currentTab.value == 1
                     ? controller.filteredCashedToPersonTasks.keys
-                        .toList()
-                        .reversed
                         .toList()[section]
-                    : controller.filteredArchiveTasks.keys
-                        .toList()
-                        .reversed
-                        .toList()[section];
+                    : controller.filteredArchiveTasks.keys.toList()[section];
 
             final checks = controller.currentTab.value == 0
                 ? controller.filteredInComingTasks[
@@ -83,6 +79,12 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                     : controller.filteredArchiveTasks[
                         controller.dateFilter.value ? monthReversed : month];
 
+            final monthTotal = controller.currentTab.value == 0
+                ? controller.totalInComing[month]
+                : controller.currentTab.value == 1
+                    ? controller.totalCashedToPerson[month]
+                    : controller.totalArchive[month] ?? 0.0;
+
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
@@ -90,6 +92,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                 children: [
                   // separator عنوان الشهر
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         controller.dateFilter.value ? monthReversed : month,
@@ -101,6 +104,21 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                               fontWeight: FontWeight.w700,
                               fontSize: 15.sp,
                             ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 15.w),
+                        child: Text(
+                          NumberFormat('#,###')
+                              .format(double.parse(monthTotal.toString())),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium!
+                              .copyWith(
+                                color: AppColors.primaryColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16.sp,
+                              ),
+                        ),
                       ),
                     ],
                   ),
@@ -118,9 +136,12 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                               controller.currentTab.value == 2
                           ? null
                           : () {
+                              controller.getShowBoxes();
+                              controller.getAllCustomersAndSellers();
                               Get.dialog(OnLongPress(check: check));
                             },
                       child: ViewChecksWidget(
+                        type: controller.isInComing,
                         check: check,
                         currentTab: controller.currentTab.value,
                       ),

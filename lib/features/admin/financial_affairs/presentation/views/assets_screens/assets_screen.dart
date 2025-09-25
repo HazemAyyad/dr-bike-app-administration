@@ -113,6 +113,9 @@ class AssetsScreen extends GetView<AssetsController> {
           ),
         ),
       ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

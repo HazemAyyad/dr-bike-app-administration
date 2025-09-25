@@ -21,10 +21,7 @@ import '../../domain/usecases/add_payment_usecase.dart';
 import '../controllers/payment_controller.dart';
 
 class PaymentScreen extends GetView<PaymentController> {
-  const PaymentScreen({
-    Key? key,
-    this.type,
-  }) : super(key: key);
+  const PaymentScreen({Key? key, this.type}) : super(key: key);
   final String? type;
   @override
   Widget build(BuildContext context) {

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../payment_method/presentation/views/payment_screen.dart';
 import '../../controllers/bills_controller.dart';
 
 class AddNewBillScreen extends GetView<BillsController> {
@@ -50,7 +49,8 @@ class AddNewBillScreen extends GetView<BillsController> {
                                   item.productIdController.text =
                                       value.id.toString();
                                 },
-                                itemAsString: (item) => item.nameAr,
+                                itemAsString: (item) =>
+                                    '${item.nameAr}  (${item.stock})',
                                 compareFn: (item1, item2) =>
                                     item1.id == item2.id,
                               ),
@@ -182,16 +182,18 @@ class AddNewBillScreen extends GetView<BillsController> {
                 text: 'createBill',
                 onPressed: () {
                   if (controller.formKey.currentState!.validate()) {
-                    Get.bottomSheet(
-                      const PaymentScreen(type: 'payment'),
-                      backgroundColor: Colors.white,
-                      isScrollControlled: true,
-                    ).then((value) {
-                      if (value == true) {
-                        // ignore: use_build_context_synchronously
-                        controller.addBill(context);
-                      }
-                    });
+                    controller.addBill(context);
+
+                    // Get.bottomSheet(
+                    //   const PaymentScreen(type: 'payment'),
+                    //   backgroundColor: Colors.white,
+                    //   isScrollControlled: true,
+                    // ).then((value) {
+                    //   if (value == true) {
+                    //     // ignore: use_build_context_synchronously
+                    //     controller.addBill(context);
+                    //   }
+                    // });
                   }
                 },
               ),

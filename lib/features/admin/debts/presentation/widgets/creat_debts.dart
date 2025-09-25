@@ -27,8 +27,6 @@ class CreateDebts extends GetView<DebtsController> {
 
   @override
   Widget build(BuildContext context) {
-    final RxnString selectedValue = RxnString();
-
     return SafeArea(
       child: Scaffold(
         extendBody: true,
@@ -54,7 +52,8 @@ class CreateDebts extends GetView<DebtsController> {
                               !controller.selectedCustomersSellers.value ==
                                   true),
                           onChanged: (val) {
-                            selectedValue.value = null;
+                            controller.customerOrSellerIdController.text = '';
+                            controller.customerOrSellerIdController.clear();
                             controller.selectedCustomersSellers.value = false;
                           },
                         ),
@@ -66,7 +65,8 @@ class CreateDebts extends GetView<DebtsController> {
                               !controller.selectedCustomersSellers.value ==
                                   false),
                           onChanged: (val) {
-                            selectedValue.value = null;
+                            controller.customerOrSellerIdController.text = '';
+                            controller.customerOrSellerIdController.clear();
                             controller.selectedCustomersSellers.value = true;
                           },
                         ),
@@ -84,9 +84,10 @@ class CreateDebts extends GetView<DebtsController> {
                     items: controller.selectedCustomersSellers.value == false
                         ? controller.allCustomersList
                         : controller.allSellersList,
-                    value: selectedValue.value,
+                    // value: selectedValue.value,
                     onChanged: (val) {
-                      selectedValue.value = val!;
+                      controller.customerOrSellerIdController.text =
+                          val!.id.toString();
                     },
                     itemAsString: (f) => f.name,
                     compareFn: (a, b) => a.id == b.id,
@@ -115,13 +116,7 @@ class CreateDebts extends GetView<DebtsController> {
                 CustomTextField(
                   isRequired: true,
                   label: 'total_debt',
-                  labelColor: ThemeService.isDark.value
-                      ? AppColors.customGreyColor6
-                      : AppColors.customGreyColor,
                   hintText: 'employeeSalaryExample',
-                  hintColor: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.customGreyColor6,
                   controller: controller.totalDebtController,
                 ),
                 SizedBox(height: 20.h),
@@ -149,48 +144,50 @@ class CreateDebts extends GetView<DebtsController> {
                   ],
                 ),
                 SizedBox(height: 10.h),
-                FormField<void>(
-                  validator: (file) {
-                    if (controller.selectedFile.isEmpty) {
-                      return 'receipt'.tr;
-                    }
-                    return null;
-                  },
-                  builder: (formFieldState) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        MediaUploadButton(
-                          title: 'uploadPersonalIdImage',
-                          width: double.infinity,
-                          allowedType: MediaType.image,
-                          onFilesChanged: (files) {
-                            controller.selectedFile = files;
-                          },
-                        ),
-                        if (formFieldState.hasError)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 5),
-                            child: Text(
-                              formFieldState.errorText ?? "",
-                              style: const TextStyle(
-                                  color: Colors.red, fontSize: 12),
-                            ),
-                          ),
-                      ],
-                    );
+                // FormField<void>(
+                //   validator: (file) {
+                //     if (controller.selectedFile.isEmpty) {
+                //       return 'receipt'.tr;
+                //     }
+                //     return null;
+                //   },
+                //   builder: (formFieldState) {
+                //     return Column(
+                //       crossAxisAlignment: CrossAxisAlignment.start,
+                //       children: [
+                //         MediaUploadButton(
+                //           title: 'uploadPersonalIdImage',
+                //           width: double.infinity,
+                //           allowedType: MediaType.image,
+                //           onFilesChanged: (files) {
+                //             controller.selectedFile = files;
+                //           },
+                //         ),
+                //         if (formFieldState.hasError)
+                //           Padding(
+                //             padding: const EdgeInsets.only(top: 5),
+                //             child: Text(
+                //               formFieldState.errorText ?? "",
+                //               style: const TextStyle(
+                //                   color: Colors.red, fontSize: 12),
+                //             ),
+                //           ),
+                //       ],
+                //     );
+                //   },
+                // ),
+                MediaUploadButton(
+                  title: 'uploadPersonalIdImage',
+                  width: double.infinity,
+                  allowedType: MediaType.image,
+                  onFilesChanged: (files) {
+                    controller.selectedFile = files;
                   },
                 ),
                 SizedBox(height: 20.h),
                 CustomTextField(
                   label: 'other_details',
-                  labelColor: ThemeService.isDark.value
-                      ? AppColors.customGreyColor6
-                      : AppColors.customGreyColor,
                   hintText: 'other_details',
-                  hintColor: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.customGreyColor6,
                   controller: controller.moreDetailsController,
                   validator: (p0) {
                     return null;
@@ -201,11 +198,11 @@ class CreateDebts extends GetView<DebtsController> {
                   isLoading: controller.isLoading,
                   text: 'createNewDebt',
                   onPressed: () {
+                    print(controller.customerOrSellerIdController.text);
                     if (controller.formKey.currentState?.validate() ?? false) {
                       controller.addDebts(
                         context: context,
                         isCustomer: !controller.selectedCustomersSellers.value,
-                        customerId: selectedValue.value!,
                         type: supTitle == 'gave' ? 'owed to us' : 'we owe',
                       );
                     }

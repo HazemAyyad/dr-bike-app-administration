@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../admin/admin_dashbord/data/repositories/admin_dashboard_implement.dart';
 import '../../admin/admin_dashbord/domain/usecases/get_admin_logs_usecase.dart';
+import '../../admin/admin_dashbord/domain/usecases/get_main_dashboard_data_usecase.dart';
 import '../../admin/admin_dashbord/presentation/controllers/admin_dashboard_controller.dart';
 import '../../admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../../admin/counters/data/repositories/countrers_implement.dart';
@@ -61,6 +62,9 @@ class BottomNavBarController extends GetxController {
                 ),
                 cancelLogUsecase: CancelLogUsecase(
                   employeeRepository: Get.find<EmployeeImplement>(),
+                ),
+                getMainDashboardDataUsecase: GetMainDashboardDataUsecase(
+                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
                 ),
               ),
             );

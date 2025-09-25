@@ -28,7 +28,6 @@ class ChecksImplement implements ChecksRepository {
     required String currency,
     required String checkId,
     required String bankName,
-    required XFile img,
     XFile? frontImage,
     XFile? backImage,
   }) async {
@@ -45,7 +44,6 @@ class ChecksImplement implements ChecksRepository {
         currency: currency,
         checkId: checkId,
         bankName: bankName,
-        img: img,
         frontImage: frontImage,
         backImage: backImage,
       );
@@ -100,9 +98,8 @@ class ChecksImplement implements ChecksRepository {
 
   // cashed to person or cancel
   @override
-  Future<Either<Failure, String>> cashedToPersonOrCancel({
+  Future<Either<Failure, String>> cashedToPersonOrCashed({
     required bool isInComing,
-    required bool toPerson,
     required String checkId,
     String? sellerId,
     String? customerId,
@@ -111,9 +108,8 @@ class ChecksImplement implements ChecksRepository {
       return Left(NoConnectionFailure());
     }
     try {
-      final result = await checksDatasource.cashedToPersonOrCancel(
+      final result = await checksDatasource.cashedToPersonOrCashed(
         isIncoming: isInComing,
-        toPerson: toPerson,
         checkId: checkId,
         sellerId: sellerId,
         customerId: customerId,

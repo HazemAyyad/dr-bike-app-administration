@@ -499,12 +499,14 @@ class SupTextAndDiscr extends StatelessWidget {
     this.titleColor,
     required this.discription,
     this.noSized = false,
+    this.discriptionColor,
   }) : super(key: key);
 
   final String title;
   final String discription;
   final bool noSized;
   final Color? titleColor;
+  final Color? discriptionColor;
   @override
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
@@ -530,9 +532,10 @@ class SupTextAndDiscr extends StatelessWidget {
                 style: theme.copyWith(
                   fontSize: 17.sp,
                   fontWeight: FontWeight.w400,
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor6
-                      : AppColors.customGreyColor4,
+                  color: discriptionColor ??
+                      (ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor4),
                 ),
               )
             ],

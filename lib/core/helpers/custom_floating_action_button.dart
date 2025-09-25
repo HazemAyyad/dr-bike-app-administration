@@ -28,16 +28,12 @@ class CustomFloatingActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Get.locale!.languageCode == 'ar'
-          ? Alignment.bottomLeft
-          : Alignment.bottomRight,
+      alignment: Alignment.bottomRight,
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Stack(
-          alignment: Get.locale!.languageCode == 'ar'
-              ? Alignment.bottomLeft
-              : Alignment.bottomRight,
+          alignment: Alignment.bottomRight,
           children: [
             Obx(() {
               if (!isAddMenuOpen.value) return const SizedBox.shrink();
@@ -56,8 +52,8 @@ class CustomFloatingActionButton extends StatelessWidget {
 
             Positioned(
               bottom: 50.h,
-              left: Get.locale!.languageCode == 'ar' ? 0.w : 100.w,
-              right: Get.locale!.languageCode == 'ar' ? 100.w : 0.w,
+              left: 50.w,
+              right: 50.w,
               child: SizeTransition(
                 sizeFactor: sizeAnimation,
                 axisAlignment: -1.0,
@@ -116,9 +112,8 @@ class CustomFloatingActionButton extends StatelessWidget {
             ),
 
             // زر الإضافة
-            SizedBox(
-              height: 55.h,
-              width: 55.w,
+            Positioned(
+              right: Get.locale!.languageCode == 'ar' ? 30.w : 0.w,
               child: FloatingActionButton(
                 onPressed: onTap,
                 backgroundColor: AppColors.secondaryColor,

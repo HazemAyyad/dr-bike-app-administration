@@ -37,9 +37,6 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                       isRequired: true,
                       label: 'employeeName',
                       hintText: 'employeeNameExample',
-                      // hintColor: ThemeService.isDark.value
-                      //     ? AppColors.customGreyColor
-                      //     : AppColors.customGreyColor6,
                       controller: controller.employeeNameController,
                     ),
                   ),
@@ -64,24 +61,12 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 hintText: '58458XXXXX',
                 controller: controller.phoneNumberController,
               ),
-              // SizedBox(height: 10.h),
-
+              SizedBox(height: 15.h),
               CustomPhoneField(
                 label: 'alternatePhone',
                 hintText: '58410XXXXX',
                 controller: controller.subPhoneController,
               ),
-              // Row(
-              //   children: [
-              //     Flexible(
-              //       child:
-              //     ),
-              //     SizedBox(width: 10.w),
-              //     Flexible(
-              //       child:
-              //     ),
-              //   ],
-              // ),
               SizedBox(height: controller.isEditEmployee ? 0 : 15.h),
               controller.isEditEmployee
                   ? const SizedBox()

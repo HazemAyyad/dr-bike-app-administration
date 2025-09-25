@@ -40,7 +40,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
             SizedBox(height: 20.h),
             // أزرار الوظائف
             BuildActionButtons(buttons: controller.buttons),
-            SizedBox(height: 80.h),
+            SizedBox(height: 70.h),
           ],
         ),
       ),
@@ -51,6 +51,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
         sizeAnimation: controller.opacityAnimation,
         addList: controller.adminAddList,
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

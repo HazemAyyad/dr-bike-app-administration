@@ -98,8 +98,13 @@ class ChecksDetails extends StatelessWidget {
                             show: true,
                             title: 'totalFunds',
                             imageicon: AssetsManager.moneyIcon,
-                            value: controller.generalOutgoing.value!.totalBoxes
-                                .toString(),
+                            value: NumberFormat('#,###').format(
+                              double.parse(
+                                controller.generalOutgoing.value?.totalBoxes
+                                        .toString() ??
+                                    '0',
+                              ),
+                            ),
                             subtitle: '',
                           ),
                         ),

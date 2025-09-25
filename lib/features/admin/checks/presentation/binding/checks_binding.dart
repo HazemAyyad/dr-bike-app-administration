@@ -27,7 +27,7 @@ class ChecksBinding extends Bindings {
         generalChecksDataUsecase: GeneralChecksDataUsecase(
           checksRepository: Get.find<ChecksImplement>(),
         ),
-        cashedToPersonCancelUsecase: CashedToPersonCancelUsecase(
+        cashedToPersonCancelUsecase: CashedToPersonOrCashedUsecase(
           checksRepository: Get.find<ChecksImplement>(),
         ),
         allCustomersSellersUsecase: AllCustomersSellersUsecase(

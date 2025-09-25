@@ -19,28 +19,19 @@ class AdminActivtiLogScreen extends GetView<AdminDashboardController> {
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
-              automaticallyImplyLeading: false,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Column(
+            SliverToBoxAdapter(
+              child: Container(
+                height: 32.h,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Flexible(
-                      child: Container(
-                        height: 32.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor,
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            const CustomText(title: 'activity'),
-                            const CustomText(title: 'description'),
-                            SizedBox(width: 0.w),
-                          ],
-                        ),
-                      ),
-                    ),
+                    const CustomText(title: 'activity'),
+                    const CustomText(title: 'description'),
+                    SizedBox(width: 0.w),
                   ],
                 ),
               ),
@@ -53,6 +44,9 @@ class AdminActivtiLogScreen extends GetView<AdminDashboardController> {
                       child: CircularProgressIndicator(),
                     ),
                   );
+                }
+                if (controller.logsMap.isEmpty) {
+                  return const SliverFillRemaining(child: ShowNoData());
                 }
                 return SliverToBoxAdapter(
                   child: Column(
@@ -131,6 +125,9 @@ class AdminActivtiLogScreen extends GetView<AdminDashboardController> {
                                         ),
                                         IconButton(
                                           onPressed: () {
+                                            if (controller.isLoading.value) {
+                                              return;
+                                            }
                                             controller.cancelLog(
                                               context: context,
                                               logId: log.id.toString(),

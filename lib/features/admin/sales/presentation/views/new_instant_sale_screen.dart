@@ -47,6 +47,27 @@ class NewInstantSaleScreen extends GetView<SalesController> {
                     ),
                 onPressed: () {
                   if (controller.formKey.currentState!.validate()) {
+                    final hasOutOfStock = controller.items.any((item) {
+                      // دور على المنتج اللي ليه نفس الـ id
+                      final product = controller.products.firstWhereOrNull(
+                        (p) => p.id.toString() == item.selectedItem.toString(),
+                      );
+                      // قارن المخزون بالكمية المطلوبة
+                      final stock = int.tryParse(product!.stock) ?? 0;
+                      final requestedQty =
+                          int.tryParse(item.quantityController.text) ?? 0;
+                      return requestedQty > stock;
+                    });
+                    if (hasOutOfStock) {
+                      Get.snackbar(
+                        'error'.tr,
+                        'out_of_stock_products'.tr,
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: Colors.red,
+                      );
+                      return;
+                    }
+
                     Get.bottomSheet(
                       const PaymentScreen(type: 'receive'),
                       backgroundColor: Colors.white,

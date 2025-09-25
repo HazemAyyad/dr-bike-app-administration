@@ -75,6 +75,9 @@ import '../features/admin/general_data_list/presentation/views/general_data_list
 import '../features/admin/maintenance/presentation/binding/maintenance_binding.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_screen.dart';
 import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
+import '../features/admin/product_management/presentation/binding/product_management_binding.dart';
+import '../features/admin/product_management/presentation/views/add_product_management_screen.dart';
+import '../features/admin/product_management/presentation/views/product_management_screen.dart';
 import '../features/admin/projects/presentation/binding/project_binding.dart';
 import '../features/admin/projects/presentation/views/create_project_screen.dart';
 import '../features/admin/projects/presentation/views/project_details_screeen.dart';
@@ -462,6 +465,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.CREATEBOXESSCREEN,
+      binding: BoxesBinding(),
       page: () => const CreateBoxesScreen(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
@@ -643,6 +647,22 @@ class AppPages {
       page: () => const FilesScreen(),
       binding: OfficialPapersBinding(),
       transition: _transitionSize,
+    ),
+
+    // PRODUCT MANAGEMENT
+    GetPage(
+      name: AppRoutes.PRODUCTMANAGEMENTSCREEN,
+      page: () => const ProductManagementScreen(),
+      binding: ProductManagementBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.ADDPRODUCTMANAGEMENTSCREEN,
+      page: () => const AddProductManagementScreen(),
+      binding: ProductManagementBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
     ),
 
     // Counters

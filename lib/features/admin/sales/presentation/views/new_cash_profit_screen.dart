@@ -51,20 +51,24 @@ class NewCashProfitScreen extends GetView<SalesController> {
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
-                onPressed: () {
+                onPressed: () async {
                   if (controller.formKey.currentState!.validate()) {
-                    Get.bottomSheet(
-                      const PaymentScreen(
-                        type: 'receive',
-                      ),
+                    final result = await Get.bottomSheet<bool>(
+                      const PaymentScreen(type: 'receive'),
                       backgroundColor: Colors.white,
                       isScrollControlled: true,
-                    ).then((value) {
-                      if (value == true) {
-                        // ignore: use_build_context_synchronously
-                        controller.addProfitSale(context);
+                    );
+
+                    if (result == true) {
+                      // ignore: use_build_context_synchronously
+                      final success = await controller.addProfitSale(context);
+                      if (!success) {
+                        // رجع فلوس أو أعمل Rollback
+                        Get.snackbar("فشل", "لم تتم العملية بنجاح");
                       }
-                    });
+                    } else {
+                      Get.snackbar("إلغاء", "لم يتم الدفع");
+                    }
                   }
                 },
               ),

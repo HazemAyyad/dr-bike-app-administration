@@ -7,18 +7,22 @@ import '../../../../../routes/app_routes.dart';
 import '../../../employee_section/data/models/logs_model.dart';
 import '../../../employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../data/models/main_dashboard_mata_model.dart';
 import '../../domain/usecases/get_admin_logs_usecase.dart';
+import '../../domain/usecases/get_main_dashboard_data_usecase.dart';
 
 class AdminDashboardController extends GetxController
     with GetTickerProviderStateMixin {
   final GetAllEmployeeUsecase getAllEmployeeUsecase;
   final GetAdminLogsUsecase getAdminLogsUsecase;
   final CancelLogUsecase cancelLogUsecase;
+  final GetMainDashboardDataUsecase getMainDashboardDataUsecase;
 
   AdminDashboardController({
     required this.getAllEmployeeUsecase,
     required this.getAdminLogsUsecase,
     required this.cancelLogUsecase,
+    required this.getMainDashboardDataUsecase,
   });
 
   List<Map<String, dynamic>> buttons = [
@@ -69,13 +73,18 @@ class AdminDashboardController extends GetxController
       'title': 'financialMatters',
       'route': AppRoutes.FINANCIALAFFAIRSSCREEN
     },
+
+    {'id': '15', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
+    {
+      'id': '18',
+      'title': 'productManagement',
+      'route': AppRoutes.PRODUCTMANAGEMENTSCREEN
+    },
     {
       'id': '14',
       'title': 'checksandCommitments',
       'route': AppRoutes.CHECKSSCREEN
     },
-    {'id': '15', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
-    // {'id': '18', 'title': 'countersAndStatisticsAndReports', 'route': ''},
   ];
 
   // متغيرات للإحصائيات
@@ -101,7 +110,7 @@ class AdminDashboardController extends GetxController
     {
       'title': 'newInvoice',
       'icon': AssetsManager.invoiceIcon,
-      'route': AppRoutes.ADDNEWEMPLOYEESCREEN
+      'route': AppRoutes.ADDNEWBILLSCREEN
     },
     {
       'title': 'newEmployee',
@@ -161,7 +170,7 @@ class AdminDashboardController extends GetxController
       },
       (success) {
         Future.delayed(
-          const Duration(milliseconds: 1500),
+          const Duration(milliseconds: 500),
           () {
             getLogs();
             Get.back();
@@ -178,8 +187,19 @@ class AdminDashboardController extends GetxController
     update();
   }
 
+  // get Main Dashboard Data
+  MainDashboardDataModel? mainDashboardDataModel;
+  void getMainDashboardData() async {
+    isLoading(true);
+    final result = await getMainDashboardDataUsecase.call();
+    mainDashboardDataModel = result;
+    isLoading(false);
+    update();
+  }
+
   @override
   void onInit() async {
+    getMainDashboardData();
     super.onInit();
     animController = AnimationController(
       vsync: this,

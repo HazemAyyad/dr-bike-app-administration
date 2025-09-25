@@ -23,6 +23,13 @@ class PaymentDatasource {
   }) async {
     try {
       final checksMap = <String, dynamic>{};
+      checksMap.addAll({
+        'type': type,
+        if (customerId.isNotEmpty) 'customer_id': customerId,
+        if (sellerId.isNotEmpty) 'seller_id': sellerId,
+        if (boxId.isNotEmpty) 'box_id': boxId,
+        if (boxValue.isNotEmpty) 'box_value': boxValue,
+      });
 
       for (int i = 0; i < checks.length; i++) {
         if (checks[i].checkValue.text.isNotEmpty) {
@@ -43,17 +50,10 @@ class PaymentDatasource {
           checksMap['debts[$i][due_date]'] = checks[i].dueDate.text;
         }
       }
-
       final response = await api.post(
         EndPoints.addTransaction,
-        data: {
-          'type': type,
-          if (customerId.isNotEmpty) 'customer_id': customerId,
-          if (sellerId.isNotEmpty) 'seller_id': sellerId,
-          'box_id': boxId,
-          'box_value': boxValue,
-          ...checksMap,
-        },
+        data: checksMap,
+        isFormData: true,
       );
       return response.data;
     } on DioException catch (e) {

@@ -83,31 +83,33 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                     ],
                   ),
                 ),
-                SupTextAndDis(
-                  title: 'taskDescription',
-                  discription: data.taskDescription,
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 15.h),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'subTasks'.tr,
-                        style: theme.copyWith(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryColor,
-                        ),
-                      ),
-                      Container(
-                        color: AppColors.primaryColor,
-                        width: double.infinity,
-                        height: 1.h,
-                      ),
-                    ],
+                if (data.taskDescription.isNotEmpty)
+                  SupTextAndDis(
+                    title: 'taskDescription',
+                    discription: data.taskDescription,
                   ),
-                ),
+                if (data.subTasks.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 15.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'subTasks'.tr,
+                          style: theme.copyWith(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryColor,
+                          ),
+                        ),
+                        Container(
+                          color: AppColors.primaryColor,
+                          width: double.infinity,
+                          height: 1.h,
+                        ),
+                      ],
+                    ),
+                  ),
                 ...data.subTasks.map(
                   (tasks) => Container(
                     margin: EdgeInsets.symmetric(vertical: 5.h),

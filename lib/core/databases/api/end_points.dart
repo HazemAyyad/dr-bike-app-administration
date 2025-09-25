@@ -30,6 +30,7 @@ class EndPoints {
 
   // admin dashboard
   static const String adminLogs = 'all/logs';
+  static const String adminHomeData = 'admin/home/page/data';
 
   // debts section
   static const String totalDebtsWeOwe = 'total/debts/we/owe';
@@ -275,6 +276,13 @@ class EndPoints {
   static const String purchaseExtraProducts = 'purchase/extra/products';
   static const String changeReturnPurchaseToDelivered =
       'change/return/purchase/to/delivered';
+
+  // product developments
+  static const String getAllProductDevelopments =
+      'get/all/product/developments';
+  static const String createProductDevelopment = 'create/product/development';
+  static const String updateProductDevelopment =
+      'update/product/development/step';
 }
 
 class ApiKey {

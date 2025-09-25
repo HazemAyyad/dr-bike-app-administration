@@ -149,34 +149,35 @@ class NewCheckScreen extends GetView<ChecksController> {
                 isRequired: true,
               ),
               SizedBox(height: 30.h),
-              FormField<void>(
-                validator: (file) {
-                  if (controller.checkFrontImage.value == null) {
-                    return 'checkFrontImage'.tr;
-                  }
-                  return null;
-                },
-                builder: (formFieldState) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      UploadImageButton(
-                        selectedFile: controller.checkFrontImage,
-                        title: 'checkFrontImage',
-                      ),
-                      if (formFieldState.hasError)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Text(
-                            formFieldState.errorText ?? "",
-                            style: const TextStyle(
-                                color: Colors.red, fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  );
-                },
+              UploadImageButton(
+                selectedFile: controller.checkFrontImage,
+                title: 'checkFrontImage',
               ),
+              // FormField<void>(
+              //   validator: (file) {
+              //     if (controller.checkFrontImage.value == null) {
+              //       return 'checkFrontImage'.tr;
+              //     }
+              //     return null;
+              //   },
+              //   builder: (formFieldState) {
+              //     return Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+
+              //         if (formFieldState.hasError)
+              //           Padding(
+              //             padding: const EdgeInsets.only(top: 5),
+              //             child: Text(
+              //               formFieldState.errorText ?? "",
+              //               style: const TextStyle(
+              //                   color: Colors.red, fontSize: 12),
+              //             ),
+              //           ),
+              //       ],
+              //     );
+              //   },
+              // ),
               // MediaUploadButton(
               //   title: 'checkFrontImage',
               //   allowedType: MediaType.image,

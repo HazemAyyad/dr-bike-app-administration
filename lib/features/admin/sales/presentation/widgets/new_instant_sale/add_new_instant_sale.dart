@@ -66,7 +66,8 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                         child: DropdownSearch<ProductModel>(
                           items: (filter, infiniteScrollProps) =>
                               controller.products,
-                          itemAsString: (u) => u.nameAr,
+                          itemAsString: (u) =>
+                              "${u.nameAr} (${'stock'.tr}: ${u.stock})",
                           compareFn: (a, b) => a.id == b.id,
                           validator: (value) {
                             if (value == null) {
@@ -179,24 +180,36 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                 ),
                 SizedBox(height: 10.h),
                 Obx(
-                  () => item.selectedCustomersSellers.value
-                      ? CustomDropdownField(
-                          label: 'projectName'.tr,
-                          hint: 'projectNameExample',
-                          dropdownField: controller.ongoingProjects
-                              .map(
-                                (e) => DropdownMenuItem<String>(
-                                  value: e.id.toString(),
-                                  child: Text(e.name),
-                                ),
-                              )
-                              .toList(),
-                          value: item.selectedValue.value,
-                          onChanged: (val) {
-                            item.selectedValue.value = val!;
-                          },
-                        )
-                      : const SizedBox.shrink(),
+                  () {
+                    if (item.selectedCustomersSellers.value) {
+                      final allProjectIds = controller.products
+                          .where((p) => p.id == item.selectedItem.value)
+                          .expand((p) => p.projects)
+                          .map((id) => id.toString())
+                          .toList();
+
+                      return CustomDropdownField(
+                        label: 'projectName'.tr,
+                        hint: 'projectNameExample',
+                        dropdownField: controller.ongoingProjects
+                            .where((proj) =>
+                                allProjectIds.contains(proj.id.toString()))
+                            .map(
+                              (proj) => DropdownMenuItem<String>(
+                                value: proj.id.toString(),
+                                child: Text(proj.name),
+                              ),
+                            )
+                            .toList(),
+                        value: item.selectedValue.value,
+                        onChanged: (val) {
+                          print(allProjectIds);
+                          item.selectedValue.value = val!;
+                        },
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
                 if (index == controller.items.length - 1)
                   Column(

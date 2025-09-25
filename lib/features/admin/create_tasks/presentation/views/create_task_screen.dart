@@ -12,8 +12,6 @@ import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/helpers/loding_indicator.dart';
-import '../../../../../core/services/theme_service.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
 import '../widgets/add_sub_task.dart';
 import '../widgets/select_date.dart';
@@ -53,14 +51,6 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                     child: CustomTextField(
                       label: 'taskDescription',
                       hintText: 'taskDescriptionExample',
-                      hintStyle:
-                          Theme.of(Get.context!).textTheme.bodyMedium!.copyWith(
-                                color: ThemeService.isDark.value
-                                    ? AppColors.customGreyColor
-                                    : AppColors.customGreyColor6,
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w400,
-                              ),
                       controller: controller.taskDescriptionController,
                       validator: (p0) => null,
                     ),

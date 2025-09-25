@@ -5,6 +5,7 @@ import '../../../employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../domain/repositories/admin_dashboard_repository.dart';
 import '../../domain/usecases/get_admin_logs_usecase.dart';
+import '../../domain/usecases/get_main_dashboard_data_usecase.dart';
 import '../controllers/admin_dashboard_controller.dart';
 
 class AdminDashboardBinding extends Bindings {
@@ -20,6 +21,9 @@ class AdminDashboardBinding extends Bindings {
         ),
         cancelLogUsecase: CancelLogUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getMainDashboardDataUsecase: GetMainDashboardDataUsecase(
+          adminDashboardRepository: Get.find<AdminDashboardRepository>(),
         ),
       ),
     );

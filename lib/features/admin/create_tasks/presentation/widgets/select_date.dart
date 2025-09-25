@@ -44,14 +44,6 @@ class SelectDate extends StatelessWidget {
                 fontWeight: FontWeight.w400,
               ),
             ),
-            // Text(
-            //   '*',
-            //   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            //         color: Colors.red,
-            //         fontSize: 15.sp,
-            //         fontWeight: FontWeight.w700,
-            //       ),
-            // )
           ],
         ),
         SizedBox(height: 10.h),
@@ -169,10 +161,9 @@ class SelectDate extends StatelessWidget {
 
                                   isSelected.value == 0
                                       ? Calendar(
-                                          onDaySelected: (DateTime value) {
-                                            date.value = value;
+                                          onDaySelected: (dateTime) {
+                                            date.value = dateTime;
                                           },
-                                          selectedDay: date.value,
                                         )
                                       : OmniDateTimePicker(
                                           initialDate: DateTime.now(),

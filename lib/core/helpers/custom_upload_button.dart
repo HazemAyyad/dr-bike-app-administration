@@ -35,7 +35,7 @@ class UploadImageButton extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (selectedFile.value == null) {
-          pickFile();
+          pickFile(context);
         }
       },
       child: Obx(
@@ -62,13 +62,39 @@ class UploadImageButton extends StatelessWidget {
     );
   }
 
-  Future<void> pickFile() async {
+  Future<void> pickFile(BuildContext context) async {
     final picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
 
-    if (pickedFile != null) {
-      selectedFile.value = XFile(pickedFile.path);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: Text("takeImage".tr),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.image),
+                title: Text("selectImage".tr),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source != null) {
+      final XFile? pickedFile = await picker.pickImage(source: source);
+      if (pickedFile != null) {
+        selectedFile.value = XFile(pickedFile.path);
+      }
     }
   }
 
@@ -238,20 +264,22 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
   }
 
   Widget _buildImageOptions() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const Icon(Icons.camera_alt),
-          title: Text("takeImage".tr),
-          onTap: () => Navigator.pop(context, 'camera'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.image),
-          title: Text("selectImage".tr),
-          onTap: () => Navigator.pop(context, 'gallery'),
-        ),
-      ],
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: Text("takeImage".tr),
+            onTap: () => Navigator.pop(context, 'camera'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.image),
+            title: Text("selectImage".tr),
+            onTap: () => Navigator.pop(context, 'gallery'),
+          ),
+        ],
+      ),
     );
   }
 

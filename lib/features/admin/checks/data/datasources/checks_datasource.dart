@@ -25,7 +25,6 @@ class ChecksDatasource {
     required String currency,
     required String checkId,
     required String bankName,
-    required XFile img,
     XFile? frontImage,
     XFile? backImage,
   }) async {
@@ -40,10 +39,11 @@ class ChecksDatasource {
           'currency': currency,
           'check_id': checkId,
           'bank_name': bankName,
-          if (isInComing)
+          if (frontImage != null)
+            // if (isInComing)
             'img': await MultipartFile.fromFile(
-              img.path,
-              filename: img.path.split('/').last,
+              frontImage.path,
+              filename: frontImage.path.split('/').last,
             ),
           if (frontImage != null)
             'front_image': await MultipartFile.fromFile(
@@ -113,9 +113,8 @@ class ChecksDatasource {
   }
 
   // cashed to person or cancel
-  Future<Map<String, dynamic>> cashedToPersonOrCancel({
+  Future<Map<String, dynamic>> cashedToPersonOrCashed({
     required bool isIncoming,
-    required bool toPerson,
     required String checkId,
     String? sellerId,
     String? customerId,
@@ -123,10 +122,10 @@ class ChecksDatasource {
     try {
       final response = await api.post(
         isIncoming
-            ? toPerson
+            ? sellerId != null || customerId != null
                 ? EndPoints.cashIncomingCheckToPerson
                 : EndPoints.cashIncomingCheck
-            : toPerson
+            : sellerId != null || customerId != null
                 ? EndPoints.cashOutgoingCheckToPerson
                 : EndPoints.cashOutgoingCheck,
         data: {

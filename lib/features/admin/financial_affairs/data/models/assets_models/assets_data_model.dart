@@ -18,9 +18,10 @@ class AssetsModel {
       assets: (json['assets'] as List)
           .map((e) => Asset.fromJson(e as Map<String, dynamic>))
           .toList(),
-      totalAssetsOriginalPrices: json['total_assets_original_prices'] ?? '0.0',
+      totalAssetsOriginalPrices:
+          json['total_assets_original_prices'].toString(),
       totalAssetsDepreciatePrices:
-          json['total_assets_depreciate_prices'] ?? '0.0',
+          json['total_assets_depreciate_prices'].toString(),
       averageDepreciationRate: json['average_depreciation_rate'] ?? '0.0',
     );
   }

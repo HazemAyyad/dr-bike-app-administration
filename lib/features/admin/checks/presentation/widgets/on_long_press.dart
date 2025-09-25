@@ -7,6 +7,8 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
+import '../../../payment_method/presentation/views/payment_screen.dart';
 import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
 import 'view_checks_widget.dart';
@@ -26,6 +28,7 @@ class OnLongPress extends GetView<ChecksController> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 24.w),
           child: ViewChecksWidget(
+            type: controller.isInComing,
             check: check,
             shadowed: false,
             currentTab: controller.currentTab.value,
@@ -178,6 +181,7 @@ class IfCancelCheck extends GetView<ChecksController> {
               children: [
                 Flexible(
                   child: AppButton(
+                    isSafeArea: false,
                     isLoading: controller.isLoading,
                     width: double.infinity,
                     borderRadius: BorderRadius.all(
@@ -196,10 +200,18 @@ class IfCancelCheck extends GetView<ChecksController> {
                               isCancel: false,
                             )
                           : toPerson
-                              ? controller.cashedToPersonOrCancel(
-                                  toPerson: toPerson,
-                                  checkId: check.id.toString(),
-                                )
+                              ? Get.bottomSheet(
+                                  const PaymentScreen(type: 'payment'),
+                                  backgroundColor: Colors.white,
+                                  isScrollControlled: true,
+                                ).then((value) {
+                                  if (value == true) {
+                                    // ignore: use_build_context_synchronously
+                                    controller.cashedToPersonOrCashed(
+                                      checkId: check.id.toString(),
+                                    );
+                                  }
+                                })
                               : controller.returnCheck(
                                   checkId: check.id.toString(),
                                   isCancel: true,
@@ -210,6 +222,7 @@ class IfCancelCheck extends GetView<ChecksController> {
                 SizedBox(width: 10.w),
                 Flexible(
                   child: AppButton(
+                    isSafeArea: false,
                     color: Colors.red,
                     width: double.infinity,
                     borderRadius: BorderRadius.all(
@@ -306,31 +319,43 @@ class CashTheCheck extends GetView<ChecksController> {
               ),
             ),
             child: Obx(
-              () => CustomDropdownField(
-                label: label,
-                hint: hint,
-                dropdownField:
-                    controller.selectedCustomersSellers.value == false
-                        ? controller.allCustomersList
-                            .map(
-                              (e) => DropdownMenuItem<String>(
-                                value: e.id.toString(),
-                                child: Text(e.name),
-                              ),
-                            )
-                            .toList()
-                        : controller.allSellersList
-                            .map(
-                              (e) => DropdownMenuItem<String>(
-                                value: e.id.toString(),
-                                child: Text(e.name),
-                              ),
-                            )
-                            .toList(),
-                value: selectedValue.value,
-                onChanged: (val) {
-                  selectedValue.value = val!;
-                },
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: CustomDropdownFieldWithSearch(
+                      tital: label,
+                      hint: hint,
+                      items: controller.selectedCustomersSellers.value == false
+                          ? controller.allCustomersList
+                          : controller.allSellersList,
+                      onChanged: (value) {
+                        if (value != null) {
+                          selectedValue.value = value.id.toString();
+                        }
+                      },
+                      itemAsString: (item) => item.name,
+                      compareFn: (a, b) => a.id == b.id,
+                      validator: (value) => null,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN, arguments: {
+                      'sellerId': '',
+                      'employeeId': '',
+                      'employeeType': '',
+                    }),
+                    icon: Icon(
+                      Icons.add_circle_sharp,
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                      size: 35.sp,
+                    ),
+                  )
+                ],
               ),
             ),
           ),
@@ -351,8 +376,7 @@ class CashTheCheck extends GetView<ChecksController> {
                 ),
             onPressed: () {
               if (selectedValue.value != null) {
-                controller.cashedToPersonOrCancel(
-                  toPerson: true,
+                controller.cashedToPersonOrCashed(
                   checkId: check.id.toString(),
                   customerId: controller.selectedCustomersSellers.value == false
                       ? selectedValue.value
@@ -409,31 +433,48 @@ class CashToBox extends GetView<ChecksController> {
               ),
             ),
             child: Obx(
-              () => CustomDropdownField(
-                label: label,
-                labelTextStyle:
-                    Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: AppColors.primaryColor,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                hint: hint,
-                dropdownField: controller.shownBoxesList
-                    .map(
-                      (e) => DropdownMenuItem<String>(
-                        value: e.boxId.toString(),
-                        child: Text(e.boxName),
-                      ),
-                    )
-                    .toList(),
-                value: selectedValue.value,
-                onChanged: (val) {
-                  selectedValue.value = val!;
-                },
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: CustomDropdownField(
+                      label: label,
+                      labelTextStyle:
+                          Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                color: AppColors.primaryColor,
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                      hint: hint,
+                      dropdownField: controller.shownBoxesList
+                          .map(
+                            (e) => DropdownMenuItem<String>(
+                              value: e.boxId.toString(),
+                              child: Text(e.boxName),
+                            ),
+                          )
+                          .toList(),
+                      value: selectedValue.value,
+                      onChanged: (val) {
+                        selectedValue.value = val!;
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Get.toNamed(AppRoutes.CREATEBOXESSCREEN),
+                    icon: Icon(
+                      Icons.add_circle_sharp,
+                      color: AppColors.primaryColor,
+                      size: 35.sp,
+                    ),
+                  )
+                ],
               ),
             ),
           ),
           AppButton(
+            isSafeArea: false,
             isLoading: controller.isLoading,
             height: 48.h,
             width: double.infinity,

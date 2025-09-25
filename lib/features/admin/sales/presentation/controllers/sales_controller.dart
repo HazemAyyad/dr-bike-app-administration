@@ -119,7 +119,7 @@ class SalesController extends GetxController
   ];
 
   // add profit sale
-  Future<void> addProfitSale(BuildContext context) async {
+  Future<bool> addProfitSale(BuildContext context) async {
     if (formKey.currentState!.validate()) {
       isLoading(true);
       final result = await addProfitSaleUsecase.call(
@@ -152,6 +152,7 @@ class SalesController extends GetxController
             title: failure.errMessage,
             message: errorMessages,
           );
+          return false;
         },
         (success) {
           noteController.clear();
@@ -174,10 +175,12 @@ class SalesController extends GetxController
             title: 'success'.tr,
             message: success,
           );
+          return true;
         },
       );
     }
     isLoading(false);
+    return false;
   }
 
   // add instant sale

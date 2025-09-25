@@ -50,6 +50,8 @@ class DebtsController extends GetxController {
   RxList<Map<String, dynamic>> debts = <Map<String, dynamic>>[].obs;
   final RxString sortBy = 'all'.obs;
 
+  final TextEditingController customerOrSellerIdController =
+      TextEditingController();
   final TextEditingController totalDebtController = TextEditingController();
   final TextEditingController moreDetailsController = TextEditingController();
   final TextEditingController dueDateController = TextEditingController();
@@ -191,9 +193,11 @@ class DebtsController extends GetxController {
   void addDebts({
     required BuildContext context,
     required bool isCustomer,
-    required String customerId,
     required String type,
   }) async {
+    print(totalDebtController.text);
+    print(dueDateController.text);
+
     if (totalDebtController.text.isEmpty || dueDateController.text.isEmpty) {
       Get.snackbar(
         'error'.tr,
@@ -205,7 +209,7 @@ class DebtsController extends GetxController {
     isLoading(true);
     final result = await addDebtUsecase.call(
       isCustomer: isCustomer,
-      customerId: customerId,
+      customerId: customerOrSellerIdController.text,
       dueDate: dueDateController.text,
       total: totalDebtController.text,
       receiptImage: selectedFile,

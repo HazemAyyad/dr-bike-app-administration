@@ -34,15 +34,11 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            pinned: true,
-            automaticallyImplyLeading: false,
-            flexibleSpace: Center(
-              child: AppTabs(
-                tabs: controller.tabs,
-                currentTab: controller.currentTab,
-                changeTab: controller.changeTab,
-              ),
+          SliverToBoxAdapter(
+            child: AppTabs(
+              tabs: controller.tabs,
+              currentTab: controller.currentTab,
+              changeTab: controller.changeTab,
             ),
           ),
           EmployeeTasks(controller: controller),

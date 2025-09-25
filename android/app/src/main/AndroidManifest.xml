@@ -11,7 +11,7 @@
     android:maxSdkVersion="29"/>
 
     <application
-        android:label="doctorbike"
+        android:label="Doctor Bike"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

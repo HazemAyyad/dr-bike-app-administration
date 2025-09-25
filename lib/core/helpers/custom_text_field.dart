@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get_utils/get_utils.dart';
 
 import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   const CustomTextField({
     Key? key,
     required this.label,
@@ -58,25 +59,72 @@ class CustomTextField extends StatelessWidget {
   final Function(String)? onChanged;
 
   @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField>
+    with WidgetsBindingObserver {
+  late FocusNode _focusNode;
+  bool _wasFocused = false;
+  bool _shouldKeepKeyboard = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    WidgetsBinding.instance.addObserver(this);
+
+    _focusNode.addListener(() {
+      _shouldKeepKeyboard = _focusNode.hasFocus;
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _wasFocused = _focusNode.hasFocus;
+    } else if (state == AppLifecycleState.resumed) {
+      if (_wasFocused || _shouldKeepKeyboard) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _focusNode.canRequestFocus) {
+            _focusNode.requestFocus();
+            SystemChannels.textInput.invokeMethod('TextInput.show');
+          }
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        label == ''
+        widget.label == ''
             ? const SizedBox.shrink()
             : Text.rich(
                 TextSpan(
-                  text: label.tr,
-                  style: labelTextstyle ??
+                  text: widget.label.tr,
+                  style: widget.labelTextstyle ??
                       Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: labelColor ??
+                            color: widget.labelColor ??
                                 (ThemeService.isDark.value
                                     ? AppColors.customGreyColor6
                                     : AppColors.customGreyColor),
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w400,
                           ),
-                  children: isRequired
+                  children: widget.isRequired
                       ? [
                           TextSpan(
                             text: '*',
@@ -90,46 +138,50 @@ class CustomTextField extends StatelessWidget {
                       : [],
                 ),
               ),
-        sizedBox == false || label == ''
+        widget.sizedBox == false || widget.label == ''
             ? const SizedBox.shrink()
             : SizedBox(height: 10.h),
         Container(
-          decoration: decoration,
+          decoration: widget.decoration,
           child: TextFormField(
-            onChanged: onChanged,
-            minLines: minLines ?? 1,
-            maxLines: maxLines ?? 1,
-            obscureText: obscureText,
-            controller: controller,
-            enabled: enabled,
+            focusNode: _focusNode,
+            onChanged: widget.onChanged,
+            minLines: widget.minLines ?? 1,
+            maxLines: widget.maxLines ?? 1,
+            obscureText: widget.obscureText,
+            controller: widget.controller,
+            enabled: widget.enabled,
+            onTap: () {
+              _shouldKeepKeyboard = true;
+            },
             decoration: InputDecoration(
               filled: true,
-              fillColor: fillColor ??
+              fillColor: widget.fillColor ??
                   (ThemeService.isDark.value
                       ? AppColors.customGreyColor
                       : AppColors.whiteColor2),
-              hintText: hintText.tr,
-              hintStyle: hintStyle ??
+              hintText: widget.hintText.tr,
+              hintStyle: widget.hintStyle ??
                   Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: hintColor ??
+                        color: widget.hintColor ??
                             (ThemeService.isDark.value
                                 ? AppColors.customGreyColor2
                                 : AppColors.customGreyColor6),
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w400,
                       ),
-              suffix: suffix,
-              suffixIcon: suffixIcon,
-              suffixIconColor: suffixIconColor,
+              suffix: widget.suffix,
+              suffixIcon: widget.suffixIcon,
+              suffixIconColor: widget.suffixIconColor,
               contentPadding:
                   EdgeInsets.symmetric(vertical: 13.h, horizontal: 10.w),
-              border: border ??
+              border: widget.border ??
                   OutlineInputBorder(
                     borderRadius: BorderRadius.circular(11.r),
                     gapPadding: 1.w,
                     borderSide: const BorderSide(color: Colors.transparent),
                   ),
-              enabledBorder: border ??
+              enabledBorder: widget.border ??
                   OutlineInputBorder(
                     borderRadius: BorderRadius.circular(11.r),
                     gapPadding: 1.w,
@@ -137,7 +189,8 @@ class CustomTextField extends StatelessWidget {
                   ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(11.r),
-                borderSide: const BorderSide(color: Colors.transparent, width: 0),
+                borderSide:
+                    const BorderSide(color: Colors.transparent, width: 0),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(11.r),
@@ -148,12 +201,12 @@ class CustomTextField extends StatelessWidget {
                 ),
               ),
             ),
-            keyboardType: keyboardType,
-            textInputAction: textInputAction ?? TextInputAction.next,
-            validator: validator ??
+            keyboardType: widget.keyboardType,
+            textInputAction: widget.textInputAction ?? TextInputAction.next,
+            validator: widget.validator ??
                 (value) {
                   if (value == null || value.isEmpty) {
-                    return label.tr;
+                    return widget.label.tr;
                   }
                   return null;
                 },

@@ -131,6 +131,7 @@ class BuildProductCard extends GetView<StockController> {
                       fit: BoxFit.cover,
                       height: 65.h,
                       width: 90.w,
+                      filterQuality: FilterQuality.medium,
                       placeholder: (context, url) => const Center(
                         child: CircularProgressIndicator(
                             color: AppColors.primaryColor),

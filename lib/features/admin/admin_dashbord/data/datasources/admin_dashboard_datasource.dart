@@ -7,6 +7,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../employee_section/data/models/logs_model.dart';
+import '../models/main_dashboard_mata_model.dart';
 
 class AdminDashboardDatasource {
   final ApiConsumer api;
@@ -18,6 +19,24 @@ class AdminDashboardDatasource {
       final response = await api.get(EndPoints.adminLogs);
       final data = response.data['logs'] as List;
       return data.map((e) => LogsModel.fromJson(e)).toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // getAdminDashboardData
+  Future<MainDashboardDataModel> getAdminDashboardData() async {
+    try {
+      final response = await api.get(EndPoints.adminHomeData);
+      final data = response.data['data'];
+      return MainDashboardDataModel.fromJson(data);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

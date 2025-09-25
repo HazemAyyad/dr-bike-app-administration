@@ -18,7 +18,6 @@ class AddChecksUsecase {
     required String currency,
     required String checkId,
     required String bankName,
-    required XFile img,
     XFile? frontImage,
     XFile? backImage,
   }) {
@@ -31,7 +30,6 @@ class AddChecksUsecase {
       currency: currency,
       checkId: checkId,
       bankName: bankName,
-      img: img,
       frontImage: frontImage,
       backImage: backImage,
     );

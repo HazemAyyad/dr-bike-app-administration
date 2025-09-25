@@ -119,6 +119,9 @@ class ReturnPurchasesScreen extends GetView<ReturnPurchasesController> {
           ),
         ),
       ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

@@ -9,7 +9,7 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../controllers/admin_dashboard_controller.dart';
 import 'stat_card.dart';
 
-class BuildStatisticsCards extends GetView<AdminDashboardController> {
+class BuildStatisticsCards extends StatelessWidget {
   const BuildStatisticsCards({Key? key}) : super(key: key);
 
   @override
@@ -22,88 +22,103 @@ class BuildStatisticsCards extends GetView<AdminDashboardController> {
             ? AppColors.customGreyColor
             : AppColors.whiteColor2,
       ),
-      child: Column(
-        children: [
-          // الصف الأول: ديون لنا وديون علينا
-          Row(
+      child: GetBuilder<AdminDashboardController>(
+        builder: (controller) {
+          return Column(
             children: [
-              Expanded(
-                child: StatCard(
-                  title: 'debtsForUs',
-                  imageicon: AssetsManager.cashIcon,
-                  value: controller.debtToUs.value.toString(),
-                  subtitle: 'currency',
-                ),
+              // الصف الأول: ديون لنا وديون علينا
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      title: 'debtsForUs',
+                      imageicon: AssetsManager.cashIcon,
+                      value: controller
+                              .mainDashboardDataModel?.totalDebtsOwedToUs ??
+                          '0',
+                      subtitle: 'currency',
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: StatCard(
+                      title: 'debtsOnUs',
+                      imageicon: AssetsManager.cashIcon,
+                      value:
+                          controller.mainDashboardDataModel?.totalDebtsWeOwe ??
+                              '0',
+                      subtitle: 'currency',
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: StatCard(
-                  title: 'debtsOnUs',
-                  imageicon: AssetsManager.cashIcon,
-                  value: controller.debtOnUs.value.toString(),
-                  subtitle: 'currency',
-                ),
+              // الصف الثاني: المنتجات والموظفين
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      title: 'products',
+                      imageicon: AssetsManager.productIcon,
+                      value: controller.mainDashboardDataModel?.totalProducts ??
+                          '0',
+                      subtitle: 'product',
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: GetBuilder<AdminDashboardController>(
+                      builder: (_) {
+                        return StatCard(
+                          title: 'employees',
+                          imageicon: AssetsManager.usersIcon,
+                          value: controller
+                                  .mainDashboardDataModel?.numberOfEmployees ??
+                              '0',
+                          subtitle: 'employee',
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              // SizedBox(height: 8.w),
+              // الصف الثالث: مهام منجزة ومهام غير منجزة
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      title: 'completedTasks',
+                      imageicon: AssetsManager.doneIcon,
+                      value: controller
+                              .mainDashboardDataModel?.totalCompletedTasks ??
+                          '0',
+                      subtitle: 'task',
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: StatCard(
+                      title: 'uncompletedTasks',
+                      imageicon: AssetsManager.cancelIcon,
+                      value: controller
+                              .mainDashboardDataModel?.totalIncompletedTasks ??
+                          '0',
+                      subtitle: 'task',
+                    ),
+                  ),
+                ],
+              ),
+              // SizedBox(height: 8.w),
+              // الصف الرابع: مصاريف (عرض كامل)
+              StatCard(
+                title: 'expenses',
+                imageicon: AssetsManager.moneyIcon,
+                value: controller.mainDashboardDataModel?.totalExpenses ?? '0',
+                subtitle: 'currency',
               ),
             ],
-          ),
-          // الصف الثاني: المنتجات والموظفين
-          Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'products',
-                  imageicon: AssetsManager.productIcon,
-                  value: controller.products.value.toString(),
-                  subtitle: 'product',
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: GetBuilder<AdminDashboardController>(
-                  builder: (_) {
-                    return StatCard(
-                      title: 'employees',
-                      imageicon: AssetsManager.usersIcon,
-                      value: 15.toString(),
-                      subtitle: 'employee',
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          // SizedBox(height: 8.w),
-          // الصف الثالث: مهام منجزة ومهام غير منجزة
-          Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  title: 'completedTasks',
-                  imageicon: AssetsManager.doneIcon,
-                  value: controller.completedTasks.value.toString(),
-                  subtitle: 'task',
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: StatCard(
-                  title: 'uncompletedTasks',
-                  imageicon: AssetsManager.cancelIcon,
-                  value: controller.pendingTasks.value.toString(),
-                  subtitle: 'tasks',
-                ),
-              ),
-            ],
-          ),
-          // SizedBox(height: 8.w),
-          // الصف الرابع: مصاريف (عرض كامل)
-          StatCard(
-            title: 'expenses',
-            imageicon: AssetsManager.moneyIcon,
-            value: controller.expenses.value.toString(),
-            subtitle: 'currency',
-          ),
-        ],
+          );
+        },
       ),
     );
   }

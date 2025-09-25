@@ -11,6 +11,7 @@ class CustomLineSteps extends StatelessWidget {
     required this.timeLineSteps,
     required this.selectedStep,
     required this.changeSelected,
+    this.width,
     this.isTaped = false,
   }) : super(key: key);
 
@@ -18,6 +19,7 @@ class CustomLineSteps extends StatelessWidget {
   final RxInt selectedStep;
   final Function(int index) changeSelected;
   final bool isTaped;
+  final double? width;
 
   @override
   Widget build(BuildContext context) {
@@ -25,14 +27,18 @@ class CustomLineSteps extends StatelessWidget {
 
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // ✅ الخطوات (الأرقام + الخطوط بس في نفس السطر)
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: 15.h, // مسافة بين الأسطر
           children: [
-            ...timeLineSteps.map(
-              (e) => Obx(
-                () {
-                  final int step = e.keys.first;
-                  return Row(
+            ...timeLineSteps.asMap().entries.map(
+              (entry) {
+                final int step = entry.key + 1;
+                return Obx(
+                  () => Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       GestureDetector(
                         onTap: () => isTaped ? changeSelected(step) : null,
@@ -60,7 +66,7 @@ class CustomLineSteps extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              step.toString(),
+                              entry.value.keys.first.toString(),
                               style: textTheme.copyWith(
                                 fontSize: 20.sp,
                                 fontWeight: FontWeight.w600,
@@ -74,46 +80,48 @@ class CustomLineSteps extends StatelessWidget {
                           ),
                         ),
                       ),
-                      step > timeLineSteps.length - 1
-                          ? const SizedBox()
-                          : Container(
-                              height: 2.h,
-                              width: 80.w,
-                              color: step < selectedStep.value
-                                  ? AppColors.primaryColor
-                                  : Colors.grey.shade400,
-                            ),
+                      // ✅ نرسم الخط بس لو العنصر ده مش آخر عنصر في Wrap
+                      if (step < timeLineSteps.length)
+                        Container(
+                          height: 2.h,
+                          width: width ?? 80.w,
+                          color: step < selectedStep.value
+                              ? AppColors.primaryColor
+                              : Colors.grey.shade400,
+                        ),
                     ],
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),
+        SizedBox(height: 10.h),
+
         Obx(
           () => Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ...timeLineSteps.asMap().entries.map(
                 (entry) {
                   final int step = entry.key + 1;
-                  return Column(
-                    children: [
-                      SizedBox(height: 10.h),
-                      Text(
-                        entry.value.values.first.tr,
-                        style: textTheme.copyWith(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w600,
-                          color: selectedStep.value == step
-                              ? AppColors.primaryColor
-                              : step < selectedStep.value
-                                  ? AppColors.primaryColor
-                                  : Colors.grey.shade400,
-                        ),
+                  return Flexible(
+                    child: Text(
+                      entry.value.values.first.tr,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.copyWith(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: selectedStep.value == step
+                            ? AppColors.primaryColor
+                            : step < selectedStep.value
+                                ? AppColors.primaryColor
+                                : Colors.grey.shade400,
                       ),
-                    ],
+                    ),
                   );
                 },
               ),

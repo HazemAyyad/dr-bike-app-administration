@@ -222,7 +222,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
   }
 
   final RxBool isAddLoading = false.obs;
-  String isaddNewBill = '';
+  String isaddNewBill = '1';
   // add bill
   void addBill(BuildContext context) async {
     isAddLoading(true);

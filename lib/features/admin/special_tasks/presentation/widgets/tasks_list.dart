@@ -19,25 +19,43 @@ class TasksList extends GetView<SpecialTasksController> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme.bodyMedium!;
 
-    return Obx(
-      () {
+    return GetBuilder<SpecialTasksController>(
+      builder: (controller) {
         if (controller.isLoading.value) {
           return const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.primaryColor),
-            ),
+            child: Center(child: CircularProgressIndicator()),
           );
-        } else if (controller.filteredTasks.isEmpty) {
+        }
+        if (controller.currentTab.value == 0 &&
+            controller.filteredWeeklyTasks.isEmpty) {
           return const SliverFillRemaining(child: ShowNoData());
         }
-
+        if (controller.currentTab.value == 1 &&
+            controller.filteredNoDateTasks.isEmpty) {
+          return const SliverFillRemaining(child: ShowNoData());
+        }
+        if (controller.currentTab.value == 2 &&
+            controller.filteredArchivedTasks.isEmpty) {
+          return const SliverFillRemaining(child: ShowNoData());
+        }
         return SliverList.builder(
-          itemCount: controller.filteredTasks.length,
+          itemCount: controller.currentTab.value == 0
+              ? controller.filteredWeeklyTasks.length
+              : controller.currentTab.value == 1
+                  ? controller.filteredNoDateTasks.length
+                  : controller.filteredArchivedTasks.length,
           itemBuilder: (context, index) {
-            String date = controller.filteredTasks.keys.toList()[index];
+            String date = controller.currentTab.value == 0
+                ? controller.filteredWeeklyTasks.keys.toList()[index]
+                : controller.currentTab.value == 1
+                    ? controller.filteredNoDateTasks.keys.toList()[index]
+                    : controller.filteredArchivedTasks.keys.toList()[index];
             List<SpecialTaskModel> tasksForDate =
-                controller.filteredTasks[date]!;
+                controller.currentTab.value == 0
+                    ? controller.filteredWeeklyTasks[date]!
+                    : controller.currentTab.value == 1
+                        ? controller.filteredNoDateTasks[date]!
+                        : controller.filteredArchivedTasks[date]!;
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -78,13 +96,9 @@ class TasksList extends GetView<SpecialTasksController> {
                         onLongPress: () => controller.currentTab.value == 0
                             ? Get.dialog(
                                 Dialog(
-                                  // backgroundColor: Colors.transparent,
                                   child: Container(
                                     padding: EdgeInsets.all(20.h),
                                     decoration: BoxDecoration(
-                                      // color: ThemeService.isDark.value
-                                      //     ? AppColors.customGreyColor4
-                                      //     : AppColors.whiteColor2,
                                       borderRadius: BorderRadius.circular(8.r),
                                     ),
                                     child: Column(
@@ -145,6 +159,7 @@ class TasksList extends GetView<SpecialTasksController> {
                                         ),
                                         SizedBox(height: 8.h),
                                         AppButton(
+                                          isSafeArea: false,
                                           isLoading: controller.isLoading,
                                           text: 'done',
                                           onPressed: () {
@@ -200,6 +215,9 @@ class TasksList extends GetView<SpecialTasksController> {
                                       : controller
                                           .checkedMap[task.id.toString()]!,
                                   onChanged: (val) {
+                                    if (controller.currentTab.value == 2) {
+                                      return;
+                                    }
                                     controller.checkedMap[task.id.toString()]!
                                         .value = val!;
                                     controller.completedSpecialTasks(

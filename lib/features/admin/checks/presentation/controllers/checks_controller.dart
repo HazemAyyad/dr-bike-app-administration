@@ -26,7 +26,7 @@ class ChecksController extends GetxController
   AddChecksUsecase addChecksUsecase;
   GetChecksUsecase getChecksUsecase;
   GeneralChecksDataUsecase generalChecksDataUsecase;
-  CashedToPersonCancelUsecase cashedToPersonCancelUsecase;
+  CashedToPersonOrCashedUsecase cashedToPersonCancelUsecase;
   AllCustomersSellersUsecase allCustomersSellersUsecase;
   GeneralOutgoingDataUsecase generalOutgoingDataUsecase;
   ReturnCheckUsercase returnCheckUsercase;
@@ -87,6 +87,7 @@ class ChecksController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
+    // generalData();
     update();
   }
 
@@ -128,7 +129,6 @@ class ChecksController extends GetxController
         currency: currencyController.text.tr,
         checkId: checkNumberController.text,
         bankName: bankNameController.text,
-        img: checkFrontImage.value!,
         frontImage: checkFrontImage.value,
         backImage: checkBackImage.value,
       );
@@ -169,7 +169,7 @@ class ChecksController extends GetxController
           isCalendarVisible.value = false;
           Get.back();
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
             },
@@ -187,8 +187,7 @@ class ChecksController extends GetxController
   }
 
   // cash to person or cancel
-  void cashedToPersonOrCancel({
-    required bool toPerson,
+  void cashedToPersonOrCashed({
     required String checkId,
     String? customerId,
     String? sellerId,
@@ -196,7 +195,6 @@ class ChecksController extends GetxController
     isLoading(true);
     final result = await cashedToPersonCancelUsecase.call(
       isInComing: isInComing,
-      toPerson: toPerson,
       checkId: checkId,
       customerId: customerId,
       sellerId: sellerId,
@@ -336,21 +334,31 @@ class ChecksController extends GetxController
   // get all not cashed outgoing checks
   final Rxn<NotCashedModel> inComingChecksList = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> inComingTasks = {};
+  final Map<String, double> totalInComing = {};
 
   final Map<String, double> totalsByCurrency = {};
   Future<void> getNotCashed() async {
-    // inComingChecksList.value = null;
     isLoading(true);
+
+    filteredInComingTasks.clear();
+    inComingTasks.clear();
+    totalsByCurrency.clear();
+    totalInComing.clear();
+
     final result = await getChecksUsecase.call(
       endPoint: isInComing
           ? EndPoints.inComingChecks
           : EndPoints.notCashedOutgoingChecks,
     );
     inComingChecksList.value = NotCashedModel.fromJson(result);
-    inComingTasks.clear();
+
+    // clear maps
+
     for (var task in inComingChecksList.value!.inComingChecksList) {
       String dateKey =
           "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
+
+      // group by month
       if (inComingTasks.containsKey(dateKey)) {
         if (!inComingTasks[dateKey]!.any((a) => a.id == task.id)) {
           inComingTasks[dateKey]!.add(task);
@@ -358,18 +366,23 @@ class ChecksController extends GetxController
       } else {
         inComingTasks[dateKey] = [task];
       }
-    }
-    filteredInComingTasks.assignAll(inComingTasks);
-    totalsByCurrency.clear();
-    for (var task in inComingChecksList.value!.inComingChecksList) {
+
+      // accumulate totals by currency
       final currency = task.currency;
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      if (totalsByCurrency.containsKey(currency)) {
-        totalsByCurrency[currency] = totalsByCurrency[currency]! + total;
-      } else {
-        totalsByCurrency[currency] = total;
-      }
+      totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0.0) + total;
+
+      // accumulate totals by month
+      totalInComing[dateKey] = (totalInComing[dateKey] ?? 0.0) + total;
     }
+
+    // sort tasks inside each month
+    inComingTasks.forEach((key, tasks) {
+      tasks.sort((a, b) => a.dueDate.day.compareTo(b.dueDate.day));
+    });
+
+    filteredInComingTasks.assignAll(inComingTasks);
+    update();
     isLoading(false);
     update();
   }
@@ -378,16 +391,21 @@ class ChecksController extends GetxController
   final Rxn<CashedToPersonOutgoingModel> cashedToPerson =
       Rxn<CashedToPersonOutgoingModel>(null);
   final Map<String, List<CheckModel>> cashedToPersonTasks = {};
+  final Map<String, double> totalCashedToPerson = {};
 
   Future<void> getCashedToPerson() async {
     isLoading(true);
+
+    filteredCashedToPersonTasks.clear();
+    cashedToPersonTasks.clear();
+    totalCashedToPerson.clear();
     final result = await getChecksUsecase.call(
       endPoint: isInComing
           ? EndPoints.cashedIncomingChecks
           : EndPoints.cashedOutgoingChecks,
     );
     cashedToPerson.value = CashedToPersonOutgoingModel.fromJson(result);
-    cashedToPersonTasks.clear();
+
     for (var task in cashedToPerson.value!.cashedToPerson) {
       String dateKey =
           "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
@@ -398,9 +416,19 @@ class ChecksController extends GetxController
       } else {
         cashedToPersonTasks[dateKey] = [task];
       }
-    }
-    filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+      final currency = task.currency;
+      final total = double.tryParse(task.total.toString()) ?? 0.0;
+      totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0.0) + total;
 
+      // accumulate totals by month
+      totalCashedToPerson[dateKey] =
+          (totalCashedToPerson[dateKey] ?? 0.0) + total;
+    }
+    cashedToPersonTasks.forEach((key, tasks) {
+      tasks.sort((a, b) => a.dueDate.day.compareTo(b.dueDate.day));
+    });
+    filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+    update();
     isLoading(false);
     update();
   }
@@ -408,16 +436,21 @@ class ChecksController extends GetxController
   // get cashed to person checks
   final Rxn<ArchiveDataModel> archiveData = Rxn<ArchiveDataModel>(null);
   final Map<String, List<CheckModel>> archiveTasks = {};
+  final Map<String, double> totalArchive = {};
 
   Future<void> getArchive() async {
     isLoading(true);
+
+    filteredArchiveTasks.clear();
+    archiveTasks.clear();
+    totalArchive.clear();
     final result = await getChecksUsecase.call(
       endPoint: isInComing
           ? EndPoints.archivedIncomingChecks
           : EndPoints.archivedOutgoingChecks,
     );
     archiveData.value = ArchiveDataModel.fromJson(result);
-    archiveTasks.clear();
+
     for (var task in archiveData.value!.archiveData) {
       String dateKey =
           "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
@@ -428,8 +461,15 @@ class ChecksController extends GetxController
       } else {
         archiveTasks[dateKey] = [task];
       }
+      final currency = task.currency;
+      final total = double.tryParse(task.total.toString()) ?? 0.0;
+      totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0.0) + total;
+
+      // accumulate totals by month
+      totalArchive[dateKey] = (totalArchive[dateKey] ?? 0.0) + total;
     }
     filteredArchiveTasks.assignAll(archiveTasks);
+    update();
     isLoading(false);
     update();
   }

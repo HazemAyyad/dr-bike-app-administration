@@ -15,7 +15,6 @@ abstract class ChecksRepository {
     required String currency,
     required String checkId,
     required String bankName,
-    required XFile img,
     XFile? frontImage,
     XFile? backImage,
   });
@@ -26,9 +25,8 @@ abstract class ChecksRepository {
 
   Future<dynamic> generalOutgoingData({required bool isInComing});
 
-  Future<Either<Failure, String>> cashedToPersonOrCancel({
+  Future<Either<Failure, String>> cashedToPersonOrCashed({
     required bool isInComing,
-    required bool toPerson,
     required String checkId,
     String? sellerId,
     String? customerId,

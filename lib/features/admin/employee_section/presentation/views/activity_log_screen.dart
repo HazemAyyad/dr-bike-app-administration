@@ -22,28 +22,19 @@ class ActivityLogScreen extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
-              automaticallyImplyLeading: false,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Column(
+            SliverToBoxAdapter(
+              child: Container(
+                height: 32.h,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Flexible(
-                      child: Container(
-                        height: 32.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryColor,
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            const CustomText(title: 'activity'),
-                            const CustomText(title: 'description'),
-                            SizedBox(width: 0.w),
-                          ],
-                        ),
-                      ),
-                    ),
+                    const CustomText(title: 'activity'),
+                    const CustomText(title: 'description'),
+                    SizedBox(width: 0.w),
                   ],
                 ),
               ),
@@ -54,6 +45,14 @@ class ActivityLogScreen extends StatelessWidget {
                   if (controller.isLoading.value) {
                     return const Center(
                       child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (controller.employeeService.logsMap.isEmpty) {
+                    return Column(
+                      children: [
+                        SizedBox(height: 250.h),
+                        const ShowNoData(),
+                      ],
                     );
                   }
                   return Column(
@@ -169,10 +168,7 @@ class ActivityLogScreen extends StatelessWidget {
 }
 
 class ShowLogDetails extends StatelessWidget {
-  const ShowLogDetails({
-    Key? key,
-    required this.log,
-  }) : super(key: key);
+  const ShowLogDetails({Key? key, required this.log}) : super(key: key);
 
   final LogsModel log;
 

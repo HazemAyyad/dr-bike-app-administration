@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get_state_manager/get_state_manager.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -89,11 +90,15 @@ class ChecksInformaiton extends StatelessWidget {
                       show: true,
                       title: 'totalDebts',
                       imageicon: AssetsManager.moneyIcon,
-                      value: ChecksServes()
-                              .generalChecksData
-                              .value
-                              ?.totalOutgoingChecks ??
-                          '0',
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalOutgoingChecks ??
+                              '0',
+                        ),
+                      ),
                       subtitle: '',
                     ),
                   ),
@@ -103,11 +108,15 @@ class ChecksInformaiton extends StatelessWidget {
                       show: true,
                       title: 'totalOwed',
                       imageicon: AssetsManager.moneyIcon,
-                      value: ChecksServes()
-                              .generalChecksData
-                              .value
-                              ?.totalIncomingChecks ??
-                          '0',
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalIncomingChecks ??
+                              '0',
+                        ),
+                      ),
                       subtitle: '',
                     ),
                   ),
