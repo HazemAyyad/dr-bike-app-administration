@@ -1,9 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/employee_data_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/open_apps.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -129,20 +131,48 @@ class GlobalData extends GetView<GeneralDataListController> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(5.r),
-                child: Image.asset(
-                  AssetsManager.generalDataImage,
-                  height: 70.h,
-                  width: 70.w,
+                child: GestureDetector(
+                  onTap: () {
+                    showGeneralDialog(
+                      context: context,
+                      barrierDismissible: true,
+                      barrierLabel: 'Dismiss',
+                      barrierColor: Colors.black.withAlpha(128),
+                      transitionDuration: const Duration(milliseconds: 300),
+                      pageBuilder: (context, anim1, anim2) {
+                        return FullScreenZoomImage(
+                          imageUrl: employee.idImage!,
+                        );
+                      },
+                    );
+                  },
+                  child: CachedNetworkImage(
+                    imageUrl: employee.idImage!,
+                    height: 70.h,
+                    width: 90.w,
+                    fit: BoxFit.fill,
+                    filterQuality: FilterQuality.medium,
+                    fadeInDuration: const Duration(milliseconds: 200),
+                    fadeOutDuration: const Duration(milliseconds: 200),
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error),
+                  ),
                 ),
               ),
-              SizedBox(width: 20.w),
+              // SizedBox(width: 20.w),
               Flexible(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        SizedBox(height: 20.h),
                         SizedBox(
                           width: 100.w,
                           child: Text(

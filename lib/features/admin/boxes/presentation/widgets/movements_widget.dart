@@ -20,7 +20,7 @@ class MovementsWidget extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10.w),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

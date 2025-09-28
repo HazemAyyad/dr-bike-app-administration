@@ -17,7 +17,8 @@ class TaskDetailsTransfer extends GetView<BoxesController> {
         ...List.generate(
           controller.boxDetailsLogs.length,
           (index) {
-            final boxDetailsLog = controller.boxDetailsLogs[index];
+            final boxDetailsLog =
+                controller.boxDetailsLogs.toList().reversed.toList()[index];
             return Column(
               children: [
                 if (index == 0)

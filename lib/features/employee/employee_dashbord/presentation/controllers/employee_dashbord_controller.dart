@@ -51,7 +51,6 @@ class EmployeeDashbordController extends GetxController
       'title': 'projectManagement',
       'route': AppRoutes.PROJECTMANAGEMENTSCREEN
     },
-    // {'id': '17', 'title': 'messagesDepartment', 'route': ''},
     {
       'id': '3',
       'title': 'targetSetting',
@@ -69,7 +68,6 @@ class EmployeeDashbordController extends GetxController
       'title': 'generalData',
       'route': AppRoutes.GENERALDATALISTSCREEN
     },
-    // {'id': '10', 'title': 'partnersDepartment', 'route': ''},
     {'id': '16', 'title': 'stock', 'route': AppRoutes.STOCKSCREEN},
     {'id': '11', 'title': 'boxes', 'route': AppRoutes.BOXESSCREEN},
     {
@@ -88,11 +86,6 @@ class EmployeeDashbordController extends GetxController
       'route': AppRoutes.CHECKSSCREEN
     },
     {'id': '15', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
-    {
-      // 'id': '18',
-      // 'title': 'countersAndStatisticsAndReports',
-      // 'route': AppRoutes.COUNTERSSCREEN
-    },
   ];
   void toggleAddMenu() {
     isAddMenuOpen.value = !isAddMenuOpen.value;

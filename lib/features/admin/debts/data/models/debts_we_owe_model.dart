@@ -21,9 +21,9 @@ class DebtsWeOweModel {
 class DebtsWeOwe {
   final int debtId;
   final int? customerId;
-  final String? customerName;
+  final String customerName;
   final int? sellerId;
-  final String? sellerName;
+  final String sellerName;
   final bool? customerIsCanceled;
   final bool? sellerIsCanceled;
   final DateTime dueDate;

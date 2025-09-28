@@ -195,3 +195,30 @@ class BuildAddMenuItem extends StatelessWidget {
     );
   }
 }
+
+// ==============================================================================
+class AddFloatingActionButton extends StatelessWidget {
+  const AddFloatingActionButton({Key? key, required this.onPressed})
+      : super(key: key);
+
+  final void Function()? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 55.h,
+      width: 55.w,
+      child: FloatingActionButton(
+        onPressed: onPressed,
+        backgroundColor: AppColors.secondaryColor,
+        elevation: 2.0,
+        shape: const CircleBorder(),
+        child: Icon(
+          Icons.add,
+          color: AppColors.whiteColor,
+          size: 42.sp,
+        ),
+      ),
+    );
+  }
+}

@@ -200,18 +200,37 @@ class IfCancelCheck extends GetView<ChecksController> {
                               isCancel: false,
                             )
                           : toPerson
-                              ? Get.bottomSheet(
-                                  const PaymentScreen(type: 'payment'),
-                                  backgroundColor: Colors.white,
-                                  isScrollControlled: true,
-                                ).then((value) {
-                                  if (value == true) {
-                                    // ignore: use_build_context_synchronously
-                                    controller.cashedToPersonOrCashed(
+                              ? !controller.isInComing
+                                  ? Get.bottomSheet(
+                                      PaymentScreen(
+                                        type: 'payment',
+                                        isSeller: check.seller != null ||
+                                                check.toSeller != null
+                                            ? true
+                                            : false,
+                                        id: check.seller != null
+                                            ? check.seller!.id.toString()
+                                            : check.customer != null
+                                                ? check.customer!.id.toString()
+                                                : check.toSeller != null
+                                                    ? check.toSeller!.id
+                                                        .toString()
+                                                    : check.toCustomer!.id
+                                                        .toString(),
+                                      ),
+                                      backgroundColor: Colors.white,
+                                      isScrollControlled: true,
+                                    ).then((value) {
+                                      if (value == true) {
+                                        // ignore: use_build_context_synchronously
+                                        controller.cashedToPersonOrCashed(
+                                          checkId: check.id.toString(),
+                                        );
+                                      }
+                                    })
+                                  : controller.cashedToPersonOrCashed(
                                       checkId: check.id.toString(),
-                                    );
-                                  }
-                                })
+                                    )
                               : controller.returnCheck(
                                   checkId: check.id.toString(),
                                   isCancel: true,

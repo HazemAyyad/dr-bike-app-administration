@@ -7,7 +7,6 @@ import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
 import '../controllers/checks_controller.dart';
 
 class CustomActionsAppBar extends GetView<ChecksController> {
@@ -127,23 +126,23 @@ class CustomActionsAppBar extends GetView<ChecksController> {
             );
           },
         ),
-        IconButton(
-          highlightColor: Colors.transparent,
-          icon: Icon(
-            Icons.add_circle,
-            size: 32.sp,
-            color: ThemeService.isDark.value
-                ? AppColors.primaryColor
-                : AppColors.secondaryColor,
-          ),
-          onPressed: () {
-            // Handle add action
-            Get.toNamed(
-              AppRoutes.NEWCHECKSCREEN,
-              arguments: {'isNewCheck': isNewCheck},
-            );
-          },
-        ),
+        // IconButton(
+        //   highlightColor: Colors.transparent,
+        //   icon: Icon(
+        //     Icons.add_circle,
+        //     size: 32.sp,
+        //     color: ThemeService.isDark.value
+        //         ? AppColors.primaryColor
+        //         : AppColors.secondaryColor,
+        //   ),
+        //   onPressed: () {
+        //     // Handle add action
+        //     Get.toNamed(
+        //       AppRoutes.NEWCHECKSCREEN,
+        //       arguments: {'isNewCheck': isNewCheck},
+        //     );
+        //   },
+        // ),
         SizedBox(width: 10.w),
       ],
     );

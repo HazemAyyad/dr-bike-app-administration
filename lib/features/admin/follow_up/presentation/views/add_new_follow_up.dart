@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
+import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -117,8 +118,14 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                       ),
                       if (controller.selectedStep.value == 1)
                         IconButton(
-                          onPressed: () =>
-                              Get.toNamed(AppRoutes.ADDNEWFOLLOWCUSTOMERSCREEN),
+                          onPressed: () => Get.toNamed(
+                            AppRoutes.ADDNEWCUSTOMERSCREEN,
+                            arguments: {
+                              'employeeType': '',
+                              'employeeId': '',
+                              'sellerId': '',
+                            },
+                          ),
                           icon: Icon(
                             Icons.add_circle_sharp,
                             color: AppColors.primaryColor,
@@ -128,24 +135,13 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                     ],
                   ),
                   SizedBox(height: 20.h),
-                  CustomDropdownFieldWithSearch(
-                    tital: 'productName'.tr,
-                    hint: 'itemExample',
-                    value: controller.itemIdController.text.isEmpty
-                        ? null
-                        : controller.products.firstWhereOrNull(
-                            (e) =>
-                                e.id.toString() ==
-                                controller.itemIdController.text,
-                          ),
-                    items: controller.products,
-                    onChanged: (value) {
-                      if (value != null) {
-                        controller.itemIdController.text = value.id.toString();
-                      }
-                    },
-                    itemAsString: (u) => u.nameAr,
-                    compareFn: (a, b) => a.id == b.id,
+                  CustomTextField(
+                    label: 'details',
+                    hintText: 'details',
+                    controller: controller.itemIdController,
+                    minLines: 6,
+                    maxLines: 10,
+                    validator: (p0) => null,
                   ),
                   SizedBox(height: 20.h),
                   Row(
@@ -200,7 +196,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                           onPressed: () {
                             controller.selectedStep.value = 4;
                             Get.back();
-                            controller.addFollowUp();
+                            controller.addFollowUp(step: 4);
                           },
                           width: 120.w,
                           height: 45.h,

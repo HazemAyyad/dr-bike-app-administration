@@ -43,34 +43,32 @@ class AddProductManagementScreen extends StatelessWidget {
                   builder: (controller) {
                     if (controller.isEdit.value) {
                       return ProductManagementWidget(
-                        currentStep: controller.currentStep,
+                        currentStep: controller.currentStep.toString(),
                         productImage: controller.productImage,
                         productName: controller.productName,
                       );
                     }
-                    return Row(
+                    return Column(
                       children: [
-                        Flexible(
-                          child: CustomDropdownFieldWithSearch(
-                            tital: 'productName',
-                            hint: 'itemExample',
-                            items: controller.products,
-                            onChanged: (value) {
-                              controller.productIdController.text =
-                                  value.id.toString();
-                            },
-                            itemAsString: (item) => item.nameAr,
-                            compareFn: (item1, item2) => item1.id == item2.id,
-                          ),
+                        CustomDropdownFieldWithSearch(
+                          tital: 'productName',
+                          hint: 'itemExample',
+                          items: controller.products,
+                          onChanged: (value) {
+                            controller.productIdController.text =
+                                value.id.toString();
+                          },
+                          itemAsString: (item) => item.nameAr,
+                          compareFn: (item1, item2) => item1.id == item2.id,
                         ),
-                        SizedBox(width: 10.w),
-                        Flexible(
-                          child: CustomTextField(
-                            label: 'details',
-                            hintText: 'detailsExample',
-                            controller: controller.descriptionController,
-                            validator: (p0) => null,
-                          ),
+                        SizedBox(height: 10.h),
+                        CustomTextField(
+                          label: 'details',
+                          hintText: 'detailsExample',
+                          controller: controller.descriptionController,
+                          validator: (p0) => null,
+                          maxLines: 5,
+                          minLines: 4,
                         ),
                       ],
                     );

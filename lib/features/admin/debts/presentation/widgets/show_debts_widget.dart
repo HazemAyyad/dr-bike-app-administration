@@ -8,6 +8,7 @@ import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
+import '../../data/models/debts_we_owe_model.dart';
 import '../controllers/debts_controller.dart';
 import 'show_user_transactions.dart';
 
@@ -57,7 +58,7 @@ class ShowDebtsWidget extends GetView<DebtsController> {
           itemCount: controller.filteredDebts.length,
           itemBuilder: (context, index) {
             final reversedIndex = controller.filteredDebts.length - 1 - index;
-            final debt = controller.filteredDebts[reversedIndex];
+            final debt = controller.filteredDebts[reversedIndex] as DebtsWeOwe;
             final today = DateTime.now();
             final daysPassed = today.difference(debt.debtCreatedAt).inDays;
             final daysLeft = debt.dueDate.difference(today).inDays;
@@ -72,7 +73,13 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                       debt.sellerId.toString(),
                     );
                     Get.bottomSheet(
-                      ShowUserTransactions(debt: debt),
+                      ShowUserTransactions(
+                        debt: debt,
+                        userId: debt.customerName.isNotEmpty
+                            ? debt.customerId.toString()
+                            : debt.sellerId.toString(),
+                        isSeller: debt.customerName.isNotEmpty ? false : true,
+                      ),
                       ignoreSafeArea: false,
                       isScrollControlled: true,
                       backgroundColor: ThemeService.isDark.value
@@ -113,7 +120,9 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    debt.customerName,
+                                    debt.customerName.isNotEmpty
+                                        ? debt.customerName
+                                        : debt.sellerName,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium!

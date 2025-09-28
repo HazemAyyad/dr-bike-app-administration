@@ -14,8 +14,9 @@ class ArchiveWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      // crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           box.boxName,
@@ -27,6 +28,7 @@ class ArchiveWidget extends StatelessWidget {
                 : Colors.black.withValues(alpha: 0.5),
           ),
         ),
+        SizedBox(width: 50.w),
         Text(
           'غير ظاهر',
           style: textStyle.copyWith(

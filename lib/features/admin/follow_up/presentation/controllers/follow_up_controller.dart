@@ -72,20 +72,21 @@ class FollowUpController extends GetxController {
 
   void nextStep() {
     if (selectedStep.value < timeLineSteps.length) {
-      addFollowUp();
+      addFollowUp(step: selectedStep.value);
       selectedStep.value += 1;
       update();
     } else if (selectedStep.value == timeLineSteps.length) {
       Future.delayed(const Duration(milliseconds: 100), () {
         Get.back();
       });
-      addFollowUp();
+      addFollowUp(step: selectedStep.value);
       update();
     }
   }
 
   void prevStep() {
     selectedStep.value -= 1;
+    addFollowUp(step: selectedStep.value - 1);
     update();
   }
 
@@ -188,7 +189,7 @@ class FollowUpController extends GetxController {
       customerAndSellerIdController.text =
           followupDetails['seller']['id'].toString();
     }
-    itemIdController.text = followupDetails['product']['id'].toString();
+    itemIdController.text = followupDetails['product_id'].toString();
     selectedStep.value = followupDetails['status'] == 'initial'
         ? 1
         : followupDetails['status'] == 'inform'
@@ -213,20 +214,24 @@ class FollowUpController extends GetxController {
   }
 
   // add follow up
-  void addFollowUp() async {
+  void addFollowUp({int step = 0}) async {
     isLoading(true);
+    String status = '';
+    if (step == 1) {
+      status = 'inform';
+    } else if (step == 2) {
+      status = 'agreement';
+    } else if (step == 3) {
+      status = 'delivered';
+    } else if (step == 4) {
+      status = 'rejected';
+    }
     final result = await addFollowupUsecase.call(
       followupId: followupId,
       customerId: !isCustomer.value ? customerAndSellerIdController.text : '',
       sellerId: isCustomer.value ? customerAndSellerIdController.text : '',
       productId: itemIdController.text,
-      status: selectedStep.value == 1
-          ? 'inform'
-          : selectedStep.value == 2
-              ? 'agreement'
-              : selectedStep.value == 3
-                  ? 'delivered'
-                  : 'rejected',
+      status: status,
     );
     // values [inform,agreement,delivered,rejected]
 

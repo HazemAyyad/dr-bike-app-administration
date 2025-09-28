@@ -35,7 +35,7 @@ void showCustomDialog(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'timeFilter'.tr,
+                'search'.tr,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w800,

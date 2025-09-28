@@ -17,6 +17,12 @@ class BuildActionButtons extends StatelessWidget {
   final List<int>? employeePermissions;
   @override
   Widget build(BuildContext context) {
+    final filteredButtons = userType == 'admin'
+        ? buttons
+        : buttons
+            .where((x) => employeePermissions!.contains(int.parse(x['id'])))
+            .toList();
+
     return Column(
       children: [
         SizedBox(height: 5.h),
@@ -35,6 +41,7 @@ class BuildActionButtons extends StatelessWidget {
           ],
         ),
         SizedBox(height: 8.h),
+
         GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
@@ -44,26 +51,15 @@ class BuildActionButtons extends StatelessWidget {
           ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: userType == 'admin'
-              ? buttons.length
-              : buttons
-                  .where((x) =>
-                      employeePermissions!.contains(int.parse(x['id'] ?? 0)))
-                  .length,
+          itemCount: filteredButtons.length,
           itemBuilder: (context, index) {
-            final filteredButtons = userType == 'admin'
-                ? buttons
-                : buttons
-                    .where((x) =>
-                        employeePermissions!.contains(int.parse(x['id'])))
-                    .toList();
-
             return _buildActionButton(
               filteredButtons[index]['title'],
               filteredButtons[index]['route'],
             );
           },
         ),
+
         // زر المصاريف والأمور المالية (عرض كامل)
         // Container(
         //   height: 45.h,

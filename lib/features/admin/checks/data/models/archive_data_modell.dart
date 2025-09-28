@@ -5,11 +5,16 @@ class ArchiveDataModel {
   final String checksStatus;
   final String checksImagesPath;
   final List<CheckModel> archiveData;
+  final String checksCount;
+  final String checksTotal;
+
   ArchiveDataModel({
     required this.status,
     required this.checksStatus,
     required this.checksImagesPath,
     required this.archiveData,
+    required this.checksCount,
+    required this.checksTotal,
   });
 
   factory ArchiveDataModel.fromJson(Map<String, dynamic> json) {
@@ -21,6 +26,8 @@ class ArchiveDataModel {
           .map((e) =>
               CheckModel.fromJson(e, imgPath: json['checks_images_path']))
           .toList(),
+      checksCount: (json['checks_count'] ?? '').toString(),
+      checksTotal: (json['checks_total'] ?? '').toString(),
     );
   }
 
@@ -30,6 +37,8 @@ class ArchiveDataModel {
       'checks_status': checksStatus,
       'checks_images_path': checksImagesPath,
       'cancelled_checks': archiveData.map((e) => e.toJson()).toList(),
+      'checks_count': checksCount,
+      'checks_total': checksTotal
     };
   }
 }

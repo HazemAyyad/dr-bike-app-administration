@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/special_tasks_controller.dart';
@@ -19,13 +20,7 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
         onPressedFilter: () => controller.filterLists(true),
-        onPressedAdd: () {
-          // Handle add button press
-          Get.toNamed(
-            AppRoutes.CREATETASKSCREEN,
-            arguments: {'title': 'addNewPravateTask', 'isEdit': false},
-          );
-        },
+        action: false,
       ),
       body: CustomScrollView(
         slivers: [
@@ -41,6 +36,17 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
           SliverToBoxAdapter(child: SizedBox(height: 40.h)),
         ],
       ),
+      floatingActionButton: AddFloatingActionButton(
+        onPressed: () {
+          Get.toNamed(
+            AppRoutes.CREATETASKSCREEN,
+            arguments: {'title': 'addNewPravateTask', 'isEdit': false},
+          );
+        },
+      ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

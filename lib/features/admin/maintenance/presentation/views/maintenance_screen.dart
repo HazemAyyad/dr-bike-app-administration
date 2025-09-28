@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/maintenance_controller.dart';
@@ -19,13 +20,10 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
         employeeNameController: controller.employeeNameController,
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
-        onPressedAdd: () {
-          controller.clearControllers();
-          Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
-        },
         onPressedFilter: () {
           controller.filterAllMaintenances();
         },
+        action: false,
       ),
       body: CustomScrollView(
         slivers: [
@@ -40,6 +38,15 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
           SliverToBoxAdapter(child: SizedBox(height: 50.h)),
         ],
       ),
+      floatingActionButton: AddFloatingActionButton(
+        onPressed: () {
+          controller.clearControllers();
+          Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+        },
+      ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

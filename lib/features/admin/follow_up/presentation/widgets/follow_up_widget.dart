@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -65,7 +66,7 @@ class FollowUpWidget extends StatelessWidget {
                   followupId: followup.id.toString(),
                 ),
                 child: Container(
-                  height: 70.h,
+                  height: 90.h,
                   margin: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
                   decoration: BoxDecoration(
                     color: ThemeService.isDark.value
@@ -86,13 +87,14 @@ class FollowUpWidget extends StatelessWidget {
                     children: [
                       Padding(
                         padding: EdgeInsets.symmetric(
-                          vertical: 10.h,
-                          horizontal: 20.w,
+                          vertical: 5.h,
+                          horizontal: 10.w,
                         ),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            SizedBox(height: 5.h),
                             Row(
                               children: [
                                 Text(
@@ -129,23 +131,42 @@ class FollowUpWidget extends StatelessWidget {
                                     color: AppColors.primaryColor,
                                   ),
                                 ),
+                                SizedBox(width: 10.w),
+                                Text(
+                                  showData(followup.createdAt),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium!
+                                      .copyWith(
+                                        fontSize: 15.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: ThemeService.isDark.value
+                                            ? AppColors.customGreyColor6
+                                            : AppColors.customGreyColor5,
+                                      ),
+                                ),
                               ],
                             ),
                             SizedBox(height: 5.h),
-                            Text(
-                              followup.productName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.customGreyColor6
-                                        : AppColors.customGreyColor5,
-                                  ),
+                            SizedBox(
+                              width: 230.w,
+                              child: Text(
+                                followup.productName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: ThemeService.isDark.value
+                                          ? AppColors.customGreyColor6
+                                          : AppColors.customGreyColor5,
+                                    ),
+                              ),
                             ),
                           ],
                         ),

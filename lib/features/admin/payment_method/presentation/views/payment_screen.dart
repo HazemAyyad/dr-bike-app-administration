@@ -21,8 +21,16 @@ import '../../domain/usecases/add_payment_usecase.dart';
 import '../controllers/payment_controller.dart';
 
 class PaymentScreen extends GetView<PaymentController> {
-  const PaymentScreen({Key? key, this.type}) : super(key: key);
+  const PaymentScreen({
+    Key? key,
+    this.type,
+    this.isSeller,
+    this.id,
+  }) : super(key: key);
   final String? type;
+  final bool? isSeller;
+  final String? id;
+
   @override
   Widget build(BuildContext context) {
     final PaymentController controller = Get.put(
@@ -37,6 +45,7 @@ class PaymentScreen extends GetView<PaymentController> {
             AddPaymentUsecase(paymentRepository: Get.find<PaymentImplement>()),
       ),
     );
+    controller.selectedCustomersSellers.value = isSeller ?? false;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -50,32 +59,35 @@ class PaymentScreen extends GetView<PaymentController> {
               action: false,
             ),
             Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: CustomCheckBox(
-                      title: 'seller'.tr,
-                      value: RxBool(
-                          !controller.selectedCustomersSellers.value == true),
-                      onChanged: (val) {
-                        controller.selectedCustomersSellers.value = false;
-                      },
+              () {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: CustomCheckBox(
+                        title: 'seller'.tr,
+                        value: RxBool(
+                            !controller.selectedCustomersSellers.value == true),
+                        onChanged: (val) {
+                          controller.selectedCustomersSellers.value = false;
+                        },
+                      ),
                     ),
-                  ),
-                  Flexible(
-                    child: CustomCheckBox(
-                      title: 'customer'.tr,
-                      value: RxBool(
-                          !controller.selectedCustomersSellers.value == false),
-                      onChanged: (val) {
-                        controller.selectedCustomersSellers.value = true;
-                      },
-                    ),
-                  )
-                ],
-              ),
+                    Flexible(
+                      child: CustomCheckBox(
+                        title: 'customer'.tr,
+                        value: RxBool(
+                            !controller.selectedCustomersSellers.value ==
+                                false),
+                        onChanged: (val) {
+                          controller.selectedCustomersSellers.value = true;
+                        },
+                      ),
+                    )
+                  ],
+                );
+              },
             ),
             SizedBox(height: 10.h),
             Obx(
@@ -90,6 +102,15 @@ class PaymentScreen extends GetView<PaymentController> {
                       items: controller.selectedCustomersSellers.value == false
                           ? controller.allCustomersList
                           : controller.allSellersList,
+                      value: id == null || id!.isEmpty
+                          ? null
+                          : (!controller.selectedCustomersSellers.value
+                              ? controller.allCustomersList.firstWhereOrNull(
+                                  (e) => e.id == int.tryParse(id!),
+                                )
+                              : controller.allSellersList.firstWhereOrNull(
+                                  (e) => e.id == int.tryParse(id!),
+                                )),
                       onChanged: (value) {
                         if (value != null) {
                           controller.partnerIdController.text =
@@ -141,34 +162,6 @@ class PaymentScreen extends GetView<PaymentController> {
                 SizedBox(width: 10.w),
                 Flexible(
                   child: CustomTextField(
-                    label: 'totalBill',
-                    hintText: 'totalExample',
-                    controller: controller.totalBillController,
-                    keyboardType: TextInputType.number,
-                    validator: (value) => null,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 15.h),
-            Row(
-              children: [
-                Flexible(
-                  child: CustomDropdownField(
-                    label: 'paymentMethod'.tr,
-                    hint: 'paymentMethodExample',
-                    items: controller.paymentMethods1,
-                    onChanged: (value) {
-                      if (value != null) {
-                        controller.paymentMethodController.text = value;
-                      }
-                    },
-                    validator: (value) => null,
-                  ),
-                ),
-                SizedBox(width: 10.w),
-                Flexible(
-                  child: CustomTextField(
                     label: 'cashValue',
                     hintText: 'totalExample',
                     controller: controller.cashValueController,
@@ -178,6 +171,34 @@ class PaymentScreen extends GetView<PaymentController> {
                 ),
               ],
             ),
+            // SizedBox(height: 15.h),
+            // Row(
+            //   children: [
+            // Flexible(
+            //   child: CustomDropdownField(
+            //     label: 'paymentMethod'.tr,
+            //     hint: 'paymentMethodExample',
+            //     items: controller.paymentMethods1,
+            //     onChanged: (value) {
+            //       if (value != null) {
+            //         controller.paymentMethodController.text = value;
+            //       }
+            //     },
+            //     validator: (value) => null,
+            //   ),
+            // ),
+            // SizedBox(width: 10.w),
+            // Flexible(
+            //   child: CustomTextField(
+            //     label: 'totalBill',
+            //     hintText: 'totalExample',
+            //     controller: controller.totalBillController,
+            //     keyboardType: TextInputType.number,
+            //     validator: (value) => null,
+            //   ),
+            // ),
+            //   ],
+            // ),
             GetBuilder<PaymentController>(
               builder: (controller) {
                 return Column(
@@ -309,7 +330,9 @@ class PaymentScreen extends GetView<PaymentController> {
               children: [
                 TextButton(
                   onPressed: () {
-                    controller.addPaymentMethod();
+                    if (controller.boxIdController.text.isEmpty) {
+                      controller.addPaymentMethod();
+                    }
                   },
                   child: Text(
                     'addPaymentMethod'.tr,

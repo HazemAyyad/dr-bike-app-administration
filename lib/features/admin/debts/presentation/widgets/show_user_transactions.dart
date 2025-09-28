@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:doctorbike/features/admin/debts/data/models/user_transactions_data_model.dart';
 import 'package:doctorbike/features/admin/debts/presentation/widgets/user_account.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +13,16 @@ import 'gave_and_took_button.dart';
 import 'user_transactions_widget.dart';
 
 class ShowUserTransactions extends GetView<DebtsController> {
-  const ShowUserTransactions({Key? key, required this.debt}) : super(key: key);
+  const ShowUserTransactions({
+    Key? key,
+    required this.debt,
+    required this.userId,
+    required this.isSeller,
+  }) : super(key: key);
 
   final dynamic debt;
+  final String userId;
+  final bool isSeller;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +30,7 @@ class ShowUserTransactions extends GetView<DebtsController> {
       child: Scaffold(
         extendBody: true,
         appBar: appBar(
-          debt.customerName,
+          debt.customerName.isNotEmpty ? debt.customerName : debt.sellerName,
           false,
           context,
           Get.find<DebtsController>(),
@@ -64,31 +72,8 @@ class ShowUserTransactions extends GetView<DebtsController> {
                   } else if (controller
                           .dataService.userTransactionsDataModel.value ==
                       null) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(height: 200.h),
-                          Icon(
-                            Icons.receipt_long_outlined,
-                            size: 100.h,
-                            color: AppColors.graywhiteColor,
-                          ),
-                          SizedBox(height: 10.h),
-                          Text(
-                            'noDebts'.tr,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 13.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.graywhiteColor,
-                                ),
-                          ),
-                        ],
-                      ),
+                    return const Center(
+                      child: ShowNoData(),
                     );
                   }
                   return Expanded(
@@ -114,6 +99,7 @@ class ShowUserTransactions extends GetView<DebtsController> {
                             .userTransactionsDataModel
                             .value!
                             .customerDebts[reversedIndex];
+
                         return UserTransactionsWidget(debt: debt, index: index);
                       },
                     ),
@@ -123,7 +109,8 @@ class ShowUserTransactions extends GetView<DebtsController> {
             ],
           ),
         ),
-        bottomNavigationBar: const GaveAndTookButton(),
+        bottomNavigationBar:
+            GaveAndTookButton(userId: userId, isSeller: isSeller),
       ),
     );
   }

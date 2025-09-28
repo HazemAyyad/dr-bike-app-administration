@@ -52,14 +52,9 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                   : controller.filteredArchiveTasks.length,
           itemBuilder: (context, section) {
             final monthReversed = controller.currentTab.value == 0
-                ? controller.filteredInComingTasks.keys
-                    .toList()
-                    .reversed
-                    .toList()[section]
+                ? controller.filteredInComingTasks.keys.toList()[section]
                 : controller.currentTab.value == 1
                     ? controller.filteredCashedToPersonTasks.keys
-                        .toList()
-                        .reversed
                         .toList()[section]
                     : controller.filteredArchiveTasks.keys.toList()[section];
 
@@ -71,13 +66,20 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                     : controller.filteredArchiveTasks.keys.toList()[section];
 
             final checks = controller.currentTab.value == 0
-                ? controller.filteredInComingTasks[
-                    controller.dateFilter.value ? monthReversed : month]
+                ? controller.dateFilter.value
+                    ? controller.filteredInComingTasks[month]!.toList().reversed
+                    : controller.filteredInComingTasks[month]
                 : controller.currentTab.value == 1
-                    ? controller.filteredCashedToPersonTasks[
-                        controller.dateFilter.value ? monthReversed : month]
-                    : controller.filteredArchiveTasks[
-                        controller.dateFilter.value ? monthReversed : month];
+                    ? controller.dateFilter.value
+                        ? controller.filteredCashedToPersonTasks[month]!
+                            .toList()
+                            .reversed
+                        : controller.filteredCashedToPersonTasks[month]
+                    : controller.dateFilter.value
+                        ? controller.filteredArchiveTasks[month]!
+                            .toList()
+                            .reversed
+                        : controller.filteredArchiveTasks[month];
 
             final monthTotal = controller.currentTab.value == 0
                 ? controller.totalInComing[month]

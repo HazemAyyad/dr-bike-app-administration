@@ -1,5 +1,7 @@
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
+import '../../../../../core/utils/assets_manger.dart';
+
 class GeneralDataModel {
   final int id;
   final String phone;
@@ -26,9 +28,9 @@ class GeneralDataModel {
       jobTitle: json['job_title'] ?? '',
       name: json['name'] ?? '',
       isCanceled: json['is_canceled'] ?? '0',
-      idImage: json['ID_image'] is String
+      idImage: (json['ID_image'] != null && json['ID_image'].isNotEmpty)
           ? ShowNetImage.getPhoto(json['ID_image'])
-          : '',
+          : AssetsManager.noImageNet,
       type: json['type'] ?? '',
     );
   }

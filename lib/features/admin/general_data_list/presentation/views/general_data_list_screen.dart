@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/general_data_list_controller.dart';
@@ -24,20 +25,7 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
         onPressedFilter: () {
           controller.searchBar();
         },
-        onPressedAdd: () {
-          controller.isEdit.value = false;
-          controller.clearForm();
-
-          // Handle add button press
-          Get.toNamed(
-            AppRoutes.ADDNEWCUSTOMERSCREEN,
-            arguments: {
-              'employeeType': '',
-              'employeeId': '',
-              'sellerId': '',
-            },
-          );
-        },
+        action: false,
       ),
       body: CustomScrollView(
         slivers: [
@@ -98,6 +86,24 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
           ),
         ],
       ),
+      floatingActionButton: AddFloatingActionButton(
+        onPressed: () {
+          controller.isEdit.value = false;
+          controller.clearForm();
+          // Handle add button press
+          Get.toNamed(
+            AppRoutes.ADDNEWCUSTOMERSCREEN,
+            arguments: {
+              'employeeType': '',
+              'employeeId': '',
+              'sellerId': '',
+            },
+          );
+        },
+      ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

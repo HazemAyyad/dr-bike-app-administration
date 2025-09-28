@@ -23,8 +23,8 @@ class PaymentController extends GetxController {
 
   final TextEditingController partnerIdController = TextEditingController();
   final TextEditingController boxIdController = TextEditingController();
-  final TextEditingController totalBillController = TextEditingController();
-  final TextEditingController paymentMethodController = TextEditingController();
+  // final TextEditingController totalBillController = TextEditingController();
+  // final TextEditingController paymentMethodController = TextEditingController();
   final TextEditingController cashValueController = TextEditingController();
   final TextEditingController checkNumberController = TextEditingController();
   final TextEditingController currencyController = TextEditingController();
@@ -124,10 +124,10 @@ class PaymentController extends GetxController {
         );
       },
       (success) {
-        totalBillController.clear();
+        // totalBillController.clear();
         partnerIdController.clear();
         boxIdController.clear();
-        paymentMethodController.clear();
+        // paymentMethodController.clear();
         cashValueController.clear();
         checkNumberController.clear();
         currencyController.clear();
@@ -171,10 +171,10 @@ class PaymentController extends GetxController {
   @override
   void onClose() {
     super.onClose();
-    totalBillController.dispose();
+    // totalBillController.dispose();
     partnerIdController.dispose();
     boxIdController.dispose();
-    paymentMethodController.dispose();
+    // paymentMethodController.dispose();
     cashValueController.dispose();
     checkNumberController.dispose();
     currencyController.dispose();

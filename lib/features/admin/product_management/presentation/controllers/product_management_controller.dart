@@ -39,15 +39,18 @@ class ProductManagementController extends GetxController {
     update();
   }
 
+  /// ✅ القيم المراقبة
   final RxInt selectedStep = 1.obs;
   final RxInt selectedStep2 = 0.obs;
 
+  /// ✅ خطوات المرحلة الأولى
   final List<Map<int, String>> timeLineSteps = [
     {1: 'purchase_anywhere'},
     {2: 'purchase_second_hand'},
     {3: 'purchase_first_hand'},
   ];
 
+  /// ✅ خطوات المرحلة الثانية
   final List<Map<int, String>> timeLineSteps2 = [
     {4: 'local_supplier'},
     {5: 'import'},
@@ -55,38 +58,38 @@ class ProductManagementController extends GetxController {
     {7: 'our_factory'},
   ];
 
-  /// ✅ المجموع الكلي للخطوات
+  /// ✅ إجمالي الخطوات
   int get totalSteps => timeLineSteps.length + timeLineSteps2.length;
 
-  /// ✅ الخطوة الحالية عالميًا (تجمع الأولى والتانية)
+  /// ✅ الخطوة الحالية عالميًا
   int get currentGlobalStep {
     if (selectedStep2.value == 0) {
-      return selectedStep.value; // لسه في الأولى
+      return selectedStep.value; // لسه في المرحلة الأولى
     } else {
-      return timeLineSteps.length + selectedStep2.value; // دخل التانية
+      return timeLineSteps.length + selectedStep2.value; // دخل المرحلة الثانية
     }
   }
 
-  /// ✅ التالي
+  /// ✅ الخطوة التالية
   void nextStep() {
     if (selectedStep2.value == 0) {
+      // لسه في المرحلة الأولى
       if (selectedStep.value < timeLineSteps.length) {
-        if (selectedStep.value == 1) {
-          return createProduct();
-        }
         createProduct();
-        selectedStep.value += 1;
+        selectedStep.value++;
       } else {
+        // خلص المرحلة الأولى → يدخل على التانية
         createProduct();
-        selectedStep.value = 4;
         selectedStep2.value = 1;
+        selectedStep.value = timeLineSteps.length;
       }
     } else {
+      // المرحلة التانية
       if (selectedStep2.value < timeLineSteps2.length) {
         createProduct();
-
-        selectedStep2.value += 1;
+        selectedStep2.value++;
       } else {
+        // خلص الكل → رجّعه للبداية
         createProduct();
         selectedStep.value = 1;
         selectedStep2.value = 0;
@@ -95,32 +98,31 @@ class ProductManagementController extends GetxController {
     update();
   }
 
-  /// ✅ السابق
+  /// ✅ الخطوة السابقة
   void prevStep() {
     if (selectedStep2.value > 0) {
       if (selectedStep2.value == 1) {
         selectedStep2.value = 0;
-        selectedStep.value = timeLineSteps.length; // آخر خطوة في الأولى
+        selectedStep.value = timeLineSteps.length;
       } else {
-        selectedStep2.value -= 1;
+        selectedStep2.value--;
       }
     } else {
       if (selectedStep.value > 1) {
-        selectedStep.value -= 1;
+        selectedStep.value--;
       }
     }
     update();
   }
 
+  /// ✅ تغيير الخطوة يدويًا
   void changeSelected(int step, {bool isSecond = false}) {
     if (isSecond) {
-      // ما يقدرش يروح للتانية إلا بعد ما يخلص الأولى
       if (selectedStep.value == timeLineSteps.length) {
         selectedStep2.value = step;
       }
     } else {
       selectedStep.value = step;
-      // لو المستخدم ضغط آخر خطوة في الأولى، خلي التانية تبدأ من 0 لحد ما يضغط Next
       if (step < timeLineSteps.length) {
         selectedStep2.value = 0;
       }
@@ -193,7 +195,7 @@ class ProductManagementController extends GetxController {
     final result = await createProductDevelopmentUsecase.call(
       productId: productIdController.text,
       description: descriptionController.text,
-      step: isEdit.value ? (int.parse(currentStep) + 1).toString() : '',
+      step: isEdit.value ? (currentStep + 1).toString() : '',
     );
 
     result.fold(
@@ -221,13 +223,16 @@ class ProductManagementController extends GetxController {
         }
       },
       (success) {
-        // productIdController.clear();
-        // descriptionController.clear();
+        productIdController.clear();
+        descriptionController.clear();
         // currentStep = '';
         getProductManagement();
         // isEdit.value
         // ?
-        editProduct(isEditing: true, id: productIdController.text);
+        // if (selectedStep.value == 2) Get.back();
+        // if (selectedStep.value != 2) {
+        //   editProduct(isEditing: true, id: productIdController.text);
+        // }
         Get.back();
         Future.delayed(
           const Duration(milliseconds: 2000),
@@ -250,7 +255,7 @@ class ProductManagementController extends GetxController {
   final RxBool isEdit = false.obs;
   String productName = '';
   String productImage = '';
-  String currentStep = '';
+  int currentStep = 0;
   void editProduct({required String id, required bool isEditing}) {
     if (isEditing) {
       isEdit(true);
@@ -267,46 +272,20 @@ class ProductManagementController extends GetxController {
           .first
           .productImage
           .toString();
-      if (int.parse(
-            ProductManagementServes()
-                .productManagement
-                .where((f) => f.id.toString() == id)
-                .first
-                .currentStep,
-          ) <
-          3) {
-        selectedStep.value = int.parse(
-              ProductManagementServes()
-                  .productManagement
-                  .where((f) => f.id.toString() == id)
-                  .first
-                  .currentStep,
-            ) +
-            1;
-      } else {
-        (selectedStep2.value = int.parse(
-              ProductManagementServes()
-                  .productManagement
-                  .where((f) => f.id.toString() == id)
-                  .first
-                  .currentStep,
-            ) -
-            2);
-      }
-      selectedStep.value = int.parse(
-            ProductManagementServes()
-                .productManagement
-                .where((f) => f.id.toString() == id)
-                .first
-                .currentStep,
-          ) +
-          1;
-      currentStep = ProductManagementServes()
+      final product = ProductManagementServes()
           .productManagement
-          .where((f) => f.id.toString() == id)
-          .first
-          .currentStep
-          .toString();
+          .firstWhere((f) => f.id.toString() == id);
+
+      final currentStep = int.tryParse(product.currentStep) ?? 1;
+      this.currentStep = currentStep;
+      if (currentStep < timeLineSteps.length) {
+        selectedStep.value = currentStep + 1;
+        selectedStep2.value = 0;
+      } else {
+        selectedStep2.value = currentStep - timeLineSteps.length + 1;
+        selectedStep.value =
+            timeLineSteps.length + 1; // يوقف الأولى عند آخر خطوة
+      }
     } else {
       isEdit(false);
       productIdController.clear();
@@ -314,7 +293,7 @@ class ProductManagementController extends GetxController {
       selectedStep2.value = 0;
       productName = '';
       productImage = '';
-      currentStep = '';
+      currentStep = 0;
     }
     update();
   }

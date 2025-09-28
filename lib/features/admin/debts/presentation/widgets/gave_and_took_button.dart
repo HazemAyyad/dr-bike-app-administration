@@ -7,8 +7,11 @@ import '../../../../../core/utils/app_colors.dart';
 import 'creat_debts.dart';
 
 class GaveAndTookButton extends StatelessWidget {
-  const GaveAndTookButton({Key? key}) : super(key: key);
+  const GaveAndTookButton({Key? key, this.userId, this.isSeller})
+      : super(key: key);
 
+  final String? userId;
+  final bool? isSeller;
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -20,10 +23,12 @@ class GaveAndTookButton extends StatelessWidget {
             child: GestureDetector(
               onTap: () {
                 Get.bottomSheet(
-                  const CreateDebts(
+                  CreateDebts(
                     title: 'create_debt_for_us',
                     supTitle: 'gave',
                     color: Colors.red,
+                    userId: userId,
+                    isSeller: isSeller,
                   ),
                   ignoreSafeArea: false,
                   isScrollControlled: true,
@@ -56,10 +61,12 @@ class GaveAndTookButton extends StatelessWidget {
             child: GestureDetector(
               onTap: () {
                 Get.bottomSheet(
-                  const CreateDebts(
+                  CreateDebts(
                     title: 'create_debt_on_us',
                     supTitle: 'took',
                     color: Colors.green,
+                    userId: userId,
+                    isSeller: isSeller,
                   ),
                   ignoreSafeArea: false,
                   isScrollControlled: true,

@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart' hide MultipartFile;
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -29,6 +31,17 @@ class ChecksDatasource {
     XFile? backImage,
   }) async {
     try {
+      XFile? compressedFrontImage;
+      XFile? compressedBackImage;
+
+      if (frontImage != null) {
+        compressedFrontImage = await compressImage(frontImage);
+      }
+
+      if (backImage != null) {
+        compressedBackImage = await compressImage(backImage);
+      }
+
       final response = await api.post(
         isInComing ? EndPoints.addIncomingCheck : EndPoints.addOutgoingCheck,
         data: {
@@ -39,21 +52,21 @@ class ChecksDatasource {
           'currency': currency,
           'check_id': checkId,
           'bank_name': bankName,
-          if (frontImage != null)
-            // if (isInComing)
+          // if (isInComing)
+          if (compressedFrontImage != null)
             'img': await MultipartFile.fromFile(
-              frontImage.path,
-              filename: frontImage.path.split('/').last,
+              compressedFrontImage.path,
+              filename: compressedFrontImage.path.split('/').last,
             ),
-          if (frontImage != null)
+          if (compressedFrontImage != null)
             'front_image': await MultipartFile.fromFile(
-              frontImage.path,
-              filename: frontImage.path.split('/').last,
+              compressedFrontImage.path,
+              filename: compressedFrontImage.path.split('/').last,
             ),
-          if (backImage != null)
+          if (compressedBackImage != null)
             'back_image': await MultipartFile.fromFile(
-              backImage.path,
-              filename: backImage.path.split('/').last,
+              compressedBackImage.path,
+              filename: compressedBackImage.path.split('/').last,
             ),
         },
         isFormData: true,
@@ -241,4 +254,18 @@ class ChecksDatasource {
       );
     }
   }
+}
+
+Future<XFile> compressImage(XFile file) async {
+  final dir = await getTemporaryDirectory();
+  final targetPath =
+      '${dir.absolute.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+  var result = await FlutterImageCompress.compressAndGetFile(
+    file.path,
+    targetPath,
+    quality: 70,
+  );
+
+  return XFile(result?.path ?? file.path);
 }

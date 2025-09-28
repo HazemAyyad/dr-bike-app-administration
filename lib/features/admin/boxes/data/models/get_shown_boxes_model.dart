@@ -6,11 +6,13 @@ class GetShownBoxesModel extends GetShownBoxesEntity {
     required String boxName,
     required double totalBalance,
     required bool isShown,
+    required String currency,
   }) : super(
           boxId: boxId,
           boxName: boxName,
           totalBalance: totalBalance,
           isShown: isShown,
+          currency: currency,
         );
 
   factory GetShownBoxesModel.fromJson(Map<String, dynamic> json) {
@@ -19,6 +21,7 @@ class GetShownBoxesModel extends GetShownBoxesEntity {
       boxName: json['box_name'] ?? '',
       totalBalance: double.parse(json['total_balance'].toString()),
       isShown: json['is_shown'].toString() == "1",
+      currency: json['currency'] ?? '',
     );
   }
 

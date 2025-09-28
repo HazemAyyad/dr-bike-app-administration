@@ -195,17 +195,20 @@ class BoxesController extends GetxController {
         },
         (success) {
           getAllBoxes();
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
           Future.delayed(
             const Duration(milliseconds: 1000),
             () {
               Get.back();
               Get.back();
+              createBoxNameController.clear();
+              createStartBalanceController.clear();
+              currencyController.clear();
             },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
           );
         },
       );

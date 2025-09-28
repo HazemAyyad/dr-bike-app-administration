@@ -8,7 +8,6 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/checks_controller.dart';
-import 'totals_currency_dialog.dart';
 
 class ChecksDetails extends StatelessWidget {
   const ChecksDetails({Key? key, this.isOutGoing = false}) : super(key: key);
@@ -41,54 +40,126 @@ class ChecksDetails extends StatelessWidget {
                       show: true,
                       title: 'numberOfChecks',
                       imageicon: AssetsManager.cashIcon,
-                      value: isOutGoing
-                          ? controller.generalOutgoing.value == null
-                              ? '0'
-                              : controller
-                                  .generalOutgoing.value!.outgoingChecksCount
+                      value: controller.currentTab.value == 0
+                          ? controller.inComingChecksList.value!.checksCount
+                              .toString()
+                          : controller.currentTab.value == 1
+                              ? controller.cashedToPerson.value!.checksCount
                                   .toString()
-                          : controller.generalIncoming.value == null
-                              ? '0'
-                              : controller
-                                  .generalIncoming.value!.incomingChecksCount
+                              : controller.archiveData.value!.checksCount
                                   .toString(),
                       subtitle: '',
                     ),
                   ),
                   SizedBox(width: 8.w),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => Get.dialog(const TotalsCurrencyDialog()),
-                      child: StatCard(
-                        show: true,
-                        title: 'total',
-                        imageicon: AssetsManager.cashIcon,
-                        value: isOutGoing
-                            ? controller.generalOutgoing.value == null
-                                ? '0.0'
-                                : NumberFormat('#,###').format(
-                                    double.tryParse(
-                                          controller.generalOutgoing.value!
-                                              .totalOutgoingChecks
-                                              .toString(),
-                                        ) ??
-                                        0.0,
-                                  )
-                            : controller.generalIncoming.value == null
-                                ? '0.0'
-                                : NumberFormat('#,###').format(
-                                    double.tryParse(
-                                          controller.generalIncoming.value!
-                                              .totalIncomingChecks
-                                              .toString(),
-                                        ) ??
-                                        0.0,
-                                  ),
-                        subtitle: '',
-                      ),
+                    child: StatCard(
+                      show: true,
+                      title: 'total',
+                      imageicon: AssetsManager.cashIcon,
+                      value: controller.currentTab.value == 0
+                          ? NumberFormat('#,###').format(
+                              double.tryParse(controller
+                                      .inComingChecksList.value!.checksTotal
+                                      .toString()) ??
+                                  0.0,
+                            )
+                          : controller.currentTab.value == 1
+                              ? NumberFormat('#,###').format(
+                                  double.tryParse(controller
+                                          .cashedToPerson.value!.checksTotal
+                                          .toString()) ??
+                                      0.0,
+                                )
+                              : NumberFormat('#,###').format(
+                                  double.tryParse(controller
+                                          .archiveData.value!.checksTotal
+                                          .toString()) ??
+                                      0.0,
+                                ),
+                      subtitle: '',
                     ),
                   ),
                 ],
+              ),
+              Row(
+                children: List.generate(
+                  controller.currentTab.value == 0
+                      ? controller.totalNotCashedByCurrency.entries.length
+                      : controller.currentTab.value == 1
+                          ? controller
+                              .totalCashedToPersonByCurrency.entries.length
+                          : controller.totalArchiveByCurrency.entries.length,
+                  (index) {
+                    final entry = controller.currentTab.value == 0
+                        ? controller.totalNotCashedByCurrency.entries
+                            .toList()[index]
+                        : controller.currentTab.value == 1
+                            ? controller.totalCashedToPersonByCurrency.entries
+                                .toList()[index]
+                            : controller.totalArchiveByCurrency.entries
+                                .toList()[index];
+                    return Expanded(
+                      child: Container(
+                        margin: EdgeInsets.symmetric(
+                            horizontal: 5.w, vertical: 10.h),
+                        decoration: BoxDecoration(
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor4
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(5.r),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                            vertical: 5.h, horizontal: 5.w),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  AssetsManager.moneyIcon,
+                                  height: 20.h,
+                                  width: 20.w,
+                                  scale: 0.5,
+                                ),
+                                SizedBox(width: 5.w),
+                                Text(
+                                  entry.key.tr,
+                                  maxLines: 2,
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium!
+                                      .copyWith(
+                                        color: ThemeService.isDark.value
+                                            ? Colors.white
+                                            : AppColors.secondaryColor,
+                                        fontSize: 15.sp,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 5.h),
+                            Text(
+                              NumberFormat('#,###').format(entry.value),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: AppColors.primaryColor,
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
               isOutGoing
                   ? Row(
@@ -97,7 +168,7 @@ class ChecksDetails extends StatelessWidget {
                           child: StatCard(
                             show: true,
                             title: 'totalFunds',
-                            imageicon: AssetsManager.moneyIcon,
+                            imageicon: AssetsManager.cashIcon,
                             value: NumberFormat('#,###').format(
                               double.parse(
                                 controller.generalOutgoing.value?.totalBoxes

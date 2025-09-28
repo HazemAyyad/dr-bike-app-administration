@@ -19,14 +19,19 @@ class CreateDebts extends GetView<DebtsController> {
     required this.title,
     required this.supTitle,
     required this.color,
+    this.userId,
+    this.isSeller,
   }) : super(key: key);
 
   final String title;
   final String supTitle;
   final Color color;
+  final String? userId;
+  final bool? isSeller;
 
   @override
   Widget build(BuildContext context) {
+    controller.selectedCustomersSellers.value = isSeller ?? false;
     return SafeArea(
       child: Scaffold(
         extendBody: true,
@@ -84,13 +89,21 @@ class CreateDebts extends GetView<DebtsController> {
                     items: controller.selectedCustomersSellers.value == false
                         ? controller.allCustomersList
                         : controller.allSellersList,
-                    // value: selectedValue.value,
                     onChanged: (val) {
                       controller.customerOrSellerIdController.text =
                           val!.id.toString();
                     },
                     itemAsString: (f) => f.name,
                     compareFn: (a, b) => a.id == b.id,
+                    value: userId == null || userId!.isEmpty
+                        ? null
+                        : (!controller.selectedCustomersSellers.value
+                            ? controller.allCustomersList.firstWhereOrNull(
+                                (e) => e.id == int.tryParse(userId!),
+                              )
+                            : controller.allSellersList.firstWhereOrNull(
+                                (e) => e.id == int.tryParse(userId!),
+                              )),
                   ),
                 ),
                 SizedBox(height: 20.h),

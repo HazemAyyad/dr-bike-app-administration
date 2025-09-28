@@ -1,5 +1,48 @@
 import '../../domain/entity/check_entity.dart';
 
+class NotCashedModel {
+  final String status;
+  final String checksStatus;
+  final String checksImagesPath;
+  final List<CheckModel> inComingChecksList;
+  final String checksCount;
+  final String checksTotal;
+
+  NotCashedModel({
+    required this.status,
+    required this.checksStatus,
+    required this.checksImagesPath,
+    required this.inComingChecksList,
+    required this.checksCount,
+    required this.checksTotal,
+  });
+
+  factory NotCashedModel.fromJson(Map<String, dynamic> json) {
+    return NotCashedModel(
+      status: json['status'] ?? '',
+      checksStatus: json['checks_status'] ?? '',
+      checksImagesPath: json['checks_images_path'] ?? '',
+      inComingChecksList: (json['not_cashed_checks'] as List<dynamic>)
+          .map((e) =>
+              CheckModel.fromJson(e, imgPath: json['checks_images_path']))
+          .toList(),
+      checksCount: (json['checks_count'] ?? '').toString(),
+      checksTotal: (json['checks_total'] ?? '').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'checks_status': checksStatus,
+      'checks_images_path': checksImagesPath,
+      'not_cashed_checks': inComingChecksList.map((e) => e.toJson()).toList(),
+      'checks_count': checksCount,
+      'checks_total': checksTotal
+    };
+  }
+}
+
 class CheckModel extends CheckEntity {
   const CheckModel({
     required int id,
@@ -104,41 +147,6 @@ class CheckModel extends CheckEntity {
       'from_seller': fromSeller,
       'to_customer': toCustomer,
       'to_seller': toSeller,
-    };
-  }
-}
-
-class NotCashedModel {
-  final String status;
-  final String checksStatus;
-  final String checksImagesPath;
-  final List<CheckModel> inComingChecksList;
-
-  NotCashedModel({
-    required this.status,
-    required this.checksStatus,
-    required this.checksImagesPath,
-    required this.inComingChecksList,
-  });
-
-  factory NotCashedModel.fromJson(Map<String, dynamic> json) {
-    return NotCashedModel(
-      status: json['status'] ?? '',
-      checksStatus: json['checks_status'] ?? '',
-      checksImagesPath: json['checks_images_path'] ?? '',
-      inComingChecksList: (json['not_cashed_checks'] as List<dynamic>)
-          .map((e) =>
-              CheckModel.fromJson(e, imgPath: json['checks_images_path']))
-          .toList(),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'status': status,
-      'checks_status': checksStatus,
-      'checks_images_path': checksImagesPath,
-      'not_cashed_checks': inComingChecksList.map((e) => e.toJson()).toList(),
     };
   }
 }

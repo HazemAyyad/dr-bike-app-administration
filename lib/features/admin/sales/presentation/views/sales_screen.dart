@@ -9,9 +9,9 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/utils/app_colors.dart';
 
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../controllers/sales_controller.dart';
-import '../widgets/add_list.dart';
 import 'bill_details_screen.dart';
 import '../widgets/profit_sale_card.dart';
 
@@ -23,9 +23,7 @@ class SalesScreen extends GetView<SalesController> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'sales',
-        onPressedAdd: () {
-          controller.toggleAddMenu();
-        },
+        action: false,
         onPressedFilter: () {
           controller.filterLists(true);
         },
@@ -190,9 +188,19 @@ class SalesScreen extends GetView<SalesController> {
               );
             },
           ),
-          const AddList(),
+          // const AddList(),
         ],
       ),
+      floatingActionButton: CustomFloatingActionButton(
+        isAddMenuOpen: controller.isAddMenuOpen,
+        onTap: () => controller.toggleAddMenu(),
+        opacityAnimation: controller.sizeAnimation,
+        sizeAnimation: controller.opacityAnimation,
+        addList: controller.addList,
+      ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

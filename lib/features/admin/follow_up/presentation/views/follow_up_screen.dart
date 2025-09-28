@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../controllers/follow_up_controller.dart';
 import '../widgets/follow_up_widget.dart';
@@ -18,10 +19,9 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
         employeeNameController: controller.employeeNameController,
-        onPressedAdd: () {
-          controller.resetData();
-        },
         onPressedFilter: () => controller.filterGoals(),
+        label: 'customerName',
+        action: false,
       ),
       body: CustomScrollView(
         slivers: [
@@ -38,6 +38,14 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
           SliverToBoxAdapter(child: SizedBox(height: 30.h)),
         ],
       ),
+      floatingActionButton: AddFloatingActionButton(
+        onPressed: () {
+          controller.resetData();
+        },
+      ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

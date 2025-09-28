@@ -39,7 +39,7 @@ class StatCard extends StatelessWidget {
               : Colors.white,
           borderRadius: BorderRadius.circular(5.r),
         ),
-        padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 10.w),
+        padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 5.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [

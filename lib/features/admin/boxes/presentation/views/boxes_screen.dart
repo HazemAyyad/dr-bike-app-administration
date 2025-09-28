@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/boxes_controller.dart';
@@ -21,9 +22,7 @@ class BoxesScreen extends GetView<BoxesController> {
         // toDateController: controller.toDateController,
         label: 'boxName',
         onPressedFilter: () => controller.filterLists(),
-        onPressedAdd: () {
-          Get.toNamed(AppRoutes.CREATEBOXESSCREEN);
-        },
+        action: false,
       ),
       body: CustomScrollView(
         slivers: [
@@ -47,6 +46,14 @@ class BoxesScreen extends GetView<BoxesController> {
           const VeiwBoxes(),
         ],
       ),
+      floatingActionButton: AddFloatingActionButton(
+        onPressed: () {
+          Get.toNamed(AppRoutes.CREATEBOXESSCREEN);
+        },
+      ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

@@ -42,6 +42,7 @@ class EditBoxesScreen extends GetView<BoxesController> {
                           hintText: 'startBalanceExample',
                           controller: controller.editStartBalanceController,
                           keyboardType: TextInputType.number,
+                          enabled: false,
                         ),
                         SizedBox(height: 10.h),
                         CustomDropdownField(
@@ -68,6 +69,7 @@ class EditBoxesScreen extends GetView<BoxesController> {
                             controller.editCurrencyController.text = value!;
                           },
                           items: controller.currency,
+                          isEnabled: false,
                         ),
                         SizedBox(height: 30.h),
                         AppButton(

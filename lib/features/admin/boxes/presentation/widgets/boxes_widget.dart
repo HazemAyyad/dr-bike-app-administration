@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
@@ -31,7 +30,7 @@ class BoxesWidget extends StatelessWidget {
             ),
           ),
           Text(
-            "${NumberFormat('#,###').format(box.totalBalance)} ${'currency'.tr}",
+            "${NumberFormat('#,###').format(box.totalBalance)} ${box.currency}",
             style: textStyle.copyWith(
               fontSize: 16.sp,
               fontWeight: FontWeight.w700,

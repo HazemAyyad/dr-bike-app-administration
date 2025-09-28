@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/all_boxes_logs_model.dart';
 import '../../data/models/get_shown_boxes_model.dart';
@@ -89,6 +88,7 @@ class VeiwBoxes extends GetView<BoxesController> {
                     right: 24.w,
                     left: 24.w,
                   ),
+                  height: 70.h,
                   decoration: BoxDecoration(
                     color: ThemeService.isDark.value
                         ? AppColors.customGreyColor
@@ -104,17 +104,19 @@ class VeiwBoxes extends GetView<BoxesController> {
                     ],
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(5.r),
-                        child: Image.asset(
-                          AssetsManager.boxesImage,
-                          height: 70.h,
-                          width: 70.w,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      SizedBox(width: 10.w),
+                      // ClipRRect(
+                      //   borderRadius: BorderRadius.circular(5.r),
+                      //   child: Image.asset(
+                      //     AssetsManager.boxesImage,
+                      //     height: 70.h,
+                      //     width: 70.w,
+                      //     fit: BoxFit.cover,
+                      //   ),
+                      // ),
+                      // SizedBox(width: 10.w),
                       controller.currentTab.value == 0
                           ? BoxesWidget(box: box as GetShownBoxesModel)
                           : controller.currentTab.value == 1

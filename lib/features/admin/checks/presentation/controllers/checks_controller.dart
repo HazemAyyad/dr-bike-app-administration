@@ -1,5 +1,6 @@
 import 'package:doctorbike/features/admin/boxes/domain/usecases/get_shown_box_usecase.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -336,13 +337,13 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> inComingTasks = {};
   final Map<String, double> totalInComing = {};
 
-  final Map<String, double> totalsByCurrency = {};
+  final Map<String, double> totalNotCashedByCurrency = {};
   Future<void> getNotCashed() async {
     isLoading(true);
 
     filteredInComingTasks.clear();
     inComingTasks.clear();
-    totalsByCurrency.clear();
+    totalNotCashedByCurrency.clear();
     totalInComing.clear();
 
     final result = await getChecksUsecase.call(
@@ -370,7 +371,8 @@ class ChecksController extends GetxController
       // accumulate totals by currency
       final currency = task.currency;
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0.0) + total;
+      totalNotCashedByCurrency[currency] =
+          (totalNotCashedByCurrency[currency] ?? 0.0) + total;
 
       // accumulate totals by month
       totalInComing[dateKey] = (totalInComing[dateKey] ?? 0.0) + total;
@@ -393,9 +395,11 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> cashedToPersonTasks = {};
   final Map<String, double> totalCashedToPerson = {};
 
+  final Map<String, double> totalCashedToPersonByCurrency = {};
   Future<void> getCashedToPerson() async {
     isLoading(true);
 
+    totalCashedToPersonByCurrency.clear();
     filteredCashedToPersonTasks.clear();
     cashedToPersonTasks.clear();
     totalCashedToPerson.clear();
@@ -418,7 +422,8 @@ class ChecksController extends GetxController
       }
       final currency = task.currency;
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0.0) + total;
+      totalCashedToPersonByCurrency[currency] =
+          (totalCashedToPersonByCurrency[currency] ?? 0.0) + total;
 
       // accumulate totals by month
       totalCashedToPerson[dateKey] =
@@ -438,9 +443,12 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> archiveTasks = {};
   final Map<String, double> totalArchive = {};
 
+  final Map<String, double> totalArchiveByCurrency = {};
+
   Future<void> getArchive() async {
     isLoading(true);
 
+    totalArchiveByCurrency.clear();
     filteredArchiveTasks.clear();
     archiveTasks.clear();
     totalArchive.clear();
@@ -463,7 +471,8 @@ class ChecksController extends GetxController
       }
       final currency = task.currency;
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      totalsByCurrency[currency] = (totalsByCurrency[currency] ?? 0.0) + total;
+      totalArchiveByCurrency[currency] =
+          (totalArchiveByCurrency[currency] ?? 0.0) + total;
 
       // accumulate totals by month
       totalArchive[dateKey] = (totalArchive[dateKey] ?? 0.0) + total;
@@ -525,12 +534,13 @@ class ChecksController extends GetxController
   }
 
 // filter assets by date
+// فلترة وتجميع الشيكات حسب التاريخ + الترتيب
   Map<String, List<CheckModel>> filterChecks(
     Map<String, List<CheckModel>> source,
     String nameQuery,
     bool filterByAmount,
   ) {
-    // لو الفلاتر كلها فاضية رجع النسخة الأصلية بالظبط
+    // لو الفلاتر كلها فاضية → رجع النسخة الأصلية زي ما هي
     if (nameQuery.isEmpty && !filterByAmount) {
       return Map.from(source);
     }
@@ -542,13 +552,30 @@ class ChecksController extends GetxController
       bool matchesAmount = true;
 
       // فلترة بالاسم
-      if (nameQuery.isNotEmpty && check.customer != null) {
-        matchesName = check.customer!.name
-            .toLowerCase()
-            .contains(nameQuery.toLowerCase());
+      if (nameQuery.isNotEmpty) {
+        if (check.customer != null) {
+          matchesName = check.customer!.name
+              .toLowerCase()
+              .contains(nameQuery.toLowerCase());
+        }
+        if (check.seller != null) {
+          matchesName = check.seller!.name
+              .toLowerCase()
+              .contains(nameQuery.toLowerCase());
+        }
+        if (check.fromCustomer != null) {
+          matchesName = check.fromCustomer!.name
+              .toLowerCase()
+              .contains(nameQuery.toLowerCase());
+        }
+        if (check.fromSeller != null) {
+          matchesName = check.fromSeller!.name
+              .toLowerCase()
+              .contains(nameQuery.toLowerCase());
+        }
       }
 
-      // فلترة بالمبلغ
+      // فلترة بالمبلغ (أكبر من 0)
       if (filterByAmount) {
         matchesAmount = (double.tryParse(check.total.toString()) ?? 0) > 0;
       }
@@ -556,7 +583,7 @@ class ChecksController extends GetxController
       return matchesName && matchesAmount;
     }).toList();
 
-    // إعادة التجميع حسب التاريخ (الشهر/السنة)
+    // إعادة التجميع حسب التاريخ (شهر/سنة)
     final Map<String, List<CheckModel>> grouped = {};
     for (var check in filtered) {
       final dateKey =
@@ -564,28 +591,30 @@ class ChecksController extends GetxController
       grouped.putIfAbsent(dateKey, () => []).add(check);
     }
 
-    // الترتيب بالمبلغ داخل كل شهر فقط لو filterByAmount = true
-    if (filterByAmount) {
-      grouped.forEach((key, checks) {
-        checks.sort((a, b) {
+    // الترتيب داخل كل شهر
+    grouped.forEach((key, checks) {
+      checks.sort((a, b) {
+        if (filterByAmount) {
+          // لو فلترة بالمبلغ → رتب تنازلي حسب المبلغ
           final totalA = double.tryParse(a.total.toString()) ?? 0.0;
           final totalB = double.tryParse(b.total.toString()) ?? 0.0;
-          return totalB.compareTo(totalA); // ترتيب تنازلي
-        });
+          return totalB.compareTo(totalA);
+        } else {
+          // لو مفيش فلترة مبلغ → رتب حسب اليوم
+          return a.dueDate.day.compareTo(b.dueDate.day);
+        }
       });
-    }
+    });
 
-    // الترتيب الزمني للشهور
-    late final List<String> sortedKeys;
-
-    if (filterByAmount) {
-      // لو الفلترة بالمبلغ → رتب الشهور من الأحدث للأقدم
-      sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    } else {
-      // لو الفلترة بالاسم فقط → حافظ على ترتيب الـ source زي ما هو
-      sortedKeys =
-          source.keys.where((key) => grouped.containsKey(key)).toList();
-    }
+    // ترتيب الشهور زمنيًا (قديم → جديد)
+    final sortedKeys = grouped.keys.toList()
+      ..sort((a, b) {
+        final aParts = a.split('/');
+        final bParts = b.split('/');
+        final aDate = DateTime(int.parse(aParts[0]), int.parse(aParts[1]));
+        final bDate = DateTime(int.parse(bParts[0]), int.parse(bParts[1]));
+        return aDate.compareTo(bDate);
+      });
 
     final Map<String, List<CheckModel>> sortedGrouped = {
       for (var key in sortedKeys) key: grouped[key]!
@@ -613,6 +642,47 @@ class ChecksController extends GetxController
       filterChecks(inComingTasks, query, amountFilter.value),
     );
     Get.back();
+    update();
+  }
+
+  void searchBar(String value) {
+    bool matches(CheckModel check, String query) {
+      final q = query.toLowerCase();
+      return (check.checkId.toLowerCase().contains(q)) ||
+          (check.bankName.toLowerCase().contains(q)) ||
+          (check.currency.toLowerCase().contains(q));
+    }
+
+    if (value.isNotEmpty) {
+      filteredInComingTasks = Map.fromEntries(
+        inComingTasks.entries.map((entry) {
+          final filtered =
+              entry.value.where((check) => matches(check, value)).toList();
+          return MapEntry(entry.key, filtered);
+        }).where((entry) => entry.value.isNotEmpty),
+      );
+
+      filteredCashedToPersonTasks = Map.fromEntries(
+        cashedToPersonTasks.entries.map((entry) {
+          final filtered =
+              entry.value.where((check) => matches(check, value)).toList();
+          return MapEntry(entry.key, filtered);
+        }).where((entry) => entry.value.isNotEmpty),
+      );
+
+      filteredArchiveTasks = Map.fromEntries(
+        archiveTasks.entries.map((entry) {
+          final filtered =
+              entry.value.where((check) => matches(check, value)).toList();
+          return MapEntry(entry.key, filtered);
+        }).where((entry) => entry.value.isNotEmpty),
+      );
+    } else {
+      filteredInComingTasks.assignAll(inComingTasks);
+      filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+      filteredArchiveTasks.assignAll(archiveTasks);
+    }
+
     update();
   }
 

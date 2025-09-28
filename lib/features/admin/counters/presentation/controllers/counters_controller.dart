@@ -63,7 +63,7 @@ class CountersController extends GetxController {
           message: failure.data['message'] ?? 'Unknown error',
         );
       }, (success) async {
-        final directory = Directory("/storage/emulated/0/Download");
+        final directory = Directory("/storage/emulated/0/Pictures/Doctor Bike");
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }

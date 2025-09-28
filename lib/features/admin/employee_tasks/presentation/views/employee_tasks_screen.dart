@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:doctorbike/routes/app_routes.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/employee_tasks_list.dart';
@@ -24,13 +25,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
           controller.filterEmployeeTasks();
           Get.back();
         },
-        onPressedAdd: () {
-          // Handle add button press
-          Get.toNamed(
-            AppRoutes.CREATETASKSCREEN,
-            arguments: {'title': 'createNewEmployeeTask', 'isEdit': false},
-          );
-        },
+        action: false,
       ),
       body: CustomScrollView(
         slivers: [
@@ -45,6 +40,17 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
           SliverToBoxAdapter(child: SizedBox(height: 40.h)),
         ],
       ),
+      floatingActionButton: AddFloatingActionButton(
+        onPressed: () {
+          Get.toNamed(
+            AppRoutes.CREATETASKSCREEN,
+            arguments: {'title': 'createNewEmployeeTask', 'isEdit': false},
+          );
+        },
+      ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

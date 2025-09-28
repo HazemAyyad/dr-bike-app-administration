@@ -5,12 +5,15 @@ class CashedToPersonOutgoingModel {
   final String checksStatus;
   final String checksImagesPath;
   final List<CheckModel> cashedToPerson;
-  CashedToPersonOutgoingModel({
-    required this.status,
-    required this.checksStatus,
-    required this.checksImagesPath,
-    required this.cashedToPerson,
-  });
+  final String checksCount;
+  final String checksTotal;
+  CashedToPersonOutgoingModel(
+      {required this.status,
+      required this.checksStatus,
+      required this.checksImagesPath,
+      required this.cashedToPerson,
+      required this.checksCount,
+      required this.checksTotal});
 
   factory CashedToPersonOutgoingModel.fromJson(Map<String, dynamic> json) {
     return CashedToPersonOutgoingModel(
@@ -21,6 +24,8 @@ class CashedToPersonOutgoingModel {
           .map((e) =>
               CheckModel.fromJson(e, imgPath: json['checks_images_path']))
           .toList(),
+      checksCount: (json['checks_count'] ?? '').toString(),
+      checksTotal: (json['checks_total'] ?? '').toString(),
     );
   }
 
@@ -30,6 +35,8 @@ class CashedToPersonOutgoingModel {
       'checks_status': checksStatus,
       'checks_images_path': checksImagesPath,
       'cashed_to_person_checks': cashedToPerson.map((e) => e.toJson()).toList(),
+      'checks_count': checksCount,
+      'checks_total': checksTotal
     };
   }
 }

@@ -58,6 +58,9 @@ class MaintenanceController extends GetxController {
     super.onClose();
   }
 
+  final RxBool isCalendarVisible = false.obs;
+  final RxBool isTimeVisible = false.obs;
+
   // متغير لاظهار الخطوات
   final RxInt selectedStep = 1.obs;
 
