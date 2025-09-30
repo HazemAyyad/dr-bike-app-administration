@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/models/all_boxes_logs_model.dart';
 import '../../data/models/get_shown_boxes_model.dart';
 import '../../domain/entity/all_boxes_logs_entity.dart';
@@ -22,6 +26,7 @@ class BoxesController extends GetxController {
   BoxDetailsUesecase boxDetailsUesecase;
   AddBoxBalanceUsecase addBoxBalanceUsecase;
   EditBoxUsecase editBoxUsecase;
+  final GetReportByTypeUsecase getReportByType;
 
   BoxesController({
     required this.boxesUsecase,
@@ -31,11 +36,15 @@ class BoxesController extends GetxController {
     required this.boxDetailsUesecase,
     required this.addBoxBalanceUsecase,
     required this.editBoxUsecase,
+    required this.getReportByType,
   });
 
   final GlobalKey formKey = GlobalKey();
 
   final TextEditingController boxNameController = TextEditingController();
+
+  final TextEditingController fromDateController = TextEditingController();
+  final TextEditingController toDateController = TextEditingController();
 
   final tabs = ['boxes', 'movements', 'archive'].obs;
 
@@ -45,6 +54,7 @@ class BoxesController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
+    update();
   }
 
   final List<String> currency = ['currency1', 'currency2', 'currency'];
@@ -91,6 +101,7 @@ class BoxesController extends GetxController {
     BoxesServes().shownBoxesArchive.assignAll(boxesArchiveList);
     filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);
     isLoading(false);
+    update();
   }
 
   String boxDetailsId = '0';
@@ -102,6 +113,7 @@ class BoxesController extends GetxController {
     }
     boxDetailsId = boxId;
     final boxDetails = await boxDetailsUesecase.call(boxId: boxId);
+
     editBoxNameController.text = boxDetails.boxName;
     editStartBalanceController.text = boxDetails.totalBalance.toString();
     editAppearController.text =
@@ -127,6 +139,7 @@ class BoxesController extends GetxController {
       result.fold(
         (failure) {
           isAddBoxLoading(false);
+          update();
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
@@ -154,6 +167,7 @@ class BoxesController extends GetxController {
       );
     }
     isAddBoxLoading(false);
+    update();
   }
 
   // add box
@@ -170,6 +184,7 @@ class BoxesController extends GetxController {
       result.fold(
         (failure) {
           isAddBoxLoading(false);
+          update();
 
           final errors = failure.data != null ? failure.data['errors'] : null;
 
@@ -214,6 +229,7 @@ class BoxesController extends GetxController {
       );
     }
     isAddBoxLoading(false);
+    update();
   }
 
   // add box
@@ -229,7 +245,7 @@ class BoxesController extends GetxController {
       result.fold(
         (failure) {
           isAddBoxLoading(false);
-
+          update();
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
@@ -255,61 +271,79 @@ class BoxesController extends GetxController {
       );
     }
     isAddBoxLoading(false);
+    update();
   }
 
   // add box
-  void editBox(BuildContext context, String boxId) async {
-    if ((formKey.currentState as FormState).validate()) {
-      isAddBoxLoading(true);
+  void editBox({
+    required BuildContext context,
+    required String boxId,
+    bool isDelete = false,
+  }) async {
+    isAddBoxLoading(true);
 
-      final result = await editBoxUsecase.call(
-        boxId: boxId,
-        name: editBoxNameController.text,
-        total: editStartBalanceController.text,
-        isShown: editAppearController.text == 'visible' ? '1' : '0',
-        currency: editCurrencyController.text.tr,
-      );
+    final result = await editBoxUsecase.call(
+      boxId: boxId,
+      name: isDelete ? '' : editBoxNameController.text,
+      total: editStartBalanceController.text,
+      isShown: editAppearController.text == 'visible' ? '1' : '0',
+      currency: editCurrencyController.text.tr,
+    );
 
-      result.fold(
-        (failure) {
-          isAddBoxLoading(false);
+    result.fold(
+      (failure) {
+        isAddBoxLoading(false);
+        update();
+        isDelete
+            ? Get.snackbar(
+                failure.errMessage,
+                failure.data['message'],
+                snackPosition: SnackPosition.BOTTOM,
+                duration: const Duration(seconds: 2),
+              )
+            : Helpers.showCustomDialogError(
+                context: context,
+                title: failure.errMessage,
+                message: failure.data['message'],
+              );
+      },
+      (success) {
+        Get.back();
+        getAllBoxes();
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            Get.back();
+            boxDetailsId = '0';
+            addBalanceValueController.clear();
+            editCurrencyController.clear();
+            editBoxNameController.clear();
+            editStartBalanceController.clear();
+            editAppearController.clear();
+          },
+        );
+        isDelete
+            ? Get.snackbar(
+                'success'.tr,
+                success,
+                snackPosition: SnackPosition.BOTTOM,
+                duration: const Duration(seconds: 2),
+              )
+            : Helpers.showCustomDialogSuccess(
+                context: context,
+                title: 'success'.tr,
+                message: success,
+              );
+      },
+    );
 
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: failure.data['message'],
-          );
-        },
-        (success) {
-          Get.back();
-          getAllBoxes();
-          boxDetailsId = '0';
-          addBalanceValueController.clear();
-          editCurrencyController.clear();
-          editBoxNameController.clear();
-          editStartBalanceController.clear();
-          editAppearController.clear();
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-        },
-      );
-    }
     isAddBoxLoading(false);
+    update();
   }
 
-  final RxList<GetShownBoxesModel> filteredShownBoxes =
-      <GetShownBoxesModel>[].obs;
-  final RxList<BoxLogModel> filteredAllBoxesLogs = <BoxLogModel>[].obs;
-  final RxList<GetShownBoxesModel> filteredShownBoxesArchive =
+  RxList<GetShownBoxesModel> filteredShownBoxes = <GetShownBoxesModel>[].obs;
+  RxList<BoxLogModel> filteredAllBoxesLogs = <BoxLogModel>[].obs;
+  RxList<GetShownBoxesModel> filteredShownBoxesArchive =
       <GetShownBoxesModel>[].obs;
 
   void filterLists() {
@@ -350,31 +384,168 @@ class BoxesController extends GetxController {
     Get.back();
   }
 
+  void searchBar(String value) {
+    bool matches(GetShownBoxesModel box, String query) {
+      final q = query.toLowerCase();
+      return (box.boxName.toLowerCase().contains(q)) ||
+          (box.currency.toLowerCase().contains(q)) ||
+          (box.totalBalance.toString().toLowerCase().contains(q));
+    }
+
+    if (value.isNotEmpty) {
+      filteredShownBoxes = BoxesServes()
+          .shownBoxes
+          .where((box) {
+            final boxName = matches(box, value);
+            final currency = matches(box, value);
+            final totalBalance = matches(box, value);
+            return boxName || currency || totalBalance;
+          })
+          .toList()
+          .obs;
+
+      filteredShownBoxesArchive = BoxesServes()
+          .shownBoxesArchive
+          .where((box) {
+            final boxName = matches(box, value);
+            final currency = matches(box, value);
+            final totalBalance = matches(box, value);
+            return boxName || currency || totalBalance;
+          })
+          .toList()
+          .obs;
+
+      filteredAllBoxesLogs = BoxesServes()
+          .allBoxesLogs
+          .where((box) {
+            final search = value.toLowerCase();
+            final valueMatch =
+                box.value.toString().toLowerCase().contains(search);
+            final fromMatch = box.fromBox != null &&
+                box.fromBox!.name.toLowerCase().contains(search);
+            final toMatch = box.toBox != null &&
+                box.toBox!.name.toLowerCase().contains(search);
+            final boxMatch =
+                box.box != null && box.box!.name.toLowerCase().contains(search);
+            final Map<String, List<String>> keywordsMap = {
+              "transfer": ["transfer", "نقل", "تحويل"],
+              "add": [
+                'اضافه',
+                'add',
+                "اضافة",
+                "إضافة",
+                "إضافه",
+                'إيداع',
+                'ايداع'
+              ],
+              "minus": ['minus', 'سحب'],
+            };
+            final transferMatch = box.type != null &&
+                keywordsMap.entries.any((entry) {
+                  final apiValue = entry.key.toLowerCase();
+                  final arabicWords =
+                      entry.value.map((e) => e.toLowerCase()).toList();
+                  final userMatch =
+                      arabicWords.any((word) => word.contains(search));
+                  return userMatch && box.type!.toLowerCase() == apiValue;
+                });
+            return valueMatch ||
+                fromMatch ||
+                toMatch ||
+                boxMatch ||
+                transferMatch;
+          })
+          .toList()
+          .obs;
+    } else {
+      filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
+      filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
+      filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);
+    }
+    update();
+  }
+
+  // download report
+  Future<void> downloadReport({
+    required BuildContext context,
+    required String boxId,
+    required String boxName,
+  }) async {
+    try {
+      Get.back();
+      Get.snackbar(
+        "info".tr,
+        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2500),
+      );
+      final response = await getReportByType.call(
+        type: '',
+        boxId: boxId,
+        fromDate: DateTime.parse(fromDateController.text),
+        toDate: DateTime.parse(toDateController.text),
+      );
+
+      response.fold((failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'] ?? 'Unknown error',
+        );
+      }, (success) async {
+        final directory =
+            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        final filePath =
+            "${directory.path}/تقرير صندوق_$boxName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+        final file = File(filePath);
+        await file.writeAsBytes(success);
+        Get.snackbar(
+          "fileDownloadedSuccessfully".tr,
+          filePath,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 2000),
+        );
+
+        await OpenFilex.open(filePath);
+        fromDateController.clear();
+        toDateController.clear();
+      });
+    } catch (e) {
+      Get.snackbar(
+        "error".tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2500),
+      );
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();
     getAllBoxes();
-    filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
     filteredShownBoxes.assignAll(BoxesServes().shownBoxes);
+    filteredAllBoxesLogs.assignAll(BoxesServes().allBoxesLogs);
     filteredShownBoxesArchive.assignAll(BoxesServes().shownBoxesArchive);
   }
 
   @override
   void onClose() {
     boxNameController.dispose();
-    // fromDateController.dispose();
-    // toDateController.dispose();
     createBoxNameController.dispose();
     createStartBalanceController.dispose();
     editBoxNameController.dispose();
     editStartBalanceController.dispose();
     appearController.dispose();
-    // addBalanceBoxNameController.dispose();
     addBalanceValueController.dispose();
-    // transferFromBoxIdController.dispose();
     transferToBoxIdController.dispose();
     transferTotalController.dispose();
     currencyController.dispose();
+    fromDateController.dispose();
+    toDateController.dispose();
 
     super.onClose();
   }

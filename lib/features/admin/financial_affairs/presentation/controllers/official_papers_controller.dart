@@ -238,36 +238,35 @@ class OfficialPapersController extends GetxController
   // cancel paper
   void cancelPaper({required String paperId}) async {
     isLoading(true);
-    if (formKey.currentState!.validate()) {
-      final result = await cancelPaperUsecase.call(paperId: paperId);
+    final result = await cancelPaperUsecase.call(paperId: paperId);
 
-      result.fold(
-        (failure) {
-          Get.back();
-          Get.snackbar(
-            failure.errMessage,
-            failure.data['message'],
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(milliseconds: 1500),
-          );
-        },
-        (success) async {
-          getAllExpenses();
-          Get.back();
-          Future.delayed(
-            const Duration(milliseconds: 500),
-            () {
-              Get.snackbar(
-                'success'.tr,
-                success,
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(milliseconds: 1500),
-              );
-            },
-          );
-        },
-      );
-    }
+    result.fold(
+      (failure) {
+        Get.back();
+        Get.snackbar(
+          failure.errMessage,
+          failure.data['message'],
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+      (success) async {
+        getAllExpenses();
+        Get.back();
+        Future.delayed(
+          const Duration(milliseconds: 500),
+          () {
+            Get.snackbar(
+              'success'.tr,
+              success,
+              snackPosition: SnackPosition.BOTTOM,
+              duration: const Duration(milliseconds: 1500),
+            );
+          },
+        );
+      },
+    );
+
     isLoading(false);
     update();
   }

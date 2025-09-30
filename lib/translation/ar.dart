@@ -675,10 +675,12 @@ const Map<String, String> ar = {
   'createBox': 'إنشاء الصندوق',
   'editBox': 'تعديل الصندوق',
   'addBalance': 'إضافة رصيد',
+  'withdrawBalance': 'سحب رصيد',
   'transferBalance': 'نقل رصيد',
-  'addOrTransferBalance': 'اضافة / سحب رصيد',
+  'addOrWithdrawBalance': 'اضافة / سحب رصيد',
   'value': 'القيمة',
   'transfer': 'نقل',
+  'deleteBox': 'حذف الصندوق',
 
   // قسم الصيانة
   'newRequest': 'طلبات جديدة',

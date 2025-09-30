@@ -19,8 +19,8 @@ class VeiwBoxes extends GetView<BoxesController> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () {
+    return GetBuilder<BoxesController>(
+      builder: (controller) {
         if (controller.isLoading.value) {
           return const SliverFillRemaining(
             child: Center(child: CircularProgressIndicator()),
@@ -77,7 +77,8 @@ class VeiwBoxes extends GetView<BoxesController> {
                                   : '',
                         );
                       },
-                onLongPress: controller.currentTab.value == 0
+                onLongPress: controller.currentTab.value == 0 ||
+                        controller.currentTab.value == 2
                     ? () => Get.dialog(
                           OnLongPressInBox(box: box as GetShownBoxesModel),
                         )

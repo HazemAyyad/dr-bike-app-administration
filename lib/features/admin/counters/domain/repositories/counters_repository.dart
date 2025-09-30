@@ -9,7 +9,9 @@ abstract class CountersRepository {
 
   Future<Either<Failure, Uint8List>> getReportByType({
     required String type,
+    String? employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    String? boxId,
   });
 }

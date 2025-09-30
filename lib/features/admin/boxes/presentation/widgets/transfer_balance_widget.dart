@@ -10,10 +10,14 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/boxes_controller.dart';
 
 class TransferBalanceWidget extends GetView<BoxesController> {
-  const TransferBalanceWidget({Key? key, required this.boxId})
-      : super(key: key);
+  const TransferBalanceWidget({
+    Key? key,
+    required this.boxId,
+    required this.currency,
+  }) : super(key: key);
 
   final int boxId;
+  final String currency;
   @override
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
@@ -56,6 +60,7 @@ class TransferBalanceWidget extends GetView<BoxesController> {
                 hint: 'boxNameExample',
                 dropdownField: controller.filteredShownBoxes
                     .where((e) => e.boxId != boxId)
+                    .where((e) => e.currency == currency)
                     .map((e) {
                   return DropdownMenuItem<String>(
                     value: e.boxId.toString(),
@@ -85,6 +90,7 @@ class TransferBalanceWidget extends GetView<BoxesController> {
               ),
               SizedBox(height: 20.h),
               AppButton(
+                isSafeArea: false,
                 isLoading: controller.isAddBoxLoading,
                 text: 'apply',
                 textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(

@@ -190,12 +190,12 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
           isDownload: isDownload,
         );
 
-        final directory = Directory("/storage/emulated/0/Pictures/Doctor Bike");
+        final directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
         final filePath =
-            "${directory.path}/فاتورة ${billDetails!.sellerName} ${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+            "${directory.path}/فاتورة_${billDetails!.sellerName}${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(response);
         Get.snackbar(

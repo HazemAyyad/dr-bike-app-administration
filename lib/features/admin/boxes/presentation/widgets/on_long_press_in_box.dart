@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/get_shown_boxes_model.dart';
@@ -40,41 +41,139 @@ class OnLongPressInBox extends GetView<BoxesController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (controller.currentTab.value == 0)
+                  TextButton.icon(
+                    onPressed: () {
+                      controller.addBalanceValueController.clear();
+                      Get.back();
+                      Get.dialog(AddBalanceWidget(boxId: box.boxId));
+                    },
+                    label: Text(
+                      'addOrWithdrawBalance'.tr,
+                      style: textStyle.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.add,
+                      size: 25.h,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                if (controller.currentTab.value == 0) SizedBox(height: 10.h),
+                if (controller.currentTab.value == 0)
+                  TextButton.icon(
+                    onPressed: () {
+                      Get.back();
+                      controller.transferToBoxIdController.clear();
+                      controller.transferTotalController.clear();
+                      Get.dialog(
+                        TransferBalanceWidget(
+                          boxId: box.boxId,
+                          currency: box.currency,
+                        ),
+                      );
+                    },
+                    label: Text(
+                      'transferBalance'.tr,
+                      style: textStyle.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    icon: Icon(
+                      Icons.swap_horiz,
+                      size: 25.h,
+                      color: AppColors.primaryColor,
+                    ),
+                  ),
+                if (controller.currentTab.value == 0) SizedBox(height: 10.h),
                 TextButton.icon(
                   onPressed: () {
                     Get.back();
-                    Get.dialog(AddBalanceWidget(boxId: box.boxId));
+                    Get.dialog(
+                      Dialog(
+                        backgroundColor: ThemeService.isDark.value
+                            ? AppColors.darkColor
+                            : AppColors.whiteColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(15.w),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      '${'deleteBox'.tr} ${box.boxName}',
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      style: textStyle.copyWith(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.redColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 20.h),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: AppButton(
+                                      isSafeArea: false,
+                                      isLoading: controller.isAddBoxLoading,
+                                      text: 'yes',
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(30.r),
+                                      onPressed: () {
+                                        controller.editBox(
+                                          context: context,
+                                          boxId: box.boxId.toString(),
+                                          isDelete: true,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  Expanded(
+                                    child: AppButton(
+                                      isSafeArea: false,
+                                      isLoading: controller.isAddBoxLoading,
+                                      text: 'cancel',
+                                      textColor: Colors.red,
+                                      color: Colors.transparent,
+                                      borderColor: Colors.red,
+                                      borderRadius: BorderRadius.circular(30.r),
+                                      onPressed: () => Get.back(),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
                   },
                   label: Text(
-                    'addBalance'.tr,
+                    'deleteBox'.tr,
                     style: textStyle.copyWith(
                       fontSize: 18.sp,
                       fontWeight: FontWeight.w700,
+                      color: AppColors.redColor,
                     ),
                   ),
                   icon: Icon(
-                    Icons.add,
+                    Icons.delete_outline,
                     size: 25.h,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                TextButton.icon(
-                  onPressed: () {
-                    Get.back();
-                    Get.dialog(TransferBalanceWidget(boxId: box.boxId));
-                  },
-                  label: Text(
-                    'transferBalance'.tr,
-                    style: textStyle.copyWith(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  icon: Icon(
-                    Icons.swap_horiz,
-                    size: 25.h,
-                    color: AppColors.primaryColor,
+                    color: AppColors.redColor,
                   ),
                 ),
               ],

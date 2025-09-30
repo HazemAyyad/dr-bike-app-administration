@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -11,7 +12,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../../../admin/admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/employee_dashbord_controller.dart';
 
-class EmployeeHomeStatisticsCard extends StatelessWidget {
+class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
   const EmployeeHomeStatisticsCard({Key? key}) : super(key: key);
 
   @override
@@ -46,7 +47,26 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 20.h),
+        Obx(
+          () {
+            final hours = controller.elapsed.value.inHours;
+            final minutes = controller.elapsed.value.inMinutes % 60;
+            final seconds = controller.elapsed.value.inSeconds % 60;
+            return controller.isStartWork
+                ? Text(
+                    '$seconds : $minutes : $hours',
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.bold,
+                          color: controller.isStartWork
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                  )
+                : const SizedBox();
+          },
+        ),
+        SizedBox(height: 10.h),
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
@@ -59,20 +79,29 @@ class EmployeeHomeStatisticsCard extends StatelessWidget {
             builder: (controller) {
               return Column(
                 children: [
-                  StatCard(
-                    // show: true,
-                    title: 'workingHours',
-                    imageicon: AssetsManager.doneIcon,
-                    value: controller.employeeData.value == null
-                        ? '0'
-                        : controller.employeeData.value!.totalWorkHours,
-                    subtitle: controller.employeeData.value == null
-                        ? '0'
-                        : int.parse(controller
-                                    .employeeData.value!.numberOfWorkHours) >
-                                10
-                            ? 'hour'.tr
-                            : 'hours'.tr,
+                  GestureDetector(
+                    onTap: () {
+                      controller.downloadReport(
+                        context: context,
+                        customerId: '',
+                        customerName: userName,
+                      );
+                    },
+                    child: StatCard(
+                      // show: true,
+                      title: 'workingHours',
+                      imageicon: AssetsManager.doneIcon,
+                      value: controller.employeeData.value == null
+                          ? '0'
+                          : controller.employeeData.value!.totalWorkHours,
+                      subtitle: controller.employeeData.value == null
+                          ? '0'
+                          : int.parse(controller
+                                      .employeeData.value!.numberOfWorkHours) >
+                                  10
+                              ? 'hour'.tr
+                              : 'hours'.tr,
+                    ),
                   ),
                   SizedBox(width: 8.w),
                   StatCard(

@@ -1,7 +1,9 @@
+import 'package:doctorbike/features/admin/counters/data/repositories/countrers_implement.dart';
 import 'package:doctorbike/features/admin/employee_section/domain/usecases/add_employee_usecase.dart';
 import 'package:doctorbike/features/admin/employee_section/domain/usecases/get_all_employee.dart';
 import 'package:get/get.dart';
 
+import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/repositorie_imp/employee_implement.dart';
 import '../../domain/usecases/add_points_usecase.dart';
 import '../../domain/usecases/approve_employee_order_usecase.dart';
@@ -60,6 +62,9 @@ class EmployeeSectionBinding extends Bindings {
         ),
         cancelLogUsecase: CancelLogUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getReportByType: GetReportByTypeUsecase(
+          countersRepository: Get.find<CountrersImplement>(),
         ),
       ),
     );

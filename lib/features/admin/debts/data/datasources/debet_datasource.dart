@@ -156,14 +156,17 @@ class DebetDatasource {
 
   Future<Uint8List> getDebtsReports({required String customerId}) async {
     try {
-      final response = await api.post(
-        EndPoints.getDebtsReports,
-        data: {
-          'customer_id': customerId,
-        },
-        options: Options(responseType: ResponseType.bytes),
-        isFormData: true,
-      );
+      final response = customerId.isNotEmpty
+          ? await api.post(
+              EndPoints.getDebtsReports,
+              data: {'customer_id': customerId},
+              options: Options(responseType: ResponseType.bytes),
+              isFormData: true,
+            )
+          : await api.get(
+              EndPoints.getAttendanceDetails,
+              options: Options(responseType: ResponseType.bytes),
+            );
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

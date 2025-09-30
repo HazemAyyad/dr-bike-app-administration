@@ -77,7 +77,11 @@ class EditBoxesScreen extends GetView<BoxesController> {
                           isLoading: controller.isAddBoxLoading,
                           text: 'editBox',
                           onPressed: () {
-                            controller.editBox(context, boxId);
+                            if ((controller. formKey.currentState as FormState)
+                                .validate()) {
+                              controller.editBox(
+                                  context: context, boxId: boxId);
+                            }
                           },
                           textStyle:
                               Theme.of(context).textTheme.bodyMedium!.copyWith(

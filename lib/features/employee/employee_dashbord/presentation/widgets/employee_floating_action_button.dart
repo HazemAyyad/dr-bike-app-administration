@@ -16,16 +16,12 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Get.locale!.languageCode == 'ar'
-          ? Alignment.bottomLeft
-          : Alignment.bottomRight,
+      alignment: Alignment.bottomRight,
       child: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Stack(
-          alignment: Get.locale!.languageCode == 'ar'
-              ? Alignment.bottomLeft
-              : Alignment.bottomRight,
+          alignment: Alignment.bottomRight,
           children: [
             Obx(() {
               if (!controller.isAddMenuOpen.value) {
@@ -46,8 +42,8 @@ class EmployeeFloatingActionButton extends GetView<EmployeeDashbordController> {
 
             Positioned(
               bottom: 50.h,
-              left: Get.locale!.languageCode == 'ar' ? 0.w : 180.w,
-              right: Get.locale!.languageCode == 'ar' ? 180.w : 0.w,
+              left: 50.w,
+              right: 50.w,
               child: SizeTransition(
                 sizeFactor: controller.sizeAnimation,
                 axisAlignment: -1.0,

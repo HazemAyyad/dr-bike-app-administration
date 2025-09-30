@@ -48,22 +48,6 @@ class AddBalanceWidget extends GetView<BoxesController> {
               ],
             ),
             SizedBox(height: 10.h),
-            // CustomDropdownField(
-            //   label: 'boxName',
-            //   labelTextStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            //         color: AppColors.primaryColor,
-            //         fontSize: 15.sp,
-            //         fontWeight: FontWeight.w700,
-            //       ),
-            //   hint: 'boxNameExample',
-            //   items: controller.boxes
-            //       .map((box) => box['boxName'] as String)
-            //       .toList(),
-            //   onChanged: (value) {
-            //     controller.addBalanceBoxNameController.text = value!;
-            //   },
-            // ),
-            // SizedBox(height: 10.h),
             Form(
               key: controller.formKey,
               child: CustomTextField(
@@ -80,6 +64,7 @@ class AddBalanceWidget extends GetView<BoxesController> {
             ),
             SizedBox(height: 20.h),
             AppButton(
+              isSafeArea: false,
               isLoading: controller.isAddBoxLoading,
               text: 'apply',
               textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(

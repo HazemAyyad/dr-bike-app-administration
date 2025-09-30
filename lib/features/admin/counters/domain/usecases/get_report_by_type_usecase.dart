@@ -11,13 +11,17 @@ class GetReportByTypeUsecase {
 
   Future<Either<Failure, Uint8List>> call({
     required String type,
+    String? employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    String? boxId,
   }) {
     return countersRepository.getReportByType(
       type: type,
+      employeeId: employeeId,
       fromDate: fromDate,
       toDate: toDate,
+      boxId: boxId,
     );
   }
 }

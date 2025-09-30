@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/services/initial_bindings.dart';
+import 'package:doctorbike/features/admin/debts/data/repositories/debts_implement.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -12,6 +13,7 @@ import '../../admin/counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../admin/counters/domain/usecases/get_report_information_usecase.dart';
 import '../../admin/counters/presentation/controllers/counters_controller.dart';
 import '../../admin/counters/presentation/views/counters_screen.dart';
+import '../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
 import '../../admin/employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../admin/employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../admin/employee_section/domain/usecases/get_all_employee.dart';
@@ -87,6 +89,9 @@ class BottomNavBarController extends GetxController {
                   employeeDashbordRepository:
                       Get.find<EmployeeDashbordImplement>(),
                 ),
+                getDebtsReports: GetDebtsReportsUsecase(
+                  debtsRepository: Get.find<DebtsImplement>(),
+                ),
               ),
             );
           }
@@ -122,6 +127,9 @@ class BottomNavBarController extends GetxController {
                 requestOverTimeLoanUsecase: RequestOverTimeLoanUsecase(
                   employeeDashbordRepository:
                       Get.find<EmployeeDashbordImplement>(),
+                ),
+                getDebtsReports: GetDebtsReportsUsecase(
+                  debtsRepository: Get.find<DebtsImplement>(),
                 ),
               ),
             );

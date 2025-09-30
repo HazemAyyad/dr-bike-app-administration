@@ -34,15 +34,19 @@ class CountrersImplement implements CountersRepository {
   @override
   Future<Either<Failure, Uint8List>> getReportByType({
     required String type,
+    String? employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    String? boxId,
   }) async {
     if (await networkInfo.isConnected) {
       try {
         final reportInformation = await countrersDataSource.getReportByType(
           type: type,
+          employeeId: employeeId,
           fromDate: fromDate,
           toDate: toDate,
+          boxId: boxId,
         );
         return Right(reportInformation);
       } on ServerException catch (e) {

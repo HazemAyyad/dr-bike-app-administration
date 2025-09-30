@@ -20,14 +20,17 @@ class MovementsWidget extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 box.type! == 'transfer'
                     ? 'transferBalance'.tr
-                    : 'addOrTransferBalance'.tr,
+                    : box.type! == 'add'
+                        ? 'addBalance'.tr
+                        : 'withdrawBalance'.tr,
                 style: textStyle.copyWith(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w400,
@@ -53,7 +56,7 @@ class MovementsWidget extends StatelessWidget {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          "${'to'.tr} : ${box.toBox!.name}",
+                          "${'to'.tr} : ${box.toBox?.name ?? ''}",
                           style: textStyle.copyWith(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w400,
@@ -84,9 +87,9 @@ class MovementsWidget extends StatelessWidget {
           decoration: BoxDecoration(
             color: box.type == 'transfer'
                 ? AppColors.customOrange3
-                : box.type != 'add'
-                    ? AppColors.redColor
-                    : AppColors.customGreen1,
+                : box.type == 'add'
+                    ? AppColors.customGreen1
+                    : AppColors.redColor,
             borderRadius: Get.locale!.languageCode == 'en'
                 ? BorderRadius.only(
                     topRight: Radius.circular(4.r),

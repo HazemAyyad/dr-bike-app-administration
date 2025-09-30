@@ -1,5 +1,7 @@
+import 'package:doctorbike/features/admin/counters/data/repositories/countrers_implement.dart';
 import 'package:get/get.dart';
 
+import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/repositories/boxes_implement.dart';
 import '../../domain/usecases/add_box_balance_usecase.dart';
 import '../../domain/usecases/add_boxes_usecase.dart';
@@ -31,6 +33,9 @@ class BoxesBinding extends Bindings {
             AddBoxBalanceUsecase(boxesRepository: Get.find<BoxesImplement>()),
         editBoxUsecase:
             EditBoxUsecase(boxesRepository: Get.find<BoxesImplement>()),
+        getReportByType: GetReportByTypeUsecase(
+          countersRepository: Get.find<CountrersImplement>(),
+        ),
       ),
     );
   }

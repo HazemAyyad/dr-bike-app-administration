@@ -63,12 +63,13 @@ class CountersController extends GetxController {
           message: failure.data['message'] ?? 'Unknown error',
         );
       }, (success) async {
-        final directory = Directory("/storage/emulated/0/Pictures/Doctor Bike");
+        final directory =
+            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
         final filePath =
-            "${directory.path}/${p.basename(type)} Report ${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+            "${directory.path}/${p.basename(type)}_تقرير${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(success);
         Get.snackbar(

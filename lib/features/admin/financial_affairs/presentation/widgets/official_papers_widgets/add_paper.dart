@@ -119,6 +119,7 @@ class AddPaper extends GetView<OfficialPapersController> {
                 label: 'notes'.tr,
                 hintText: 'notes'.tr,
                 controller: controller.notesController,
+                validator: (value) => null,
               ),
               SizedBox(height: 20.h),
               AppButton(

@@ -1,10 +1,16 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
 import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks_controller.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../../domain/usecases/change_task_completed_uasecase.dart';
@@ -16,12 +22,66 @@ class EmployeeDashbordController extends GetxController
   final RequestOverTimeLoanUsecase requestOverTimeLoanUsecase;
   final GetEmployeeDataUsecase getEmployeeDataUsecase;
   final ChangeTaskCompletedUasecase changeTaskCompletedUasecase;
+  final GetDebtsReportsUsecase getDebtsReports;
 
   EmployeeDashbordController({
     required this.requestOverTimeLoanUsecase,
     required this.getEmployeeDataUsecase,
     required this.changeTaskCompletedUasecase,
+    required this.getDebtsReports,
   });
+  bool isStartWork = false;
+  final box = GetStorage();
+  Timer? timer;
+  DateTime? startTime;
+  Rx<Duration> elapsed = Duration.zero.obs;
+
+  void _loadStartTime() {
+    final startMillis = box.read("work_start_time");
+    if (startMillis != null) {
+      startTime = DateTime.fromMillisecondsSinceEpoch(startMillis);
+      _startTimer();
+    }
+    isStartWork = box.read("isStartWork") ?? false;
+    update();
+  }
+
+  void _saveStartTime() {
+    box.write("work_start_time", startTime!.millisecondsSinceEpoch);
+    update();
+  }
+
+  void _startTimer() {
+    timer?.cancel();
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      elapsed.value = DateTime.now().difference(startTime!);
+    });
+    update();
+  }
+
+  void onStartWork() {
+    isStartWork = !isStartWork;
+    box.write("isStartWork", isStartWork);
+    if (startTime == null) {
+      startTime = DateTime.now();
+      _saveStartTime();
+      _startTimer();
+    }
+    isStartWork = box.read("isStartWork") ?? false;
+    update();
+  }
+
+  void onResetWork() {
+    isStartWork = !isStartWork;
+    box.write("isStartWork", isStartWork);
+    timer?.cancel();
+    startTime = null;
+    elapsed.value = Duration.zero;
+    isStartWork = box.read("isStartWork") ?? false;
+    box.remove("work_start_time");
+    update();
+  }
+
   final formKey = GlobalKey<FormState>();
 
   final RxBool isAddMenuOpen = false.obs;
@@ -259,9 +319,62 @@ class EmployeeDashbordController extends GetxController
     update();
   }
 
+  // download report
+  Future<void> downloadReport({
+    required String customerId,
+    required String customerName,
+    required BuildContext context,
+  }) async {
+    try {
+      // نطلب من المستخدم يختار فولدر
+      Get.snackbar(
+        "info".tr,
+        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2500),
+      );
+      // نجيب الداتا من API
+      final response = await getDebtsReports.call(customerId: customerId);
+
+      response.fold((failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'] ?? 'Unknown error',
+        );
+      }, (success) async {
+        final directory =
+            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        final filePath =
+            "${directory.path}/تقرير_ساعات_عمل_$customerName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+        final file = File(filePath);
+        await file.writeAsBytes(success);
+        Get.snackbar(
+          "fileDownloadedSuccessfully".tr,
+          filePath,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 2000),
+        );
+
+        await OpenFilex.open(filePath);
+      });
+    } catch (e) {
+      Get.snackbar(
+        "error".tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2000),
+      );
+    }
+  }
+
   @override
   void onInit() async {
     super.onInit();
+    _loadStartTime();
     getEmployeeData();
     animController = AnimationController(
       vsync: this,

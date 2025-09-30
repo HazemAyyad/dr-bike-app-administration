@@ -1,14 +1,18 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:path/path.dart' as p;
 
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/models/financial_details_model.dart';
 import '../../data/models/financial_dues_model.dart';
 import '../../data/models/overtime_and_loan_model.dart';
@@ -43,6 +47,7 @@ class EmployeeSectionController extends GetxController
   final GetLogsUsecase getLogsUsecase;
   final CancelLogUsecase cancelLogUsecase;
   final EmployeeService employeeService;
+  final GetReportByTypeUsecase getReportByType;
 
   EmployeeSectionController({
     required this.paySalaryEmployee,
@@ -58,6 +63,7 @@ class EmployeeSectionController extends GetxController
     required this.getLogsUsecase,
     required this.cancelLogUsecase,
     required this.employeeService,
+    required this.getReportByType,
   });
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -72,19 +78,11 @@ class EmployeeSectionController extends GetxController
 
   final RxBool isLoading = false.obs;
 
+  List<DateTime>? dateTimeList;
+
   void changeTab(int index) {
     currentTab.value = index;
   }
-
-  final List<String> daysList = [
-    "saturday".tr,
-    "sunday".tr,
-    "monday".tr,
-    "tuesday".tr,
-    "wednesday".tr,
-    "thursday".tr,
-    "friday".tr,
-  ];
 
   final TextEditingController paySalaryController = TextEditingController();
 
@@ -160,6 +158,8 @@ class EmployeeSectionController extends GetxController
           );
         },
         (success) {
+          getFinancialDues();
+          paySalaryController.clear();
           Get.back();
           Future.delayed(
             const Duration(milliseconds: 1500),
@@ -167,7 +167,6 @@ class EmployeeSectionController extends GetxController
               Get.back();
             },
           );
-          paySalaryController.clear();
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
@@ -499,6 +498,66 @@ class EmployeeSectionController extends GetxController
       Get.snackbar("نجاح ✅", "تم حفظ الكود في المعرض");
     } catch (e) {
       Get.snackbar("خطأ ❌", "فشل حفظ الكود");
+    }
+  }
+
+  // download report
+  Future<void> downloadReport({
+    required String type,
+    required BuildContext context,
+    String? employeeId,
+    String? employeeName,
+  }) async {
+    try {
+      Get.back();
+      Get.snackbar(
+        "info".tr,
+        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2500),
+      );
+      final response = await getReportByType.call(
+        type: type,
+        employeeId: employeeId,
+        fromDate: DateTime(
+          dateTimeList?.first.year ?? DateTime.now().year,
+          dateTimeList?.first.month ?? DateTime.now().month,
+          dateTimeList?.first.day ?? DateTime.now().day,
+        ),
+        toDate: DateTime(
+          dateTimeList?.last.year ?? DateTime.now().year,
+          dateTimeList?.last.month ?? DateTime.now().month,
+          dateTimeList?.last.day ?? DateTime.now().day,
+        ),
+      );
+
+      response.fold((failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'] ?? 'Unknown error',
+        );
+      }, (success) async {
+        final directory =
+            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        final filePath =
+            "${directory.path}/${p.basename(type)}_تقرير_$employeeName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+        final file = File(filePath);
+        await file.writeAsBytes(success);
+        Get.snackbar(
+          "fileDownloadedSuccessfully".tr,
+          filePath,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 2000),
+        );
+
+        await OpenFilex.open(filePath);
+      });
+    } catch (e) {
+      Get.snackbar("error".tr, e.toString());
     }
   }
 

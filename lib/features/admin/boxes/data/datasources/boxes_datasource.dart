@@ -158,7 +158,8 @@ class BoxesDatasource {
     required String currency,
   }) async {
     try {
-      final response = await api.post(EndPoints.editBox, data: {
+      final response = await api
+          .post(name.isEmpty ? EndPoints.deleteBox : EndPoints.editBox, data: {
         'box_id': boxId,
         'name': name,
         'total': total,

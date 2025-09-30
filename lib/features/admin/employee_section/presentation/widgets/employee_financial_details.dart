@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:omni_datetime_picker/omni_datetime_picker.dart';
 
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
@@ -42,7 +43,12 @@ class EmployeeFinancialDetails extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      onPressed: () => Get.back(),
+                      onPressed: () => controller.downloadReport(
+                        type: 'financial',
+                        context: context,
+                        employeeId: employee.employeeId.toString(),
+                        employeeName: employee.employeeName,
+                      ),
                       icon: Icon(
                         Icons.print_outlined,
                         color: AppColors.primaryColor,
@@ -70,46 +76,80 @@ class EmployeeFinancialDetails extends StatelessWidget {
                   ],
                 ),
               ),
-              CustomTextField(
-                label: 'employeeName'.tr,
-                labelTextstyle: textStyle.copyWith(
-                  color: AppColors.primaryColor,
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-                hintText: employee.employeeName,
-                hintStyle: textStyle.copyWith(
-                  color: Colors.grey,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-                enabled: false,
-                sizedBox: false,
-                fillColor: ThemeService.isDark.value
-                    ? AppColors.darkColor
-                    : AppColors.whiteColor,
+              Row(
+                children: [
+                  Flexible(
+                    child: CustomTextField(
+                      label: 'employeeName'.tr,
+                      labelTextstyle: textStyle.copyWith(
+                        color: AppColors.primaryColor,
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      hintText: employee.employeeName,
+                      hintStyle: textStyle.copyWith(
+                        color: Colors.grey,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      enabled: false,
+                      sizedBox: false,
+                      fillColor: ThemeService.isDark.value
+                          ? AppColors.darkColor
+                          : AppColors.whiteColor,
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Flexible(
+                    child: GestureDetector(
+                      onTap: () async {
+                        controller.dateTimeList =
+                            await showOmniDateTimeRangePicker(
+                          context: context,
+                          type: OmniDateTimePickerType.date,
+                          is24HourMode: false,
+                          isShowSeconds: false,
+                          isForceEndDateAfterStartDate: true,
+                        );
+                        controller.update();
+                      },
+                      child: GetBuilder<EmployeeSectionController>(
+                        builder: (controller) {
+                          return CustomTextField(
+                            label: 'selectMonth'.tr,
+                            labelTextstyle: textStyle.copyWith(
+                              color: AppColors.primaryColor,
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            hintText: controller.dateTimeList != null
+                                ? '${controller.dateTimeList?.first.month}-${controller.dateTimeList?.first.day} ${'to'.tr} ${controller.dateTimeList?.last.day}-${controller.dateTimeList?.last.month}'
+                                : 'selectMonth'.tr,
+                            hintStyle: textStyle.copyWith(
+                              color: Colors.grey,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            enabled: false,
+                            // sizedBox: false,
+                          );
+                        },
+                      ),
+                    ),
+                    // CustomDropdownField(
+                    //   label: 'selectMonth',
+                    //   labelTextStyle: textStyle.copyWith(
+                    //     color: AppColors.primaryColor,
+                    //     fontSize: 17.sp,
+                    //     fontWeight: FontWeight.w700,
+                    //   ),
+                    //   hint: 'employee',
+                    //   items: controller.daysList,
+                    //   onChanged: (value) {},
+                    // ),
+                  )
+                ],
               ),
-              // Row(
-              //   children: [
-              //     Flexible(
-              //       child:
-              //     ),
-              //     SizedBox(width: 10.w),
-              // Flexible(
-              //   child: CustomDropdownField(
-              //     label: 'selectMonth',
-              //     labelTextStyle: textStyle.copyWith(
-              //       color: AppColors.primaryColor,
-              //       fontSize: 17.sp,
-              //       fontWeight: FontWeight.w700,
-              //     ),
-              //     hint: 'employee',
-              //     items: controller.daysList,
-              //     onChanged: (value) {},
-              //   ),
-              // )
-              // ],
-              // ),
               SizedBox(height: 5.h),
               Row(
                 children: [
@@ -255,35 +295,41 @@ class EmployeeFinancialDetails extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 5.h),
-              Column(
-                children: [
-                  CustomTextField(
-                    labelTextstyle: textStyle.copyWith(
-                      color: Colors.green,
-                      fontSize: 17.sp,
-                      fontWeight: FontWeight.w700,
+              Form(
+                key: controller.formKey,
+                child: Column(
+                  children: [
+                    CustomTextField(
+                      labelTextstyle: textStyle.copyWith(
+                        color: Colors.green,
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      label: 'paySalary',
+                      hintText: 'salary',
+                      hintStyle: textStyle.copyWith(
+                        color: Colors.grey,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      controller: controller.paySalaryController,
                     ),
-                    label: 'paySalary',
-                    hintText: 'salary',
-                    hintStyle: textStyle.copyWith(
-                      color: Colors.grey,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    controller: controller.paySalaryController,
-                  ),
-                  SizedBox(height: 10.h),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10.h),
-                    child: AppButton(
-                      isLoading: controller.isLoading,
-                      text: 'apply',
-                      onPressed: () => controller.isLoading.value
-                          ? null
-                          : controller.paySalaryToEmployee(context, '9'),
-                    ),
-                  )
-                ],
+                    SizedBox(height: 10.h),
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10.h),
+                      child: AppButton(
+                        isLoading: controller.isLoading,
+                        text: 'apply',
+                        onPressed: () => controller.isLoading.value
+                            ? null
+                            : controller.paySalaryToEmployee(
+                                context,
+                                employee.employeeId.toString(),
+                              ),
+                      ),
+                    )
+                  ],
+                ),
               ),
             ],
           ),

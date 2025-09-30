@@ -680,10 +680,12 @@ const Map<String, String> en = {
   'createBox': 'Create Box',
   'editBox': 'Edit Box',
   'addBalance': 'Add Balance',
+  'withdrawBalance': 'Withdraw Balance',
   'transferBalance': 'Transfer Balance',
-  'addOrTransferBalance': 'Add / Transfer Balance',
+  'addOrWithdrawBalance': 'Add / Withdraw Balance',
   'value': 'Value',
   'transfer': 'Transfer',
+  'deleteBox': 'Delete Box',
 
   // قسم الصيانة
   "newRequest": "New Requests",

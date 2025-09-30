@@ -195,9 +195,6 @@ class DebtsController extends GetxController {
     required bool isCustomer,
     required String type,
   }) async {
-    print(totalDebtController.text);
-    print(dueDateController.text);
-
     if (totalDebtController.text.isEmpty || dueDateController.text.isEmpty) {
       Get.snackbar(
         'error'.tr,
@@ -299,12 +296,13 @@ class DebtsController extends GetxController {
           message: failure.data['message'] ?? 'Unknown error',
         );
       }, (success) async {
-        final directory = Directory("/storage/emulated/0/Download");
+        final directory =
+            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
         final filePath =
-            "${directory.path}/تقرير ديون $customerName ${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+            "${directory.path}/تقرير_ديون_$customerName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(success);
         Get.snackbar(

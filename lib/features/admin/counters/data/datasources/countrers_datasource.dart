@@ -30,15 +30,23 @@ class CountrersDatasource {
 
   // download report
   Future<Uint8List> getReportByType({
-    required String type,
+    String? type,
+    String? employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    String? boxId,
   }) async {
     try {
       final response = await api.post(
-        EndPoints.getReportByType,
+        boxId != null
+            ? EndPoints.boxLogsReport
+            : employeeId != null
+                ? EndPoints.employeeFinancialDataReport
+                : EndPoints.getReportByType,
         data: {
-          'type': type,
+          if (type != null) 'type': type,
+          if (employeeId != null) 'employee_id': employeeId,
+          if (boxId != null) 'box_id': boxId,
           'from_date': fromDate,
           'to_date': toDate,
         },

@@ -38,8 +38,8 @@ class PictureCard extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: data.file,
                 fit: BoxFit.cover,
-                // height: 75.h,
-                // width: 70.w,
+                height: 80.h,
+                width: 100.w,
                 errorWidget: (context, url, error) =>
                     Image.network(AssetsManager.noImageNet),
                 placeholder: (context, url) =>

@@ -27,6 +27,7 @@ class EndPoints {
   static const String addLoanOrder = 'employee/add/loan/order';
 
   static const String getMyOrders = 'employee/orders';
+  static const String getAttendanceDetails = 'get/attendance/details';
 
   // admin dashboard
   static const String adminLogs = 'all/logs';
@@ -63,6 +64,8 @@ class EndPoints {
       'approve/employee/overtime/order';
   static const String employeeLogs = 'employee/logs';
   static const String cancelLog = 'cancel/log';
+  static const String employeeFinancialDataReport =
+      'get/employee/financial/data/report';
 
   // tasks section
   static const String createEmployeeTask = 'create/employee/task';
@@ -103,6 +106,8 @@ class EndPoints {
   static const String showBox = 'show/box';
   static const String addBoxBalance = 'add/box/balance';
   static const String editBox = 'edit/box';
+  static const String boxLogsReport = 'box/logs/report';
+  static const String deleteBox = 'delete/box';
 
   // check section
   static const String notCashedIncomingChecks =

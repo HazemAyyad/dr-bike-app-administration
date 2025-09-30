@@ -15,6 +15,7 @@ void showCustomDialog(
   TextEditingController? employeeNameController,
   required String label,
   required VoidCallback onPressed,
+  VoidCallback? onClear,
 }) {
   Get.dialog(
     WillPopScope(
@@ -30,7 +31,7 @@ void showCustomDialog(
           borderRadius: BorderRadius.circular(8.r),
         ),
         child: Padding(
-          padding: EdgeInsets.all(25.w),
+          padding: EdgeInsets.all(20.w),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -179,12 +180,13 @@ void showCustomDialog(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.whiteColor,
                               ),
-                      onPressed: () {
-                        fromDateController?.clear();
-                        toDateController?.clear();
-                        employeeNameController?.clear();
-                        onPressed();
-                      },
+                      onPressed: onClear ??
+                          () {
+                            fromDateController?.clear();
+                            toDateController?.clear();
+                            employeeNameController?.clear();
+                            onPressed();
+                          },
                     ),
                   ),
                 ],

@@ -36,9 +36,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              height: 10.h,
-            ),
+            SizedBox(height: 10.h),
             // بطاقات الإحصائيات
             const EmployeeHomeStatisticsCard(),
             SizedBox(height: 15.h),
@@ -132,6 +130,9 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
         ),
       ),
       floatingActionButton: const EmployeeFloatingActionButton(),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
     );
   }
 }

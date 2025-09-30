@@ -54,7 +54,6 @@ class DestructionProductsScreen extends GetView<ExpensesController> {
                 controller: controller.damageReasonController,
                 label: 'damageReason',
                 hintText: 'damageReason',
-                keyboardType: TextInputType.number,
               ),
               SizedBox(height: 20.h),
               MediaUploadButton(

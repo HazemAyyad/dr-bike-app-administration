@@ -42,16 +42,19 @@ class FullScreenQRScanner extends GetView<QrCodeController> {
                 ),
               ),
               ElevatedButton(
-                onPressed: () async {
-                  controller.qrScan(context);
+                onPressed: () {
+                  controller.controller?.resumeCamera();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryColor,
                   shape: const CircleBorder(),
-                  padding: EdgeInsets.all(20.w),
+                  padding: EdgeInsets.all(10.w),
                 ),
-                child: Icon(Icons.qr_code_scanner,
-                    color: Colors.white, size: 24.sp),
+                child: Icon(
+                  Icons.refresh,
+                  color: Colors.white,
+                  size: 40.sp,
+                ),
               ),
               const SizedBox(height: 10),
             ],

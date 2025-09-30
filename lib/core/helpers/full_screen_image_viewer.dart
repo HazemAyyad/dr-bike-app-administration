@@ -29,7 +29,7 @@ class FullScreenZoomImage extends StatelessWidget {
       Directory dir;
       if (Platform.isAndroid) {
         // خزن الصورة داخل Pictures/اسم_التطبيق
-        dir = Directory("/storage/emulated/0/Pictures/Doctor Bike");
+        dir = Directory("/storage/emulated/0/Download/Doctor Bike/photos");
         if (!await dir.exists()) {
           await dir.create(recursive: true);
         }

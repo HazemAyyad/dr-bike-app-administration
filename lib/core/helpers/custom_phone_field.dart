@@ -177,6 +177,7 @@ class CustomPhoneField extends StatefulWidget {
     this.label = '',
     this.isRequired = false,
     this.textInputAction,
+    this.maxLength,
   }) : super(key: key);
 
   final TextEditingController controller;
@@ -184,6 +185,7 @@ class CustomPhoneField extends StatefulWidget {
   final String label;
   final bool isRequired;
   final TextInputAction? textInputAction;
+  final int? maxLength;
 
   @override
   State<CustomPhoneField> createState() => _CustomPhoneFieldState();
@@ -369,7 +371,7 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
             SizedBox(width: 8.w),
             Expanded(
               child: TextField(
-                // maxLength: 10,
+                maxLength: 9,
                 focusNode: _focusNode,
                 controller: _phoneOnlyController,
                 onChanged: (value) {
