@@ -59,7 +59,7 @@ class UserTransactionsWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          DateFormat('dd/MM/yyyy').format(debt.debtCreatedAt),
+                          DateFormat('dd/MM/yyyy').format(debt.dueDate),
                           style:
                               Theme.of(context).textTheme.bodyMedium!.copyWith(
                                     fontSize: 13.sp,

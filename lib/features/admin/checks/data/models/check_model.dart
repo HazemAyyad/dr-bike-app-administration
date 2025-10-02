@@ -1,12 +1,20 @@
 import '../../domain/entity/check_entity.dart';
 
+// import '../../domain/entity/check_entity.dart';
+
 class NotCashedModel {
   final String status;
   final String checksStatus;
   final String checksImagesPath;
   final List<CheckModel> inComingChecksList;
   final String checksCount;
-  final String checksTotal;
+  final String checksTotalDollar;
+  final String checksTotalShekel;
+  final String checksTotalDinar;
+  final String boxesTotalDollar;
+  final String boxesTotalShekel;
+  final String boxesTotalDinar;
+  final Map<String, dynamic>? coverPercentage;
 
   NotCashedModel({
     required this.status,
@@ -14,20 +22,34 @@ class NotCashedModel {
     required this.checksImagesPath,
     required this.inComingChecksList,
     required this.checksCount,
-    required this.checksTotal,
+    required this.checksTotalDollar,
+    required this.checksTotalShekel,
+    required this.checksTotalDinar,
+    required this.boxesTotalDollar,
+    required this.boxesTotalShekel,
+    required this.boxesTotalDinar,
+    required this.coverPercentage,
   });
 
-  factory NotCashedModel.fromJson(Map<String, dynamic> json) {
+  factory NotCashedModel.fromJson(Map<String, dynamic> json,
+      {required String checksPath}) {
     return NotCashedModel(
       status: json['status'] ?? '',
       checksStatus: json['checks_status'] ?? '',
       checksImagesPath: json['checks_images_path'] ?? '',
-      inComingChecksList: (json['not_cashed_checks'] as List<dynamic>)
-          .map((e) =>
-              CheckModel.fromJson(e, imgPath: json['checks_images_path']))
-          .toList(),
+      inComingChecksList: (json[checksPath] as List<dynamic>?)
+              ?.map((e) =>
+                  CheckModel.fromJson(e, imgPath: json['checks_images_path']))
+              .toList() ??
+          [],
       checksCount: (json['checks_count'] ?? '').toString(),
-      checksTotal: (json['checks_total'] ?? '').toString(),
+      checksTotalDollar: (json['checks_total_dollar'] ?? '').toString(),
+      checksTotalShekel: (json['checks_total_shekel'] ?? '').toString(),
+      checksTotalDinar: (json['checks_total_dinar'] ?? '').toString(),
+      boxesTotalDollar: (json['boxes_total_dollar'] ?? '').toString(),
+      boxesTotalShekel: (json['boxes_total_shekel'] ?? '').toString(),
+      boxesTotalDinar: (json['boxes_total_dinar'] ?? '').toString(),
+      coverPercentage: json['cover_percentage'],
     );
   }
 
@@ -38,10 +60,87 @@ class NotCashedModel {
       'checks_images_path': checksImagesPath,
       'not_cashed_checks': inComingChecksList.map((e) => e.toJson()).toList(),
       'checks_count': checksCount,
-      'checks_total': checksTotal
+      'checks_total_dollar': checksTotalDollar,
+      'checks_total_shekel': checksTotalShekel,
+      'checks_total_dinar': checksTotalDinar,
+      'boxes_total_dollar': boxesTotalDollar,
+      'boxes_total_shekel': boxesTotalShekel,
+      'boxes_total_dinar': boxesTotalDinar,
+      'cover_percentage': coverPercentage,
     };
   }
 }
+
+class CoverPercentageModel {
+  final double dollar;
+  final double dinar;
+  final double shekel;
+
+  CoverPercentageModel({
+    required this.dollar,
+    required this.dinar,
+    required this.shekel,
+  });
+
+  factory CoverPercentageModel.fromJson(Map<String, dynamic> json) {
+    return CoverPercentageModel(
+      dollar: (json['dollar'] ?? 0).toDouble(),
+      dinar: (json['dinar'] ?? 0).toDouble(),
+      shekel: (json['shekel'] ?? 0).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'dollar': dollar,
+      'dinar': dinar,
+      'shekel': shekel,
+    };
+  }
+}
+
+// class NotCashedModel {
+//   final String status;
+//   final String checksStatus;
+//   final String checksImagesPath;
+//   final List<CheckModel> inComingChecksList;
+//   final String checksCount;
+//   final String checksTotal;
+
+//   NotCashedModel({
+//     required this.status,
+//     required this.checksStatus,
+//     required this.checksImagesPath,
+//     required this.inComingChecksList,
+//     required this.checksCount,
+//     required this.checksTotal,
+//   });
+
+//   factory NotCashedModel.fromJson(Map<String, dynamic> json) {
+//     return NotCashedModel(
+//       status: json['status'] ?? '',
+//       checksStatus: json['checks_status'] ?? '',
+//       checksImagesPath: json['checks_images_path'] ?? '',
+//       inComingChecksList: (json['not_cashed_checks'] as List<dynamic>)
+//           .map((e) =>
+//               CheckModel.fromJson(e, imgPath: json['checks_images_path']))
+//           .toList(),
+//       checksCount: (json['checks_count'] ?? '').toString(),
+//       checksTotal: (json['checks_total'] ?? '').toString(),
+//     );
+//   }
+
+//   Map<String, dynamic> toJson() {
+//     return {
+//       'status': status,
+//       'checks_status': checksStatus,
+//       'checks_images_path': checksImagesPath,
+//       'not_cashed_checks': inComingChecksList.map((e) => e.toJson()).toList(),
+//       'checks_count': checksCount,
+//       'checks_total': checksTotal
+//     };
+//   }
+// }
 
 class CheckModel extends CheckEntity {
   const CheckModel({

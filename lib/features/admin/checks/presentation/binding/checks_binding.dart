@@ -7,6 +7,7 @@ import '../../data/repositories/checks_implement.dart';
 import '../../domain/usecases/add_checks_usecase.dart';
 import '../../domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/cashed_to_person_cancel_usecase.dart';
+import '../../domain/usecases/edit_checks_usecase.dart';
 import '../../domain/usecases/general_checks_data_usecase.dart';
 import '../../domain/usecases/general_outgoing_data_usecase.dart';
 import '../../domain/usecases/get_checks_usecase.dart';
@@ -43,6 +44,9 @@ class ChecksBinding extends Bindings {
           boxesRepository: Get.find<BoxesImplement>(),
         ),
         chashToBoxUsecase: ChashToBoxUsecase(
+          checksRepository: Get.find<ChecksImplement>(),
+        ),
+        editChecksUsecase: EditChecksUsecase(
           checksRepository: Get.find<ChecksImplement>(),
         ),
       ),

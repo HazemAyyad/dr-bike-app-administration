@@ -9,7 +9,14 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../controllers/debts_controller.dart';
 
 class UserAccount extends GetView<DebtsController> {
-  const UserAccount({Key? key}) : super(key: key);
+  const UserAccount({
+    Key? key,
+    required this.userName,
+    required this.userId,
+  }) : super(key: key);
+
+  final String userName;
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
@@ -51,15 +58,23 @@ class UserAccount extends GetView<DebtsController> {
                     ),
                   ],
                 ),
-                Obx(
-                  () => Flexible(
+                GetBuilder<DebtsController>(
+                  builder: (controller) => Flexible(
                     child: Text(
                       controller.dataService.userTransactionsDataModel.value ==
                               null
                           ? '0.00 ${'currency'.tr}'
                           : '${NumberFormat("#,###").format(controller.dataService.userTransactionsDataModel.value!.customerBalance)} ${'currency'.tr}',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: Colors.green,
+                            color: (controller
+                                            .dataService
+                                            .userTransactionsDataModel
+                                            .value
+                                            ?.customerBalance ??
+                                        0) <
+                                    0
+                                ? Colors.red
+                                : Colors.green,
                             fontSize: 17.sp,
                             fontWeight: FontWeight.w700,
                           ),
@@ -114,11 +129,8 @@ class UserAccount extends GetView<DebtsController> {
             GestureDetector(
               onTap: () {
                 controller.downloadReport(
-                  customerId: controller.dataService.userTransactionsDataModel
-                      .value!.customerDebts.first.customerId
-                      .toString(),
-                  customerName: controller.dataService.userTransactionsDataModel
-                      .value!.customerDebts.first.customerName,
+                  customerId: userId,
+                  customerName: userName,
                   context: context,
                 );
               },

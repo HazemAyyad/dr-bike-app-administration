@@ -28,10 +28,6 @@ class GeneralDataListController extends GetxController {
   final isEdit = false.obs;
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  // TextEditingController toDateController = TextEditingController();
-  // TextEditingController fromDateController = TextEditingController();
-  TextEditingController employeeNameController = TextEditingController();
-
   final currentTab = 0.obs;
 
   TextEditingController customerNameController = TextEditingController();
@@ -60,6 +56,7 @@ class GeneralDataListController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
+    update();
   }
 
   final isLoading = false.obs;
@@ -74,9 +71,7 @@ class GeneralDataListController extends GetxController {
   List<GeneralDataModel> sellersSearch = [];
   List<GeneralDataModel> inCompleteDataSearch = [];
 
-  void searchBar() {
-    isLoading(true);
-    String value = employeeNameController.text.toLowerCase();
+  void searchBar(String value) {
     if (value.isNotEmpty) {
       // الموظفين
       employeeSearch = generalDataServes.employeeDataList
@@ -110,8 +105,7 @@ class GeneralDataListController extends GetxController {
       sellersSearch = generalDataServes.sellersDataList;
       inCompleteDataSearch = generalDataServes.inCompleteDataList;
     }
-    isLoading(false);
-    Get.back();
+
     update();
   }
 
@@ -197,6 +191,7 @@ class GeneralDataListController extends GetxController {
         },
       );
       isLoading(false);
+      update();
     }
   }
 
@@ -207,7 +202,10 @@ class GeneralDataListController extends GetxController {
             generalDataServes.inCompleteDataList.isEmpty
         ? isLoading(true)
         : isLoading(false);
+    update();
+
     loding ? isLoading(true) : null;
+    update();
 
     generalDataServes.employeeDataList
         .assignAll(await getCustomersUseCase.call(tab: 0));
@@ -221,6 +219,7 @@ class GeneralDataListController extends GetxController {
       ...generalDataServes.inCompleteDataList,
     ]);
     isLoading(false);
+    update();
   }
 
   //Get Person Data
@@ -268,9 +267,6 @@ class GeneralDataListController extends GetxController {
   @override
   void onClose() {
     super.onClose();
-    // fromDateController.dispose();
-    // toDateController.dispose();
-    employeeNameController.dispose();
     customerNameController.dispose();
     phoneNumberController.dispose();
     subPhoneNumberController.dispose();

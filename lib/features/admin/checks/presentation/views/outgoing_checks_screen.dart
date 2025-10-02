@@ -8,9 +8,8 @@ import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
 import '../controllers/checks_controller.dart';
-import '../widgets/checks_details.dart';
+import '../widgets/checks_data_details.dart';
 import '../widgets/custom_actions_appbar.dart';
 import '../widgets/custom_list_veiw_builder.dart';
 
@@ -36,7 +35,7 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                 slivers: [
                   SliverToBoxAdapter(child: SizedBox(height: 10.h)),
                   const SliverToBoxAdapter(
-                    child: ChecksDetails(isOutGoing: true),
+                    child: ChecksDataDetails(isOutGoing: true),
                   ),
                   SliverToBoxAdapter(child: SizedBox(height: 20.h)),
                   SliverToBoxAdapter(
@@ -68,7 +67,7 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                   ),
                   SliverToBoxAdapter(child: SizedBox(height: 10.h)),
                   const CustomListVeiwBuilder(),
-                  SliverToBoxAdapter(child: SizedBox(height: 50.h)),
+                  SliverToBoxAdapter(child: SizedBox(height: 80.h)),
                 ],
               );
             },
@@ -77,10 +76,8 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
       ),
       floatingActionButton: AddFloatingActionButton(
         onPressed: () {
-          Get.toNamed(
-            AppRoutes.NEWCHECKSCREEN,
-            arguments: {'isNewCheck': true},
-          );
+          controller.isEdit.value = false;
+          controller.getCeckData(isOutgoing: true);
         },
       ),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'

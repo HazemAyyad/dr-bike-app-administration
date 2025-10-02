@@ -1,4 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:doctorbike/core/helpers/show_no_data.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -21,36 +23,13 @@ class ShowDebtsWidget extends GetView<DebtsController> {
       () {
         if (controller.isDebtsWeOweLoading.value) {
           return const SliverFillRemaining(
-            hasScrollBody: false,
             child: Center(
-              child: CircularProgressIndicator(color: AppColors.primaryColor),
+              child: CircularProgressIndicator(),
             ),
           );
         } else if (controller.filteredDebts.isEmpty) {
-          return SliverFillRemaining(
-            hasScrollBody: false,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 100.h,
-                    color: AppColors.graywhiteColor,
-                  ),
-                  SizedBox(height: 10.h),
-                  Text(
-                    'noDebts'.tr,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.graywhiteColor,
-                        ),
-                  ),
-                  SizedBox(height: 150.h),
-                ],
-              ),
-            ),
+          return const SliverFillRemaining(
+            child: Center(child: ShowNoData()),
           );
         }
 
@@ -68,6 +47,8 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                 SizedBox(height: index == 0 ? 5.h : 0.h),
                 GestureDetector(
                   onTap: () {
+                    controller.customerId.value = debt.customerId.toString();
+                    controller.sellerId.value = debt.sellerId.toString();
                     controller.getUserTransactionsData(
                       debt.customerId.toString(),
                       debt.sellerId.toString(),
@@ -119,42 +100,47 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    debt.customerName.isNotEmpty
-                                        ? debt.customerName
-                                        : debt.sellerName,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(
-                                          fontSize: 13.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: ThemeService.isDark.value
-                                              ? Colors.white
-                                              : AppColors.secondaryColor,
-                                        ),
+                                  Flexible(
+                                    child: Text(
+                                      debt.customerName.isNotEmpty
+                                          ? debt.customerName
+                                          : debt.sellerName,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            fontSize: 13.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: ThemeService.isDark.value
+                                                ? Colors.white
+                                                : AppColors.secondaryColor,
+                                          ),
+                                    ),
                                   ),
-                                  Text(
-                                    '${NumberFormat("#,###").format(double.parse(debt.total))} ${'currency'.tr}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(
-                                          decoration: debt.status == 'paid'
-                                              ? TextDecoration.lineThrough
-                                              : TextDecoration.none,
-                                          decorationColor:
-                                              controller.currentTab.value == 0
-                                                  ? Colors.red
-                                                  : Colors.green,
-                                          decorationThickness: 1.5,
-                                          fontSize: 13.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color:
-                                              controller.currentTab.value == 0
-                                                  ? Colors.red
-                                                  : Colors.green,
-                                        ),
+                                  Text(showData(debt.debtCreatedAt)),
+                                  Flexible(
+                                    child: Text(
+                                      '${NumberFormat("#,###").format(double.parse(debt.total))} ${'currency'.tr}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            decoration: debt.status == 'paid'
+                                                ? TextDecoration.lineThrough
+                                                : TextDecoration.none,
+                                            decorationColor:
+                                                controller.currentTab.value == 0
+                                                    ? Colors.red
+                                                    : Colors.green,
+                                            decorationThickness: 1.5,
+                                            fontSize: 13.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color:
+                                                controller.currentTab.value == 0
+                                                    ? Colors.red
+                                                    : Colors.green,
+                                          ),
+                                    ),
                                   ),
                                 ],
                               ),

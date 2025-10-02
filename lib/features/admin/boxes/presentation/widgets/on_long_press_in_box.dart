@@ -88,94 +88,96 @@ class OnLongPressInBox extends GetView<BoxesController> {
                       color: AppColors.primaryColor,
                     ),
                   ),
-                if (controller.currentTab.value == 0) SizedBox(height: 10.h),
-                TextButton.icon(
-                  onPressed: () {
-                    Get.back();
-                    Get.dialog(
-                      Dialog(
-                        backgroundColor: ThemeService.isDark.value
-                            ? AppColors.darkColor
-                            : AppColors.whiteColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(15.w),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      '${'deleteBox'.tr} ${box.boxName}',
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      style: textStyle.copyWith(
-                                        fontSize: 18.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.redColor,
+                if (controller.currentTab.value == 2)
+                  TextButton.icon(
+                    onPressed: () {
+                      Get.back();
+                      Get.dialog(
+                        Dialog(
+                          backgroundColor: ThemeService.isDark.value
+                              ? AppColors.darkColor
+                              : AppColors.whiteColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(15.w),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        '${'deleteBox'.tr} ${box.boxName}',
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        style: textStyle.copyWith(
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.redColor,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 20.h),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: AppButton(
-                                      isSafeArea: false,
-                                      isLoading: controller.isAddBoxLoading,
-                                      text: 'yes',
-                                      color: Colors.red,
-                                      borderRadius: BorderRadius.circular(30.r),
-                                      onPressed: () {
-                                        controller.editBox(
-                                          context: context,
-                                          boxId: box.boxId.toString(),
-                                          isDelete: true,
-                                        );
-                                      },
+                                  ],
+                                ),
+                                SizedBox(height: 20.h),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: AppButton(
+                                        isSafeArea: false,
+                                        isLoading: controller.isAddBoxLoading,
+                                        text: 'yes',
+                                        color: Colors.red,
+                                        borderRadius:
+                                            BorderRadius.circular(30.r),
+                                        onPressed: () {
+                                          controller.editBox(
+                                            context: context,
+                                            boxId: box.boxId.toString(),
+                                            isDelete: true,
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(width: 10.w),
-                                  Expanded(
-                                    child: AppButton(
-                                      isSafeArea: false,
-                                      isLoading: controller.isAddBoxLoading,
-                                      text: 'cancel',
-                                      textColor: Colors.red,
-                                      color: Colors.transparent,
-                                      borderColor: Colors.red,
-                                      borderRadius: BorderRadius.circular(30.r),
-                                      onPressed: () => Get.back(),
+                                    SizedBox(width: 10.w),
+                                    Expanded(
+                                      child: AppButton(
+                                        isSafeArea: false,
+                                        isLoading: controller.isAddBoxLoading,
+                                        text: 'cancel',
+                                        textColor: Colors.red,
+                                        color: Colors.transparent,
+                                        borderColor: Colors.red,
+                                        borderRadius:
+                                            BorderRadius.circular(30.r),
+                                        onPressed: () => Get.back(),
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
+                      );
+                    },
+                    label: Text(
+                      'deleteBox'.tr,
+                      style: textStyle.copyWith(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.redColor,
                       ),
-                    );
-                  },
-                  label: Text(
-                    'deleteBox'.tr,
-                    style: textStyle.copyWith(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w700,
+                    ),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      size: 25.h,
                       color: AppColors.redColor,
                     ),
                   ),
-                  icon: Icon(
-                    Icons.delete_outline,
-                    size: 25.h,
-                    color: AppColors.redColor,
-                  ),
-                ),
               ],
             ),
           ),

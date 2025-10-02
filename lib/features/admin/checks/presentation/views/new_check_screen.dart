@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:flutter/material.dart';
@@ -6,10 +7,13 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
 
+import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/helpers/custom_calendar.dart';
+import '../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../controllers/checks_controller.dart';
 
 class NewCheckScreen extends GetView<ChecksController> {
@@ -17,8 +21,7 @@ class NewCheckScreen extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isNewCheck = Get.arguments['isNewCheck'] ?? true;
-    final RxnString selectedValue = RxnString();
+    final bool isNewCheck = !controller.isInComing;
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -36,6 +39,7 @@ class NewCheckScreen extends GetView<ChecksController> {
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
                 isRequired: true,
+                enabled: !controller.isEdit.value,
               ),
               SizedBox(height: isNewCheck ? 0 : 16.h),
               isNewCheck
@@ -54,9 +58,13 @@ class NewCheckScreen extends GetView<ChecksController> {
                                           .selectedCustomersSellers.value ==
                                       true),
                                   onChanged: (val) {
-                                    selectedValue.value = null;
-                                    controller.selectedCustomersSellers.value =
-                                        false;
+                                    if (controller.isEdit.value) {
+                                      null;
+                                    } else {
+                                      controller.selectedValue.value = null;
+                                      controller.selectedCustomersSellers
+                                          .value = false;
+                                    }
                                   },
                                 ),
                               ),
@@ -67,9 +75,13 @@ class NewCheckScreen extends GetView<ChecksController> {
                                           .selectedCustomersSellers.value ==
                                       false),
                                   onChanged: (val) {
-                                    selectedValue.value = null;
-                                    controller.selectedCustomersSellers.value =
-                                        true;
+                                    if (controller.isEdit.value) {
+                                      null;
+                                    } else {
+                                      controller.selectedValue.value = null;
+                                      controller.selectedCustomersSellers
+                                          .value = true;
+                                    }
                                   },
                                 ),
                               )
@@ -78,6 +90,8 @@ class NewCheckScreen extends GetView<ChecksController> {
                         ),
                         Obx(
                           () => CustomDropdownField(
+                            validator: (p0) => null,
+                            isEnabled: !controller.isEdit.value,
                             label: 'beneficiaryName',
                             hint: 'customerNameExample',
                             dropdownField:
@@ -99,9 +113,26 @@ class NewCheckScreen extends GetView<ChecksController> {
                                           ),
                                         )
                                         .toList(),
-                            value: selectedValue.value,
+                            value: controller.selectedCustomersSellers.value ==
+                                    false
+                                ? controller.allCustomersList
+                                    .firstWhereOrNull(
+                                      (element) =>
+                                          element.id.toString() ==
+                                          controller.selectedValue.value,
+                                    )
+                                    ?.id
+                                    .toString()
+                                : controller.allSellersList
+                                    .firstWhereOrNull(
+                                      (element) =>
+                                          element.id.toString() ==
+                                          controller.selectedValue.value,
+                                    )
+                                    ?.id
+                                    .toString(),
                             onChanged: (val) {
-                              selectedValue.value = val!;
+                              controller.selectedValue.value = val!;
                             },
                           ),
                         ),
@@ -124,12 +155,10 @@ class NewCheckScreen extends GetView<ChecksController> {
                 onChanged: (value) {
                   controller.currencyController.text = value!;
                 },
-                // validator: (value) {
-                //   if (value == null || value.isEmpty) {
-                //     return 'currencyy'.tr;
-                //   }
-                //   return null;
-                // },
+                value: controller.currencyController.text.isEmpty
+                    ? null
+                    : controller.currencyController.text,
+                isEnabled: !controller.isEdit.value,
               ),
               SizedBox(height: 16.h),
               CustomTextField(
@@ -148,7 +177,63 @@ class NewCheckScreen extends GetView<ChecksController> {
                 textInputAction: TextInputAction.next,
                 isRequired: true,
               ),
-              SizedBox(height: 30.h),
+              if (controller.editCheckBackImage.value == null)
+                SizedBox(height: 30.h),
+              if (controller.editCheckFrontImage.value != null &&
+                  controller.isEdit.value)
+                Column(
+                  children: [
+                    const SupTextAndDiscr(
+                      titleColor: AppColors.primaryColor,
+                      title: 'checkFrontImage',
+                      discription: '',
+                    ),
+                    SizedBox(height: 5.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            showGeneralDialog(
+                              context: context,
+                              barrierDismissible: true,
+                              barrierLabel: 'Dismiss',
+                              barrierColor: Colors.black.withAlpha(128),
+                              transitionDuration:
+                                  const Duration(milliseconds: 300),
+                              pageBuilder: (context, anim1, anim2) {
+                                return FullScreenZoomImage(
+                                  imageUrl: controller.isInComing
+                                      ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${controller.editCheckFrontImage.value!.path}'
+                                      : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${controller.editCheckFrontImage.value!.path}',
+                                );
+                              },
+                            );
+                          },
+                          child: CachedNetworkImage(
+                            imageUrl: controller.isInComing
+                                ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${controller.editCheckFrontImage.value!.path}'
+                                : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${controller.editCheckFrontImage.value!.path}',
+                            fit: BoxFit.cover,
+                            height: 300.h,
+                            width: 300.w,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primaryColor),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error,
+                              size: 50,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20.h),
+                  ],
+                ),
+
               UploadImageButton(
                 selectedFile: controller.checkFrontImage,
                 title: 'checkFrontImage',
@@ -185,7 +270,62 @@ class NewCheckScreen extends GetView<ChecksController> {
               //     controller.checkFrontImage = [files.first];
               //   },
               // ),
-              SizedBox(height: 30.h),
+
+              if (controller.editCheckBackImage.value == null)
+                SizedBox(height: 30.h),
+              if (controller.editCheckBackImage.value != null &&
+                  controller.isEdit.value &&
+                  controller.isInComing)
+                Column(
+                  children: [
+                    const SupTextAndDiscr(
+                      titleColor: AppColors.primaryColor,
+                      title: 'checkBackImage',
+                      discription: '',
+                    ),
+                    SizedBox(height: 5.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            showGeneralDialog(
+                              context: context,
+                              barrierDismissible: true,
+                              barrierLabel: 'Dismiss',
+                              barrierColor: Colors.black.withAlpha(128),
+                              transitionDuration:
+                                  const Duration(milliseconds: 300),
+                              pageBuilder: (context, anim1, anim2) {
+                                return FullScreenZoomImage(
+                                  imageUrl:
+                                      '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${controller.editCheckBackImage.value!.path}',
+                                );
+                              },
+                            );
+                          },
+                          child: CachedNetworkImage(
+                            imageUrl:
+                                '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${controller.editCheckBackImage.value!.path}',
+                            fit: BoxFit.cover,
+                            height: 300.h,
+                            width: 300.w,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primaryColor),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error,
+                              size: 50,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 20.h),
+                  ],
+                ),
               isNewCheck
                   ? const SizedBox()
                   : UploadImageButton(
@@ -209,18 +349,24 @@ class NewCheckScreen extends GetView<ChecksController> {
                       fontWeight: FontWeight.w700,
                     ),
                 onPressed: () {
-                  controller.addChecks(
-                    isInComing: !isNewCheck,
-                    context: context,
-                    customerId: !isNewCheck &&
-                            !controller.selectedCustomersSellers.value
-                        ? selectedValue.value
-                        : null,
-                    sellerId:
-                        !isNewCheck && controller.selectedCustomersSellers.value
-                            ? selectedValue.value
-                            : null,
-                  );
+                  controller.isEdit.value
+                      ? controller.editChecks(
+                          context: context,
+                          isInComing: !isNewCheck,
+                          checkId: controller.checkId!,
+                        )
+                      : controller.addChecks(
+                          isInComing: !isNewCheck,
+                          context: context,
+                          customerId: !isNewCheck &&
+                                  !controller.selectedCustomersSellers.value
+                              ? controller.selectedValue.value
+                              : null,
+                          sellerId: !isNewCheck &&
+                                  controller.selectedCustomersSellers.value
+                              ? controller.selectedValue.value
+                              : null,
+                        );
                 },
               ),
             ],

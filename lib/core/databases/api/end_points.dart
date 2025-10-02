@@ -115,6 +115,9 @@ class EndPoints {
   static const String addOutgoingCheck = 'add/outgoing/check';
   static const String addIncomingCheck = 'add/incoming/check';
 
+  static const String editOutgoingCheck = 'edit/outgoing/check';
+  static const String editIncomingCheck = 'edit/incoming/check';
+
   static const String notCashedOutgoingChecks = 'not-cashed/outgoing/checks';
   static const String inComingChecks = 'not-cashed/incoming/checks';
 
@@ -141,7 +144,6 @@ class EndPoints {
   static const String all_customers = 'all/customers';
   static const String all_sellers = 'all/sellers';
 
-  static const String generalOutgoingChecks = 'general/outgoing/checks/data';
   static const String generalIncomingChecks = 'general/incoming/checks/data';
 
   static const String chashIncomingCheckToBox = 'cash/incoming/check/to/box';

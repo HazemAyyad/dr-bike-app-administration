@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/general_data_list_controller.dart';
 import '../widgets/global_data.dart';
@@ -16,15 +18,13 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: 'generalDataList',
         // toDateController: controller.toDateController,
         // fromDateController: controller.fromDateController,
-        employeeNameController: controller.employeeNameController,
+        // employeeNameController: controller.employeeNameController,
         label: 'customerName',
-        onPressedFilter: () {
-          controller.searchBar();
-        },
+
         action: false,
       ),
       body: CustomScrollView(
@@ -35,12 +35,29 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                 tabs: controller.tabs,
                 currentTab: controller.currentTab,
                 changeTab: controller.changeTab,
-                // width: 270.w,
               ),
             ),
           ),
-          Obx(
-            () {
+          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 50.w),
+              child: SearchBar(
+                shadowColor: WidgetStateProperty.all(Colors.transparent),
+                leading: const Icon(Icons.search),
+                hintText: 'search'.tr,
+                backgroundColor: WidgetStateProperty.all(
+                  ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : AppColors.customGreyColor7,
+                ),
+                onChanged: (value) => controller.searchBar(value),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          GetBuilder<GeneralDataListController>(
+            builder: (controller) {
               if (controller.isLoading.value) {
                 return const SliverFillRemaining(
                   hasScrollBody: true,
@@ -70,7 +87,7 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                                 .toList()[index];
                     return Column(
                       children: [
-                        SizedBox(height: index == 0 ? 10.h : 0.h),
+                        // SizedBox(height: index == 0 ? 10.h : 0.h),
                         GlobalData(employee: employee),
                       ],
                     );

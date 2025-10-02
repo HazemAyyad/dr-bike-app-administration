@@ -11,8 +11,9 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../../data/models/check_model.dart';
+import '../controllers/checks_controller.dart';
 
-class CheckDetails extends StatelessWidget {
+class CheckDetails extends GetView<ChecksController> {
   const CheckDetails({
     Key? key,
     required this.check,
@@ -41,8 +42,10 @@ class CheckDetails extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                const SizedBox.shrink(),
+                const SizedBox.shrink(),
                 Text(
                   'details'.tr,
                   textAlign: TextAlign.center,
@@ -53,6 +56,17 @@ class CheckDetails extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         fontSize: 20.sp,
                       ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit_document,
+                    color: AppColors.primaryColor,
+                    size: 30,
+                  ),
+                  onPressed: () {
+                    controller.isEdit.value = true;
+                    controller.getCeckData(check: check, isOutgoing: type);
+                  },
                 ),
               ],
             ),

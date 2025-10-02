@@ -32,14 +32,14 @@ class StatCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 5.w, vertical: 10.h),
+        margin: EdgeInsets.all(5.r),
         decoration: BoxDecoration(
           color: ThemeService.isDark.value
               ? AppColors.customGreyColor4
               : Colors.white,
           borderRadius: BorderRadius.circular(5.r),
         ),
-        padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 5.w),
+        padding: EdgeInsets.symmetric(vertical: 5.h, horizontal: 2.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -80,6 +80,7 @@ class StatCard extends StatelessWidget {
                         ? value.toString()
                         : NumberFormat('#,###')
                             .format(double.parse(value.toString())),
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium!.copyWith(
                       color: AppColors.primaryColor,
                       fontSize: 15.sp,
@@ -87,17 +88,18 @@ class StatCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: 4.w),
-                Flexible(
-                  child: Text(
-                    subtitle.tr,
-                    style: theme.textTheme.bodyMedium!.copyWith(
-                      color: AppColors.primaryColor,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+                // SizedBox(width: 4.w),
+                // Flexible(
+                //   child: Text(
+                //     subtitle.tr,
+                //     textAlign: TextAlign.center,
+                //     style: theme.textTheme.bodyMedium!.copyWith(
+                //       color: AppColors.primaryColor,
+                //       fontSize: 15.sp,
+                //       fontWeight: FontWeight.w700,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ],

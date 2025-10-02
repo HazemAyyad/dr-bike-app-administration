@@ -353,31 +353,23 @@ class MaintenanceController extends GetxController {
     List<MaintenanceDataModel> applyFilter(
         List<MaintenanceDataModel> sourceList) {
       return sourceList.where((item) {
-        final name = (item.customerName.isNotEmpty && item.sellerName != null
-                ? item.customerName
-                : item.sellerName ?? "")
-            .toLowerCase();
-
-        // ✅ فلترة بالاسم
+        final name = item.customerName.isNotEmpty
+            ? item.customerName.toLowerCase()
+            : (item.sellerName ?? "").toLowerCase();
         final matchesName =
             (nameQuery.isEmpty) ? true : name.contains(nameQuery.toLowerCase());
-
-        // ✅ فلترة بالتاريخ
         final itemDate = DateTime.tryParse(item.receiptDate);
         final from = (fromDate.isNotEmpty) ? DateTime.tryParse(fromDate) : null;
         final to = (toDate.isNotEmpty) ? DateTime.tryParse(toDate) : null;
-
         bool matchesDate = true;
         if (itemDate != null) {
           if (from != null && itemDate.isBefore(from)) matchesDate = false;
           if (to != null && itemDate.isAfter(to)) matchesDate = false;
         }
-
         return matchesName && matchesDate;
       }).toList();
     }
 
-    // ✅ تطبيق الفلتر على كل القوائم
     Map<String, List<MaintenanceDataModel>> groupByDate(
         List<MaintenanceDataModel> list) {
       final Map<String, List<MaintenanceDataModel>> grouped = {};

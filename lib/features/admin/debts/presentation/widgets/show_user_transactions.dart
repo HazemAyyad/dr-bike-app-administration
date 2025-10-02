@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/debts_we_owe_model.dart';
 import '../controllers/debts_controller.dart';
 import 'app_bar.dart';
 import 'gave_and_took_button.dart';
@@ -20,7 +21,7 @@ class ShowUserTransactions extends GetView<DebtsController> {
     required this.isSeller,
   }) : super(key: key);
 
-  final dynamic debt;
+  final DebtsWeOwe debt;
   final String userId;
   final bool isSeller;
 
@@ -44,7 +45,14 @@ class ShowUserTransactions extends GetView<DebtsController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(height: 20.h),
-              const UserAccount(),
+              UserAccount(
+                userName: debt.customerName.isNotEmpty
+                    ? debt.customerName
+                    : debt.sellerName,
+                userId: debt.customerName.isNotEmpty
+                    ? debt.customerId.toString()
+                    : debt.sellerId.toString(),
+              ),
               SizedBox(height: 20.h),
               Obx(
                 () => Text(

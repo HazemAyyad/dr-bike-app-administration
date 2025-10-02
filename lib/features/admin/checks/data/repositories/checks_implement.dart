@@ -211,4 +211,41 @@ class ChecksImplement implements ChecksRepository {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
+
+  @override
+  Future<Either<Failure, String>> editChecks({
+    required bool isInComing,
+    required String outgoingCheckId,
+    required DateTime dueDate,
+    required String checkId,
+    required String bankName,
+    XFile? frontImage,
+    XFile? backImage,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await checksDatasource.editChecks(
+        isInComing: isInComing,
+        outgoingCheckId: outgoingCheckId,
+        dueDate: dueDate,
+        checkId: checkId,
+        bankName: bankName,
+        frontImage: frontImage,
+        backImage: backImage,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
 }

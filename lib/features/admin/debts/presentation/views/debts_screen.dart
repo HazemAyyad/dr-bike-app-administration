@@ -82,6 +82,24 @@ class DebtsScreen extends GetView<DebtsController> {
                 ],
               ),
             ),
+            // SliverToBoxAdapter(
+            //   child: Padding(
+            //     padding: EdgeInsets.symmetric(horizontal: 50.w),
+            //     child: SearchBar(
+            //       shadowColor: WidgetStateProperty.all(Colors.transparent),
+            //       leading: const Icon(
+            //         Icons.search,
+            //       ),
+            //       hintText: 'search'.tr,
+            //       backgroundColor: WidgetStateProperty.all(
+            //         ThemeService.isDark.value
+            //             ? AppColors.customGreyColor
+            //             : AppColors.customGreyColor7,
+            //       ),
+            //       onChanged: (value) => controller.searchBar(value),
+            //     ),
+            //   ),
+            // ),
             const ShowDebtsWidget(),
           ],
         ),

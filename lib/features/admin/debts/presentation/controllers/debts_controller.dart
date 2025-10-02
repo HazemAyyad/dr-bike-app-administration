@@ -70,6 +70,7 @@ class DebtsController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
+    update();
   }
 
   void getTotalDebtsOwedToUs() async {
@@ -78,6 +79,7 @@ class DebtsController extends GetxController {
     result.fold((failure) {}, (success) {
       dataService.totalDebtsOwedToUsModel.value = success;
     });
+    update();
   }
 
   void getTotalDebtsWeOwe() async {
@@ -85,30 +87,40 @@ class DebtsController extends GetxController {
     result.fold((failure) {}, (success) {
       dataService.totalDebtsWeOweModel.value = success;
     });
+    update();
   }
 
   void getDebtsOwedToUs() async {
     dataService.debtsWeOweModel.value == null
         ? isDebtsWeOweLoading(true)
         : isDebtsWeOweLoading(false);
+    update();
+
     // if (dataService.totalDebtsWeOweModel.value != null) return;
     final result = await debtsOwedToUs.call();
     result.fold((failure) {}, (success) {
       dataService.debtsOwedToUsModel.value = success;
     });
     isDebtsWeOweLoading(false);
+    update();
   }
 
   void getDebtsWeOwe() async {
     dataService.debtsWeOweModel.value == null
         ? isDebtsWeOweLoading(true)
         : isDebtsWeOweLoading(false);
+    update();
+
     final result = await debtsWeOwe.call();
     result.fold((failure) {}, (success) {
       dataService.debtsWeOweModel.value = success;
     });
     isDebtsWeOweLoading(false);
+    update();
   }
+
+  RxString customerId = ''.obs;
+  RxString sellerId = ''.obs;
 
   void getUserTransactionsData(String customerId, String sellerId) async {
     if (dataService.customerId != customerId) {
@@ -117,6 +129,7 @@ class DebtsController extends GetxController {
       dataService.customerId = customerId;
     } else {
       userTransactionsLoading(false);
+      update();
     }
 
     final result = await userTransactionsData.call(
@@ -127,6 +140,7 @@ class DebtsController extends GetxController {
       dataService.userTransactionsDataModel.value = success;
     });
     userTransactionsLoading(false);
+    update();
   }
 
   List get filteredDebts {
@@ -173,6 +187,7 @@ class DebtsController extends GetxController {
 
   void setSortBy(String sort) {
     sortBy.value = sort;
+    update();
   }
 
   Future<void> pickDate(BuildContext context) async {
@@ -185,6 +200,7 @@ class DebtsController extends GetxController {
     if (picked != null) {
       dueDateController.text = picked.toIso8601String().split('T')[0];
     }
+    update();
   }
 
   final RxBool isLoading = false.obs;
@@ -237,6 +253,7 @@ class DebtsController extends GetxController {
         getDebtsOwedToUs();
         getTotalDebtsWeOwe();
         getTotalDebtsOwedToUs();
+        getUserTransactionsData(customerId.value, sellerId.value);
         dueDateController.clear();
         totalDebtController.clear();
         moreDetailsController.clear();
@@ -257,6 +274,7 @@ class DebtsController extends GetxController {
       },
     );
     isLoading(false);
+    update();
   }
 
   // get all customers and sellers
@@ -270,6 +288,7 @@ class DebtsController extends GetxController {
     final resultSellers =
         await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
     allSellersList.assignAll(resultSellers);
+    update();
   }
 
   // download report
@@ -317,6 +336,7 @@ class DebtsController extends GetxController {
     } catch (e) {
       Get.snackbar("error".tr, e.toString());
     }
+    update();
   }
 
   @override

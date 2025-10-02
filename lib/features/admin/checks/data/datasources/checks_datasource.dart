@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart' hide MultipartFile;
-import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
@@ -189,7 +188,7 @@ class ChecksDatasource {
       final response = await api.get(
         isInComing
             ? EndPoints.generalIncomingChecks
-            : EndPoints.generalOutgoingChecks,
+            : EndPoints.generalIncomingChecks,
       );
       return response.data['data'];
     } on DioException catch (e) {
@@ -242,6 +241,86 @@ class ChecksDatasource {
     try {
       final response = await api.post(EndPoints.chashIncomingCheckToBox,
           data: {'box_id': boxId, 'incoming_check_id': checkId});
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // edit checks
+  Future<Map<String, dynamic>> editChecks({
+    required bool isInComing,
+    required String outgoingCheckId,
+    required DateTime dueDate,
+    required String checkId,
+    required String bankName,
+    XFile? frontImage,
+    XFile? backImage,
+  }) async {
+    try {
+      XFile? compressedFrontImage;
+      XFile? compressedBackImage;
+
+      if (frontImage != null && !frontImage.path.contains('http')) {
+        compressedFrontImage = await compressImage(frontImage);
+      } else {
+        compressedFrontImage = frontImage;
+      }
+
+      if (backImage != null && !backImage.path.contains('http')) {
+        compressedBackImage = await compressImage(backImage);
+      } else {
+        compressedBackImage = backImage;
+      }
+      print(isInComing);
+      print(outgoingCheckId);
+      print(compressedFrontImage?.path);
+
+      final response = await api.post(
+        isInComing ? EndPoints.editIncomingCheck : EndPoints.editOutgoingCheck,
+        data: {
+          if (isInComing) 'incoming_check_id': outgoingCheckId,
+          if (!isInComing) 'outgoing_check_id': outgoingCheckId,
+          'due_date': dueDate,
+          'check_id': checkId,
+          'bank_name': bankName,
+          if (compressedFrontImage != null)
+            if (compressedFrontImage.path.contains('http'))
+              'img': compressedFrontImage.path,
+          if (compressedFrontImage != null)
+            if (!compressedFrontImage.path.contains('http'))
+              'img': await MultipartFile.fromFile(
+                compressedFrontImage.path,
+                filename: compressedFrontImage.path.split('/').last,
+              ),
+          if (compressedFrontImage != null)
+            if (compressedFrontImage.path.contains('http'))
+              'front_image': compressedFrontImage.path,
+          if (compressedFrontImage != null)
+            if (!compressedFrontImage.path.contains('http'))
+              'front_image': await MultipartFile.fromFile(
+                compressedFrontImage.path,
+                filename: compressedFrontImage.path.split('/').last,
+              ),
+          if (compressedBackImage != null)
+            if (compressedBackImage.path.contains('http'))
+              'back_image': compressedBackImage.path,
+          if (compressedBackImage != null)
+            if (!compressedBackImage.path.contains('http'))
+              'back_image': await MultipartFile.fromFile(
+                compressedBackImage.path,
+                filename: compressedBackImage.path.split('/').last,
+              ),
+        },
+        isFormData: true,
+      );
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

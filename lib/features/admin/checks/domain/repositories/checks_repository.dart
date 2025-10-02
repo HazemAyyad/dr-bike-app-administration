@@ -19,6 +19,16 @@ abstract class ChecksRepository {
     XFile? backImage,
   });
 
+  Future<Either<Failure, String>> editChecks({
+    required bool isInComing,
+    required String outgoingCheckId,
+    required DateTime dueDate,
+    required String checkId,
+    required String bankName,
+    XFile? frontImage,
+    XFile? backImage,
+  });
+
   Future<dynamic> getChecks({required String endPoint});
 
   Future<GeneralChecksDataModel> generalChecksData();

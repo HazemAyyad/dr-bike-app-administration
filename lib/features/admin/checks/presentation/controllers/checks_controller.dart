@@ -6,15 +6,15 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
-import '../../data/models/archive_data_modell.dart';
-import '../../data/models/cashed_to_person_outgoing_model.dart';
 import '../../data/models/check_model.dart';
 import '../../data/models/general_incoming_model.dart';
 import '../../data/models/general_outgoing_data_model.dart';
 import '../../domain/usecases/add_checks_usecase.dart';
 import '../../domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/cashed_to_person_cancel_usecase.dart';
+import '../../domain/usecases/edit_checks_usecase.dart';
 import '../../domain/usecases/general_checks_data_usecase.dart';
 import '../../domain/usecases/general_outgoing_data_usecase.dart';
 import '../../domain/usecases/get_checks_usecase.dart';
@@ -24,15 +24,16 @@ import 'checks_serves.dart';
 
 class ChecksController extends GetxController
     with GetSingleTickerProviderStateMixin {
-  AddChecksUsecase addChecksUsecase;
-  GetChecksUsecase getChecksUsecase;
-  GeneralChecksDataUsecase generalChecksDataUsecase;
-  CashedToPersonOrCashedUsecase cashedToPersonCancelUsecase;
-  AllCustomersSellersUsecase allCustomersSellersUsecase;
-  GeneralOutgoingDataUsecase generalOutgoingDataUsecase;
-  ReturnCheckUsercase returnCheckUsercase;
-  GetShownBoxUsecase getShownBoxUsecase;
-  ChashToBoxUsecase chashToBoxUsecase;
+  final AddChecksUsecase addChecksUsecase;
+  final GetChecksUsecase getChecksUsecase;
+  final GeneralChecksDataUsecase generalChecksDataUsecase;
+  final CashedToPersonOrCashedUsecase cashedToPersonCancelUsecase;
+  final AllCustomersSellersUsecase allCustomersSellersUsecase;
+  final GeneralOutgoingDataUsecase generalOutgoingDataUsecase;
+  final ReturnCheckUsercase returnCheckUsercase;
+  final GetShownBoxUsecase getShownBoxUsecase;
+  final ChashToBoxUsecase chashToBoxUsecase;
+  final EditChecksUsecase editChecksUsecase;
 
   ChecksController({
     required this.addChecksUsecase,
@@ -44,6 +45,7 @@ class ChecksController extends GetxController
     required this.returnCheckUsercase,
     required this.getShownBoxUsecase,
     required this.chashToBoxUsecase,
+    required this.editChecksUsecase,
   });
 
   final GlobalKey formKey = GlobalKey<FormState>();
@@ -154,7 +156,7 @@ class ChecksController extends GetxController
           );
         },
         (success) {
-          getGeneralChecksData();
+          // getGeneralChecksData();
           generalData();
           getCashedToPerson();
           getNotCashed();
@@ -172,6 +174,150 @@ class ChecksController extends GetxController
           Future.delayed(
             const Duration(milliseconds: 1000),
             () {
+              Get.back();
+            },
+          );
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
+        },
+      );
+    }
+    isLoading(false);
+    update();
+  }
+
+  final RxnString selectedValue = RxnString();
+  RxBool isEdit = false.obs;
+  final Rx<XFile?> editCheckFrontImage = Rx<XFile?>(null);
+  final Rx<XFile?> editCheckBackImage = Rx<XFile?>(null);
+
+  String? checkId;
+  void getCeckData({CheckModel? check, required bool isOutgoing}) {
+    if (isEdit.value) {
+      Get.toNamed(
+        AppRoutes.NEWCHECKSCREEN,
+        arguments: {'isNewCheck': isOutgoing},
+      );
+      checkId = check!.id.toString();
+      checkValueController.text = check.total.toString();
+      currencyController.text =
+          currency.where((element) => element.tr == check.currency).first;
+      checkNumberController.text = check.checkId;
+      bankNameController.text = check.bankName;
+      editCheckFrontImage.value =
+          check.frontImage != null ? XFile(check.frontImage!) : null;
+      editCheckBackImage.value =
+          check.backImage != null ? XFile(check.backImage!) : null;
+      selectedDay.value = check.dueDate;
+      isCalendarVisible.value = false;
+      selectedValue.value = check.fromCustomer != null
+          ? check.fromCustomer!.id.toString()
+          : check.fromSeller?.id.toString();
+      selectedCustomersSellers.value = check.fromCustomer == null;
+    } else {
+      Get.toNamed(
+        AppRoutes.NEWCHECKSCREEN,
+        arguments: {'isNewCheck': isOutgoing},
+      );
+      selectedValue.value = null;
+      selectedCustomersSellers.value = false;
+      checkId = null;
+      checkValueController.clear();
+      currencyController.clear();
+      checkNumberController.clear();
+      bankNameController.clear();
+      editCheckFrontImage.value = null;
+      editCheckBackImage.value = null;
+      selectedDay.value = DateTime.now();
+      isCalendarVisible.value = false;
+    }
+    update();
+  }
+
+  // edit checks
+  void editChecks({
+    required BuildContext context,
+    required bool isInComing,
+    required String checkId,
+  }) async {
+    if ((formKey.currentState as FormState).validate()) {
+      isLoading(true);
+      final result = await editChecksUsecase.call(
+        isInComing: isInComing,
+        outgoingCheckId: checkId,
+        dueDate: selectedDay.value,
+        checkId: checkNumberController.text,
+        bankName: bankNameController.text,
+        frontImage: checkFrontImage.value != null
+            ? XFile(
+                isInComing
+                    ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${checkFrontImage.value!.path}'
+                    : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${checkFrontImage.value!.path}',
+              )
+            : editCheckFrontImage.value != null
+                ? XFile(
+                    isInComing
+                        ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${editCheckFrontImage.value!.path}'
+                        : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${editCheckFrontImage.value!.path}',
+                  )
+                : null,
+        backImage: checkBackImage.value != null
+            ? XFile(
+                isInComing
+                    ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${checkBackImage.value!.path}'
+                    : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${checkBackImage.value!.path}',
+              )
+            : editCheckBackImage.value != null
+                ? XFile(
+                    isInComing
+                        ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${editCheckBackImage.value!.path}'
+                        : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${editCheckBackImage.value!.path}',
+                  )
+                : null,
+      );
+      result.fold(
+        (failure) {
+          isLoading(false);
+          update();
+
+          final errors = failure.data['errors'];
+          String errorMessage = '';
+          if (errors is Map) {
+            errorMessage = errors.entries
+                .map((e) => "${e.key}: ${(e.value as List).join(', ')}")
+                .join("\n");
+          } else {
+            errorMessage = errors.toString();
+          }
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: errorMessage,
+          );
+        },
+        (success) {
+          // getGeneralChecksData();
+          generalData();
+          getCashedToPerson();
+          getNotCashed();
+          getArchive();
+
+          checkValueController.clear();
+          currencyController.clear();
+          checkNumberController.clear();
+          bankNameController.clear();
+          checkFrontImage.value = null;
+          checkBackImage.value = null;
+          selectedDay.value = DateTime.now();
+          isCalendarVisible.value = false;
+          Get.back();
+          Future.delayed(
+            const Duration(milliseconds: 1000),
+            () {
+              Get.back();
               Get.back();
             },
           );
@@ -214,7 +360,7 @@ class ChecksController extends GetxController
       (success) async {
         Get.back();
         await Future.wait([
-          getGeneralChecksData(),
+          // getGeneralChecksData(),
           generalData(),
           getCashedToPerson(),
           getNotCashed(),
@@ -261,7 +407,7 @@ class ChecksController extends GetxController
       (success) async {
         Get.back();
         await Future.wait([
-          getGeneralChecksData(),
+          // getGeneralChecksData(),
           generalData(),
           getCashedToPerson(),
           getNotCashed(),
@@ -307,7 +453,7 @@ class ChecksController extends GetxController
       (success) async {
         Get.back();
         await Future.wait([
-          getGeneralChecksData(),
+          // getGeneralChecksData(),
           generalData(),
           getCashedToPerson(),
           getNotCashed(),
@@ -337,13 +483,11 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> inComingTasks = {};
   final Map<String, double> totalInComing = {};
 
-  final Map<String, double> totalNotCashedByCurrency = {};
   Future<void> getNotCashed() async {
     isLoading(true);
 
     filteredInComingTasks.clear();
     inComingTasks.clear();
-    totalNotCashedByCurrency.clear();
     totalInComing.clear();
 
     final result = await getChecksUsecase.call(
@@ -351,9 +495,8 @@ class ChecksController extends GetxController
           ? EndPoints.inComingChecks
           : EndPoints.notCashedOutgoingChecks,
     );
-    inComingChecksList.value = NotCashedModel.fromJson(result);
-
-    // clear maps
+    inComingChecksList.value =
+        NotCashedModel.fromJson(result, checksPath: 'not_cashed_checks');
 
     for (var task in inComingChecksList.value!.inComingChecksList) {
       String dateKey =
@@ -367,18 +510,10 @@ class ChecksController extends GetxController
       } else {
         inComingTasks[dateKey] = [task];
       }
-
-      // accumulate totals by currency
-      final currency = task.currency;
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      totalNotCashedByCurrency[currency] =
-          (totalNotCashedByCurrency[currency] ?? 0.0) + total;
-
-      // accumulate totals by month
       totalInComing[dateKey] = (totalInComing[dateKey] ?? 0.0) + total;
     }
 
-    // sort tasks inside each month
     inComingTasks.forEach((key, tasks) {
       tasks.sort((a, b) => a.dueDate.day.compareTo(b.dueDate.day));
     });
@@ -390,16 +525,13 @@ class ChecksController extends GetxController
   }
 
   // get cashed to person checks
-  final Rxn<CashedToPersonOutgoingModel> cashedToPerson =
-      Rxn<CashedToPersonOutgoingModel>(null);
+  final Rxn<NotCashedModel> cashedToPerson = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> cashedToPersonTasks = {};
   final Map<String, double> totalCashedToPerson = {};
 
-  final Map<String, double> totalCashedToPersonByCurrency = {};
   Future<void> getCashedToPerson() async {
     isLoading(true);
 
-    totalCashedToPersonByCurrency.clear();
     filteredCashedToPersonTasks.clear();
     cashedToPersonTasks.clear();
     totalCashedToPerson.clear();
@@ -408,9 +540,10 @@ class ChecksController extends GetxController
           ? EndPoints.cashedIncomingChecks
           : EndPoints.cashedOutgoingChecks,
     );
-    cashedToPerson.value = CashedToPersonOutgoingModel.fromJson(result);
+    cashedToPerson.value =
+        NotCashedModel.fromJson(result, checksPath: 'cashed_to_person_checks');
 
-    for (var task in cashedToPerson.value!.cashedToPerson) {
+    for (var task in cashedToPerson.value!.inComingChecksList) {
       String dateKey =
           "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
       if (cashedToPersonTasks.containsKey(dateKey)) {
@@ -420,11 +553,7 @@ class ChecksController extends GetxController
       } else {
         cashedToPersonTasks[dateKey] = [task];
       }
-      final currency = task.currency;
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      totalCashedToPersonByCurrency[currency] =
-          (totalCashedToPersonByCurrency[currency] ?? 0.0) + total;
-
       // accumulate totals by month
       totalCashedToPerson[dateKey] =
           (totalCashedToPerson[dateKey] ?? 0.0) + total;
@@ -439,16 +568,13 @@ class ChecksController extends GetxController
   }
 
   // get cashed to person checks
-  final Rxn<ArchiveDataModel> archiveData = Rxn<ArchiveDataModel>(null);
+  final Rxn<NotCashedModel> archiveData = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> archiveTasks = {};
   final Map<String, double> totalArchive = {};
-
-  final Map<String, double> totalArchiveByCurrency = {};
 
   Future<void> getArchive() async {
     isLoading(true);
 
-    totalArchiveByCurrency.clear();
     filteredArchiveTasks.clear();
     archiveTasks.clear();
     totalArchive.clear();
@@ -457,9 +583,10 @@ class ChecksController extends GetxController
           ? EndPoints.archivedIncomingChecks
           : EndPoints.archivedOutgoingChecks,
     );
-    archiveData.value = ArchiveDataModel.fromJson(result);
+    archiveData.value =
+        NotCashedModel.fromJson(result, checksPath: 'archived_checks');
 
-    for (var task in archiveData.value!.archiveData) {
+    for (var task in archiveData.value!.inComingChecksList) {
       String dateKey =
           "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
       if (archiveTasks.containsKey(dateKey)) {
@@ -469,12 +596,7 @@ class ChecksController extends GetxController
       } else {
         archiveTasks[dateKey] = [task];
       }
-      final currency = task.currency;
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      totalArchiveByCurrency[currency] =
-          (totalArchiveByCurrency[currency] ?? 0.0) + total;
-
-      // accumulate totals by month
       totalArchive[dateKey] = (totalArchive[dateKey] ?? 0.0) + total;
     }
     filteredArchiveTasks.assignAll(archiveTasks);
@@ -488,6 +610,7 @@ class ChecksController extends GetxController
   //     Rxn<GeneralChecksDataModel>(null);
 
   Future<void> getGeneralChecksData() async {
+    print('مهممممممممممممممممممممممممممممم');
     final result = await generalChecksDataUsecase.call();
     ChecksServes().generalChecksData.value = result;
     update();
@@ -650,7 +773,13 @@ class ChecksController extends GetxController
       final q = query.toLowerCase();
       return (check.checkId.toLowerCase().contains(q)) ||
           (check.bankName.toLowerCase().contains(q)) ||
-          (check.currency.toLowerCase().contains(q));
+          (check.currency.toLowerCase().contains(q)) ||
+          (check.total.toLowerCase().contains(q)) ||
+          (check.dueDate.toString().contains(q)) ||
+          (check.customer?.name.toLowerCase().contains(q) ?? false) ||
+          (check.seller?.name.toLowerCase().contains(q) ?? false) ||
+          (check.fromCustomer?.name.toLowerCase().contains(q) ?? false) ||
+          (check.fromSeller?.name.toLowerCase().contains(q) ?? false);
     }
 
     if (value.isNotEmpty) {
@@ -689,7 +818,7 @@ class ChecksController extends GetxController
   @override
   void onInit() {
     super.onInit();
-    getGeneralChecksData();
+    // getGeneralChecksData();
 
     getAllCustomersAndSellers();
     getShowBoxes();

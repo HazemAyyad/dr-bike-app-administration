@@ -81,30 +81,36 @@ class CreateDebts extends GetView<DebtsController> {
                 ),
                 SizedBox(height: 10.h),
                 Obx(
-                  () => CustomDropdownFieldWithSearch(
-                    tital: controller.selectedCustomersSellers.value == false
-                        ? 'customerName'.tr
-                        : 'sellerName'.tr,
-                    hint: 'employeeNameExample',
-                    items: controller.selectedCustomersSellers.value == false
-                        ? controller.allCustomersList
-                        : controller.allSellersList,
-                    onChanged: (val) {
-                      controller.customerOrSellerIdController.text =
-                          val!.id.toString();
-                    },
-                    itemAsString: (f) => f.name,
-                    compareFn: (a, b) => a.id == b.id,
-                    value: userId == null || userId!.isEmpty
+                  () {
+                    userId == null || userId!.isEmpty
                         ? null
-                        : (!controller.selectedCustomersSellers.value
-                            ? controller.allCustomersList.firstWhereOrNull(
-                                (e) => e.id == int.tryParse(userId!),
-                              )
-                            : controller.allSellersList.firstWhereOrNull(
-                                (e) => e.id == int.tryParse(userId!),
-                              )),
-                  ),
+                        : controller.customerOrSellerIdController.text =
+                            userId.toString();
+                    return CustomDropdownFieldWithSearch(
+                      tital: controller.selectedCustomersSellers.value == false
+                          ? 'customerName'.tr
+                          : 'sellerName'.tr,
+                      hint: 'employeeNameExample',
+                      items: controller.selectedCustomersSellers.value == false
+                          ? controller.allCustomersList
+                          : controller.allSellersList,
+                      onChanged: (val) {
+                        controller.customerOrSellerIdController.text =
+                            val!.id.toString();
+                      },
+                      itemAsString: (f) => f.name,
+                      compareFn: (a, b) => a.id == b.id,
+                      value: userId == null || userId!.isEmpty
+                          ? null
+                          : (!controller.selectedCustomersSellers.value
+                              ? controller.allCustomersList.firstWhereOrNull(
+                                  (e) => e.id == int.tryParse(userId!),
+                                )
+                              : controller.allSellersList.firstWhereOrNull(
+                                  (e) => e.id == int.tryParse(userId!),
+                                )),
+                    );
+                  },
                 ),
                 SizedBox(height: 20.h),
                 GestureDetector(
@@ -211,7 +217,6 @@ class CreateDebts extends GetView<DebtsController> {
                   isLoading: controller.isLoading,
                   text: 'createNewDebt',
                   onPressed: () {
-                    print(controller.customerOrSellerIdController.text);
                     if (controller.formKey.currentState?.validate() ?? false) {
                       controller.addDebts(
                         context: context,
