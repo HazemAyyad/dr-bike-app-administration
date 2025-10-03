@@ -451,45 +451,42 @@ class CashToBox extends GetView<ChecksController> {
                 topRight: Radius.circular(8.r),
               ),
             ),
-            child: Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Flexible(
-                    child: CustomDropdownField(
-                      label: label,
-                      labelTextStyle:
-                          Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                color: AppColors.primaryColor,
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                      hint: hint,
-                      dropdownField: controller.shownBoxesList
-                          .map(
-                            (e) => DropdownMenuItem<String>(
-                              value: e.boxId.toString(),
-                              child: Text(e.boxName),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Flexible(
+                  child: CustomDropdownFieldWithSearch(
+                    tital: label,
+                    hint: hint,
+                    titalTextStyle:
+                        Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: AppColors.primaryColor,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
                             ),
-                          )
-                          .toList(),
-                      value: selectedValue.value,
-                      onChanged: (val) {
-                        selectedValue.value = val!;
-                      },
-                    ),
+                    items: controller.shownBoxesList
+                        .where((element) => element.currency == check.currency)
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        selectedValue.value = value.boxId.toString();
+                      }
+                    },
+                    itemAsString: (item) =>
+                        '${item.boxName} - (${item.totalBalance} ${item.currency})',
+                    compareFn: (a, b) => a.boxId == b.boxId,
                   ),
-                  IconButton(
-                    onPressed: () => Get.toNamed(AppRoutes.CREATEBOXESSCREEN),
-                    icon: Icon(
-                      Icons.add_circle_sharp,
-                      color: AppColors.primaryColor,
-                      size: 35.sp,
-                    ),
-                  )
-                ],
-              ),
+                ),
+                IconButton(
+                  onPressed: () => Get.toNamed(AppRoutes.CREATEBOXESSCREEN),
+                  icon: Icon(
+                    Icons.add_circle_sharp,
+                    color: AppColors.primaryColor,
+                    size: 35.sp,
+                  ),
+                )
+              ],
             ),
           ),
           AppButton(

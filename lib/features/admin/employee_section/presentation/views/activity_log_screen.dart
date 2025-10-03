@@ -58,8 +58,6 @@ class ActivityLogScreen extends StatelessWidget {
                   return Column(
                     children: [
                       ...controller.employeeService.logsMap.entries
-                          .toList()
-                          .reversed
                           .take(30)
                           .map(
                         (entry) {

@@ -28,16 +28,10 @@ class ChecksDataDetails extends StatelessWidget {
       ),
       child: GetBuilder<ChecksController>(
         builder: (controller) {
-          if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (controller.inComingChecksList.value == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (controller.cashedToPerson.value == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (controller.archiveData.value == null) {
+          if (controller.isLoading.value ||
+              controller.inComingChecksList.value == null ||
+              controller.cashedToPerson.value == null ||
+              controller.archiveData.value == null) {
             return const Center(child: CircularProgressIndicator());
           }
           return Column(

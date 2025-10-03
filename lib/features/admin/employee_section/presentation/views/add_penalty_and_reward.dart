@@ -49,6 +49,14 @@ class AddPenaltyAndRewardScreen extends GetView<AddEmployeeController> {
                 keyboardType: TextInputType.number,
                 controller: controller.pointsConroller,
               ),
+              SizedBox(height: 20.h),
+              CustomTextField(
+                label: 'notes',
+                hintText: 'notes',
+                controller: controller.notesConroller,
+                minLines: 5,
+                maxLines: 6,
+              ),
               SizedBox(height: 30.h),
               AppButton(
                 isLoading: controller.isLoading,

@@ -129,13 +129,13 @@ class EmployeeSectionController extends GetxController
       'route': AppRoutes.ADDNEWEMPLOYEESCREEN
     },
     {
-      'title': 'penalty',
-      'icon': AssetsManager.invoiceIcon,
+      'title': 'reward',
+      'icon': AssetsManager.moneyIcon,
       'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
     },
     {
-      'title': 'reward',
-      'icon': AssetsManager.moneyIcon,
+      'title': 'penalty',
+      'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
     },
   ];
@@ -278,7 +278,7 @@ class EmployeeSectionController extends GetxController
       },
       (success) {
         Future.delayed(
-          const Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1000),
           () {
             getLogs();
             Get.back();
@@ -367,7 +367,7 @@ class EmployeeSectionController extends GetxController
 
   // Get Logs
   void getLogs() async {
-    employeeService.logsMap.isEmpty ? isLoading(true) : isLoading(false);
+    isLoading(true);
     employeeService.logsMap.clear();
 
     final result = await getLogsUsecase.call();

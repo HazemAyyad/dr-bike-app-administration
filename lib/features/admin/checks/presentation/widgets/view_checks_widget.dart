@@ -7,9 +7,10 @@ import 'package:intl/intl.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/check_model.dart';
+import '../controllers/checks_controller.dart';
 import 'check_details.dart';
 
-class ViewChecksWidget extends StatelessWidget {
+class ViewChecksWidget extends GetView<ChecksController> {
   final CheckModel check;
   final bool? shadowed;
   final int? currentTab;
@@ -51,107 +52,123 @@ class ViewChecksWidget extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 5.w),
                 child: Row(
                   children: [
-                    Flexible(
-                      child: Container(
-                        width: 65.w,
-                        height: 65.h,
-                        decoration: BoxDecoration(
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor
-                              : AppColors.customGreyColor6,
-                          borderRadius: BorderRadius.circular(4.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withAlpha(30),
-                              blurRadius: 5.r,
-                              spreadRadius: 2.r,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency}",
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium!
-                                .copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15.sp,
-                                ),
+                    Container(
+                      width: 65.w,
+                      height: 65.h,
+                      decoration: BoxDecoration(
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.customGreyColor6,
+                        borderRadius: BorderRadius.circular(4.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withAlpha(30),
+                            blurRadius: 5.r,
+                            spreadRadius: 2.r,
+                            offset: const Offset(0, 2),
                           ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency}",
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium!
+                              .copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15.sp,
+                              ),
                         ),
                       ),
                     ),
                     SizedBox(width: 10.w),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "${'checkNumber'.tr} : ${check.checkId}",
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                        ),
-                        if (currentTab == 0) SizedBox(height: 10.h),
-                        Text(
-                          "${'due_date'.tr} : ${showData(check.dueDate)}",
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                        ),
-                        if (currentTab == 1)
-                          SizedBox(
-                            width: 200.w,
-                            child: Text(
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "${'checkNumber'.tr} : ${check.checkId}",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                          ),
+                          // if (currentTab == 0)
+                          SizedBox(height: 5.h),
+                          Text(
+                            "${'due_date'.tr} : ${showData(check.dueDate)}",
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                          ),
+                          if (currentTab == 1)
+                            SizedBox(
+                              // width: 200.w,
+                              child: Text(
+                                () {
+                                  if (check.customer != null) {
+                                    return check.customer!.name;
+                                  } else if (check.seller != null) {
+                                    return check.seller!.name;
+                                  } else if (check.fromCustomer != null &&
+                                      check.toCustomer != null) {
+                                    return '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toCustomer!.name}';
+                                  } else if (check.fromCustomer != null &&
+                                      check.toSeller != null) {
+                                    return '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toSeller!.name}';
+                                  } else if (check.fromSeller != null &&
+                                      check.toSeller != null) {
+                                    return '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toSeller!.name}';
+                                  } else if (check.fromSeller != null &&
+                                      check.toCustomer != null) {
+                                    return '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toCustomer!.name}';
+                                  } else {
+                                    return ''; // لو مفيش أي بيانات
+                                  }
+                                }(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w400,
+                                      // color: Colors.grey.withAlpha(500),
+                                    ),
+                              ),
+                            ),
+                          if (currentTab != 1)
+                            Text(
                               check.customer != null
                                   ? check.customer!.name
                                   : check.seller != null
                                       ? check.seller!.name
                                       : check.fromCustomer != null
-                                          ? check.toCustomer != null
-                                              ? '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toCustomer!.name}'
-                                              : '${'from'.tr} ${check.fromCustomer!.name} ${'to'.tr} ${check.toSeller!.name}'
-                                          : check.toSeller != null
-                                              ? '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toSeller!.name}'
-                                              : '${'from'.tr} ${check.fromSeller!.name} ${'to'.tr} ${check.toCustomer!.name}',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                                          ? check.fromCustomer!.name
+                                          : check.fromSeller != null
+                                              ? check.fromSeller!.name
+                                              : '',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium!
                                   .copyWith(
                                     fontSize: 14.sp,
                                     fontWeight: FontWeight.w400,
-                                    // color: Colors.grey.withAlpha(500),
                                   ),
                             ),
-                          ),
-                        if (currentTab == 2)
-                          Text(
-                            check.customer != null
-                                ? check.customer!.name
-                                : check.seller != null
-                                    ? check.seller!.name
-                                    : check.fromCustomer != null
-                                        ? check.fromCustomer!.name
-                                        : check.fromSeller != null
-                                            ? check.fromSeller!.name
-                                            : '',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

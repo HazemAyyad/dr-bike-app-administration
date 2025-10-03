@@ -19,7 +19,10 @@ class EmployeeList extends GetView<EmployeeSectionController> {
     return InkWell(
       onTap: () {
         controller.getEmployeeDetails(employee.id.toString());
-        Get.toNamed(AppRoutes.EMPLOYEEDETAILSSCREEN, arguments: employee);
+        Get.toNamed(
+          AppRoutes.EMPLOYEEDETAILSSCREEN,
+          arguments: employee.points,
+        );
       },
       child: Row(
         children: [

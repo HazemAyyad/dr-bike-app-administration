@@ -18,6 +18,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
     required List<String> employeeImg,
     required List<String> documentImg,
     required List<PermissionEntity> permissions,
+    required List<RewardPunishmentEntity> rewardPunishment,
   }) : super(
           id: id,
           name: name,
@@ -32,6 +33,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
           employeeImg: employeeImg,
           documentImg: documentImg,
           permissions: permissions,
+          rewardPunishment: rewardPunishment,
         );
 
   factory EmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -65,6 +67,11 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
               .map((p) => PermissionModel.fromJson(p))
               .toList()
           : [],
+      rewardPunishment: (json['rewards_and_punishments'] is List)
+          ? (json['rewards_and_punishments'] as List)
+              .map((p) => RewardPunishmentModel.fromJson(p))
+              .toList()
+          : [],
     );
   }
 }
@@ -86,5 +93,33 @@ class PermissionModel extends PermissionEntity {
       permissionName: json[ApiKey.permission_name],
       permissionNameEn: json[ApiKey.permission_name_en],
     );
+  }
+}
+
+class RewardPunishmentModel extends RewardPunishmentEntity {
+  const RewardPunishmentModel({
+    required String points,
+    required String notes,
+    required String type,
+  }) : super(
+          points: points,
+          notes: notes,
+          type: type,
+        );
+
+  factory RewardPunishmentModel.fromJson(Map<String, dynamic> json) {
+    return RewardPunishmentModel(
+      points: json['points'] ?? '',
+      notes: json['notes'] ?? '',
+      type: json['type'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'points': points,
+      'notes': notes,
+      'type': type,
+    };
   }
 }

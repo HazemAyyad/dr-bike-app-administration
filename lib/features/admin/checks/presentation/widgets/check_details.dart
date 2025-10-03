@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -159,17 +158,13 @@ class CheckDetails extends GetView<ChecksController> {
                                       const Duration(milliseconds: 300),
                                   pageBuilder: (context, anim1, anim2) {
                                     return FullScreenZoomImage(
-                                      imageUrl: type
-                                          ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${check.frontImage}'
-                                          : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${check.frontImage}',
+                                      imageUrl: check.frontImage ?? '',
                                     );
                                   },
                                 );
                               },
                               child: CachedNetworkImage(
-                                imageUrl: type
-                                    ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${check.frontImage}'
-                                    : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${check.frontImage}',
+                                imageUrl: check.frontImage ?? '',
                                 fit: BoxFit.cover,
                                 height: 150.h,
                                 width: 150.w,
@@ -214,15 +209,13 @@ class CheckDetails extends GetView<ChecksController> {
                                       const Duration(milliseconds: 300),
                                   pageBuilder: (context, anim1, anim2) {
                                     return FullScreenZoomImage(
-                                      imageUrl:
-                                          '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${check.backImage}',
+                                      imageUrl: check.backImage ?? '',
                                     );
                                   },
                                 );
                               },
                               child: CachedNetworkImage(
-                                imageUrl:
-                                    '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${check.backImage}',
+                                imageUrl: check.backImage ?? '',
                                 fit: BoxFit.cover,
                                 height: 150.h,
                                 width: 150.w,

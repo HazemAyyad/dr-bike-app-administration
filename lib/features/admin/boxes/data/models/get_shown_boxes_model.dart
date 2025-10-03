@@ -31,6 +31,7 @@ class GetShownBoxesModel extends GetShownBoxesEntity {
       "box_name": boxName,
       "total_balance": totalBalance.toStringAsFixed(2),
       "is_shown": isShown ? "1" : "0",
+      "currency": currency,
     };
   }
 }

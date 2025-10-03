@@ -144,19 +144,19 @@ class ChecksImplement implements ChecksRepository {
     }
   }
 
-  @override
-  Future<dynamic> generalOutgoingData({required bool isInComing}) async {
-    if (!await networkInfo.isConnected) {
-      throw NoConnectionFailure();
-    }
-    try {
-      final result =
-          await checksDatasource.generalOutgoingData(isInComing: isInComing);
-      return result;
-    } on ServerException catch (e) {
-      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
-    }
-  }
+  // @override
+  // Future<dynamic> generalOutgoingData({required bool isInComing}) async {
+  //   if (!await networkInfo.isConnected) {
+  //     throw NoConnectionFailure();
+  //   }
+  //   try {
+  //     final result =
+  //         await checksDatasource.generalOutgoingData(isInComing: isInComing);
+  //     return result;
+  //   } on ServerException catch (e) {
+  //     throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+  //   }
+  // }
 
   @override
   Future<Either<Failure, String>> returnCheck({

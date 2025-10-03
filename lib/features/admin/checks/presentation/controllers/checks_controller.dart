@@ -16,7 +16,6 @@ import '../../domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/cashed_to_person_cancel_usecase.dart';
 import '../../domain/usecases/edit_checks_usecase.dart';
 import '../../domain/usecases/general_checks_data_usecase.dart';
-import '../../domain/usecases/general_outgoing_data_usecase.dart';
 import '../../domain/usecases/get_checks_usecase.dart';
 import '../../domain/usecases/return_check_usercase.dart';
 import '../../domain/usecases/chash_to_box_usecase.dart';
@@ -29,7 +28,7 @@ class ChecksController extends GetxController
   final GeneralChecksDataUsecase generalChecksDataUsecase;
   final CashedToPersonOrCashedUsecase cashedToPersonCancelUsecase;
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
-  final GeneralOutgoingDataUsecase generalOutgoingDataUsecase;
+  // final GeneralOutgoingDataUsecase generalOutgoingDataUsecase;
   final ReturnCheckUsercase returnCheckUsercase;
   final GetShownBoxUsecase getShownBoxUsecase;
   final ChashToBoxUsecase chashToBoxUsecase;
@@ -41,7 +40,7 @@ class ChecksController extends GetxController
     required this.generalChecksDataUsecase,
     required this.cashedToPersonCancelUsecase,
     required this.allCustomersSellersUsecase,
-    required this.generalOutgoingDataUsecase,
+    // required this.generalOutgoingDataUsecase,
     required this.returnCheckUsercase,
     required this.getShownBoxUsecase,
     required this.chashToBoxUsecase,
@@ -156,8 +155,8 @@ class ChecksController extends GetxController
           );
         },
         (success) {
-          // getGeneralChecksData();
-          generalData();
+          getGeneralChecksData();
+          // generalData();
           getCashedToPerson();
           getNotCashed();
           getArchive();
@@ -170,6 +169,8 @@ class ChecksController extends GetxController
           checkBackImage.value = null;
           selectedDay.value = DateTime.now();
           isCalendarVisible.value = false;
+          checkFrontImage.value = null;
+          checkBackImage.value = null;
           Get.back();
           Future.delayed(
             const Duration(milliseconds: 1000),
@@ -252,30 +253,14 @@ class ChecksController extends GetxController
         checkId: checkNumberController.text,
         bankName: bankNameController.text,
         frontImage: checkFrontImage.value != null
-            ? XFile(
-                isInComing
-                    ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${checkFrontImage.value!.path}'
-                    : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${checkFrontImage.value!.path}',
-              )
+            ? XFile(checkFrontImage.value!.path)
             : editCheckFrontImage.value != null
-                ? XFile(
-                    isInComing
-                        ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${editCheckFrontImage.value!.path}'
-                        : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${editCheckFrontImage.value!.path}',
-                  )
+                ? XFile(editCheckFrontImage.value!.path)
                 : null,
         backImage: checkBackImage.value != null
-            ? XFile(
-                isInComing
-                    ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${checkBackImage.value!.path}'
-                    : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${checkBackImage.value!.path}',
-              )
+            ? XFile(checkBackImage.value!.path)
             : editCheckBackImage.value != null
-                ? XFile(
-                    isInComing
-                        ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${editCheckBackImage.value!.path}'
-                        : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${editCheckBackImage.value!.path}',
-                  )
+                ? XFile(editCheckBackImage.value!.path)
                 : null,
       );
       result.fold(
@@ -299,8 +284,8 @@ class ChecksController extends GetxController
           );
         },
         (success) {
-          // getGeneralChecksData();
-          generalData();
+          getGeneralChecksData();
+          // generalData();
           getCashedToPerson();
           getNotCashed();
           getArchive();
@@ -314,10 +299,10 @@ class ChecksController extends GetxController
           selectedDay.value = DateTime.now();
           isCalendarVisible.value = false;
           Get.back();
+          Get.back();
           Future.delayed(
             const Duration(milliseconds: 1000),
             () {
-              Get.back();
               Get.back();
             },
           );
@@ -360,8 +345,8 @@ class ChecksController extends GetxController
       (success) async {
         Get.back();
         await Future.wait([
-          // getGeneralChecksData(),
-          generalData(),
+          getGeneralChecksData(),
+          // generalData(),
           getCashedToPerson(),
           getNotCashed(),
           getArchive(),
@@ -393,22 +378,29 @@ class ChecksController extends GetxController
       isCancel: isCancel,
     );
     result.fold(
-      (failure) {
+      (failure) async {
         isLoading(false);
         update();
 
-        Get.snackbar(
-          'error'.tr,
-          failure.errMessage,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+        await Future.wait([
+          getGeneralChecksData(),
+          // generalData(),
+          getCashedToPerson(),
+          getNotCashed(),
+          getArchive(),
+        ]);
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            Get.back();
+          },
         );
       },
       (success) async {
         Get.back();
         await Future.wait([
-          // getGeneralChecksData(),
-          generalData(),
+          getGeneralChecksData(),
+          // generalData(),
           getCashedToPerson(),
           getNotCashed(),
           getArchive(),
@@ -453,8 +445,8 @@ class ChecksController extends GetxController
       (success) async {
         Get.back();
         await Future.wait([
-          // getGeneralChecksData(),
-          generalData(),
+          getGeneralChecksData(),
+          // generalData(),
           getCashedToPerson(),
           getNotCashed(),
           getArchive(),
@@ -637,16 +629,16 @@ class ChecksController extends GetxController
   final Rxn<GeneralOutgoingDataModel> generalOutgoing =
       Rxn<GeneralOutgoingDataModel>(null);
 
-  Future<void> generalData() async {
-    isLoading(true);
-    final result =
-        await generalOutgoingDataUsecase.call(isInComing: isInComing);
-    isInComing
-        ? generalIncoming.value = GeneralIncomingModel.fromJson(result)
-        : generalOutgoing.value = GeneralOutgoingDataModel.fromJson(result);
-    isLoading(false);
-    update();
-  }
+  // Future<void> generalData() async {
+  //   isLoading(true);
+  //   final result =
+  //       await generalOutgoingDataUsecase.call(isInComing: isInComing);
+  //   isInComing
+  //       ? generalIncoming.value = GeneralIncomingModel.fromJson(result)
+  //       : generalOutgoing.value = GeneralOutgoingDataModel.fromJson(result);
+  //   isLoading(false);
+  //   update();
+  // }
 
   // get shown boxes
   final RxList<GetShownBoxesModel> shownBoxesList = <GetShownBoxesModel>[].obs;
@@ -656,8 +648,8 @@ class ChecksController extends GetxController
     shownBoxesList.value = boxes;
   }
 
-// filter assets by date
-// فلترة وتجميع الشيكات حسب التاريخ + الترتيب
+  // filter assets by date
+  // فلترة وتجميع الشيكات حسب التاريخ + الترتيب
   Map<String, List<CheckModel>> filterChecks(
     Map<String, List<CheckModel>> source,
     String nameQuery,
@@ -818,7 +810,7 @@ class ChecksController extends GetxController
   @override
   void onInit() {
     super.onInit();
-    // getGeneralChecksData();
+    getGeneralChecksData();
 
     getAllCustomersAndSellers();
     getShowBoxes();

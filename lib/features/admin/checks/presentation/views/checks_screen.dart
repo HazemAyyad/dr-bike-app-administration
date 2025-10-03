@@ -35,7 +35,7 @@ class ChecksScreen extends GetView<ChecksController> {
                 ),
             onPressed: () {
               controller.isInComing = false;
-              controller.generalData();
+              // controller.generalData();
               controller.getNotCashed();
               controller.getCashedToPerson();
               controller.getArchive();
@@ -55,7 +55,7 @@ class ChecksScreen extends GetView<ChecksController> {
                 ),
             onPressed: () {
               controller.isInComing = true;
-              controller.generalData();
+              // controller.generalData();
               controller.getNotCashed();
               controller.getCashedToPerson();
               controller.getArchive();

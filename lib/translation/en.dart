@@ -137,6 +137,7 @@ const Map<String, String> en = {
   'productManagement': 'Product Management and Development',
 
   'add': 'Add',
+  'minus': 'minus',
   'newInvoice': 'New Invoice',
   'penalty': 'Penalty',
   'reward': 'Reward',
@@ -364,6 +365,7 @@ const Map<String, String> en = {
 
   'hourlyRate': 'Hourly Rate',
   'points': 'Points',
+  'pointsHistory': 'Points History',
   'point': 'Point',
   'workStartTime': 'Work Start Time',
   'workEndTime': 'Work End Time',

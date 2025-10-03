@@ -182,26 +182,26 @@ class ChecksDatasource {
     }
   }
 
-  // general outgoing data
-  Future<dynamic> generalOutgoingData({required bool isInComing}) async {
-    try {
-      final response = await api.get(
-        isInComing
-            ? EndPoints.generalIncomingChecks
-            : EndPoints.generalIncomingChecks,
-      );
-      return response.data['data'];
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
-        ),
-      );
-    }
-  }
+  // // general outgoing data
+  // Future<dynamic> generalOutgoingData({required bool isInComing}) async {
+  //   try {
+  //     final response = await api.get(
+  //       isInComing
+  //           ? EndPoints.generalIncomingChecks
+  //           : EndPoints.generalIncomingChecks,
+  //     );
+  //     return response.data['data'];
+  //   } on DioException catch (e) {
+  //     final data = e.response?.data;
+  //     throw ServerException(
+  //       ErrorModel(
+  //         errorMessage: data['message'] ?? 'Unknown error',
+  //         status: data['status'] ?? 500,
+  //         data: data['data'] ?? {},
+  //       ),
+  //     );
+  //   }
+  // }
 
   // general incoming data
   Future<Map<String, dynamic>> returnCheck({
@@ -222,6 +222,7 @@ class ChecksDatasource {
             if (isInComing) 'incoming_check_id': checkId,
             if (!isInComing) 'outgoing_check_id': checkId,
           });
+
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -279,10 +280,6 @@ class ChecksDatasource {
       } else {
         compressedBackImage = backImage;
       }
-      print(isInComing);
-      print(outgoingCheckId);
-      print(compressedFrontImage?.path);
-
       final response = await api.post(
         isInComing ? EndPoints.editIncomingCheck : EndPoints.editOutgoingCheck,
         data: {
@@ -293,7 +290,7 @@ class ChecksDatasource {
           'bank_name': bankName,
           if (compressedFrontImage != null)
             if (compressedFrontImage.path.contains('http'))
-              'img': compressedFrontImage.path,
+              'img': compressedFrontImage.path.split('/').last,
           if (compressedFrontImage != null)
             if (!compressedFrontImage.path.contains('http'))
               'img': await MultipartFile.fromFile(
@@ -302,7 +299,7 @@ class ChecksDatasource {
               ),
           if (compressedFrontImage != null)
             if (compressedFrontImage.path.contains('http'))
-              'front_image': compressedFrontImage.path,
+              'front_image': compressedFrontImage.path.split('/').last,
           if (compressedFrontImage != null)
             if (!compressedFrontImage.path.contains('http'))
               'front_image': await MultipartFile.fromFile(
@@ -311,7 +308,7 @@ class ChecksDatasource {
               ),
           if (compressedBackImage != null)
             if (compressedBackImage.path.contains('http'))
-              'back_image': compressedBackImage.path,
+              'back_image': compressedBackImage.path.split('/').last,
           if (compressedBackImage != null)
             if (!compressedBackImage.path.contains('http'))
               'back_image': await MultipartFile.fromFile(

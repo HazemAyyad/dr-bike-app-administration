@@ -45,7 +45,10 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                   : AppColors.secondaryColor,
               size: 27.sp,
             ),
-            onPressed: () => Get.toNamed(AppRoutes.ACTIVITYLOGSCREEN),
+            onPressed: () {
+              controller.getLogs();
+              Get.toNamed(AppRoutes.ACTIVITYLOGSCREEN);
+            },
           ),
           IconButton(
             highlightColor: Colors.transparent,

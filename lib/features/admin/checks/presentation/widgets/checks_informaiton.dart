@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get_state_manager/get_state_manager.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
@@ -27,16 +27,28 @@ class ChecksInformaiton extends StatelessWidget {
         builder: (controller) {
           return Column(
             children: [
+              Text(
+                'outgoingChecks'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: ThemeService.isDark.value
+                          ? Colors.white
+                          : AppColors.secondaryColor,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
               Row(
                 children: [
                   Expanded(
                     child: StatCard(
-                      title: 'youOwe',
+                      title: 'didNotActOnIt',
                       imageicon: AssetsManager.cashIcon,
                       value: ChecksServes()
                               .generalChecksData
                               .value
-                              ?.outgoingChecksCount
+                              ?.notCashedOutgoingChecksCount
                               .toString() ??
                           '0',
                       subtitle: '',
@@ -45,12 +57,12 @@ class ChecksInformaiton extends StatelessWidget {
                   SizedBox(width: 8.w),
                   Expanded(
                     child: StatCard(
-                      title: 'forYou',
+                      title: 'actedOnIt',
                       imageicon: AssetsManager.cashIcon,
                       value: ChecksServes()
                               .generalChecksData
                               .value
-                              ?.incomingChecksCount
+                              ?.cashedOutgoingChecksCount
                               .toString() ??
                           '0',
                       subtitle: '',
@@ -63,39 +75,85 @@ class ChecksInformaiton extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       show: true,
-                      title: 'all',
-                      imageicon: AssetsManager.productIcon,
-                      value: (int.parse(ChecksServes()
-                                      .generalChecksData
-                                      .value
-                                      ?.incomingChecksCount
-                                      .toString() ??
-                                  '0') +
-                              int.parse(ChecksServes()
-                                      .generalChecksData
-                                      .value
-                                      ?.outgoingChecksCount
-                                      .toString() ??
-                                  '0'))
-                          .toString(),
+                      title: 'currency',
+                      imageicon: AssetsManager.cashIcon,
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalOutgoingChecksShekel
+                                  .toString() ??
+                              '0.0',
+                        ),
+                      ),
+                      subtitle: '',
+                    ),
+                  ),
+                  Expanded(
+                    child: StatCard(
+                      show: true,
+                      title: 'currency1',
+                      imageicon: AssetsManager.cashIcon,
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalOutgoingChecksDollar
+                                  .toString() ??
+                              '0.0',
+                        ),
+                      ),
+                      subtitle: '',
+                    ),
+                  ),
+                  Expanded(
+                    child: StatCard(
+                      show: true,
+                      title: 'currency2',
+                      imageicon: AssetsManager.cashIcon,
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalOutgoingChecksDinar
+                                  .toString() ??
+                              '0.0',
+                        ),
+                      ),
                       subtitle: '',
                     ),
                   ),
                 ],
+              ),
+              Text(
+                'incomingChecks'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: ThemeService.isDark.value
+                          ? Colors.white
+                          : AppColors.secondaryColor,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
               ),
               Row(
                 children: [
                   Expanded(
                     child: StatCard(
                       show: true,
-                      title: 'totalDebts',
+                      title: 'didNotActOnIt',
                       imageicon: AssetsManager.moneyIcon,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
                                   .generalChecksData
                                   .value
-                                  ?.totalOutgoingChecks ??
+                                  ?.notCashedIncomingChecksCount
+                                  .toString() ??
                               '0',
                         ),
                       ),
@@ -106,15 +164,74 @@ class ChecksInformaiton extends StatelessWidget {
                   Expanded(
                     child: StatCard(
                       show: true,
-                      title: 'totalOwed',
+                      title: 'actedOnIt',
                       imageicon: AssetsManager.moneyIcon,
                       value: NumberFormat('#,###').format(
                         double.parse(
                           ChecksServes()
                                   .generalChecksData
                                   .value
-                                  ?.totalIncomingChecks ??
+                                  ?.cashedIncomingChecksCount
+                                  .toString() ??
                               '0',
+                        ),
+                      ),
+                      subtitle: '',
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      show: true,
+                      title: 'currency',
+                      imageicon: AssetsManager.cashIcon,
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalIncomingChecksShekel
+                                  .toString() ??
+                              '0.0',
+                        ),
+                      ),
+                      subtitle: '',
+                    ),
+                  ),
+                  Expanded(
+                    child: StatCard(
+                      show: true,
+                      title: 'currency1',
+                      imageicon: AssetsManager.cashIcon,
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalIncomingChecksDollar
+                                  .toString() ??
+                              '0.0',
+                        ),
+                      ),
+                      subtitle: '',
+                    ),
+                  ),
+                  Expanded(
+                    child: StatCard(
+                      show: true,
+                      title: 'currency2',
+                      imageicon: AssetsManager.cashIcon,
+                      value: NumberFormat('#,###').format(
+                        double.parse(
+                          ChecksServes()
+                                  .generalChecksData
+                                  .value
+                                  ?.totalIncomingChecksDinar
+                                  .toString() ??
+                              '0.0',
                         ),
                       ),
                       subtitle: '',

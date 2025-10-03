@@ -112,6 +112,7 @@ class EmployeeDatasource {
     required String employeeId,
     required String points,
     required bool isAdd,
+    required String notes,
   }) async {
     try {
       final response = await api.post(
@@ -121,6 +122,7 @@ class EmployeeDatasource {
         data: {
           'employee_id': employeeId,
           'points': points,
+          'notes': notes,
         },
         isFormData: true,
       );

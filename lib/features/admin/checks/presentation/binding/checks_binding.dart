@@ -9,7 +9,6 @@ import '../../domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/cashed_to_person_cancel_usecase.dart';
 import '../../domain/usecases/edit_checks_usecase.dart';
 import '../../domain/usecases/general_checks_data_usecase.dart';
-import '../../domain/usecases/general_outgoing_data_usecase.dart';
 import '../../domain/usecases/get_checks_usecase.dart';
 import '../../domain/usecases/return_check_usercase.dart';
 import '../controllers/checks_controller.dart';
@@ -34,9 +33,9 @@ class ChecksBinding extends Bindings {
         allCustomersSellersUsecase: AllCustomersSellersUsecase(
           checksRepository: Get.find<ChecksImplement>(),
         ),
-        generalOutgoingDataUsecase: GeneralOutgoingDataUsecase(
-          checksRepository: Get.find<ChecksImplement>(),
-        ),
+        // generalOutgoingDataUsecase: GeneralOutgoingDataUsecase(
+        //   checksRepository: Get.find<ChecksImplement>(),
+        // ),
         returnCheckUsercase: ReturnCheckUsercase(
           checksRepository: Get.find<ChecksImplement>(),
         ),

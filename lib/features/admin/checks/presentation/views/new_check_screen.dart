@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
 
-import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
@@ -203,17 +202,15 @@ class NewCheckScreen extends GetView<ChecksController> {
                                   const Duration(milliseconds: 300),
                               pageBuilder: (context, anim1, anim2) {
                                 return FullScreenZoomImage(
-                                  imageUrl: controller.isInComing
-                                      ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${controller.editCheckFrontImage.value!.path}'
-                                      : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${controller.editCheckFrontImage.value!.path}',
+                                  imageUrl: controller
+                                      .editCheckFrontImage.value!.path,
                                 );
                               },
                             );
                           },
                           child: CachedNetworkImage(
-                            imageUrl: controller.isInComing
-                                ? '${EndPoints.baserUrlForImage}public/IncomingCheckImages/front/${controller.editCheckFrontImage.value!.path}'
-                                : '${EndPoints.baserUrlForImage}public/OutgoingChecksImages/${controller.editCheckFrontImage.value!.path}',
+                            imageUrl:
+                                controller.editCheckFrontImage.value!.path,
                             fit: BoxFit.cover,
                             height: 300.h,
                             width: 300.w,
@@ -249,7 +246,6 @@ class NewCheckScreen extends GetView<ChecksController> {
               //     return Column(
               //       crossAxisAlignment: CrossAxisAlignment.start,
               //       children: [
-
               //         if (formFieldState.hasError)
               //           Padding(
               //             padding: const EdgeInsets.only(top: 5),
@@ -299,14 +295,13 @@ class NewCheckScreen extends GetView<ChecksController> {
                               pageBuilder: (context, anim1, anim2) {
                                 return FullScreenZoomImage(
                                   imageUrl:
-                                      '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${controller.editCheckBackImage.value!.path}',
+                                      controller.editCheckBackImage.value!.path,
                                 );
                               },
                             );
                           },
                           child: CachedNetworkImage(
-                            imageUrl:
-                                '${EndPoints.baserUrlForImage}public/IncomingCheckImages/back/${controller.editCheckBackImage.value!.path}',
+                            imageUrl: controller.editCheckBackImage.value!.path,
                             fit: BoxFit.cover,
                             height: 300.h,
                             width: 300.w,

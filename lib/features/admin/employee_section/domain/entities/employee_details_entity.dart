@@ -12,6 +12,7 @@ class EmployeeDetailsEntity {
   final List<String> employeeImg;
   final List<String> documentImg;
   final List<PermissionEntity> permissions;
+  final List<RewardPunishmentEntity> rewardPunishment;
 
   const EmployeeDetailsEntity({
     required this.id,
@@ -27,6 +28,7 @@ class EmployeeDetailsEntity {
     required this.employeeImg,
     required this.documentImg,
     required this.permissions,
+    required this.rewardPunishment,
   });
 }
 
@@ -39,5 +41,17 @@ class PermissionEntity {
     required this.permissionId,
     required this.permissionName,
     required this.permissionNameEn,
+  });
+}
+
+class RewardPunishmentEntity {
+  final String points;
+  final String notes;
+  final String type; // "add" or "minus"
+
+  const RewardPunishmentEntity({
+    required this.points,
+    required this.notes,
+    required this.type,
   });
 }

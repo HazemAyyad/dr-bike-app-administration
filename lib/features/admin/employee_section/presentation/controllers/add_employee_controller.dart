@@ -120,6 +120,7 @@ class AddEmployeeController extends GetxController {
   final TextEditingController employeeConroller = TextEditingController();
 
   final TextEditingController pointsConroller = TextEditingController();
+  final TextEditingController notesConroller = TextEditingController();
 
   final RxBool isVisible = false.obs;
 
@@ -196,16 +197,18 @@ class AddEmployeeController extends GetxController {
             );
           },
           (success) {
-            isEditEmployee
-                ? {
-                    Get.find<EmployeeSectionController>().getEmployee(),
-                    Get.find<EmployeeSectionController>().getEmployeeDetails(
-                      employeeService.employeeDetails.value!.id.toString(),
-                    )
-                  }
-                : Get.find<EmployeeSectionController>().getEmployee();
+            if (isEditEmployee) {
+              Get.find<EmployeeSectionController>().getEmployeeDetails(
+                employeeService.employeeDetails.value!.id.toString(),
+              );
+              Get.find<EmployeeSectionController>().getOvertimeAndLoan();
+              Get.find<EmployeeSectionController>().getFinancialDues();
+              Get.find<EmployeeSectionController>().getWorkingTimes();
+            }
+            Get.find<EmployeeSectionController>().getEmployee();
+
             Future.delayed(
-              const Duration(milliseconds: 1500),
+              const Duration(milliseconds: 1000),
               () {
                 Get.back();
                 Get.back();
@@ -236,6 +239,7 @@ class AddEmployeeController extends GetxController {
       final result = await addPointsUsecase.call(
         employeeId: employeeConroller.text,
         points: pointsConroller.text,
+        notes: notesConroller.text,
         isAdd: isAdd,
       );
       result.fold(
@@ -248,7 +252,7 @@ class AddEmployeeController extends GetxController {
         },
         (success) {
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 100),
             () {
               Get.back();
               Get.back();
@@ -282,7 +286,7 @@ class AddEmployeeController extends GetxController {
     employeeNameController.dispose();
     employeeConroller.dispose();
     pointsConroller.dispose();
-
+    notesConroller.dispose();
     super.onClose();
   }
 }

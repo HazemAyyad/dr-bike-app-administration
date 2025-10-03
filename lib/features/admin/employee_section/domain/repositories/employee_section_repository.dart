@@ -46,6 +46,7 @@ abstract class EmployeeRepository {
     required String employeeId,
     required String points,
     required bool isAdd,
+    required String notes,
   });
 
   Future<Either<Failure, String>> paySalaryToEmployeeUsecase({

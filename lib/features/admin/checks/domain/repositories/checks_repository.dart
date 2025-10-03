@@ -33,7 +33,7 @@ abstract class ChecksRepository {
 
   Future<GeneralChecksDataModel> generalChecksData();
 
-  Future<dynamic> generalOutgoingData({required bool isInComing});
+  // Future<dynamic> generalOutgoingData({required bool isInComing});
 
   Future<Either<Failure, String>> cashedToPersonOrCashed({
     required bool isInComing,

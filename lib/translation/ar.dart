@@ -138,6 +138,7 @@ const Map<String, String> ar = {
   'productManagement': 'إدارة وتطوير المنتجات',
 
   'add': 'إضافة',
+  'minus': 'عقوبة',
   'newInvoice': 'فاتورة جديدة',
   'penalty': 'عقوبة',
   'reward': 'مكافأة',
@@ -350,6 +351,7 @@ const Map<String, String> ar = {
 
   'hourlyRate': 'سعر ساعة العمل',
   'points': 'عدد النقاط',
+  'pointsHistory': 'سجل النقاط',
   'point': 'نقطة',
   'workStartTime': 'وقت البدء',
   'workEndTime': 'وقت الانصراف',

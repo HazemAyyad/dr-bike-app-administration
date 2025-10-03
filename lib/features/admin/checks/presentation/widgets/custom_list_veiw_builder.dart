@@ -18,26 +18,25 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
       builder: (controller) {
         if (controller.isLoading.value) {
           return const SliverFillRemaining(
-            hasScrollBody: true,
             child: Center(child: CircularProgressIndicator()),
           );
         }
 
-        if (controller.currentTab.value == 0) {
+        if (controller.currentTab.value == 0 && !controller.isLoading.value) {
           if (controller.filteredInComingTasks.isEmpty) {
             return const SliverFillRemaining(
               child: ShowNoData(),
             );
           }
         }
-        if (controller.currentTab.value == 1) {
+        if (controller.currentTab.value == 1 && !controller.isLoading.value) {
           if (controller.filteredCashedToPersonTasks.isEmpty) {
             return const SliverFillRemaining(
               child: ShowNoData(),
             );
           }
         }
-        if (controller.currentTab.value == 2) {
+        if (controller.currentTab.value == 2 && !controller.isLoading.value) {
           if (controller.filteredArchiveTasks.isEmpty) {
             return const SliverFillRemaining(
               child: ShowNoData(),

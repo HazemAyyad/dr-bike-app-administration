@@ -11,10 +11,12 @@ class AddPointsUsecase {
     required String employeeId,
     required String points,
     required bool isAdd,
+    required String notes,
   }) {
     return employeeRepository.addPointsToEmployee(
       employeeId: employeeId,
       points: points,
+      notes: notes,
       isAdd: isAdd,
     );
   }

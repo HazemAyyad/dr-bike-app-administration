@@ -18,7 +18,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
   @override
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
-
+    final String points = Get.arguments;
     return Scaffold(
       appBar: CustomAppBar(
         title: 'employeeDetails',
@@ -255,6 +255,140 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                         title: 'regularWorkingHours',
                         discription:
                             "${'from'.tr} ${formatTimeTo12Hour(controller.employeeService.employeeDetails.value!.startWorkTime)} ${'to'.tr} ${formatTimeTo12Hour(controller.employeeService.employeeDetails.value!.endWorkTime)}",
+                      ),
+                      SizedBox(height: 10.h),
+                      Row(
+                        // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: SupTextAndDiscr(
+                              title: 'points',
+                              discription: points,
+                            ),
+                          ),
+                          Flexible(
+                            child: IconButton(
+                              onPressed: () {
+                                Get.dialog(
+                                  Dialog(
+                                    backgroundColor: ThemeService.isDark.value
+                                        ? AppColors.darkColor
+                                        : AppColors.whiteColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8.r),
+                                    ),
+                                    child: SingleChildScrollView(
+                                      padding: const EdgeInsets.all(10),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'pointsHistory'.tr,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium!
+                                                .copyWith(
+                                                  fontSize: 20.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.primaryColor,
+                                                ),
+                                          ),
+                                          SizedBox(height: 10.h),
+                                          ...controller
+                                              .employeeService
+                                              .employeeDetails
+                                              .value!
+                                              .rewardPunishment
+                                              .map(
+                                            (e) => Padding(
+                                              padding: const EdgeInsets.all(5),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceEvenly,
+                                                    children: [
+                                                      Flexible(
+                                                        child: Row(
+                                                          children: [
+                                                            Text(
+                                                              e.type.tr,
+                                                              style: Theme.of(
+                                                                      context)
+                                                                  .textTheme
+                                                                  .bodyMedium!
+                                                                  .copyWith(
+                                                                    fontSize:
+                                                                        17.sp,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w700,
+                                                                    color: AppColors
+                                                                        .primaryColor,
+                                                                  ),
+                                                            ),
+                                                            Text(
+                                                              ' : ${e.points} ${'point'.tr}',
+                                                              style: Theme.of(
+                                                                      context)
+                                                                  .textTheme
+                                                                  .bodyMedium!
+                                                                  .copyWith(
+                                                                      fontSize:
+                                                                          17.sp),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Flexible(
+                                                        child: SupTextAndDiscr(
+                                                          noSized: true,
+                                                          title: 'notes',
+                                                          discription: e.notes,
+                                                          titleColor: AppColors
+                                                              .primaryColor,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Container(
+                                                    margin:
+                                                        EdgeInsets.symmetric(
+                                                      vertical: 5.h,
+                                                      horizontal: 20.w,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors
+                                                          .primaryColor,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8.r),
+                                                    ),
+                                                    height: 1.h,
+                                                    width: double.infinity,
+                                                  )
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(
+                                Icons.list_alt_rounded,
+                                color: AppColors.primaryColor,
+                                size: 30.sp,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 10.h),
                       SupTextAndDiscr(

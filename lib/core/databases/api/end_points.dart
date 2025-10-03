@@ -144,8 +144,6 @@ class EndPoints {
   static const String all_customers = 'all/customers';
   static const String all_sellers = 'all/sellers';
 
-  static const String generalIncomingChecks = 'general/incoming/checks/data';
-
   static const String chashIncomingCheckToBox = 'cash/incoming/check/to/box';
 
   // stock

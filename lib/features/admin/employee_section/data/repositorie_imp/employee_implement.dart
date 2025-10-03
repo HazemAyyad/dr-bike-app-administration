@@ -80,6 +80,7 @@ class EmployeeImplement implements EmployeeRepository {
   Future<Either<Failure, String>> addPointsToEmployee({
     required String employeeId,
     required String points,
+    required String notes,
     required bool isAdd,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -89,6 +90,7 @@ class EmployeeImplement implements EmployeeRepository {
       final result = await employeeDatasource.addPointsToEmployee(
         employeeId: employeeId,
         points: points,
+        notes: notes,
         isAdd: isAdd,
       );
       if (result['status'] == 'success') {
