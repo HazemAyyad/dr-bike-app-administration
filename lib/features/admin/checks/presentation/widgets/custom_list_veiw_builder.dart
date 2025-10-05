@@ -133,14 +133,11 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                   // عرض العناصر
                   ...checks!.map(
                     (check) => GestureDetector(
-                      onLongPress: !controller.isInComing &&
-                              controller.currentTab.value == 2
-                          ? null
-                          : () {
-                              controller.getShowBoxes();
-                              controller.getAllCustomersAndSellers();
-                              Get.dialog(OnLongPress(check: check));
-                            },
+                      onLongPress: () {
+                        controller.getShowBoxes();
+                        controller.getAllCustomersAndSellers();
+                        Get.dialog(OnLongPress(check: check));
+                      },
                       child: ViewChecksWidget(
                         type: controller.isInComing,
                         check: check,

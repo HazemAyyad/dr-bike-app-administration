@@ -2,6 +2,8 @@ import 'package:doctorbike/features/admin/stock/domain/usecases/get_product_deta
 import 'package:doctorbike/features/admin/stock/domain/usecases/search_products_usecase.dart';
 import 'package:get/get.dart';
 
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../stock/data/repositories/stock_implement.dart';
 import '../../../stock/domain/usecases/add_combination_usecase.dart';
 import '../../../stock/domain/usecases/get_all_stock_usecase.dart';
@@ -32,6 +34,9 @@ class ExpensesBinding extends Bindings {
         ),
         getExpensesDataUsecase: GetExpensesDataUsecase(
           financialAffairsRepository: Get.find<FinancialAffairsImplement>(),
+        ),
+        getShownBoxUsecase: GetShownBoxUsecase(
+          boxesRepository: Get.find<BoxesImplement>(),
         ),
       ),
     );

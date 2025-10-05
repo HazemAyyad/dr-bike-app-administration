@@ -5,12 +5,14 @@ class PictureModel {
   final String name;
   final String description;
   final String file;
+  final String createdAt;
 
   PictureModel({
     required this.id,
     required this.name,
     required this.description,
     required this.file,
+    required this.createdAt,
   });
 
   factory PictureModel.fromJson(Map<String, dynamic> json) {
@@ -19,6 +21,7 @@ class PictureModel {
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       file: ShowNetImage.getPhoto(json['file']),
+      createdAt: json['created_at'] ?? '',
     );
   }
 
@@ -28,6 +31,7 @@ class PictureModel {
       'name': name,
       'description': description,
       'file': file,
+      'created_at': createdAt,
     };
   }
 }

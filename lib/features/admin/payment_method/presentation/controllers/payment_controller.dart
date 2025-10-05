@@ -61,7 +61,7 @@ class PaymentController extends GetxController {
   }
 
   // get shown boxes
-  final RxList<GetShownBoxesModel> shownBoxes = <GetShownBoxesModel>[].obs;
+  final RxList<shownBoxesModel> shownBoxes = <shownBoxesModel>[].obs;
 
   void showBoxes() async {
     // shownBoxes.isEmpty ? isLoading(true) : isLoading(true);

@@ -95,6 +95,9 @@ class FilesScreen extends GetView<OfficialPapersController> {
           )
         ],
       ),
+      floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
+          ? FloatingActionButtonLocation.startFloat
+          : FloatingActionButtonLocation.endFloat,
       floatingActionButton: SizedBox(
         height: 55.h,
         width: 55.w,

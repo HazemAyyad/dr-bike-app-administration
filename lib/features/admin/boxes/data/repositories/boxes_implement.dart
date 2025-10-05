@@ -48,7 +48,7 @@ class BoxesImplement implements BoxesRepository {
 
   // get all boxes
   @override
-  Future<List<GetShownBoxesModel>> getShownBoxes({required int screen}) async {
+  Future<List<shownBoxesModel>> getShownBoxes({required int screen}) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }

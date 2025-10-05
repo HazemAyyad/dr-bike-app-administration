@@ -91,7 +91,9 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                       final data = controller.papersSearch[index];
                       return Padding(
                         padding: EdgeInsets.symmetric(
-                            vertical: 5.h, horizontal: 24.w),
+                          vertical: 5.h,
+                          horizontal: 24.w,
+                        ),
                         child: OfficialPapersCard(data: data),
                       );
                     },
@@ -102,11 +104,12 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                 return SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: 24.w),
                   sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
-                      crossAxisSpacing: 10.h,
-                      mainAxisSpacing: 10.h,
-                      childAspectRatio: 0.75.h,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 0.75,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -137,13 +140,13 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
               iconAsset: AssetsManager.invoiceIcon,
               route: '',
               onTap: () {
+                controller.isEdit = false;
                 controller.pictureNameController.clear();
                 controller.pictureDescriptionController.clear();
-                controller.pictureFiles.clear();
+                controller.selectedFile.value = null;
                 controller.toggleAddMenu();
-                Get.dialog(
-                  const AddPaper(),
-                );
+                controller.getPaperData();
+                Get.dialog(const AddPaper());
               },
             ),
             BuildAddMenuItem(
@@ -151,13 +154,13 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
               iconAsset: AssetsManager.invoiceIcon,
               route: '',
               onTap: () {
+                controller.isEdit = false;
                 controller.fileController.clear();
                 controller.paperFiles.clear();
                 controller.notesController.clear();
                 controller.toggleAddMenu();
-                Get.dialog(
-                  const AddPicture(),
-                );
+                controller.getPictureData();
+                Get.dialog(const AddPicture());
               },
             ),
           ],

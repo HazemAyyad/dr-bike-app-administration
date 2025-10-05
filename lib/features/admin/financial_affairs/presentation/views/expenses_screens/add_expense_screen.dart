@@ -11,6 +11,7 @@ import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/video_view.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../routes/app_routes.dart';
 import '../../controllers/expenses_controller.dart';
 
 class AddExpenseScreen extends StatelessWidget {
@@ -54,24 +55,58 @@ class AddExpenseScreen extends StatelessWidget {
                           hintText: 'price',
                           keyboardType: TextInputType.number,
                           controller: controller.expensePriceController,
+                          enabled: !controller.isEditing.value,
                         ),
                       ),
                     ],
                   ),
                   SizedBox(height: 20.h),
-                  CustomDropdownField(
-                    label: 'paymentMethod',
-                    hint: 'paymentMethod',
-                    items: const ['cash', 'visa'],
-                    value: controller.paymentMethodController.text.isEmpty
-                        ? null
-                        : controller.paymentMethodController.text,
-                    onChanged: (value) {
-                      controller.paymentMethodController.text = value!;
-                    },
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: CustomDropdownFieldWithSearch(
+                          tital: 'box',
+                          hint: 'box',
+                          titalTextStyle:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: AppColors.primaryColor,
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                          items: controller.shownBoxesList,
+                          onChanged: (value) {
+                            if (value != null) {
+                              controller.boxIdController.text =
+                                  value.boxId.toString();
+                            }
+                          },
+                          value: controller.shownBoxesList.firstWhereOrNull(
+                            (element) =>
+                                element.boxId.toString() ==
+                                controller.boxIdController.text,
+                          ),
+                          itemAsString: (item) =>
+                              '${item.boxName} - (${item.totalBalance} ${item.currency})',
+                          compareFn: (a, b) => a.boxId == b.boxId,
+                          isEnabled: !controller.isEditing.value,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () =>
+                            Get.toNamed(AppRoutes.CREATEBOXESSCREEN),
+                        icon: Icon(
+                          Icons.add_circle_sharp,
+                          color: AppColors.primaryColor,
+                          size: 35.sp,
+                        ),
+                      )
+                    ],
                   ),
                   SizedBox(height: 20.h),
-                  if (controller.isEditing.value)
+                  if (controller.isEditing.value &&
+                      controller.invoiceFile.isNotEmpty)
                     GestureDetector(
                       onTap: () {
                         showGeneralDialog(
@@ -82,9 +117,8 @@ class AddExpenseScreen extends StatelessWidget {
                           transitionDuration: const Duration(milliseconds: 300),
                           pageBuilder: (context, anim1, anim2) {
                             return FullScreenZoomImage(
-                                imageUrl: controller.invoiceFile.isNotEmpty
-                                    ? controller.invoiceFile.first.path
-                                    : '');
+                              imageUrl: controller.invoiceFile.first.path,
+                            );
                           },
                         );
                       },

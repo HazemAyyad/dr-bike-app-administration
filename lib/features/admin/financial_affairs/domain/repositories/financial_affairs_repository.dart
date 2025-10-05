@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dartz/dartz.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/assets_models/assets_detials_model.dart';
@@ -40,7 +41,7 @@ abstract class FinancialAffairsRepository {
     required String name,
     required String price,
     required String notes,
-    required String paymentMethod,
+    required String boxId,
     required List<File?> invoiceImage,
     required List<File?> media,
     String? expenseId,
@@ -49,12 +50,16 @@ abstract class FinancialAffairsRepository {
   Future<ExpenseDetailModel> getExpensesData({required String expenseId});
 
   // official papers
-  Future<Either<Failure, String>> cancelPaper({required String? paperId});
+  Future<Either<Failure, String>> cancelPaper({
+    required String? paperId,
+    bool? isPicture,
+  });
 
   Future<Either<Failure, String>> addPicture({
     required String name,
     required String description,
-    required List<File?> media,
+    required List<XFile?> media,
+    required String pictureId,
   });
 
   Future<Either<Failure, String>> addPaper({
@@ -62,6 +67,7 @@ abstract class FinancialAffairsRepository {
     required String fileId,
     required List<File?> media,
     required String notes,
+    required String paperId,
   });
 
   Future<Either<Failure, String>> addSafe({
@@ -74,6 +80,7 @@ abstract class FinancialAffairsRepository {
     required String? fileId,
     required String? treasuryId,
     required String? fileBoxId,
+    required String? assetId,
   });
 
   Future<List<FilePapersModel>> getFilePapers({required String fileId});

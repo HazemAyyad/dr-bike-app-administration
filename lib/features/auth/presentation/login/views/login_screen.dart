@@ -7,7 +7,6 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/auth_logo.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../controllers/login_controller.dart';
-import '../widgets/dont_have_account.dart';
 import '../widgets/login_text_field.dart';
 import '../widgets/remember_me.dart';
 
@@ -62,7 +61,7 @@ class LoginScreen extends GetView<LoginController> {
                   height: 48.h,
                 ),
                 SizedBox(height: 15.h),
-                const DontHaveAccount(),
+                // const DontHaveAccount(),
                 SizedBox(height: 30.h),
               ],
             ),

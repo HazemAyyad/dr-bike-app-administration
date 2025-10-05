@@ -15,8 +15,10 @@ class AddPaperUsecase {
     required String fileId,
     required List<File?> media,
     required String notes,
+    required String paperId,
   }) {
     return financialAffairsRepository.addPaper(
+      paperId: paperId,
       name: name,
       fileId: fileId,
       media: media,

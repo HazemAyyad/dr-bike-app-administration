@@ -8,7 +8,7 @@ class DestructionModel {
   final String piecesNumber;
   final String destructionReason;
   final DateTime createdAt;
-  final String image;
+  final List<String> image;
 
   DestructionModel({
     required this.destructionId,
@@ -30,7 +30,10 @@ class DestructionModel {
       piecesNumber: json['pieces_number'] ?? '',
       destructionReason: json['destruction_reason'] ?? '',
       createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
-      image: ShowNetImage.getPhoto(json['image']),
+      image: json['image'] != null
+          ? List<String>.from(
+              json['image'].map((x) => ShowNetImage.getPhoto(x)))
+          : [],
     );
   }
 

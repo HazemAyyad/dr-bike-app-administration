@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -8,6 +9,7 @@ import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
 
@@ -30,106 +32,171 @@ class AddPaper extends GetView<OfficialPapersController> {
         ),
         child: Form(
           key: controller.formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'add_new_document'.tr,
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 20.sp,
-                          color: ThemeService.isDark.value
-                              ? AppColors.whiteColor
-                              : AppColors.secondaryColor,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'add_new_document'.tr,
+                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 20.sp,
+                            color: ThemeService.isDark.value
+                                ? AppColors.whiteColor
+                                : AppColors.secondaryColor,
+                          ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                CustomTextField(
+                  label: 'document_name'.tr,
+                  hintText: 'document_example'.tr,
+                  controller: controller.paperNameController,
+                ),
+                SizedBox(height: 10.h),
+                CustomDropdownField(
+                  label: 'select_file'.tr,
+                  hint: 'select_file'.tr,
+                  dropdownField: FinacialService()
+                      .filesData
+                      .map(
+                        (e) => DropdownMenuItem<String>(
+                          value: e.id.toString(),
+                          child: Text(e.name),
                         ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 10.h),
-              CustomTextField(
-                label: 'document_name'.tr,
-                hintText: 'document_example'.tr,
-                controller: controller.paperNameController,
-              ),
-              SizedBox(height: 10.h),
-              CustomDropdownField(
-                label: 'select_file'.tr,
-                hint: 'select_file'.tr,
-                dropdownField: FinacialService()
-                    .filesData
-                    .map(
-                      (e) => DropdownMenuItem<String>(
-                        value: e.id.toString(),
-                        child: Text(e.name),
+                      )
+                      .toList(),
+                  items:
+                      FinacialService().filesData.map((e) => e.name).toList(),
+                  onChanged: (value) {
+                    controller.fileController.text = value!;
+                  },
+                  value: controller.fileController.text.isEmpty
+                      ? null
+                      : controller.fileController.text,
+                ),
+                if (controller.isEdit)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SupTextAndDiscr(
+                        titleColor: AppColors.primaryColor,
+                        title: '${'images'.tr} ${'or'.tr} ${'video'.tr}',
+                        discription: '',
                       ),
-                    )
-                    .toList(),
-                items: FinacialService().filesData.map((e) => e.name).toList(),
-                onChanged: (value) {
-                  controller.fileController.text = value!;
-                },
-              ),
-              // SizedBox(height: 10.h),
-              // Row(
-              //   children: [
-              //     Flexible(
-              //       child: CustomDropdownField(
-              //         label: 'select_file_box'.tr,
-              //         hint: 'select_file_box'.tr,
-              //         // value: controller.fileBoxController.text,
-              //         items: const ['pdf', 'image'],
-              //         onChanged: (value) {
-              //           // controller.fileBoxController.text = value!;
-              //         },
-              //       ),
-              //     ),
-              //     SizedBox(width: 15.w),
-              //     Flexible(
-              //       child: CustomDropdownField(
-              //         label: 'safes'.tr,
-              //         hint: 'safes'.tr,
-              //          value: FinacialService()
-              //              .files
-              //              .where((e) =>
-              //                  e.id.toString() == controller.fileController.text)
-              //              .first
-              //              .name
-              //              .toString(),
-              //         items:
-              //             FinacialService().files.map((e) => e.name).toList(),
-              //         onChanged: (value) {
-              //           // controller.safeController.text = value!;
-              //         },
-              //       ),
-              //     ),
-              //   ],
-              // ),
-              SizedBox(height: 20.h),
-              MediaUploadButton(
-                onFilesChanged: (files) {
-                  controller.paperFiles = files;
-                },
-                title: 'uploadMedia'.tr,
-              ),
-              SizedBox(height: 20.h),
-              CustomTextField(
-                label: 'notes'.tr,
-                hintText: 'notes'.tr,
-                controller: controller.notesController,
-                validator: (value) => null,
-              ),
-              SizedBox(height: 20.h),
-              AppButton(
-                isLoading: controller.isLoading,
-                text: 'add_document'.tr,
-                onPressed: () {
-                  controller.addPaper(fileId: controller.fileController.text);
-                },
-              ),
-            ],
+                      SizedBox(height: 5.h),
+                      GetBuilder<OfficialPapersController>(
+                        builder: (controller) {
+                          return SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                ...controller.paperFiles.map(
+                                  (file) => Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 5.w),
+                                    child: Stack(
+                                      children: [
+                                        file.path.contains('.mp4')
+                                            ? Icon(
+                                                Icons.video_library_rounded,
+                                                size: 80.sp,
+                                                color: AppColors.primaryColor,
+                                              )
+                                            : file.path.contains('http')
+                                                ? CachedNetworkImage(
+                                                    imageUrl: file.path,
+                                                    fit: BoxFit.cover,
+                                                    height: 150.h,
+                                                    width: 150.w,
+                                                    placeholder:
+                                                        (context, url) =>
+                                                            const Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                              color: AppColors
+                                                                  .primaryColor),
+                                                    ),
+                                                    errorWidget:
+                                                        (context, url, error) =>
+                                                            const Icon(
+                                                      Icons.error,
+                                                      size: 50,
+                                                      color: Colors.red,
+                                                    ),
+                                                  )
+                                                : Image.file(
+                                                    file,
+                                                    height: 150.h,
+                                                    width: 150.w,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                        Positioned(
+                                          top: 5,
+                                          right: 5,
+                                          child: InkWell(
+                                            onTap: () {
+                                              controller.paperFiles
+                                                  .remove(file);
+                                              controller.update();
+                                            },
+                                            child: const CircleAvatar(
+                                              backgroundColor: Colors.red,
+                                              radius: 14,
+                                              child: Icon(Icons.close,
+                                                  color: Colors.white,
+                                                  size: 16),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      )
+                    ],
+                  ),
+                SizedBox(height: 20.h),
+                MediaUploadButton(
+                  onFilesChanged: (files) {
+                    final uniqueNewFiles = files.where((file) {
+                      return !controller.paperFiles.any(
+                        (existingFile) =>
+                            existingFile.path.trim() == file.path.trim(),
+                      );
+                    }).toList();
+                    controller.paperFiles.addAll(uniqueNewFiles);
+                    controller.update();
+                  },
+                  title: 'uploadMedia'.tr,
+                ),
+                SizedBox(height: 20.h),
+                CustomTextField(
+                  label: 'notes'.tr,
+                  hintText: 'notes'.tr,
+                  controller: controller.notesController,
+                  validator: (value) => null,
+                  maxLines: 4,
+                  minLines: 4,
+                ),
+                SizedBox(height: 20.h),
+                AppButton(
+                  isLoading: controller.isLoading,
+                  text: 'add_document'.tr,
+                  onPressed: () {
+                    controller.addPaper();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

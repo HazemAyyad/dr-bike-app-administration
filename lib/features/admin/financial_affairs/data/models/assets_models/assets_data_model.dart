@@ -62,7 +62,9 @@ class Asset {
       originalPrice: json['original_price'] ?? '0.0',
       depreciationRate: json['depreciation_rate'] ?? '0.0',
       depreciationPrice: json['depreciation_price'] ?? '0.0',
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
+          : DateTime.now(),
       image: ShowNetImage.getPhoto(json['image']),
     );
   }

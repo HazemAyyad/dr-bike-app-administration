@@ -5,7 +5,7 @@ class GetShownBoxUsecase {
   BoxesRepository boxesRepository;
   GetShownBoxUsecase({required this.boxesRepository});
 
-  Future<List<GetShownBoxesModel>> call({required int screen}) {
+  Future<List<shownBoxesModel>> call({required int screen}) {
     return boxesRepository.getShownBoxes(screen: screen);
   }
 }

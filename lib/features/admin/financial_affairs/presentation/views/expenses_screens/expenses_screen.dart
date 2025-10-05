@@ -7,6 +7,7 @@ import '../../../../../../core/helpers/custom_tab_bar.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/show_no_data.dart';
+import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/expenses_models/destruction_model.dart';
 import '../../../data/models/expenses_models/expense_data_model.dart';
@@ -36,6 +37,22 @@ class ExpensesScreen extends GetView<ExpensesController> {
               tabs: controller.tabs,
               currentTab: controller.currentTab,
               changeTab: controller.changeTab,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 50.w, vertical: 10.h),
+              child: SearchBar(
+                shadowColor: WidgetStateProperty.all(Colors.transparent),
+                leading: const Icon(Icons.search),
+                hintText: 'search'.tr,
+                backgroundColor: WidgetStateProperty.all(
+                  ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : AppColors.customGreyColor7,
+                ),
+                onChanged: (value) => controller.searchBar(value),
+              ),
             ),
           ),
           GetBuilder<ExpensesController>(
@@ -125,7 +142,7 @@ class ExpensesScreen extends GetView<ExpensesController> {
           controller.expenseNameController.clear();
           controller.expensePriceController.clear();
           controller.expenseNoteController.clear();
-          controller.paymentMethodController.clear();
+          controller.boxIdController.clear();
           controller.invoiceFile.clear();
           controller.expensesFile.clear();
         },

@@ -146,6 +146,8 @@ class EndPoints {
 
   static const String chashIncomingCheckToBox = 'cash/incoming/check/to/box';
 
+  static const String deleteCheck = 'delete/incoming/check';
+
   // stock
   static const String getProductsList = 'get/products/list';
   static const String getUnarchivedCloseouts = 'get/unarchived/closeouts';
@@ -188,6 +190,7 @@ class EndPoints {
   static const String getAssetsLogs = 'get/all/asset/logs';
   static const String getAllTreasuries = 'get/all/treasuries';
   static const String getFilePapers = 'file/papers';
+  static const String deleteAsset = 'delete/asset';
 
   // expenses
   static const String getAllExpenses = 'get/all/expenses';
@@ -201,8 +204,11 @@ class EndPoints {
   static const String getAllPapers = 'get/all/papers';
   static const String getAllPictures = 'get/all/pictures';
   static const String cancelPaper = 'cancel/paper';
+  static const String deletePicture = 'delete/picture';
   static const String addPicture = 'store/picture';
+  static const String editPicture = 'edit/picture';
   static const String addPaper = 'store/paper';
+  static const String editPaper = 'edit/paper';
   static const String storeTreasury = 'store/treasury';
   static const String storeFileBox = 'store/file-box';
   static const String storeFile = 'store/file';

@@ -141,7 +141,7 @@ class TargetSectionController extends GetxController {
   }
 
   // get shown boxes
-  final RxList<GetShownBoxesModel> shownBoxes = <GetShownBoxesModel>[].obs;
+  final RxList<shownBoxesModel> shownBoxes = <shownBoxesModel>[].obs;
   void getShowBoxes() async {
     final boxes = await getShownBoxUsecase.call(screen: currentTab.value);
     shownBoxes.value = boxes;

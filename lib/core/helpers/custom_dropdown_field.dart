@@ -194,46 +194,49 @@ class CustomDropdownFieldWithSearch extends StatelessWidget {
                 ],
               ),
         tital == '' ? const SizedBox.shrink() : SizedBox(height: 10.h),
-        Container(
-          decoration: BoxDecoration(
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor
-                : AppColors.whiteColor2,
-            border: Border.all(color: Colors.transparent),
-            borderRadius: BorderRadius.circular(11.r),
-          ),
-          child: DropdownSearch<dynamic>(
-            selectedItem: value,
-            items: (filter, infiniteScrollProps) => items,
-            itemAsString: itemAsString,
-            compareFn: compareFn,
-            validator: validator ??
-                (value) {
-                  if (value == null) {
-                    return tital.tr;
-                  }
-                  return null;
-                },
-            decoratorProps: DropDownDecoratorProps(
-              decoration: InputDecoration(
-                hoverColor: Colors.transparent,
-                focusColor: Colors.transparent,
-                fillColor: Colors.transparent,
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 15.w),
-                labelText: hint.tr,
-                labelStyle: labelStyle ??
-                    Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor2
-                              : AppColors.customGreyColor6,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
-              ),
+        AbsorbPointer(
+          absorbing: !isEnabled,
+          child: Container(
+            decoration: BoxDecoration(
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : AppColors.whiteColor2,
+              border: Border.all(color: Colors.transparent),
+              borderRadius: BorderRadius.circular(11.r),
             ),
-            popupProps: const PopupProps.menu(showSearchBox: true),
-            onChanged: isEnabled ? onChanged : null,
+            child: DropdownSearch<dynamic>(
+              selectedItem: value,
+              items: (filter, infiniteScrollProps) => items,
+              itemAsString: itemAsString,
+              compareFn: compareFn,
+              validator: validator ??
+                  (value) {
+                    if (value == null) {
+                      return tital.tr;
+                    }
+                    return null;
+                  },
+              decoratorProps: DropDownDecoratorProps(
+                decoration: InputDecoration(
+                  hoverColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                  fillColor: Colors.transparent,
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 15.w),
+                  labelText: hint.tr,
+                  labelStyle: labelStyle ??
+                      Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: ThemeService.isDark.value
+                                ? AppColors.customGreyColor2
+                                : AppColors.customGreyColor6,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
+                ),
+              ),
+              popupProps: const PopupProps.menu(showSearchBox: true),
+              onChanged: isEnabled ? onChanged : null,
+            ),
           ),
         ),
       ],

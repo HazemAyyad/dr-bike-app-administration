@@ -50,6 +50,10 @@ abstract class ChecksRepository {
     required bool isCancel,
   });
 
-  Future<Either<Failure, String>> chashToBox(
-      {required String boxId, required String checkId});
+  Future<Either<Failure, String>> chashToBox({
+    required String boxId,
+    required String checkId,
+  });
+
+  Future<Either<Failure, String>> deleteCheck({required String checkId});
 }

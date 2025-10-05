@@ -5,6 +5,7 @@ import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_m
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_log_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/expenses_models/expense_detail_model.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/file_data_model.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
@@ -163,7 +164,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     required String name,
     required String price,
     required String notes,
-    required String paymentMethod,
+    required String boxId,
     required List<File?> invoiceImage,
     required List<File?> media,
     String? expenseId,
@@ -176,7 +177,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
         name: name,
         price: price,
         notes: notes,
-        paymentMethod: paymentMethod,
+        boxId: boxId,
         invoiceImage: invoiceImage,
         media: media,
         expenseId: expenseId,
@@ -213,14 +214,18 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
 
   // cancel paper
   @override
-  Future<Either<Failure, String>> cancelPaper(
-      {required String? paperId}) async {
+  Future<Either<Failure, String>> cancelPaper({
+    required String? paperId,
+    bool? isPicture,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
-      final result =
-          await financialAffairsDatasource.cancelPaper(paperId: paperId);
+      final result = await financialAffairsDatasource.cancelPaper(
+        paperId: paperId!,
+        isPicture: isPicture,
+      );
       if (result['status'] == 'success') {
         return Right(result['message']!);
       }
@@ -238,15 +243,17 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
   // add picture
   @override
   Future<Either<Failure, String>> addPicture({
+    required String pictureId,
     required String name,
     required String description,
-    required List<File?> media,
+    required List<XFile?> media,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
       final result = await financialAffairsDatasource.addPicture(
+        pictureId: pictureId,
         name: name,
         description: description,
         media: media,
@@ -267,6 +274,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
 
   @override
   Future<Either<Failure, String>> addPaper({
+    required String paperId,
     required String name,
     required String fileId,
     required List<File?> media,
@@ -277,6 +285,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     }
     try {
       final result = await financialAffairsDatasource.addPaper(
+        paperId: paperId,
         name: name,
         fileId: fileId,
         media: media,
@@ -332,6 +341,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
     required String? fileId,
     required String? treasuryId,
     required String? fileBoxId,
+    required String? assetId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -341,6 +351,7 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
         fileId: fileId,
         treasuryId: treasuryId,
         fileBoxId: fileBoxId,
+        assetId: assetId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

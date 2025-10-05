@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -82,6 +83,33 @@ class FinancialAffairsDatasource {
     required List<File?> selectedFile,
   }) async {
     try {
+      print(assetId);
+      print(assetName);
+      print(price);
+      print(note);
+      print(depreciationRate);
+      print(numberOfMonths);
+      print(selectedFile);
+      final Map<String, dynamic> formData = {};
+
+      if (selectedFile.isNotEmpty) {
+        for (int i = 0; i < selectedFile.length; i++) {
+          final file = selectedFile[i];
+          if (file == null) continue;
+
+          if (file.path.contains('http')) {
+            // لو الملف لينك (مش مرفوع جديد)
+            formData['media[$i]'] = file.path;
+          } else {
+            // لو الملف محلي
+            formData['media[$i]'] = await MultipartFile.fromFile(
+              file.path,
+              filename: file.path.split('/').last,
+            );
+          }
+        }
+      }
+
       final response = await api.post(
         assetId != null ? EndPoints.editAsset : EndPoints.addNewAsset,
         data: {
@@ -91,22 +119,7 @@ class FinancialAffairsDatasource {
           'notes': note,
           'depreciation_rate': depreciationRate,
           'months_number': numberOfMonths,
-          if (selectedFile.isNotEmpty)
-            'media[]': selectedFile.map(
-              (file) async {
-                if (file!.path.contains('http')) {
-                  return file.path;
-                }
-                return await Future.wait(
-                  [
-                    MultipartFile.fromFile(
-                      file.path,
-                      filename: file.path.split('/').last,
-                    ),
-                  ],
-                );
-              },
-            ),
+          ...formData,
         },
         isFormData: true,
       );
@@ -205,7 +218,7 @@ class FinancialAffairsDatasource {
     required String name,
     required String price,
     required String notes,
-    required String paymentMethod,
+    required String boxId,
     required List<File?> invoiceImage,
     required List<File?> media,
     String? expenseId,
@@ -216,9 +229,9 @@ class FinancialAffairsDatasource {
         data: {
           if (expenseId != null) 'expense_id': expenseId,
           'name': name,
-          'price': price,
+          if (expenseId == null) 'price': price,
           'notes': notes,
-          'payment_method': paymentMethod,
+          if (expenseId == null) 'box_id': boxId,
           if (invoiceImage.isNotEmpty)
             'invoice_img[]': await Future.wait(
               invoiceImage.map((file) async {
@@ -279,11 +292,19 @@ class FinancialAffairsDatasource {
   }
 
   // cancel paper
-  Future<Map<String, dynamic>> cancelPaper({required String? paperId}) async {
+  Future<Map<String, dynamic>> cancelPaper({
+    required String paperId,
+    bool? isPicture,
+  }) async {
     try {
       final response = await api.post(
-        EndPoints.cancelPaper,
-        data: {'paper_id': paperId},
+        isPicture == true || isPicture != null
+            ? EndPoints.deletePicture
+            : EndPoints.cancelPaper,
+        data: {
+          'paper_id': paperId,
+          if (isPicture != null) 'picture_id': paperId
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -302,12 +323,14 @@ class FinancialAffairsDatasource {
   Future<Map<String, dynamic>> addPicture({
     required String name,
     required String description,
-    required List<File?> media,
+    required List<XFile?> media,
+    required String pictureId,
   }) async {
     try {
       final response = await api.post(
-        EndPoints.addPicture,
+        pictureId.isNotEmpty ? EndPoints.editPicture : EndPoints.addPicture,
         data: {
+          if (pictureId.isNotEmpty) 'picture_id': pictureId,
           'name': name,
           'description': description,
           if (media.isNotEmpty)
@@ -340,6 +363,7 @@ class FinancialAffairsDatasource {
 
   // add document
   Future<Map<String, dynamic>> addPaper({
+    required String paperId,
     required String name,
     required String fileId,
     required List<File?> media,
@@ -347,8 +371,9 @@ class FinancialAffairsDatasource {
   }) async {
     try {
       final response = await api.post(
-        EndPoints.addPaper,
+        paperId.isNotEmpty ? EndPoints.editPaper : EndPoints.addPaper,
         data: {
+          if (paperId.isNotEmpty) 'paper_id': paperId,
           'name': name,
           'file_id': fileId,
           if (media.isNotEmpty)
@@ -417,6 +442,7 @@ class FinancialAffairsDatasource {
     required String? fileId,
     required String? treasuryId,
     required String? fileBoxId,
+    required String? assetId,
   }) async {
     try {
       final response = await api.post(
@@ -424,11 +450,14 @@ class FinancialAffairsDatasource {
               ? EndPoints.deleteFile
               : treasuryId != null
                   ? EndPoints.deleteTreasury
-                  : EndPoints.deleteFileBox,
+                  : fileBoxId != null
+                      ? EndPoints.deleteFileBox
+                      : EndPoints.deleteAsset,
           data: {
             if (fileId != null) 'file_id': fileId,
             if (treasuryId != null) 'treasury_id': treasuryId,
             if (fileBoxId != null) 'file_box_id': fileBoxId,
+            if (assetId != null) 'asset_id': assetId,
           });
       return response.data;
     } on DioException catch (e) {

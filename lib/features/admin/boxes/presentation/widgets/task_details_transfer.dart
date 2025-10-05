@@ -83,6 +83,8 @@ class TaskDetailsTransfer extends StatelessWidget {
                                     Get.snackbar(
                                       "error".tr,
                                       "برجاء اختيار مدة محدده".tr,
+                                      snackPosition: SnackPosition.BOTTOM,
+                                      duration: const Duration(seconds: 1),
                                     );
                                     return;
                                   }

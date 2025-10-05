@@ -1,7 +1,7 @@
 import '../../domain/entity/get_shown_boxes_entity.dart';
 
-class GetShownBoxesModel extends GetShownBoxesEntity {
-  const GetShownBoxesModel({
+class shownBoxesModel extends GetShownBoxesEntity {
+  const shownBoxesModel({
     required int boxId,
     required String boxName,
     required double totalBalance,
@@ -15,8 +15,8 @@ class GetShownBoxesModel extends GetShownBoxesEntity {
           currency: currency,
         );
 
-  factory GetShownBoxesModel.fromJson(Map<String, dynamic> json) {
-    return GetShownBoxesModel(
+  factory shownBoxesModel.fromJson(Map<String, dynamic> json) {
+    return shownBoxesModel(
       boxId: int.parse(json['box_id'].toString()),
       boxName: json['box_name'] ?? '',
       totalBalance: double.parse(json['total_balance'].toString()),

@@ -9,7 +9,7 @@ import '../../data/models/get_shown_boxes_model.dart';
 class BoxesWidget extends StatelessWidget {
   const BoxesWidget({Key? key, required this.box}) : super(key: key);
 
-  final GetShownBoxesModel box;
+  final shownBoxesModel box;
 
   @override
   Widget build(BuildContext context) {

@@ -7,6 +7,8 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'video_view.dart';
+
 class FullScreenZoomImage extends StatelessWidget {
   final String imageUrl;
 
@@ -68,20 +70,22 @@ class FullScreenZoomImage extends StatelessWidget {
               Navigator.of(context).pop();
             }
           },
-          child: Container(
-            color: Colors.transparent,
-            child: Center(
-              child: PhotoView(
-                imageProvider: NetworkImage(imageUrl),
-                backgroundDecoration: const BoxDecoration(
+          child: imageUrl.contains('.mp4')
+              ? VideoView(videoPath: imageUrl, dsibalBack: true)
+              : Container(
                   color: Colors.transparent,
+                  child: Center(
+                    child: PhotoView(
+                      imageProvider: NetworkImage(imageUrl),
+                      backgroundDecoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 2.5,
+                      enableRotation: false,
+                    ),
+                  ),
                 ),
-                minScale: PhotoViewComputedScale.contained,
-                maxScale: PhotoViewComputedScale.covered * 2.5,
-                enableRotation: false,
-              ),
-            ),
-          ),
         ),
         // زرار إغلاق
         Positioned(

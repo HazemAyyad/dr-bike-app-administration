@@ -1,11 +1,19 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:video_player/video_player.dart';
 
 import 'custom_app_bar.dart';
 
 class VideoView extends StatefulWidget {
-  const VideoView({Key? key, required this.videoPath}) : super(key: key);
+  const VideoView({Key? key, required this.videoPath, this.dsibalBack})
+      : super(key: key);
   final String videoPath;
+  final bool? dsibalBack;
 
   @override
   State<VideoView> createState() => _VideoViewState();
@@ -81,10 +89,72 @@ class _VideoViewState extends State<VideoView> {
     super.dispose();
   }
 
+  Future<void> _downloadImage(BuildContext context) async {
+    try {
+      // اطلب صلاحيات
+      if (Platform.isAndroid) {
+        await Permission.storage.request();
+        await Permission.manageExternalStorage.request(); // Android 11+
+      }
+      Get.snackbar(
+        "تنبية",
+        "جاري التحميل سيتم اخبارك عند الانتهاء",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 1500),
+      );
+      Directory dir;
+      if (Platform.isAndroid) {
+        // خزن الصورة داخل Pictures/اسم_التطبيق
+        dir = Directory("/storage/emulated/0/Download/Doctor Bike/photos");
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+      } else {
+        dir = await getApplicationDocumentsDirectory();
+      }
+
+      String fileName = widget.videoPath.split('/').last;
+      String savePath = "${dir.path}/$fileName";
+
+      await Dio().download(widget.videoPath, savePath);
+
+      Get.snackbar(
+        "success".tr,
+        "تم التحميل في $savePath".tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 1500),
+      );
+    } catch (e) {
+      Get.snackbar(
+        "error".tr,
+        "فشل التحميل: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 1500),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: '', action: false),
+      appBar: widget.dsibalBack != true
+          ? CustomAppBar(
+              title: '',
+              // action: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.download,
+                    color: Colors.green,
+                    size: 30,
+                  ),
+                  onPressed: () => _downloadImage(context)
+                      // ignore: use_build_context_synchronously
+                      .then((value) => Navigator.of(context).pop()),
+                ),
+              ],
+            )
+          : null,
       body: Center(
         child: _controller == null || !_controller!.value.isInitialized
             ? const CircularProgressIndicator()

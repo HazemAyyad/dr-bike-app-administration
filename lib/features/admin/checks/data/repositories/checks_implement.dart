@@ -248,4 +248,25 @@ class ChecksImplement implements ChecksRepository {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
+
+  @override
+  Future<Either<Failure, String>> deleteCheck({required String checkId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await checksDatasource.deleteCheck(checkId: checkId);
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
 }

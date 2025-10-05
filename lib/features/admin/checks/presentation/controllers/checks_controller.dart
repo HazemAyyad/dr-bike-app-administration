@@ -1,4 +1,3 @@
-import 'package:doctorbike/features/admin/boxes/domain/usecases/get_shown_box_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
@@ -8,12 +7,14 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/check_model.dart';
 import '../../data/models/general_incoming_model.dart';
 import '../../data/models/general_outgoing_data_model.dart';
 import '../../domain/usecases/add_checks_usecase.dart';
 import '../../domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/cashed_to_person_cancel_usecase.dart';
+import '../../domain/usecases/delete_check_usecase.dart';
 import '../../domain/usecases/edit_checks_usecase.dart';
 import '../../domain/usecases/general_checks_data_usecase.dart';
 import '../../domain/usecases/get_checks_usecase.dart';
@@ -33,6 +34,7 @@ class ChecksController extends GetxController
   final GetShownBoxUsecase getShownBoxUsecase;
   final ChashToBoxUsecase chashToBoxUsecase;
   final EditChecksUsecase editChecksUsecase;
+  final DeleteCheckUsecase deleteCheckUsecase;
 
   ChecksController({
     required this.addChecksUsecase,
@@ -45,6 +47,7 @@ class ChecksController extends GetxController
     required this.getShownBoxUsecase,
     required this.chashToBoxUsecase,
     required this.editChecksUsecase,
+    required this.deleteCheckUsecase,
   });
 
   final GlobalKey formKey = GlobalKey<FormState>();
@@ -98,20 +101,33 @@ class ChecksController extends GetxController
   bool isInComing = false;
 
   // الشيكات الصادرة
-  RxList<String> outgoingChecksDidNotActOnIt =
-      <String>['endorseTheCheck', 'voidTheCheck'].obs;
+  RxList<String> outgoingChecksDidNotActOnIt = <String>[
+    'endorseTheCheck',
+    'returnedCheck',
+    'voidTheCheck',
+    'deleteCheck'
+  ].obs;
 
-  RxList<String> outgoingChecksActedOnIt =
-      <String>['cashTheCheck', 'returnedCheck', 'voidTheCheck'].obs;
+  RxList<String> outgoingChecksActedOnIt = <String>[
+    // 'cashTheCheck',
+    'returnedCheck', 'voidTheCheck'
+  ].obs;
 
   // الشيكات الواردة
-  RxList<String> incomingChecksDidNotActOnIt =
-      <String>['cashTheCheck', 'returnedCheck', 'endorseTheCheck'].obs;
+  RxList<String> incomingChecksDidNotActOnIt = <String>[
+    'endorseTheCheck',
+    'cashTheCheck',
+    'returnedCheck',
+    'deleteCheck',
+    'voidTheCheck'
+  ].obs;
 
-  RxList<String> incomingChecksActedOnIt =
-      <String>['cashTheCheck', 'returnedCheck'].obs;
+  RxList<String> incomingChecksActedOnIt = <String>[
+    // 'cashTheCheck',
+    'returnedCheck'
+  ].obs;
 
-  RxList<String> archive = ['voidTheCheck', 'returnedCheck'].obs;
+  RxList<String> archive = ['deleteCheck'].obs;
 
   // add checks
   void addChecks({
@@ -470,6 +486,48 @@ class ChecksController extends GetxController
     update();
   }
 
+  // delete check
+  void deleteCheck({required String checkId}) async {
+    isLoading(true);
+    final result = await deleteCheckUsecase.deleteCheck(checkId: checkId);
+    result.fold(
+      (failure) {
+        isLoading(false);
+        update();
+        Get.snackbar(
+          'error'.tr,
+          failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
+        );
+      },
+      (success) async {
+        Get.back();
+        await Future.wait([
+          getGeneralChecksData(),
+          // generalData(),
+          getCashedToPerson(),
+          getNotCashed(),
+          getArchive(),
+        ]);
+        Future.delayed(
+          const Duration(milliseconds: 1000),
+          () {
+            Get.back();
+          },
+        );
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
+        );
+      },
+    );
+    isLoading(false);
+    update();
+  }
+
   // get all not cashed outgoing checks
   final Rxn<NotCashedModel> inComingChecksList = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> inComingTasks = {};
@@ -602,7 +660,6 @@ class ChecksController extends GetxController
   //     Rxn<GeneralChecksDataModel>(null);
 
   Future<void> getGeneralChecksData() async {
-    print('مهممممممممممممممممممممممممممممم');
     final result = await generalChecksDataUsecase.call();
     ChecksServes().generalChecksData.value = result;
     update();
@@ -641,7 +698,7 @@ class ChecksController extends GetxController
   // }
 
   // get shown boxes
-  final RxList<GetShownBoxesModel> shownBoxesList = <GetShownBoxesModel>[].obs;
+  final RxList<shownBoxesModel> shownBoxesList = <shownBoxesModel>[].obs;
 
   void getShowBoxes() async {
     final boxes = await getShownBoxUsecase.call(screen: currentTab.value);

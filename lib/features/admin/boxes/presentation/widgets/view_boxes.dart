@@ -62,7 +62,7 @@ class VeiwBoxes extends GetView<BoxesController> {
                     ? null
                     : () {
                         controller.getboxDetails(
-                          box is GetShownBoxesModel
+                          box is shownBoxesModel
                               ? box.boxId.toString()
                               : box is BoxLogModel
                                   ? box.id.toString()
@@ -70,7 +70,7 @@ class VeiwBoxes extends GetView<BoxesController> {
                         );
                         Get.toNamed(
                           AppRoutes.EDITBOXESSCREEN,
-                          arguments: box is GetShownBoxesModel
+                          arguments: box is shownBoxesModel
                               ? box.boxId.toString()
                               : box is BoxLogModel
                                   ? box.id.toString()
@@ -80,7 +80,7 @@ class VeiwBoxes extends GetView<BoxesController> {
                 onLongPress: controller.currentTab.value == 0 ||
                         controller.currentTab.value == 2
                     ? () => Get.dialog(
-                          OnLongPressInBox(box: box as GetShownBoxesModel),
+                          OnLongPressInBox(box: box as shownBoxesModel),
                         )
                     : null,
                 child: Container(
@@ -119,13 +119,13 @@ class VeiwBoxes extends GetView<BoxesController> {
                       // ),
                       // SizedBox(width: 10.w),
                       controller.currentTab.value == 0
-                          ? BoxesWidget(box: box as GetShownBoxesModel)
+                          ? BoxesWidget(box: box as shownBoxesModel)
                           : controller.currentTab.value == 1
                               ? Flexible(
                                   child:
                                       MovementsWidget(box: box as BoxLogModel),
                                 )
-                              : ArchiveWidget(box: box as GetShownBoxesModel)
+                              : ArchiveWidget(box: box as shownBoxesModel)
                     ],
                   ),
                 ),

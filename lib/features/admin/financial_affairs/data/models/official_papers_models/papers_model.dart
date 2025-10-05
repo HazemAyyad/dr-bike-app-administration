@@ -6,7 +6,9 @@ class PaperModel {
   final String treasuryName;
   final String fileBoxName;
   final String fileName;
-  final String img;
+  final List<String> img;
+  final String note;
+  final String createdAt;
 
   PaperModel({
     required this.paperId,
@@ -15,6 +17,8 @@ class PaperModel {
     required this.fileBoxName,
     required this.fileName,
     required this.img,
+    required this.note,
+    required this.createdAt,
   });
 
   factory PaperModel.fromJson(Map<String, dynamic> json) {
@@ -24,7 +28,11 @@ class PaperModel {
       treasuryName: json['treasury_name'] ?? '',
       fileBoxName: json['file_box_name'] ?? '',
       fileName: json['file_name'] ?? '',
-      img: ShowNetImage.getPhoto(json['img']),
+      img: json['img'] != null
+          ? List<String>.from(json['img']).map((e) => ShowNetImage.getPhoto(e)).toList()
+          : [],
+      note: json['note'] ?? '',
+      createdAt: json['created_at'] ?? '',
     );
   }
 
@@ -36,6 +44,8 @@ class PaperModel {
       'file_box_name': fileBoxName,
       'file_name': fileName,
       'img': img,
+      'note': note,
+      'created_at': createdAt,
     };
   }
 }

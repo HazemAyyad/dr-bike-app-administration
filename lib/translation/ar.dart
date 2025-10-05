@@ -638,6 +638,7 @@ const Map<String, String> ar = {
   'voidTheCheck': 'اعدام الشيك',
   'cashTheCheck': 'صرف الشيك',
   'returnedCheck': 'ارجاع الشيك',
+  'deleteCheck': 'حذف الشيك',
   'beneficiary': 'أسم المستفيد',
   'receiveMaintenance': 'استلام صيانة',
 
@@ -764,6 +765,7 @@ const Map<String, String> ar = {
   'assetsConsumption': 'إهلاك الأصول',
   'consumptionDate': 'تاريخ الاهلاك',
   'addNewAsset': 'إضافة اصل جديد',
+  'editAsset': 'تعديل الاصل',
   'assetName': 'أسم الأصل',
   'assetNameExample': 'مثال: مكيفات للمحل',
   'assetValue': 'سعر الأصل',
@@ -804,6 +806,7 @@ const Map<String, String> ar = {
   "images": "صور",
   "add_important_images": "إضافة صور مهمة",
   "image_name": "اسم الصورة",
+  "delete_picture": "حذف الصورة",
 
   "safes": "الخزائن",
   "safe_name": "اسم الخزينة",
@@ -814,6 +817,7 @@ const Map<String, String> ar = {
   "create_file": "إنشاء فايل",
   "file_name": "اسم الفايل",
   "delete_file": "حذف الفايل",
+  'paperName': 'اسم الورقة',
 
   // قسم العدادات والاحصائيات والتقارير
   "statistics": "الإحصائيات",

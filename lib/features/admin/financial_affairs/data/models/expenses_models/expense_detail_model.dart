@@ -4,7 +4,7 @@ class ExpenseDetailModel {
   final int id;
   final String name;
   final String price;
-  final String paymentMethod;
+  final String boxId;
   final String? notes;
   final List<String> invoiceImg;
   final List<String> media;
@@ -15,7 +15,7 @@ class ExpenseDetailModel {
     required this.id,
     required this.name,
     required this.price,
-    required this.paymentMethod,
+    required this.boxId,
     this.notes,
     required this.invoiceImg,
     required this.media,
@@ -25,11 +25,11 @@ class ExpenseDetailModel {
 
   factory ExpenseDetailModel.fromJson(Map<String, dynamic> json) {
     return ExpenseDetailModel(
-      id: json['id'],
-      name: json['name'],
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
       price: json['price'].toString(),
-      paymentMethod: json['payment_method'],
-      notes: json['notes'],
+      boxId: json['box']?['id']?.toString() ?? '0',
+      notes: json['notes'] ?? '',
       invoiceImg: List<String>.from(
           json['invoice_img'].map((x) => ShowNetImage.getPhoto(x))),
       media:
@@ -44,7 +44,7 @@ class ExpenseDetailModel {
       "id": id,
       "name": name,
       "price": price,
-      "payment_method": paymentMethod,
+      "box": boxId,
       "notes": notes,
       "invoice_img": invoiceImg,
       "media": media,

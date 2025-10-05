@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -9,6 +10,7 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../data/models/assets_models/assets_data_model.dart';
 import '../../controllers/assets_controller.dart';
+import '../official_papers_widgets/cancel_file_dialog.dart';
 
 class AssetsCard extends GetView<AssetsController> {
   const AssetsCard({Key? key, required this.asset}) : super(key: key);
@@ -18,6 +20,14 @@ class AssetsCard extends GetView<AssetsController> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onLongPress: () {
+        Get.dialog(
+          CancelFileDialog(
+            fileName: asset.name,
+            assetId: asset.assetId.toString(),
+          ),
+        );
+      },
       onTap: () {
         controller.isEditing.value = true;
         controller.getAssetsDetials(assetId: asset.assetId.toString());
@@ -50,7 +60,7 @@ class AssetsCard extends GetView<AssetsController> {
                   imageUrl: asset.image,
                   fit: BoxFit.cover,
                   height: 45.h,
-                  width: 60.w,
+                  width: 50.w,
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                   placeholder: (context, url) =>
                       const Center(child: CircularProgressIndicator()),
@@ -59,18 +69,33 @@ class AssetsCard extends GetView<AssetsController> {
             ),
             SizedBox(width: 10.w),
             Expanded(
-              child: Text(
-                asset.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      color: AppColors.graywhiteColor,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    asset.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          color: AppColors.graywhiteColor,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  SizedBox(height: 5.h),
+                  Text(
+                    showData(asset.createdAt),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                          color: AppColors.graywhiteColor,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ],
               ),
             ),
-            const Spacer(),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -102,7 +127,7 @@ class AssetsCard extends GetView<AssetsController> {
                     ),
                   ),
                 ),
-                SizedBox(width: 10.w),
+                SizedBox(width: 5.w),
                 Container(
                   padding: EdgeInsets.all(4.r),
                   decoration: BoxDecoration(

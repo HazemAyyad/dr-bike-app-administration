@@ -8,7 +8,9 @@ class CancelPaperUsecase {
 
   CancelPaperUsecase({required this.financialAffairsRepository});
 
-  Future<Either<Failure, String>> call({required String paperId}) {
-    return financialAffairsRepository.cancelPaper(paperId: paperId);
+  Future<Either<Failure, String>> call(
+      {required String paperId, bool? isPicture}) {
+    return financialAffairsRepository.cancelPaper(
+        paperId: paperId, isPicture: isPicture);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/services/user_data.dart';
 import 'package:get/get.dart';
 
@@ -12,15 +13,20 @@ class SplashController extends GetxController {
     bool isFirstTime = await UserData.getIsFirstTime();
     bool isRemembered = await UserData.getIsRememberUser();
 
-    Future.delayed(const Duration(seconds: 3), () async {
-      connected
-          ? !isFirstTime
-              ? isRemembered
-                  ? Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN)
-                  : Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN)
-              : Get.offAllNamed(AppRoutes.ONBOARDINGSCREEN)
-          : Get.offAllNamed(AppRoutes.NOINTERNETSCREEN);
-    });
+    Future.delayed(
+      const Duration(seconds: 3),
+      () async {
+        if (supabase) {
+          connected
+              ? !isFirstTime
+                  ? isRemembered
+                      ? Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN)
+                      : Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN)
+                  : Get.offAllNamed(AppRoutes.ONBOARDINGSCREEN)
+              : Get.offAllNamed(AppRoutes.NOINTERNETSCREEN);
+        }
+      },
+    );
     super.onInit();
   }
 }

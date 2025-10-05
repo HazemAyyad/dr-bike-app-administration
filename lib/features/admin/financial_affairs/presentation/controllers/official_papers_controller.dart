@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/official_papers_models/papers_model.dart';
 import '../../data/models/official_papers_models/pictures_model.dart';
@@ -13,6 +14,7 @@ import '../../domain/usecases/paper_usecase/add_safe_usecase.dart';
 import '../../domain/usecases/paper_usecase/cancel_paper_usecase.dart';
 import '../../domain/usecases/paper_usecase/delete_file.dart';
 import '../../domain/usecases/paper_usecase/get_file_papers_usecase.dart';
+import 'assets_controller.dart';
 import 'finacial_service.dart';
 
 class OfficialPapersController extends GetxController
@@ -46,7 +48,8 @@ class OfficialPapersController extends GetxController
   // add picture
   final pictureNameController = TextEditingController();
   final pictureDescriptionController = TextEditingController();
-  List<File> pictureFiles = [];
+  // List<File> pictureFiles = [];
+  Rx<XFile?> selectedFile = Rx<XFile?>(null);
 
   final TextEditingController safeNameController = TextEditingController();
 
@@ -62,28 +65,70 @@ class OfficialPapersController extends GetxController
 
   List<PictureModel> picturesSearch = [];
 
+  bool isEdit = false;
+  // List<File> editPaperFiles = [];
+  String paperId = '';
+  void getPaperData({PaperModel? paper}) {
+    if (isEdit) {
+      paperNameController.text = paper!.paperName;
+      fileController.text = FinacialService()
+          .filesData
+          .firstWhere(
+            (e) => e.name == paper.fileName,
+            orElse: () => FinacialService().filesData.first,
+          )
+          .id
+          .toString();
+      paperFiles = paper.img.map((e) => File(e)).toList();
+      notesController.text = paper.note;
+      paperId = paper.paperId.toString();
+    } else {
+      paperNameController.clear();
+      fileController.clear();
+      paperFiles.clear();
+      notesController.clear();
+      paperId = '';
+    }
+  }
+
+  String pictureId = '';
+  void getPictureData({PictureModel? picture}) {
+    if (isEdit) {
+      pictureNameController.text = picture!.name;
+      selectedFile.value = XFile(picture.file);
+      pictureDescriptionController.text = picture.description;
+      pictureId = picture.id.toString();
+    } else {
+      pictureNameController.clear();
+      selectedFile.value = null;
+      pictureDescriptionController.clear();
+      pictureId = '';
+    }
+  }
+
   void searchBar(String value) {
     if (value.isNotEmpty) {
-      papersSearch = FinacialService()
-          .papers
-          .where(
-            (element) => element.paperName.toLowerCase().contains(
-                  value.toLowerCase(),
-                ),
-          )
-          .toList();
-      picturesSearch = FinacialService()
-          .pictures
-          .where(
-            (element) => element.name.toLowerCase().contains(
-                  value.toLowerCase(),
-                ),
-          )
-          .toList();
+      final papers = FinacialService().papers;
+      final pictures = FinacialService().pictures;
+      final search = value.toLowerCase();
+
+      papersSearch = papers.where((element) {
+        return element.paperName.toLowerCase().contains(search) ||
+            element.treasuryName.toLowerCase().contains(search) ||
+            element.fileBoxName.toLowerCase().contains(search) ||
+            element.fileName.toLowerCase().contains(search) ||
+            element.createdAt.toString().toLowerCase().contains(search);
+      }).toList();
+
+      picturesSearch = pictures.where((element) {
+        return element.name.toLowerCase().contains(search) ||
+            element.createdAt.toString().toLowerCase().contains(search);
+      }).toList();
     } else {
       papersSearch = FinacialService().papers;
       picturesSearch = FinacialService().pictures;
     }
+
     update();
   }
 
@@ -160,9 +205,10 @@ class OfficialPapersController extends GetxController
     isLoading(true);
     if (formKey.currentState!.validate()) {
       final result = await addPictureUsecase.call(
+        pictureId: pictureId,
         name: pictureNameController.text,
         description: pictureDescriptionController.text,
-        media: pictureFiles,
+        media: [selectedFile.value],
       );
 
       result.fold(
@@ -178,8 +224,11 @@ class OfficialPapersController extends GetxController
         (success) async {
           pictureNameController.clear();
           pictureDescriptionController.clear();
-          pictureFiles.clear();
+          selectedFile.value = null;
           getAllExpenses();
+          if (isEdit) {
+            Get.back();
+          }
           Get.back();
           Get.snackbar(
             'success'.tr,
@@ -195,12 +244,13 @@ class OfficialPapersController extends GetxController
   }
 
   // add document
-  void addPaper({required String fileId}) async {
+  void addPaper() async {
     isLoading(true);
     if (formKey.currentState!.validate()) {
       final result = await addPaperUsecase.call(
+        paperId: paperId,
         name: paperNameController.text,
-        fileId: fileId,
+        fileId: fileController.text,
         media: paperFiles,
         notes: notesController.text,
       );
@@ -221,6 +271,9 @@ class OfficialPapersController extends GetxController
           paperFiles.clear();
           notesController.clear();
           getAllExpenses();
+          if (isEdit) {
+            Get.back();
+          }
           Get.back();
           Get.snackbar(
             'success'.tr,
@@ -236,9 +289,10 @@ class OfficialPapersController extends GetxController
   }
 
   // cancel paper
-  void cancelPaper({required String paperId}) async {
+  void cancelPaper({required String paperId, bool? isPicture = false}) async {
     isLoading(true);
-    final result = await cancelPaperUsecase.call(paperId: paperId);
+    final result =
+        await cancelPaperUsecase.call(paperId: paperId, isPicture: isPicture);
 
     result.fold(
       (failure) {
@@ -314,12 +368,14 @@ class OfficialPapersController extends GetxController
     String? fileId,
     String? fileBoxId,
     String? treasuryId,
+    String? assetId,
   }) async {
     isLoading(true);
     final result = await deleteFileUsecase.call(
       fileId: fileId,
       treasuryId: treasuryId,
       fileBoxId: fileBoxId,
+      assetId: assetId,
     );
 
     result.fold(
@@ -335,6 +391,9 @@ class OfficialPapersController extends GetxController
       (success) async {
         Get.back();
         Future.delayed(const Duration(milliseconds: 10), () {
+          if (assetId != null) {
+            Get.find<AssetsController>().getAllAssets();
+          }
           getTreasury();
         });
         Get.snackbar(
@@ -382,7 +441,7 @@ class OfficialPapersController extends GetxController
     paperFiles.clear();
     pictureNameController.dispose();
     pictureDescriptionController.dispose();
-    pictureFiles.clear();
+    selectedFile.value = null;
     notesController.dispose();
     animController.dispose();
     opacityAnimation.isDismissed;

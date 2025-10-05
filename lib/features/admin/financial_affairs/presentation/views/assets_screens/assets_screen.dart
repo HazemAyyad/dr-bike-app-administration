@@ -37,22 +37,18 @@ class AssetsScreen extends GetView<AssetsController> {
                   child: Center(child: CircularProgressIndicator()),
                 );
               }
-
               if (controller.assetsFilter.isEmpty) {
                 return const SliverFillRemaining(
                   hasScrollBody: false,
                   child: ShowNoData(),
                 );
               }
-
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final month = controller.assetsFilter.keys.toList()[index];
-
                     final assets =
                         controller.assetsFilter[month]!.reversed.toList();
-
                     return Padding(
                       padding:
                           EdgeInsets.symmetric(vertical: 5.h, horizontal: 24.w),

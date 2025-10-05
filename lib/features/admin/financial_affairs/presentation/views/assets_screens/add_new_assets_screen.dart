@@ -18,7 +18,9 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'addNewAsset', action: false),
+      appBar: CustomAppBar(
+          title: controller.isEditing.value ? 'editAsset' : 'addNewAsset',
+          action: false),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Form(
@@ -62,6 +64,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                       label: 'averageConsumptionRatio',
                       hintText: 'partnerPercentageExample',
                       keyboardType: TextInputType.number,
+                      onChanged: controller.onDepreciationChanged,
                     ),
                   ),
                   SizedBox(width: 10.w),
@@ -73,6 +76,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                             label: 'numberOfMonths',
                             hintText: 'numberOfMonths',
                             keyboardType: TextInputType.number,
+                            onChanged: controller.onMonthsChanged,
                           ),
                         ),
                 ],
@@ -91,7 +95,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                 onPressed: () {
                   controller.addNewAssets(context);
                 },
-                text: 'addAsset',
+                text: controller.isEditing.value ? 'editAsset' : 'addNewAsset',
               ),
             ],
           ),

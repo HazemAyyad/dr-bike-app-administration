@@ -19,68 +19,54 @@ class MovementsWidget extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                box.type! == 'transfer'
-                    ? 'transferBalance'.tr
-                    : box.type! == 'add'
-                        ? 'addBalance'.tr
-                        : 'withdrawBalance'.tr,
-                style: textStyle.copyWith(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w400,
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor3
-                      : Colors.black.withValues(alpha: 0.5),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  box.type! == 'transfer'
+                      ? 'transferBalance'.tr
+                      : box.type! == 'add'
+                          ? 'addBalance'.tr
+                          : 'withdrawBalance'.tr,
+                  style: textStyle.copyWith(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w400,
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor3
+                        : Colors.black.withValues(alpha: 0.5),
+                  ),
                 ),
-              ),
-              SizedBox(height: 2.h),
-              box.fromBox != null
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "${'from'.tr} : ${box.fromBox!.name}",
-                          style: textStyle.copyWith(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor3
-                                : Colors.black.withValues(alpha: 0.5),
-                          ),
+                // SizedBox(height: 2.h),
+                box.fromBox != null
+                    ? Text(
+                        "${'from'.tr} : ${box.fromBox!.name} ${'to'.tr} : ${box.toBox?.name ?? ''}",
+                        style: textStyle.copyWith(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w400,
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor3
+                              : Colors.black.withValues(alpha: 0.5),
                         ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          "${'to'.tr} : ${box.toBox?.name ?? ''}",
-                          style: textStyle.copyWith(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor3
-                                : Colors.black.withValues(alpha: 0.5),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Text(
-                      box.box?.name ?? '',
-                      style: textStyle.copyWith(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w400,
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor3
-                            : Colors.black.withValues(alpha: 0.5),
-                      ),
-                    ),
-            ],
+                      )
+                    : const SizedBox.shrink(),
+                Text(
+                  box.description,
+                  style: textStyle.copyWith(
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w400,
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor3
+                        : Colors.black.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const Spacer(),
         Container(
           width: 60.w,
           height: 70.h,

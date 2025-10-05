@@ -61,8 +61,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                   (context, index) {
                     final data = FinacialService().filesPapers[index];
                     return Container(
-                      margin:
-                          EdgeInsets.symmetric(vertical: 5.h, horizontal: 10.w),
+                      margin: EdgeInsets.symmetric(vertical: 5.h),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(9.r),
                         color: ThemeService.isDark.value
@@ -80,8 +79,8 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Padding(
-                            padding: EdgeInsets.all(5.r),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8.r),
                             child: GestureDetector(
                               onTap: () {
                                 showGeneralDialog(
@@ -101,8 +100,8 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                               child: CachedNetworkImage(
                                 imageUrl: data.paperImage,
                                 fit: BoxFit.cover,
-                                height: 35.h,
-                                width: 60.w,
+                                height: 40.h,
+                                width: 55.w,
                                 placeholder: (context, url) => const Center(
                                   child: CircularProgressIndicator(
                                       color: AppColors.primaryColor),
@@ -127,7 +126,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                                   .bodyLarge!
                                   .copyWith(
                                     color: AppColors.graywhiteColor,
-                                    fontSize: 14.sp,
+                                    fontSize: 11.sp,
                                     fontWeight: FontWeight.w700,
                                   ),
                             ),
@@ -137,7 +136,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                padding: EdgeInsets.all(5.r),
+                                // padding: EdgeInsets.all(5.r),
                                 decoration: BoxDecoration(
                                   borderRadius: Get.locale!.languageCode == 'ar'
                                       ? BorderRadius.only(
@@ -151,7 +150,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                                   color: AppColors.graywhiteColor,
                                 ),
                                 height: 45.h,
-                                width: 40.w,
+                                width: 45.w,
                                 child: Center(
                                   child: Text(
                                     data.fileName,
@@ -161,7 +160,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                                         .bodyLarge!
                                         .copyWith(
                                           color: AppColors.secondaryColor,
-                                          fontSize: 11.sp,
+                                          fontSize: 9.sp,
                                           fontWeight: FontWeight.w700,
                                         ),
                                   ),
@@ -169,7 +168,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                               ),
                               SizedBox(width: 5.w),
                               Container(
-                                padding: EdgeInsets.all(4.r),
+                                // padding: EdgeInsets.all(4.r),
                                 decoration: BoxDecoration(
                                   borderRadius: Get.locale!.languageCode == 'ar'
                                       ? BorderRadius.only(
@@ -183,7 +182,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                                   color: AppColors.graywhiteColor,
                                 ),
                                 height: 45.h,
-                                width: 40.w,
+                                width: 45.w,
                                 child: Center(
                                   child: Text(
                                     data.treasuryName,
@@ -193,7 +192,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                                         .bodyLarge!
                                         .copyWith(
                                           color: AppColors.secondaryColor,
-                                          fontSize: 11.sp,
+                                          fontSize: 9.sp,
                                           fontWeight: FontWeight.w700,
                                         ),
                                   ),

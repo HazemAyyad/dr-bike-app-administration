@@ -13,12 +13,14 @@ class CancelFileDialog extends GetView<OfficialPapersController> {
     this.fileId,
     this.fileBoxId,
     this.treasuryId,
+    this.assetId,
     required this.fileName,
   }) : super(key: key);
 
   final String? fileId;
   final String? fileBoxId;
   final String? treasuryId;
+  final String? assetId;
   final String fileName;
 
   @override
@@ -40,8 +42,8 @@ class CancelFileDialog extends GetView<OfficialPapersController> {
                     color: ThemeService.isDark.value
                         ? AppColors.whiteColor
                         : AppColors.secondaryColor,
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w700,
                   ),
             ),
             SizedBox(height: 20.h),
@@ -69,6 +71,7 @@ class CancelFileDialog extends GetView<OfficialPapersController> {
                         fileId: fileId,
                         fileBoxId: fileBoxId,
                         treasuryId: treasuryId,
+                        assetId: assetId,
                       );
                     },
                   ),

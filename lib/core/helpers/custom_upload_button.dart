@@ -12,13 +12,14 @@ import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 import 'dart:typed_data';
 
-class UploadImageButton extends StatelessWidget {
+class UploadImageButton extends StatefulWidget {
   final Rx<XFile?> selectedFile;
   final double? width;
   final double? height;
   final Color? textColor;
   final String title;
   final TextStyle? titleStyle;
+  final bool isVideo;
 
   const UploadImageButton({
     Key? key,
@@ -28,44 +29,52 @@ class UploadImageButton extends StatelessWidget {
     required this.selectedFile,
     required this.title,
     this.titleStyle,
+    this.isVideo = false,
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (selectedFile.value == null) {
-          pickFile(context);
-        }
-      },
-      child: Obx(
-        () => SizedBox(
-          width: double.infinity,
-          height: selectedFile.value != null ? 350.h : 130.h,
-          child: DashedBorderContainer(
-            dashWidth: 5,
-            dashSpace: 5,
-            strokeWidth: 1,
-            radius: 4,
-            child: Obx(
-              () {
-                if (selectedFile.value != null) {
-                  return _buildUploadedState();
-                } else {
-                  return buildInitialState(context);
-                }
-              },
-            ),
-          ),
-        ),
-      ),
-    );
+  State<UploadImageButton> createState() => _UploadImageButtonState();
+}
+
+class _UploadImageButtonState extends State<UploadImageButton> {
+  Uint8List? _videoThumbnail;
+
+  @override
+  void didUpdateWidget(covariant UploadImageButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _checkAndGenerateThumbnail();
   }
+
+  Future<void> _checkAndGenerateThumbnail() async {
+    final file = widget.selectedFile.value;
+    if (file == null) return;
+
+    if (_isVideo(file.path)) {
+      final thumb = await VideoThumbnail.thumbnailData(
+        video: file.path,
+        imageFormat: ImageFormat.JPEG,
+        maxWidth: 400,
+        quality: 75,
+      );
+
+      if (mounted) {
+        setState(() => _videoThumbnail = thumb);
+      }
+    } else {
+      setState(() => _videoThumbnail = null);
+    }
+  }
+
+  bool _isVideo(String path) =>
+      path.toLowerCase().endsWith('.mp4') ||
+      path.toLowerCase().endsWith('.mov') ||
+      path.toLowerCase().endsWith('.avi') ||
+      path.toLowerCase().endsWith('.mkv');
 
   Future<void> pickFile(BuildContext context) async {
     final picker = ImagePicker();
 
-    final source = await showModalBottomSheet<ImageSource>(
+    final choice = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -77,90 +86,147 @@ class UploadImageButton extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.camera_alt),
                 title: Text("takeImage".tr),
-                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+                onTap: () => Navigator.pop(ctx, 'camera_image'),
               ),
               ListTile(
                 leading: const Icon(Icons.image),
                 title: Text("selectImage".tr),
-                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+                onTap: () => Navigator.pop(ctx, 'gallery_image'),
               ),
+              if (widget.isVideo)
+                ListTile(
+                  leading: const Icon(Icons.videocam),
+                  title: Text("takeVideo".tr),
+                  onTap: () => Navigator.pop(ctx, 'camera_video'),
+                ),
+              if (widget.isVideo)
+                ListTile(
+                  leading: const Icon(Icons.video_library),
+                  title: Text("selectVideo".tr),
+                  onTap: () => Navigator.pop(ctx, 'gallery_video'),
+                ),
             ],
           ),
         );
       },
     );
 
-    if (source != null) {
-      final XFile? pickedFile = await picker.pickImage(source: source);
-      if (pickedFile != null) {
-        selectedFile.value = XFile(pickedFile.path);
-      }
+    XFile? pickedFile;
+
+    if (choice == 'camera_image') {
+      pickedFile = await picker.pickImage(source: ImageSource.camera);
+    } else if (choice == 'gallery_image') {
+      pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    } else if (choice == 'camera_video') {
+      pickedFile = await picker.pickVideo(source: ImageSource.camera);
+    } else if (choice == 'gallery_video') {
+      pickedFile = await picker.pickVideo(source: ImageSource.gallery);
     }
+
+    if (pickedFile != null) {
+      widget.selectedFile.value = XFile(pickedFile.path);
+      _checkAndGenerateThumbnail();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        if (widget.selectedFile.value == null) {
+          pickFile(context);
+        }
+      },
+      child: Obx(
+        () => SizedBox(
+          width: double.infinity,
+          height: widget.selectedFile.value != null ? 350.h : 130.h,
+          child: DashedBorderContainer(
+            dashWidth: 5,
+            dashSpace: 5,
+            strokeWidth: 1,
+            radius: 4,
+            child: widget.selectedFile.value != null
+                ? _buildUploadedState()
+                : buildInitialState(context),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget buildInitialState(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(height: 15.h),
-        Image.asset(
-          AssetsManager.upLoadIcon,
-          height: 32.h,
-          width: 37.w,
-        ),
+        const Icon(Icons.cloud_upload, size: 40, color: AppColors.primaryColor),
         const SizedBox(height: 8),
         Text(
-          title.tr,
-          style: titleStyle ??
+          widget.title.tr,
+          style: widget.titleStyle ??
               Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor2
-                        : AppColors.secondaryColor,
+                    color: AppColors.primaryColor,
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
                   ),
           textAlign: TextAlign.center,
-          textDirection: TextDirection.rtl,
         ),
-        SizedBox(height: 15.h),
       ],
     );
   }
 
   Widget _buildUploadedState() {
+    final file = widget.selectedFile.value!;
+    final isVideo = _isVideo(file.path);
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: selectedFile.value!.path.startsWith('http')
-                ? Image.network(
-                    selectedFile.value!.path,
-                    fit: BoxFit.fill,
-                  )
-                : Image.file(
-                    File(selectedFile.value!.path),
-                    fit: BoxFit.fill,
-                  ),
+        if (isVideo)
+          (_videoThumbnail != null)
+              ? Image.memory(
+                  _videoThumbnail!,
+                  fit: BoxFit.cover,
+                )
+              : const Center(child: CircularProgressIndicator())
+        else
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: widget.selectedFile.value!.path.startsWith('http')
+                  ? Image.network(
+                      widget.selectedFile.value!.path,
+                      fit: BoxFit.fill,
+                    )
+                  : Image.file(
+                      File(widget.selectedFile.value!.path),
+                      fit: BoxFit.fill,
+                    ),
+            ),
           ),
-        ),
+        if (isVideo)
+          const Center(
+            child: Icon(
+              Icons.play_circle_fill,
+              color: Colors.white,
+              size: 70,
+            ),
+          ),
         Positioned(
           right: 4,
           top: 4,
           child: GestureDetector(
-            onTap: () => selectedFile.value = null,
+            onTap: () {
+              widget.selectedFile.value = null;
+              setState(() => _videoThumbnail = null);
+            },
             child: Container(
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.red,
               ),
               padding: const EdgeInsets.all(4),
-              child: const Icon(
-                Icons.close,
-                color: Colors.white,
-                size: 16,
-              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 16),
             ),
           ),
         ),

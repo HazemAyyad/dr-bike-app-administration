@@ -43,7 +43,7 @@ class BoxesDatasource {
   }
 
   // get shown boxes
-  Future<List<GetShownBoxesModel>> getShownBoxes({required int screen}) async {
+  Future<List<shownBoxesModel>> getShownBoxes({required int screen}) async {
     try {
       final response = await api.get(
         screen == 0
@@ -53,7 +53,7 @@ class BoxesDatasource {
                 : EndPoints.getHiddenBoxes,
       );
       final data = response.data['boxes'] as List;
-      return data.map((e) => GetShownBoxesModel.fromJson(e)).toList();
+      return data.map((e) => shownBoxesModel.fromJson(e)).toList();
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

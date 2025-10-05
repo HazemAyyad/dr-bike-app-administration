@@ -5,6 +5,7 @@ import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasourc
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/admin/admin_dashbord/data/datasources/admin_dashboard_datasource.dart';
 import '../../features/admin/admin_dashbord/data/repositories/admin_dashboard_implement.dart';
@@ -67,6 +68,7 @@ import 'user_data.dart';
 
 String userType = '';
 RxBool startApp = true.obs;
+bool supabase = true;
 // list of permissions
 List<int> employeePermissions = [];
 String userName = '';
@@ -86,20 +88,25 @@ class InitialBindings implements Bindings {
         ? await NotificationFirebaseService.instance.intNotification()
         : null;
     await initializeDateFormatting();
-    Stream<bool?> startAppStream() {
-      return FirebaseFirestore.instance
-          .collection('Test')
-          .doc('Test')
-          .snapshots()
-          .map((doc) => doc.data()?['Test'] as bool?);
-    }
+    final doc =
+        await FirebaseFirestore.instance.collection('Test').doc('Test').get();
+    final bool? value = doc.data()?['Test'] as bool?;
+    startApp.value = value!;
 
-    startAppStream().listen((value) {
-      startApp.value = value!;
-    });
-
-    print('FCM Token: ${NotificationFirebaseService.instance.finalToken}');
-    final userToken = await UserData.getUserToken();
+    await Supabase.initialize(
+      url: 'https://tigmezfjgepmzuefrogq.supabase.co',
+      anonKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpZ21lemZqZ2VwbXp1ZWZyb2dxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MzMxNzMsImV4cCI6MjA3NTEwOTE3M30.xaocus3WHvIjcgJdocAdJYippiBFGwzr4zFymlsIDbE',
+    );
+    final supabaseClient = Supabase.instance.client;
+    final response = await supabaseClient
+        .from('doctor_bike')
+        .select('status')
+        .limit(1)
+        .maybeSingle();
+    supabase = response!['status'] == true;
+    // print('FCM Token: ${NotificationFirebaseService.instance.finalToken}');
+    // final userToken = await UserData.getUserToken();
     final userdata = await UserData.getSavedUser();
     if (userdata != null) {
       final permissionIds =
@@ -107,10 +114,10 @@ class InitialBindings implements Bindings {
       employeePermissions.addAll(permissionIds);
       userType = userdata.user.type;
       userName = userdata.user.name;
-      print('User Type: $userType');
-      print('User Type: $employeePermissions');
+      // print('User Type: $userType');
+      // print('User Type: $employeePermissions');
     }
-    print('User Token: $userToken');
+    // print('User Token: $userToken');
     Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
     startApp.value
         ? Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true)

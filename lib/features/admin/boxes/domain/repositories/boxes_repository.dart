@@ -12,7 +12,7 @@ abstract class BoxesRepository {
     required String currency,
   });
 
-  Future<List<GetShownBoxesModel>> getShownBoxes({required int screen});
+  Future<List<shownBoxesModel>> getShownBoxes({required int screen});
 
   Future<List<BoxLogModel>> getAllBoxesLogs();
 

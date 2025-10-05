@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/expenses_models/destruction_model.dart';
 import '../../data/models/expenses_models/expense_data_model.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
@@ -21,12 +23,14 @@ class ExpensesController extends GetxController
   final AddDestructionUsecase addDestructionUsecase;
   final AddExpenseUsecase addExpenseUsecase;
   final GetExpensesDataUsecase getExpensesDataUsecase;
+  final GetShownBoxUsecase getShownBoxUsecase;
 
   ExpensesController({
     required this.getAllFinancialUsecase,
     required this.addDestructionUsecase,
     required this.addExpenseUsecase,
     required this.getExpensesDataUsecase,
+    required this.getShownBoxUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -45,7 +49,7 @@ class ExpensesController extends GetxController
   final TextEditingController expenseNameController = TextEditingController();
   final TextEditingController expensePriceController = TextEditingController();
   final TextEditingController expenseNoteController = TextEditingController();
-  final TextEditingController paymentMethodController = TextEditingController();
+  final TextEditingController boxIdController = TextEditingController();
   List<File> invoiceFile = [];
   List<File> expensesFile = [];
 
@@ -218,7 +222,7 @@ class ExpensesController extends GetxController
     expenseNameController.text = expenses.name;
     expensePriceController.text = expenses.price.toString();
     expenseNoteController.text = expenses.notes ?? '';
-    paymentMethodController.text = expenses.paymentMethod;
+    boxIdController.text = expenses.boxId;
     invoiceFile = expenses.invoiceImg.map((e) => File(e)).toList();
     expensesFile = expenses.media.map((e) => File(e)).toList();
     isLoadingGet(false);
@@ -282,7 +286,7 @@ class ExpensesController extends GetxController
         name: expenseNameController.text,
         price: expensePriceController.text,
         notes: expenseNoteController.text,
-        paymentMethod: paymentMethodController.text,
+        boxId: boxIdController.text,
         invoiceImage: invoiceFile,
         media: expensesFile,
       );
@@ -300,7 +304,7 @@ class ExpensesController extends GetxController
           expenseNameController.clear();
           expensePriceController.clear();
           expenseNoteController.clear();
-          paymentMethodController.clear();
+          boxIdController.clear();
           invoiceFile.clear();
           expensesFile.clear();
           Future.delayed(
@@ -321,9 +325,59 @@ class ExpensesController extends GetxController
     }
   }
 
+  final RxList<shownBoxesModel> shownBoxesList = <shownBoxesModel>[].obs;
+
+  void getShowBoxes() async {
+    final boxes = await getShownBoxUsecase.call(screen: currentTab.value);
+    shownBoxesList.value = boxes;
+  }
+
+  void searchBar(String value) {
+    final search = value.toLowerCase();
+
+    if (value.isNotEmpty) {
+      final filteredExpenses = <String, List<ExpenseModel>>{};
+      final filteredDestructions = <String, List<DestructionModel>>{};
+
+      FinacialService().expensesTasks.forEach((key, list) {
+        final filteredList = list.where((element) {
+          return element.name.toLowerCase().contains(search) ||
+              element.price.toLowerCase().contains(search) ||
+              element.createdAt.toString().toLowerCase().contains(search);
+        }).toList();
+
+        if (filteredList.isNotEmpty) filteredExpenses[key] = filteredList;
+      });
+
+      FinacialService().destructionsTasks.forEach((key, list) {
+        final filteredList = list.where((element) {
+          return element.productName.toLowerCase().contains(search) ||
+              element.piecesNumber.toLowerCase().contains(search) ||
+              element.destructionReason.toLowerCase().contains(search) ||
+              element.destructionValue
+                  .toString()
+                  .toLowerCase()
+                  .contains(search) ||
+              element.createdAt.toString().toLowerCase().contains(search);
+        }).toList();
+
+        if (filteredList.isNotEmpty) filteredDestructions[key] = filteredList;
+      });
+
+      expensesFilter.value = filteredExpenses;
+      destructionsFilter.value = filteredDestructions;
+    } else {
+      expensesFilter.value = FinacialService().expensesTasks;
+      destructionsFilter.value = FinacialService().destructionsTasks;
+    }
+
+    update();
+  }
+
   @override
   void onInit() {
     getAllExpenses();
+    getShowBoxes();
     expensesFilter.assignAll(FinacialService().expensesTasks);
     destructionsFilter.assignAll(FinacialService().destructionsTasks);
     animController = AnimationController(
@@ -360,7 +414,7 @@ class ExpensesController extends GetxController
     expenseNameController.dispose();
     expensePriceController.dispose();
     expenseNoteController.dispose();
-    paymentMethodController.dispose();
+    boxIdController.dispose();
     isEditing.value = false;
     expenseId = '';
     invoiceFile.clear();

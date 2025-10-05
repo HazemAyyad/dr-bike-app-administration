@@ -642,6 +642,7 @@ const Map<String, String> en = {
   'voidTheCheck': 'Void the Check',
   'cashTheCheck': 'Cash The Check',
   'returnedCheck': 'Returned Check',
+  'deleteCheck': 'Delete Check',
   'beneficiary': 'beneficiary Name',
   'receiveMaintenance': 'Receive Maintenance',
 
@@ -768,6 +769,7 @@ const Map<String, String> en = {
   'assetsConsumption': 'Assets Depreciation',
   'consumptionDate': 'Depreciation Date',
   'addNewAsset': 'Add New Asset',
+  'editAsset': 'Edit Asset',
   'assetName': 'Asset Name',
   'assetNameExample': 'Example: Shop Air Conditioners',
   'assetValue': 'Asset Cost',
@@ -807,6 +809,7 @@ const Map<String, String> en = {
   "images": "Images",
   "add_important_images": "Add Important Images",
   "image_name": "Image Name",
+  "delete_picture": "Delete Picture",
 
   "safes": "Safes",
   "safe_name": "Safe Name",
@@ -817,6 +820,7 @@ const Map<String, String> en = {
   "create_file": "Create File",
   "file_name": "File Name",
   "delete_file": "Delete File",
+  'paperName': 'Paper Name',
 
   // قسم العدادات والاحصائيات والتقارير
   "statistics": "Statistics",

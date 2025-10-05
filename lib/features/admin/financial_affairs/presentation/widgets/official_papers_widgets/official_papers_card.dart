@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -8,6 +9,7 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/official_papers_models/papers_model.dart';
 import '../../controllers/official_papers_controller.dart';
+import 'paper_details.dart';
 
 class OfficialPapersCard extends GetView<OfficialPapersController> {
   const OfficialPapersCard({Key? key, required this.data}) : super(key: key);
@@ -18,6 +20,9 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        Get.dialog(PaperDetails(paper: data));
+      },
+      onLongPress: () {
         Get.dialog(
           Dialog(
             backgroundColor: ThemeService.isDark.value
@@ -75,10 +80,6 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
             ),
           ),
         );
-        // controller.isEditing.value = true;
-        // controller.getAssetsDetials(
-        //     assetId: asset.assetId.toString());
-        // Get.toNamed(AppRoutes.ADDNEWASSETSCREEN);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -98,40 +99,66 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Padding(
-              padding: EdgeInsets.all(5.r),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(9.r),
-                child: CachedNetworkImage(
-                  imageUrl: data.img,
-                  fit: BoxFit.cover,
-                  height: 45.h,
-                  width: 60.w,
-                  errorWidget: (context, url, error) => const Icon(Icons.error),
-                  placeholder: (context, url) =>
-                      const Center(child: CircularProgressIndicator()),
-                ),
-              ),
-            ),
-            SizedBox(width: 5.w),
-            Expanded(
-              child: Text(
-                data.paperName,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      color: AppColors.graywhiteColor,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
+            Flexible(
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(5.r),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(9.r),
+                      child: CachedNetworkImage(
+                        imageUrl: data.img.first,
+                        fit: BoxFit.cover,
+                        height: 45.h,
+                        width: 60.w,
+                        errorWidget: (context, url, error) =>
+                            const Icon(Icons.error),
+                        placeholder: (context, url) =>
+                            const Center(child: CircularProgressIndicator()),
+                      ),
                     ),
+                  ),
+                  SizedBox(width: 5.w),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.paperName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge!.copyWith(
+                                    color: AppColors.graywhiteColor,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        Text(
+                          showData(data.createdAt),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge!.copyWith(
+                                    color: AppColors.graywhiteColor,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
+
+            // const Spacer(),
             SizedBox(width: 5.w),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: EdgeInsets.all(5.r),
+                  padding: EdgeInsets.all(2.r),
                   decoration: BoxDecoration(
                     borderRadius: Get.locale!.languageCode == 'ar'
                         ? BorderRadius.only(
@@ -145,14 +172,14 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                     color: AppColors.graywhiteColor,
                   ),
                   height: 55.h,
-                  width: 50.w,
+                  width: 45.w,
                   child: Center(
                     child: Text(
                       data.treasuryName,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             color: AppColors.secondaryColor,
-                            fontSize: 11.sp,
+                            fontSize: 10.sp,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -160,19 +187,19 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                 ),
                 SizedBox(width: 5.w),
                 Container(
-                  padding: EdgeInsets.all(4.r),
+                  padding: EdgeInsets.all(2.r),
                   decoration: const BoxDecoration(
                     color: AppColors.graywhiteColor,
                   ),
                   height: 55.h,
-                  width: 50.w,
+                  width: 45.w,
                   child: Center(
                     child: Text(
                       data.fileBoxName,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             color: AppColors.secondaryColor,
-                            fontSize: 11.sp,
+                            fontSize: 9.sp,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -180,7 +207,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                 ),
                 SizedBox(width: 5.w),
                 Container(
-                  padding: EdgeInsets.all(4.r),
+                  padding: EdgeInsets.all(2.r),
                   decoration: BoxDecoration(
                     borderRadius: Get.locale!.languageCode == 'ar'
                         ? BorderRadius.only(
@@ -194,14 +221,14 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                     color: AppColors.graywhiteColor,
                   ),
                   height: 55.h,
-                  width: 50.w,
+                  width: 45.w,
                   child: Center(
                     child: Text(
                       data.fileName,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             color: AppColors.secondaryColor,
-                            fontSize: 11.sp,
+                            fontSize: 9.sp,
                             fontWeight: FontWeight.w700,
                           ),
                     ),

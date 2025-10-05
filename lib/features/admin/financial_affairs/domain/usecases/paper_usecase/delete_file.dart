@@ -12,11 +12,13 @@ class DeleteFilesUsecase {
     required String? fileId,
     required String? treasuryId,
     required String? fileBoxId,
+    required String? assetId,
   }) {
     return financialAffairsRepository.deleteFiles(
       fileId: fileId,
       treasuryId: treasuryId,
       fileBoxId: fileBoxId,
+      assetId: assetId,
     );
   }
 }

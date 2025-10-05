@@ -95,7 +95,11 @@ class OnLongPress extends GetView<ChecksController> {
                                 ),
                               );
                             }
-
+                            if (value == 'deleteCheck') {
+                              Get.dialog(
+                                DeleteCheck(checkId: check.id.toString()),
+                              );
+                            }
                             if (value == 'cashTheCheck') {
                               Get.dialog(
                                 controller.currentTab.value == 0
@@ -514,6 +518,85 @@ class CashToBox extends GetView<ChecksController> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class DeleteCheck extends GetView<ChecksController> {
+  const DeleteCheck({Key? key, required this.checkId}) : super(key: key);
+
+  final String checkId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: ThemeService.isDark.value
+          ? AppColors.darkColor
+          : AppColors.whiteColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 5.h),
+            Text(
+              'areYouSure'.tr,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            SizedBox(height: 10.h),
+            Row(
+              children: [
+                Flexible(
+                  child: AppButton(
+                    isSafeArea: false,
+                    isLoading: controller.isLoading,
+                    width: double.infinity,
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(8.r),
+                    ),
+                    text: 'yes'.tr,
+                    textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: Colors.white,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                    onPressed: () {
+                      // print("checkId23123123 $checkId");
+                      controller.deleteCheck(checkId: checkId);
+                    },
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Flexible(
+                  child: AppButton(
+                    isSafeArea: false,
+                    color: Colors.red,
+                    width: double.infinity,
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(8.r),
+                    ),
+                    text: 'cancel'.tr,
+                    textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          color: Colors.white,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                    onPressed: () {
+                      Get.back();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

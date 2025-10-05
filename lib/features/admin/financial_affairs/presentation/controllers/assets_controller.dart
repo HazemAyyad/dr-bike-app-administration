@@ -41,6 +41,24 @@ class AssetsController extends GetxController {
       TextEditingController();
   final TextEditingController monthsNumberController = TextEditingController();
 
+  void onMonthsChanged(String value) {
+    if (value.isEmpty) return;
+    final months = double.tryParse(value);
+    if (months != null && months > 0) {
+      final percent = 100 / months;
+      depreciationRateController.text = percent.toStringAsFixed(2);
+    }
+  }
+
+  void onDepreciationChanged(String value) {
+    if (value.isEmpty) return;
+    final percent = double.tryParse(value);
+    if (percent != null && percent > 0) {
+      final months = 100 / percent;
+      monthsNumberController.text = months.toStringAsFixed(0);
+    }
+  }
+
   List<File?> selectedFile = [];
   final RxBool isLoading = false.obs;
 
@@ -85,8 +103,16 @@ class AssetsController extends GetxController {
   void getAllAssets() async {
     FinacialService().assetsTasks.isEmpty ? isLoading(true) : isLoading(false);
     update();
+
     final assets = await getAllFinancialUsecase.call(page: '1');
+
+    // 🧹 امسح الداتا القديمة قبل ما تضيف الجديدة
+    FinacialService().assetsTasks.clear();
+
+    // حدّث الموديل الرئيسي
     FinacialService().assets.value = AssetsModel.fromJson(assets);
+
+    // حدّث الفلتر
     assetsFilter.value = FinacialService().assetsTasks;
 
     for (var task in FinacialService().assets.value!.assets) {
@@ -95,16 +121,14 @@ class AssetsController extends GetxController {
       String dateKey =
           "$dayName ${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
 
+      // أضف المهام الجديدة بشكل منظم
       if (FinacialService().assetsTasks.containsKey(dateKey)) {
-        if (!FinacialService()
-            .assetsTasks[dateKey]!
-            .any((a) => a.assetId == task.assetId)) {
-          FinacialService().assetsTasks[dateKey]!.add(task);
-        }
+        FinacialService().assetsTasks[dateKey]!.add(task);
       } else {
         FinacialService().assetsTasks[dateKey] = [task];
       }
     }
+
     isLoading(false);
     update();
   }
@@ -191,7 +215,7 @@ class AssetsController extends GetxController {
           selectedFile.clear();
           getAllAssets();
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
               Get.back();

@@ -330,6 +330,27 @@ class ChecksDatasource {
       );
     }
   }
+
+  // delete check
+  Future<Map<String, dynamic>> deleteCheck({required String checkId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.deleteCheck,
+        data: {'incoming_check_id': checkId},
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
 }
 
 Future<XFile> compressImage(XFile file) async {
