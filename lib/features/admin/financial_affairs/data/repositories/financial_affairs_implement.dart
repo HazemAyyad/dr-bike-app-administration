@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/financial_affairs/data/models/assets_models/assets_detials_model.dart';
@@ -378,6 +379,44 @@ class FinancialAffairsImplement implements FinancialAffairsRepository {
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Uint8List> getAssetReport() async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      final result = await financialAffairsDatasource.getAssetReport();
+      return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> depreciateOneAssets({
+    required String assetId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await financialAffairsDatasource.depreciateOneAssets(
+        assetId: assetId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']!);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }

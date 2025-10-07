@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:image_picker/image_picker.dart';
@@ -84,4 +85,10 @@ abstract class FinancialAffairsRepository {
   });
 
   Future<List<FilePapersModel>> getFilePapers({required String fileId});
+
+  Future<Uint8List> getAssetReport();
+
+  Future<Either<Failure, String>> depreciateOneAssets({
+    required String assetId,
+  });
 }

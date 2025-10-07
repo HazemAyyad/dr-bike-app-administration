@@ -146,7 +146,8 @@ class EndPoints {
 
   static const String chashIncomingCheckToBox = 'cash/incoming/check/to/box';
 
-  static const String deleteCheck = 'delete/incoming/check';
+  static const String deleteIncomingCheck = 'delete/incoming/check';
+  static const String deleteOutgoingCheck = 'delete/outgoing/check';
 
   // stock
   static const String getProductsList = 'get/products/list';
@@ -176,6 +177,8 @@ class EndPoints {
   static const String editPerson = 'edit/person';
   static const String showPerson = 'show/person';
 
+  static const String deletePerson = 'delete/person';
+
   static const String mainPageCustomers = 'main/page/customers';
   static const String mainPageSellers = 'main/page/sellers';
   static const String mainPageInComplete = 'main/page/incomplete/persons';
@@ -191,6 +194,8 @@ class EndPoints {
   static const String getAllTreasuries = 'get/all/treasuries';
   static const String getFilePapers = 'file/papers';
   static const String deleteAsset = 'delete/asset';
+  static const String getAssetsLogsReport = 'get/all/asset/logs/report';
+  static const String depreciateOneAsset = 'depreciate/one/asset';
 
   // expenses
   static const String getAllExpenses = 'get/all/expenses';
@@ -250,6 +255,7 @@ class EndPoints {
   static const String addGoal = 'add/goal';
   static const String editGoal = 'edit/goal';
   static const String showGoal = 'show/goal';
+  static const String deleteGoal = 'delete/goal';
   static const String transferGoal = 'transfer/goal';
   static const String cancelGoal = 'cancel/goal';
 

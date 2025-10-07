@@ -118,9 +118,40 @@ class GeneralDataListDatasource {
     required String sellerId,
   }) async {
     try {
-      final response = await api.post(EndPoints.showPerson,
-          data: {'customer_id': customerId, 'seller_id': sellerId});
+      final response = await api.post(
+        EndPoints.showPerson,
+        data: {
+          'customer_id': customerId,
+          'seller_id': sellerId,
+        },
+      );
       return PersonDataModel.fromJson(response.data['person_details']);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // delete person
+  Future<dynamic> deletePerson({
+    required String customerId,
+    required String sellerId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.deletePerson,
+        data: {
+          'customer_id': customerId,
+          'seller_id': sellerId,
+        },
+      );
+      return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

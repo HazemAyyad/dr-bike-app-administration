@@ -25,5 +25,6 @@ abstract class GoalsRepository {
     required String goalId,
     bool? isCancel,
     bool? isTransfer,
+    bool? isDelete,
   });
 }

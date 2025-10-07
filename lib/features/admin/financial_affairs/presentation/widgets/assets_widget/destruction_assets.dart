@@ -5,23 +5,13 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../../controllers/official_papers_controller.dart';
+import '../../../data/models/assets_models/assets_data_model.dart';
+import '../../controllers/assets_controller.dart';
 
-class CancelFileDialog extends GetView<OfficialPapersController> {
-  const CancelFileDialog({
-    Key? key,
-    this.fileId,
-    this.fileBoxId,
-    this.treasuryId,
-    this.assetId,
-    required this.fileName,
-  }) : super(key: key);
+class DestructionAssets extends GetView<AssetsController> {
+  const DestructionAssets({Key? key, required this.asset}) : super(key: key);
 
-  final String? fileId;
-  final String? fileBoxId;
-  final String? treasuryId;
-  final String? assetId;
-  final String fileName;
+  final Asset asset;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +28,7 @@ class CancelFileDialog extends GetView<OfficialPapersController> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${'delete'.tr} $fileName',
+              '${'destruction'.tr} ${asset.name}',
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                     color: ThemeService.isDark.value
                         ? AppColors.whiteColor
@@ -66,13 +56,10 @@ class CancelFileDialog extends GetView<OfficialPapersController> {
                     isLoading: controller.isLoading,
                     isSafeArea: false,
                     color: Colors.red,
-                    text: 'clear'.tr,
+                    text: 'destruction'.tr,
                     onPressed: () {
-                      controller.deleteFiles(
-                        fileId: fileId,
-                        fileBoxId: fileBoxId,
-                        treasuryId: treasuryId,
-                        assetId: assetId,
+                      controller.destructionOneAssets(
+                        asset.assetId.toString(),
                       );
                     },
                   ),

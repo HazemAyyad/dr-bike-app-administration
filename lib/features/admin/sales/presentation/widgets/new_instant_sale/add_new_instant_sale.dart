@@ -187,7 +187,6 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                           .expand((p) => p.projects)
                           .map((id) => id.toString())
                           .toList();
-
                       return CustomDropdownField(
                         label: 'projectName'.tr,
                         hint: 'projectNameExample',
@@ -203,7 +202,6 @@ class AddNewInstantSaleWidget extends GetView<SalesController> {
                             .toList(),
                         value: item.selectedValue.value,
                         onChanged: (val) {
-                          print(allProjectIds);
                           item.selectedValue.value = val!;
                         },
                       );

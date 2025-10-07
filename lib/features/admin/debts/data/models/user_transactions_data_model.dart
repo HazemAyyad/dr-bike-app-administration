@@ -3,7 +3,7 @@ import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class UserTransactionsDataModel {
   final String status;
-  final int customerBalance;
+  final double customerBalance;
   final List<Debt> customerDebts;
 
   UserTransactionsDataModel({
@@ -15,7 +15,7 @@ class UserTransactionsDataModel {
   factory UserTransactionsDataModel.fromJson(Map<String, dynamic> json) {
     return UserTransactionsDataModel(
       status: json[ApiKey.status] ?? 'failed',
-      customerBalance: json['person_balance'] ?? 0,
+      customerBalance: json['person_balance'] ?? 0.0,
       customerDebts: (json['person_debts'] as List<dynamic>?)
               ?.map((e) => Debt.fromJson(e))
               .toList() ??

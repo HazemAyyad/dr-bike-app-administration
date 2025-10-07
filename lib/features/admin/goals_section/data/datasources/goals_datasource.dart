@@ -82,6 +82,7 @@ class GoalsDatasource {
     required String goalId,
     bool? isCancel,
     bool? isTransfer,
+    bool? isDelete,
   }) async {
     try {
       final response = await api.post(
@@ -89,7 +90,9 @@ class GoalsDatasource {
               ? EndPoints.cancelGoal
               : isTransfer != null
                   ? EndPoints.transferGoal
-                  : EndPoints.showGoal,
+                  : isDelete != null
+                      ? EndPoints.deleteGoal
+                      : EndPoints.showGoal,
           data: {'goal_id': goalId});
       return response.data;
     } on DioException catch (e) {

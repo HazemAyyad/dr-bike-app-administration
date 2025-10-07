@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/employee_data_model.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,6 @@ class GlobalData extends GetView<GeneralDataListController> {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: GestureDetector(
-        // overlayColor: WidgetStateProperty.all(Colors.transparent),
         onTap: () {
           controller.clearForm();
           controller.isEdit.value = true;
@@ -52,11 +52,13 @@ class GlobalData extends GetView<GeneralDataListController> {
               backgroundColor: ThemeService.isDark.value
                   ? AppColors.darkColor
                   : AppColors.whiteColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 20.h),
                   GestureDetector(
                     onTap: () {
                       launchDialer(phoneNumber: employee.phone);
@@ -107,6 +109,101 @@ class GlobalData extends GetView<GeneralDataListController> {
                     ),
                   ),
                   SizedBox(height: 20.h),
+                  InkWell(
+                    overlayColor: WidgetStateProperty.all(Colors.transparent),
+                    onTap: () {
+                      Get.back();
+                      Get.dialog(
+                        Dialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          backgroundColor: ThemeService.isDark.value
+                              ? AppColors.darkColor
+                              : AppColors.whiteColor,
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'areYouSure'.tr,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: Colors.red,
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                  SizedBox(height: 20.h),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: AppButton(
+                                          isSafeArea: false,
+                                          text: 'cancel'.tr,
+                                          color: Colors.red,
+                                          onPressed: () => Get.back(),
+                                        ),
+                                      ),
+                                      SizedBox(width: 10.w),
+                                      Expanded(
+                                        child: AppButton(
+                                            isSafeArea: false,
+                                            text: 'delete'.tr,
+                                            color: Colors.transparent,
+                                            textColor: Colors.red,
+                                            borderColor: Colors.red,
+                                            onPressed: () {
+                                              controller.deletePerson(
+                                                customerId: controller
+                                                            .currentTab.value ==
+                                                        1
+                                                    ? employee.id.toString()
+                                                    : employee.type ==
+                                                            'customer'
+                                                        ? employee.id.toString()
+                                                        : '',
+                                                sellerId: controller
+                                                            .currentTab.value ==
+                                                        0
+                                                    ? employee.id.toString()
+                                                    : employee.type == 'seller'
+                                                        ? employee.id.toString()
+                                                        : '',
+                                              );
+                                              Get.back();
+                                            }),
+                                      ),
+                                    ],
+                                  )
+                                ]),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        SizedBox(width: 5.h),
+                        const Icon(
+                          Icons.delete_outline_rounded,
+                          color: Colors.red,
+                        ),
+                        SizedBox(width: 10.w),
+                        Text(
+                          'delete'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.red,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),

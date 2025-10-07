@@ -19,4 +19,9 @@ abstract class GeneralDataListRepository {
     required String customerId,
     required String sellerId,
   });
+
+  Future<Either<Failure, String>> deletePerson({
+    required String customerId,
+    required String sellerId,
+  });
 }

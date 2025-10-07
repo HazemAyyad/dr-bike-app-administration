@@ -424,6 +424,7 @@ class SalesController extends GetxController
           .map((e) => OngoingProject.fromJson(e))
           .toList(),
     );
+    print(ongoingProjects.map((e) => e.name).toList());
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
@@ -55,11 +56,7 @@ class FinancialAffairsDatasource {
     try {
       final response = await api.get(EndPoints.getAssetsLogs);
       final data = response.data['asset_logs'] as List;
-      return data
-          .where((e) => e['type'] == 'depreciate')
-          .toList()
-          .map((e) => AssetLogModel.fromJson(e))
-          .toList();
+      return data.map((e) => AssetLogModel.fromJson(e)).toList();
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -83,13 +80,6 @@ class FinancialAffairsDatasource {
     required List<File?> selectedFile,
   }) async {
     try {
-      print(assetId);
-      print(assetName);
-      print(price);
-      print(note);
-      print(depreciationRate);
-      print(numberOfMonths);
-      print(selectedFile);
       final Map<String, dynamic> formData = {};
 
       if (selectedFile.isNotEmpty) {
@@ -483,6 +473,45 @@ class FinancialAffairsDatasource {
       return data
           .map((e) => FilePapersModel.fromJson(e as Map<String, dynamic>))
           .toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // get assets logs
+  Future<Uint8List> getAssetReport() async {
+    try {
+      final response = await api.get(
+        EndPoints.getAssetsLogsReport,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // get assets logs
+  Future<Map<String, dynamic>> depreciateOneAssets(
+      {required String assetId}) async {
+    try {
+      final response = await api
+          .post(EndPoints.depreciateOneAsset, data: {'asset_id': assetId});
+      return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

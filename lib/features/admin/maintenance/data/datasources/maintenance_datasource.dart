@@ -48,20 +48,6 @@ class MaintenanceDatasource {
     required String status,
   }) async {
     try {
-      Map<String, dynamic> maintenanceFiles = {};
-      await Future.wait(
-        List.generate(files.length, (i) async {
-          if (files[i].path.contains('http')) {
-            maintenanceFiles['files[$i]'] = files[i].path;
-          } else {
-            maintenanceFiles['files[$i]'] = await MultipartFile.fromFile(
-              files[i].path,
-              filename: files[i].path.split('/').last,
-            );
-          }
-        }),
-      );
-
       final response = await api.post(
         status.isNotEmpty
             ? EndPoints.changeMaintenanceStatus
@@ -73,7 +59,19 @@ class MaintenanceDatasource {
           'description': description,
           'receipt_date': receipDate,
           'receipt_time': receiptTime,
-          ...maintenanceFiles,
+          if (files.isNotEmpty)
+            'files[]': await Future.wait(
+              files.map((e) async {
+                if (e.path.contains('http')) {
+                  return e.path;
+                } else {
+                  return await MultipartFile.fromFile(
+                    e.path,
+                    filename: e.path.split('/').last,
+                  );
+                }
+              }),
+            ),
           if (status.isNotEmpty) 'status': status,
         },
         isFormData: true,

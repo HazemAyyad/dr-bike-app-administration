@@ -35,7 +35,7 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
             ),
           ),
           const MaintenanceDataWidget(),
-          SliverToBoxAdapter(child: SizedBox(height: 50.h)),
+          SliverToBoxAdapter(child: SizedBox(height: 60.h)),
         ],
       ),
       floatingActionButton: AddFloatingActionButton(

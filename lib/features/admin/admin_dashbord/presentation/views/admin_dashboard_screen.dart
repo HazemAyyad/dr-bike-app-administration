@@ -19,9 +19,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
       appBar: AppBar(
         scrolledUnderElevation: 0,
         title: Text(
-          userName.isEmpty
-              ? 'welcomeBack.'.tr
-              : '${'welcomeBack.'.tr}  $userName',
+          userName.isEmpty ? 'welcome'.tr : '${'welcome'.tr} $userName',
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w700,

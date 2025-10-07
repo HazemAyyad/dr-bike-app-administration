@@ -154,8 +154,9 @@ class TargetSectionController extends GetxController {
     required String goalId,
     bool? isCancel,
     bool? isTransfer,
+    bool? isDelete,
   }) async {
-    isCancel == true || isTransfer == true
+    isCancel == true || isTransfer == true || isDelete == true
         ? isLoading(true)
         : isAddLoading(true);
     update();
@@ -163,8 +164,9 @@ class TargetSectionController extends GetxController {
       goalId: goalId,
       isCancel: isCancel,
       isTransfer: isTransfer,
+      isDelete: isDelete,
     );
-    if (isCancel == null && isTransfer == null) {
+    if (isCancel == null && isTransfer == null && isDelete == null) {
       goalDetailsList = GoalDetailsModel.fromJson(goalDetails['goal']);
     } else {
       Get.back();
@@ -173,6 +175,7 @@ class TargetSectionController extends GetxController {
         'success'.tr,
         goalDetails['message'],
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
       );
     }
     isLoading(false);

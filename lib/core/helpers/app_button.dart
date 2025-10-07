@@ -74,13 +74,13 @@ class AppButton extends StatelessWidget {
             padding: padding ??
                 EdgeInsets.symmetric(
                   vertical: 10.h,
-                  horizontal: 10.w,
+                  horizontal: 5.w,
                 ),
             margin: margin,
             child: loading
                 ? SizedBox(
                     height: 22.h,
-                    width: 22.h,
+                    width: 22.w,
                     child: const CircularProgressIndicator(strokeWidth: 3),
                   )
                 : _buildContent(context),
@@ -103,14 +103,16 @@ class AppButton extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (isRtl) widget!,
-          Text(
-            text.tr,
-            style: textStyle ??
-                Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: textColor ?? AppColors.whiteColor,
-                      fontSize: size ?? 16.sp,
-                      fontWeight: fontWeight ?? FontWeight.w700,
-                    ),
+          Flexible(
+            child: Text(
+              text.tr,
+              style: textStyle ??
+                  Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: textColor ?? AppColors.whiteColor,
+                        fontSize: size ?? 16.sp,
+                        fontWeight: fontWeight ?? FontWeight.w700,
+                      ),
+            ),
           ),
           if (!isRtl) widget!,
         ],

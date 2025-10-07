@@ -165,9 +165,9 @@ class CheckDetails extends GetView<ChecksController> {
                               },
                               child: CachedNetworkImage(
                                 imageUrl: check.frontImage ?? '',
-                                fit: BoxFit.cover,
-                                height: 150.h,
-                                width: 150.w,
+                                fit: BoxFit.fill,
+                                height: 100.h,
+                                width: 110.w,
                                 placeholder: (context, url) => const Center(
                                   child: CircularProgressIndicator(
                                       color: AppColors.primaryColor),
@@ -216,9 +216,9 @@ class CheckDetails extends GetView<ChecksController> {
                               },
                               child: CachedNetworkImage(
                                 imageUrl: check.backImage ?? '',
-                                fit: BoxFit.cover,
-                                height: 150.h,
-                                width: 150.w,
+                                fit: BoxFit.fill,
+                                height: 100.h,
+                                width: 110.w,
                                 placeholder: (context, url) => const Center(
                                   child: CircularProgressIndicator(
                                       color: AppColors.primaryColor),

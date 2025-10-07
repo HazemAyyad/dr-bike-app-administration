@@ -51,6 +51,7 @@ class ProjectDatasource {
     String? sellerId,
   }) async {
     try {
+      print('customerId: $customerId');
       final productIdList = <String, dynamic>{};
 
       for (int i = 0; i < productId.length; i++) {
@@ -97,6 +98,7 @@ class ProjectDatasource {
         },
         isFormData: true,
       );
+      print('response: $response');
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

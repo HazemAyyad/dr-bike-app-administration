@@ -44,6 +44,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                       label: 'assetValue',
                       hintText: 'assetValueExample',
                       keyboardType: TextInputType.number,
+                      enabled: !controller.isEditing.value,
                     ),
                   ),
                 ],
@@ -65,6 +66,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
                       hintText: 'partnerPercentageExample',
                       keyboardType: TextInputType.number,
                       onChanged: controller.onDepreciationChanged,
+                      enabled: !controller.isEditing.value,
                     ),
                   ),
                   SizedBox(width: 10.w),
@@ -106,9 +108,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
 }
 
 class EditImagesWidget extends StatelessWidget {
-  const EditImagesWidget({
-    Key? key,
-  }) : super(key: key);
+  const EditImagesWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -35,11 +35,12 @@ class FirstStep extends GetView<ProjectController> {
             SizedBox(width: 10.w),
             Flexible(
               child: CustomTextField(
+                isRequired: true,
                 label: 'projectCost',
                 hintText: 'projectCostExample',
                 controller: controller.projectCostController,
                 keyboardType: TextInputType.number,
-                validator: (value) => null,
+                // validator: (value) => null,
               ),
             ),
           ],
@@ -112,8 +113,12 @@ class FirstStep extends GetView<ProjectController> {
               if (!controller.productsId
                   .map((e) => e.productId)
                   .contains(value.id.toString())) {
-                controller.productsId.add(ProjectProductModel(
-                    productId: value.id, productName: value.nameAr));
+                controller.productsId.add(
+                  ProjectProductModel(
+                    productId: value.id,
+                    productName: value.nameAr,
+                  ),
+                );
               }
               controller.update();
             }

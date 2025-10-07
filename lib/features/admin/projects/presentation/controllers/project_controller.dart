@@ -93,11 +93,14 @@ class ProjectController extends GetxController {
 
   void changeSelected(int index) => selectedStep.value = index;
 
-  void nextStep(String projectId) {
+  void nextStep() {
     if (selectedStep.value < timeLineSteps.length) {
       if (formKey.currentState!.validate()) selectedStep.value += 1;
     } else if (isEdit.value) {
-      addNewProject(Get.context!, projectId: projectId);
+      addNewProject(
+        Get.context!,
+        projectId: ProjectService().projectDetails.value!.id.toString(),
+      );
     } else {
       addNewProject(Get.context!);
     }
@@ -208,64 +211,63 @@ class ProjectController extends GetxController {
 
   // add new project
   void addNewProject(BuildContext context, {String projectId = ''}) async {
-    if (formKey.currentState!.validate()) {
-      isLoading(true);
-      final result = await createProjectUsecase.call(
-        projectId: projectId,
-        name: projectNameController.text,
-        projectCost: projectCostController.text,
-        productId: productsId,
-        customerId: selectedCustomersSellers.value ? null : partnerId.value,
-        sellerId: selectedCustomersSellers.value ? partnerId.value : null,
-        projectImages: projectImages,
-        partnerShare: partnerShareController.text,
-        partnerPercentage: partnerPercentageController.text,
-        paperImages: paperImages,
-        notes: notesController.text,
-        paymentMethod: paymentMethodController.text,
-        paymentNote: paymentNoteController.text,
-      );
-      result.fold(
-        (failure) {
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: failure.data['message'],
-          );
-        },
-        (success) {
-          getProjects(loding: true);
+    isLoading(true);
+    final result = await createProjectUsecase.call(
+      projectId: projectId,
+      name: projectNameController.text,
+      projectCost: projectCostController.text,
+      productId: productsId,
+      customerId: selectedCustomersSellers.value ? null : partnerId.value,
+      sellerId: selectedCustomersSellers.value ? partnerId.value : null,
+      projectImages: projectImages,
+      partnerShare: partnerShareController.text,
+      partnerPercentage: partnerPercentageController.text,
+      paperImages: paperImages,
+      notes: notesController.text,
+      paymentMethod: paymentMethodController.text,
+      paymentNote: paymentNoteController.text,
+    );
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: failure.data['message'],
+        );
+      },
+      (success) {
+        getProjects(loding: true);
+        if (projectId.isNotEmpty) {
           getProjectDetails(ProjectService().projectDetails.value!.id);
-          projectNameController.clear();
-          projectCostController.clear();
-          itemIdController.clear();
-          productsId.clear();
-          projectImages.clear();
-          partnerId.value = '';
-          partnerShareController.clear();
-          partnerPercentageController.clear();
-          paperImages.clear();
-          notesController.clear();
-          paymentMethodController.clear();
-          paymentNoteController.clear();
-          selectedStep.value = 1;
-
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-          Future.delayed(
-            const Duration(milliseconds: 1500),
-            () {
-              Get.back();
-              Get.back();
-              getProjects(loding: true);
-            },
-          );
-        },
-      );
-    }
+        }
+        projectNameController.clear();
+        projectCostController.clear();
+        itemIdController.clear();
+        productsId.clear();
+        projectImages.clear();
+        partnerId.value = '';
+        partnerShareController.clear();
+        partnerPercentageController.clear();
+        paperImages.clear();
+        notesController.clear();
+        paymentMethodController.clear();
+        paymentNoteController.clear();
+        selectedStep.value = 1;
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            Get.back();
+            Get.back();
+            getProjects(loding: true);
+          },
+        );
+      },
+    );
     isLoading(false);
   }
 

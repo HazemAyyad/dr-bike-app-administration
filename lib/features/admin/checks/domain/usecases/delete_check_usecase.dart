@@ -8,7 +8,13 @@ class DeleteCheckUsecase {
 
   DeleteCheckUsecase({required this.checksRepository});
 
-  Future<Either<Failure, String>> deleteCheck({required String checkId}) async {
-    return await checksRepository.deleteCheck(checkId: checkId);
+  Future<Either<Failure, String>> deleteCheck({
+    required String checkId,
+    required bool isInComing,
+  }) async {
+    return await checksRepository.deleteCheck(
+      checkId: checkId,
+      isInComing: isInComing,
+    );
   }
 }

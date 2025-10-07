@@ -93,4 +93,28 @@ class GeneralDataListImplement implements GeneralDataListRepository {
       throw ServerFailure('No internet connection', {});
     }
   }
+
+  @override
+  Future<Either<Failure, String>> deletePerson({
+    required String customerId,
+    required String sellerId,
+  }) async {
+    try {
+      final result = await generalDataListDatasource.deletePerson(
+        customerId: customerId,
+        sellerId: sellerId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
 }

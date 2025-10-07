@@ -78,6 +78,7 @@ class GoalsImplement implements GoalsRepository {
     required String goalId,
     bool? isCancel,
     bool? isTransfer,
+    bool? isDelete,
   }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
@@ -87,6 +88,7 @@ class GoalsImplement implements GoalsRepository {
         goalId: goalId,
         isCancel: isCancel,
         isTransfer: isTransfer,
+        isDelete: isDelete,
       );
       return result;
     } on ServerException catch (e) {

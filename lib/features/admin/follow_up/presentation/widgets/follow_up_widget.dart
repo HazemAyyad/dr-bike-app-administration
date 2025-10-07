@@ -151,7 +151,7 @@ class FollowUpWidget extends StatelessWidget {
                             ),
                             SizedBox(height: 5.h),
                             SizedBox(
-                              width: 230.w,
+                              width: 200,
                               child: Text(
                                 followup.productName,
                                 maxLines: 2,

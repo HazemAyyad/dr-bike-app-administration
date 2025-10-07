@@ -5,6 +5,7 @@ import 'package:doctorbike/features/admin/general_data_list/domain/usecases/get_
 import 'package:doctorbike/features/admin/general_data_list/presentation/controllers/general_data_serves.dart';
 import 'package:get/get.dart';
 
+import '../../domain/usecases/delete_person_usecase.dart';
 import '../controllers/general_data_list_controller.dart';
 
 class GeneralDataListBinding extends Bindings {
@@ -20,6 +21,9 @@ class GeneralDataListBinding extends Bindings {
           generalDataListRepository: Get.find<GeneralDataListImplement>(),
         ),
         getPersonDataUseCase: GetPersonDataUseCase(
+          generalDataListRepository: Get.find<GeneralDataListImplement>(),
+        ),
+        deletePersonUsecase: DeletePersonUsecase(
           generalDataListRepository: Get.find<GeneralDataListImplement>(),
         ),
       ),

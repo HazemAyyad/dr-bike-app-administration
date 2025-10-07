@@ -172,6 +172,7 @@ const Map<String, String> en = {
 
   'logoutError': 'An error occurred while logging out, please try again later',
   'areYouSure': 'Are you sure?',
+  'delete': 'Delete',
 
   'doctorBikeWillStartToApplyThisChange':
       'Doctor Bike will start to apply this change',
@@ -765,6 +766,7 @@ const Map<String, String> en = {
 
   'totalAssets': 'Total Assets',
   'averageConsumptionRatio': 'Average Depreciation Rate',
+  'createDate': 'Create Date',
   'log': 'Record',
   'assetsConsumption': 'Assets Depreciation',
   'consumptionDate': 'Depreciation Date',
@@ -777,6 +779,7 @@ const Map<String, String> en = {
   'monthlyConsumptionRatio': 'Monthly Depreciation Rate',
   'numberOfMonths': 'Number of Months',
   'addAsset': 'Add Asset',
+  'destruction': 'Destruction',
 
   "generalAdministrativeExpenses": "General and Administrative Expenses",
   "DestructionProducts": "Destruction Products",

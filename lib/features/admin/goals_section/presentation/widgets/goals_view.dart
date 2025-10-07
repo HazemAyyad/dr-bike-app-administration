@@ -59,10 +59,72 @@ class GoalsView extends StatelessWidget {
                 return GestureDetector(
                   onLongPress: () {
                     controller.currentTab.value == 2
-                        ? null
-                        : Get.dialog(
-                            DeleteGoalDialog(goal: goal),
-                          );
+                        ? Get.dialog(
+                            Dialog(
+                              backgroundColor: ThemeService.isDark.value
+                                  ? AppColors.darkColor
+                                  : AppColors.whiteColor,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8.r)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${'delete'.tr} ${goal.name}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge!
+                                          .copyWith(
+                                            color: ThemeService.isDark.value
+                                                ? AppColors.whiteColor
+                                                : AppColors.secondaryColor,
+                                            fontSize: 18.sp,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    SizedBox(height: 20.h),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Expanded(
+                                          child: AppButton(
+                                            isSafeArea: false,
+                                            text: 'cancel'.tr,
+                                            onPressed: () {
+                                              Get.back();
+                                            },
+                                          ),
+                                        ),
+                                        SizedBox(width: 10.w),
+                                        Expanded(
+                                          child: AppButton(
+                                            isLoading: controller.isLoading,
+                                            isSafeArea: false,
+                                            color: Colors.red,
+                                            text: 'clear'.tr,
+                                            onPressed: () {
+                                              controller.getGoalDetails(
+                                                goalId: goal.id.toString(),
+                                                isCancel: null,
+                                                isTransfer: null,
+                                                isDelete: true,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : Get.dialog(DeleteGoalDialog(goal: goal));
                   },
                   onTap: () => {
                     controller.getGoalDetails(goalId: goal.id.toString()),
@@ -77,9 +139,10 @@ class GoalsView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(9.r),
                     ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        SizedBox(height: 10.h),
                         Center(
                           child: Stack(
                             alignment: Alignment.center,
@@ -90,7 +153,7 @@ class GoalsView extends StatelessWidget {
                                     .textTheme
                                     .bodyMedium!
                                     .copyWith(
-                                      fontSize: 13.sp,
+                                      fontSize: 10.sp,
                                       fontWeight: FontWeight.w700,
                                       color: ThemeService.isDark.value
                                           ? AppColors.whiteColor2
@@ -99,13 +162,13 @@ class GoalsView extends StatelessWidget {
                               ),
                               Center(
                                 child: SizedBox(
-                                  height: 65.h,
-                                  width: 70.w,
+                                  height: 65,
+                                  width: 65,
                                   child: CircularProgressIndicator(
                                     value: (double.parse(
                                             goal.achievementPercentage) /
                                         100),
-                                    strokeWidth: 8,
+                                    strokeWidth: 6,
                                     backgroundColor: Colors.grey.shade300,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       double.parse(
@@ -120,18 +183,18 @@ class GoalsView extends StatelessWidget {
                             ],
                           ),
                         ),
-                        SizedBox(height: 20.h),
+                        SizedBox(height: 10.h),
                         Flexible(
                           child: Text(
                             goal.name,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium!
                                 .copyWith(
-                                  fontSize: 13.sp,
+                                  fontSize: 10.sp,
                                   fontWeight: FontWeight.w700,
                                   color: ThemeService.isDark.value
                                       ? AppColors.whiteColor2
@@ -139,7 +202,7 @@ class GoalsView extends StatelessWidget {
                                 ),
                           ),
                         ),
-                        SizedBox(height: 10.h),
+                        SizedBox(height: 5.h),
                         Flexible(
                           child: Text(
                             '${'targetValue'.tr}: ${NumberFormat('#,###').format(double.parse(goal.targetValue))}',

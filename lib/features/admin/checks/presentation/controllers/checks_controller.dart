@@ -166,8 +166,8 @@ class ChecksController extends GetxController
           }
           Helpers.showCustomDialogError(
             context: context,
-            title: failure.errMessage,
-            message: errorMessage,
+            title: errorMessage,
+            message: failure.errMessage,
           );
         },
         (success) {
@@ -489,7 +489,10 @@ class ChecksController extends GetxController
   // delete check
   void deleteCheck({required String checkId}) async {
     isLoading(true);
-    final result = await deleteCheckUsecase.deleteCheck(checkId: checkId);
+    final result = await deleteCheckUsecase.deleteCheck(
+      checkId: checkId,
+      isInComing: isInComing,
+    );
     result.fold(
       (failure) {
         isLoading(false);
@@ -504,11 +507,11 @@ class ChecksController extends GetxController
       (success) async {
         Get.back();
         await Future.wait([
-          getGeneralChecksData(),
+          getArchive(isStopLoding: false),
           // generalData(),
-          getCashedToPerson(),
-          getNotCashed(),
-          getArchive(),
+          getCashedToPerson(isStopLoding: false),
+          getNotCashed(isStopLoding: false),
+          getGeneralChecksData(),
         ]);
         Future.delayed(
           const Duration(milliseconds: 1000),
@@ -533,7 +536,7 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> inComingTasks = {};
   final Map<String, double> totalInComing = {};
 
-  Future<void> getNotCashed() async {
+  Future<void> getNotCashed({bool isStopLoding = true}) async {
     isLoading(true);
 
     filteredInComingTasks.clear();
@@ -570,7 +573,7 @@ class ChecksController extends GetxController
 
     filteredInComingTasks.assignAll(inComingTasks);
     update();
-    isLoading(false);
+    if (isStopLoding) isLoading(false);
     update();
   }
 
@@ -579,7 +582,7 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> cashedToPersonTasks = {};
   final Map<String, double> totalCashedToPerson = {};
 
-  Future<void> getCashedToPerson() async {
+  Future<void> getCashedToPerson({bool isStopLoding = true}) async {
     isLoading(true);
 
     filteredCashedToPersonTasks.clear();
@@ -613,7 +616,7 @@ class ChecksController extends GetxController
     });
     filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
     update();
-    isLoading(false);
+    if (isStopLoding) isLoading(false);
     update();
   }
 
@@ -622,7 +625,7 @@ class ChecksController extends GetxController
   final Map<String, List<CheckModel>> archiveTasks = {};
   final Map<String, double> totalArchive = {};
 
-  Future<void> getArchive() async {
+  Future<void> getArchive({bool isStopLoding = true}) async {
     isLoading(true);
 
     filteredArchiveTasks.clear();
@@ -651,7 +654,7 @@ class ChecksController extends GetxController
     }
     filteredArchiveTasks.assignAll(archiveTasks);
     update();
-    isLoading(false);
+    if (isStopLoding) isLoading(false);
     update();
   }
 

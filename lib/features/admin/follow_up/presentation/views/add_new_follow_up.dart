@@ -146,21 +146,25 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                   SizedBox(height: 20.h),
                   Row(
                     children: [
-                      RichText(
-                        text: TextSpan(
-                          text: controller.selectedStep.value == 1
-                              ? 'step_one'.tr
-                              : controller.selectedStep.value == 2
-                                  ? 'step_two'.tr
-                                  : 'step_three'.tr,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.whiteColor
-                                        : AppColors.blackColor,
-                                  ),
+                      Flexible(
+                        child: RichText(
+                          text: TextSpan(
+                            text: controller.selectedStep.value == 1
+                                ? 'step_one'.tr
+                                : controller.selectedStep.value == 2
+                                    ? 'step_two'.tr
+                                    : 'step_three'.tr,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: ThemeService.isDark.value
+                                      ? AppColors.whiteColor
+                                      : AppColors.blackColor,
+                                ),
+                          ),
                         ),
                       ),
                     ],

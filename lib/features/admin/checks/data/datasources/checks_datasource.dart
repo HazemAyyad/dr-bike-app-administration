@@ -332,11 +332,17 @@ class ChecksDatasource {
   }
 
   // delete check
-  Future<Map<String, dynamic>> deleteCheck({required String checkId}) async {
+  Future<Map<String, dynamic>> deleteCheck(
+      {required String checkId, required bool isInComing}) async {
     try {
       final response = await api.post(
-        EndPoints.deleteCheck,
-        data: {'incoming_check_id': checkId},
+        isInComing
+            ? EndPoints.deleteIncomingCheck
+            : EndPoints.deleteOutgoingCheck,
+        data: {
+          if (isInComing) 'incoming_check_id': checkId,
+          if (!isInComing) 'outgoing_check_id': checkId
+        },
         isFormData: true,
       );
       return response.data;

@@ -11,6 +11,7 @@ import '../../../../../../routes/app_routes.dart';
 import '../../../data/models/assets_models/assets_data_model.dart';
 import '../../controllers/assets_controller.dart';
 import '../official_papers_widgets/cancel_file_dialog.dart';
+import 'destruction_assets.dart';
 
 class AssetsCard extends GetView<AssetsController> {
   const AssetsCard({Key? key, required this.asset}) : super(key: key);
@@ -22,9 +23,63 @@ class AssetsCard extends GetView<AssetsController> {
     return GestureDetector(
       onLongPress: () {
         Get.dialog(
-          CancelFileDialog(
-            fileName: asset.name,
-            assetId: asset.assetId.toString(),
+          Dialog(
+            backgroundColor: ThemeService.isDark.value
+                ? AppColors.darkColor
+                : AppColors.whiteColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : Colors.white,
+                    borderRadius: BorderRadius.all(Radius.circular(8.r)),
+                  ),
+                  child: Column(
+                    children: controller.list
+                        .map<Widget>(
+                          (option) => RadioListTile<String>(
+                            title: Text(
+                              option.tr,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.red,
+                                  ),
+                            ),
+                            value: option,
+                            groupValue: null,
+                            onChanged: (value) {
+                              Get.back();
+                              if (value == 'delete') {
+                                Get.dialog(
+                                  CancelFileDialog(
+                                    fileName: asset.name,
+                                    assetId: asset.assetId.toString(),
+                                  ),
+                                );
+                              }
+                              if (value == 'destruction') {
+                                Get.dialog(
+                                  DestructionAssets(asset: asset),
+                                );
+                              }
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

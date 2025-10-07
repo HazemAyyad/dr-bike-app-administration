@@ -16,7 +16,22 @@ class AssetsLogScreen extends GetView<AssetsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'log', action: false),
+      appBar: CustomAppBar(
+        title: 'log',
+        actions: [
+          IconButton(
+            onPressed: () {
+              controller.downloadReport();
+            },
+            icon: Icon(
+              Icons.downloading_rounded,
+              color: AppColors.primaryColor,
+              size: 30.sp,
+            ),
+          ),
+          SizedBox(width: 20.w),
+        ],
+      ),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
@@ -39,7 +54,8 @@ class AssetsLogScreen extends GetView<AssetsController> {
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final assetLog = FinacialService().assetsLogs[index];
+                    final assetLog =
+                        FinacialService().assetsLogs.reversed.toList()[index];
 
                     return Container(
                       margin:
@@ -69,7 +85,9 @@ class AssetsLogScreen extends GetView<AssetsController> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    '${'consumptionDate'.tr}: ${showData(assetLog.depreciationDate)}',
+                                    assetLog.type == 'create'
+                                        ? '${'createDate'.tr}: ${showData(assetLog.depreciationDate)}'
+                                        : '${'consumptionDate'.tr}: ${showData(assetLog.depreciationDate)}',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyLarge!

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../data/models/assets_models/assets_data_model.dart';
@@ -10,6 +11,8 @@ import '../../data/models/assets_models/assets_detials_model.dart';
 import '../../domain/usecases/assets_usecases/add_new_assers_usecase.dart';
 import '../../domain/usecases/assets_usecases/assets_detials_usecase.dart';
 import '../../domain/usecases/assets_usecases/depreciate_assets_usecase.dart';
+import '../../domain/usecases/assets_usecases/depreciate_one_assets_usecase.dart';
+import '../../domain/usecases/assets_usecases/get_asset_report_usecase.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/assets_usecases/get_assets_logs_usecase.dart';
 import 'finacial_service.dart';
@@ -20,6 +23,8 @@ class AssetsController extends GetxController {
   final AddNewAssetsUsecase addNewAssetsUsecase;
   final DepreciateAssetsUsecase depreciateAssetsUsecase;
   final AssetsDetialsUsecase assetsDetialsUsecase;
+  final GetAssetReportUsecase getAssetReportUsecase;
+  final DepreciateOneAssetsUsecase depreciateOneAssetsUsecase;
 
   AssetsController({
     required this.getAllFinancialUsecase,
@@ -27,6 +32,8 @@ class AssetsController extends GetxController {
     required this.addNewAssetsUsecase,
     required this.depreciateAssetsUsecase,
     required this.assetsDetialsUsecase,
+    required this.getAssetReportUsecase,
+    required this.depreciateOneAssetsUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -40,6 +47,8 @@ class AssetsController extends GetxController {
   final TextEditingController depreciationRateController =
       TextEditingController();
   final TextEditingController monthsNumberController = TextEditingController();
+
+  RxList<String> list = <String>['delete', 'destruction'].obs;
 
   void onMonthsChanged(String value) {
     if (value.isEmpty) return;
@@ -232,6 +241,35 @@ class AssetsController extends GetxController {
     }
   }
 
+  // destruction one assets
+  void destructionOneAssets(String assetId) async {
+    isLoading(true);
+    final result = await depreciateOneAssetsUsecase.call(assetId: assetId);
+    result.fold(
+      (failure) {
+        Get.back();
+        Get.snackbar(
+          "error".tr,
+          failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+      (success) {
+        Get.back();
+        getAllAssets();
+
+        Get.snackbar(
+          "success".tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+    );
+    isLoading(false);
+  }
+
   final RxBool isLoadingDepreciate = false.obs;
   // add new assets
   void depreciateAssets() async {
@@ -257,17 +295,53 @@ class AssetsController extends GetxController {
           colorText: Colors.white,
           backgroundColor: Colors.green,
           snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
         );
       },
     );
     isLoadingDepreciate(false);
   }
 
+  // download report
+  Future<void> downloadReport() async {
+    try {
+      Get.snackbar(
+        "info".tr,
+        "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2500),
+      );
+      final response = await getAssetReportUsecase.call();
+      final directory =
+          Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      final filePath =
+          "${directory.path}/سجل_الأهلاك${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+      final file = File(filePath);
+      await file.writeAsBytes(response);
+      Get.snackbar(
+        "fileDownloadedSuccessfully".tr,
+        filePath,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2000),
+      );
+      await OpenFilex.open(filePath);
+    } catch (e) {
+      Get.snackbar(
+        "error".tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 2500),
+      );
+    }
+  }
+
   @override
   void onInit() {
     getAllAssets();
     assetsFilter.value = FinacialService().assetsTasks;
-
     super.onInit();
   }
 

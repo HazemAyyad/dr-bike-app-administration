@@ -71,10 +71,7 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                   : controller.currentTab.value == 1
                       ? controller.sellersSearch.isEmpty
                       : controller.inCompleteDataSearch.isEmpty) {
-                return const SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: ShowNoData(),
-                );
+                return const SliverFillRemaining(child: ShowNoData());
               }
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
@@ -85,12 +82,7 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
                             ? controller.sellersSearch.reversed.toList()[index]
                             : controller.inCompleteDataSearch.reversed
                                 .toList()[index];
-                    return Column(
-                      children: [
-                        // SizedBox(height: index == 0 ? 10.h : 0.h),
-                        GlobalData(employee: employee),
-                      ],
-                    );
+                    return GlobalData(employee: employee);
                   },
                   childCount: controller.currentTab.value == 0
                       ? controller.employeeSearch.length

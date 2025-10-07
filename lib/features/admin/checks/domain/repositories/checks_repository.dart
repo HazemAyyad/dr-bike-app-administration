@@ -55,5 +55,8 @@ abstract class ChecksRepository {
     required String checkId,
   });
 
-  Future<Either<Failure, String>> deleteCheck({required String checkId});
+  Future<Either<Failure, String>> deleteCheck({
+    required String checkId,
+    required bool isInComing,
+  });
 }

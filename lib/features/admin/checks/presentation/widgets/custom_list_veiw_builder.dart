@@ -22,23 +22,27 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
           );
         }
 
-        if (controller.currentTab.value == 0 && !controller.isLoading.value) {
-          if (controller.filteredInComingTasks.isEmpty) {
+        if (controller.currentTab.value == 0) {
+          if (controller.filteredInComingTasks.isEmpty &&
+              !controller.isLoading.value) {
             return const SliverFillRemaining(
               child: ShowNoData(),
             );
           }
         }
-        if (controller.currentTab.value == 1 && !controller.isLoading.value) {
-          if (controller.filteredCashedToPersonTasks.isEmpty) {
+        if (controller.currentTab.value == 1) {
+          if (controller.filteredCashedToPersonTasks.isEmpty &&
+              !controller.isLoading.value) {
             return const SliverFillRemaining(
               child: ShowNoData(),
             );
           }
         }
-        if (controller.currentTab.value == 2 && !controller.isLoading.value) {
-          if (controller.filteredArchiveTasks.isEmpty) {
+        if (controller.currentTab.value == 2) {
+          if (controller.filteredArchiveTasks.isEmpty &&
+              !controller.isLoading.value) {
             return const SliverFillRemaining(
+              hasScrollBody: true,
               child: ShowNoData(),
             );
           }

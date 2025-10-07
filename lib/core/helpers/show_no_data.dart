@@ -19,13 +19,15 @@ class ShowNoData extends StatelessWidget {
             color: AppColors.graywhiteColor,
           ),
           SizedBox(height: 10.h),
-          Text(
-            'noData'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.graywhiteColor,
-                ),
+          Flexible(
+            child: Text(
+              'noData'.tr,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.graywhiteColor,
+                  ),
+            ),
           ),
         ],
       ),

@@ -250,12 +250,18 @@ class ChecksImplement implements ChecksRepository {
   }
 
   @override
-  Future<Either<Failure, String>> deleteCheck({required String checkId}) async {
+  Future<Either<Failure, String>> deleteCheck({
+    required String checkId,
+    required bool isInComing,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
-      final result = await checksDatasource.deleteCheck(checkId: checkId);
+      final result = await checksDatasource.deleteCheck(
+        checkId: checkId,
+        isInComing: isInComing,
+      );
       if (result['status'] == 'success') {
         return Right(result['message']);
       }

@@ -119,7 +119,7 @@ class PaymentScreen extends GetView<PaymentController> {
                       },
                       itemAsString: (item) => item.name,
                       compareFn: (a, b) => a.id == b.id,
-                      validator: (value) => null,
+                      // validator: (value) => null,
                     ),
                   ),
                   IconButton(

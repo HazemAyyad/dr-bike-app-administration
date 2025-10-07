@@ -170,8 +170,10 @@ const Map<String, String> ar = {
   'cancel': 'إلغاء',
   'loginSuccess': 'تم تسجيل الدخول بنجاح',
   'logoutSuccess': 'تم تسجيل الخروج بنجاح',
+
   'logoutError': 'حدث خطأ أثناء تسجيل الخروج، حاول مرة أخرى لاحقاً',
   'areYouSure': 'هل أنت متأكد؟',
+  'delete': 'حذف',
 
   'doctorBikeWillStartToApplyThisChange':
       'سيبدأ Doctor Bike في تطبيق هذا التغيير',
@@ -761,6 +763,7 @@ const Map<String, String> ar = {
   // قسم الأصول
   'totalAssets': 'إجمالي الوصول',
   'averageConsumptionRatio': 'متوسط نسبة الاهلاك',
+  'createDate': 'تاريخ الانشاء',
   'log': 'السجل',
   'assetsConsumption': 'إهلاك الأصول',
   'consumptionDate': 'تاريخ الاهلاك',
@@ -773,6 +776,7 @@ const Map<String, String> ar = {
   'monthlyConsumptionRatio': 'نسبة الاهلاك الشهري',
   'numberOfMonths': 'عدد الاشهر',
   'addAsset': 'إضافة الأصل',
+  'destruction': 'اهلاك',
 
   // قسم المصاريف
   "generalAdministrativeExpenses": "مصاريف إدارية وعمومية",

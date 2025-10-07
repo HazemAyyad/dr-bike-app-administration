@@ -84,7 +84,9 @@ class MaintenanceController extends GetxController {
       selectedStep.value += 1;
       if (isEdit.value) {
         createMaintenance(
-            step: selectedStep.value, maintenanceId: maintenanceId);
+          step: selectedStep.value,
+          maintenanceId: maintenanceId,
+        );
       }
     } else {
       Get.back();
@@ -95,8 +97,8 @@ class MaintenanceController extends GetxController {
   }
 
   void prevStep() {
-    createMaintenance(step: selectedStep.value, maintenanceId: maintenanceId);
     selectedStep.value -= 1;
+    createMaintenance(step: selectedStep.value, maintenanceId: maintenanceId);
   }
 
   // متغير لاظهار التكرار
@@ -236,7 +238,7 @@ class MaintenanceController extends GetxController {
             ? 2
             : maintenances['status'] == 'ready'
                 ? 3
-                : 1;
+                : 4;
     if (maintenances['files'] != null) {
       selectedMedia = List<File>.from(
         (maintenances['files'] as List).map(
@@ -275,13 +277,17 @@ class MaintenanceController extends GetxController {
   }
 
   // create maintenance
-  Future<void> createMaintenance(
-      {required int step, String? maintenanceId}) async {
+  Future<void> createMaintenance({
+    required int step,
+    String? maintenanceId,
+    bool isSave = false,
+  }) async {
     if (!formKey.currentState!.validate()) {
       return;
     }
     isLoading(true);
     update();
+    print("===================$step");
     final result = await creatMaintenanceUsecase.call(
       maintenanceId: isEdit.value ? maintenanceId : null,
       customerId: !selectedSellers.value ? partnerIdController.text : '',
@@ -292,7 +298,7 @@ class MaintenanceController extends GetxController {
           '${deliveryTime.value.hour.toString().padLeft(2, '0')}:${deliveryTime.value.minute.toString().padLeft(2, '0')}',
       files: selectedMedia,
       status: step == 1
-          ? ''
+          ? 'new'
           : step == 2
               ? 'ongoing'
               : step == 3
@@ -322,7 +328,9 @@ class MaintenanceController extends GetxController {
       },
       (success) {
         getMaintenancesData();
-        // Get.back();
+        if (isSave) {
+          Get.back();
+        }
         // Future.delayed(
         //   const Duration(milliseconds: 1500),
         //   () {

@@ -87,6 +87,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                                   value.id.toString();
                             },
                             itemAsString: (f) => f.name,
+                            validator: (value) => null,
                             compareFn: (a, b) => a.id == b.id,
                           ),
                         ],
@@ -112,6 +113,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                       },
                       itemAsString: (f) => f.employeeName,
                       compareFn: (a, b) => a.id == b.id,
+                      validator: (value) => null,
                     ),
                   ),
                 ],

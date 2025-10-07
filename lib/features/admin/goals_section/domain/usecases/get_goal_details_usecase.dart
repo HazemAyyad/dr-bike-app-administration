@@ -9,11 +9,13 @@ class GetGoalDetailsUsecase {
     required String goalId,
     bool? isCancel,
     bool? isTransfer,
+    bool? isDelete,
   }) async {
     return await goalsRepository.getGoalDetails(
       goalId: goalId,
       isCancel: isCancel,
       isTransfer: isTransfer,
+      isDelete: isDelete,
     );
   }
 }

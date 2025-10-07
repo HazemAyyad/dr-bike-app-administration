@@ -245,6 +245,7 @@ class MediaUploadButton extends StatefulWidget {
   final TextStyle? titleStyle;
   final void Function(List<File> files) onFilesChanged;
   final MediaType allowedType;
+  final bool isShowPreview;
 
   const MediaUploadButton({
     Key? key,
@@ -254,6 +255,7 @@ class MediaUploadButton extends StatefulWidget {
     this.titleStyle,
     required this.onFilesChanged,
     this.allowedType = MediaType.both,
+    this.isShowPreview = true,
   }) : super(key: key);
 
   @override
@@ -447,7 +449,9 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           radius: 4,
           child: _files.isEmpty
               ? buildInitialState(widget.title)
-              : _buildPreviewList(),
+              : widget.isShowPreview
+                  ? _buildPreviewList()
+                  : buildInitialState(widget.title),
         ),
       ),
     );

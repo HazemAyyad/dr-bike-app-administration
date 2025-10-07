@@ -65,7 +65,9 @@ class CustomTimePicker extends FormField<TimeOfDay?> {
                     onTap: onTap,
                     child: Container(
                       padding: EdgeInsets.symmetric(
-                          horizontal: 16.w, vertical: 12.h),
+                        horizontal: 16.w,
+                        vertical: 12.h,
+                      ),
                       decoration: BoxDecoration(
                         color: ThemeService.isDark.value
                             ? AppColors.customGreyColor
@@ -84,8 +86,8 @@ class CustomTimePicker extends FormField<TimeOfDay?> {
                                     .bodyMedium!
                                     .copyWith(
                                       color: ThemeService.isDark.value
-                                          ? AppColors.customGreyColor2
-                                          : AppColors.customGreyColor5,
+                                          ? AppColors.customGreyColor6
+                                          : AppColors.customGreyColor,
                                       fontSize: 16.sp,
                                       fontWeight: FontWeight.w400,
                                     ),

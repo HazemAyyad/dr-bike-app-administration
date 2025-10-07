@@ -8,6 +8,7 @@ import '../../data/models/employee_data_model.dart';
 import '../../data/models/person_data_model.dart';
 import '../../domain/entity/add_person_entity.dart';
 import '../../domain/usecases/add_person_usecase.dart';
+import '../../domain/usecases/delete_person_usecase.dart';
 import '../../domain/usecases/get_customers_usecase.dart';
 import '../../domain/usecases/get_person_data_usecase.dart';
 import 'general_data_serves.dart';
@@ -17,12 +18,14 @@ class GeneralDataListController extends GetxController {
   final GetCustomersUseCase getCustomersUseCase;
   final AddPersonUseCase addPersonUseCase;
   final GetPersonDataUseCase getPersonDataUseCase;
+  final DeletePersonUsecase deletePersonUsecase;
 
   GeneralDataListController({
     required this.generalDataServes,
     required this.getCustomersUseCase,
     required this.addPersonUseCase,
     required this.getPersonDataUseCase,
+    required this.deletePersonUsecase,
   });
 
   final isEdit = false.obs;
@@ -193,6 +196,70 @@ class GeneralDataListController extends GetxController {
       isLoading(false);
       update();
     }
+  }
+
+  // delete person
+  void deletePerson({String? customerId, String? sellerId}) async {
+    isLoading(true);
+    final result = await deletePersonUsecase.call(
+      customerId: customerId ?? '',
+      sellerId: sellerId ?? '',
+    );
+    result.fold(
+      (failure) {
+        String errorMessages = '';
+        bool data = false;
+        final errors = failure.data?['errors'] as Map<String, dynamic>?;
+        if (errors != null) {
+          errors.forEach((key, value) {
+            if (key.startsWith('permissions')) {
+              if (!data) {
+                errorMessages += "Permissions: ${value.first}\n";
+                data = true;
+              }
+            } else {
+              for (var msg in value) {
+                errorMessages += "- $key: $msg\n";
+              }
+            }
+          });
+        } else {
+          errorMessages = failure.data?['message'] ?? failure.errMessage;
+        }
+        Get.snackbar(
+          'error'.tr,
+          errorMessages,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+      (success) {
+        clearForm();
+        Future.delayed(
+          const Duration(milliseconds: 500),
+          () {
+            getGeneralData(loding: true);
+          },
+        );
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            Get.back();
+            Get.back();
+          },
+        );
+        Get.snackbar(
+          'success'.tr,
+          success,
+          colorText: Colors.white,
+          backgroundColor: Colors.green,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
+        );
+      },
+    );
+    isLoading(false);
+    update();
   }
 
   //Get General Data List
