@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -8,10 +9,10 @@ import '../../data/models/employee_task_model.dart';
 import '../controllers/employee_tasks_controller.dart';
 import 'employee_tasks_lists.dart';
 
-class EmployeeTasks extends StatelessWidget {
-  const EmployeeTasks({Key? key, required this.controller}) : super(key: key);
-
-  final EmployeeTasksController controller;
+class EmployeeTasks extends GetView<EmployeeTasksController> {
+  const EmployeeTasks({
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +73,8 @@ class EmployeeTasks extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        month,
+                        DateFormat('EEEE, yyyy/MM/dd', Get.locale!.languageCode)
+                            .format(DateTime.parse(month)),
                         style: theme.copyWith(
                           color: AppColors.primaryColor,
                           fontWeight: FontWeight.w700,

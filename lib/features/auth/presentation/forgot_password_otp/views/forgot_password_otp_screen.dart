@@ -1,16 +1,16 @@
+import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/loding_indicator.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../controllers/sign_up_otp_controller.dart';
+import '../controllers/forgot_password_otp_controller.dart';
 
-class SignUpOtpScreen extends GetView<SignUpOtpController> {
-  const SignUpOtpScreen({Key? key}) : super(key: key);
+class ForgotPasswordScreen extends GetView<ForgotPasswordController> {
+  const ForgotPasswordScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,7 @@ class SignUpOtpScreen extends GetView<SignUpOtpController> {
                     fontWeight: FontWeight.w400,
                   ),
             ),
-            SizedBox(height: 75.h),
+            SizedBox(height: 20.h),
             // Directionality(
             //   textDirection: TextDirection.ltr,
             // child:
@@ -51,7 +51,7 @@ class SignUpOtpScreen extends GetView<SignUpOtpController> {
               length: 4,
               keyboardType: TextInputType.number,
               animationType: AnimationType.scale,
-              cursorColor: AppColors.primaryColor, // لون السهم
+              cursorColor: AppColors.primaryColor,
               pinTheme: PinTheme(
                 shape: PinCodeFieldShape.box,
                 borderRadius: BorderRadius.circular(20.r),
@@ -72,26 +72,83 @@ class SignUpOtpScreen extends GetView<SignUpOtpController> {
               },
             ),
             // ),
-            SizedBox(height: 50.h),
+            SizedBox(height: 25.h),
+            Text(
+              'enterNewPassword'.tr,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: ThemeService.isDark.value
+                        ? Colors.white
+                        : AppColors.secondaryColor,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w400,
+                  ),
+            ),
+            SizedBox(height: 20.h),
+            Obx(
+              () {
+                return Column(
+                  children: [
+                    CustomTextField(
+                      label: 'password',
+                      hintText: '************',
+                      controller: controller.passwordController,
+                      obscureText: controller.isPasswordVisible.value,
+                      keyboardType: TextInputType.visiblePassword,
+                      suffixIcon: IconButton(
+                        onPressed: () => controller.togglePasswordVisibility(),
+                        icon: Icon(
+                          controller.isPasswordVisible.value
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: ThemeService.isDark.value
+                              ? AppColors.graywhiteColor
+                              : AppColors.customGreyColor2,
+                        ),
+                      ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                    SizedBox(height: 10.h),
+                    CustomTextField(
+                      label: 'newPassword',
+                      hintText: '************',
+                      controller: controller.passwordConfirmationController,
+                      obscureText: controller.isPasswordVisible.value,
+                      isRequired: true,
+                      keyboardType: TextInputType.visiblePassword,
+                      suffixIcon: IconButton(
+                        onPressed: () => controller.togglePasswordVisibility(),
+                        icon: Icon(
+                          controller.isPasswordVisible.value
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: ThemeService.isDark.value
+                              ? AppColors.graywhiteColor
+                              : AppColors.customGreyColor2,
+                        ),
+                      ),
+                      textInputAction: TextInputAction.done,
+                    ),
+                  ],
+                );
+              },
+            ),
 
             Obx(
-              () => controller.isLoading.value
-                  ? lodingIndicator()
-                  : AppButton(
-                      text: 'verify',
-                      onPressed: () {
-                        controller.sendOtp(context);
-                      },
-                      textStyle:
-                          Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                color: ThemeService.isDark.value
-                                    ? AppColors.secondaryColor
-                                    : AppColors.whiteColor,
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                      height: 48.h,
+              () => AppButton(
+                isLoading: controller.isLoading,
+                text: 'verify',
+                onPressed: () {
+                  controller.sendOtp(context);
+                },
+                textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: ThemeService.isDark.value
+                          ? AppColors.secondaryColor
+                          : AppColors.whiteColor,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w700,
                     ),
+                height: 48.h,
+              ),
             ),
             SizedBox(height: 50.h),
 

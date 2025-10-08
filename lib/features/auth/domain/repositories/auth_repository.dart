@@ -11,13 +11,12 @@ abstract class AuthRepository {
     required String confirmPassword,
   });
 
-  Future<Either<Failure, bool>> sendOtpToEmail({
-    required String email,
-  });
+  Future<Either<Failure, bool>> sendOtpToEmail({required String email});
 
   Future<Either<Failure, bool>> verifyOtp({
     required String email,
     required String otpCode,
+    required String password,
   });
 
   Future<Either<Failure, UserModel>> login({

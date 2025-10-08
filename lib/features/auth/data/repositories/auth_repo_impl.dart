@@ -68,14 +68,20 @@ class AuthImplement implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, bool>> verifyOtp(
-      {required String email, required String otpCode}) async {
+  Future<Either<Failure, bool>> verifyOtp({
+    required String email,
+    required String otpCode,
+    required String password,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
-      final result =
-          await remoteDataSource.verifyOtp(email: email, otpCode: otpCode);
+      final result = await remoteDataSource.verifyOtp(
+        email: email,
+        otpCode: otpCode,
+        password: password,
+      );
 
       if (result['status'] == 'success') {
         return const Right(true);

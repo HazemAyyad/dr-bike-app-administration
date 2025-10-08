@@ -79,6 +79,50 @@ class InitialBindings implements Bindings {
     Firebase.initializeApp();
     NetworkInfo networkInfo = NetworkInfo();
     final connected = await networkInfo.isConnected;
+    Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
+    startApp.value
+        ? Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true)
+        : null;
+
+    // employee dashbord
+    Get.lazyPut<EmployeeDashbordDatasource>(
+      () => EmployeeDashbordDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<EmployeeDashbordImplement>(
+      () => EmployeeDashbordImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        employeeDashbordDatasource: Get.find<EmployeeDashbordDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // admin dashbord
+    Get.lazyPut<AdminDashboardDatasource>(
+      () => AdminDashboardDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<AdminDashboardImplement>(
+      () => AdminDashboardImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        adminDashboardDataSource: Get.find<AdminDashboardDatasource>(),
+      ),
+      fenix: true,
+    );
+
+    // debts feature
+    Get.lazyPut<DebetDatasource>(
+      () => DebetDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<DebtsImplement>(
+      () => DebtsImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        debetDatasource: Get.find<DebetDatasource>(),
+      ),
+      fenix: true,
+    );
+    Get.lazyPut<DebtsDataService>(() => DebtsDataService(), fenix: true);
 
     // firebase init
     await Firebase.initializeApp(
@@ -118,36 +162,6 @@ class InitialBindings implements Bindings {
       // print('User Type: $employeePermissions');
     }
     // print('User Token: $userToken');
-    Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
-    startApp.value
-        ? Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true)
-        : null;
-
-    // employee dashbord
-    Get.lazyPut<EmployeeDashbordDatasource>(
-      () => EmployeeDashbordDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut<EmployeeDashbordImplement>(
-      () => EmployeeDashbordImplement(
-        networkInfo: Get.find<NetworkInfo>(),
-        employeeDashbordDatasource: Get.find<EmployeeDashbordDatasource>(),
-      ),
-      fenix: true,
-    );
-
-    // admin dashbord
-    Get.lazyPut<AdminDashboardDatasource>(
-      () => AdminDashboardDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut<AdminDashboardImplement>(
-      () => AdminDashboardImplement(
-        networkInfo: Get.find<NetworkInfo>(),
-        adminDashboardDataSource: Get.find<AdminDashboardDatasource>(),
-      ),
-      fenix: true,
-    );
 
     // قسم الموظين
     Get.lazyPut<EmployeeDatasource>(
@@ -187,20 +201,6 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-
-    // debts feature
-    Get.lazyPut<DebetDatasource>(
-      () => DebetDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut<DebtsImplement>(
-      () => DebtsImplement(
-        networkInfo: Get.find<NetworkInfo>(),
-        debetDatasource: Get.find<DebetDatasource>(),
-      ),
-      fenix: true,
-    );
-    Get.lazyPut<DebtsDataService>(() => DebtsDataService(), fenix: true);
 
     // انشاء مهام الموظفين
     Get.lazyPut<CreateEmployeeTasksDatasource>(

@@ -24,7 +24,12 @@ class NewCheckScreen extends GetView<ChecksController> {
 
     return Scaffold(
       appBar: CustomAppBar(
-          title: isNewCheck ? 'newCheck'.tr : 'newReceipt'.tr, action: false),
+          title: controller.isEdit.value
+              ? 'editCheck'.tr
+              : isNewCheck
+                  ? 'newCheck'.tr
+                  : 'newReceipt'.tr,
+          action: false),
       body: Form(
         key: controller.formKey,
         child: SingleChildScrollView(
@@ -337,7 +342,11 @@ class NewCheckScreen extends GetView<ChecksController> {
               SizedBox(height: isNewCheck ? 0 : 50.h),
               AppButton(
                 isLoading: controller.isLoading,
-                text: isNewCheck ? 'createCheck'.tr : 'cashTheChecks'.tr,
+                text: controller.isEdit.value
+                    ? 'editCheck'.tr
+                    : isNewCheck
+                        ? 'createCheck'.tr
+                        : 'cashTheChecks'.tr,
                 textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontSize: 16.sp,
                       color: AppColors.whiteColor,

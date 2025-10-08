@@ -456,32 +456,33 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                 SizedBox(height: 15.h),
                 // userType == 'admin'
                 // ?
-                AppButton(
-                  isLoading: controller.isLoading,
-                  text: 'cancelTask',
-                  onPressed: userType == 'admin'
-                      ? () {
-                          controller.cancelEmployeeTask(
-                            taskId: data.taskId.toString(),
-                            cancelWithRepetition: false,
-                            isCompleted: true,
-                          );
-                        }
-                      : () {
-                          final args = Get.arguments as Map<String, dynamic>?;
-                          final EmployeeDashbordController controller1 =
-                              args?['EmployeeDashbordController'];
-                          controller.uploadTaskImage(
-                            taskId: data.taskId.toString(),
-                          );
-                          controller1.changeTaskToCompleted(
-                            taskId: data.taskId,
-                            isSubTask: false,
-                            context: context,
-                          );
-                          Get.back();
-                        },
-                )
+                if (controller.currentTab.value != 1)
+                  AppButton(
+                    isLoading: controller.isLoading,
+                    text: 'cancelTask',
+                    onPressed: userType == 'admin'
+                        ? () {
+                            controller.cancelEmployeeTask(
+                              taskId: data.taskId.toString(),
+                              cancelWithRepetition: false,
+                              isCompleted: true,
+                            );
+                          }
+                        : () {
+                            final args = Get.arguments as Map<String, dynamic>?;
+                            final EmployeeDashbordController controller1 =
+                                args?['EmployeeDashbordController'];
+                            controller.uploadTaskImage(
+                              taskId: data.taskId.toString(),
+                            );
+                            controller1.changeTaskToCompleted(
+                              taskId: data.taskId,
+                              isSubTask: false,
+                              context: context,
+                            );
+                            Get.back();
+                          },
+                  )
                 // : SizedBox.shrink(),
               ],
             ),

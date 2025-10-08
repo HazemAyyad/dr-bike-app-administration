@@ -88,6 +88,7 @@ class EmployeeTasksLists extends StatelessWidget {
                                 ),
                                 SizedBox(height: 10.h),
                                 AppButton(
+                                  isSafeArea: false,
                                   text: 'save',
                                   onPressed: () =>
                                       controller.deleteTask.value == false &&
@@ -143,14 +144,14 @@ class EmployeeTasksLists extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 15.h),
+                      SizedBox(height: 10.h),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Flexible(
+                          Expanded(
                             child: Text(
                               order.taskName,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: theme.copyWith(
                                 fontSize: 12.sp,
@@ -161,25 +162,24 @@ class EmployeeTasksLists extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Flexible(
-                            child: Text(
-                              showData(order.endTime),
-                              style: theme.copyWith(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w400,
-                                color: ThemeService.isDark.value
-                                    ? AppColors.whiteColor
-                                    : AppColors.customGreyColor5,
-                              ),
+                          SizedBox(width: 10.w),
+                          Text(
+                            showData(order.endTime),
+                            style: theme.copyWith(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w400,
+                              color: ThemeService.isDark.value
+                                  ? AppColors.whiteColor
+                                  : AppColors.customGreyColor5,
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 15.h),
+                      SizedBox(height: 5.h),
                       Text(
                         order.employeeName,
                         style: theme.copyWith(
-                          fontSize: 13.sp,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.w400,
                           color: ThemeService.isDark.value
                               ? AppColors.whiteColor
@@ -190,7 +190,7 @@ class EmployeeTasksLists extends StatelessWidget {
                   ),
                 ),
                 controller.currentTab.value == 2
-                    ? SizedBox(height: 75.h, width: 90.w)
+                    ? SizedBox(height: 75.h, width: 80.w)
                     : Container(
                         width: 70.w,
                         height: 70.h,
@@ -216,8 +216,8 @@ class EmployeeTasksLists extends StatelessWidget {
                                 ),
                         ),
                         margin: Get.locale!.languageCode == 'en'
-                            ? EdgeInsets.only(left: 30.w)
-                            : EdgeInsets.only(right: 30.w),
+                            ? EdgeInsets.only(left: 10.w)
+                            : EdgeInsets.only(right: 10.w),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,

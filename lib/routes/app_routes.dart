@@ -13,6 +13,7 @@ class AppRoutes {
   static const LOGINSCREEN = '/loginscreen';
   static const BOTTOMNAVBARSCREEN = '/bottomnavbarscreen';
   static const HOMEPAGESCREEN = '/homepagescreen';
+  static const FORGETPASSWORDSCREEN = '/ForgetPasswordScreen';
 
   // Admin Dashboard
   static const ADMINDASHBOARDSCREEN = '/dashboardscreen';

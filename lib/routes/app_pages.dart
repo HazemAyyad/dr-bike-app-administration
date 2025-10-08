@@ -97,13 +97,15 @@ import '../features/admin/goals_section/presentation/binding/target_section_bind
 import '../features/admin/goals_section/presentation/views/goals_section_screen.dart';
 import '../features/admin/goals_section/presentation/views/add_new_goals_screen.dart';
 import '../features/admin/goals_section/presentation/views/goals_details_screen.dart';
+import '../features/auth/presentation/forget_password/binding/forget_password_binding.dart';
+import '../features/auth/presentation/forget_password/views/forget_password_screen.dart';
 import '../features/auth/presentation/login/binding/login_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/binding/sgin_up_verify_binding.dart';
 import '../features/auth/presentation/sgin_up_verify/views/sgin_up_verify_screen.dart';
 import '../features/auth/presentation/sign_up/binding/sign_up_binding.dart';
 import '../features/auth/presentation/sign_up/views/sign_up_screen.dart';
-import '../features/auth/presentation/sign_up_otp/binding/sign_up_otp_binding.dart';
-import '../features/auth/presentation/sign_up_otp/views/sign_up_otp_screen.dart';
+import '../features/auth/presentation/forgot_password_otp/binding/forgot_password_otp_binding.dart';
+import '../features/auth/presentation/forgot_password_otp/views/forgot_password_otp_screen.dart';
 import '../features/auth/presentation/success/views/success_screen.dart';
 import '../features/bottom_nav_bar/binding/binding.dart';
 import '../features/bottom_nav_bar/views/bottom_nav_bar_screen.dart';
@@ -179,8 +181,8 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.SIGNUPOTPSCREEN,
-      page: () => const SignUpOtpScreen(),
-      binding: SignUpOtpBinding(),
+      page: () => const ForgotPasswordScreen(),
+      binding: ForgotPasswordOtpBinding(),
       transition: _transitionLeftToRight,
     ),
     GetPage(
@@ -193,6 +195,12 @@ class AppPages {
       name: AppRoutes.LOGINSCREEN,
       page: () => const LoginScreen(),
       binding: LoginBinding(),
+      transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.FORGETPASSWORDSCREEN,
+      page: () => const ForgetPasswordScreen(),
+      binding: ForgetPasswordBinding(),
       transition: _transitionDownToUp,
     ),
     GetPage(

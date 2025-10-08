@@ -43,14 +43,10 @@ class AuthRemoteDatasource {
     }
   }
 
-  Future<Map<String, dynamic>> sendOtpToEmail({
-    required String email,
-  }) async {
+  Future<Map<String, dynamic>> sendOtpToEmail({required String email}) async {
     try {
-      final response = await api.post(
-        EndPoints.sendCode,
-        data: {'email': email},
-      );
+      final response =
+          await api.post(EndPoints.forgotPassword, data: {'email': email});
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -67,11 +63,17 @@ class AuthRemoteDatasource {
   Future<Map<String, dynamic>> verifyOtp({
     required String email,
     required String otpCode,
+    required String password,
   }) async {
     try {
       final response = await api.post(
-        EndPoints.verifyCode,
-        data: {'email': email, 'otp_code': otpCode},
+        EndPoints.resetPassword,
+        data: {
+          'email': email,
+          'token': otpCode,
+          'password': password,
+          'password_confirmation': password,
+        },
       );
       return response.data;
     } on DioException catch (e) {

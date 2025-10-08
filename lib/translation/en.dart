@@ -64,6 +64,7 @@ const Map<String, String> en = {
   'otpVerification': 'OTP Verification',
   'otpSent': 'We will send a verification code to confirm your email',
   'enterOtp': 'Please enter the verification code',
+  'enterNewPassword': 'Please enter your new password',
   'verificationSuccess': 'Verified successfully',
   'noCode': 'Didn’t receive a verification code?',
 
@@ -657,7 +658,8 @@ const Map<String, String> en = {
   'boxNameExample': 'Example: Khan Store',
 
   'newReceipt': 'New Check Receipt',
-  'newCheck': 'Create New Check',
+  'newCheck': 'Create New Check',  
+  'editCheck': 'Edit Check',
   'checkValue': 'Check Amount',
   'debtValue2': 'Debt Value',
   'beneficiaryName': 'Payee Name',

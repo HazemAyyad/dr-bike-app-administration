@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/login_controller.dart';
 
 class RememberMe extends StatelessWidget {
@@ -51,7 +52,9 @@ class RememberMe extends StatelessWidget {
             splashFactory: NoSplash.splashFactory,
             padding: EdgeInsets.zero,
           ),
-          onPressed: () {},
+          onPressed: () {
+            Get.toNamed(AppRoutes.SIGNUPVERIFYSCREEN);
+          },
           child: Text(
             'forgotPassword'.tr,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(

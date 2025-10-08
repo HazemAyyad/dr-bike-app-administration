@@ -64,6 +64,7 @@ const Map<String, String> ar = {
   'otpVerification': 'التحقق من OTP',
   'otpSent': 'سوف نقوم بإرسال رمز تحقق للتأكد على بريدك الإلكتروني',
   'enterOtp': 'رجاءً إدخل رمز التحقق',
+  'enterNewPassword': 'يرجى ادخال كلمة المرور الجديدة',
   'verificationSuccess': 'تم التحقق بنجاح',
   'noCode': 'لم يصلك رمز تحقق؟',
 
@@ -655,6 +656,7 @@ const Map<String, String> ar = {
 
   'newReceipt': 'قبض شيك جديد',
   'newCheck': 'إنشاء شيك جديد',
+  'editCheck': 'تعديل الشيك',
   'checkValue': 'قيمة الشيك',
   'debtValue2': 'قيمة الدين',
   'beneficiaryName': 'اسم صاحب الشيك',

@@ -2,13 +2,13 @@ import 'package:get/get.dart';
 
 import '../../../data/repositories/auth_repo_impl.dart';
 import '../../../domain/usecases/verify_otp_usecase.dart';
-import '../controllers/sign_up_otp_controller.dart';
+import '../controllers/forgot_password_otp_controller.dart';
 
-class SignUpOtpBinding extends Bindings {
+class ForgotPasswordOtpBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut(
-      () => SignUpOtpController(
+      () => ForgotPasswordController(
         verifyOtp: VerifyOtp(
           authRepository: Get.find<AuthImplement>(),
         ),

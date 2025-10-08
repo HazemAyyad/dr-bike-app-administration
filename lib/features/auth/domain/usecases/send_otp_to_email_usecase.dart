@@ -7,11 +7,7 @@ class SendOtpToEmail {
   final AuthRepository authRepository;
   SendOtpToEmail({required this.authRepository});
 
-  Future<Either<Failure, bool>> call({
-    required String email,
-  }) {
-    return authRepository.sendOtpToEmail(
-      email: email,
-    );
+  Future<Either<Failure, bool>> call({required String email}) {
+    return authRepository.sendOtpToEmail(email: email);
   }
 }
