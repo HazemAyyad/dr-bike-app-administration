@@ -5,6 +5,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../projects/data/models/project_details_model.dart';
 
 class GoalsDatasource {
   final ApiConsumer api;
@@ -44,26 +45,61 @@ class GoalsDatasource {
     required String employeeId,
     required String sellerId,
     required String boxId,
+    required List<ProjectProductModel> productsIds,
+    required String mainCategoriesId,
+    required String subCategoriesId,
+    required DateTime dueDate,
   }) async {
+    print("name $name");
+    print("type $type");
+    print("form $form");
+    print("targetedValue $targetedValue");
+    print("scope $scope");
+    print(mainCategoriesId);
+    print(subCategoriesId);
+    print('dueDate $dueDate');
+    print('customerId $customerId');
+    print('employeeId $employeeId');
+    print('sellerId $sellerId');
+    print('boxId $boxId');
+
+    final Map<String, dynamic> productsList = {};
+
+    for (var i = 0; i < productsIds.length; i++) {
+      if (productsIds[i].productId.isNotEmpty) {
+        productsList['products[$i][product_id]'] = productsIds[i].productId;
+      }
+    }
+
     try {
       final response = await api.post(
-          goalId != null && goalId != '' && goalId.isNotEmpty
-              ? EndPoints.editGoal
-              : EndPoints.addGoal,
-          data: {
-            if (goalId != null) 'goal_id': goalId,
-            'name': name,
-            'type': type,
-            'form': form,
-            'targeted_value': targetedValue,
-            if (currentValue.isNotEmpty) 'current_value': currentValue,
-            'notes': notes,
-            'scope': scope,
-            if (customerId != '') 'customer_id': customerId,
-            if (employeeId != '') 'employee_id': employeeId,
-            if (sellerId != '') 'seller_id': sellerId,
-            if (boxId != '') 'box_id': boxId
-          });
+        goalId != null && goalId != '' && goalId.isNotEmpty
+            ? EndPoints.editGoal
+            : EndPoints.addGoal,
+        data: {
+          if (goalId != null) 'goal_id': goalId,
+          'name': name,
+          'type': type,
+          'form': form,
+          'targeted_value': targetedValue,
+          if (currentValue.isNotEmpty) 'current_value': currentValue,
+          'notes': notes,
+          'scope': scope,
+          if (customerId.isNotEmpty) 'people[0][customer_id]': customerId,
+          // if (employeeId.isNotEmpty && type != 'finish_tasks')
+          //   'people[0][employee_id]': employeeId,
+          if (sellerId.isNotEmpty) 'people[0][seller_id]': sellerId,
+          if (boxId.isNotEmpty) 'box_id': boxId,
+          ...productsList,
+          if (mainCategoriesId.isNotEmpty)
+            'main_categories[0][main_category_id]': mainCategoriesId,
+          if (subCategoriesId.isNotEmpty)
+            'sub_categories[0][sub_category_id]': subCategoriesId,
+          if (employeeId.isNotEmpty) 'employee_id': employeeId,
+          'due_date': dueDate,
+        },
+        isFormData: true,
+      );
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

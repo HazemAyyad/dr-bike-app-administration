@@ -63,7 +63,7 @@ class StatCard extends StatelessWidget {
                       color: ThemeService.isDark.value
                           ? Colors.white
                           : AppColors.secondaryColor,
-                      fontSize: 15.sp,
+                      fontSize: 13.sp,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -83,7 +83,7 @@ class StatCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium!.copyWith(
                       color: AppColors.primaryColor,
-                      fontSize: 15.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

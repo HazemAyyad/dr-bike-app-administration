@@ -5,6 +5,7 @@ import 'package:doctorbike/features/admin/special_tasks/data/models/special_task
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -69,7 +70,9 @@ class TasksList extends GetView<SpecialTasksController> {
                             Row(
                               children: [
                                 Text(
-                                  date,
+                                  DateFormat('EEEE, yyyy/MM/dd',
+                                          Get.locale!.languageCode)
+                                      .format(DateTime.parse(date)),
                                   style: theme.copyWith(
                                     color: AppColors.primaryColor,
                                     fontWeight: FontWeight.w700,

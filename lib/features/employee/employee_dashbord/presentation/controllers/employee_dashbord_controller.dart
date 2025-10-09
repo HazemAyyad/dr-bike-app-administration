@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 
 import '../../../../../core/helpers/helpers.dart';
@@ -302,20 +301,24 @@ class EmployeeDashbordController extends GetxController
   // get employee data
   final Rxn<DashbordEmployeeDetailsModel> employeeData = Rxn();
   final Map<String, List<Task>> tasksData = {};
+  final Map<String, List<Task>> tasksDataFilter = {};
+
   void getEmployeeData() async {
     employeeData.value != null ? isLoading(false) : isLoading(true);
     final result = await getEmployeeDataUsecase.call();
     employeeData.value = result;
     isLoading(false);
-
+    tasksData.clear();
+    tasksDataFilter.clear();
     for (var task in employeeData.value!.tasks) {
       String dateKey =
-          "${DateFormat.E('ar').format(task.endTime)} ${task.endTime.year}/${task.endTime.month.toString().padLeft(2, '0')}/${task.endTime.day.toString().padLeft(2, '0')}";
+          "${task.startTime.year}-${task.startTime.month.toString().padLeft(2, '0')}-${task.startTime.day.toString().padLeft(2, '0')}";
       tasksData.putIfAbsent(dateKey, () => []);
       if (!tasksData[dateKey]!.any((t) => t.id == task.id)) {
         tasksData[dateKey]!.add(task);
       }
     }
+    tasksDataFilter.assignAll(filterByRange(tasksData));
     update();
   }
 
@@ -369,6 +372,49 @@ class EmployeeDashbordController extends GetxController
         duration: const Duration(milliseconds: 2000),
       );
     }
+  }
+
+  DateTime startDate = DateTime.now();
+  DateTime endDate = DateTime.now().add(const Duration(days: 7));
+
+  Map<String, List<Task>> filterByRange(Map<String, List<Task>> source) {
+    final filtered = <String, List<Task>>{};
+
+    source.forEach((key, tasks) {
+      DateTime dateKey;
+      try {
+        dateKey = DateTime.parse(key);
+      } catch (_) {
+        return;
+      }
+
+      if (dateKey.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          dateKey.isBefore(endDate)) {
+        filtered[key] = tasks;
+      }
+    });
+
+    return filtered;
+  }
+
+  void filterDataByDateRange() {
+    tasksDataFilter.assignAll(filterByRange(tasksData));
+    update();
+  }
+
+  void changeWeek(bool isNext) {
+    const int daysInWeek = 8;
+
+    if (isNext) {
+      startDate = startDate.add(const Duration(days: daysInWeek));
+      endDate = endDate.add(const Duration(days: daysInWeek));
+    } else {
+      startDate = startDate.subtract(const Duration(days: daysInWeek));
+      endDate = endDate.subtract(const Duration(days: daysInWeek));
+    }
+    // بعد التغيير، نفلتر الداتا حسب المدى الجديد
+    filterDataByDateRange();
+    update();
   }
 
   @override

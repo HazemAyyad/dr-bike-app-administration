@@ -48,7 +48,7 @@ class FirstStep extends GetView<ProjectController> {
         SizedBox(height: 15.h),
         GetBuilder<ProjectController>(
           builder: (controller) {
-            if (controller.productsId.isEmpty) return const SizedBox.shrink();
+            if (controller.productsIds.isEmpty) return const SizedBox.shrink();
             return Column(
               children: [
                 Container(
@@ -60,9 +60,9 @@ class FirstStep extends GetView<ProjectController> {
                       : AppColors.customGreyColor3,
                 ),
                 ...List.generate(
-                  controller.productsId.length,
+                  controller.productsIds.length,
                   (index) {
-                    ProjectProductModel product = controller.productsId[index];
+                    ProjectProductModel product = controller.productsIds[index];
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,7 +76,7 @@ class FirstStep extends GetView<ProjectController> {
                         ),
                         IconButton(
                           onPressed: () {
-                            controller.productsId.removeAt(index);
+                            controller.productsIds.removeAt(index);
                             controller.update();
                           },
                           icon: Icon(
@@ -110,10 +110,10 @@ class FirstStep extends GetView<ProjectController> {
           items: controller.products,
           onChanged: (value) {
             if (value != null) {
-              if (!controller.productsId
+              if (!controller.productsIds
                   .map((e) => e.productId)
                   .contains(value.id.toString())) {
-                controller.productsId.add(
+                controller.productsIds.add(
                   ProjectProductModel(
                     productId: value.id,
                     productName: value.nameAr,

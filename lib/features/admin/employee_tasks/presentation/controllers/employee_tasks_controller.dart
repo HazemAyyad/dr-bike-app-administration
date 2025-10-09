@@ -50,7 +50,7 @@ class EmployeeTasksController extends GetxController {
 
   final RxBool deleteTasDuplicate = false.obs;
 
-  Map<String, List<EmployeeTaskModel>> sortByDay(
+  Map<String, List<EmployeeTaskModel>> sortByDate(
       Map<String, List<EmployeeTaskModel>> source) {
     final sortedKeys = source.keys.toList()
       ..sort((a, b) {
@@ -72,10 +72,10 @@ class EmployeeTasksController extends GetxController {
 
   // get employee tasks
   Future<void> getEmployeeTasks() async {
-    if (employeeTaskService.ongoingEmployeeTasks.isEmpty) {
-      isLoading(true);
-      update();
-    }
+    // if (employeeTaskService.ongoingEmployeeTasks.isEmpty) {
+    isLoading(true);
+    update();
+    // }
     employeeTaskService.ongoingEmployeeTasks.clear();
     employeeTaskService.completedEmployeeTasks.clear();
     employeeTaskService.canceledEmployeeTasks.clear();
@@ -91,7 +91,7 @@ class EmployeeTasksController extends GetxController {
       }
     }
     ongoingTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.ongoingEmployeeTasks)));
+        filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)));
 
     // completed
     final completed = await employeeTasksUsecase.call(page: 1);
@@ -104,8 +104,8 @@ class EmployeeTasksController extends GetxController {
         employeeTaskService.completedEmployeeTasks[dateKey]!.add(task);
       }
     }
-    completedTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.completedEmployeeTasks)));
+    completedTasksFilter
+        .assignAll(sortByDate(employeeTaskService.completedEmployeeTasks));
 
     // canceled
     final canceled = await employeeTasksUsecase.call(page: 2);
@@ -119,7 +119,7 @@ class EmployeeTasksController extends GetxController {
       }
     }
     canceledTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.canceledEmployeeTasks)));
+        filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)));
 
     isLoading(false);
     update();
@@ -212,13 +212,12 @@ class EmployeeTasksController extends GetxController {
         toDateController.text.isEmpty &&
         employeeNameController.text.isEmpty) {
       ongoingTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.ongoingEmployeeTasks)),
+        filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)),
       );
-      completedTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.completedEmployeeTasks)),
-      );
+      completedTasksFilter
+          .assignAll(sortByDate(employeeTaskService.completedEmployeeTasks));
       canceledTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.canceledEmployeeTasks)),
+        filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)),
       );
       update();
       return;
@@ -227,7 +226,7 @@ class EmployeeTasksController extends GetxController {
     ongoingTasksFilter =
         filterByRange(filterTasks(employeeTaskService.ongoingEmployeeTasks));
     completedTasksFilter =
-        filterByRange(filterTasks(employeeTaskService.completedEmployeeTasks));
+        filterTasks(employeeTaskService.completedEmployeeTasks);
     canceledTasksFilter =
         filterByRange(filterTasks(employeeTaskService.canceledEmployeeTasks));
     update();
@@ -328,38 +327,30 @@ class EmployeeTasksController extends GetxController {
       }
     });
 
-    return sortByDay(filtered);
+    return sortByDate(filtered);
   }
 
   void filterDataByDateRange() {
     ongoingTasksFilter
-        .assignAll(sortByDay(employeeTaskService.ongoingEmployeeTasks));
-    completedTasksFilter
-        .assignAll(sortByDay(employeeTaskService.completedEmployeeTasks));
+        .assignAll(sortByDate(employeeTaskService.ongoingEmployeeTasks));
     canceledTasksFilter
-        .assignAll(sortByDay(employeeTaskService.canceledEmployeeTasks));
+        .assignAll(sortByDate(employeeTaskService.canceledEmployeeTasks));
 
     ongoingTasksFilter.assignAll(
       filterTasks(
-        filterByRange(sortByDay(employeeTaskService.ongoingEmployeeTasks)),
-      ),
-    );
-    completedTasksFilter.assignAll(
-      filterTasks(
-        filterByRange(sortByDay(employeeTaskService.completedEmployeeTasks)),
+        filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)),
       ),
     );
     canceledTasksFilter.assignAll(
       filterTasks(
-        filterByRange(sortByDay(employeeTaskService.canceledEmployeeTasks)),
+        filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)),
       ),
     );
-
     update();
   }
 
   void changeWeek(bool isNext) {
-    const int daysInWeek = 7;
+    const int daysInWeek = 8;
 
     if (isNext) {
       startDate = startDate.add(const Duration(days: daysInWeek));
@@ -368,7 +359,6 @@ class EmployeeTasksController extends GetxController {
       startDate = startDate.subtract(const Duration(days: daysInWeek));
       endDate = endDate.subtract(const Duration(days: daysInWeek));
     }
-
     // بعد التغيير، نفلتر الداتا حسب المدى الجديد
     filterDataByDateRange();
     update();
@@ -377,13 +367,13 @@ class EmployeeTasksController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    userType == 'admin' ? getEmployeeTasks() : null;
+    employeePermissions.contains(7) ? getEmployeeTasks() : null;
     ongoingTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.ongoingEmployeeTasks)));
-    completedTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.completedEmployeeTasks)));
+        filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)));
+    completedTasksFilter
+        .assignAll(sortByDate(employeeTaskService.completedEmployeeTasks));
     canceledTasksFilter.assignAll(
-        filterByRange(sortByDay(employeeTaskService.canceledEmployeeTasks)));
+        filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)));
     update();
     final String taskId = args?['taskId'] ?? '';
     if (taskId.isNotEmpty) {

@@ -56,7 +56,7 @@ class ProjectController extends GetxController {
   final TextEditingController itemIdController = TextEditingController();
   final TextEditingController expensesController = TextEditingController();
 
-  final List<ProjectProductModel> productsId = [];
+  final List<ProjectProductModel> productsIds = [];
 
   List<File> projectImages = [];
 
@@ -216,7 +216,7 @@ class ProjectController extends GetxController {
       projectId: projectId,
       name: projectNameController.text,
       projectCost: projectCostController.text,
-      productId: productsId,
+      productId: productsIds,
       customerId: selectedCustomersSellers.value ? null : partnerId.value,
       sellerId: selectedCustomersSellers.value ? partnerId.value : null,
       projectImages: projectImages,
@@ -243,7 +243,7 @@ class ProjectController extends GetxController {
         projectNameController.clear();
         projectCostController.clear();
         itemIdController.clear();
-        productsId.clear();
+        productsIds.clear();
         projectImages.clear();
         partnerId.value = '';
         partnerShareController.clear();
@@ -352,7 +352,7 @@ class ProjectController extends GetxController {
     projectNameController.text = ProjectService().projectDetails.value!.name;
     projectCostController.text =
         ProjectService().projectDetails.value!.projectCost;
-    productsId.assignAll(ProjectService().projectDetails.value!.products);
+    productsIds.assignAll(ProjectService().projectDetails.value!.products);
     if (ProjectService().projectDetails.value!.partnership != null) {
       partnershipName = ProjectService()
               .projectDetails
@@ -414,7 +414,7 @@ class ProjectController extends GetxController {
     isEdit.value = false;
     projectNameController.clear();
     projectCostController.clear();
-    productsId.clear();
+    productsIds.clear();
     partnershipName = '';
     selectedCustomersSellers.value = false;
     partnerShareController.clear();

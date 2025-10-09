@@ -75,7 +75,7 @@ class AssetsData extends StatelessWidget {
                         textStyle:
                             Theme.of(context).textTheme.bodyLarge!.copyWith(
                                   color: AppColors.whiteColor,
-                                  fontSize: 15.sp,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w700,
                                 ),
                         text:
@@ -93,7 +93,7 @@ class AssetsData extends StatelessWidget {
                         textStyle:
                             Theme.of(context).textTheme.bodyLarge!.copyWith(
                                   color: AppColors.whiteColor,
-                                  fontSize: 15.sp,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w700,
                                 ),
                         text: 'log',

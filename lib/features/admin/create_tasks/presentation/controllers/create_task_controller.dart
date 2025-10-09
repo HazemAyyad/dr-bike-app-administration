@@ -148,6 +148,14 @@ class CreateTaskController extends GetxController {
   // دالة لإنشاء المهمة
   void createTask(BuildContext context, {int employeeTaskId = 0}) async {
     if (formKey.currentState!.validate() && selectedDays.value.isNotEmpty) {
+      if (endDate.value.isBefore(startDate.value)) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'endDateBeforeStartDate'.tr,
+        );
+        return;
+      }
       isLoding(true);
 
       final result = await createTaskUsecase.call(

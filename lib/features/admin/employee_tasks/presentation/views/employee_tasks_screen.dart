@@ -40,45 +40,46 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
             ),
           ),
           SliverToBoxAdapter(
-              child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-            child: GetBuilder<EmployeeTasksController>(
-              builder: (controller) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: () => controller.changeWeek(false),
-                      icon: const Icon(
-                        Icons.arrow_circle_right_outlined,
-                        color: AppColors.primaryColor,
-                        size: 35,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+              child: GetBuilder<EmployeeTasksController>(
+                builder: (controller) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: () => controller.changeWeek(false),
+                        icon: const Icon(
+                          Icons.arrow_circle_right_outlined,
+                          color: AppColors.primaryColor,
+                          size: 35,
+                        ),
                       ),
-                    ),
-                    Text(
-                      "من ${DateFormat('d/M/yyyy').format(controller.startDate)} "
-                      "الى ${DateFormat('d/M/yyyy').format(controller.endDate)}",
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                            color: ThemeService.isDark.value
-                                ? AppColors.primaryColor
-                                : AppColors.secondaryColor,
-                          ),
-                    ),
-                    IconButton(
-                      onPressed: () => controller.changeWeek(true),
-                      icon: const Icon(
-                        Icons.arrow_circle_left_outlined,
-                        color: AppColors.primaryColor,
-                        size: 35,
+                      Text(
+                        "من ${DateFormat('d/M/yyyy').format(controller.startDate)} "
+                        "الى ${DateFormat('d/M/yyyy').format(controller.endDate)}",
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: ThemeService.isDark.value
+                                  ? AppColors.primaryColor
+                                  : AppColors.secondaryColor,
+                            ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                      IconButton(
+                        onPressed: () => controller.changeWeek(true),
+                        icon: const Icon(
+                          Icons.arrow_circle_left_outlined,
+                          color: AppColors.primaryColor,
+                          size: 35,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
-          )),
+          ),
           const EmployeeTasks(),
           SliverToBoxAdapter(child: SizedBox(height: 80.h)),
         ],

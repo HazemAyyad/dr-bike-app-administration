@@ -7,7 +7,7 @@ class GetAllProductsUsecase {
 
   GetAllProductsUsecase({required this.salesRepository});
 
-  Future<List<ProductModel>> call() async {
-    return await salesRepository.getAllProducts();
+  Future<List<ProductModel>> call({String endPoint = ''}) async {
+    return await salesRepository.getAllProducts(endPoint: endPoint);
   }
 }

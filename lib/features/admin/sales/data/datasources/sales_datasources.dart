@@ -83,10 +83,15 @@ class SalesDatasource {
   }
 
   // get all products
-  Future<List<ProductModel>> getAllProducts() async {
+  Future<List<ProductModel>> getAllProducts({required String endPoint}) async {
     try {
-      final response = await api.get(EndPoints.allProducts);
-      return (response.data['products'] as List)
+      final response =
+          await api.get(endPoint.isNotEmpty ? endPoint : EndPoints.allProducts);
+      return (response.data[endPoint == 'get/all/categories'
+              ? 'categories'
+              : endPoint == 'get/all/subcategories'
+                  ? 'sub_categories'
+                  : 'products'] as List)
           .map((e) => ProductModel.fromJson(e))
           .toList();
     } on DioException catch (e) {

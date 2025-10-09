@@ -17,7 +17,7 @@ abstract class SalesRepository {
 
   Future<List<InstantSalesModel>> getInstantSales();
 
-  Future<List<ProductModel>> getAllProducts();
+  Future<List<ProductModel>> getAllProducts({required String endPoint});
 
   Future<Either<Failure, String>> addInstantSales({
     required String productId,

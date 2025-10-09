@@ -6,7 +6,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/custom_calendar.dart';
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
+import '../../../projects/data/models/project_details_model.dart';
+import '../../../projects/presentation/widgets/product_details_widgets/sup_text_and_dis.dart';
 import '../controllers/target_section_controller.dart';
+import '../widgets/options_widget.dart';
 import '../widgets/target_type_format_widget.dart';
 
 class AddNewGoalScreen extends GetView<TargetSectionController> {
@@ -29,34 +35,107 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                 hintText: 'targetNameExample',
                 controller: controller.targetNameController,
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 10.h),
               CustomDropdownField(
+                isRequired: true,
                 label: 'targetType',
                 hint: 'targetTypeExample',
                 items: controller.targetTypes,
+                value: controller.targetScopeController.text.isEmpty
+                    ? null
+                    : controller.targetScopeController.text,
+                onChanged: (value) {
+                  controller.targetScopeController.text = value!;
+                },
+              ),
+              SizedBox(height: 10.h),
+              CustomDropdownField(
+                isRequired: true,
+                label: 'targetTypeFormat',
+                hint: 'targetTypeFormat',
                 value: controller.targetTypeController.text.isEmpty
                     ? null
                     : controller.targetTypeController.text,
+                items: controller.targetTypeList,
                 onChanged: (value) {
+                  controller.formController.clear();
+                  controller.mainCategoriesIdController.clear();
+                  controller.subCategoriesIdController.clear();
+                  controller.productIdController.clear();
+                  controller.customerAndSellerIdController.clear();
+                  controller.employeeIdController.clear();
+                  controller.boxIdController.clear();
+
                   controller.targetTypeController.text = value!;
-                },
-              ),
-              SizedBox(height: 20.h),
-              CustomDropdownField(
-                label: 'targetTypeFormat',
-                hint: 'targetTypeFormat',
-                value: controller.targetTypeFormatController.text.isEmpty
-                    ? null
-                    : controller.targetTypeFormatController.text,
-                items: controller.targetTypeFormat,
-                onChanged: (value) {
-                  controller.targetTypeFormatController.text = value!;
                   controller.update();
                 },
-                validator: (p0) => null,
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 10.h),
               const TargetTypeFormatWidget(),
+              const OptionsWidget(),
+              SizedBox(height: 10.h),
+              GetBuilder<TargetSectionController>(
+                builder: (controller) {
+                  if (controller.productsIds.isEmpty) {
+                    return const SizedBox.shrink();
+                  } else {
+                    return Column(
+                      children: [
+                        Container(
+                          margin: EdgeInsets.symmetric(
+                              vertical: 10.h, horizontal: 50.w),
+                          height: 1.h,
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor6
+                              : AppColors.customGreyColor3,
+                        ),
+                        ...List.generate(
+                          controller.productsIds.length,
+                          (index) {
+                            ProjectProductModel product =
+                                controller.productsIds[index];
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Flexible(
+                                  child: SupTextAndDis(
+                                    showLine: false,
+                                    title: '${'productName'.tr} ${index + 1}',
+                                    discription: product.productName,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () {
+                                    controller.productsIds.removeAt(index);
+                                    controller.update();
+                                  },
+                                  icon: Icon(
+                                    Icons.highlight_remove_rounded,
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.primaryColor
+                                        : AppColors.secondaryColor,
+                                    size: 25.sp,
+                                  ),
+                                )
+                              ],
+                            );
+                          },
+                        ),
+                        Container(
+                          margin: EdgeInsets.symmetric(
+                              vertical: 10.h, horizontal: 50.w),
+                          height: 1.h,
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor6
+                              : AppColors.customGreyColor3,
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
+              SizedBox(height: 10.h),
               CustomTextField(
                 label: 'targetValue',
                 hintText: 'targetValueExample',
@@ -65,7 +144,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
               if (controller.isEdit.value)
                 Column(
                   children: [
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 10.h),
                     CustomTextField(
                       label: 'currentValue',
                       hintText: 'targetValueExample',
@@ -73,7 +152,17 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                     ),
                   ],
                 ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 10.h),
+              CustomCalendar(
+                label: 'date',
+                selectedDay: controller.selectedTime,
+                onTap: () {
+                  controller.targetTimeController.value =
+                      !controller.targetTimeController.value;
+                },
+                isVisible: controller.targetTimeController,
+              ),
+              SizedBox(height: 10.h),
               CustomTextField(
                 label: 'notes',
                 hintText: 'notesExample',

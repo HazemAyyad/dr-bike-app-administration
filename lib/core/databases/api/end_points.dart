@@ -167,6 +167,9 @@ class EndPoints {
 
   // sales
   static const String allProducts = 'all/products';
+  static const String categories = 'get/all/categories';
+  static const String sub_categories = 'get/all/subcategories';
+
   static const String getInstantSaleInvoice = 'get/instant/sale/invoice';
 
   static const String createProfitSale = 'create/profit/sale';

@@ -289,6 +289,7 @@ const Map<String, String> ar = {
 
   'taskRepeatDate': 'موعد تكرار المهمة',
   'taskRepeatDateExample': 'مثال: من الأحد إلي الخميس',
+  'endDateBeforeStartDate': 'تاريخ الانتهاء يجب ان يكون بعد تاريخ البدء',
 
   'everySaturday': 'سبت',
   'everySunday': 'أحد',
@@ -505,10 +506,11 @@ const Map<String, String> ar = {
   'private': 'خاص',
   'public': 'عام',
 
-  "total_profit_values": "مجموع قيمة البيع",
+  "total_sell_values": "مجموع قيمة البيع",
   "net_profit": "صافي ربح",
   "sell_pieces": "بيع عدد معين من القطع",
   "purchase_pieces": "شراء عدد معين من القطع",
+  "total_purchase_values": "مجموع قيمة الشراء",
   "finish_tasks": "إنجاز عدد مهمات أساسية",
   "pay_person": "دفع قيمة معينة لشخص",
   "deposit_to_box": "ترصيد مبلغ في صندوق معين",
@@ -516,6 +518,7 @@ const Map<String, String> ar = {
   "main_categories": "التصنيفات الرئيسية",
   "sub_categories": "التصنيفات الفرعية",
   "box": "صندوق",
+  'people': 'شخص',
 
   // قائمة البيانات العامة
   'generalDataList': 'قائمة البيانات العامة',

@@ -1,6 +1,6 @@
 class GoalsModel {
   final int id;
-  final String type;
+  final String scope;
   final String name;
   final String achievementPercentage;
   final String targetValue;
@@ -10,7 +10,7 @@ class GoalsModel {
 
   GoalsModel({
     required this.id,
-    required this.type,
+    required this.scope,
     required this.name,
     required this.achievementPercentage,
     required this.targetValue,
@@ -22,7 +22,7 @@ class GoalsModel {
   factory GoalsModel.fromJson(Map<String, dynamic> json) {
     return GoalsModel(
       id: json['id'] ?? 0,
-      type: json['type'] ?? '',
+      scope: json['scope'] ?? '',
       name: json['name'] ?? '',
       achievementPercentage: json['achievement_percentage']?.toString() ?? '0',
       targetValue: json['targeted_value']?.toString() ?? '0',
@@ -35,7 +35,7 @@ class GoalsModel {
   Map<String, dynamic> toJson() {
     return {
       "id": id,
-      "type": type,
+      "scope": scope,
       "name": name,
       "achievement_percentage": achievementPercentage,
       "targeted_value": targetValue,

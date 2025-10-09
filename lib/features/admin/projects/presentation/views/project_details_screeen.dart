@@ -111,7 +111,8 @@ class ProjectDetailsScreeen extends GetView<ProjectController> {
                   ],
                 ),
                 ProjectImages(
-                    list: ProjectService().projectDetails.value!.images),
+                  list: ProjectService().projectDetails.value!.images,
+                ),
                 if (ProjectService().projectDetails.value!.partnership != null)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

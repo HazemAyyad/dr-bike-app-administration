@@ -10,6 +10,9 @@ import '../../../checks/data/models/check_model.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../../employee_section/domain/entities/employee_entity.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../../projects/data/models/project_details_model.dart';
+import '../../../sales/data/models/product_model.dart';
+import '../../../sales/domain/usecases/get_all_products_usecase.dart';
 import '../../data/models/goals_details_model.dart' hide SellerModel;
 import '../../data/models/goals_model.dart';
 import '../../domain/usecases/add_goal_usecase.dart';
@@ -24,6 +27,7 @@ class TargetSectionController extends GetxController {
   final GetShownBoxUsecase getShownBoxUsecase;
   final AddGoalUsecase addGoalUsecase;
   final GetGoalDetailsUsecase getGoalDetailsUsecase;
+  final GetAllProductsUsecase getAllProductsUsecase;
 
   TargetSectionController({
     required this.getGoalsUsecase,
@@ -32,6 +36,7 @@ class TargetSectionController extends GetxController {
     required this.getShownBoxUsecase,
     required this.addGoalUsecase,
     required this.getGoalDetailsUsecase,
+    required this.getAllProductsUsecase,
   });
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -40,11 +45,10 @@ class TargetSectionController extends GetxController {
   final TextEditingController fromDateController = TextEditingController();
 
   final TextEditingController targetNameController = TextEditingController();
-  final TextEditingController targetTypeController = TextEditingController();
-  final TextEditingController optionsController = TextEditingController();
+  final TextEditingController targetScopeController = TextEditingController();
+  final TextEditingController formController = TextEditingController();
 
-  final TextEditingController targetTypeFormatController =
-      TextEditingController();
+  final TextEditingController targetTypeController = TextEditingController();
   final TextEditingController customerAndSellerIdController =
       TextEditingController();
   final TextEditingController mainValueController = TextEditingController();
@@ -53,6 +57,11 @@ class TargetSectionController extends GetxController {
   final TextEditingController notesController = TextEditingController();
   final TextEditingController employeeIdController = TextEditingController();
   final TextEditingController boxIdController = TextEditingController();
+  final TextEditingController productIdController = TextEditingController();
+  final TextEditingController mainCategoriesIdController =
+      TextEditingController();
+  final TextEditingController subCategoriesIdController =
+      TextEditingController();
 
   final currentTab = 0.obs;
   final tabs = ['generalTarget', 'specialTarget', 'archive'].obs;
@@ -70,24 +79,35 @@ class TargetSectionController extends GetxController {
 
   List<String> targetTypes = ['private', 'public'];
 
-  List<String> targetTypeFormat = [
-    'total_profit_values',
+  List<String> targetTypeList = [
+    'total_sell_values',
     'net_profit',
     'sell_pieces',
     'purchase_pieces',
+    'total_purchase_values',
     'finish_tasks',
     'pay_person',
     'deposit_to_box'
   ];
-
-  List<String> options = [
+  List<String> options1 = [
     'main_categories',
     'sub_categories',
-    'product',
-    'employee',
-    'person',
-    'box'
+    'products',
   ];
+
+  List<String> options3 = [
+    'main_categories',
+    'sub_categories',
+    'products',
+    'people',
+  ];
+
+  final List<ProjectProductModel> productsIds = [];
+
+  final RxBool targetTimeController = false.obs;
+
+  final Rx<DateTime> selectedTime = DateTime.now().obs;
+
   void getAllGoal() async {
     GoalsServices().globalGoalsList.isEmpty
         ? isLoading(true)
@@ -95,19 +115,23 @@ class TargetSectionController extends GetxController {
     update();
     final response = await getGoalsUsecase.call();
     GoalsServices().globalGoalsList.assignAll(
-          response.where((goal) =>
-              goal.type == 'public' &&
-              double.parse(goal.achievementPercentage) < 100 &&
-              !goal.isCanceled),
+          response.where(
+            (goal) =>
+                goal.scope == 'public' &&
+                double.parse(goal.achievementPercentage) < 100 &&
+                !goal.isCanceled,
+          ),
         );
     globalGoalsFilterList.assignAll(GoalsServices().globalGoalsList);
     isLoading(false);
     update();
     GoalsServices().privateGoalsList.assignAll(
-          response.where((goal) =>
-              !goal.isCanceled &&
-              double.parse(goal.achievementPercentage) < 100 &&
-              goal.type == 'private'),
+          response.where(
+            (goal) =>
+                !goal.isCanceled &&
+                double.parse(goal.achievementPercentage) < 100 &&
+                goal.scope == 'private',
+          ),
         );
     privateGoalsFilterList.assignAll(GoalsServices().privateGoalsList);
 
@@ -192,12 +216,12 @@ class TargetSectionController extends GetxController {
     isAddLoading(true);
     update();
     targetNameController.text = goalDetailsList!.name;
-    targetTypeController.text = goalDetailsList!.type;
-    targetTypeFormatController.text = goalDetailsList!.form;
+    targetScopeController.text = goalDetailsList!.type;
+    targetTypeController.text = goalDetailsList!.form;
     targetValueController.text = goalDetailsList!.targetedValue;
     currentValueController.text = goalDetailsList!.currentValue;
     notesController.text = goalDetailsList!.notes;
-    optionsController.text = goalDetailsList!.scope;
+    formController.text = goalDetailsList!.scope;
     if (goalDetailsList!.employee != null) {
       employeeIdController.text = goalDetailsList!.employee!.id.toString();
     }
@@ -225,12 +249,12 @@ class TargetSectionController extends GetxController {
     update();
     Get.toNamed(AppRoutes.ADDNEWTARGETSCREEN);
     targetNameController.clear();
+    targetScopeController.clear();
     targetTypeController.clear();
-    targetTypeFormatController.clear();
     targetValueController.clear();
     currentValueController.clear();
     notesController.clear();
-    optionsController.clear();
+    formController.clear();
     employeeIdController.clear();
     customerAndSellerIdController.clear();
     boxIdController.clear();
@@ -243,15 +267,19 @@ class TargetSectionController extends GetxController {
       goalId: isEdit.value ? goalDetailsList!.id.toString() : '',
       name: targetNameController.text,
       type: targetTypeController.text,
-      form: targetTypeFormatController.text,
+      form: formController.text,
       targetedValue: targetValueController.text,
-      currentValue: currentValueController.text,
       notes: notesController.text,
-      scope: optionsController.text,
+      scope: targetScopeController.text,
+      currentValue: currentValueController.text,
       employeeId: employeeIdController.text,
       sellerId: isCustomer.value ? customerAndSellerIdController.text : '',
       customerId: !isCustomer.value ? customerAndSellerIdController.text : '',
       boxId: boxIdController.text,
+      mainCategoriesId: mainCategoriesIdController.text,
+      subCategoriesId: subCategoriesIdController.text,
+      dueDate: selectedTime.value,
+      productsIds: productsIds,
     );
 
     result.fold(
@@ -285,17 +313,25 @@ class TargetSectionController extends GetxController {
       (success) {
         targetNameController.clear();
         targetTypeController.clear();
-        targetTypeFormatController.clear();
+        formController.clear();
         targetValueController.clear();
-        optionsController.clear();
-        customerAndSellerIdController.clear();
         notesController.clear();
+        targetScopeController.clear();
+        currentValueController.clear();
         employeeIdController.clear();
+        customerAndSellerIdController.clear();
         boxIdController.clear();
+        mainCategoriesIdController.clear();
+        subCategoriesIdController.clear();
+        selectedTime.value = DateTime.now();
+        productsIds.clear();
+
         getAllGoal();
-        getGoalDetails(goalId: goalDetailsList!.id.toString());
+        if (goalDetailsList != null) {
+          getGoalDetails(goalId: goalDetailsList!.id.toString());
+        }
         Future.delayed(
-          const Duration(milliseconds: 1000),
+          const Duration(milliseconds: 800),
           () {
             Get.back();
             Get.back();
@@ -309,6 +345,28 @@ class TargetSectionController extends GetxController {
       },
     );
     isAddLoading(false);
+  }
+
+  // get all products
+  final List<ProductModel> products = [];
+  void getAllProducts() async {
+    final result = await getAllProductsUsecase.call();
+    products.assignAll(result);
+  }
+
+  // get all products
+  final List<ProductModel> categories = [];
+  void getAllCategories() async {
+    final result =
+        await getAllProductsUsecase.call(endPoint: EndPoints.categories);
+    categories.assignAll(result);
+  } // get all products
+
+  final List<ProductModel> subCategories = [];
+  void getAllSubCategories() async {
+    final result =
+        await getAllProductsUsecase.call(endPoint: EndPoints.sub_categories);
+    subCategories.assignAll(result);
   }
 
   final List<GoalsModel> globalGoalsFilterList = <GoalsModel>[].obs;
@@ -350,8 +408,11 @@ class TargetSectionController extends GetxController {
     super.onInit();
     getAllGoal();
     getEmployee();
-    getAllCustomersAndSellers();
     getShowBoxes();
+    getAllProducts();
+    getAllCategories();
+    getAllSubCategories();
+    getAllCustomersAndSellers();
     globalGoalsFilterList.assignAll(GoalsServices().globalGoalsList);
     privateGoalsFilterList.assignAll(GoalsServices().privateGoalsList);
     archiveGoalsFilterList.assignAll(GoalsServices().archiveGoalsList);
@@ -364,14 +425,14 @@ class TargetSectionController extends GetxController {
     toDateController.dispose();
     targetNameController.dispose();
     targetValueController.dispose();
-    targetTypeFormatController.dispose();
+    targetTypeController.dispose();
     customerAndSellerIdController.dispose();
     currentValueController.dispose();
     mainValueController.dispose();
     notesController.dispose();
-    targetTypeController.dispose();
+    targetScopeController.dispose();
     employeeIdController.dispose();
     boxIdController.dispose();
-    optionsController.dispose();
+    formController.dispose();
   }
 }

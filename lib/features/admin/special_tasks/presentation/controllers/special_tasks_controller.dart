@@ -1,7 +1,8 @@
+import 'dart:collection';
+
 import 'package:doctorbike/features/admin/special_tasks/domain/usecases/subs_pecial_task_completed_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../data/models/special_task_model.dart';
@@ -67,30 +68,49 @@ class SpecialTasksController extends GetxController {
     deleteRepeatedTask.value = key == 'deleteRepeatedTask';
   }
 
-// ✅ دالة مساعدة لترتيب الـ Map حسب التاريخ
   Map<String, List<SpecialTaskModel>> sortByDate(
       Map<String, List<SpecialTaskModel>> source) {
-    final entries = source.entries.toList();
+    final sortedKeys = source.keys.toList()
+      ..sort((a, b) {
+        final aDate = a;
+        final bDate = b;
+        return bDate.compareTo(aDate);
+      });
 
-    entries.sort((a, b) {
-      final dateA = a.value.first.endDate;
-      final dateB = b.value.first.endDate;
-      return dateB.compareTo(dateA);
-    });
-
-    return Map.fromEntries(entries);
+    return LinkedHashMap.fromIterable(
+      sortedKeys,
+      key: (k) => k,
+      value: (k) => source[k]!,
+    );
   }
+
+// // ✅ دالة مساعدة لترتيب الـ Map حسب التاريخ
+//   Map<String, List<SpecialTaskModel>> sortByDate(
+//       Map<String, List<SpecialTaskModel>> source) {
+//     final entries = source.entries.toList();
+
+//     entries.sort((a, b) {
+//       final dateA = a.value.first.endDate;
+//       final dateB = b.value.first.endDate;
+//       return dateB.compareTo(dateA);
+//     });
+
+//     return Map.fromEntries(entries);
+//   }
 
   // Get special Tasks
   Future<void> getSpecialTasks() async {
-    specialTasksService.weeklyTasks.isEmpty ? isLoading(true) : null;
+    // specialTasksService.weeklyTasks.isEmpty ?
+    isLoading(true);
+    //  : null;
     update();
     specialTasksService.weeklyTasks.clear();
     specialTasksService.noDateTasks.clear();
+    specialTasksService.archivedTasks.clear();
     final weeklyresult = await specialTasksUsecase.call(page: '0');
     for (var task in weeklyresult) {
       String dateKey =
-          "${DateFormat.E('ar').format(task.endDate)} ${task.endDate.year}/${task.endDate.month.toString().padLeft(2, '0')}/${task.endDate.day}";
+          "${task.startDate.year}-${task.startDate.month.toString().padLeft(2, '0')}-${task.startDate.day.toString().padLeft(2, '0')}";
       if (specialTasksService.weeklyTasks.containsKey(dateKey)) {
         if (!specialTasksService.weeklyTasks[dateKey]!
             .any((t) => t.id == task.id)) {
@@ -100,12 +120,13 @@ class SpecialTasksController extends GetxController {
         specialTasksService.weeklyTasks[dateKey] = [task];
       }
     }
-    filteredWeeklyTasks.assignAll(sortByDate(specialTasksService.weeklyTasks));
+    filteredWeeklyTasks
+        .assignAll(filterByRange(sortByDate(specialTasksService.weeklyTasks)));
 
     final noDateresult = await specialTasksUsecase.call(page: '1');
     for (var task in noDateresult) {
       String dateKey =
-          "${DateFormat.E('ar').format(task.endDate)} ${task.endDate.year}/${task.endDate.month.toString().padLeft(2, '0')}/${task.endDate.day}";
+          "${task.startDate.year}-${task.startDate.month.toString().padLeft(2, '0')}-${task.startDate.day.toString().padLeft(2, '0')}";
       if (specialTasksService.noDateTasks.containsKey(dateKey)) {
         if (!specialTasksService.noDateTasks[dateKey]!
             .any((t) => t.id == task.id)) {
@@ -120,7 +141,7 @@ class SpecialTasksController extends GetxController {
     final archivedresult = await specialTasksUsecase.call(page: '2');
     for (var task in archivedresult) {
       String dateKey =
-          "${DateFormat.E('ar').format(task.endDate)} ${task.endDate.year}/${task.endDate.month.toString().padLeft(2, '0')}/${task.endDate.day}";
+          "${task.startDate.year}-${task.startDate.month.toString().padLeft(2, '0')}-${task.startDate.day.toString().padLeft(2, '0')}";
       if (specialTasksService.archivedTasks.containsKey(dateKey)) {
         if (!specialTasksService.archivedTasks[dateKey]!
             .any((t) => t.id == task.id)) {
@@ -130,8 +151,9 @@ class SpecialTasksController extends GetxController {
         specialTasksService.archivedTasks[dateKey] = [task];
       }
     }
-    filteredArchivedTasks
-        .assignAll(sortByDate(specialTasksService.archivedTasks));
+    filteredArchivedTasks.assignAll(
+      filterByRange(sortByDate(specialTasksService.archivedTasks)),
+    );
 
     isLoading(false);
     update();
@@ -301,64 +323,121 @@ class SpecialTasksController extends GetxController {
   final RxMap<String, List<SpecialTaskModel>> filteredArchivedTasks =
       <String, List<SpecialTaskModel>>{}.obs;
 
-  void filterLists(bool isFilter) {
+  // دالة عامة للفلترة عشان نعيد استخدامها مع التلات Maps
+  Map<String, List<SpecialTaskModel>> filterMap(
+    Map<String, List<SpecialTaskModel>> source,
+  ) {
     final from = DateTime.tryParse(fromDateController.text);
     final to = DateTime.tryParse(toDateController.text);
+    final Map<String, List<SpecialTaskModel>> newMap = {};
+    source.forEach((key, tasks) {
+      final filteredList = tasks.where((task) {
+        final start = task.startDate;
+        final end = task.startDate;
+        if (from != null && to == null) {
+          return start.isAtSameMomentAs(from) || start.isAfter(from);
+        }
+        if (to != null && from == null) {
+          return end.isAtSameMomentAs(to) || end.isBefore(to);
+        }
+        if (from != null && to != null) {
+          final startsOk = start.isAtSameMomentAs(from) || start.isAfter(from);
+          final endsOk = end.isAtSameMomentAs(to) || end.isBefore(to);
+          return startsOk && endsOk;
+        }
+        return true;
+      }).toList();
 
+      if (filteredList.isNotEmpty) {
+        newMap[key] = filteredList;
+      }
+    });
+
+    return newMap;
+  }
+
+  void filterLists(bool isFilter) {
     // لو مفيش أي فلترة → رجع البيانات الأصلية كلها
-    if (from == null && to == null) {
-      filteredWeeklyTasks.assignAll(specialTasksService.weeklyTasks);
+    if (fromDateController.text.isEmpty && toDateController.text.isEmpty) {
+      filteredWeeklyTasks
+          .assignAll(filterByRange(specialTasksService.weeklyTasks));
       filteredNoDateTasks.assignAll(specialTasksService.noDateTasks);
-      filteredArchivedTasks.assignAll(specialTasksService.archivedTasks);
+      filteredArchivedTasks
+          .assignAll(filterByRange(specialTasksService.archivedTasks));
       if (isFilter) Get.back();
       update();
       return;
     }
 
-    // دالة عامة للفلترة عشان نعيد استخدامها مع التلات Maps
-    Map<String, List<SpecialTaskModel>> filterMap(
-      Map<String, List<SpecialTaskModel>> source,
-    ) {
-      final Map<String, List<SpecialTaskModel>> newMap = {};
-
-      source.forEach((key, tasks) {
-        final filteredList = tasks.where((task) {
-          final start = task.startDate;
-          final end = task.endDate;
-
-          if (from != null && to == null) {
-            return start.isAtSameMomentAs(from) || start.isAfter(from);
-          }
-
-          if (to != null && from == null) {
-            return end.isAtSameMomentAs(to) || end.isBefore(to);
-          }
-
-          if (from != null && to != null) {
-            final startsOk =
-                start.isAtSameMomentAs(from) || start.isAfter(from);
-            final endsOk = end.isAtSameMomentAs(to) || end.isBefore(to);
-            return startsOk && endsOk;
-          }
-
-          return true;
-        }).toList();
-
-        if (filteredList.isNotEmpty) {
-          newMap[key] = filteredList;
-        }
-      });
-
-      return newMap;
-    }
-
     // فلترة التلات Maps
-    filteredWeeklyTasks.assignAll(filterMap(specialTasksService.weeklyTasks));
+    filteredWeeklyTasks.assignAll(
+      filterMap(filterByRange(specialTasksService.weeklyTasks)),
+    );
     filteredNoDateTasks.assignAll(filterMap(specialTasksService.noDateTasks));
-    filteredArchivedTasks
-        .assignAll(filterMap(specialTasksService.archivedTasks));
+    filteredArchivedTasks.assignAll(
+      filterMap(filterByRange(specialTasksService.archivedTasks)),
+    );
 
     if (isFilter) Get.back();
+    update();
+  }
+
+  DateTime startDate = DateTime.now();
+  DateTime endDate = DateTime.now().add(const Duration(days: 7));
+
+  Map<String, List<SpecialTaskModel>> filterByRange(
+      Map<String, List<SpecialTaskModel>> source) {
+    final filtered = <String, List<SpecialTaskModel>>{};
+
+    source.forEach((key, tasks) {
+      DateTime dateKey;
+      try {
+        dateKey = DateTime.parse(key);
+      } catch (_) {
+        return;
+      }
+
+      if (dateKey.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          dateKey.isBefore(endDate)) {
+        filtered[key] = tasks;
+      }
+    });
+
+    return sortByDate(filtered);
+  }
+
+  void filterDataByDateRange() {
+    filteredWeeklyTasks.assignAll(sortByDate(specialTasksService.weeklyTasks));
+    // filteredNoDateTasks.assignAll(sortByDate(specialTasksService.noDateTasks));
+    filteredArchivedTasks
+        .assignAll(sortByDate(specialTasksService.archivedTasks));
+
+    filteredWeeklyTasks.assignAll(
+      filterMap(filterByRange(sortByDate(specialTasksService.weeklyTasks))),
+    );
+    // filteredNoDateTasks.assignAll(
+    //   filterByRange(sortByDate(specialTasksService.noDateTasks)),
+    // );
+    filteredArchivedTasks.assignAll(
+      filterMap(filterByRange(sortByDate(specialTasksService.archivedTasks))),
+    );
+
+    update();
+  }
+
+  void changeWeek(bool isNext) {
+    const int daysInWeek = 8;
+
+    if (isNext) {
+      startDate = startDate.add(const Duration(days: daysInWeek));
+      endDate = endDate.add(const Duration(days: daysInWeek));
+    } else {
+      startDate = startDate.subtract(const Duration(days: daysInWeek));
+      endDate = endDate.subtract(const Duration(days: daysInWeek));
+    }
+
+    // بعد التغيير، نفلتر الداتا حسب المدى الجديد
+    filterDataByDateRange();
     update();
   }
 
@@ -366,10 +445,13 @@ class SpecialTasksController extends GetxController {
   void onInit() {
     super.onInit();
     getSpecialTasks();
-    filteredWeeklyTasks.assignAll(sortByDate(specialTasksService.weeklyTasks));
+    filteredWeeklyTasks.assignAll(
+      filterByRange(sortByDate(specialTasksService.weeklyTasks)),
+    );
     filteredNoDateTasks.assignAll(sortByDate(specialTasksService.noDateTasks));
-    filteredArchivedTasks
-        .assignAll(sortByDate(specialTasksService.archivedTasks));
+    filteredArchivedTasks.assignAll(
+      filterByRange(sortByDate(specialTasksService.archivedTasks)),
+    );
     // fromDateController.addListener(filterLists);
     // toDateController.addListener(filterLists);
   }

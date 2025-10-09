@@ -22,9 +22,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
       appBar: AppBar(
         elevation: 0,
         title: Text(
-          userName.isEmpty
-              ? 'welcomeBack.'.tr
-              : '${'welcomeBack.'.tr}  $userName',
+          userName.isEmpty ? 'welcome'.tr : '${'welcome'.tr}  $userName',
           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w700,

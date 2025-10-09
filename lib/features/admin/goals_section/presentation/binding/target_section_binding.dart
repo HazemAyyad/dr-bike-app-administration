@@ -8,6 +8,8 @@ import '../../../checks/data/repositories/checks_implement.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../../sales/data/repositories/sales_implement.dart';
+import '../../../sales/domain/usecases/get_all_products_usecase.dart';
 import '../../domain/usecases/add_goal_usecase.dart';
 import '../../domain/usecases/get_goal_details_usecase.dart';
 import '../controllers/target_section_controller.dart';
@@ -34,6 +36,9 @@ class TargetSectionBinding extends Bindings {
         ),
         getGoalDetailsUsecase: GetGoalDetailsUsecase(
           goalsRepository: Get.find<GoalsImplement>(),
+        ),
+        getAllProductsUsecase: GetAllProductsUsecase(
+          salesRepository: Get.find<SalesImplement>(),
         ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../../projects/data/models/project_details_model.dart';
 import '../../data/models/goals_model.dart';
 
 abstract class GoalsRepository {
@@ -19,6 +20,10 @@ abstract class GoalsRepository {
     required String employeeId,
     required String sellerId,
     required String boxId,
+    required List<ProjectProductModel> productsIds,
+    required String mainCategoriesId,
+    required String subCategoriesId,
+    required DateTime dueDate,
   });
 
   Future<dynamic> getGoalDetails({

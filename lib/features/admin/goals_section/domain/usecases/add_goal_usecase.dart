@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../../projects/data/models/project_details_model.dart';
 import '../repositories/goals_repository.dart';
 
 class AddGoalUsecase {
@@ -21,6 +22,10 @@ class AddGoalUsecase {
     required String employeeId,
     required String sellerId,
     required String boxId,
+    required List<ProjectProductModel> productsIds,
+    required String mainCategoriesId,
+    required String subCategoriesId,
+    required DateTime dueDate,
   }) async {
     return await goalsRepository.addGoal(
       goalId: goalId,
@@ -35,6 +40,10 @@ class AddGoalUsecase {
       employeeId: employeeId,
       sellerId: sellerId,
       boxId: boxId,
+      productsIds: productsIds,
+      mainCategoriesId: mainCategoriesId,
+      subCategoriesId: subCategoriesId,
+      dueDate: dueDate,
     );
   }
 }

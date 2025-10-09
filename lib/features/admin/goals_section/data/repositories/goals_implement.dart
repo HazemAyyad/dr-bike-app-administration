@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../../../core/connection/network_info.dart';
 import '../../../../../../core/errors/failure.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../projects/data/models/project_details_model.dart';
 import '../../domain/repositories/goals_repository.dart';
 import '../datasources/goals_datasource.dart';
 import '../models/goals_model.dart';
@@ -40,6 +41,10 @@ class GoalsImplement implements GoalsRepository {
     required String employeeId,
     required String sellerId,
     required String boxId,
+    required List<ProjectProductModel> productsIds,
+    required String mainCategoriesId,
+    required String subCategoriesId,
+    required DateTime dueDate,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -58,6 +63,10 @@ class GoalsImplement implements GoalsRepository {
         employeeId: employeeId,
         sellerId: sellerId,
         boxId: boxId,
+        mainCategoriesId: mainCategoriesId,
+        subCategoriesId: subCategoriesId,
+        dueDate: dueDate,
+        productsIds: productsIds,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

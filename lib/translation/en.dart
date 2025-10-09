@@ -289,6 +289,7 @@ const Map<String, String> en = {
 
   'taskRepeatDate': 'Task Repeat Date',
   'taskRepeatDateExample': 'Example: From Sunday to Thursday',
+  'endDateBeforeStartDate': 'End Date must be after Start Date',
 
   'everySaturday': 'Saturday',
   'everySunday': 'Sunday',
@@ -491,16 +492,19 @@ const Map<String, String> en = {
   'cancelTarget': 'Delete Target',
   'transferGoal': 'Transfer Goal',
 
-  "total_profit_values": "Total Sales Value",
+  "total_sell_values": "Total Sales Value",
   "net_profit": "Net Profit",
   "sell_pieces": "Sell a Specific Number of Pieces",
   "purchase_pieces": "Purchase a Specific Number of Pieces",
+  "total_purchase_values": "Total Purchase Values",
   "finish_tasks": "Complete a Number of Main Tasks",
   "pay_person": "Pay a Specific Amount to a Person",
   "deposit_to_box": "Deposit an Amount in a Specific Box",
 
   "main_categories": "Main Categories",
   "sub_categories": "Sub Categories",
+  'people': 'People',
+
   // "product": "Product",
   // "employee": "Employee",
   // "person": "Person",
@@ -658,7 +662,7 @@ const Map<String, String> en = {
   'boxNameExample': 'Example: Khan Store',
 
   'newReceipt': 'New Check Receipt',
-  'newCheck': 'Create New Check',  
+  'newCheck': 'Create New Check',
   'editCheck': 'Edit Check',
   'checkValue': 'Check Amount',
   'debtValue2': 'Debt Value',
