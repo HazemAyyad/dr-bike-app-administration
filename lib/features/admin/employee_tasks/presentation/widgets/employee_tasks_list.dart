@@ -56,10 +56,19 @@ class EmployeeTasks extends GetView<EmployeeTasksController> {
                   : controller.canceledTasksFilter.length,
           itemBuilder: (context, index) {
             final month = controller.currentTab.value == 0
-                ? controller.ongoingTasksFilter.keys.toList()[index]
+                ? controller.ongoingTasksFilter.keys
+                    .toList()
+                    .reversed
+                    .toList()[index]
                 : controller.currentTab.value == 1
-                    ? controller.completedTasksFilter.keys.toList()[index]
-                    : controller.canceledTasksFilter.keys.toList()[index];
+                    ? controller.completedTasksFilter.keys
+                        .toList()
+                        .reversed
+                        .toList()[index]
+                    : controller.canceledTasksFilter.keys
+                        .toList()
+                        .reversed
+                        .toList()[index];
             List<EmployeeTaskModel> date = controller.currentTab.value == 0
                 ? controller.ongoingTasksFilter[month]!.reversed.toList()
                 : controller.currentTab.value == 1

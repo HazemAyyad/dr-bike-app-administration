@@ -152,7 +152,6 @@ const Map<String, String> ar = {
   'startWork': 'بدء العمل',
   'leaveWork': 'مغادرة العمل',
   'workingHours': 'عدد ساعات العمل(في الشهر)',
-  // 'hourlyRate': 'سعر ساعة العمل',
   'advancesAndDebts': 'سلف وديون',
   'remainingBalance': 'المتبقي من الحساب',
 
@@ -502,6 +501,7 @@ const Map<String, String> ar = {
   'person': 'شخص',
   'personExample': 'مثال: زبون',
   'addTarget': 'إضافة الهدف',
+  'editTarget': 'تعديل الهدف',
   'targetAddedSuccessfully': 'تم اضافة الهدف بنجاح',
   'private': 'خاص',
   'public': 'عام',

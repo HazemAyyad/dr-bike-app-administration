@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:doctorbike/features/admin/goals_section/data/models/goals_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -103,7 +104,7 @@ class GoalsView extends StatelessWidget {
                                         SizedBox(width: 10.w),
                                         Expanded(
                                           child: AppButton(
-                                            isLoading: controller.isLoading,
+                                            isLoading: controller.isAddLoading,
                                             isSafeArea: false,
                                             color: Colors.red,
                                             text: 'clear'.tr,
@@ -187,7 +188,7 @@ class GoalsView extends StatelessWidget {
                         Flexible(
                           child: Text(
                             goal.name,
-                            maxLines: 2,
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: Theme.of(context)
@@ -203,42 +204,49 @@ class GoalsView extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 5.h),
-                        Flexible(
-                          child: Text(
-                            '${'targetValue'.tr}: ${NumberFormat('#,###').format(double.parse(goal.targetValue))}',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w400,
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.whiteColor2
-                                      : AppColors.blackColor,
-                                ),
-                          ),
+                        Text(
+                          '${'targetValue'.tr}: ${NumberFormat('#,###').format(double.parse(goal.targetValue))}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w400,
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.whiteColor2
+                                        : AppColors.blackColor,
+                                  ),
                         ),
-                        SizedBox(height: 10.h),
-                        Flexible(
-                          child: Text(
-                            '${'currentValue'.tr}: ${NumberFormat('#,###').format(double.parse(goal.currentValue))}',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w400,
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.whiteColor2
-                                      : AppColors.blackColor,
-                                ),
-                          ),
+                        SizedBox(height: 5.h),
+                        Text(
+                          '${'currentValue'.tr}: ${NumberFormat('#,###').format(double.parse(goal.currentValue))}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w400,
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.whiteColor2
+                                        : AppColors.blackColor,
+                                  ),
+                        ),
+                        SizedBox(height: 5.h),
+                        Text(
+                          showData(goal.dueDate),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w400,
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.whiteColor2
+                                        : AppColors.blackColor,
+                                  ),
                         ),
                       ],
                     ),

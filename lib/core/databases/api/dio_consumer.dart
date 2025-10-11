@@ -45,6 +45,7 @@ class DioConsumer extends ApiConsumer {
     Function(int, int)? onSendProgress,
   }) async {
     try {
+      getx.Get.closeAllSnackbars();
       final response = await dio.post(
         path,
         data: isFormData && data is Map<String, dynamic>
@@ -93,6 +94,7 @@ class DioConsumer extends ApiConsumer {
     Map<String, dynamic>? queryParameters,
   }) async {
     try {
+      getx.Get.closeAllSnackbars();
       final response = await dio.get(
         path,
         options: options,
@@ -146,7 +148,6 @@ class DioConsumer extends ApiConsumer {
       );
       return response;
     } on DioException catch (e) {
-      print('==========Test================${e.response}');
       handleDioException(e);
       rethrow;
     }
@@ -170,7 +171,6 @@ class DioConsumer extends ApiConsumer {
       );
       return response;
     } on DioException catch (e) {
-      print('==========Test================${e.response}');
       handleDioException(e);
       rethrow;
     }

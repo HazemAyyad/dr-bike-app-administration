@@ -34,76 +34,80 @@ class EmployeeTasksLists extends StatelessWidget {
         GestureDetector(
           onLongPress: () => controller.currentTab.value == 0
               ? Get.dialog(
-                  AlertDialog(
+                  Dialog(
                     backgroundColor: ThemeService.isDark.value
                         ? AppColors.darkColor
                         : AppColors.whiteColor,
-                    content: Obx(
-                      () => controller.isLoading.value
-                          ? Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Center(
-                                  heightFactor: 3.7.h,
-                                  child: const CircularProgressIndicator(
-                                    color: AppColors.primaryColor,
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Obx(
+                        () => controller.isLoading.value
+                            ? Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Center(
+                                    heightFactor: 3.7.h,
+                                    child: const CircularProgressIndicator(
+                                      color: AppColors.primaryColor,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CustomCheckBox(
-                                  title: 'deleteTask',
-                                  value: controller.deleteTask,
-                                  onChanged: (value) {
-                                    controller.deleteTask.value = value!;
-                                    controller.deleteTasDuplicate.value = false;
-                                  },
-                                  style: theme.copyWith(
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? Colors.white
-                                        : AppColors.secondaryColor,
+                                ],
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CustomCheckBox(
+                                    title: 'deleteTask',
+                                    value: controller.deleteTask,
+                                    onChanged: (value) {
+                                      controller.deleteTask.value = value!;
+                                      controller.deleteTasDuplicate.value =
+                                          false;
+                                    },
+                                    style: theme.copyWith(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: ThemeService.isDark.value
+                                          ? Colors.white
+                                          : AppColors.secondaryColor,
+                                    ),
                                   ),
-                                ),
-                                CustomCheckBox(
-                                  title: 'deleteRepeatedTask',
-                                  value: controller.deleteTasDuplicate,
-                                  onChanged: (value) {
-                                    controller.deleteTasDuplicate.value =
-                                        value!;
-                                    controller.deleteTask.value = false;
-                                  },
-                                  style: theme.copyWith(
-                                    fontSize: 18.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? Colors.white
-                                        : AppColors.secondaryColor,
+                                  CustomCheckBox(
+                                    title: 'deleteRepeatedTask',
+                                    value: controller.deleteTasDuplicate,
+                                    onChanged: (value) {
+                                      controller.deleteTasDuplicate.value =
+                                          value!;
+                                      controller.deleteTask.value = false;
+                                    },
+                                    style: theme.copyWith(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: ThemeService.isDark.value
+                                          ? Colors.white
+                                          : AppColors.secondaryColor,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 10.h),
-                                AppButton(
-                                  isSafeArea: false,
-                                  text: 'save',
-                                  onPressed: () =>
-                                      controller.deleteTask.value == false &&
-                                              controller.deleteTasDuplicate
-                                                      .value ==
-                                                  false
-                                          ? null
-                                          : controller.cancelEmployeeTask(
-                                              taskId: order.taskId.toString(),
-                                              cancelWithRepetition: controller
-                                                  .deleteTasDuplicate.value,
-                                            ),
-                                ),
-                              ],
-                            ),
+                                  SizedBox(height: 10.h),
+                                  AppButton(
+                                    isSafeArea: false,
+                                    text: 'save',
+                                    onPressed: () =>
+                                        controller.deleteTask.value == false &&
+                                                controller.deleteTasDuplicate
+                                                        .value ==
+                                                    false
+                                            ? null
+                                            : controller.cancelEmployeeTask(
+                                                taskId: order.taskId.toString(),
+                                                cancelWithRepetition: controller
+                                                    .deleteTasDuplicate.value,
+                                              ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
                 )

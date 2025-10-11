@@ -13,7 +13,7 @@ import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../projects/data/models/project_details_model.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
-import '../../data/models/goals_details_model.dart' hide SellerModel;
+import '../../data/models/goals_details_model.dart';
 import '../../data/models/goals_model.dart';
 import '../../domain/usecases/add_goal_usecase.dart';
 import '../../domain/usecases/get_goal_details_usecase.dart';
@@ -150,7 +150,7 @@ class TargetSectionController extends GetxController {
     isLoading(false);
   }
 
-  final RxBool isCustomer = true.obs;
+  final RxBool isSeller = true.obs;
   final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
 
@@ -180,6 +180,7 @@ class TargetSectionController extends GetxController {
     bool? isTransfer,
     bool? isDelete,
   }) async {
+    Get.closeAllSnackbars();
     isCancel == true || isTransfer == true || isDelete == true
         ? isLoading(true)
         : isAddLoading(true);
@@ -191,7 +192,7 @@ class TargetSectionController extends GetxController {
       isDelete: isDelete,
     );
     if (isCancel == null && isTransfer == null && isDelete == null) {
-      goalDetailsList = GoalDetailsModel.fromJson(goalDetails['goal']);
+      goalDetailsList = GoalDetailsModel.fromJson(goalDetails);
     } else {
       Get.back();
       getAllGoal();
@@ -212,33 +213,60 @@ class TargetSectionController extends GetxController {
   void editGoal() {
     isEdit(true);
     update();
+    targetNameController.clear();
+    targetScopeController.clear();
+    targetTypeController.clear();
+    targetValueController.clear();
+    currentValueController.clear();
+    notesController.clear();
+    formController.clear();
+    employeeIdController.clear();
+    customerAndSellerIdController.clear();
+    boxIdController.clear();
+    mainCategoriesIdController.clear();
+    subCategoriesIdController.clear();
+    productsIds.clear();
+    selectedTime.value = DateTime.now();
+
     Get.toNamed(AppRoutes.ADDNEWTARGETSCREEN);
     isAddLoading(true);
     update();
-    targetNameController.text = goalDetailsList!.name;
-    targetScopeController.text = goalDetailsList!.type;
-    targetTypeController.text = goalDetailsList!.form;
-    targetValueController.text = goalDetailsList!.targetedValue;
-    currentValueController.text = goalDetailsList!.currentValue;
-    notesController.text = goalDetailsList!.notes;
-    formController.text = goalDetailsList!.scope;
-    if (goalDetailsList!.employee != null) {
-      employeeIdController.text = goalDetailsList!.employee!.id.toString();
+    final goal = goalDetailsList!.goal;
+    targetNameController.text = goal.name;
+    targetScopeController.text = goal.scope;
+    targetTypeController.text = goal.type;
+    targetValueController.text = goal.targetedValue;
+    currentValueController.text = goal.currentValue;
+    notesController.text = goal.notes ?? '';
+    formController.text = goal.form;
+    if (goal.employee != null) {
+      employeeIdController.text = goal.employee!.id.toString();
     }
-    if (goalDetailsList!.customer != null) {
-      isCustomer.value = false;
+    if (goal.people!.isNotEmpty && goal.people!.first.sellerId.isNotEmpty) {
+      isSeller.value = true;
       customerAndSellerIdController.text =
-          goalDetailsList!.customer!.id.toString();
+          goal.people!.first.sellerId.toString();
     }
-    if (goalDetailsList!.seller != null) {
-      isCustomer.value = true;
+    if (goal.people!.isNotEmpty && goal.people!.first.customerId.isNotEmpty) {
+      isSeller.value = false;
       customerAndSellerIdController.text =
-          goalDetailsList!.seller!.id.toString();
+          goal.people!.first.customerId.toString();
     }
-
-    if (goalDetailsList!.box != null) {
-      boxIdController.text = goalDetailsList!.box!.id.toString();
+    if (goal.box != null) {
+      boxIdController.text = goal.box!.id.toString();
     }
+    if (goal.products!.isNotEmpty) {
+      productsIds.assignAll(goal.products!.map(
+          (e) => ProjectProductModel(productId: e.id, productName: e.name)));
+    }
+    if (goal.mainCategories!.isNotEmpty) {
+      mainCategoriesIdController.text =
+          goal.mainCategories!.first.id.toString();
+    }
+    if (goal.subCategories!.isNotEmpty) {
+      subCategoriesIdController.text = goal.subCategories!.first.id.toString();
+    }
+    selectedTime.value = DateTime.parse(goal.dueDate);
     isAddLoading(false);
     update();
   }
@@ -264,7 +292,7 @@ class TargetSectionController extends GetxController {
   void addGoal(BuildContext context) async {
     isAddLoading(true);
     final result = await addGoalUsecase.call(
-      goalId: isEdit.value ? goalDetailsList!.id.toString() : '',
+      goalId: isEdit.value ? goalDetailsList!.goal.id.toString() : '',
       name: targetNameController.text,
       type: targetTypeController.text,
       form: formController.text,
@@ -273,8 +301,8 @@ class TargetSectionController extends GetxController {
       scope: targetScopeController.text,
       currentValue: currentValueController.text,
       employeeId: employeeIdController.text,
-      sellerId: isCustomer.value ? customerAndSellerIdController.text : '',
-      customerId: !isCustomer.value ? customerAndSellerIdController.text : '',
+      sellerId: isSeller.value ? customerAndSellerIdController.text : '',
+      customerId: !isSeller.value ? customerAndSellerIdController.text : '',
       boxId: boxIdController.text,
       mainCategoriesId: mainCategoriesIdController.text,
       subCategoriesId: subCategoriesIdController.text,
@@ -328,7 +356,7 @@ class TargetSectionController extends GetxController {
 
         getAllGoal();
         if (goalDetailsList != null) {
-          getGoalDetails(goalId: goalDetailsList!.id.toString());
+          getGoalDetails(goalId: goalDetailsList!.goal.id.toString());
         }
         Future.delayed(
           const Duration(milliseconds: 800),
@@ -380,7 +408,7 @@ class TargetSectionController extends GetxController {
     List<GoalsModel> applyFilter(List<GoalsModel> sourceList) {
       return sourceList.where((item) {
         // ✅ فلترة بالتاريخ
-        final itemDate = item.createdAt;
+        final itemDate = item.dueDate;
         final from = (fromDate.isNotEmpty) ? DateTime.tryParse(fromDate) : null;
         final to = (toDate.isNotEmpty) ? DateTime.tryParse(toDate) : null;
         bool matchesDate = true;
@@ -400,6 +428,62 @@ class TargetSectionController extends GetxController {
       ..clear()
       ..addAll(applyFilter(GoalsServices().archiveGoalsList));
     Get.back();
+    update();
+  }
+
+  void searchBar(String value) {
+    final query = value.toLowerCase();
+
+    // ✅ لو المستخدم كتب نسبة مئوية (مثلاً "50%")
+
+    bool matches(GoalsModel goal, String query) {
+      if (query.endsWith('%')) {
+        // نحذف علامة % ونقارن الرقم فقط
+        final percentValue = query.replaceAll('%', '').trim();
+        return goal.achievementPercentage
+            .toString()
+            .toLowerCase()
+            .contains(percentValue);
+      }
+      return goal.name.toLowerCase().contains(query) ||
+          goal.name.toLowerCase().contains(query) ||
+          goal.targetValue.toString().toLowerCase().contains(query) ||
+          goal.currentValue.toString().toLowerCase().contains(query) ||
+          goal.dueDate.toString().toLowerCase().contains(query) ||
+          ('${goal.achievementPercentage}%'.toLowerCase().contains(query));
+    }
+
+    if (value.isNotEmpty) {
+      // فلترة الأهداف العامة
+      globalGoalsFilterList.assignAll(
+        GoalsServices()
+            .globalGoalsList
+            .where((goal) => matches(goal, query))
+            .toList(),
+      );
+
+      // فلترة الأهداف الخاصة
+      privateGoalsFilterList.assignAll(
+        GoalsServices()
+            .privateGoalsList
+            .where((goal) => matches(goal, query))
+            .toList(),
+      );
+
+      // فلترة الأرشيف
+      archiveGoalsFilterList.assignAll(
+        GoalsServices()
+            .archiveGoalsList
+            .where((goal) => matches(goal, query))
+            .toList(),
+      );
+    } else {
+      // في حالة البحث فاضي → نرجع كل الداتا الأصلية
+      globalGoalsFilterList.assignAll(GoalsServices().globalGoalsList);
+      privateGoalsFilterList.assignAll(GoalsServices().privateGoalsList);
+      archiveGoalsFilterList.assignAll(GoalsServices().archiveGoalsList);
+    }
+
     update();
   }
 

@@ -151,6 +151,7 @@ class AddExpenseScreen extends StatelessWidget {
                     controller: controller.expenseNoteController,
                     label: 'notes',
                     hintText: 'notes',
+                    validator: (p0) => null,
                   ),
                   SizedBox(height: 20.h),
                   const EditImagesWidget(),

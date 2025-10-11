@@ -116,7 +116,7 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
                             : controller.tasksDataFilter[e]!
                                 .any((t) => t.status == 'completed'))
                         .toList()
-                      ..sort((a, b) => b.compareTo(a));
+                      ..sort((a, b) => a.compareTo(b));
 
                     final monthKey = keys[index];
                     final tasks = controller.tasksDataFilter[monthKey]!

@@ -47,10 +47,19 @@ class TasksList extends GetView<SpecialTasksController> {
                   : controller.filteredArchivedTasks.length,
           itemBuilder: (context, index) {
             String date = controller.currentTab.value == 0
-                ? controller.filteredWeeklyTasks.keys.toList()[index]
+                ? controller.filteredWeeklyTasks.keys
+                    .toList()
+                    .reversed
+                    .toList()[index]
                 : controller.currentTab.value == 1
-                    ? controller.filteredNoDateTasks.keys.toList()[index]
-                    : controller.filteredArchivedTasks.keys.toList()[index];
+                    ? controller.filteredNoDateTasks.keys
+                        .toList()
+                        .reversed
+                        .toList()[index]
+                    : controller.filteredArchivedTasks.keys
+                        .toList()
+                        .reversed
+                        .toList()[index];
             List<SpecialTaskModel> tasksForDate =
                 controller.currentTab.value == 0
                     ? controller.filteredWeeklyTasks[date]!

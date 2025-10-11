@@ -31,41 +31,53 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                               Flexible(
                                 child: CustomCheckBox(
                                   title: 'seller'.tr,
-                                  value: RxBool(
-                                      !controller.isCustomer.value == true),
+                                  value: controller
+                                          .employeeIdController.text.isNotEmpty
+                                      ? RxBool(false)
+                                      : RxBool(
+                                          !controller.isSeller.value == true),
                                   onChanged: (val) {
+                                    if (controller.isEdit.value) {
+                                      return;
+                                    }
                                     controller.customerAndSellerIdController
                                         .clear();
-                                    controller.isCustomer.value = false;
+                                    controller.isSeller.value = false;
                                   },
                                 ),
                               ),
                               Flexible(
                                 child: CustomCheckBox(
                                   title: 'customer'.tr,
-                                  value: RxBool(
-                                      !controller.isCustomer.value == false),
+                                  value: controller
+                                          .employeeIdController.text.isNotEmpty
+                                      ? RxBool(false)
+                                      : RxBool(
+                                          !controller.isSeller.value == false),
                                   onChanged: (val) {
+                                    if (controller.isEdit.value) {
+                                      return;
+                                    }
                                     controller.customerAndSellerIdController
                                         .text = '';
-                                    controller.isCustomer.value = true;
+                                    controller.isSeller.value = true;
                                   },
                                 ),
                               )
                             ],
                           ),
                           CustomDropdownFieldWithSearch(
-                            tital: controller.isCustomer.value == false
+                            tital: controller.isSeller.value == false
                                 ? 'customerName'.tr
                                 : 'sellerName'.tr,
                             hint: 'employeeNameExample',
-                            items: controller.isCustomer.value == false
+                            items: controller.isSeller.value == false
                                 ? controller.allCustomersList
                                 : controller.allSellersList,
                             value: (controller
                                     .customerAndSellerIdController.text.isEmpty)
                                 ? null
-                                : (controller.isCustomer.value == false
+                                : (controller.isSeller.value == false
                                     ? controller.allCustomersList
                                         .firstWhereOrNull(
                                         (e) =>
@@ -95,6 +107,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                             itemAsString: (f) => f.name,
                             validator: (value) => null,
                             compareFn: (a, b) => a.id == b.id,
+                            isEnabled: !controller.isEdit.value,
                           ),
                         ],
                       ),
@@ -120,6 +133,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                       itemAsString: (f) => f.employeeName,
                       compareFn: (a, b) => a.id == b.id,
                       validator: (value) => null,
+                      isEnabled: !controller.isEdit.value,
                     ),
                   ),
                 ],
@@ -154,6 +168,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                 itemAsString: (f) => f.employeeName,
                 compareFn: (a, b) => a.id == b.id,
                 validator: (value) => null,
+                isEnabled: !controller.isEdit.value,
               ),
               SizedBox(height: 10.h),
             ],
@@ -245,6 +260,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                 },
                 itemAsString: (f) => f.boxName,
                 compareFn: (a, b) => a.boxId == b.boxId,
+                isEnabled: !controller.isEdit.value,
               ),
               SizedBox(height: 10.h),
             ],
@@ -271,6 +287,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                           'total_purchase_values'
                       ? controller.options3
                       : [],
+              isEnabled: !controller.isEdit.value,
               onChanged: (value) {
                 controller.productsIds.clear();
                 controller.mainCategoriesIdController.clear();

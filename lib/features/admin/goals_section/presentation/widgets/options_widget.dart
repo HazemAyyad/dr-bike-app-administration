@@ -24,10 +24,13 @@ class OptionsWidget extends StatelessWidget {
                   Flexible(
                     child: CustomCheckBox(
                       title: 'seller'.tr,
-                      value: RxBool(!controller.isCustomer.value == true),
+                      value: RxBool(!controller.isSeller.value == true),
                       onChanged: (val) {
+                        if (controller.isEdit.value) {
+                          return;
+                        }
                         controller.customerAndSellerIdController.clear();
-                        controller.isCustomer.value = false;
+                        controller.isSeller.value = false;
                         controller.update();
                       },
                     ),
@@ -35,10 +38,12 @@ class OptionsWidget extends StatelessWidget {
                   Flexible(
                     child: CustomCheckBox(
                       title: 'customer'.tr,
-                      value: RxBool(!controller.isCustomer.value == false),
+                      value: RxBool(!controller.isSeller.value == false),
                       onChanged: (val) {
-                        controller.customerAndSellerIdController.text = '';
-                        controller.isCustomer.value = true;
+                        if (controller.isEdit.value) {
+                          return;
+                        }
+                        controller.isSeller.value = true;
                         controller.update();
                       },
                     ),
@@ -46,16 +51,16 @@ class OptionsWidget extends StatelessWidget {
                 ],
               ),
               CustomDropdownFieldWithSearch(
-                tital: controller.isCustomer.value == false
+                tital: controller.isSeller.value == false
                     ? 'customerName'.tr
                     : 'sellerName'.tr,
                 hint: 'employeeNameExample',
-                items: controller.isCustomer.value == false
+                items: controller.isSeller.value == false
                     ? controller.allCustomersList
                     : controller.allSellersList,
                 value: (controller.customerAndSellerIdController.text.isEmpty)
                     ? null
-                    : (controller.isCustomer.value == false
+                    : (controller.isSeller.value == false
                         ? controller.allCustomersList.firstWhereOrNull(
                             (e) =>
                                 e.id.toString() ==
@@ -78,6 +83,7 @@ class OptionsWidget extends StatelessWidget {
                 },
                 itemAsString: (f) => f.name,
                 compareFn: (a, b) => a.id == b.id,
+                isEnabled: !controller.isEdit.value,
               ),
               SizedBox(height: 10.h),
             ],
@@ -106,6 +112,7 @@ class OptionsWidget extends StatelessWidget {
             itemAsString: (u) => u.nameAr,
             compareFn: (a, b) => a.id == b.id,
             validator: (value) => null,
+            isEnabled: !controller.isEdit.value,
           );
         }
 
@@ -133,6 +140,7 @@ class OptionsWidget extends StatelessWidget {
             itemAsString: (f) => f.nameAr,
             compareFn: (a, b) => a.id == b.id,
             validator: (value) => null,
+            isEnabled: !controller.isEdit.value,
           );
         }
         if (controller.formController.text == 'sub_categories') {
@@ -159,9 +167,10 @@ class OptionsWidget extends StatelessWidget {
             itemAsString: (f) => f.nameAr,
             compareFn: (a, b) => a.id == b.id,
             validator: (value) => null,
+            isEnabled: !controller.isEdit.value,
           );
         }
-        return const SizedBox();
+        return const SizedBox.shrink();
       },
     );
   }

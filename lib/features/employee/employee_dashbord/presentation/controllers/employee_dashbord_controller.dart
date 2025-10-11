@@ -271,27 +271,29 @@ class EmployeeDashbordController extends GetxController
           'error'.tr,
           errorMessages,
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
         );
       },
       (success) {
+        Get.closeAllSnackbars();
+        Get.back();
         if (mainTaskId != null) {
           Get.find<EmployeeTasksController>()
               .getTaskDetails(taskId: mainTaskId.toString());
         }
         // Get.back();
         Future.delayed(
-          const Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1000),
           () {
             getEmployeeData();
-            Get.back();
+            // Get.back();
           },
         );
         Get.snackbar(
           'success'.tr,
           success,
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
         );
       },
     );

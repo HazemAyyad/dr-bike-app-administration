@@ -1,4 +1,4 @@
-package com.example.doctorbike
+package com.nofal.doctorbike
 
 import io.flutter.embedding.android.FlutterActivity
 

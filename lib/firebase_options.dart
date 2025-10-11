@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '783845645727',
     projectId: 'allite-f3970',
     storageBucket: 'allite-f3970.appspot.com',
-    iosBundleId: 'com.example.doctorbike',
+    iosBundleId: 'com.nofal.doctorbike',
   );
 }

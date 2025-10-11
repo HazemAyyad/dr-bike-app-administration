@@ -50,24 +50,23 @@ class SupTextAndDis extends StatelessWidget {
           ),
         ),
         SizedBox(height: 5.h),
-        showLine
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Container(
-                      margin: EdgeInsets.symmetric(
-                          vertical: 10.h, horizontal: 50.w),
-                      height: 1.h,
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor6
-                          : AppColors.customGreyColor3,
-                    ),
-                  ),
-                ],
-              )
-            : const SizedBox.shrink(),
+        if (showLine)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Container(
+                  margin:
+                      EdgeInsets.symmetric(vertical: 10.h, horizontal: 50.w),
+                  height: 1.h,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor6
+                      : AppColors.customGreyColor3,
+                ),
+              ),
+            ],
+          )
       ],
     );
   }

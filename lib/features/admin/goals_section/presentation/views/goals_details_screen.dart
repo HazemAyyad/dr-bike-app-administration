@@ -1,5 +1,5 @@
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
-import 'package:doctorbike/core/helpers/show_no_data.dart';
+import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -47,6 +47,7 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                 ),
               );
             }
+            final goal = controller.goalDetailsList!.goal;
             if (controller.goalDetailsList == null) {
               return Center(
                 child: Column(
@@ -54,22 +55,25 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     SizedBox(height: 300.h),
-                    const ShowNoData(),
+                    const CircularProgressIndicator(),
                   ],
                 ),
               );
             }
+
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 SizedBox(height: 20.h),
                 // target details view
-                if (controller.goalDetailsList!.name.isNotEmpty)
+                if (goal.name.isNotEmpty)
                   Row(
                     children: [
                       Flexible(
                         child: SupTextAndDis(
                           title: 'targetName',
-                          discription: controller.goalDetailsList!.name,
+                          discription: goal.name,
                         ),
                       ),
                       Center(
@@ -77,7 +81,7 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                           alignment: Alignment.center,
                           children: [
                             Text(
-                              '${controller.goalDetailsList!.achievementPercentage}%',
+                              '${goal.achievementPercentage}%',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium!
@@ -96,13 +100,14 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                                 child: CircularProgressIndicator(
                                   value: (double.parse(controller
                                           .goalDetailsList!
+                                          .goal
                                           .achievementPercentage) /
                                       100),
                                   strokeWidth: 8,
                                   backgroundColor: Colors.grey.shade300,
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     double.parse(controller.goalDetailsList!
-                                                .achievementPercentage) >=
+                                                .goal.achievementPercentage) >=
                                             100
                                         ? Colors.green
                                         : AppColors.primaryColor,
@@ -115,37 +120,107 @@ class GoalsDetailsScreen extends GetView<TargetSectionController> {
                       ),
                     ],
                   ),
-                if (controller.goalDetailsList!.type.isNotEmpty)
+                if (goal.scope.isNotEmpty)
                   SupTextAndDis(
                     title: 'targetType',
-                    discription: controller.goalDetailsList!.type.tr,
+                    discription: goal.scope.tr,
                   ),
-                if (controller.goalDetailsList!.form.isNotEmpty)
+                if (goal.type.isNotEmpty)
                   SupTextAndDis(
                     title: 'targetTypeFormat',
-                    discription: controller.goalDetailsList!.form.tr,
+                    discription: goal.type.tr,
                   ),
-                if (controller.goalDetailsList!.scope.isNotEmpty)
+                if (goal.form.isNotEmpty)
                   SupTextAndDis(
                     title: 'options',
-                    discription: controller.goalDetailsList!.scope.tr,
+                    discription: goal.form.tr,
+                  ),
+                if (goal.employee != null)
+                  SupTextAndDis(
+                    title: 'employeeName',
+                    discription: goal.employee!.name,
+                  ),
+                if (goal.people?.isNotEmpty ?? false) ...[
+                  if (goal.people!.first.customerName.isNotEmpty)
+                    SupTextAndDis(
+                      title: 'customerName',
+                      discription: goal.people!.first.customerName,
+                    ),
+                  if (goal.people!.first.sellerName.isNotEmpty)
+                    SupTextAndDis(
+                      title: 'sellerName',
+                      discription: goal.people!.first.sellerName,
+                    ),
+                ],
+                if (goal.box != null && goal.box!.name.isNotEmpty)
+                  SupTextAndDis(
+                    title: 'boxName',
+                    discription: goal.box!.name,
+                  ),
+                if (goal.products != null && goal.products!.isNotEmpty)
+                  ...List.generate(
+                    goal.products!.length,
+                    (index) => SupTextAndDis(
+                      showLine: false,
+                      title: '${'productName'.tr}${index + 1} ',
+                      discription: goal.products![index].name,
+                    ),
+                  ),
+                if (goal.mainCategories != null &&
+                    goal.mainCategories!.isNotEmpty)
+                  ...goal.mainCategories!.map(
+                    (e) => SupTextAndDis(
+                      title: 'main_categories',
+                      discription: e.name,
+                    ),
+                  ),
+                if (goal.subCategories != null &&
+                    goal.subCategories!.isNotEmpty)
+                  ...goal.subCategories!.map(
+                    (e) => SupTextAndDis(
+                      title: 'sub_categories',
+                      discription: e.name,
+                    ),
                   ),
 
-                if (controller.goalDetailsList!.targetedValue.isNotEmpty)
+                if (goal.targetedValue.isNotEmpty)
                   SupTextAndDis(
                     title: 'targetValue',
-                    discription: controller.goalDetailsList!.targetedValue,
+                    discription: goal.targetedValue,
                   ),
-                if (controller.goalDetailsList!.currentValue.isNotEmpty)
+                if (goal.currentValue.isNotEmpty)
                   SupTextAndDis(
                     title: 'currentValue',
-                    discription: controller.goalDetailsList!.currentValue,
+                    discription: goal.currentValue,
                   ),
-                if (controller.goalDetailsList!.notes.isNotEmpty)
+                if (goal.dueDate.isNotEmpty)
+                  SupTextAndDis(
+                    title: 'date',
+                    discription: showData(goal.dueDate),
+                  ),
+                if (goal.notes!.isNotEmpty)
                   SupTextAndDis(
                     title: 'notes',
-                    discription: controller.goalDetailsList!.notes,
+                    discription: goal.notes!,
                   ),
+                Row(
+                  children: [
+                    Text(
+                      'log'.tr,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryColor,
+                          ),
+                    ),
+                  ],
+                ),
+                ...controller.goalDetailsList!.goalLogs.map(
+                  (e) => SupTextAndDis(
+                    title: e.title,
+                    discription: e.description,
+                  ),
+                ),
                 SizedBox(height: 30.h),
               ],
             );

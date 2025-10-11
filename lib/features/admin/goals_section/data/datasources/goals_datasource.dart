@@ -50,19 +50,6 @@ class GoalsDatasource {
     required String subCategoriesId,
     required DateTime dueDate,
   }) async {
-    print("name $name");
-    print("type $type");
-    print("form $form");
-    print("targetedValue $targetedValue");
-    print("scope $scope");
-    print(mainCategoriesId);
-    print(subCategoriesId);
-    print('dueDate $dueDate');
-    print('customerId $customerId');
-    print('employeeId $employeeId');
-    print('sellerId $sellerId');
-    print('boxId $boxId');
-
     final Map<String, dynamic> productsList = {};
 
     for (var i = 0; i < productsIds.length; i++) {

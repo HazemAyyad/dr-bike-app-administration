@@ -253,20 +253,21 @@ class EmployeeTasksController extends GetxController {
           failure.errMessage,
           failure.data['message'],
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
         );
       },
       (success) {
-        getEmployeeTasks();
+        Get.closeAllSnackbars();
         Get.back();
+        getEmployeeTasks();
         Future.delayed(
-          const Duration(milliseconds: 500),
+          const Duration(milliseconds: 0),
           () {
             Get.snackbar(
               'success'.tr,
               success,
               snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(milliseconds: 1500),
+              duration: const Duration(milliseconds: 1000),
             );
           },
         );
@@ -322,7 +323,7 @@ class EmployeeTasksController extends GetxController {
       }
 
       if (dateKey.isAfter(startDate.subtract(const Duration(days: 1))) &&
-          dateKey.isBefore(endDate.add(const Duration(days: 1)))) {
+          dateKey.isBefore(endDate)) {
         filtered[key] = tasks;
       }
     });

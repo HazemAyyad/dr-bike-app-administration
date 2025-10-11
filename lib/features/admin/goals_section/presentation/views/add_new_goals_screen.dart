@@ -21,7 +21,10 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'addNewTarget', action: false),
+      appBar: CustomAppBar(
+        title: controller.isEdit.value ? 'editTarget' : 'addTarget',
+        action: false,
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Form(
@@ -69,6 +72,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                   controller.targetTypeController.text = value!;
                   controller.update();
                 },
+                isEnabled: !controller.isEdit.value,
               ),
               SizedBox(height: 10.h),
               const TargetTypeFormatWidget(),
@@ -137,9 +141,11 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
               ),
               SizedBox(height: 10.h),
               CustomTextField(
+                enabled: !controller.isEdit.value,
                 label: 'targetValue',
                 hintText: 'targetValueExample',
                 controller: controller.targetValueController,
+                keyboardType: TextInputType.number,
               ),
               if (controller.isEdit.value)
                 Column(
@@ -149,6 +155,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
                       label: 'currentValue',
                       hintText: 'targetValueExample',
                       controller: controller.currentValueController,
+                      keyboardType: TextInputType.number,
                     ),
                   ],
                 ),
@@ -172,7 +179,7 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
               SizedBox(height: 30.h),
               AppButton(
                 isLoading: controller.isAddLoading,
-                text: 'addTarget',
+                text: controller.isEdit.value ? 'editTarget' : 'addTarget',
                 onPressed: () {
                   if (controller.formKey.currentState!.validate()) {
                     controller.addGoal(context);

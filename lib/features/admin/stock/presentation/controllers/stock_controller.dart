@@ -302,7 +302,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           failure.errMessage,
           failure.data['message'],
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
         );
       },
       (success) async {
@@ -312,10 +312,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           'success'.tr,
           success,
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
         );
         Future.delayed(
-          const Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1000),
           () {
             Get.back();
           },
@@ -342,7 +342,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           failure.errMessage,
           failure.data['message'],
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
         );
       },
       (success) async {
@@ -352,10 +352,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           'success'.tr,
           success,
           snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
+          duration: const Duration(milliseconds: 1000),
         );
         Future.delayed(
-          const Duration(milliseconds: 1500),
+          const Duration(milliseconds: 1000),
           () {
             Get.back();
           },

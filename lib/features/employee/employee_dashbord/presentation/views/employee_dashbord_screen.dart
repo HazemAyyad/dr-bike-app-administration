@@ -102,6 +102,8 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                 ),
                               ...controller.employeeData.value!.tasks
                                   .where((e) => e.status == 'ongoing')
+                                  .where((e) =>
+                                      e.startTime.isBefore(DateTime.now()))
                                   .take(5)
                                   .map((e) => EmployeeDashbordTasks(task: e)),
                             ],

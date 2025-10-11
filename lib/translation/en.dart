@@ -151,7 +151,6 @@ const Map<String, String> en = {
   'startWork': 'Start Work',
   'leaveWork': 'Leave Work',
   'workingHours': 'Working hours (per month)',
-  // 'hourlyRate': 'سعر ساعة العمل',
   'advancesAndDebts': 'Advances and Debts',
   'remainingBalance': 'Remaining Balance',
 
@@ -505,9 +504,6 @@ const Map<String, String> en = {
   "sub_categories": "Sub Categories",
   'people': 'People',
 
-  // "product": "Product",
-  // "employee": "Employee",
-  // "person": "Person",
   "box": "Box",
 
   // إنشاء هدف جديد
@@ -520,6 +516,7 @@ const Map<String, String> en = {
   'person': 'Person',
   'personExample': 'Example: Customer',
   'addTarget': 'Add Target',
+  'editTarget': 'Edit Target',
   'targetAddedSuccessfully': 'Target added successfully',
   'private': 'Private',
   'public': 'Public',
