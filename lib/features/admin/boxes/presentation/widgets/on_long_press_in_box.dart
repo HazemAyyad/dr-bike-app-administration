@@ -13,7 +13,7 @@ import 'transfer_balance_widget.dart';
 class OnLongPressInBox extends GetView<BoxesController> {
   const OnLongPressInBox({Key? key, required this.box}) : super(key: key);
 
-  final shownBoxesModel box;
+  final ShownBoxesModel box;
   @override
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;

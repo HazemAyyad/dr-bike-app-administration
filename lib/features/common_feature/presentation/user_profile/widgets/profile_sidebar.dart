@@ -70,16 +70,16 @@ class BuildProfileSidebar extends GetView<ProfileController> {
               Get.toNamed(AppRoutes.MYORDERSSCREEN);
             },
           ),
-        BuildSidebarItem(
-          title: 'termsAndConditions'.tr,
-          icon: Icons.description_outlined,
-          route: null,
-        ),
-        BuildSidebarItem(
-          title: 'aboutUs'.tr,
-          icon: Icons.help_outline_rounded,
-          route: null,
-        ),
+        // BuildSidebarItem(
+        //   title: 'termsAndConditions'.tr,
+        //   icon: Icons.description_outlined,
+        //   route: null,
+        // ),
+        // BuildSidebarItem(
+        //   title: 'aboutUs'.tr,
+        //   icon: Icons.help_outline_rounded,
+        //   route: null,
+        // ),
         BuildSidebarItem(
           title: 'contactUs'.tr,
           icon: Icons.phone_outlined,

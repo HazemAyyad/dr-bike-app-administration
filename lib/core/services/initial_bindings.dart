@@ -54,6 +54,7 @@ import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repo_impl.dart';
 import '../../features/common_feature/data/datasources/common_datasource.dart';
 import '../../features/common_feature/data/repositories/common_repo_impl.dart';
+import '../../features/common_feature/presentation/personal_details/controllers/personal_details_controller.dart';
 import '../../features/employee/employee_dashbord/data/datasources/employee_dashbord_datasource.dart';
 import '../../features/employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
 import '../../features/employee/my_orders/data/datasources/my_orders_datasource.dart';
@@ -128,6 +129,7 @@ class InitialBindings implements Bindings {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+
     connected
         ? await NotificationFirebaseService.instance.intNotification()
         : null;
@@ -201,6 +203,7 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
+    Get.find<PersonalDetailsController>().getUserData();
 
     // انشاء مهام الموظفين
     Get.lazyPut<CreateEmployeeTasksDatasource>(

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
+// ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
 
 import '../../../../../core/helpers/helpers.dart';

@@ -16,6 +16,7 @@ void main() async {
   await GetStorage.init();
 
   final binding = WidgetsFlutterBinding.ensureInitialized();
+  // ignore: deprecated_member_use
   final window = binding.window;
   final width = window.physicalSize.width / window.devicePixelRatio;
   final height = window.physicalSize.height / window.devicePixelRatio;

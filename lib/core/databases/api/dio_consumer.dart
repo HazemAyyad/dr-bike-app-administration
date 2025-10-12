@@ -57,7 +57,7 @@ class DioConsumer extends ApiConsumer {
       );
       return response; // إعادة الكائن الكامل
     } on DioException catch (e) {
-      print('==========Test================$e');
+      // print('==========Test================$e');
       final data = e.response?.data;
 
       String errorMessage;
@@ -103,7 +103,7 @@ class DioConsumer extends ApiConsumer {
       );
       return response;
     } on DioException catch (e) {
-      print('==========Test================$e');
+      // print('==========Test================$e');
       final data = e.response?.data;
 
       String errorMessage;

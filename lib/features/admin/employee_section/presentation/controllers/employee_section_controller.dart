@@ -1,14 +1,16 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
-import 'package:path/path.dart' as p;
 
-import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:open_filex/open_filex.dart';
+// ignore: depend_on_referenced_packages
+import 'package:path/path.dart' as p;
+
+import 'package:doctorbike/core/utils/assets_manger.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';

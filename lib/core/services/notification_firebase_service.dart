@@ -77,7 +77,7 @@ class NotificationFirebaseService {
         // يتم استدعاء هذه الدالة عند الضغط على الإشعار
         final payload = response.payload; // String
         if (payload != null) {
-          print("تم الضغط على الإشعار، البيانات:");
+          // print("تم الضغط على الإشعار، البيانات:");
 
           // Get.to(() => NotificationScreen());
           // إذا أردت تحويلها من String إلى خريطة (Map) لقراءتها:

@@ -325,7 +325,7 @@ class ExpensesController extends GetxController
     }
   }
 
-  final RxList<shownBoxesModel> shownBoxesList = <shownBoxesModel>[].obs;
+  final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
 
   void getShowBoxes() async {
     final boxes = await getShownBoxUsecase.call(screen: currentTab.value);

@@ -287,7 +287,6 @@ class MaintenanceController extends GetxController {
     }
     isLoading(true);
     update();
-    print("===================$step");
     final result = await creatMaintenanceUsecase.call(
       maintenanceId: isEdit.value ? maintenanceId : null,
       customerId: !selectedSellers.value ? partnerIdController.text : '',

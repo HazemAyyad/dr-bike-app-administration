@@ -8,7 +8,7 @@ class UserData {
   static String userToken = '';
 
   /// حفظ حالة تذكر المستخدم
-  static Future<void> saveIsFirstTime(value) async {
+  static Future<void> saveIsFirstTime(bool value) async {
     FinalClasses.getStorage.write('firstTime', value);
   }
 
@@ -52,7 +52,7 @@ class UserData {
   }
 
   /// حفظ حالة تذكر المستخدم
-  static Future<void> saveIsRememberUser(value) async {
+  static Future<void> saveIsRememberUser(bool value) async {
     FinalClasses.getStorage.write('isRemember', value);
   }
 

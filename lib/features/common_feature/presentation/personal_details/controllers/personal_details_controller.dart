@@ -3,26 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/initial_bindings.dart';
+import '../../../../auth/data/models/user_model.dart';
 import '../../../domain/usecases/get_user_data_usecase.dart';
 import '../../../domain/usecases/user_profile_usecase.dart';
 
 class PersonalDetailsController extends GetxController {
   final UserProfileUseCase userProfileUseCase;
   final GetUserDataUsecase getUserDataUsecase;
-  PersonalDetailsController(
-      {required this.userProfileUseCase, required this.getUserDataUsecase});
+
+  PersonalDetailsController({
+    required this.userProfileUseCase,
+    required this.getUserDataUsecase,
+  });
   final formKey = GlobalKey<FormState>();
   // متغيرات للبيانات الشخصية
 
-  final nameController = TextEditingController();
-  final emailController = TextEditingController();
-  final phoneController = TextEditingController();
-  final alternativePhoneController =
-      TextEditingController(text: '+970123456789');
-  final cityController = TextEditingController();
-  final addressController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController subPhoneController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
+  final TextEditingController addressController = TextEditingController();
 
-  final city = 'نابلس'.obs;
+  final city = 'القدس'.obs;
 
   // متغيرات للتحقق من صحة النموذج
   final isPhoneValid = true.obs;
@@ -46,7 +50,7 @@ class PersonalDetailsController extends GetxController {
     final result = await userProfileUseCase.call(
       name: nameController.text,
       phone: phoneController.text.split(' ').join(''),
-      subPhone: alternativePhoneController.text.split(' ').join(''),
+      subPhone: subPhoneController.text.split(' ').join(''),
       city: city.value,
       address: addressController.text,
     );
@@ -64,7 +68,7 @@ class PersonalDetailsController extends GetxController {
         );
       },
       (success) {
-        // getUserData();
+        getUserData();
         Get.back();
         Helpers.showCustomDialogSuccess(
           context: context,
@@ -72,7 +76,7 @@ class PersonalDetailsController extends GetxController {
           message: 'dataUpdatedSuccessfully'.tr,
         );
         Future.delayed(
-          const Duration(seconds: 2),
+          const Duration(seconds: 1),
           () {
             Get.back();
           },
@@ -82,24 +86,25 @@ class PersonalDetailsController extends GetxController {
     isLoading(false);
   }
 
-  // void getUserData() async {
-  //   final result = await getUserDataUsecase.call();
-  //   // await UserData.saveToken(result);
-  //   // print(result.user.name);
-  //   // userName = result.user.name;
-  // }
+  UserModel? userData;
+  void getUserData() async {
+    final result = await getUserDataUsecase.call();
+    await UserData.saveUser(result);
+    final userdata = await UserData.getSavedUser();
+    userName = userdata?.user.name ?? '';
+
+    nameController.text = userdata!.user.name;
+    emailController.text = userdata.user.email;
+    phoneController.text = userdata.user.phone;
+    subPhoneController.text = userdata.user.subPhone ?? '';
+    city.value = userdata.user.city ?? 'القدس';
+    addressController.text = userdata.user.address ?? '';
+    update();
+  }
 
   @override
   void onInit() async {
-    final userdata = await UserData.getSavedUser();
-    if (userdata != null) {
-      nameController.text = userdata.user.name;
-      emailController.text = userdata.user.email;
-      phoneController.text = userdata.user.phone;
-      alternativePhoneController.text = userdata.user.subPhone ?? '';
-      city.value = userdata.user.city ?? 'نابلس';
-      addressController.text = userdata.user.address ?? '';
-    }
+    getUserData();
     super.onInit();
   }
 }

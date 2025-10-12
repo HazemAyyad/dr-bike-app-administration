@@ -30,6 +30,7 @@ class CustomActionsAppBar extends GetView<ChecksController> {
           ),
           onPressed: () {
             Get.dialog(
+              // ignore: deprecated_member_use
               WillPopScope(
                 onWillPop: () async {
                   controller.applyFilters();

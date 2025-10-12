@@ -18,6 +18,7 @@ void showCustomDialog(
   VoidCallback? onClear,
 }) {
   Get.dialog(
+    // ignore: deprecated_member_use
     WillPopScope(
       onWillPop: () async {
         onPressed();

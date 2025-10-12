@@ -8,7 +8,7 @@ import '../../data/models/get_shown_boxes_model.dart';
 class ArchiveWidget extends StatelessWidget {
   const ArchiveWidget({Key? key, required this.box}) : super(key: key);
 
-  final shownBoxesModel box;
+  final ShownBoxesModel box;
 
   @override
   Widget build(BuildContext context) {

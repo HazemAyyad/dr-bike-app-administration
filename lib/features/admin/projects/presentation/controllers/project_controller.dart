@@ -192,7 +192,6 @@ class ProjectController extends GetxController {
           ProjectExpensesModel.fromJson(result);
     } else if (isSales) {
       ProjectService().projectSales.value = ProjectSaleModel.fromJson(result);
-      print(result);
     } else {
       Get.snackbar(
         'success'.tr,

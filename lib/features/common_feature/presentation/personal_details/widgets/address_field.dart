@@ -4,8 +4,9 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../controllers/personal_details_controller.dart';
 
-Column addressField(controller) {
+Column addressField(PersonalDetailsController controller) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [

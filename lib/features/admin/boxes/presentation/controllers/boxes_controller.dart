@@ -341,9 +341,9 @@ class BoxesController extends GetxController {
     update();
   }
 
-  RxList<shownBoxesModel> filteredShownBoxes = <shownBoxesModel>[].obs;
+  RxList<ShownBoxesModel> filteredShownBoxes = <ShownBoxesModel>[].obs;
   RxList<BoxLogModel> filteredAllBoxesLogs = <BoxLogModel>[].obs;
-  RxList<shownBoxesModel> filteredShownBoxesArchive = <shownBoxesModel>[].obs;
+  RxList<ShownBoxesModel> filteredShownBoxesArchive = <ShownBoxesModel>[].obs;
 
   void filterLists() {
     final query = boxNameController.text.trim().toLowerCase();
@@ -384,7 +384,7 @@ class BoxesController extends GetxController {
   }
 
   void searchBar(String value) {
-    bool matches(shownBoxesModel box, String query) {
+    bool matches(ShownBoxesModel box, String query) {
       final q = query.toLowerCase();
       return (box.boxName.toLowerCase().contains(q)) ||
           (box.currency.toLowerCase().contains(q)) ||

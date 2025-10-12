@@ -3,7 +3,6 @@ import 'package:doctorbike/core/helpers/custom_tab_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/state_manager.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/show_no_data.dart';

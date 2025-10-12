@@ -4,11 +4,11 @@ import '../../data/models/all_boxes_logs_model.dart';
 import '../../data/models/get_shown_boxes_model.dart';
 
 class BoxesServes {
-  final RxList<shownBoxesModel> shownBoxes = <shownBoxesModel>[].obs;
+  final RxList<ShownBoxesModel> shownBoxes = <ShownBoxesModel>[].obs;
 
   final RxList<BoxLogModel> allBoxesLogs = <BoxLogModel>[].obs;
 
-  final RxList<shownBoxesModel> shownBoxesArchive = <shownBoxesModel>[].obs;
+  final RxList<ShownBoxesModel> shownBoxesArchive = <ShownBoxesModel>[].obs;
 
   // singleton pattern
   static final BoxesServes _instance = BoxesServes._internal();

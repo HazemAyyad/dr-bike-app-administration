@@ -48,7 +48,7 @@ class CommonDatasource {
   Future<UserModel> getUserData() async {
     try {
       final response = await api.post(EndPoints.me);
-      final user = UserModel.fromJson(response.data['user']);
+      final user = UserModel.fromJson(response.data);
       await UserData.saveUser(user);
       final userdata = await UserData.getSavedUser();
       if (userdata != null) {

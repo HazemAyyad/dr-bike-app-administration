@@ -36,6 +36,7 @@ class LogOutController extends GetxController {
         UserData.clearAllUserData();
 
         Helpers.showCustomDialogSuccess(
+          // ignore: use_build_context_synchronously
           context: context,
           title: 'success'.tr,
           message: 'logoutSuccess'.tr,
