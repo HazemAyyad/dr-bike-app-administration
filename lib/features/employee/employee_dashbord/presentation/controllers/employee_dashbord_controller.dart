@@ -331,7 +331,6 @@ class EmployeeDashbordController extends GetxController
     required BuildContext context,
   }) async {
     try {
-      // نطلب من المستخدم يختار فولدر
       Get.snackbar(
         "info".tr,
         "جار تحميل الملف. سيتم اعلامك عند الانتهاء".tr,

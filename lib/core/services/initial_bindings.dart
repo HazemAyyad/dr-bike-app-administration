@@ -54,6 +54,8 @@ import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repo_impl.dart';
 import '../../features/common_feature/data/datasources/common_datasource.dart';
 import '../../features/common_feature/data/repositories/common_repo_impl.dart';
+import '../../features/common_feature/domain/usecases/get_user_data_usecase.dart';
+import '../../features/common_feature/domain/usecases/user_profile_usecase.dart';
 import '../../features/common_feature/presentation/personal_details/controllers/personal_details_controller.dart';
 import '../../features/employee/employee_dashbord/data/datasources/employee_dashbord_datasource.dart';
 import '../../features/employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
@@ -203,7 +205,6 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-    Get.find<PersonalDetailsController>().getUserData();
 
     // انشاء مهام الموظفين
     Get.lazyPut<CreateEmployeeTasksDatasource>(
@@ -441,6 +442,17 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
+
+    Get.put(
+      PersonalDetailsController(
+        userProfileUseCase: UserProfileUseCase(
+          commonRepository: Get.find<CommonImplement>(),
+        ),
+        getUserDataUsecase: GetUserDataUsecase(
+          commonRepository: Get.find<CommonImplement>(),
+        ),
+      ),
+    ).getUserData();
 
     // Product Management
     Get.lazyPut<ProductManagementDatasource>(
