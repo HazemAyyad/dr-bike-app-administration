@@ -155,8 +155,9 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             fit: BoxFit.cover,
                                             placeholder: (context, url) =>
                                                 const Center(
-                                                    child:
-                                                        CircularProgressIndicator()),
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
                                             errorWidget:
                                                 (context, url, error) =>
                                                     const Icon(Icons.error),

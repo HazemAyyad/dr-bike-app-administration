@@ -288,12 +288,10 @@ class FinancialAffairsDatasource {
   }) async {
     try {
       final response = await api.post(
-        isPicture == true || isPicture != null
-            ? EndPoints.deletePicture
-            : EndPoints.cancelPaper,
+        isPicture == true ? EndPoints.deletePicture : EndPoints.cancelPaper,
         data: {
-          'paper_id': paperId,
-          if (isPicture != null) 'picture_id': paperId
+          if (isPicture == false) 'paper_id': paperId,
+          if (isPicture == true) 'picture_id': paperId
         },
       );
       return response.data;

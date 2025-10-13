@@ -109,8 +109,9 @@ class ChecksController extends GetxController
   ].obs;
 
   RxList<String> outgoingChecksActedOnIt = <String>[
-    // 'cashTheCheck',
-    'returnedCheck', 'voidTheCheck'
+    'cashTheCheck',
+    'returnedCheck',
+    'voidTheCheck',
   ].obs;
 
   // الشيكات الواردة
@@ -122,10 +123,8 @@ class ChecksController extends GetxController
     'voidTheCheck'
   ].obs;
 
-  RxList<String> incomingChecksActedOnIt = <String>[
-    // 'cashTheCheck',
-    'returnedCheck'
-  ].obs;
+  RxList<String> incomingChecksActedOnIt =
+      <String>['cashTheCheck', 'returnedCheck'].obs;
 
   RxList<String> archive = ['deleteCheck'].obs;
 
@@ -367,12 +366,12 @@ class ChecksController extends GetxController
           getNotCashed(),
           getArchive(),
         ]);
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            Get.back();
-          },
-        );
+        // Future.delayed(
+        //   const Duration(milliseconds: 1500),
+        //   () {
+        //     Get.back();
+        //   },
+        // );
         Get.snackbar(
           'success'.tr,
           success,
@@ -421,12 +420,12 @@ class ChecksController extends GetxController
           getNotCashed(),
           getArchive(),
         ]);
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            Get.back();
-          },
-        );
+        // Future.delayed(
+        //   const Duration(milliseconds: 1500),
+        //   () {
+        //     Get.back();
+        //   },
+        // );
         Get.snackbar(
           'success'.tr,
           success,
@@ -467,12 +466,12 @@ class ChecksController extends GetxController
           getNotCashed(),
           getArchive(),
         ]);
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            Get.back();
-          },
-        );
+        // Future.delayed(
+        //   const Duration(milliseconds: 1500),
+        //   () {
+        //     Get.back();
+        //   },
+        // );
         Get.snackbar(
           'success'.tr,
           success,
@@ -513,12 +512,12 @@ class ChecksController extends GetxController
           getNotCashed(isStopLoding: false),
           getGeneralChecksData(),
         ]);
-        Future.delayed(
-          const Duration(milliseconds: 1000),
-          () {
-            Get.back();
-          },
-        );
+        // Future.delayed(
+        //   const Duration(milliseconds: 1000),
+        //   () {
+        //     Get.back();
+        //   },
+        // );
         Get.snackbar(
           'success'.tr,
           success,
@@ -704,7 +703,7 @@ class ChecksController extends GetxController
   final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
 
   void getShowBoxes() async {
-    final boxes = await getShownBoxUsecase.call(screen: currentTab.value);
+    final boxes = await getShownBoxUsecase.call(screen: 0);
     shownBoxesList.value = boxes;
   }
 

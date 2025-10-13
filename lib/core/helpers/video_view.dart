@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -91,45 +92,59 @@ class _VideoViewState extends State<VideoView> {
 
   Future<void> _downloadImage(BuildContext context) async {
     try {
-      // اطلب صلاحيات
+      // ✅ اطلب الصلاحيات المسموح بها فقط
       if (Platform.isAndroid) {
-        await Permission.storage.request();
-        await Permission.manageExternalStorage.request(); // Android 11+
+        await Permission.photos.request(); // Android 13+
+        await Permission.storage.request(); // Android < 13
+      } else if (Platform.isIOS) {
+        await Permission.photosAddOnly.request();
       }
+
       Get.snackbar(
-        "تنبية",
-        "جاري التحميل سيتم اخبارك عند الانتهاء",
+        "تنبيه",
+        "جاري التحميل... سيتم إعلامك عند الانتهاء",
         snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1500),
+        duration: const Duration(seconds: 2),
       );
-      Directory dir;
-      if (Platform.isAndroid) {
-        // خزن الصورة داخل Pictures/اسم_التطبيق
-        dir = Directory("/storage/emulated/0/Download/Doctor Bike/photos");
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
+
+      // 🧭 احفظ مؤقتاً داخل كاش التطبيق
+      final dir = await getTemporaryDirectory();
+      final fileName = widget.videoPath.split('/').last;
+      final tempPath = "${dir.path}/$fileName";
+
+      // 💾 التحميل المؤقت
+      await Dio().download(widget.videoPath, tempPath);
+
+      // 📸 احفظ في المعرض حسب نوع الملف
+      bool? success;
+      if (widget.videoPath.toLowerCase().endsWith('.mp4')) {
+        success = await GallerySaver.saveVideo(
+          tempPath,
+          albumName: "Doctor Bike",
+        );
       } else {
-        dir = await getApplicationDocumentsDirectory();
+        success = await GallerySaver.saveImage(
+          tempPath,
+          albumName: "Doctor Bike",
+        );
       }
 
-      String fileName = widget.videoPath.split('/').last;
-      String savePath = "${dir.path}/$fileName";
-
-      await Dio().download(widget.videoPath, savePath);
-
-      Get.snackbar(
-        "success".tr,
-        "تم التحميل في $savePath".tr,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1500),
-      );
+      if (success == true) {
+        Get.snackbar(
+          "تم",
+          "تم الحفظ في المعرض ✅",
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+      } else {
+        throw Exception("فشل الحفظ في المعرض");
+      }
     } catch (e) {
       Get.snackbar(
-        "error".tr,
+        "خطأ",
         "فشل التحميل: $e",
         snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1500),
+        duration: const Duration(seconds: 2),
       );
     }
   }

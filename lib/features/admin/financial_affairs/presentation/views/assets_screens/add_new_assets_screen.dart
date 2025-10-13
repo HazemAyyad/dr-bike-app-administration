@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
@@ -7,10 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/helpers/show_image_or_video.dart';
 import '../../controllers/assets_controller.dart';
-import '../../../../../../core/helpers/video_view.dart';
 
 class AddNewAssetsScreen extends GetView<AssetsController> {
   const AddNewAssetsScreen({Key? key}) : super(key: key);
@@ -86,8 +83,16 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
               const EditImagesWidget(),
               SizedBox(height: 30.h),
               MediaUploadButton(
+                isShowPreview: false,
                 onFilesChanged: (files) {
-                  controller.selectedFile = files;
+                  final uniqueNewFiles = files.where((file) {
+                    return !controller.selectedFile.any(
+                      (existingFile) =>
+                          existingFile!.path.trim() == file.path.trim(),
+                    );
+                  }).toList();
+                  controller.selectedFile.addAll(uniqueNewFiles);
+                  controller.update();
                 },
                 title: 'uploadMedia',
               ),
@@ -124,84 +129,34 @@ class EditImagesWidget extends StatelessWidget {
                         ? const SizedBox.shrink()
                         : Row(
                             children: [
-                              ...controller.selectedFile.map(
-                                (e) => controller.isLoadingDepreciate.value
-                                    ? const Center(
-                                        child: CircularProgressIndicator())
-                                    : Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 5.w),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(5.r),
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              e!.path.contains('mp4')
-                                                  ? showGeneralDialog(
-                                                      context: context,
-                                                      barrierDismissible: true,
-                                                      barrierLabel: 'Dismiss',
-                                                      barrierColor: Colors.black
-                                                          .withAlpha(128),
-                                                      transitionDuration:
-                                                          const Duration(
-                                                              milliseconds:
-                                                                  300),
-                                                      pageBuilder: (context,
-                                                          anim1, anim2) {
-                                                        return VideoView(
-                                                            videoPath: e.path);
-                                                      },
-                                                    )
-                                                  : showGeneralDialog(
-                                                      context: context,
-                                                      barrierDismissible: true,
-                                                      barrierLabel: 'Dismiss',
-                                                      barrierColor: Colors.black
-                                                          .withAlpha(128),
-                                                      transitionDuration:
-                                                          const Duration(
-                                                              milliseconds:
-                                                                  300),
-                                                      pageBuilder: (context,
-                                                          anim1, anim2) {
-                                                        return FullScreenZoomImage(
-                                                            imageUrl: e.path);
-                                                      },
-                                                    );
+                              ...controller.selectedFile.asMap().entries.map(
+                                (entry) {
+                                  final index = entry.key;
+                                  final file = entry.value;
+                                  return Padding(
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 5.w),
+                                    child: Stack(
+                                      children: [
+                                        ShowImageOrVideo(path: file!.path),
+                                        // زرار فوق الصورة
+                                        Positioned(
+                                          right: 8,
+                                          top: 8,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.delete,
+                                                color: Colors.red),
+                                            onPressed: () {
+                                              controller.selectedFile
+                                                  .removeAt(index);
+                                              controller.update();
                                             },
-                                            child: e!.path.contains('.mp4')
-                                                ? Icon(
-                                                    Icons
-                                                        .play_circle_outline_rounded,
-                                                    size: 150.sp,
-                                                    color:
-                                                        AppColors.primaryColor,
-                                                  )
-                                                : CachedNetworkImage(
-                                                    imageUrl: e.path,
-                                                    height: 200.h,
-                                                    width: 200.w,
-                                                    fit: BoxFit.fill,
-                                                    fadeInDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    fadeOutDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    placeholder:
-                                                        (context, url) =>
-                                                            const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                    errorWidget: (context, url,
-                                                            error) =>
-                                                        const Icon(Icons.error),
-                                                  ),
                                           ),
                                         ),
-                                      ),
+                                      ],
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),

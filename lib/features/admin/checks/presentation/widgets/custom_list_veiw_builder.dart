@@ -26,6 +26,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
           if (controller.filteredInComingTasks.isEmpty &&
               !controller.isLoading.value) {
             return const SliverFillRemaining(
+              hasScrollBody: false,
               child: ShowNoData(),
             );
           }
@@ -34,6 +35,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
           if (controller.filteredCashedToPersonTasks.isEmpty &&
               !controller.isLoading.value) {
             return const SliverFillRemaining(
+              hasScrollBody: false,
               child: ShowNoData(),
             );
           }
@@ -42,7 +44,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
           if (controller.filteredArchiveTasks.isEmpty &&
               !controller.isLoading.value) {
             return const SliverFillRemaining(
-              hasScrollBody: true,
+              hasScrollBody: false,
               child: ShowNoData(),
             );
           }
@@ -66,7 +68,10 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                 : controller.currentTab.value == 1
                     ? controller.filteredCashedToPersonTasks.keys
                         .toList()[section]
-                    : controller.filteredArchiveTasks.keys.toList()[section];
+                    : controller.filteredArchiveTasks.keys
+                        .toList()
+                        .reversed
+                        .toList()[section];
 
             final checks = controller.currentTab.value == 0
                 ? controller.dateFilter.value

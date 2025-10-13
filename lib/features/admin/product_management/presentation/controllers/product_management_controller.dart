@@ -255,6 +255,7 @@ class ProductManagementController extends GetxController {
   final RxBool isEdit = false.obs;
   String productName = '';
   String productImage = '';
+  String description = '';
   int currentStep = 0;
   void editProduct({required String id, required bool isEditing}) {
     if (isEditing) {
@@ -275,7 +276,7 @@ class ProductManagementController extends GetxController {
       final product = ProductManagementServes()
           .productManagement
           .firstWhere((f) => f.id.toString() == id);
-
+      description = product.description;
       final currentStep = int.tryParse(product.currentStep) ?? 1;
       this.currentStep = currentStep;
       if (currentStep < timeLineSteps.length) {

@@ -789,6 +789,7 @@ const Map<String, String> ar = {
   "piecesCount": "عدد القطع",
   "destructionValue": "قيمة الاتلاف",
   "addExpense": "إضافة مصروف",
+  'editExpense': 'تعديل المصروف',
   "expenseName": "أسم المصروف",
   "payment": "دفع",
   "receiptt": "قبض",
@@ -895,5 +896,12 @@ const Map<String, String> ar = {
   "our_factory": "صناعة بشركتنا",
   "purchase_price": "سعر الشراء",
   'step': 'مرحلة',
-  "out_of_stock_products": "يوجد منتجات غير متوفرة في المخزن"
+  "out_of_stock_products": "يوجد منتجات غير متوفرة في المخزن",
+
+  'instant_sales': 'اجمالي المبيعات',
+  'employee_tasks': 'مهام الموظفين',
+  'checks': 'الشيكات',
+  'projects': 'المشاريع',
+  'returns': 'مردودات',
+  'reportType': 'نوع التقرير',
 };

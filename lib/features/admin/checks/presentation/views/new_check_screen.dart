@@ -12,6 +12,7 @@ import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/helpers/custom_calendar.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../controllers/checks_controller.dart';
 
@@ -93,51 +94,75 @@ class NewCheckScreen extends GetView<ChecksController> {
                           ),
                         ),
                         Obx(
-                          () => CustomDropdownField(
-                            validator: (p0) => null,
-                            isEnabled: !controller.isEdit.value,
-                            label: 'beneficiaryName',
-                            hint: 'customerNameExample',
-                            dropdownField:
-                                controller.selectedCustomersSellers.value ==
-                                        false
-                                    ? controller.allCustomersList
-                                        .map(
-                                          (e) => DropdownMenuItem<String>(
-                                            value: e.id.toString(),
-                                            child: Text(e.name),
-                                          ),
-                                        )
-                                        .toList()
-                                    : controller.allSellersList
-                                        .map(
-                                          (e) => DropdownMenuItem<String>(
-                                            value: e.id.toString(),
-                                            child: Text(e.name),
-                                          ),
-                                        )
-                                        .toList(),
-                            value: controller.selectedCustomersSellers.value ==
-                                    false
-                                ? controller.allCustomersList
-                                    .firstWhereOrNull(
-                                      (element) =>
-                                          element.id.toString() ==
-                                          controller.selectedValue.value,
-                                    )
-                                    ?.id
-                                    .toString()
-                                : controller.allSellersList
-                                    .firstWhereOrNull(
-                                      (element) =>
-                                          element.id.toString() ==
-                                          controller.selectedValue.value,
-                                    )
-                                    ?.id
-                                    .toString(),
-                            onChanged: (val) {
-                              controller.selectedValue.value = val!;
-                            },
+                          () => Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                child: CustomDropdownField(
+                                  validator: (p0) => null,
+                                  isEnabled: !controller.isEdit.value,
+                                  label: 'beneficiaryName',
+                                  hint: 'customerNameExample',
+                                  dropdownField: controller
+                                              .selectedCustomersSellers.value ==
+                                          false
+                                      ? controller.allCustomersList
+                                          .map(
+                                            (e) => DropdownMenuItem<String>(
+                                              value: e.id.toString(),
+                                              child: Text(e.name),
+                                            ),
+                                          )
+                                          .toList()
+                                      : controller.allSellersList
+                                          .map(
+                                            (e) => DropdownMenuItem<String>(
+                                              value: e.id.toString(),
+                                              child: Text(e.name),
+                                            ),
+                                          )
+                                          .toList(),
+                                  value: controller
+                                              .selectedCustomersSellers.value ==
+                                          false
+                                      ? controller.allCustomersList
+                                          .firstWhereOrNull(
+                                            (element) =>
+                                                element.id.toString() ==
+                                                controller.selectedValue.value,
+                                          )
+                                          ?.id
+                                          .toString()
+                                      : controller.allSellersList
+                                          .firstWhereOrNull(
+                                            (element) =>
+                                                element.id.toString() ==
+                                                controller.selectedValue.value,
+                                          )
+                                          ?.id
+                                          .toString(),
+                                  onChanged: (val) {
+                                    controller.selectedValue.value = val!;
+                                  },
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => Get.toNamed(
+                                  AppRoutes.ADDNEWCUSTOMERSCREEN,
+                                  arguments: {
+                                    'employeeType': '',
+                                    'employeeId': '',
+                                    'sellerId': '',
+                                  },
+                                ),
+                                icon: Icon(
+                                  Icons.add_circle_sharp,
+                                  color: AppColors.primaryColor,
+                                  size: 35.sp,
+                                ),
+                              )
+                            ],
                           ),
                         ),
                       ],

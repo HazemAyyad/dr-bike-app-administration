@@ -10,6 +10,7 @@ import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/debts_controller.dart';
 import 'app_bar.dart';
 
@@ -86,29 +87,58 @@ class CreateDebts extends GetView<DebtsController> {
                         ? null
                         : controller.customerOrSellerIdController.text =
                             userId.toString();
-                    return CustomDropdownFieldWithSearch(
-                      tital: controller.selectedCustomersSellers.value == false
-                          ? 'customerName'.tr
-                          : 'sellerName'.tr,
-                      hint: 'employeeNameExample',
-                      items: controller.selectedCustomersSellers.value == false
-                          ? controller.allCustomersList
-                          : controller.allSellersList,
-                      onChanged: (val) {
-                        controller.customerOrSellerIdController.text =
-                            val!.id.toString();
-                      },
-                      itemAsString: (f) => f.name,
-                      compareFn: (a, b) => a.id == b.id,
-                      value: userId == null || userId!.isEmpty
-                          ? null
-                          : (!controller.selectedCustomersSellers.value
-                              ? controller.allCustomersList.firstWhereOrNull(
-                                  (e) => e.id == int.tryParse(userId!),
-                                )
-                              : controller.allSellersList.firstWhereOrNull(
-                                  (e) => e.id == int.tryParse(userId!),
-                                )),
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: CustomDropdownFieldWithSearch(
+                            tital: controller.selectedCustomersSellers.value ==
+                                    false
+                                ? 'customerName'.tr
+                                : 'sellerName'.tr,
+                            hint: 'employeeNameExample',
+                            items: controller.selectedCustomersSellers.value ==
+                                    false
+                                ? controller.allCustomersList
+                                : controller.allSellersList,
+                            onChanged: (val) {
+                              controller.customerOrSellerIdController.text =
+                                  val!.id.toString();
+                            },
+                            itemAsString: (f) => f.name,
+                            compareFn: (a, b) => a.id == b.id,
+                            value: userId == null || userId!.isEmpty
+                                ? null
+                                : (!controller.selectedCustomersSellers.value
+                                    ? controller.allCustomersList
+                                        .firstWhereOrNull(
+                                        (e) => e.id == int.tryParse(userId!),
+                                      )
+                                    : controller.allSellersList
+                                        .firstWhereOrNull(
+                                        (e) => e.id == int.tryParse(userId!),
+                                      )),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Get.toNamed(
+                              AppRoutes.ADDNEWCUSTOMERSCREEN,
+                              arguments: {
+                                'sellerId': '',
+                                'employeeId': '',
+                                'employeeType':
+                                    controller.selectedCustomersSellers.value
+                                        ? 'customer'
+                                        : 'seller',
+                              }),
+                          icon: Icon(
+                            Icons.add_circle_sharp,
+                            color: AppColors.primaryColor,
+                            size: 35.sp,
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),

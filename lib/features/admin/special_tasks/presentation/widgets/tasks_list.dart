@@ -230,10 +230,102 @@ class TasksList extends GetView<SpecialTasksController> {
                                     if (controller.currentTab.value == 2) {
                                       return;
                                     }
-                                    controller.checkedMap[task.id.toString()]!
-                                        .value = val!;
-                                    controller.completedSpecialTasks(
-                                        context, task.id.toString());
+                                    Get.dialog(
+                                      Dialog(
+                                        backgroundColor:
+                                            ThemeService.isDark.value
+                                                ? AppColors.darkColor
+                                                : AppColors.whiteColor,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8.r),
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.all(15.w),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Flexible(
+                                                    child: Text(
+                                                      'areYouSure'.tr,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      maxLines: 2,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium!
+                                                          .copyWith(
+                                                            fontSize: 18.sp,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            color: AppColors
+                                                                .primaryColor,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              SizedBox(height: 20.h),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: AppButton(
+                                                      isSafeArea: false,
+                                                      isLoading:
+                                                          controller.isLoading,
+                                                      text: 'yes',
+                                                      onPressed: () {
+                                                        controller
+                                                            .checkedMap[task.id
+                                                                .toString()]!
+                                                            .value = val!;
+                                                        controller
+                                                            .completedSpecialTasks(
+                                                          context,
+                                                          task.id.toString(),
+                                                        );
+                                                      },
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10.w),
+                                                  Expanded(
+                                                    child: AppButton(
+                                                      isLoading:
+                                                          controller.isLoading,
+                                                      isSafeArea: false,
+                                                      color: Colors.red,
+                                                      width: double.infinity,
+                                                      borderRadius:
+                                                          BorderRadius.all(
+                                                        Radius.circular(8.r),
+                                                      ),
+                                                      text: 'cancel'.tr,
+                                                      textStyle: Theme.of(
+                                                              context)
+                                                          .textTheme
+                                                          .bodyMedium!
+                                                          .copyWith(
+                                                            color: Colors.white,
+                                                            fontSize: 15.sp,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                      onPressed: () {
+                                                        Get.back();
+                                                      },
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
                                   },
                                   shape: const CircleBorder(),
                                 ),

@@ -46,6 +46,7 @@ class AddProductManagementScreen extends StatelessWidget {
                         currentStep: controller.currentStep.toString(),
                         productImage: controller.productImage,
                         productName: controller.productName,
+                        isEdit: true,
                       );
                     }
                     return Column(
@@ -69,6 +70,7 @@ class AddProductManagementScreen extends StatelessWidget {
                           validator: (p0) => null,
                           maxLines: 5,
                           minLines: 4,
+                          keyboardType: TextInputType.multiline,
                         ),
                       ],
                     );

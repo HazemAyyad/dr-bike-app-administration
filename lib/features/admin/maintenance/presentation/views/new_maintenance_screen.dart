@@ -169,6 +169,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                     controller: controller.descriptionController,
                     minLines: 6,
                     maxLines: 10,
+                    keyboardType: TextInputType.multiline,
                   ),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -230,7 +231,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                   MediaUploadButton(
                     title: 'uploadMedia',
                     allowedType: MediaType.both,
-                    isShowPreview: controller.isEdit.value ? false : true,
+                    isShowPreview: false,
                     onFilesChanged: (files) {
                       if (controller.selectedMedia.isEmpty) {
                         controller.selectedMedia = files;

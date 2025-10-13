@@ -54,7 +54,9 @@ class DioConsumer extends ApiConsumer {
         queryParameters: queryParameters,
         onSendProgress: onSendProgress,
       );
-      getx.Get.closeAllSnackbars();
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        getx.Get.closeAllSnackbars();
+      });
       return response; // إعادة الكائن الكامل
     } on DioException catch (e) {
       // print('==========Test================$e');
@@ -100,7 +102,9 @@ class DioConsumer extends ApiConsumer {
         data: data,
         queryParameters: queryParameters,
       );
-      getx.Get.closeAllSnackbars();
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        getx.Get.closeAllSnackbars();
+      });
       return response;
     } on DioException catch (e) {
       // print('==========Test================$e');

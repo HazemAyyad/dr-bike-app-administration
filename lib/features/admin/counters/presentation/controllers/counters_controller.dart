@@ -19,6 +19,8 @@ class CountersController extends GetxController {
     required this.getReportByType,
   });
 
+  final formKey = GlobalKey<FormState>();
+
   final TextEditingController fromDateController = TextEditingController();
   final TextEditingController toDateController = TextEditingController();
 
@@ -35,6 +37,20 @@ class CountersController extends GetxController {
     update();
   }
 
+  String reportType = '';
+  List<String> reportTypeList = [
+    'debts',
+    'instant_sales',
+    'employee_tasks',
+    'boxes',
+    'checks',
+    'bills',
+    'people',
+    'projects',
+    'employees',
+    'expenses',
+    'returns',
+  ];
   // download report
   Future<void> downloadReport({
     required String type,
@@ -70,7 +86,7 @@ class CountersController extends GetxController {
           await directory.create(recursive: true);
         }
         final filePath =
-            "${directory.path}/${p.basename(type)}_تقرير${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
+            "${directory.path}/_تقرير${p.basename(type.tr)}${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(success);
         Get.snackbar(

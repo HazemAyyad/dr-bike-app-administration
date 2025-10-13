@@ -49,7 +49,7 @@ class MaintenanceDatasource {
   }) async {
     try {
       final response = await api.post(
-        status.isNotEmpty
+        maintenanceId != null
             ? EndPoints.changeMaintenanceStatus
             : EndPoints.addMaintenance,
         data: {
@@ -90,8 +90,9 @@ class MaintenanceDatasource {
   }
 
   // get maintenance details
-  Future<dynamic> getMaintenancesDetails(
-      {required String maintenanceId}) async {
+  Future<dynamic> getMaintenancesDetails({
+    required String maintenanceId,
+  }) async {
     try {
       final response = await api.post(
         EndPoints.showMaintenance,

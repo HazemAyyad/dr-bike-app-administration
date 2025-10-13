@@ -102,7 +102,7 @@ class OnLongPress extends GetView<ChecksController> {
                             }
                             if (value == 'cashTheCheck') {
                               Get.dialog(
-                                controller.currentTab.value == 0
+                                controller.currentTab.value != 2
                                     ? CashToBox(
                                         label: 'boxName',
                                         hint: 'boxNameExample',

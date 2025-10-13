@@ -9,6 +9,7 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../../../admin_dashbord/presentation/widgets/stat_card.dart';
 import '../controllers/counters_controller.dart';
 import '../controllers/counters_serves.dart';
+import '../widgets/filter.dart';
 
 class CountersScreen extends GetView<CountersController> {
   const CountersScreen({Key? key}) : super(key: key);
@@ -22,9 +23,7 @@ class CountersScreen extends GetView<CountersController> {
         action: false,
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
-        onPressedFilter: () {
-          Get.back();
-        },
+        actions: const [Filter()],
       ),
       body: Obx(
         () {

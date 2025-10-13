@@ -6,18 +6,21 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../controllers/product_management_controller.dart';
 
-class ProductManagementWidget extends StatelessWidget {
+class ProductManagementWidget extends GetView<ProductManagementController> {
   const ProductManagementWidget({
     Key? key,
     required this.productName,
     required this.productImage,
     required this.currentStep,
+    this.isEdit = false,
   }) : super(key: key);
 
   final String currentStep;
   final String productName;
   final String productImage;
+  final bool isEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +85,7 @@ class ProductManagementWidget extends StatelessWidget {
           ),
           // المرحلة
           Text(
-            '${'step'.tr}  $currentStep ${'from'.tr} 7',
+            isEdit ? controller.description : '${'step'.tr} $currentStep',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

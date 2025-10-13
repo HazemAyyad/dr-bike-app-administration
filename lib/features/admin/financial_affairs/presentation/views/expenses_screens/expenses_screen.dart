@@ -77,8 +77,14 @@ class ExpensesScreen extends GetView<ExpensesController> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final month = controller.currentTab.value == 0
-                        ? controller.expensesFilter.keys.toList()[index]
-                        : controller.destructionsFilter.keys.toList()[index];
+                        ? controller.expensesFilter.keys
+                            .toList()
+                            .reversed
+                            .toList()[index]
+                        : controller.destructionsFilter.keys
+                            .toList()
+                            .reversed
+                            .toList()[index];
 
                     final data = controller.currentTab.value == 0
                         ? controller.expensesFilter[month]!.reversed.toList()

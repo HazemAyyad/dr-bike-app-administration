@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -11,52 +12,67 @@ class ShowImageOrVideo extends StatelessWidget {
 
   final String path;
 
+  bool get _isVideo => path.toLowerCase().contains('.mp4');
+  bool get _isNetwork => path.toLowerCase().startsWith('http');
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(5.r),
       child: GestureDetector(
         onTap: () {
-          path.contains('mp4')
-              ? showGeneralDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  barrierLabel: 'Dismiss',
-                  barrierColor: Colors.black.withAlpha(128),
-                  transitionDuration: const Duration(milliseconds: 300),
-                  pageBuilder: (context, anim1, anim2) {
-                    return VideoView(videoPath: path);
-                  },
-                )
-              : showGeneralDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  barrierLabel: 'Dismiss',
-                  barrierColor: Colors.black.withAlpha(128),
-                  transitionDuration: const Duration(milliseconds: 300),
-                  pageBuilder: (context, anim1, anim2) {
-                    return FullScreenZoomImage(imageUrl: path);
-                  },
-                );
+          if (_isVideo) {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: true,
+              barrierLabel: 'Dismiss',
+              barrierColor: Colors.black.withAlpha(128),
+              transitionDuration: const Duration(milliseconds: 300),
+              pageBuilder: (context, anim1, anim2) {
+                return VideoView(videoPath: path);
+              },
+            );
+          } else {
+            showGeneralDialog(
+              context: context,
+              barrierDismissible: true,
+              barrierLabel: 'Dismiss',
+              barrierColor: Colors.black.withAlpha(128),
+              transitionDuration: const Duration(milliseconds: 300),
+              pageBuilder: (context, anim1, anim2) {
+                return FullScreenZoomImage(imageUrl: path);
+              },
+            );
+          }
         },
-        child: path.contains('.mp4')
+        child: _isVideo
             ? Icon(
                 Icons.play_circle_outline_rounded,
                 size: 150.sp,
                 color: AppColors.primaryColor,
               )
-            : CachedNetworkImage(
-                imageUrl: path,
-                height: 200.h,
-                width: 200.w,
-                fit: BoxFit.fill,
-                fadeInDuration: const Duration(milliseconds: 200),
-                fadeOutDuration: const Duration(milliseconds: 200),
-                placeholder: (context, url) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
-              ),
+            : _isNetwork
+                ? CachedNetworkImage(
+                    imageUrl: path,
+                    height: 200.h,
+                    width: 200.w,
+                    fit: BoxFit.fill,
+                    fadeInDuration: const Duration(milliseconds: 200),
+                    fadeOutDuration: const Duration(milliseconds: 200),
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.error),
+                  )
+                : Image.file(
+                    File(path),
+                    height: 200.h,
+                    width: 200.w,
+                    fit: BoxFit.fill,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.error),
+                  ),
       ),
     );
   }

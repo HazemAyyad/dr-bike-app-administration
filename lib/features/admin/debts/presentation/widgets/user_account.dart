@@ -64,14 +64,14 @@ class UserAccount extends GetView<DebtsController> {
                       controller.dataService.userTransactionsDataModel.value ==
                               null
                           ? '0.00 ${'currency'.tr}'
-                          : '${NumberFormat("#,###").format(controller.dataService.userTransactionsDataModel.value!.customerBalance)} ${'currency'.tr}',
+                          : '${NumberFormat("#,###").format(double.parse(controller.dataService.userTransactionsDataModel.value!.customerBalance))} ${'currency'.tr}',
                       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: (controller
+                            color: double.parse(controller
                                             .dataService
                                             .userTransactionsDataModel
                                             .value
                                             ?.customerBalance ??
-                                        0) <
+                                        '0') <
                                     0
                                 ? Colors.red
                                 : Colors.green,

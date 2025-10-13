@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/utils/assets_manger.dart';
 import '../../../data/models/official_papers_models/papers_model.dart';
 import '../../controllers/official_papers_controller.dart';
 import 'paper_details.dart';
@@ -67,7 +68,8 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                           isSafeArea: false,
                           onPressed: () {
                             controller.cancelPaper(
-                                paperId: data.paperId.toString());
+                              paperId: data.paperId.toString(),
+                            );
                           },
                           text: 'yes'.tr,
                           color: Colors.red,
@@ -107,7 +109,9 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(9.r),
                       child: CachedNetworkImage(
-                        imageUrl: data.img.first,
+                        imageUrl: data.img.isNotEmpty
+                            ? data.img.first
+                            : AssetsManager.noImageNet,
                         fit: BoxFit.cover,
                         height: 45.h,
                         width: 60.w,

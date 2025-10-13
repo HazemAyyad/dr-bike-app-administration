@@ -14,13 +14,16 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/expenses_controller.dart';
 
-class AddExpenseScreen extends StatelessWidget {
+class AddExpenseScreen extends GetView<ExpensesController> {
   const AddExpenseScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBar(title: 'addExpense', action: false),
+      appBar: CustomAppBar(
+        title: controller.isEditing.value ? 'editExpense' : 'addExpense',
+        action: false,
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: GetBuilder<ExpensesController>(
@@ -164,7 +167,9 @@ class AddExpenseScreen extends StatelessWidget {
                   SizedBox(height: 50.h),
                   AppButton(
                     isLoading: controller.isAddLoading,
-                    text: 'submitExpense',
+                    text: controller.isEditing.value
+                        ? 'editExpense'
+                        : 'submitExpense',
                     onPressed: () {
                       controller.addExpense(context);
                     },

@@ -789,6 +789,7 @@ const Map<String, String> en = {
   "piecesCount": "Number of Pieces",
   "destructionValue": "Destruction Value",
   "addExpense": "Add Expense",
+  'editExpense': 'Edit Expense',
   "expenseName": "Expense Name",
   "payment": "Payment",
   "receiptt": "Receipt",
@@ -894,5 +895,12 @@ const Map<String, String> en = {
   "our_factory": "Manufactured by our company",
   "purchase_price": "Purchase price",
   'step': 'Step',
-  "out_of_stock_products": "There are products that are out of stock"
+  "out_of_stock_products": "There are products that are out of stock",
+
+  'instant_sales': 'Instant Sales',
+  'employee_tasks': 'Employee Tasks',
+  'checks': 'Checks',
+  'projects': 'Projects',
+  'returns': 'Returns',
+  'reportType': 'Report Type',
 };

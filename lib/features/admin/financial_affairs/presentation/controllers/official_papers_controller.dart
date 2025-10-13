@@ -307,16 +307,11 @@ class OfficialPapersController extends GetxController
       (success) async {
         getAllExpenses();
         Get.back();
-        Future.delayed(
-          const Duration(milliseconds: 500),
-          () {
-            Get.snackbar(
-              'success'.tr,
-              success,
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(milliseconds: 1500),
-            );
-          },
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
         );
       },
     );

@@ -66,7 +66,7 @@ class FollowUpWidget extends StatelessWidget {
                   followupId: followup.id.toString(),
                 ),
                 child: Container(
-                  height: 90.h,
+                  // height: 90.h,
                   margin: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
                   decoration: BoxDecoration(
                     color: ThemeService.isDark.value
@@ -154,7 +154,7 @@ class FollowUpWidget extends StatelessWidget {
                               width: 200,
                               child: Text(
                                 followup.productName,
-                                maxLines: 2,
+                                maxLines: 5,
                                 overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context)
                                     .textTheme

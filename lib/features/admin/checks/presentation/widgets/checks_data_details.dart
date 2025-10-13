@@ -157,24 +157,6 @@ class ChecksDataDetails extends StatelessWidget {
                           ),
                           StatCard(
                             show: true,
-                            title: 'currency',
-                            imageicon: AssetsManager.cashIcon,
-                            value: NumberFormat('#,###').format(
-                              double.parse(
-                                controller.currentTab.value == 0
-                                    ? controller.inComingChecksList.value!
-                                        .checksTotalShekel
-                                    : controller.currentTab.value == 1
-                                        ? controller.cashedToPerson.value!
-                                            .checksTotalShekel
-                                        : controller.archiveData.value!
-                                            .checksTotalShekel,
-                              ),
-                            ),
-                            subtitle: '',
-                          ),
-                          StatCard(
-                            show: true,
                             title: 'currency1',
                             imageicon: AssetsManager.cashIcon,
                             value: NumberFormat('#,###').format(
@@ -205,6 +187,24 @@ class ChecksDataDetails extends StatelessWidget {
                                             .checksTotalDinar
                                         : controller.archiveData.value!
                                             .checksTotalDinar,
+                              ),
+                            ),
+                            subtitle: '',
+                          ),
+                          StatCard(
+                            show: true,
+                            title: 'currency',
+                            imageicon: AssetsManager.cashIcon,
+                            value: NumberFormat('#,###').format(
+                              double.parse(
+                                controller.currentTab.value == 0
+                                    ? controller.inComingChecksList.value!
+                                        .checksTotalShekel
+                                    : controller.currentTab.value == 1
+                                        ? controller.cashedToPerson.value!
+                                            .checksTotalShekel
+                                        : controller.archiveData.value!
+                                            .checksTotalShekel,
                               ),
                             ),
                             subtitle: '',
@@ -317,28 +317,6 @@ class ChecksDataDetails extends StatelessWidget {
                           ),
                           StatCard(
                             show: true,
-                            title: 'currency',
-                            imageicon: AssetsManager.cashIcon,
-                            value: NumberFormat('#,###').format(
-                              double.tryParse(
-                                    controller.currentTab.value == 0
-                                        ? controller.inComingChecksList.value
-                                                ?.boxesTotalShekel ??
-                                            '0.0'
-                                        : controller.currentTab.value == 1
-                                            ? controller.cashedToPerson.value
-                                                    ?.boxesTotalShekel ??
-                                                '0.0'
-                                            : controller.archiveData.value
-                                                    ?.boxesTotalShekel ??
-                                                '0.0',
-                                  ) ??
-                                  0.0,
-                            ),
-                            subtitle: '',
-                          ),
-                          StatCard(
-                            show: true,
                             title: 'currency1',
                             imageicon: AssetsManager.cashIcon,
                             value: NumberFormat('#,###').format(
@@ -375,6 +353,28 @@ class ChecksDataDetails extends StatelessWidget {
                                                 '0.0'
                                             : controller.archiveData.value
                                                     ?.boxesTotalDinar ??
+                                                '0.0',
+                                  ) ??
+                                  0.0,
+                            ),
+                            subtitle: '',
+                          ),
+                          StatCard(
+                            show: true,
+                            title: 'currency',
+                            imageicon: AssetsManager.cashIcon,
+                            value: NumberFormat('#,###').format(
+                              double.tryParse(
+                                    controller.currentTab.value == 0
+                                        ? controller.inComingChecksList.value
+                                                ?.boxesTotalShekel ??
+                                            '0.0'
+                                        : controller.currentTab.value == 1
+                                            ? controller.cashedToPerson.value
+                                                    ?.boxesTotalShekel ??
+                                                '0.0'
+                                            : controller.archiveData.value
+                                                    ?.boxesTotalShekel ??
                                                 '0.0',
                                   ) ??
                                   0.0,
