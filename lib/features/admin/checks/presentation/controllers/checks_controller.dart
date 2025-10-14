@@ -56,6 +56,8 @@ class ChecksController extends GetxController
 
   final TextEditingController employeeNameController = TextEditingController();
 
+  final TextEditingController notesController = TextEditingController();
+
   final RxBool amountFilter = false.obs;
 
   final RxBool dateFilter = false.obs;
@@ -148,6 +150,7 @@ class ChecksController extends GetxController
         bankName: bankNameController.text,
         frontImage: checkFrontImage.value,
         backImage: checkBackImage.value,
+        notes: notesController.text,
       );
       result.fold(
         (failure) {
@@ -180,6 +183,7 @@ class ChecksController extends GetxController
           currencyController.clear();
           checkNumberController.clear();
           bankNameController.clear();
+          notesController.clear();
           checkFrontImage.value = null;
           checkBackImage.value = null;
           selectedDay.value = DateTime.now();
@@ -233,6 +237,7 @@ class ChecksController extends GetxController
           ? check.fromCustomer!.id.toString()
           : check.fromSeller?.id.toString();
       selectedCustomersSellers.value = check.fromCustomer == null;
+      notesController.text = check.notes ?? '';
     } else {
       Get.toNamed(
         AppRoutes.NEWCHECKSCREEN,
@@ -245,6 +250,7 @@ class ChecksController extends GetxController
       currencyController.clear();
       checkNumberController.clear();
       bankNameController.clear();
+      notesController.clear();
       editCheckFrontImage.value = null;
       editCheckBackImage.value = null;
       selectedDay.value = DateTime.now();
@@ -277,6 +283,7 @@ class ChecksController extends GetxController
             : editCheckBackImage.value != null
                 ? XFile(editCheckBackImage.value!.path)
                 : null,
+        notes: notesController.text,
       );
       result.fold(
         (failure) {
@@ -827,6 +834,7 @@ class ChecksController extends GetxController
           (check.currency.toLowerCase().contains(q)) ||
           (check.total.toLowerCase().contains(q)) ||
           (check.dueDate.toString().contains(q)) ||
+          (check.notes?.toLowerCase().contains(q) ?? false) ||
           (check.customer?.name.toLowerCase().contains(q) ?? false) ||
           (check.seller?.name.toLowerCase().contains(q) ?? false) ||
           (check.fromCustomer?.name.toLowerCase().contains(q) ?? false) ||
@@ -881,6 +889,7 @@ class ChecksController extends GetxController
     currencyController.dispose();
     checkNumberController.dispose();
     bankNameController.dispose();
+    notesController.dispose();
     super.onClose();
   }
 }

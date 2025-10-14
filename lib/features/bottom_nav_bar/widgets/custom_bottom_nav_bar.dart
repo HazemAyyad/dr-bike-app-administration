@@ -10,6 +10,7 @@ import '../../admin/counters/data/repositories/countrers_implement.dart';
 import '../../admin/counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../admin/counters/domain/usecases/get_report_information_usecase.dart';
 import '../../admin/counters/presentation/controllers/counters_controller.dart';
+import '../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../controllers/bottom_nav_bar_controller.dart';
 import 'build_nav_item.dart';
 
@@ -66,7 +67,13 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                           assetImage: AssetsManager.taskIcon,
                           isSelected: controller.currentIndex.value == 1,
                           label: 'tasks'.tr,
-                          onTap: () => controller.changePage(1),
+                          onTap: () {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              Get.find<EmployeeDashbordController>()
+                                  .scrollToToday();
+                            });
+                            controller.changePage(1);
+                          },
                         ),
                   BuildNavItem(
                     assetImage: AssetsManager.profileIcon,

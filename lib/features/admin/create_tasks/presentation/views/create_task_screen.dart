@@ -11,7 +11,6 @@ import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
-import '../../../../../core/helpers/loding_indicator.dart';
 import '../controllers/create_task_controller.dart';
 import '../widgets/add_sub_task.dart';
 import '../widgets/select_date.dart';
@@ -343,37 +342,33 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 ],
               ),
               SizedBox(height: 10.h),
-              Obx(
-                () => controller.isLoding.value
-                    ? lodingIndicator()
-                    : AppButton(
-                        text: title == 'editEmployeeTask'
-                            ? 'editEmployeeTask'.tr
-                            : 'createTask'.tr,
-                        textStyle:
-                            Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                        onPressed: () {
-                          if (controller.isEdit) {
-                            // title == 'editPrivateTask'
-                            //     ? controller.createSpecialTask(context)
-                            //     :
-                            controller.createTask(
-                              context,
-                              employeeTaskId: controller.employeeTaskService
-                                  .taskDetails.value!.taskId,
-                            );
-                          } else {
-                            title == 'createNewEmployeeTask'
-                                ? controller.createTask(context)
-                                : controller.createSpecialTask(context);
-                          }
-                        },
-                        height: 40.h,
-                      ),
+              AppButton(
+                isLoading: controller.isLoding,
+                text: title == 'editEmployeeTask'
+                    ? 'editEmployeeTask'.tr
+                    : 'createTask'.tr,
+                textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                onPressed: () {
+                  if (controller.isEdit) {
+                    // title == 'editPrivateTask'
+                    //     ? controller.createSpecialTask(context)
+                    //     :
+                    controller.createTask(
+                      context,
+                      employeeTaskId: controller
+                          .employeeTaskService.taskDetails.value!.taskId,
+                    );
+                  } else {
+                    title == 'createNewEmployeeTask'
+                        ? controller.createTask(context)
+                        : controller.createSpecialTask(context);
+                  }
+                },
+                height: 40.h,
               ),
             ],
           ),

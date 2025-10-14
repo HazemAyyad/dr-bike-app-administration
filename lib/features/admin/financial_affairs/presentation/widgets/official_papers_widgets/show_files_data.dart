@@ -10,6 +10,7 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/official_papers_models/safes_model.dart';
 import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
+import 'add_paper.dart';
 
 class ShowFilesData extends GetView<OfficialPapersController> {
   const ShowFilesData({Key? key, required this.data}) : super(key: key);
@@ -29,7 +30,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
           slivers: [
             SliverToBoxAdapter(
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     data.name,
@@ -40,6 +41,21 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                           fontSize: 20.sp,
                           fontWeight: FontWeight.w800,
                         ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Get.back();
+                      controller.isEdit = false;
+                      controller.pictureNameController.clear();
+                      controller.pictureDescriptionController.clear();
+                      controller.selectedFile.value = null;
+                      controller.getPaperData();
+                      Get.dialog(AddPaper(fileId: data.id.toString()));
+                    },
+                    icon: const Icon(
+                      Icons.playlist_add,
+                      color: AppColors.primaryColor,
+                    ),
                   ),
                 ],
               ),

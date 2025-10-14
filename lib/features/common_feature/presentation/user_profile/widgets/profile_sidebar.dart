@@ -87,7 +87,8 @@ class BuildProfileSidebar extends GetView<ProfileController> {
             Get.toNamed(AppRoutes.CONTACTUSSCREEN);
           },
         ),
-        const ChangLang(),
+        // ignore: prefer_const_constructors
+        ChangLang(),
         // ignore: prefer_const_constructors
         DarkMode(),
         SizedBox(height: 70.h),

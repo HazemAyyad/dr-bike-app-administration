@@ -54,7 +54,7 @@ class DioConsumer extends ApiConsumer {
         queryParameters: queryParameters,
         onSendProgress: onSendProgress,
       );
-      Future.delayed(const Duration(milliseconds: 1000), () {
+      Future.delayed(const Duration(milliseconds: 1500), () {
         getx.Get.closeAllSnackbars();
       });
       return response; // إعادة الكائن الكامل

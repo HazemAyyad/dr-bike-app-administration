@@ -21,7 +21,6 @@ import '../features/admin/buying/presentation/views/bills_screens/bill_details_s
 import '../features/admin/buying/presentation/views/purchase_orders_screen/purchase_orders_screen.dart';
 import '../features/admin/buying/presentation/views/return_purchases_screens/return_purchases_screen.dart';
 import '../features/admin/follow_up/presentation/binding/follow_up_binding.dart';
-import '../features/admin/follow_up/presentation/views/add_new_follow_customer.dart';
 import '../features/admin/follow_up/presentation/views/follow_up_screen.dart';
 import '../features/admin/follow_up/presentation/views/add_new_follow_up.dart';
 import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_binding.dart';
@@ -379,12 +378,6 @@ class AppPages {
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.ADDNEWFOLLOWCUSTOMERSCREEN,
-      page: () => const AddNewFollowCustomerScreen(),
-      // binding:
-      transition: _transitionFade,
     ),
 
     // قائمة البيانات العامة

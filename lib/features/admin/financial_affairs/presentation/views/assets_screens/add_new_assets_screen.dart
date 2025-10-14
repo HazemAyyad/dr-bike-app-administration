@@ -83,7 +83,7 @@ class AddNewAssetsScreen extends GetView<AssetsController> {
               const EditImagesWidget(),
               SizedBox(height: 30.h),
               MediaUploadButton(
-                isShowPreview: false,
+                isShowPreview: controller.isEditing.value ? false : true,
                 onFilesChanged: (files) {
                   final uniqueNewFiles = files.where((file) {
                     return !controller.selectedFile.any(

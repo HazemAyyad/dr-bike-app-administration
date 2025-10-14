@@ -55,7 +55,7 @@ class EmployeeTasks extends GetView<EmployeeTasksController> {
                   ? controller.completedTasksFilter.length
                   : controller.canceledTasksFilter.length,
           itemBuilder: (context, index) {
-            final month = controller.currentTab.value == 0
+            final day = controller.currentTab.value == 0
                 ? controller.ongoingTasksFilter.keys
                     .toList()
                     .reversed
@@ -70,10 +70,10 @@ class EmployeeTasks extends GetView<EmployeeTasksController> {
                         .reversed
                         .toList()[index];
             List<EmployeeTaskModel> date = controller.currentTab.value == 0
-                ? controller.ongoingTasksFilter[month]!.reversed.toList()
+                ? controller.ongoingTasksFilter[day]!.reversed.toList()
                 : controller.currentTab.value == 1
-                    ? controller.completedTasksFilter[month]!.reversed.toList()
-                    : controller.canceledTasksFilter[month]!.reversed.toList();
+                    ? controller.completedTasksFilter[day]!.reversed.toList()
+                    : controller.canceledTasksFilter[day]!.reversed.toList();
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
@@ -83,7 +83,7 @@ class EmployeeTasks extends GetView<EmployeeTasksController> {
                     children: [
                       Text(
                         DateFormat('EEEE, yyyy/MM/dd', Get.locale!.languageCode)
-                            .format(DateTime.parse(month)),
+                            .format(DateTime.parse(day)),
                         style: theme.copyWith(
                           color: AppColors.primaryColor,
                           fontWeight: FontWeight.w700,
@@ -98,16 +98,29 @@ class EmployeeTasks extends GetView<EmployeeTasksController> {
                     width: double.infinity,
                     color: AppColors.primaryColor,
                   ),
-                  SizedBox(height: 10.h),
-                  ...date.map(
-                    (order) {
-                      return EmployeeTasksLists(
-                        controller: controller,
-                        order: order,
-                        index: index,
-                      );
-                    },
-                  ),
+                  date.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'noData'.tr,
+                            style: theme.copyWith(
+                              color: AppColors.primaryColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15.sp,
+                            ),
+                          ),
+                        )
+                      : Column(children: [
+                          ...date.map(
+                            (order) {
+                              return EmployeeTasksLists(
+                                controller: controller,
+                                order: order,
+                                index: index,
+                              );
+                            },
+                          ),
+                        ]),
                 ],
               ),
             );

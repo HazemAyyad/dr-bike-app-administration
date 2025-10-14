@@ -23,6 +23,7 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
         dsibalBack: true,
       ),
       body: CustomScrollView(
+        controller: controller.scrollController,
         slivers: [
           SliverToBoxAdapter(
             child: AppTabs(
@@ -108,21 +109,11 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final keys = controller.tasksDataFilter.keys
-                        .where((e) => controller.currentTab.value == 0
-                            ? controller.tasksDataFilter[e]!
-                                .any((t) => t.status == 'ongoing')
-                            : controller.tasksDataFilter[e]!
-                                .any((t) => t.status == 'completed'))
+                    final dateKey = controller.tasksDataFilter.keys
                         .toList()
-                      ..sort((a, b) => a.compareTo(b));
-
-                    final monthKey = keys[index];
-                    final tasks = controller.tasksDataFilter[monthKey]!
-                        .where((t) => controller.currentTab.value == 0
-                            ? t.status == 'ongoing'
-                            : t.status == 'completed')
-                        .toList();
+                        .reversed
+                        .toList()[index];
+                    final tasks = controller.tasksDataFilter[dateKey] ?? [];
 
                     return Column(
                       children: [
@@ -135,7 +126,7 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
                                   Text(
                                     DateFormat('EEEE, yyyy/MM/dd',
                                             Get.locale!.languageCode)
-                                        .format(DateTime.parse(monthKey)),
+                                        .format(DateTime.parse(dateKey)),
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium!
@@ -153,25 +144,45 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
                                 width: double.infinity,
                                 color: AppColors.primaryColor,
                               ),
-                              SizedBox(height: 10.h),
-                              ...tasks
-                                  .map((e) => EmployeeDashbordTasks(task: e)),
+                              tasks
+                                      .where((e) =>
+                                          controller.currentTab.value == 0
+                                              ? e.status != 'completed'
+                                              : e.status != 'ongoing')
+                                      .isEmpty
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        'noData'.tr,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              color: AppColors.primaryColor,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15.sp,
+                                            ),
+                                      ),
+                                    )
+                                  : Column(
+                                      children: [
+                                        SizedBox(height: 5.h),
+                                        ...tasks
+                                            .where((e) =>
+                                                controller.currentTab.value == 0
+                                                    ? e.status != 'completed'
+                                                    : e.status != 'ongoing')
+                                            .map((e) =>
+                                                EmployeeDashbordTasks(task: e)),
+                                      ],
+                                    ),
                             ],
                           ),
                         ),
                       ],
                     );
                   },
-                  childCount: controller.tasksDataFilter.entries
-                      .where(
-                        (e) => e.value.any(
-                          (t) => controller.currentTab.value == 0
-                              ? t.status == 'ongoing'
-                              : t.status == 'completed',
-                        ),
-                      )
-                      .toList()
-                      .length,
+                  childCount: controller.tasksDataFilter.length,
                 ),
               );
             },

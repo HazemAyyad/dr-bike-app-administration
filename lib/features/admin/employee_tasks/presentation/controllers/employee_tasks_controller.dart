@@ -43,6 +43,7 @@ class EmployeeTasksController extends GetxController {
 
   void changeTab(int index) {
     currentTab.value = index;
+    scrollToToday();
     update();
   }
 
@@ -58,7 +59,6 @@ class EmployeeTasksController extends GetxController {
         final bDate = DateTime.parse(b);
         return bDate.compareTo(aDate);
       });
-
     return LinkedHashMap.fromIterable(
       sortedKeys,
       key: (k) => k,
@@ -71,11 +71,9 @@ class EmployeeTasksController extends GetxController {
   Map<String, List<EmployeeTaskModel>> canceledTasksFilter = {};
 
   // get employee tasks
-  Future<void> getEmployeeTasks() async {
-    // if (employeeTaskService.ongoingEmployeeTasks.isEmpty) {
+  Future<void> getEmployeeTasks({bool scrollToTodayb = true}) async {
     isLoading(true);
     update();
-    // }
     employeeTaskService.ongoingEmployeeTasks.clear();
     employeeTaskService.completedEmployeeTasks.clear();
     employeeTaskService.canceledEmployeeTasks.clear();
@@ -104,8 +102,8 @@ class EmployeeTasksController extends GetxController {
         employeeTaskService.completedEmployeeTasks[dateKey]!.add(task);
       }
     }
-    completedTasksFilter
-        .assignAll(sortByDate(employeeTaskService.completedEmployeeTasks));
+    completedTasksFilter.assignAll(
+        filterByRange(sortByDate(employeeTaskService.completedEmployeeTasks)));
 
     // canceled
     final canceled = await employeeTasksUsecase.call(page: 2);
@@ -122,6 +120,11 @@ class EmployeeTasksController extends GetxController {
         filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)));
 
     isLoading(false);
+    if (scrollToTodayb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        scrollToToday();
+      });
+    }
     update();
   }
 
@@ -212,13 +215,11 @@ class EmployeeTasksController extends GetxController {
         toDateController.text.isEmpty &&
         employeeNameController.text.isEmpty) {
       ongoingTasksFilter.assignAll(
-        filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)),
-      );
-      completedTasksFilter
-          .assignAll(sortByDate(employeeTaskService.completedEmployeeTasks));
+          filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)));
+      completedTasksFilter.assignAll(filterByRange(
+          sortByDate(employeeTaskService.completedEmployeeTasks)));
       canceledTasksFilter.assignAll(
-        filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)),
-      );
+          filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)));
       update();
       return;
     }
@@ -226,7 +227,7 @@ class EmployeeTasksController extends GetxController {
     ongoingTasksFilter =
         filterByRange(filterTasks(employeeTaskService.ongoingEmployeeTasks));
     completedTasksFilter =
-        filterTasks(employeeTaskService.completedEmployeeTasks);
+        filterByRange(filterTasks(employeeTaskService.completedEmployeeTasks));
     canceledTasksFilter =
         filterByRange(filterTasks(employeeTaskService.canceledEmployeeTasks));
     update();
@@ -259,17 +260,12 @@ class EmployeeTasksController extends GetxController {
       (success) {
         Get.closeAllSnackbars();
         Get.back();
-        getEmployeeTasks();
-        Future.delayed(
-          const Duration(milliseconds: 0),
-          () {
-            Get.snackbar(
-              'success'.tr,
-              success,
-              snackPosition: SnackPosition.BOTTOM,
-              duration: const Duration(milliseconds: 1000),
-            );
-          },
+        getEmployeeTasks(scrollToTodayb: false);
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
         );
       },
     );
@@ -307,72 +303,92 @@ class EmployeeTasksController extends GetxController {
     isTaskDetailsLoading(false);
   }
 
+  DateTime getStartOfWeek(DateTime date) {
+    // في Flutter: السبت = 6، الأحد = 7
+    int weekday = date.weekday;
+    // لو اليوم السبت = بداية الأسبوع
+    int daysToSubtract = (weekday == 6) ? 0 : (weekday + 1);
+    return date.subtract(Duration(days: daysToSubtract));
+  }
+
   DateTime startDate = DateTime.now();
-  DateTime endDate = DateTime.now().add(const Duration(days: 7));
+  DateTime endDate = DateTime.now();
 
   Map<String, List<EmployeeTaskModel>> filterByRange(
       Map<String, List<EmployeeTaskModel>> source) {
     final filtered = <String, List<EmployeeTaskModel>>{};
 
-    source.forEach((key, tasks) {
-      DateTime dateKey;
-      try {
-        dateKey = DateTime.parse(key);
-      } catch (_) {
-        return;
-      }
+    // نضمن إن الأسبوع دايمًا 7 أيام من السبت للجمعة
+    for (int i = 0; i < 7; i++) {
+      final currentDay = startDate.add(Duration(days: i));
+      final dateKey =
+          "${currentDay.year}-${currentDay.month.toString().padLeft(2, '0')}-${currentDay.day.toString().padLeft(2, '0')}";
 
-      if (dateKey.isAfter(startDate.subtract(const Duration(days: 1))) &&
-          dateKey.isBefore(endDate)) {
-        filtered[key] = tasks;
-      }
-    });
+      // لو اليوم موجود في الـ source نضيف المهام، لو مش موجود نحط لستة فاضية
+      filtered[dateKey] = List<EmployeeTaskModel>.from(source[dateKey] ?? []);
+    }
 
-    return sortByDate(filtered);
+    // الترتيب تنازليًا (اختياري)
+    return LinkedHashMap.fromEntries(
+      filtered.entries.toList()
+        ..sort(
+            (a, b) => DateTime.parse(b.key).compareTo(DateTime.parse(a.key))),
+    );
   }
 
   void filterDataByDateRange() {
     ongoingTasksFilter
-        .assignAll(sortByDate(employeeTaskService.ongoingEmployeeTasks));
+        .assignAll(filterByRange(employeeTaskService.ongoingEmployeeTasks));
+    completedTasksFilter
+        .assignAll(filterByRange(employeeTaskService.completedEmployeeTasks));
     canceledTasksFilter
-        .assignAll(sortByDate(employeeTaskService.canceledEmployeeTasks));
-
-    ongoingTasksFilter.assignAll(
-      filterTasks(
-        filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)),
-      ),
-    );
-    canceledTasksFilter.assignAll(
-      filterTasks(
-        filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)),
-      ),
-    );
+        .assignAll(filterByRange(employeeTaskService.canceledEmployeeTasks));
     update();
   }
 
   void changeWeek(bool isNext) {
-    const int daysInWeek = 8;
-
+    const int daysInWeek = 7;
     if (isNext) {
       startDate = startDate.add(const Duration(days: daysInWeek));
-      endDate = endDate.add(const Duration(days: daysInWeek));
     } else {
       startDate = startDate.subtract(const Duration(days: daysInWeek));
-      endDate = endDate.subtract(const Duration(days: daysInWeek));
     }
-    // بعد التغيير، نفلتر الداتا حسب المدى الجديد
+    // دايمًا نهاية الأسبوع بعد 6 أيام من البداية
+    endDate = startDate.add(const Duration(days: 6));
+    // بعد ما نحدث النطاق نفلتر الداتا
     filterDataByDateRange();
     update();
+  }
+
+  final ScrollController scrollController = ScrollController();
+  void scrollToToday() {
+    DateTime today = DateTime.now();
+    DateTime startOfWeek = getStartOfWeek(today);
+    int todayIndex = today.difference(startOfWeek).inDays;
+
+    // نحرك بناءً على index اليوم (0 = السبت، 6 = الجمعة)
+    double position = todayIndex * 120.0; // عرض العنصر تقريبًا أو حجمه الرأسي
+    scrollController.animateTo(
+      position,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
   void onInit() {
     super.onInit();
-    employeePermissions.contains(7) ? getEmployeeTasks() : null;
+    startDate = getStartOfWeek(DateTime.now());
+    endDate = startDate.add(const Duration(days: 6));
+    if (userType == 'admin') {
+      getEmployeeTasks();
+    } else {
+      employeePermissions.contains(7) ? getEmployeeTasks() : null;
+    }
     ongoingTasksFilter.assignAll(
         filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)));
-    completedTasksFilter
-        .assignAll(sortByDate(employeeTaskService.completedEmployeeTasks));
+    completedTasksFilter.assignAll(
+        filterByRange(sortByDate(employeeTaskService.completedEmployeeTasks)));
     canceledTasksFilter.assignAll(
         filterByRange(sortByDate(employeeTaskService.canceledEmployeeTasks)));
     update();
@@ -388,5 +404,6 @@ class EmployeeTasksController extends GetxController {
     fromDateController.dispose();
     toDateController.dispose();
     employeeNameController.dispose();
+    scrollController.dispose();
   }
 }

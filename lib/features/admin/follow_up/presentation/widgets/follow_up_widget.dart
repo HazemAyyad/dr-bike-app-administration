@@ -85,74 +85,144 @@ class FollowUpWidget extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          vertical: 5.h,
-                          horizontal: 10.w,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 5.h),
-                            Row(
-                              children: [
-                                Text(
-                                  followup.customerName.isNotEmpty
-                                      ? followup.customerName
-                                      : followup.sellerName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: ThemeService.isDark.value
-                                            ? AppColors.customGreyColor6
-                                            : AppColors.customGreyColor5,
-                                      ),
-                                ),
-                                SizedBox(width: 5.w),
-                                GestureDetector(
-                                  onTap: () {
-                                    Get.dialog(
-                                      ContactDialog(
-                                        phone: followup.customerPhone.isNotEmpty
-                                            ? followup.customerPhone
-                                            : followup.sellerPhone,
-                                      ),
-                                    );
-                                  },
-                                  child: Icon(
-                                    Icons.phone_outlined,
-                                    size: 23.sp,
-                                    color: AppColors.primaryColor,
+                      Flexible(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 5.h,
+                            horizontal: 10.w,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 5.h),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      followup.customerName.isNotEmpty
+                                          ? followup.customerName
+                                          : followup.sellerName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium!
+                                          .copyWith(
+                                            fontSize: 15.sp,
+                                            fontWeight: FontWeight.w700,
+                                            color: ThemeService.isDark.value
+                                                ? AppColors.customGreyColor6
+                                                : AppColors.customGreyColor5,
+                                          ),
+                                    ),
                                   ),
-                                ),
-                                SizedBox(width: 10.w),
-                                Text(
-                                  showData(followup.createdAt),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w700,
-                                        color: ThemeService.isDark.value
-                                            ? AppColors.customGreyColor6
-                                            : AppColors.customGreyColor5,
+                                  SizedBox(width: 5.w),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Get.dialog(
+                                        ContactDialog(
+                                          phone:
+                                              followup.customerPhone.isNotEmpty
+                                                  ? followup.customerPhone
+                                                  : followup.sellerPhone,
+                                        ),
+                                      );
+                                    },
+                                    child: Icon(
+                                      Icons.phone_outlined,
+                                      size: 23.sp,
+                                      color: AppColors.primaryColor,
+                                    ),
+                                  ),
+                                  SizedBox(width: 5.w),
+                                  Text(
+                                    showData(followup.createdAt),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: ThemeService.isDark.value
+                                              ? AppColors.customGreyColor6
+                                              : AppColors.customGreyColor5,
+                                        ),
+                                  ),
+                                  SizedBox(width: 10.w),
+                                  if (controller.currentTab.value != 3)
+                                    GestureDetector(
+                                      onTap: () => Get.dialog(
+                                        CancelDialog(
+                                            followupId: followup.id.toString()),
                                       ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 5.h),
-                            SizedBox(
-                              width: 200,
-                              child: Text(
+                                      child: Container(
+                                        height: 30.h,
+                                        width: 80.w,
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 5.w),
+                                        margin: EdgeInsets.symmetric(
+                                            horizontal: 5.w),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                              color: AppColors.redColor),
+                                          color: Colors.transparent,
+                                          borderRadius:
+                                              BorderRadius.circular(30.r),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            'cancelFollowUp'.tr,
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium!
+                                                .copyWith(
+                                                  fontSize: 10.sp,
+                                                  fontWeight: FontWeight.w400,
+                                                  color: AppColors.redColor,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (controller.currentTab.value == 3)
+                                    Container(
+                                      height: 30.h,
+                                      width: 80.w,
+                                      decoration: BoxDecoration(
+                                        color: followup.followupStatus ==
+                                                'delivered'
+                                            ? AppColors.customGreen1
+                                            : AppColors.redColor,
+                                        borderRadius:
+                                            BorderRadius.circular(8.r),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          followup.followupStatus == 'delivered'
+                                              ? 'sale_completed'.tr
+                                              : 'sale_rejected'.tr,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium!
+                                              .copyWith(
+                                                fontSize: 13.sp,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.whiteColor,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              SizedBox(height: 5.h),
+                              Text(
                                 followup.productName,
                                 maxLines: 5,
                                 overflow: TextOverflow.ellipsis,
@@ -167,75 +237,10 @@ class FollowUpWidget extends StatelessWidget {
                                           : AppColors.customGreyColor5,
                                     ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                      if (controller.currentTab.value != 3)
-                        Flexible(
-                          child: GestureDetector(
-                            onTap: () => Get.dialog(
-                              CancelDialog(followupId: followup.id.toString()),
-                            ),
-                            child: Container(
-                              height: 35.h,
-                              width: 100.w,
-                              padding: EdgeInsets.symmetric(horizontal: 10.w),
-                              margin: EdgeInsets.symmetric(horizontal: 10.w),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppColors.redColor),
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(30.r),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'cancelFollowUp'.tr,
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w400,
-                                        color: AppColors.redColor,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (controller.currentTab.value == 3)
-                        Container(
-                          width: 60.w,
-                          padding: EdgeInsets.symmetric(
-                            vertical: 5.h,
-                            horizontal: 5.w,
-                          ),
-                          decoration: BoxDecoration(
-                            color: followup.followupStatus == 'delivered'
-                                ? AppColors.customGreen1
-                                : AppColors.redColor,
-                            borderRadius: BorderRadius.circular(8.r),
-                          ),
-                          child: Center(
-                            child: Text(
-                              followup.followupStatus == 'delivered'
-                                  ? 'sale_completed'.tr
-                                  : 'sale_rejected'.tr,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.whiteColor,
-                                  ),
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),

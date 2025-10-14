@@ -128,6 +128,7 @@ class CheckModel extends CheckEntity {
     Seller? fromSeller,
     Seller? toCustomer,
     Seller? toSeller,
+    String? notes,
   }) : super(
           id: id,
           customerId: customerId,
@@ -148,6 +149,7 @@ class CheckModel extends CheckEntity {
           fromSeller: fromSeller,
           toCustomer: toCustomer,
           toSeller: toSeller,
+          notes: notes,
         );
 
   factory CheckModel.fromJson(
@@ -197,6 +199,7 @@ class CheckModel extends CheckEntity {
       toSeller: json['to_seller'] != null
           ? SellerModel.fromJson(json['to_seller'])
           : null,
+      notes: json['notes'] ?? '',
     );
   }
 
@@ -220,6 +223,7 @@ class CheckModel extends CheckEntity {
       'from_seller': fromSeller,
       'to_customer': toCustomer,
       'to_seller': toSeller,
+      'notes': notes,
     };
   }
 }

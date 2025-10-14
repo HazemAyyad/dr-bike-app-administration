@@ -30,6 +30,7 @@ class ChecksImplement implements ChecksRepository {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -46,6 +47,7 @@ class ChecksImplement implements ChecksRepository {
         bankName: bankName,
         frontImage: frontImage,
         backImage: backImage,
+        notes: notes,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);
@@ -221,6 +223,7 @@ class ChecksImplement implements ChecksRepository {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -234,6 +237,7 @@ class ChecksImplement implements ChecksRepository {
         bankName: bankName,
         frontImage: frontImage,
         backImage: backImage,
+        notes: notes,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

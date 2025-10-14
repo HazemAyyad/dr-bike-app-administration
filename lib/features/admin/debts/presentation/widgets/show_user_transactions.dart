@@ -44,7 +44,6 @@ class ShowUserTransactions extends GetView<DebtsController> {
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 20.h),
               UserAccount(
                 userName: debt.customerName.isNotEmpty
                     ? debt.customerName
@@ -53,7 +52,7 @@ class ShowUserTransactions extends GetView<DebtsController> {
                     ? debt.customerId.toString()
                     : debt.sellerId.toString(),
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 5.h),
               Obx(
                 () => Text(
                   '${'transactions'.tr} (${controller.dataService.userTransactionsDataModel.value == null ? 0 : controller.dataService.userTransactionsDataModel.value!.customerDebts.length})',
@@ -66,7 +65,7 @@ class ShowUserTransactions extends GetView<DebtsController> {
                       ),
                 ),
               ),
-              SizedBox(height: 10.h),
+              SizedBox(height: 5.h),
               Obx(
                 () {
                   if (controller.userTransactionsLoading.value) {

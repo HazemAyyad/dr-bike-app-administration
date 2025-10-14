@@ -238,6 +238,12 @@ class CheckDetails extends GetView<ChecksController> {
                   ),
               ],
             ),
+            if (check.notes != null && check.notes!.isNotEmpty)
+              SupTextAndDiscr(
+                titleColor: AppColors.primaryColor,
+                title: 'notes',
+                discription: check.notes ?? '',
+              ),
             SupTextAndDiscr(
               titleColor: AppColors.primaryColor,
               title: 'total',

@@ -17,6 +17,7 @@ class EditChecksUsecase {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   }) {
     return checksRepository.editChecks(
       isInComing: isInComing,
@@ -26,6 +27,7 @@ class EditChecksUsecase {
       bankName: bankName,
       frontImage: frontImage,
       backImage: backImage,
+      notes: notes,
     );
   }
 }

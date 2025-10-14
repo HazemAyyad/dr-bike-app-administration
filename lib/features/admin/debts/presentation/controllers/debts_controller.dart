@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
@@ -296,6 +297,7 @@ class DebtsController extends GetxController {
     required String customerId,
     required String customerName,
     required BuildContext context,
+    bool isShared = false,
   }) async {
     try {
       // نطلب من المستخدم يختار فولدر
@@ -324,6 +326,15 @@ class DebtsController extends GetxController {
             "${directory.path}/تقرير_ديون_$customerName${DateTime.now().day}-${DateTime.now().month}-${DateTime.now().year}.pdf";
         final file = File(filePath);
         await file.writeAsBytes(success);
+        if (isShared) {
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(filePath)],
+              text: 'تقرير من تطبيق Doctor Bike',
+              subject: 'مشاركة التقرير',
+            ),
+          );
+        }
         Get.snackbar(
           "fileDownloadedSuccessfully".tr,
           filePath,

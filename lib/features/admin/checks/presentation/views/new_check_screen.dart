@@ -206,6 +206,17 @@ class NewCheckScreen extends GetView<ChecksController> {
                 textInputAction: TextInputAction.next,
                 isRequired: true,
               ),
+              SizedBox(height: 16.h),
+              CustomTextField(
+                label: 'notes',
+                hintText: 'notes',
+                controller: controller.notesController,
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.multiline,
+                maxLines: 5,
+                minLines: 5,
+                validator: (p0) => null,
+              ),
               if (controller.editCheckBackImage.value == null)
                 SizedBox(height: 30.h),
               if (controller.editCheckFrontImage.value != null &&
@@ -260,43 +271,10 @@ class NewCheckScreen extends GetView<ChecksController> {
                     SizedBox(height: 20.h),
                   ],
                 ),
-
               UploadImageButton(
                 selectedFile: controller.checkFrontImage,
                 title: 'checkFrontImage',
               ),
-              // FormField<void>(
-              //   validator: (file) {
-              //     if (controller.checkFrontImage.value == null) {
-              //       return 'checkFrontImage'.tr;
-              //     }
-              //     return null;
-              //   },
-              //   builder: (formFieldState) {
-              //     return Column(
-              //       crossAxisAlignment: CrossAxisAlignment.start,
-              //       children: [
-              //         if (formFieldState.hasError)
-              //           Padding(
-              //             padding: const EdgeInsets.only(top: 5),
-              //             child: Text(
-              //               formFieldState.errorText ?? "",
-              //               style: const TextStyle(
-              //                   color: Colors.red, fontSize: 12),
-              //             ),
-              //           ),
-              //       ],
-              //     );
-              //   },
-              // ),
-              // MediaUploadButton(
-              //   title: 'checkFrontImage',
-              //   allowedType: MediaType.image,
-              //   onFilesChanged: (files) {
-              //     controller.checkFrontImage = [files.first];
-              //   },
-              // ),
-
               if (controller.editCheckBackImage.value == null)
                 SizedBox(height: 30.h),
               if (controller.editCheckBackImage.value != null &&
@@ -357,13 +335,6 @@ class NewCheckScreen extends GetView<ChecksController> {
                       selectedFile: controller.checkBackImage,
                       title: 'checkBackImage',
                     ),
-              // MediaUploadButton(
-              //   title: 'checkBackImage',
-              //   allowedType: MediaType.image,
-              //   onFilesChanged: (files) {
-              //     controller.checkBackImage = [files.first];
-              //   },
-              // ),
               SizedBox(height: isNewCheck ? 0 : 50.h),
               AppButton(
                 isLoading: controller.isLoading,

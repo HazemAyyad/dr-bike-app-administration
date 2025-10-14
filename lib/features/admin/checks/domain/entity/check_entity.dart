@@ -18,6 +18,7 @@ class CheckEntity {
   final Seller? fromSeller;
   final Seller? toCustomer;
   final Seller? toSeller;
+  final String? notes;
 
   const CheckEntity({
     required this.id,
@@ -39,6 +40,7 @@ class CheckEntity {
     this.fromSeller,
     this.toCustomer,
     this.toSeller,
+    this.notes,
   });
 }
 

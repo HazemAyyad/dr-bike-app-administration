@@ -31,6 +31,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
         action: false,
       ),
       body: CustomScrollView(
+        controller: controller.scrollController,
         slivers: [
           SliverToBoxAdapter(
             child: AppTabs(

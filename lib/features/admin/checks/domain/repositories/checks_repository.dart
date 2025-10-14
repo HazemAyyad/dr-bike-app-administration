@@ -17,6 +17,7 @@ abstract class ChecksRepository {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   });
 
   Future<Either<Failure, String>> editChecks({
@@ -27,6 +28,7 @@ abstract class ChecksRepository {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   });
 
   Future<dynamic> getChecks({required String endPoint});

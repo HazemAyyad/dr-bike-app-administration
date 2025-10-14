@@ -28,6 +28,7 @@ class ChecksDatasource {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   }) async {
     try {
       XFile? compressedFrontImage;
@@ -67,6 +68,7 @@ class ChecksDatasource {
               compressedBackImage.path,
               filename: compressedBackImage.path.split('/').last,
             ),
+          'notes': notes,
         },
         isFormData: true,
       );
@@ -182,27 +184,6 @@ class ChecksDatasource {
     }
   }
 
-  // // general outgoing data
-  // Future<dynamic> generalOutgoingData({required bool isInComing}) async {
-  //   try {
-  //     final response = await api.get(
-  //       isInComing
-  //           ? EndPoints.generalIncomingChecks
-  //           : EndPoints.generalIncomingChecks,
-  //     );
-  //     return response.data['data'];
-  //   } on DioException catch (e) {
-  //     final data = e.response?.data;
-  //     throw ServerException(
-  //       ErrorModel(
-  //         errorMessage: data['message'] ?? 'Unknown error',
-  //         status: data['status'] ?? 500,
-  //         data: data['data'] ?? {},
-  //       ),
-  //     );
-  //   }
-  // }
-
   // general incoming data
   Future<Map<String, dynamic>> returnCheck({
     required String checkId,
@@ -237,8 +218,10 @@ class ChecksDatasource {
   }
 
   // chash to box
-  Future<Map<String, dynamic>> chashToBox(
-      {required String checkId, required String boxId}) async {
+  Future<Map<String, dynamic>> chashToBox({
+    required String checkId,
+    required String boxId,
+  }) async {
     try {
       final response = await api.post(EndPoints.chashIncomingCheckToBox,
           data: {'box_id': boxId, 'incoming_check_id': checkId});
@@ -264,6 +247,7 @@ class ChecksDatasource {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   }) async {
     try {
       XFile? compressedFrontImage;
@@ -315,6 +299,7 @@ class ChecksDatasource {
                 compressedBackImage.path,
                 filename: compressedBackImage.path.split('/').last,
               ),
+          'notes': notes,
         },
         isFormData: true,
       );

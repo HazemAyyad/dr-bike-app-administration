@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -155,6 +156,7 @@ class EmployeeDashbordController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
+    scrollToToday();
     update();
   }
 
@@ -285,7 +287,7 @@ class EmployeeDashbordController extends GetxController
         Future.delayed(
           const Duration(milliseconds: 1000),
           () {
-            getEmployeeData();
+            getEmployeeData(scrollToTodayb: false);
             // Get.back();
           },
         );
@@ -305,7 +307,7 @@ class EmployeeDashbordController extends GetxController
   final Map<String, List<Task>> tasksData = {};
   final Map<String, List<Task>> tasksDataFilter = {};
 
-  void getEmployeeData() async {
+  void getEmployeeData({bool scrollToTodayb = true}) async {
     employeeData.value != null ? isLoading(false) : isLoading(true);
     final result = await getEmployeeDataUsecase.call();
     employeeData.value = result;
@@ -376,26 +378,27 @@ class EmployeeDashbordController extends GetxController
   }
 
   DateTime startDate = DateTime.now();
-  DateTime endDate = DateTime.now().add(const Duration(days: 7));
+  DateTime endDate = DateTime.now();
 
   Map<String, List<Task>> filterByRange(Map<String, List<Task>> source) {
     final filtered = <String, List<Task>>{};
 
-    source.forEach((key, tasks) {
-      DateTime dateKey;
-      try {
-        dateKey = DateTime.parse(key);
-      } catch (_) {
-        return;
-      }
+    // نضمن إن الأسبوع دايمًا 7 أيام من السبت للجمعة
+    for (int i = 0; i < 7; i++) {
+      final currentDay = startDate.add(Duration(days: i));
+      final dateKey =
+          "${currentDay.year}-${currentDay.month.toString().padLeft(2, '0')}-${currentDay.day.toString().padLeft(2, '0')}";
 
-      if (dateKey.isAfter(startDate.subtract(const Duration(days: 1))) &&
-          dateKey.isBefore(endDate)) {
-        filtered[key] = tasks;
-      }
-    });
+      // لو اليوم موجود في الـ source نضيف المهام، لو مش موجود نحط لستة فاضية
+      filtered[dateKey] = List<Task>.from(source[dateKey] ?? []);
+    }
 
-    return filtered;
+    // الترتيب تنازليًا (اختياري)
+    return LinkedHashMap.fromEntries(
+      filtered.entries.toList()
+        ..sort(
+            (a, b) => DateTime.parse(b.key).compareTo(DateTime.parse(a.key))),
+    );
   }
 
   void filterDataByDateRange() {
@@ -404,25 +407,49 @@ class EmployeeDashbordController extends GetxController
   }
 
   void changeWeek(bool isNext) {
-    const int daysInWeek = 8;
-
+    const int daysInWeek = 7;
     if (isNext) {
       startDate = startDate.add(const Duration(days: daysInWeek));
-      endDate = endDate.add(const Duration(days: daysInWeek));
     } else {
       startDate = startDate.subtract(const Duration(days: daysInWeek));
-      endDate = endDate.subtract(const Duration(days: daysInWeek));
     }
-    // بعد التغيير، نفلتر الداتا حسب المدى الجديد
+    // دايمًا نهاية الأسبوع بعد 6 أيام من البداية
+    endDate = startDate.add(const Duration(days: 6));
+    // بعد ما نحدث النطاق نفلتر الداتا
     filterDataByDateRange();
     update();
+  }
+
+  DateTime getStartOfWeek(DateTime date) {
+    // في Flutter: السبت = 6، الأحد = 7
+    int weekday = date.weekday;
+    // لو اليوم السبت = بداية الأسبوع
+    int daysToSubtract = (weekday == 6) ? 0 : (weekday + 1);
+    return date.subtract(Duration(days: daysToSubtract));
+  }
+
+  final ScrollController scrollController = ScrollController();
+  void scrollToToday() {
+    DateTime today = DateTime.now();
+    DateTime startOfWeek = getStartOfWeek(today);
+    int todayIndex = today.difference(startOfWeek).inDays;
+
+    // نحرك بناءً على index اليوم (0 = السبت، 6 = الجمعة)
+    double position = todayIndex * 105.0; // عرض العنصر تقريبًا أو حجمه الرأسي
+    scrollController.animateTo(
+      position,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
   void onInit() async {
     super.onInit();
+    startDate = getStartOfWeek(DateTime.now());
+    endDate = startDate.add(const Duration(days: 6));
     _loadStartTime();
-    getEmployeeData();
+    getEmployeeData(scrollToTodayb: false);
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -449,6 +476,7 @@ class EmployeeDashbordController extends GetxController
     sizeAnimation.isDismissed;
     overtimeRequestController.dispose();
     loanRequestController.dispose();
+    scrollController.dispose();
     super.onClose();
   }
 }

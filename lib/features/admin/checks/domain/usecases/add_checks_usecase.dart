@@ -20,6 +20,7 @@ class AddChecksUsecase {
     required String bankName,
     XFile? frontImage,
     XFile? backImage,
+    required String notes,
   }) {
     return checksRepository.addChecks(
       isInComing: isInComing,
@@ -32,6 +33,7 @@ class AddChecksUsecase {
       bankName: bankName,
       frontImage: frontImage,
       backImage: backImage,
+      notes: notes,
     );
   }
 }

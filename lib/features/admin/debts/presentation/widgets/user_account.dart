@@ -86,44 +86,49 @@ class UserAccount extends GetView<DebtsController> {
           ),
         ),
         SizedBox(width: 10.w),
-        // Column(
-        //   children: [
-        //     GestureDetector(
-        //       onTap: () {
-        //         print('Share button pressed');
-        //       },
-        //       child: Container(
-        //         height: 45.h,
-        //         width: 45.w,
-        //         decoration: BoxDecoration(
-        //           color: ThemeService.isDark.value
-        //               ? AppColors.customGreyColor
-        //               : AppColors.whiteColor2,
-        //           shape: BoxShape.circle,
-        //         ),
-        //         child: Icon(
-        //           Icons.share_outlined,
-        //           size: 30.h,
-        //           color: ThemeService.isDark.value
-        //               ? AppColors.primaryColor
-        //               : AppColors.secondaryColor,
-        //         ),
-        //       ),
-        //     ),
-        //     SizedBox(height: 5.h),
-        //     Text(
-        //       'Share'.tr,
-        //       style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-        //             fontSize: 13.sp,
-        //             fontWeight: FontWeight.w700,
-        //             color: ThemeService.isDark.value
-        //                 ? AppColors.primaryColor
-        //                 : AppColors.secondaryColor,
-        //           ),
-        //     ),
-        //   ],
-        // ),
-        // SizedBox(width: 10.w),
+        Column(
+          children: [
+            GestureDetector(
+              onTap: () {
+                controller.downloadReport(
+                  customerId: userId,
+                  customerName: userName,
+                  context: context,
+                  isShared: true,
+                );
+              },
+              child: Container(
+                height: 45.h,
+                width: 45.w,
+                decoration: BoxDecoration(
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : AppColors.whiteColor2,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.share_outlined,
+                  size: 30.h,
+                  color: ThemeService.isDark.value
+                      ? AppColors.primaryColor
+                      : AppColors.secondaryColor,
+                ),
+              ),
+            ),
+            SizedBox(height: 5.h),
+            Text(
+              'Share'.tr,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: ThemeService.isDark.value
+                        ? AppColors.primaryColor
+                        : AppColors.secondaryColor,
+                  ),
+            ),
+          ],
+        ),
+        SizedBox(width: 10.w),
         Column(
           children: [
             GestureDetector(

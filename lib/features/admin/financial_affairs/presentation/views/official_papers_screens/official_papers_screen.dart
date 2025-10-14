@@ -11,7 +11,6 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/assets_manger.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/official_papers_controller.dart';
-import '../../widgets/official_papers_widgets/add_paper.dart';
 import '../../widgets/official_papers_widgets/add_picture.dart';
 import '../../widgets/official_papers_widgets/official_papers_card.dart';
 import '../../widgets/official_papers_widgets/picture_card.dart';
@@ -135,20 +134,6 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
         sizeAnimation: controller.opacityAnimation,
         customWidget: Column(
           children: [
-            BuildAddMenuItem(
-              title: 'add_document',
-              iconAsset: AssetsManager.invoiceIcon,
-              route: '',
-              onTap: () {
-                controller.isEdit = false;
-                controller.pictureNameController.clear();
-                controller.pictureDescriptionController.clear();
-                controller.selectedFile.value = null;
-                controller.toggleAddMenu();
-                controller.getPaperData();
-                Get.dialog(const AddPaper());
-              },
-            ),
             BuildAddMenuItem(
               title: 'add_important_images',
               iconAsset: AssetsManager.invoiceIcon,

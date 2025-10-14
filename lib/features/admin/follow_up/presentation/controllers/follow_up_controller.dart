@@ -393,6 +393,60 @@ class FollowUpController extends GetxController {
     update();
   }
 
+  void searchBar(String value) {
+    final search = value.toLowerCase();
+
+    if (value.isNotEmpty) {
+      initialFollowupsFilterList.assignAll(
+        FollowUpServices().initialFollowups.where((f) =>
+            f.customerName.toLowerCase().contains(search) ||
+            f.customerPhone.toLowerCase().contains(search) ||
+            f.productName.toLowerCase().contains(search) ||
+            f.sellerName.toLowerCase().contains(search) ||
+            f.sellerPhone.toLowerCase().contains(search) ||
+            f.createdAt.toString().toLowerCase().contains(search)),
+      );
+
+      informFollowupsFilterList.assignAll(
+        FollowUpServices().informFollowups.where((f) =>
+            f.customerName.toLowerCase().contains(search) ||
+            f.customerPhone.toLowerCase().contains(search) ||
+            f.productName.toLowerCase().contains(search) ||
+            f.sellerName.toLowerCase().contains(search) ||
+            f.sellerPhone.toLowerCase().contains(search) ||
+            f.createdAt.toString().toLowerCase().contains(search)),
+      );
+
+      finishAndAgreementFollowupsFilterList.assignAll(
+        FollowUpServices().finishAndAgreementFollowups.where((f) =>
+            f.customerName.toLowerCase().contains(search) ||
+            f.customerPhone.toLowerCase().contains(search) ||
+            f.productName.toLowerCase().contains(search) ||
+            f.sellerName.toLowerCase().contains(search) ||
+            f.sellerPhone.toLowerCase().contains(search) ||
+            f.createdAt.toString().toLowerCase().contains(search)),
+      );
+
+      archivedFollowupsFilterList.assignAll(
+        FollowUpServices().archivedFollowups.where((f) =>
+            f.customerName.toLowerCase().contains(search) ||
+            f.customerPhone.toLowerCase().contains(search) ||
+            f.productName.toLowerCase().contains(search) ||
+            f.sellerName.toLowerCase().contains(search) ||
+            f.sellerPhone.toLowerCase().contains(search) ||
+            f.createdAt.toString().toLowerCase().contains(search)),
+      );
+    } else {
+      initialFollowupsFilterList.assignAll(FollowUpServices().initialFollowups);
+      informFollowupsFilterList.assignAll(FollowUpServices().informFollowups);
+      finishAndAgreementFollowupsFilterList
+          .assignAll(FollowUpServices().finishAndAgreementFollowups);
+      archivedFollowupsFilterList
+          .assignAll(FollowUpServices().archivedFollowups);
+    }
+    update();
+  }
+
   @override
   void onInit() {
     super.onInit();

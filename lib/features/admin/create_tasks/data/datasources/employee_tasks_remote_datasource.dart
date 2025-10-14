@@ -33,6 +33,8 @@ class CreateEmployeeTasksDatasource {
     required File audio,
   }) async {
     try {
+      print('subEmployeeTasks: $taskRecurrence');
+      print('subEmployeeTasks: $taskRecurrenceTime');
       final subEmployeeTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subEmployeeTasks.length; i++) {
@@ -129,6 +131,7 @@ class CreateEmployeeTasksDatasource {
         isFormData: true,
       );
       final data = response.data;
+      print(data);
       return data;
     } on DioException catch (e) {
       final data = e.response?.data;

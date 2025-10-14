@@ -66,12 +66,12 @@ class ProjectView extends GetView<ProjectController> {
                             alignment: Alignment.center,
                             children: [
                               Text(
-                                '${project.achievementPercentage * 100}%',
+                                '${project.achievementPercentage.toStringAsFixed(2)}%',
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodyMedium!
                                     .copyWith(
-                                      fontSize: 13.sp,
+                                      fontSize: 11.sp,
                                       fontWeight: FontWeight.w700,
                                       color: ThemeService.isDark.value
                                           ? AppColors.whiteColor2
@@ -84,10 +84,10 @@ class ProjectView extends GetView<ProjectController> {
                                   width: 70.w,
                                   child: CircularProgressIndicator(
                                     value: (project.achievementPercentage),
-                                    strokeWidth: 8,
+                                    strokeWidth: 7,
                                     backgroundColor: Colors.grey.shade300,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      project.achievementPercentage * 100 == 100
+                                      project.achievementPercentage >= 100
                                           ? Colors.green
                                           : AppColors.primaryColor,
                                     ),
@@ -101,14 +101,14 @@ class ProjectView extends GetView<ProjectController> {
                         Flexible(
                           child: Text(
                             project.name,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium!
                                 .copyWith(
-                                  fontSize: 13.sp,
+                                  fontSize: 11.sp,
                                   fontWeight: FontWeight.w700,
                                   color: ThemeService.isDark.value
                                       ? AppColors.whiteColor2

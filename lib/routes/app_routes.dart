@@ -26,7 +26,6 @@ class AppRoutes {
   static const ADDNEWEMPLOYEESCREEN = '/AddNewEmployeeScreen';
   static const CURRENTFOLLOWUPSCREEN = '/CurrentFollowUpScreen';
   static const ADDFOLLOWUPSCREEN = '/AddFollowUpScreen';
-  static const ADDNEWFOLLOWCUSTOMERSCREEN = '/AddNewFollowCustomerScreen';
   static const PROJECTMANAGEMENTSCREEN = '/ProjectManagementScreen';
   static const PROJECTDETAILSSCREEN = '/ProjectDetailsScreeen';
   static const CREATEPROJECTSCREEN = '/CreateProjectScreen';

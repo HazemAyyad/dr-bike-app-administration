@@ -55,6 +55,9 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                                     value: RxBool(
                                         !controller.isCustomer.value == true),
                                     onChanged: (val) {
+                                      if (controller.isEdite.value) {
+                                        return;
+                                      }
                                       controller.customerAndSellerIdController
                                           .clear();
                                       controller.isCustomer.value = false;
@@ -68,6 +71,9 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                                     value: RxBool(
                                         !controller.isCustomer.value == false),
                                     onChanged: (val) {
+                                      if (controller.isEdite.value) {
+                                        return;
+                                      }
                                       controller.customerAndSellerIdController
                                           .text = '';
                                       controller.isCustomer.value = true;
@@ -112,6 +118,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                               },
                               itemAsString: (f) => f.name,
                               compareFn: (a, b) => a.id == b.id,
+                              isEnabled: !controller.isEdite.value,
                             ),
                           ],
                         ),
@@ -169,7 +176,19 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 20.h),
+                  SizedBox(height: 10.h),
+                  if (controller.isEdite.value)
+                    AppButton(
+                      isSafeArea: false,
+                      isLoading: controller.isLoading,
+                      text: 'save',
+                      onPressed: () {
+                        controller.addFollowUp(
+                          step: controller.selectedStep.value - 1,
+                        );
+                      },
+                    ),
+                  SizedBox(height: 10.h),
                   Row(
                     children: [
                       Flexible(
@@ -180,6 +199,9 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                           selectedStep: controller.selectedStep,
                           onPressedBack: () {
                             if (controller.formKey.currentState!.validate()) {
+                              if (controller.selectedStep.value == 2) {
+                                return;
+                              }
                               return controller.prevStep();
                             }
                           },

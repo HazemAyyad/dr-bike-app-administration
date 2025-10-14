@@ -39,7 +39,14 @@ class CreateProjectScreen extends GetView<ProjectController> {
                   onPressed: () {
                     if (controller.formKey.currentState!.validate()) {
                       if (controller.partnerId.value.isNotEmpty &&
-                          controller.partnerShareController.text.isNotEmpty) {
+                          controller.partnerShareController.text.isEmpty) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'يجب تحديد نسبة الشريك',
+                          snackPosition: SnackPosition.BOTTOM,
+                          duration: const Duration(seconds: 2),
+                        );
+                      } else {
                         Get.bottomSheet(
                           const PaymentScreen(type: 'payment'),
                           backgroundColor: Colors.white,
@@ -50,13 +57,6 @@ class CreateProjectScreen extends GetView<ProjectController> {
                             controller.addNewProject(context);
                           }
                         });
-                      } else {
-                        Get.snackbar(
-                          'error'.tr,
-                          'يجب تحديد نسبة الشريك',
-                          snackPosition: SnackPosition.BOTTOM,
-                          duration: const Duration(seconds: 2),
-                        );
                       }
                     }
                   }),

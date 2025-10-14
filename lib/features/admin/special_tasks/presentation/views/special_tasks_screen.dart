@@ -26,6 +26,7 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
         action: false,
       ),
       body: CustomScrollView(
+        controller: controller.scrollController,
         slivers: [
           SliverAppBar(
             automaticallyImplyLeading: false,

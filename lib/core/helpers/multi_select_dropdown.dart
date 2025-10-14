@@ -25,13 +25,13 @@ class MultiSelectDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     // قائمة أيام الأسبوع
     final List<String> days = [
-      "everySaturday".tr,
-      "everySunday".tr,
-      "everyMonday".tr,
-      "everyTuesday".tr,
-      "everyWednesday".tr,
-      "everyThursday".tr,
-      "everyFriday".tr,
+      "saturday",
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
     ];
     final textTheme = Theme.of(context).textTheme.bodyMedium!;
     return Column(
@@ -82,7 +82,9 @@ class MultiSelectDropdown extends StatelessWidget {
                         child: Text(
                           selectedDaysList.isEmpty
                               ? 'taskRepeatDateExample'.tr
-                              : selectedDaysList.join(' ، '),
+                              : selectedDaysList
+                                  .map((day) => day.tr)
+                                  .join(' ، '),
                           style: textTheme.copyWith(
                             color: ThemeService.isDark.value
                                 ? AppColors.customGreyColor2
@@ -135,7 +137,7 @@ class MultiSelectDropdown extends StatelessWidget {
                                                 )
                                               : SizedBox(width: 24.w),
                                           title: Text(
-                                            day,
+                                            day.tr,
                                             style: textTheme.copyWith(
                                               color: ThemeService.isDark.value
                                                   ? AppColors.whiteColor

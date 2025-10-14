@@ -4,20 +4,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/app_button.dart';
-import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../employee_tasks/presentation/views/task_details_screen.dart';
-import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
 
 class AddPaper extends GetView<OfficialPapersController> {
-  const AddPaper({Key? key}) : super(key: key);
+  const AddPaper({Key? key, this.fileId}) : super(key: key);
+
+  final String? fileId;
 
   @override
   Widget build(BuildContext context) {
+    if (fileId != null) {
+      controller.fileController.text = fileId!;
+    }
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10.r),
@@ -56,28 +59,6 @@ class AddPaper extends GetView<OfficialPapersController> {
                   label: 'document_name'.tr,
                   hintText: 'document_example'.tr,
                   controller: controller.paperNameController,
-                ),
-                SizedBox(height: 10.h),
-                CustomDropdownField(
-                  label: 'select_file'.tr,
-                  hint: 'select_file'.tr,
-                  dropdownField: FinacialService()
-                      .filesData
-                      .map(
-                        (e) => DropdownMenuItem<String>(
-                          value: e.id.toString(),
-                          child: Text(e.name),
-                        ),
-                      )
-                      .toList(),
-                  items:
-                      FinacialService().filesData.map((e) => e.name).toList(),
-                  onChanged: (value) {
-                    controller.fileController.text = value!;
-                  },
-                  value: controller.fileController.text.isEmpty
-                      ? null
-                      : controller.fileController.text,
                 ),
                 if (controller.isEdit)
                   Column(
@@ -166,6 +147,7 @@ class AddPaper extends GetView<OfficialPapersController> {
                   ),
                 SizedBox(height: 20.h),
                 MediaUploadButton(
+                  isShowPreview: controller.isEdit ? false : true,
                   onFilesChanged: (files) {
                     final uniqueNewFiles = files.where((file) {
                       return !controller.paperFiles.any(
@@ -189,6 +171,7 @@ class AddPaper extends GetView<OfficialPapersController> {
                 ),
                 SizedBox(height: 20.h),
                 AppButton(
+                  isSafeArea: false,
                   isLoading: controller.isLoading,
                   text: 'add_document'.tr,
                   onPressed: () {

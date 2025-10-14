@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/checks_controller.dart';
@@ -64,17 +63,17 @@ class CustomActionsAppBar extends GetView<ChecksController> {
                             controller.amountFilter.value = value ?? false;
                           },
                         ),
-                        CustomTextField(
-                          label: 'beneficiary'.tr,
-                          labelTextstyle:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    color: AppColors.primaryColor,
-                                    fontSize: 15.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                          hintText: 'customerNameExample',
-                          controller: controller.employeeNameController,
-                        ),
+                        // CustomTextField(
+                        //   label: 'beneficiary'.tr,
+                        //   labelTextstyle:
+                        //       Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        //             color: AppColors.primaryColor,
+                        //             fontSize: 15.sp,
+                        //             fontWeight: FontWeight.w700,
+                        //           ),
+                        //   hintText: 'customerNameExample',
+                        //   controller: controller.employeeNameController,
+                        // ),
                         SizedBox(height: 30.h),
                         Row(
                           children: [
