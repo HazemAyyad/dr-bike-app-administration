@@ -46,7 +46,10 @@ class AssetsScreen extends GetView<AssetsController> {
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final month = controller.assetsFilter.keys.toList()[index];
+                    final month = controller.assetsFilter.keys
+                        .toList()
+                        .reversed
+                        .toList()[index];
                     final assets =
                         controller.assetsFilter[month]!.reversed.toList();
                     return Padding(

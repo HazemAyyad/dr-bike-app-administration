@@ -111,7 +111,7 @@ class ChecksController extends GetxController
   ].obs;
 
   RxList<String> outgoingChecksActedOnIt = <String>[
-    'cashTheCheck',
+    // 'cashTheCheck',
     'returnedCheck',
     'voidTheCheck',
   ].obs;

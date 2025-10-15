@@ -822,6 +822,7 @@ const Map<String, String> en = {
   "safe_name": "Safe Name",
   "create_safe": "Create Safe",
   "create": "Create",
+  'depreciate': 'Depreciate',
   "create_file_box": "Create File Box",
   "file_box_name": "File Box Name",
   "create_file": "Create File",

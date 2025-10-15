@@ -1,7 +1,7 @@
 name: doctorbike
 description: A new Flutter project.
 
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ">=2.12.0 <4.0.0"
@@ -9,8 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  intl_phone_field:
-    # path: intl_phone_field
 
   cupertino_icons:
   get: ^4.7.2

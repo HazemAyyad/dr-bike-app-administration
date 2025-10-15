@@ -822,6 +822,7 @@ const Map<String, String> ar = {
   "safe_name": "اسم الخزينة",
   "create_safe": "إنشاء خزينة",
   "create": "إنشاء",
+  'depreciate': 'اهلاك',
   "create_file_box": "إنشاء فايل بوكس",
   "file_box_name": "اسم الفايل بوكس",
   "create_file": "إنشاء فايل",
