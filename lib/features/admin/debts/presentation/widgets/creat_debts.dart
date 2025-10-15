@@ -35,9 +35,15 @@ class CreateDebts extends GetView<DebtsController> {
     controller.selectedCustomersSellers.value = isSeller ?? false;
     return SafeArea(
       child: Scaffold(
-        extendBody: true,
-        appBar: appBar(title, false, context, Get.find<DebtsController>(),
-            supTitle, color),
+        resizeToAvoidBottomInset: false,
+        appBar: appBar(
+          title,
+          false,
+          context,
+          Get.find<DebtsController>(),
+          supTitle,
+          color,
+        ),
         body: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 24.w),
           child: Form(

@@ -1,12 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
 
+import '../../../routes/app_routes.dart';
 import '../../errors/error_model.dart';
 import '../../errors/expentions.dart';
 import '../../services/languague_service.dart';
 import '../../services/user_data.dart';
 import 'api_consumer.dart';
 import 'end_points.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class DioConsumer extends ApiConsumer {
   final Dio dio;
@@ -68,13 +70,23 @@ class DioConsumer extends ApiConsumer {
       if (statusCode == 429 ||
           (data is Map && data['message'] == "Too Many Attempts.")) {
         // رسالة مخصصة للمستخدم
-        errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة لاحقاً.";
+        errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة بعد قليل.";
       } else {
         errorMessage = (data is Map && data['message'] != null)
             ? data['message']
             : e.message ?? 'حدث خطأ غير معروف';
       }
 
+      if (data is Map && data['message'] == 'Unauthenticated.') {
+        await DefaultCacheManager().emptyCache();
+        UserData.clearAllUserData();
+        getx.Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+        getx.Get.snackbar(
+          'error'.tr,
+          'لقد انتهت مهلة الأتصال، برجاء تسجيل الدخول مرة أخرى',
+          snackPosition: getx.SnackPosition.BOTTOM,
+        );
+      }
       throw ServerException(
         ErrorModel(
           errorMessage: errorMessage,
@@ -116,13 +128,22 @@ class DioConsumer extends ApiConsumer {
       if (statusCode == 429 ||
           (data is Map && data['message'] == "Too Many Attempts.")) {
         // رسالة مخصصة للمستخدم
-        errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة لاحقاً.";
+        errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة بعد قليل.";
       } else {
         errorMessage = (data is Map && data['message'] != null)
             ? data['message']
             : e.message ?? 'حدث خطأ غير معروف';
       }
-
+      if (data is Map && data['message'] == 'Unauthenticated.') {
+        await DefaultCacheManager().emptyCache();
+        UserData.clearAllUserData();
+        getx.Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+        getx.Get.snackbar(
+          'error'.tr,
+          'لقد انتهت مهلة الأتصال، برجاء تسجيل الدخول مرة أخرى',
+          snackPosition: getx.SnackPosition.BOTTOM,
+        );
+      }
       throw ServerException(
         ErrorModel(
           errorMessage: errorMessage,

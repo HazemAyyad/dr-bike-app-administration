@@ -65,5 +65,7 @@ AppBar appBar(
             SizedBox(width: 10.w)
           ]
         : null,
+    automaticallyImplyLeading: false,
+    scrolledUnderElevation: 0,
   );
 }
