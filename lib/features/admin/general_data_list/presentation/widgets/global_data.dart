@@ -267,8 +267,12 @@ class GlobalData extends GetView<GeneralDataListController> {
                     filterQuality: FilterQuality.medium,
                     fadeInDuration: const Duration(milliseconds: 200),
                     fadeOutDuration: const Duration(milliseconds: 200),
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(),
+                    placeholder: (context, url) => SizedBox(
+                      height: 70.h,
+                      width: 70.w,
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
                     ),
                     errorWidget: (context, url, error) =>
                         const Icon(Icons.error),

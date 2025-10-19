@@ -174,23 +174,23 @@ class CheckDetails extends GetView<ChecksController> {
                                 ),
                                 imageBuilder: (context, imageProvider) =>
                                     Container(
-                                  height: 300.h,
-                                  width: 300.w,
+                                  height: 100.h,
+                                  width: 110.w,
                                   decoration: BoxDecoration(
                                     image: DecorationImage(
                                       image: imageProvider,
-                                      fit: BoxFit.cover,
+                                      fit: BoxFit.fill,
                                       filterQuality: FilterQuality.medium,
                                     ),
                                   ),
                                 ),
                                 imageUrl: check.frontImage ?? '',
-                                fit: BoxFit.fill,
-                                height: 100.h,
-                                width: 110.w,
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(
-                                      color: AppColors.primaryColor),
+                                placeholder: (context, url) => SizedBox(
+                                  height: 65.h,
+                                  width: 65.w,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ),
                                 errorWidget: (context, url, error) =>
                                     const Icon(
@@ -255,9 +255,12 @@ class CheckDetails extends GetView<ChecksController> {
                                   ),
                                 ),
                                 imageUrl: check.backImage ?? '',
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(
-                                      color: AppColors.primaryColor),
+                                placeholder: (context, url) => SizedBox(
+                                  height: 100.h,
+                                  width: 110.w,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ),
                                 errorWidget: (context, url, error) =>
                                     const Icon(

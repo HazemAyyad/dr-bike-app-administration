@@ -135,9 +135,12 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                                     ),
                                   ),
                                 ),
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(
-                                      color: AppColors.primaryColor),
+                                placeholder: (context, url) => SizedBox(
+                                  height: 40.h,
+                                  width: 55.w,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ),
                                 errorWidget: (context, url, error) =>
                                     const Icon(

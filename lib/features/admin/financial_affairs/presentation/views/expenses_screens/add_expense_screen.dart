@@ -150,8 +150,12 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                             : '',
                         fadeInDuration: const Duration(milliseconds: 200),
                         fadeOutDuration: const Duration(milliseconds: 200),
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(),
+                        placeholder: (context, url) => SizedBox(
+                          height: 200.h,
+                          width: 200.w,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
                         ),
                         errorWidget: (context, url, error) =>
                             const Icon(Icons.error),

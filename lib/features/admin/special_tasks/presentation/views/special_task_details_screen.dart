@@ -87,8 +87,12 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                                     const Duration(milliseconds: 200),
                                 fadeOutDuration:
                                     const Duration(milliseconds: 200),
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(),
+                                placeholder: (context, url) => SizedBox(
+                                  height: 200.h,
+                                  width: 200.w,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
                                 ),
                                 errorWidget: (context, url, error) =>
                                     const Icon(Icons.error),
@@ -196,8 +200,11 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                             imageUrl: tasks.adminImg.isNotEmpty
                                 ? tasks.adminImg.first
                                 : AssetsManager.noImageNet,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(),
+                            placeholder: (context, url) => SizedBox(
+                              width: 55.w,
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
                             ),
                             errorWidget: (context, url, error) =>
                                 const Icon(Icons.error),

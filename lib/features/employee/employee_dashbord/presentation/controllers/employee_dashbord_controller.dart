@@ -438,11 +438,11 @@ class EmployeeDashbordController extends GetxController
   }
 
   DateTime getStartOfWeek(DateTime date) {
-    // في Flutter: السبت = 6، الأحد = 7
-    int weekday = date.weekday;
-    // لو اليوم السبت = بداية الأسبوع
-    int daysToSubtract = (weekday == 6) ? 0 : (weekday + 1);
-    return date.subtract(Duration(days: daysToSubtract));
+    int weekday = date.weekday; // 1 = Monday ... 7 = Sunday
+    // لو السبت (6) هو بداية الأسبوع
+    int daysToSubtract = (weekday >= 6) ? weekday - 6 : weekday + 1;
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: daysToSubtract));
   }
 
   final ScrollController scrollController = ScrollController();

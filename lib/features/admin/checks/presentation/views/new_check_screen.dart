@@ -257,9 +257,12 @@ class NewCheckScreen extends GetView<ChecksController> {
                             ),
                             imageUrl:
                                 controller.editCheckFrontImage.value!.path,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(
-                                  color: AppColors.primaryColor),
+                            placeholder: (context, url) => SizedBox(
+                              height: 300.h,
+                              width: 300.w,
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
                             ),
                             errorWidget: (context, url, error) => const Icon(
                               Icons.error,
@@ -330,9 +333,12 @@ class NewCheckScreen extends GetView<ChecksController> {
                               ),
                             ),
                             imageUrl: controller.editCheckBackImage.value!.path,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(
-                                  color: AppColors.primaryColor),
+                            placeholder: (context, url) => SizedBox(
+                              height: 300.h,
+                              width: 300.w,
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
                             ),
                             errorWidget: (context, url, error) => const Icon(
                               Icons.error,

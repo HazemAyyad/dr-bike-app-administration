@@ -117,8 +117,12 @@ class ProductImagesSlider extends StatelessWidget {
                                         const Duration(milliseconds: 200),
                                     fadeOutDuration:
                                         const Duration(milliseconds: 200),
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(),
+                                    placeholder: (context, url) =>
+                                        const SizedBox(
+                                      width: double.infinity,
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
                                     ),
                                     errorWidget: (context, url, error) =>
                                         const Icon(Icons.error),
@@ -153,8 +157,11 @@ class ProductImagesSlider extends StatelessWidget {
                   imageUrl: image,
                   fadeInDuration: const Duration(milliseconds: 200),
                   fadeOutDuration: const Duration(milliseconds: 200),
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(),
+                  placeholder: (context, url) => const SizedBox(
+                    width: double.infinity,
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
                   ),
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),

@@ -148,9 +148,12 @@ class BuildProductCard extends GetView<StockController> {
                       ),
                       imageUrl: product.image,
                       filterQuality: FilterQuality.medium,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.primaryColor),
+                      placeholder: (context, url) => SizedBox(
+                        height: 65.h,
+                        width: 90.w,
+                        child: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
                       ),
                       errorWidget: (context, url, error) => Image.asset(
                         AssetsManager.stockImage,

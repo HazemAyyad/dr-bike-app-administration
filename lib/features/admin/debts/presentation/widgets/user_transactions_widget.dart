@@ -151,9 +151,11 @@ class UserTransactionsWidget extends StatelessWidget {
                             ),
                           ),
                           imageUrl: debt.receiptImage,
-                          placeholder: (context, url) => const Center(
-                            child: CircularProgressIndicator(
-                                color: AppColors.primaryColor),
+                          placeholder: (context, url) => SizedBox(
+                            height: 50.h,
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
                           ),
                           errorWidget: (context, url, error) => const Icon(
                             Icons.error,
