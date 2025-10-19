@@ -8,6 +8,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/official_papers_models/file_data_model.dart';
 import '../models/assets_models/assets_detials_model.dart';
 import '../models/assets_models/assets_log_model.dart';
@@ -91,10 +92,11 @@ class FinancialAffairsDatasource {
             // لو الملف لينك (مش مرفوع جديد)
             formData['media[$i]'] = file.path;
           } else {
+            final compressedImg = await compressImage(XFile(file.path));
             // لو الملف محلي
             formData['media[$i]'] = await MultipartFile.fromFile(
-              file.path,
-              filename: file.path.split('/').last,
+              compressedImg.path,
+              filename: compressedImg.path.split('/').last,
             );
           }
         }
@@ -181,9 +183,10 @@ class FinancialAffairsDatasource {
                 if (file!.path.contains('http')) {
                   return file.path;
                 }
+                final compressedImg = await compressImage(XFile(file.path));
                 return await MultipartFile.fromFile(
-                  file.path,
-                  filename: file.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }),
             ),
@@ -228,9 +231,10 @@ class FinancialAffairsDatasource {
                 if (file!.path.contains('http')) {
                   return file.path;
                 }
+                final compressedImg = await compressImage(XFile(file.path));
                 return await MultipartFile.fromFile(
-                  file.path,
-                  filename: file.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }),
             ),
@@ -240,9 +244,10 @@ class FinancialAffairsDatasource {
                 if (file!.path.contains('http')) {
                   return file.path;
                 }
+                final compressedImg = await compressImage(XFile(file.path));
                 return await MultipartFile.fromFile(
-                  file.path,
-                  filename: file.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }),
             ),
@@ -327,9 +332,10 @@ class FinancialAffairsDatasource {
                 if (file!.path.contains('http')) {
                   return file.path;
                 }
+                final compressedImg = await compressImage(XFile(file.path));
                 return await MultipartFile.fromFile(
-                  file.path,
-                  filename: file.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }),
             ),
@@ -370,9 +376,10 @@ class FinancialAffairsDatasource {
                 if (file!.path.contains('http')) {
                   return file.path;
                 }
+                final compressedImg = await compressImage(XFile(file.path));
                 return await MultipartFile.fromFile(
-                  file.path,
-                  filename: file.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }),
             ),

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../domain/usecases/get_report_by_type_usecase.dart';
@@ -80,8 +81,17 @@ class CountersController extends GetxController {
           message: failure.data['message'] ?? 'Unknown error',
         );
       }, (success) async {
-        final directory =
-            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        late Directory directory;
+        if (Platform.isAndroid) {
+          directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        } else if (Platform.isIOS) {
+          // على iOS نحفظ في Documents الخاص بالتطبيق
+          final appDocDir = await getApplicationDocumentsDirectory();
+          directory = Directory("${appDocDir.path}/Doctor Bike/PDF");
+        } else {
+          directory = Directory(
+              "${(await getApplicationDocumentsDirectory()).path}/Doctor Bike/PDF");
+        }
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }

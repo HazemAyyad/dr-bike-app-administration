@@ -3,11 +3,13 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/project_details_model.dart';
 
 class ProjectDatasource {
@@ -68,9 +70,10 @@ class ProjectDatasource {
               if (e.path.startsWith('http')) {
                 return e.path;
               } else {
+                final compressedImg = await compressImage(XFile(e.path));
                 return await MultipartFile.fromFile(
-                  e.path,
-                  filename: e.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }
             }),
@@ -85,9 +88,10 @@ class ProjectDatasource {
               if (e.path.startsWith('http')) {
                 return e.path;
               } else {
+                final compressedImg = await compressImage(XFile(e.path));
                 return await MultipartFile.fromFile(
-                  e.path,
-                  filename: e.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }
             }),

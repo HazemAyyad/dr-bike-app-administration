@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -56,7 +57,9 @@ class AssetsCard extends GetView<AssetsController> {
                                   ),
                             ),
                             value: option,
+                            // ignore: deprecated_member_use
                             groupValue: null,
+                            // ignore: deprecated_member_use
                             onChanged: (value) {
                               Get.back();
                               if (value == 'delete') {
@@ -112,10 +115,25 @@ class AssetsCard extends GetView<AssetsController> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(9.r),
                 child: CachedNetworkImage(
+                  cacheManager: CacheManager(
+                    Config(
+                      'imagesCache',
+                      stalePeriod: const Duration(days: 7),
+                      maxNrOfCacheObjects: 100,
+                    ),
+                  ),
+                  imageBuilder: (context, imageProvider) => Container(
+                    height: 45.h,
+                    width: 50.w,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.medium,
+                      ),
+                    ),
+                  ),
                   imageUrl: asset.image,
-                  fit: BoxFit.cover,
-                  height: 45.h,
-                  width: 50.w,
                   errorWidget: (context, url, error) => const Icon(Icons.error),
                   placeholder: (context, url) =>
                       const Center(child: CircularProgressIndicator()),

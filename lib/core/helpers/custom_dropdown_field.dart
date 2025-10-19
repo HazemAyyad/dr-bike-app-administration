@@ -76,6 +76,7 @@ class CustomDropdownField extends StatelessWidget {
             borderRadius: BorderRadius.circular(11.r),
           ),
           child: DropdownButtonFormField<String>(
+            // ignore: deprecated_member_use
             value: value,
             validator: validator ??
                 (value) {

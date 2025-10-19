@@ -117,6 +117,7 @@ class DebetDatasource {
     required String total,
     required List<File> receiptImage,
     required String notes,
+    required String boxId,
   }) async {
     try {
       final response = await api.post(
@@ -136,6 +137,7 @@ class DebetDatasource {
             ),
           ),
           'notes': notes,
+          'box_id': boxId,
         },
         isFormData: true,
       );

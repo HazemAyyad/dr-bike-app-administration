@@ -190,8 +190,11 @@ class ChecksImplement implements ChecksRepository {
   }
 
   @override
-  Future<Either<Failure, String>> chashToBox(
-      {required String boxId, required String checkId}) async {
+  Future<Either<Failure, String>> chashToBox({
+    required String boxId,
+    required String checkId,
+    required bool isInComing,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -199,6 +202,7 @@ class ChecksImplement implements ChecksRepository {
       final result = await checksDatasource.chashToBox(
         checkId: checkId,
         boxId: boxId,
+        isInComing: isInComing,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

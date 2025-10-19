@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_storage/get_storage.dart';
@@ -31,13 +32,21 @@ class NotificationFirebaseService {
       provisional: false,
       sound: true,
     );
-    String? token = await firebaseMessaging.getToken();
-    if (token != null) {
-      // print("FCM Token: $token");
-      finalToken = token;
-      await GetStorage().write('fcmToken', token);
+    if (Platform.isAndroid) {
+      String? token = await firebaseMessaging.getToken();
+      if (token != null) {
+        // print("FCM Token: $token");
+        finalToken = token;
+        await GetStorage().write('fcmToken', token);
+      }
+    } else if (Platform.isIOS) {
+      String? token = await firebaseMessaging.getAPNSToken();
+      if (token != null) {
+        // print("APNS Token: $token");
+        finalToken = token;
+        await GetStorage().write('fcmToken', token);
+      }
     }
-
     await setupFlutterNotifications();
 
     await _setupMessageHandler();

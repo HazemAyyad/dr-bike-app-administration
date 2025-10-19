@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../data/models/employee_data_model.dart';
 import '../../data/models/person_data_model.dart';
 import '../../domain/entity/add_person_entity.dart';
@@ -325,6 +326,9 @@ class GeneralDataListController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    if (employeePermissions.contains(40) && !employeePermissions.contains(9)) {
+      currentTab.value = 2;
+    }
     getGeneralData();
     employeeSearch = generalDataServes.employeeDataList;
     sellersSearch = generalDataServes.sellersDataList;

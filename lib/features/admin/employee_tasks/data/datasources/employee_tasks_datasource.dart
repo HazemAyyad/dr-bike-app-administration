@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide MultipartFile;
+// ignore: depend_on_referenced_packages
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -9,6 +10,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/employee_task_model.dart';
 
 class EmployeeTasksDatasource {
@@ -39,15 +41,21 @@ class EmployeeTasksDatasource {
       for (int i = 0; i < subEmployeeTasks.length; i++) {
         subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
             subEmployeeTasks[i]['subTaskName'];
+        final compressedImg =
+            await compressImage(XFile(subEmployeeTasks[i]['subTaskImage']));
         subEmployeeTasksMap['sub_employee_tasks[$i][admin_subtask__img]'] =
             await MultipartFile.fromFile(
-          subEmployeeTasks[i]['subTaskImage'],
-          filename: subEmployeeTasks[i]['subTaskImage'].split('/').last,
+          compressedImg.path,
+          filename: compressedImg.path.split('/').last,
         );
         subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
             subEmployeeTasks[i]['subTaskdescription'];
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
             subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
+      }
+      XFile? compressedImg;
+      if (adminImg != null) {
+        compressedImg = await compressImage(XFile(adminImg.path));
       }
       final response = await api.post(
         EndPoints.createEmployeeTask,
@@ -62,10 +70,10 @@ class EmployeeTasksDatasource {
           'task_recurrence': taskRecurrence,
           'task_recurrence_time[]': taskRecurrenceTime,
           ...subEmployeeTasksMap,
-          if (adminImg != null)
+          if (compressedImg != null)
             'admin_img': await MultipartFile.fromFile(
-              adminImg.path,
-              filename: adminImg.name,
+              compressedImg.path,
+              filename: compressedImg.path.split('/').last,
             ),
           // if (employeeImg == null) 'employee_img': '',
           // if (documentImg != null && documentImg.path.contains('http://'))
@@ -191,9 +199,10 @@ class EmployeeTasksDatasource {
       final subEmployeeTasksMap = <String, dynamic>{};
       subEmployeeTasksMap['employee_img[]'] = await Future.wait(
         image.map((e) async {
+          final compressedImg = await compressImage(XFile(e.path));
           return await MultipartFile.fromFile(
-            e.path,
-            filename: e.path.split('/').last,
+            compressedImg.path,
+            filename: compressedImg.path.split('/').last,
           );
         }),
       );

@@ -111,7 +111,7 @@ class ChecksController extends GetxController
   ].obs;
 
   RxList<String> outgoingChecksActedOnIt = <String>[
-    // 'cashTheCheck',
+    'cashTheCheck',
     'returnedCheck',
     'voidTheCheck',
   ].obs;
@@ -451,6 +451,7 @@ class ChecksController extends GetxController
     final result = await chashToBoxUsecase.chashToBox(
       checkId: checkId,
       boxId: boxId,
+      isInComing: isInComing,
     );
     result.fold(
       (failure) {

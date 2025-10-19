@@ -2,12 +2,15 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide MultipartFile;
+// ignore: depend_on_referenced_packages
 import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
 import '../../../../../../core/errors/error_model.dart';
 import '../../../../../../core/errors/expentions.dart';
+import '../../../checks/data/datasources/checks_datasource.dart';
 
 class CreateEmployeeTasksDatasource {
   final ApiConsumer api;
@@ -33,8 +36,6 @@ class CreateEmployeeTasksDatasource {
     required File audio,
   }) async {
     try {
-      print('subEmployeeTasks: $taskRecurrence');
-      print('subEmployeeTasks: $taskRecurrenceTime');
       final subEmployeeTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subEmployeeTasks.length; i++) {
@@ -54,11 +55,12 @@ class CreateEmployeeTasksDatasource {
                   subEmployeeTasksMap[
                       'sub_employee_tasks[$i][admin_subtask__img][]'] = img;
                 } else {
+                  final compressedImg = await compressImage(XFile(img));
                   subEmployeeTasksMap[
                           'sub_employee_tasks[$i][admin_subtask__img][]'] =
                       await MultipartFile.fromFile(
-                    img,
-                    filename: img.split('/').last,
+                    compressedImg.path,
+                    filename: compressedImg.path.split('/').last,
                   );
                 }
               }
@@ -68,11 +70,12 @@ class CreateEmployeeTasksDatasource {
                 subEmployeeTasksMap[
                     'sub_employee_tasks[$i][admin_subtask__img][]'] = imgList;
               } else {
+                final compressedImg = await compressImage(XFile(imgList));
                 subEmployeeTasksMap[
                         'sub_employee_tasks[$i][admin_subtask__img][]'] =
                     await MultipartFile.fromFile(
-                  imgList,
-                  filename: imgList.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }
             }
@@ -110,9 +113,10 @@ class CreateEmployeeTasksDatasource {
                 if (e.path.startsWith('http')) {
                   return e.path;
                 } else {
+                  final compressedImg = await compressImage(XFile(e.path));
                   return await MultipartFile.fromFile(
-                    e.path,
-                    filename: e.path.split('/').last,
+                    compressedImg.path,
+                    filename: compressedImg.path.split('/').last,
                   );
                 }
               }),
@@ -131,7 +135,6 @@ class CreateEmployeeTasksDatasource {
         isFormData: true,
       );
       final data = response.data;
-      print(data);
       return data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -166,15 +169,18 @@ class CreateEmployeeTasksDatasource {
       for (int i = 0; i < subSpecialTasks.length; i++) {
         subSpecialTasksMap['sub_special_tasks[$i][name]'] =
             subSpecialTasks[i]['subTaskName'];
-        subSpecialTasks[i]['subTaskImage'] != null
-            ? subSpecialTasksMap[
-                    'sub_special_tasks[$i][admin_subtask__img][]'] =
-                await MultipartFile.fromFile(
-                subSpecialTasks[i]['subTaskImage'] ?? '',
-                filename: subSpecialTasks[i]['subTaskImage'].split('/').last,
-              )
-            : subSpecialTasksMap[
-                'sub_special_tasks[$i][admin_subtask__img][]'] = '';
+        if (subSpecialTasks[i]['subTaskImage'] != null) {
+          final compressedImg =
+              await compressImage(XFile(subSpecialTasks[i]['subTaskImage']));
+          subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img][]'] =
+              await MultipartFile.fromFile(
+            compressedImg.path,
+            filename: compressedImg.path.split('/').last,
+          );
+        } else {
+          subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img][]'] =
+              '';
+        }
         subSpecialTasksMap['sub_special_tasks[$i][description]'] =
             subSpecialTasks[i]['subTaskdescription'];
         subSpecialTasksMap[
@@ -201,9 +207,10 @@ class CreateEmployeeTasksDatasource {
                 return e.path;
               } else {
                 // صورة محلية → حولها لـ MultipartFile
+                final compressedImg = await compressImage(XFile(e.path));
                 return await MultipartFile.fromFile(
-                  e.path,
-                  filename: e.path.split('/').last,
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
                 );
               }
             }),

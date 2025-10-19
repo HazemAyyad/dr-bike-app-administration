@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -127,10 +128,25 @@ class BuildProductCard extends GetView<StockController> {
                 : ClipRRect(
                     borderRadius: BorderRadius.circular(12.r),
                     child: CachedNetworkImage(
+                      cacheManager: CacheManager(
+                        Config(
+                          'imagesCache',
+                          stalePeriod: const Duration(days: 7),
+                          maxNrOfCacheObjects: 100,
+                        ),
+                      ),
+                      imageBuilder: (context, imageProvider) => Container(
+                        height: 65.h,
+                        width: 90.w,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                            filterQuality: FilterQuality.medium,
+                          ),
+                        ),
+                      ),
                       imageUrl: product.image,
-                      fit: BoxFit.cover,
-                      height: 65.h,
-                      width: 90.w,
                       filterQuality: FilterQuality.medium,
                       placeholder: (context, url) => const Center(
                         child: CircularProgressIndicator(

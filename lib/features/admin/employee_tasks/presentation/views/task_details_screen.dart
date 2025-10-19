@@ -3,6 +3,7 @@ import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_chechbox.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -121,10 +122,26 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                     );
                                   },
                                   child: CachedNetworkImage(
+                                    cacheManager: CacheManager(
+                                      Config(
+                                        'imagesCache',
+                                        stalePeriod: const Duration(days: 7),
+                                        maxNrOfCacheObjects: 100,
+                                      ),
+                                    ),
+                                    imageBuilder: (context, imageProvider) =>
+                                        Container(
+                                      height: 200.h,
+                                      width: 200.w,
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                          image: imageProvider,
+                                          fit: BoxFit.fill,
+                                          filterQuality: FilterQuality.medium,
+                                        ),
+                                      ),
+                                    ),
                                     imageUrl: e,
-                                    height: 200.h,
-                                    width: 200.w,
-                                    fit: BoxFit.fill,
                                     fadeInDuration:
                                         const Duration(milliseconds: 200),
                                     fadeOutDuration:
@@ -199,10 +216,26 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                     );
                                   },
                                   child: CachedNetworkImage(
+                                    cacheManager: CacheManager(
+                                      Config(
+                                        'imagesCache',
+                                        stalePeriod: const Duration(days: 7),
+                                        maxNrOfCacheObjects: 100,
+                                      ),
+                                    ),
+                                    imageBuilder: (context, imageProvider) =>
+                                        Container(
+                                      height: 200.h,
+                                      width: 200.w,
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                          image: imageProvider,
+                                          fit: BoxFit.fill,
+                                          filterQuality: FilterQuality.medium,
+                                        ),
+                                      ),
+                                    ),
                                     imageUrl: e,
-                                    height: 200.h,
-                                    width: 200.w,
-                                    fit: BoxFit.fill,
                                     fadeInDuration:
                                         const Duration(milliseconds: 200),
                                     fadeOutDuration:
@@ -357,7 +390,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                           ? (value) {}
                                           : tasks.status != 'ongoing'
                                               ? (value) {}
-                                              : (value) {
+                                              : (value) async {
                                                   final String mainTaskId =
                                                       Get.arguments['taskId'];
 
@@ -366,14 +399,15 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                                   final EmployeeDashbordController
                                                       controller1 = args?[
                                                           'EmployeeDashbordController'];
-
-                                                  controller.uploadTaskImage(
+                                                  await controller
+                                                      .uploadTaskImage(
                                                     taskId: tasks.id.toString(),
                                                   );
                                                   controller1
                                                       .changeTaskToCompleted(
                                                     taskId: tasks.id,
                                                     isSubTask: true,
+                                                    // ignore: use_build_context_synchronously
                                                     context: context,
                                                     mainTaskId: mainTaskId,
                                                   );
@@ -406,6 +440,28 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                               );
                                             },
                                             child: CachedNetworkImage(
+                                              cacheManager: CacheManager(
+                                                Config(
+                                                  'imagesCache',
+                                                  stalePeriod:
+                                                      const Duration(days: 7),
+                                                  maxNrOfCacheObjects: 100,
+                                                ),
+                                              ),
+                                              imageBuilder:
+                                                  (context, imageProvider) =>
+                                                      Container(
+                                                height: double.infinity,
+                                                width: 60.w,
+                                                decoration: BoxDecoration(
+                                                  image: DecorationImage(
+                                                    image: imageProvider,
+                                                    fit: BoxFit.fill,
+                                                    filterQuality:
+                                                        FilterQuality.medium,
+                                                  ),
+                                                ),
+                                              ),
                                               imageUrl: tasks.adminImg!.first,
                                               placeholder: (context, url) =>
                                                   const Center(
@@ -415,9 +471,6 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                               errorWidget:
                                                   (context, url, error) =>
                                                       const Icon(Icons.error),
-                                              fit: BoxFit.fill,
-                                              height: double.infinity,
-                                              width: 60.w,
                                             ),
                                           ),
                                         ),
@@ -468,16 +521,17 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                               isCompleted: true,
                             );
                           }
-                        : () {
+                        : () async {
                             final args = Get.arguments as Map<String, dynamic>?;
                             final EmployeeDashbordController controller1 =
                                 args?['EmployeeDashbordController'];
-                            controller.uploadTaskImage(
+                            await controller.uploadTaskImage(
                               taskId: data.taskId.toString(),
                             );
                             controller1.changeTaskToCompleted(
                               taskId: data.taskId,
                               isSubTask: false,
+                              // ignore: use_build_context_synchronously
                               context: context,
                             );
                             Get.back();

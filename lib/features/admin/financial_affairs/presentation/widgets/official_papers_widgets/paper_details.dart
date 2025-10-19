@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -167,9 +168,27 @@ class PaperDetails extends GetView<OfficialPapersController> {
                                       },
                                       child: CachedNetworkImage(
                                         imageUrl: e,
-                                        fit: BoxFit.cover,
-                                        height: 150.h,
-                                        width: 150.w,
+                                        cacheManager: CacheManager(
+                                          Config(
+                                            'imagesCache',
+                                            stalePeriod:
+                                                const Duration(days: 7),
+                                            maxNrOfCacheObjects: 100,
+                                          ),
+                                        ),
+                                        imageBuilder:
+                                            (context, imageProvider) =>
+                                                Container(
+                                          height: 150.h,
+                                          width: 150.w,
+                                          decoration: BoxDecoration(
+                                            image: DecorationImage(
+                                              image: imageProvider,
+                                              fit: BoxFit.cover,
+                                              filterQuality: FilterQuality.low,
+                                            ),
+                                          ),
+                                        ),
                                         placeholder: (context, url) =>
                                             const Center(
                                           child: CircularProgressIndicator(

@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import 'creat_debts.dart';
+import '../views/creat_debts_screen.dart';
 
 class GaveAndTookButton extends StatelessWidget {
   const GaveAndTookButton({Key? key, this.userId, this.isSeller})

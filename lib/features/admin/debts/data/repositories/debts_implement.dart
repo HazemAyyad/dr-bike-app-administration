@@ -138,6 +138,7 @@ class DebtsImplement implements DebtsRepository {
     required String total,
     required List<File> receiptImage,
     required String notes,
+    required String boxId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -151,6 +152,7 @@ class DebtsImplement implements DebtsRepository {
         total: total,
         receiptImage: receiptImage,
         notes: notes,
+        boxId: boxId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

@@ -40,6 +40,7 @@ Column dropdownButton(PersonalDetailsController controller) {
               Icons.keyboard_arrow_down,
               color: AppColors.primaryColor,
             ),
+            // ignore: deprecated_member_use
             value: controller.city.value,
             items: ['نابلس', 'رام الله', 'القدس', 'الخليل', 'غزة']
                 .map(

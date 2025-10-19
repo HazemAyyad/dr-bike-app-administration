@@ -101,7 +101,7 @@ class FullScreenZoomImage extends StatelessWidget {
               color: Colors.red,
               size: 30.sp,
             ),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Get.back(),
           ),
         ),
         // زرار تحميل
@@ -114,9 +114,7 @@ class FullScreenZoomImage extends StatelessWidget {
               color: Colors.green,
               size: 30.sp,
             ),
-            onPressed: () => _downloadImage(context)
-                // ignore: use_build_context_synchronously
-                .then((value) => Navigator.of(context).pop()),
+            onPressed: () => _downloadImage(context),
           ),
         ),
       ],

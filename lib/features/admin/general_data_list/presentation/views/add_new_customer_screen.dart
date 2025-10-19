@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -190,10 +191,32 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                                                       BorderRadius.circular(
                                                           5.r),
                                                   child: CachedNetworkImage(
+                                                    cacheManager: CacheManager(
+                                                      Config(
+                                                        'imagesCache',
+                                                        stalePeriod:
+                                                            const Duration(
+                                                                days: 7),
+                                                        maxNrOfCacheObjects:
+                                                            100,
+                                                      ),
+                                                    ),
+                                                    imageBuilder: (context,
+                                                            imageProvider) =>
+                                                        Container(
+                                                      height: 200.h,
+                                                      width: 200.w,
+                                                      decoration: BoxDecoration(
+                                                        image: DecorationImage(
+                                                          image: imageProvider,
+                                                          fit: BoxFit.fill,
+                                                          filterQuality:
+                                                              FilterQuality
+                                                                  .medium,
+                                                        ),
+                                                      ),
+                                                    ),
                                                     imageUrl: file.path,
-                                                    height: 200.h,
-                                                    width: 200.w,
-                                                    fit: BoxFit.fill,
                                                     fadeInDuration:
                                                         const Duration(
                                                             milliseconds: 200),

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -109,12 +110,27 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(9.r),
                       child: CachedNetworkImage(
+                        cacheManager: CacheManager(
+                          Config(
+                            'imagesCache',
+                            stalePeriod: const Duration(days: 7),
+                            maxNrOfCacheObjects: 100,
+                          ),
+                        ),
+                        imageBuilder: (context, imageProvider) => Container(
+                          height: 45.h,
+                          width: 60.w,
+                          decoration: BoxDecoration(
+                            image: DecorationImage(
+                              image: imageProvider,
+                              fit: BoxFit.cover,
+                              filterQuality: FilterQuality.medium,
+                            ),
+                          ),
+                        ),
                         imageUrl: data.img.isNotEmpty
                             ? data.img.first
                             : AssetsManager.noImageNet,
-                        fit: BoxFit.cover,
-                        height: 45.h,
-                        width: 60.w,
                         errorWidget: (context, url, error) =>
                             const Icon(Icons.error),
                         placeholder: (context, url) =>

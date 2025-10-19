@@ -3,10 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/add_debt_usecase.dart';
@@ -25,6 +28,7 @@ class DebtsController extends GetxController {
   final AddDebtUsecase addDebtUsecase;
   final DebtsWeOweUsecase debtsWeOwe;
   final GetDebtsReportsUsecase getDebtsReports;
+  final GetShownBoxUsecase getShownBoxUsecase;
 
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final UserTransactionsUsecase userTransactionsData;
@@ -38,6 +42,7 @@ class DebtsController extends GetxController {
     required this.userTransactionsData,
     required this.debtsWeOwe,
     required this.addDebtUsecase,
+    required this.getShownBoxUsecase,
     required this.allCustomersSellersUsecase,
     required this.dataService,
     required this.getDebtsReports,
@@ -53,6 +58,7 @@ class DebtsController extends GetxController {
 
   final TextEditingController customerOrSellerIdController =
       TextEditingController();
+  final TextEditingController boxIdController = TextEditingController();
   final TextEditingController totalDebtController = TextEditingController();
   final TextEditingController moreDetailsController = TextEditingController();
   final TextEditingController dueDateController = TextEditingController();
@@ -224,6 +230,7 @@ class DebtsController extends GetxController {
     final result = await addDebtUsecase.call(
       isCustomer: isCustomer,
       customerId: customerOrSellerIdController.text,
+      boxId: boxIdController.text,
       dueDate: dueDateController.text,
       total: totalDebtController.text,
       receiptImage: selectedFile,
@@ -317,8 +324,17 @@ class DebtsController extends GetxController {
           message: failure.data['message'] ?? 'Unknown error',
         );
       }, (success) async {
-        final directory =
-            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        late Directory directory;
+        if (Platform.isAndroid) {
+          directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        } else if (Platform.isIOS) {
+          // على iOS نحفظ في Documents الخاص بالتطبيق
+          final appDocDir = await getApplicationDocumentsDirectory();
+          directory = Directory("${appDocDir.path}/Doctor Bike/PDF");
+        } else {
+          directory = Directory(
+              "${(await getApplicationDocumentsDirectory()).path}/Doctor Bike/PDF");
+        }
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
@@ -341,7 +357,9 @@ class DebtsController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(milliseconds: 2000),
         );
-
+        if (isShared) {
+          return;
+        }
         await OpenFilex.open(filePath);
       });
     } catch (e) {
@@ -350,10 +368,18 @@ class DebtsController extends GetxController {
     update();
   }
 
+  final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
+
+  void getShowBoxes() async {
+    final boxes = await getShownBoxUsecase.call(screen: 0);
+    shownBoxesList.value = boxes;
+  }
+
   @override
   void onInit() {
     super.onInit();
     getDebtsWeOwe();
+    getShowBoxes();
     getAllCustomersAndSellers();
   }
 
@@ -362,6 +388,8 @@ class DebtsController extends GetxController {
     totalDebtController.dispose();
     moreDetailsController.dispose();
     dueDateController.dispose();
+    boxIdController.dispose();
+    customerOrSellerIdController.dispose();
     super.onClose();
   }
 }

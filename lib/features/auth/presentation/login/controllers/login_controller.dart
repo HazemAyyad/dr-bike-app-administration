@@ -40,7 +40,9 @@ class LoginController extends GetxController {
       final result = await login.call(
         email: emailController.text,
         password: passwordController.text,
-        fcmToken: NotificationFirebaseService.instance.finalToken,
+        fcmToken: NotificationFirebaseService.instance.finalToken.isEmpty
+            ? 'no_token'
+            : NotificationFirebaseService.instance.finalToken,
       );
       result.fold(
         (failure) {

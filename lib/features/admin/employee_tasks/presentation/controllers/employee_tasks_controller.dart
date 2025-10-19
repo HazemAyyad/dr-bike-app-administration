@@ -276,7 +276,7 @@ class EmployeeTasksController extends GetxController {
   }
 
   // upload task image
-  void uploadTaskImage({required String taskId}) async {
+  Future<void> uploadTaskImage({required String taskId}) async {
     selectedFile.isNotEmpty
         ? {
             isLoading(true),

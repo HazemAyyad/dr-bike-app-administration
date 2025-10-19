@@ -74,7 +74,9 @@ class OnLongPress extends GetView<ChecksController> {
                                 ),
                           ),
                           value: option,
+                          // ignore: deprecated_member_use
                           groupValue: null,
+                          // ignore: deprecated_member_use
                           onChanged: (value) {
                             Get.back();
                             if (value == 'voidTheCheck') {

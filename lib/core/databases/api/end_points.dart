@@ -148,6 +148,7 @@ class EndPoints {
   static const String all_sellers = 'all/sellers';
 
   static const String chashIncomingCheckToBox = 'cash/incoming/check/to/box';
+  static const String chashOutgoingCheckToBox = 'cash/outgoing/check/from/box';
 
   static const String deleteIncomingCheck = 'delete/incoming/check';
   static const String deleteOutgoingCheck = 'delete/outgoing/check';

@@ -50,19 +50,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAvMwm1A0tRCpl1susy8rPhHHUirtnvrNw',
+    apiKey: 'AIzaSyCFfHdsJ5-8umIBxBj7kYv6ZjiuJv0Vrz0',
     appId: '1:903571759531:android:06947a50bebe0e6e4bb2ee',
-    messagingSenderId: '783845645727',
-    projectId: 'allite-f3970',
-    storageBucket: 'allite-f3970.appspot.com',
+    messagingSenderId: '903571759531',
+    projectId: 'doctorbike-6e1b9',
+    storageBucket: 'doctorbike-6e1b9.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCShziC95_qmfw5rs9xOfe7JdwA5jYM8F8',
-    appId: '1:903571759531:android:06947a50bebe0e6e4bb2ee',
-    messagingSenderId: '783845645727',
-    projectId: 'allite-f3970',
-    storageBucket: 'allite-f3970.appspot.com',
-    iosBundleId: 'com.nofal.doctorbike',
+    apiKey: 'AIzaSyBqe6b8kMvD7gfS_UIVVtp1rV5mcGxcG1M',
+    appId: '1:903571759531:ios:d2c4ae7c718c2fe54bb2ee',
+    messagingSenderId: '903571759531',
+    projectId: 'doctorbike-6e1b9',
+    storageBucket: 'doctorbike-6e1b9.firebasestorage.app',
+    iosBundleId: 'com.nofal.doctorbikee',
   );
 }

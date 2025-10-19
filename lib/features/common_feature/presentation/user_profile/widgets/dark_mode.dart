@@ -22,6 +22,7 @@ class DarkMode extends GetView<ProfileController> {
         Obx(
           () => Switch(
             value: ThemeService.isDark.value,
+            // ignore: deprecated_member_use
             activeColor: AppColors.primaryColor,
             inactiveThumbColor: AppColors.secondaryColor,
             onChanged: (value) {

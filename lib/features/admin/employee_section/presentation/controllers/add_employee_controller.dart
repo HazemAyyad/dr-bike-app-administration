@@ -87,14 +87,13 @@ class AddEmployeeController extends GetxController {
     {'name': 'employeeTasks'.tr, 'id': '7', 'permission': false.obs},
     {'name': 'sales'.tr, 'id': '8', 'permission': false.obs},
     {'name': 'generalData'.tr, 'id': '9', 'permission': false.obs},
-    // {'name': 'partnersDepartment'.tr, 'id': '10', 'permission': false.obs},
     {'name': 'boxes'.tr, 'id': '11', 'permission': false.obs},
     {'name': 'purchasingDepartment'.tr, 'id': '12', 'permission': false.obs},
     {'name': 'financialMatters'.tr, 'id': '13', 'permission': false.obs},
     {'name': 'checksandCommitments'.tr, 'id': '14', 'permission': false.obs},
     {'name': 'maintenance'.tr, 'id': '15', 'permission': false.obs},
     {'name': 'stock'.tr, 'id': '16', 'permission': false.obs},
-    // {'name': 'messagesDepartment'.tr, 'id': '17', 'permission': false.obs},
+    {'name': 'completeData'.tr, 'id': '40', 'permission': false.obs},
   ];
 
   final RxBool isAllPermissionsSelected = false.obs;

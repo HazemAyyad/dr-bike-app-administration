@@ -55,6 +55,7 @@ abstract class ChecksRepository {
   Future<Either<Failure, String>> chashToBox({
     required String boxId,
     required String checkId,
+    required bool isInComing,
   });
 
   Future<Either<Failure, String>> deleteCheck({

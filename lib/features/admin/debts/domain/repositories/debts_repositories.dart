@@ -29,6 +29,7 @@ abstract class DebtsRepository {
     required String total,
     required List<File> receiptImage,
     required String notes,
+    required String boxId,
   });
 
   Future<Either<Failure, Uint8List>> getDebtsReports(

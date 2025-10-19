@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
@@ -31,10 +32,16 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
         slivers: [
           SliverToBoxAdapter(
             child: Center(
-              child: AppTabs(
-                tabs: controller.tabs,
-                currentTab: controller.currentTab,
-                changeTab: controller.changeTab,
+              child: AbsorbPointer(
+                absorbing: employeePermissions.contains(40) &&
+                        !employeePermissions.contains(9)
+                    ? true
+                    : false,
+                child: AppTabs(
+                  tabs: controller.tabs,
+                  currentTab: controller.currentTab,
+                  changeTab: controller.changeTab,
+                ),
               ),
             ),
           ),
@@ -95,21 +102,24 @@ class GeneralDataListScreen extends GetView<GeneralDataListController> {
           ),
         ],
       ),
-      floatingActionButton: AddFloatingActionButton(
-        onPressed: () {
-          controller.isEdit.value = false;
-          controller.clearForm();
-          // Handle add button press
-          Get.toNamed(
-            AppRoutes.ADDNEWCUSTOMERSCREEN,
-            arguments: {
-              'employeeType': '',
-              'employeeId': '',
-              'sellerId': '',
-            },
-          );
-        },
-      ),
+      floatingActionButton:
+          employeePermissions.contains(40) && !employeePermissions.contains(9)
+              ? null
+              : AddFloatingActionButton(
+                  onPressed: () {
+                    controller.isEdit.value = false;
+                    controller.clearForm();
+                    // Handle add button press
+                    Get.toNamed(
+                      AppRoutes.ADDNEWCUSTOMERSCREEN,
+                      arguments: {
+                        'employeeType': '',
+                        'employeeId': '',
+                        'sellerId': '',
+                      },
+                    );
+                  },
+                ),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,

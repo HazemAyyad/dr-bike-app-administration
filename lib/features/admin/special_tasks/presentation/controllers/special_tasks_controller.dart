@@ -200,6 +200,7 @@ class SpecialTasksController extends GetxController {
         checkedMap[specialTaskId]!.value = false;
       },
       (success) async {
+        Get.back();
         await getSpecialTasks(scrollToTodayb: false);
 
         Get.snackbar(

@@ -221,10 +221,18 @@ class ChecksDatasource {
   Future<Map<String, dynamic>> chashToBox({
     required String checkId,
     required String boxId,
+    required bool isInComing,
   }) async {
     try {
-      final response = await api.post(EndPoints.chashIncomingCheckToBox,
-          data: {'box_id': boxId, 'incoming_check_id': checkId});
+      final response = await api.post(
+          isInComing
+              ? EndPoints.chashIncomingCheckToBox
+              : EndPoints.chashOutgoingCheckToBox,
+          data: {
+            'box_id': boxId,
+            if (isInComing) 'incoming_check_id': checkId
+            else 'outgoing_check_id': checkId,
+          });
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -345,10 +353,14 @@ class ChecksDatasource {
 }
 
 Future<XFile> compressImage(XFile file) async {
+  final fileSizeInBytes = await file.length();
+  final fileSizeInMB = fileSizeInBytes / (1024 * 1024);
+  if (fileSizeInMB <= 1) {
+    return file;
+  }
   final dir = await getTemporaryDirectory();
   final targetPath =
       '${dir.absolute.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
-
   var result = await FlutterImageCompress.compressAndGetFile(
     file.path,
     targetPath,

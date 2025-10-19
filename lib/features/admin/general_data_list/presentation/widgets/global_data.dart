@@ -3,6 +3,7 @@ import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/employee_data_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -244,10 +245,25 @@ class GlobalData extends GetView<GeneralDataListController> {
                     );
                   },
                   child: CachedNetworkImage(
+                    cacheManager: CacheManager(
+                      Config(
+                        'imagesCache',
+                        stalePeriod: const Duration(days: 7),
+                        maxNrOfCacheObjects: 100,
+                      ),
+                    ),
+                    imageBuilder: (context, imageProvider) => Container(
+                      height: 70.h,
+                      width: 70.w,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.fill,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                      ),
+                    ),
                     imageUrl: employee.idImage!,
-                    height: 70.h,
-                    width: 90.w,
-                    fit: BoxFit.fill,
                     filterQuality: FilterQuality.medium,
                     fadeInDuration: const Duration(milliseconds: 200),
                     fadeOutDuration: const Duration(milliseconds: 200),

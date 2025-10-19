@@ -104,7 +104,9 @@ class PersonalDetailsController extends GetxController {
 
   @override
   void onInit() async {
-    getUserData();
+    if (UserData.userToken.isNotEmpty) {
+      getUserData();
+    }
     super.onInit();
   }
 }

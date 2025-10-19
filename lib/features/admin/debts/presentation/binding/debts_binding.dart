@@ -4,6 +4,8 @@ import 'package:doctorbike/features/admin/debts/data/repositories/debts_implemen
 import 'package:doctorbike/features/admin/debts/domain/usecases/total_debts_we_owe_usecase.dart';
 import 'package:get/get.dart';
 
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../domain/usecases/add_debt_usecase.dart';
 import '../../domain/usecases/debts_owed_to_us_usecase.dart';
 import '../../domain/usecases/debts_we_owe_usecase.dart';
@@ -42,6 +44,9 @@ class DebtsBinding extends Bindings {
         ),
         getDebtsReports: GetDebtsReportsUsecase(
           debtsRepository: Get.find<DebtsImplement>(),
+        ),
+        getShownBoxUsecase: GetShownBoxUsecase(
+          boxesRepository: Get.find<BoxesImplement>(),
         ),
       ),
     );

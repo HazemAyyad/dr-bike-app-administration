@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -93,9 +94,25 @@ class ProductImagesSlider extends StatelessWidget {
                               items: images.map(
                                 (image) {
                                   return CachedNetworkImage(
+                                    cacheManager: CacheManager(
+                                      Config(
+                                        'imagesCache',
+                                        stalePeriod: const Duration(days: 7),
+                                        maxNrOfCacheObjects: 100,
+                                      ),
+                                    ),
+                                    imageBuilder: (context, imageProvider) =>
+                                        Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                          image: imageProvider,
+                                          fit: BoxFit.cover,
+                                          filterQuality: FilterQuality.medium,
+                                        ),
+                                      ),
+                                    ),
                                     imageUrl: image,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
                                     fadeInDuration:
                                         const Duration(milliseconds: 200),
                                     fadeOutDuration:
@@ -116,9 +133,24 @@ class ProductImagesSlider extends StatelessWidget {
                   );
                 },
                 child: CachedNetworkImage(
+                  cacheManager: CacheManager(
+                    Config(
+                      'imagesCache',
+                      stalePeriod: const Duration(days: 7),
+                      maxNrOfCacheObjects: 100,
+                    ),
+                  ),
+                  imageBuilder: (context, imageProvider) => Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: imageProvider,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.medium,
+                      ),
+                    ),
+                  ),
                   imageUrl: image,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
                   fadeInDuration: const Duration(milliseconds: 200),
                   fadeOutDuration: const Duration(milliseconds: 200),
                   placeholder: (context, url) => const Center(

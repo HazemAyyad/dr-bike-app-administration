@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -54,11 +55,25 @@ class ProductManagementWidget extends GetView<ProductManagementController> {
                     );
                   },
                   child: CachedNetworkImage(
+                    cacheManager: CacheManager(
+                      Config(
+                        'imagesCache',
+                        stalePeriod: const Duration(days: 7),
+                        maxNrOfCacheObjects: 100,
+                      ),
+                    ),
+                    imageBuilder: (context, imageProvider) => Container(
+                      height: 45.h,
+                      width: 60.w,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                      ),
+                    ),
                     imageUrl: productImage,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.medium,
-                    height: 45.h,
-                    width: 60.w,
                     placeholder: (context, url) => const Center(
                       child: CircularProgressIndicator(
                         color: AppColors.primaryColor,

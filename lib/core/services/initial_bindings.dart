@@ -87,6 +87,18 @@ class InitialBindings implements Bindings {
         ? Get.lazyPut<DioConsumer>(() => DioConsumer(dio: Dio()), fenix: true)
         : null;
 
+    // auth feature
+    Get.lazyPut<AuthRemoteDatasource>(
+      () => AuthRemoteDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<AuthImplement>(
+      () => AuthImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        remoteDataSource: Get.find<AuthRemoteDatasource>(),
+      ),
+      fenix: true,
+    );
     // employee dashbord
     Get.lazyPut<EmployeeDashbordDatasource>(
       () => EmployeeDashbordDatasource(api: Get.find<DioConsumer>()),
@@ -140,7 +152,6 @@ class InitialBindings implements Bindings {
         await FirebaseFirestore.instance.collection('Test').doc('Test').get();
     final bool? value = doc.data()?['Test'] as bool?;
     startApp.value = value!;
-
     await Supabase.initialize(
       url: 'https://tigmezfjgepmzuefrogq.supabase.co',
       anonKey:
@@ -181,18 +192,6 @@ class InitialBindings implements Bindings {
     );
     Get.lazyPut<EmployeeService>(() => EmployeeService(), fenix: true);
 
-    // auth feature
-    Get.lazyPut<AuthRemoteDatasource>(
-      () => AuthRemoteDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
-    );
-    Get.lazyPut<AuthImplement>(
-      () => AuthImplement(
-        networkInfo: Get.find<NetworkInfo>(),
-        remoteDataSource: Get.find<AuthRemoteDatasource>(),
-      ),
-      fenix: true,
-    );
     // common feature
     Get.lazyPut<CommonDatasource>(
       () => CommonDatasource(api: Get.find<DioConsumer>()),
@@ -442,18 +441,18 @@ class InitialBindings implements Bindings {
       ),
       fenix: true,
     );
-
-    Get.put(
-      PersonalDetailsController(
-        userProfileUseCase: UserProfileUseCase(
-          commonRepository: Get.find<CommonImplement>(),
+    if (UserData.userToken.isNotEmpty) {
+      Get.put(
+        PersonalDetailsController(
+          userProfileUseCase: UserProfileUseCase(
+            commonRepository: Get.find<CommonImplement>(),
+          ),
+          getUserDataUsecase: GetUserDataUsecase(
+            commonRepository: Get.find<CommonImplement>(),
+          ),
         ),
-        getUserDataUsecase: GetUserDataUsecase(
-          commonRepository: Get.find<CommonImplement>(),
-        ),
-      ),
-    ).getUserData();
-
+      ).getUserData();
+    }
     // Product Management
     Get.lazyPut<ProductManagementDatasource>(
       () => ProductManagementDatasource(api: Get.find<DioConsumer>()),

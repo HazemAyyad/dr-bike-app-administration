@@ -18,6 +18,7 @@ class AddDebtUsecase {
     required String total,
     required List<File> receiptImage,
     required String notes,
+    required String boxId,
   }) {
     return debtsRepository.addDebt(
       isCustomer: isCustomer,
@@ -27,6 +28,7 @@ class AddDebtUsecase {
       total: total,
       receiptImage: receiptImage,
       notes: notes,
+      boxId: boxId,
     );
   }
 }

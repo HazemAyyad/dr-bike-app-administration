@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
@@ -99,52 +100,38 @@ class NewCheckScreen extends GetView<ChecksController> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Flexible(
-                                child: CustomDropdownField(
-                                  validator: (p0) => null,
-                                  isEnabled: !controller.isEdit.value,
-                                  label: 'beneficiaryName',
+                                child: CustomDropdownFieldWithSearch(
+                                  tital: 'beneficiaryName',
                                   hint: 'customerNameExample',
-                                  dropdownField: controller
+                                  items: controller
                                               .selectedCustomersSellers.value ==
                                           false
                                       ? controller.allCustomersList
-                                          .map(
-                                            (e) => DropdownMenuItem<String>(
-                                              value: e.id.toString(),
-                                              child: Text(e.name),
-                                            ),
-                                          )
-                                          .toList()
-                                      : controller.allSellersList
-                                          .map(
-                                            (e) => DropdownMenuItem<String>(
-                                              value: e.id.toString(),
-                                              child: Text(e.name),
-                                            ),
-                                          )
-                                          .toList(),
-                                  value: controller
-                                              .selectedCustomersSellers.value ==
-                                          false
-                                      ? controller.allCustomersList
-                                          .firstWhereOrNull(
-                                            (element) =>
-                                                element.id.toString() ==
-                                                controller.selectedValue.value,
-                                          )
-                                          ?.id
-                                          .toString()
-                                      : controller.allSellersList
-                                          .firstWhereOrNull(
-                                            (element) =>
-                                                element.id.toString() ==
-                                                controller.selectedValue.value,
-                                          )
-                                          ?.id
-                                          .toString(),
+                                      : controller.allSellersList,
                                   onChanged: (val) {
-                                    controller.selectedValue.value = val!;
+                                    controller.selectedValue.value =
+                                        val!.id.toString();
                                   },
+                                  itemAsString: (f) => f.name,
+                                  compareFn: (a, b) => a.id == b.id,
+                                  value: controller.selectedValue.value == null
+                                      ? null
+                                      : (!controller
+                                              .selectedCustomersSellers.value
+                                          ? controller.allCustomersList
+                                              .firstWhereOrNull(
+                                              (e) =>
+                                                  e.id ==
+                                                  int.tryParse(controller
+                                                      .selectedValue.value!),
+                                            )
+                                          : controller.allSellersList
+                                              .firstWhereOrNull(
+                                              (e) =>
+                                                  e.id ==
+                                                  int.tryParse(controller
+                                                      .selectedValue.value!),
+                                            )),
                                 ),
                               ),
                               IconButton(
@@ -250,11 +237,26 @@ class NewCheckScreen extends GetView<ChecksController> {
                             );
                           },
                           child: CachedNetworkImage(
+                            cacheManager: CacheManager(
+                              Config(
+                                'paperImagesCache',
+                                stalePeriod: const Duration(days: 7),
+                                maxNrOfCacheObjects: 100,
+                              ),
+                            ),
+                            imageBuilder: (context, imageProvider) => Container(
+                              height: 300.h,
+                              width: 300.w,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: imageProvider,
+                                  fit: BoxFit.cover,
+                                  filterQuality: FilterQuality.medium,
+                                ),
+                              ),
+                            ),
                             imageUrl:
                                 controller.editCheckFrontImage.value!.path,
-                            fit: BoxFit.cover,
-                            height: 300.h,
-                            width: 300.w,
                             placeholder: (context, url) => const Center(
                               child: CircularProgressIndicator(
                                   color: AppColors.primaryColor),
@@ -309,10 +311,25 @@ class NewCheckScreen extends GetView<ChecksController> {
                             );
                           },
                           child: CachedNetworkImage(
+                            cacheManager: CacheManager(
+                              Config(
+                                'imagesCache',
+                                stalePeriod: const Duration(days: 7),
+                                maxNrOfCacheObjects: 100,
+                              ),
+                            ),
+                            imageBuilder: (context, imageProvider) => Container(
+                              height: 300.h,
+                              width: 300.w,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: imageProvider,
+                                  fit: BoxFit.cover,
+                                  filterQuality: FilterQuality.medium,
+                                ),
+                              ),
+                            ),
                             imageUrl: controller.editCheckBackImage.value!.path,
-                            fit: BoxFit.cover,
-                            height: 300.h,
-                            width: 300.w,
                             placeholder: (context, url) => const Center(
                               child: CircularProgressIndicator(
                                   color: AppColors.primaryColor),

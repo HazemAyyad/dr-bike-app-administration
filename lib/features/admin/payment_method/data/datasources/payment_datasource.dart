@@ -1,11 +1,13 @@
 // ignore_for_file: depend_on_referenced_packages
 
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../checks/data/datasources/checks_datasource.dart';
 import '../../presentation/controllers/payment_controller.dart';
 
 class PaymentDatasource {
@@ -39,9 +41,11 @@ class PaymentDatasource {
           checksMap['checks[$i][check_id]'] = checks[i].checkNumber.text;
           checksMap['checks[$i][bank_name]'] = checks[i].bankName.text;
           if (checks[i].selectedFile.value != null) {
+            final compressedImg =
+                await compressImage(XFile(checks[i].selectedFile.value!.path));
             checksMap['checks[$i][img]'] = await MultipartFile.fromFile(
-              checks[i].selectedFile.value!.path,
-              filename: checks[i].selectedFile.value!.path.split('/').last,
+              compressedImg.path,
+              filename: compressedImg.path.split('/').last,
             );
           }
         }

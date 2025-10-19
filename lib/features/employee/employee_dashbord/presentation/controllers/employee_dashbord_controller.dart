@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -146,6 +148,12 @@ class EmployeeDashbordController extends GetxController
       'route': AppRoutes.CHECKSSCREEN
     },
     {'id': '15', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
+    if (!employeePermissions.contains(9))
+      {
+        'id': '40',
+        'title': 'generalData',
+        'route': AppRoutes.GENERALDATALISTSCREEN
+      }
   ];
   void toggleAddMenu() {
     isAddMenuOpen.value = !isAddMenuOpen.value;
@@ -349,8 +357,17 @@ class EmployeeDashbordController extends GetxController
           message: failure.data['message'] ?? 'Unknown error',
         );
       }, (success) async {
-        final directory =
-            Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        late Directory directory;
+        if (Platform.isAndroid) {
+          directory = Directory("/storage/emulated/0/Download/Doctor Bike/PDF");
+        } else if (Platform.isIOS) {
+          // على iOS نحفظ في Documents الخاص بالتطبيق
+          final appDocDir = await getApplicationDocumentsDirectory();
+          directory = Directory("${appDocDir.path}/Doctor Bike/PDF");
+        } else {
+          directory = Directory(
+              "${(await getApplicationDocumentsDirectory()).path}/Doctor Bike/PDF");
+        }
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
