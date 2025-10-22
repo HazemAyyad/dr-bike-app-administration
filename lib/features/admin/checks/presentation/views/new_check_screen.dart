@@ -64,6 +64,7 @@ class NewCheckScreen extends GetView<ChecksController> {
                                           .selectedCustomersSellers.value ==
                                       true),
                                   onChanged: (val) {
+                                    controller.getAllCustomersAndSellers();
                                     if (controller.isEdit.value) {
                                       null;
                                     } else {
@@ -81,6 +82,7 @@ class NewCheckScreen extends GetView<ChecksController> {
                                           .selectedCustomersSellers.value ==
                                       false),
                                   onChanged: (val) {
+                                    controller.getAllCustomersAndSellers();
                                     if (controller.isEdit.value) {
                                       null;
                                     } else {
@@ -142,7 +144,9 @@ class NewCheckScreen extends GetView<ChecksController> {
                                     'employeeId': '',
                                     'sellerId': '',
                                   },
-                                ),
+                                )?.then((value) {
+                                  controller.getAllCustomersAndSellers();
+                                }),
                                 icon: Icon(
                                   Icons.add_circle_sharp,
                                   color: AppColors.primaryColor,

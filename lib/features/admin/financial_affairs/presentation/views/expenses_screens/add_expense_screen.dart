@@ -99,7 +99,10 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                       ),
                       IconButton(
                         onPressed: () =>
-                            Get.toNamed(AppRoutes.CREATEBOXESSCREEN),
+                            Get.toNamed(AppRoutes.CREATEBOXESSCREEN)
+                                ?.then((value) {
+                          controller.getShowBoxes();
+                        }),
                         icon: Icon(
                           Icons.add_circle_sharp,
                           color: AppColors.primaryColor,

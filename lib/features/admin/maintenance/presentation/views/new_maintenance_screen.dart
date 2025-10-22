@@ -65,6 +65,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                             value: RxBool(
                                 !controller.selectedSellers.value == true),
                             onChanged: (val) {
+                              controller.getAllCustomersAndSellers();
                               controller.isEdit.value
                                   ? null
                                   : controller.selectedSellers.value = false;
@@ -77,6 +78,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                             value: RxBool(
                                 !controller.selectedSellers.value == false),
                             onChanged: (val) {
+                              controller.getAllCustomersAndSellers();
                               controller.isEdit.value
                                   ? null
                                   : controller.selectedSellers.value = true;
@@ -129,7 +131,9 @@ class NewMaintenanceScreen extends StatelessWidget {
                                 'employeeType': controller.selectedSellers.value
                                     ? 'customer'
                                     : 'seller',
-                              }),
+                              })?.then((value) {
+                            controller.getAllCustomersAndSellers();
+                          }),
                           icon: Icon(
                             Icons.add_circle_sharp,
                             color: AppColors.primaryColor,

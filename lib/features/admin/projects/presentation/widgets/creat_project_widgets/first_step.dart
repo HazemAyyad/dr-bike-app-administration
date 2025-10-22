@@ -152,6 +152,7 @@ class FirstStep extends GetView<ProjectController> {
                   value: RxBool(
                       !controller.selectedCustomersSellers.value == true),
                   onChanged: (val) {
+                    controller.getAllCustomersAndSellers();
                     controller.selectedCustomersSellers.value = false;
                   },
                 ),
@@ -162,6 +163,7 @@ class FirstStep extends GetView<ProjectController> {
                   value: RxBool(
                       !controller.selectedCustomersSellers.value == false),
                   onChanged: (val) {
+                    controller.getAllCustomersAndSellers();
                     controller.selectedCustomersSellers.value = true;
                   },
                 ),
@@ -218,7 +220,7 @@ class FirstStep extends GetView<ProjectController> {
                   'employeeType': controller.selectedCustomersSellers.value
                       ? 'customer'
                       : 'seller',
-                }),
+                })?.then((value) => controller.getAllCustomersAndSellers()),
                 icon: Icon(
                   Icons.add_circle_sharp,
                   color: AppColors.primaryColor,

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../routes/app_routes.dart';
 import '../../controllers/bills_controller.dart';
 
 class AddNewBillScreen extends GetView<BillsController> {
@@ -129,6 +131,7 @@ class AddNewBillScreen extends GetView<BillsController> {
               if (controller.isaddNewBill != '2') SizedBox(height: 10.h),
               if (controller.isaddNewBill != '2')
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Flexible(
                       child: CustomDropdownFieldWithSearch(
@@ -146,7 +149,20 @@ class AddNewBillScreen extends GetView<BillsController> {
                         compareFn: (item1, item2) => item1.id == item2.id,
                       ),
                     ),
-                    SizedBox(width: 10.h),
+                    IconButton(
+                      onPressed: () => Get.toNamed(
+                          AppRoutes.ADDNEWCUSTOMERSCREEN,
+                          arguments: {
+                            'sellerId': '',
+                            'employeeId': '',
+                            'employeeType': '',
+                          })?.then((value) => controller.getAllSellers()),
+                      icon: Icon(
+                        Icons.add_circle_sharp,
+                        color: AppColors.primaryColor,
+                        size: 35.sp,
+                      ),
+                    ),
                     if (controller.isaddNewBill != '3')
                       Flexible(
                         child: CustomTextField(

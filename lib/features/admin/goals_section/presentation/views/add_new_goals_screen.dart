@@ -77,7 +77,6 @@ class AddNewGoalScreen extends GetView<TargetSectionController> {
               SizedBox(height: 10.h),
               const TargetTypeFormatWidget(),
               const OptionsWidget(),
-              SizedBox(height: 10.h),
               GetBuilder<TargetSectionController>(
                 builder: (controller) {
                   if (controller.productsIds.isEmpty) {

@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
+import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/target_section_controller.dart';
 
 class TargetTypeFormatWidget extends GetView<TargetSectionController> {
@@ -145,30 +147,49 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
         if (controller.targetTypeController.text == 'finish_tasks') {
           return Column(
             children: [
-              CustomDropdownFieldWithSearch(
-                tital: 'employee',
-                hint: 'employeeNameExample',
-                value: controller.employeeIdController.text.isEmpty
-                    ? null
-                    : controller.employeeList.firstWhereOrNull(
-                        (e) =>
-                            e.id.toString() ==
-                            controller.employeeIdController.text,
-                      ),
-                items: controller.employeeList,
-                onChanged: (value) {
-                  controller.mainCategoriesIdController.clear();
-                  controller.subCategoriesIdController.clear();
-                  controller.productIdController.clear();
-                  controller.customerAndSellerIdController.clear();
-                  controller.boxIdController.clear();
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: CustomDropdownFieldWithSearch(
+                      tital: 'employee',
+                      hint: 'employeeNameExample',
+                      value: controller.employeeIdController.text.isEmpty
+                          ? null
+                          : controller.employeeList.firstWhereOrNull(
+                              (e) =>
+                                  e.id.toString() ==
+                                  controller.employeeIdController.text,
+                            ),
+                      items: controller.employeeList,
+                      onChanged: (value) {
+                        controller.mainCategoriesIdController.clear();
+                        controller.subCategoriesIdController.clear();
+                        controller.productIdController.clear();
+                        controller.customerAndSellerIdController.clear();
+                        controller.boxIdController.clear();
 
-                  controller.employeeIdController.text = value.id.toString();
-                },
-                itemAsString: (f) => f.employeeName,
-                compareFn: (a, b) => a.id == b.id,
-                validator: (value) => null,
-                isEnabled: !controller.isEdit.value,
+                        controller.employeeIdController.text =
+                            value.id.toString();
+                      },
+                      itemAsString: (f) => f.employeeName,
+                      compareFn: (a, b) => a.id == b.id,
+                      validator: (value) => null,
+                      isEnabled: !controller.isEdit.value,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        Get.toNamed(AppRoutes.ADDNEWEMPLOYEESCREEN, arguments: {
+                      'AddNewEmployeeScreen': 'addNewEmployee',
+                    })?.then((value) => controller.getEmployee()),
+                    icon: Icon(
+                      Icons.add_circle_sharp,
+                      color: AppColors.primaryColor,
+                      size: 35.sp,
+                    ),
+                  )
+                ],
               ),
               SizedBox(height: 10.h),
             ],
@@ -238,29 +259,48 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
         if (controller.targetTypeController.text == 'deposit_to_box') {
           return Column(
             children: [
-              CustomDropdownFieldWithSearch(
-                tital: 'box',
-                hint: 'boxNameExample',
-                value: controller.boxIdController.text.isEmpty
-                    ? null
-                    : controller.shownBoxes.firstWhereOrNull(
-                        (e) =>
-                            e.boxId.toString() ==
-                            controller.boxIdController.text,
-                      ),
-                items: controller.shownBoxes,
-                onChanged: (value) {
-                  controller.mainCategoriesIdController.clear();
-                  controller.subCategoriesIdController.clear();
-                  controller.productIdController.clear();
-                  controller.customerAndSellerIdController.clear();
-                  controller.employeeIdController.clear();
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: CustomDropdownFieldWithSearch(
+                      tital: 'box',
+                      hint: 'boxNameExample',
+                      value: controller.boxIdController.text.isEmpty
+                          ? null
+                          : controller.shownBoxes.firstWhereOrNull(
+                              (e) =>
+                                  e.boxId.toString() ==
+                                  controller.boxIdController.text,
+                            ),
+                      items: controller.shownBoxes,
+                      onChanged: (value) {
+                        controller.mainCategoriesIdController.clear();
+                        controller.subCategoriesIdController.clear();
+                        controller.productIdController.clear();
+                        controller.customerAndSellerIdController.clear();
+                        controller.employeeIdController.clear();
 
-                  controller.boxIdController.text = value.boxId.toString();
-                },
-                itemAsString: (f) => f.boxName,
-                compareFn: (a, b) => a.boxId == b.boxId,
-                isEnabled: !controller.isEdit.value,
+                        controller.boxIdController.text =
+                            value.boxId.toString();
+                      },
+                      itemAsString: (f) => f.boxName,
+                      compareFn: (a, b) => a.boxId == b.boxId,
+                      isEnabled: !controller.isEdit.value,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        Get.toNamed(AppRoutes.CREATEBOXESSCREEN)?.then(
+                      (value) => controller.getShowBoxes(),
+                    ),
+                    icon: Icon(
+                      Icons.add_circle_sharp,
+                      color: AppColors.primaryColor,
+                      size: 35.sp,
+                    ),
+                  )
+                ],
               ),
               SizedBox(height: 10.h),
             ],
@@ -301,7 +341,7 @@ class TargetTypeFormatWidget extends GetView<TargetSectionController> {
                 controller.update();
               },
             ),
-            SizedBox(height: 10.h),
+            // SizedBox(height: 10.h),
           ],
         );
       },

@@ -372,7 +372,8 @@ class DebtsController extends GetxController {
 
   void getShowBoxes() async {
     final boxes = await getShownBoxUsecase.call(screen: 0);
-    shownBoxesList.value = boxes;
+    shownBoxesList.assignAll(boxes);
+    update();
   }
 
   @override

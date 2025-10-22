@@ -137,7 +137,9 @@ class CreateDebts extends GetView<DebtsController> {
                                     controller.selectedCustomersSellers.value
                                         ? 'customer'
                                         : 'seller',
-                              }),
+                              })?.then(
+                            (value) => controller.getAllCustomersAndSellers(),
+                          ),
                           icon: Icon(
                             Icons.add_circle_sharp,
                             color: AppColors.primaryColor,
@@ -172,7 +174,10 @@ class CreateDebts extends GetView<DebtsController> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => Get.toNamed(AppRoutes.CREATEBOXESSCREEN),
+                      onPressed: () =>
+                          Get.toNamed(AppRoutes.CREATEBOXESSCREEN)?.then(
+                        (value) => controller.getShowBoxes(),
+                      ),
                       icon: Icon(
                         Icons.add_circle_sharp,
                         color: AppColors.primaryColor,

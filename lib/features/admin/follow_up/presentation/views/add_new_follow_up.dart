@@ -58,6 +58,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                                       if (controller.isEdite.value) {
                                         return;
                                       }
+                                      controller.getAllCustomersAndSellers();
                                       controller.customerAndSellerIdController
                                           .clear();
                                       controller.isCustomer.value = false;
@@ -74,6 +75,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                                       if (controller.isEdite.value) {
                                         return;
                                       }
+                                      controller.getAllCustomersAndSellers();
                                       controller.customerAndSellerIdController
                                           .text = '';
                                       controller.isCustomer.value = true;
@@ -132,6 +134,8 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                               'employeeId': '',
                               'sellerId': '',
                             },
+                          )?.then(
+                            (value) => controller.getAllCustomersAndSellers(),
                           ),
                           icon: Icon(
                             Icons.add_circle_sharp,
