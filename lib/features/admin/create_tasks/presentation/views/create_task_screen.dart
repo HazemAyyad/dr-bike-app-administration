@@ -152,6 +152,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                   : const SizedBox.shrink(),
               // التكرار
               CustomDropdownField(
+                isRequired: true,
                 label: 'taskRepeat'.tr,
                 value: controller.selectedDays.value.isEmpty
                     ? null
@@ -175,12 +176,13 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 isRecurrenceVisible: controller.isRecurrenceVisible,
                 label: 'taskRepeatDate',
               ),
-              if (!controller.isEdit) SizedBox(height: 20.h),
-              if (!controller.isEdit)
-                AudioRecorderButton(
-                  label: 'recordAudio',
-                  recordedPath: controller.recordedPath,
-                ),
+              // if (!controller.isEdit)
+              SizedBox(height: 10.h),
+              // if (!controller.isEdit)
+              AudioRecorderButton(
+                label: 'recordAudio',
+                recordedPath: controller.recordedPath,
+              ),
               if (!controller.isEdit) SizedBox(height: 20.h),
               // صورة المهمة
               controller.isEdit
@@ -332,9 +334,11 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
               SizedBox(height: 10.h),
               AppButton(
                 isLoading: controller.isLoding,
-                text: title == 'editEmployeeTask'
-                    ? 'editEmployeeTask'.tr
-                    : 'createTask'.tr,
+                text: controller.isEdit
+                    ? 'editTask'
+                    : title == 'editEmployeeTask'
+                        ? 'editEmployeeTask'
+                        : 'createTask',
                 textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w700,

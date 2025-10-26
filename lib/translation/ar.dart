@@ -337,6 +337,7 @@ const Map<String, String> ar = {
   'noDateTasks': 'مهمات بلا تاريخ',
   'transferTask': 'نقل المهمة',
   'editSpecialTask': 'تعديل المهمة الخاصة',
+  'editTask': 'تعديل المهمة',
 
   // employee Section
   'employeeList': 'قائمة الموظفين',

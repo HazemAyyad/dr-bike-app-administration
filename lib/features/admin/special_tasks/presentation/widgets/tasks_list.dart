@@ -119,113 +119,99 @@ class TasksList extends GetView<SpecialTasksController> {
                                 controller.checkedMap
                                     .putIfAbsent(key, () => false.obs);
                                 return GestureDetector(
-                                  onLongPress: () => controller
-                                              .currentTab.value ==
-                                          0
-                                      ? Get.dialog(
-                                          Dialog(
-                                            child: Container(
-                                              padding: EdgeInsets.all(20.h),
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(8.r),
-                                              ),
-                                              child: SingleChildScrollView(
-                                                child: Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    CustomCheckBox(
-                                                      title: 'transferTask',
-                                                      style: theme.copyWith(
-                                                        fontSize: 18.sp,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                      value: controller
-                                                          .transferTask,
-                                                      onChanged: (val) {
-                                                        controller
-                                                            .setOnlyOneTrue(
-                                                                'transferTask');
-                                                      },
-                                                      shape:
-                                                          const CircleBorder(),
-                                                    ),
-                                                    Obx(
-                                                      () => controller
-                                                              .transferTask
-                                                              .value
-                                                          ? CustomCalendar(
-                                                              isVisible: controller
-                                                                  .transferTask,
-                                                              onTap: () {},
-                                                              selectedDay:
-                                                                  controller
-                                                                      .selectedDay,
-                                                            )
-                                                          : const SizedBox
-                                                              .shrink(),
-                                                    ),
-                                                    SizedBox(height: 3.h),
-                                                    CustomCheckBox(
-                                                      title: 'deleteTask',
-                                                      style: theme.copyWith(
-                                                        fontSize: 18.sp,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                      value:
-                                                          controller.deleteTask,
-                                                      onChanged: (val) {
-                                                        controller
-                                                            .setOnlyOneTrue(
-                                                                'deleteTask');
-                                                      },
-                                                      shape:
-                                                          const CircleBorder(),
-                                                    ),
-                                                    SizedBox(height: 3.h),
-                                                    CustomCheckBox(
-                                                      title:
-                                                          'deleteRepeatedTask',
-                                                      style: theme.copyWith(
-                                                        fontSize: 18.sp,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                      value: controller
-                                                          .deleteRepeatedTask,
-                                                      onChanged: (val) {
-                                                        controller
-                                                            .setOnlyOneTrue(
-                                                          'deleteRepeatedTask',
-                                                        );
-                                                      },
-                                                      shape:
-                                                          const CircleBorder(),
-                                                    ),
-                                                    SizedBox(height: 8.h),
-                                                    AppButton(
-                                                      isSafeArea: false,
-                                                      isLoading:
-                                                          controller.isLoading,
-                                                      text: 'done',
-                                                      onPressed: () {
-                                                        controller
-                                                            .cancelSpecialTasks(
-                                                          specialTaskId: task.id
-                                                              .toString(),
-                                                        );
-                                                      },
-                                                    )
-                                                  ],
+                                  onLongPress: () => Get.dialog(
+                                    Dialog(
+                                      child: Container(
+                                        padding: EdgeInsets.all(20.h),
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(8.r),
+                                        ),
+                                        child: SingleChildScrollView(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (controller.currentTab.value ==
+                                                  0)
+                                                CustomCheckBox(
+                                                  title: 'transferTask',
+                                                  style: theme.copyWith(
+                                                    fontSize: 18.sp,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                  value:
+                                                      controller.transferTask,
+                                                  onChanged: (val) {
+                                                    controller.setOnlyOneTrue(
+                                                        'transferTask');
+                                                  },
+                                                  shape: const CircleBorder(),
                                                 ),
+                                              if (controller.currentTab.value ==
+                                                  0)
+                                                Obx(
+                                                  () => controller
+                                                          .transferTask.value
+                                                      ? CustomCalendar(
+                                                          isVisible: controller
+                                                              .transferTask,
+                                                          onTap: () {},
+                                                          selectedDay:
+                                                              controller
+                                                                  .selectedDay,
+                                                        )
+                                                      : const SizedBox.shrink(),
+                                                ),
+                                              if (controller.currentTab.value ==
+                                                  0)
+                                                SizedBox(height: 3.h),
+                                              CustomCheckBox(
+                                                title: 'deleteTask',
+                                                style: theme.copyWith(
+                                                  fontSize: 18.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                                value: controller.deleteTask,
+                                                onChanged: (val) {
+                                                  controller.setOnlyOneTrue(
+                                                      'deleteTask');
+                                                },
+                                                shape: const CircleBorder(),
                                               ),
-                                            ),
+                                              SizedBox(height: 3.h),
+                                              CustomCheckBox(
+                                                title: 'deleteRepeatedTask',
+                                                style: theme.copyWith(
+                                                  fontSize: 18.sp,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                                value: controller
+                                                    .deleteRepeatedTask,
+                                                onChanged: (val) {
+                                                  controller.setOnlyOneTrue(
+                                                    'deleteRepeatedTask',
+                                                  );
+                                                },
+                                                shape: const CircleBorder(),
+                                              ),
+                                              SizedBox(height: 8.h),
+                                              AppButton(
+                                                isSafeArea: false,
+                                                isLoading: controller.isLoading,
+                                                text: 'done',
+                                                onPressed: () {
+                                                  controller.cancelSpecialTasks(
+                                                    specialTaskId:
+                                                        task.id.toString(),
+                                                  );
+                                                },
+                                              )
+                                            ],
                                           ),
-                                        )
-                                      : null,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                   onTap: () {
                                     controller.getSpecialTasksDetails(
                                       specialTaskId: task.id.toString(),

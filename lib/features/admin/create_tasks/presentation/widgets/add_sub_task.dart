@@ -62,7 +62,7 @@ class AddSubTask extends GetView<CreateTaskController> {
                               Icon(Icons.close, size: 20.sp, color: Colors.red),
                           onPressed: () => controller.subTasks.remove(task),
                         ),
-                        buildSubTaskImage(task['subTaskImage']),
+                        buildSubTaskImage(context, task['subTaskImage']),
                         SizedBox(width: 10.w),
                         Flexible(
                           child: ListTile(

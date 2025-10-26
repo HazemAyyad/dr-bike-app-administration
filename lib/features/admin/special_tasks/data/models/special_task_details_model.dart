@@ -39,6 +39,7 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
           ? List<String>.from(
               json['admin_img'].map((e) => ShowNetImage.getPhoto(e)))
           : [],
+      audio: ShowNetImage.getPhoto(json['audio']),
       taskRecurrence: json['task_recurrence'] ?? '',
       taskRecurrenceTime: List<String>.from(json['task_recurrence_time'] ?? []),
       subTasks: (json['sub_tasks'] as List<dynamic>? ?? [])
@@ -46,7 +47,6 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
           .toList(),
       startTime: DateTime.parse(json['start_time'] ?? DateTime.now()),
       endTime: DateTime.parse(json['end_time'] ?? DateTime.now()),
-      audio: json['audio'] ?? '',
     );
   }
 }

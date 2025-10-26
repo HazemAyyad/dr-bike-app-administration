@@ -253,12 +253,17 @@ class CreateTaskController extends GetxController {
         (success) {
           Get.find<SpecialTasksController>().getSpecialTasks();
           if (isEdit) {
-            Get.find<SpecialTasksController>().getSpecialTasksDetails(
-              specialTaskId: specialTaskId.toString(),
+            Future.delayed(
+              const Duration(milliseconds: 500),
+              () {
+                Get.find<SpecialTasksController>().getSpecialTasksDetails(
+                  specialTaskId: specialTaskId.toString(),
+                );
+              },
             );
           }
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 1000),
             () {
               Get.back();
               Get.back();

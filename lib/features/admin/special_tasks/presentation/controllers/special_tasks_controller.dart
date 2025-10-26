@@ -304,10 +304,10 @@ class SpecialTasksController extends GetxController {
         getSpecialTasks();
 
         Future.delayed(
-          const Duration(seconds: 2),
+          const Duration(seconds: 1),
           () {
             Get.back();
-            // Get.back();
+            Get.back();
           },
         );
         Helpers.showCustomDialogSuccess(

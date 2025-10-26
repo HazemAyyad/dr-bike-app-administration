@@ -339,6 +339,7 @@ const Map<String, String> en = {
   'noDateTasks': 'No Date Tasks',
   'transferTask': 'Transfer Task',
   'editSpecialTask': 'Edit Special Task',
+  'editTask': 'Edit Task',
 
   // employee Section
   'employeeList': 'Employee List',

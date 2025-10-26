@@ -164,7 +164,7 @@ class CreateEmployeeTasksDatasource {
   }) async {
     try {
       final subSpecialTasksMap = <String, dynamic>{};
-
+      print(audio.path);
       for (int i = 0; i < subSpecialTasks.length; i++) {
         if (subSpecialTasks[i]['subTaskId'] != null) {
           subSpecialTasksMap['sub_special_tasks[$i][id]'] =
@@ -234,7 +234,9 @@ class CreateEmployeeTasksDatasource {
                     audio.path,
                     filename: audio.path.split('/').last,
                     contentType: MediaType("audio", "x-m4a"),
-                  ),
+                  )
+          else
+            'audio': '',
         },
         isFormData: true,
         options: Options(

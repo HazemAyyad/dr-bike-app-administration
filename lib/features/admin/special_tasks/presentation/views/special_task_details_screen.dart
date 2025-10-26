@@ -7,12 +7,14 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../employee_tasks/presentation/widgets/audio_player.dart';
 import '../controllers/special_tasks_controller.dart';
 
 class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
@@ -151,6 +153,10 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                     title: 'taskNotes',
                     discription: data.notes,
                   ),
+                SizedBox(height: 10.h),
+                data.audio.isNotEmpty && data.audio.contains('.aac')
+                    ? AudioPlayerWidget(url: data.audio)
+                    : const SizedBox.shrink(),
                 if (data.subTasks.isNotEmpty)
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 15.h),
@@ -211,45 +217,149 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                             value: (tasks.status != 'ongoing').obs,
                             onChanged: (value) {
                               if (tasks.status != 'ongoing') return;
-                              controller.makeSubsSpecialTaskCompleted(
-                                context,
-                                tasks.subTaskId.toString(),
-                                data.taskId.toString(),
+                              Get.dialog(
+                                Dialog(
+                                  backgroundColor: ThemeService.isDark.value
+                                      ? AppColors.darkColor
+                                      : AppColors.whiteColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8.r),
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(15.w),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                'areYouSure'.tr,
+                                                textAlign: TextAlign.center,
+                                                maxLines: 2,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium!
+                                                    .copyWith(
+                                                      fontSize: 18.sp,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: AppColors
+                                                          .primaryColor,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 20.h),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: AppButton(
+                                                isSafeArea: false,
+                                                isLoading: controller.isLoading,
+                                                text: 'yes',
+                                                onPressed: () {
+                                                  controller
+                                                      .makeSubsSpecialTaskCompleted(
+                                                    context,
+                                                    tasks.subTaskId.toString(),
+                                                    data.taskId.toString(),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(width: 10.w),
+                                            Expanded(
+                                              child: AppButton(
+                                                isLoading: controller.isLoading,
+                                                isSafeArea: false,
+                                                color: Colors.red,
+                                                width: double.infinity,
+                                                borderRadius: BorderRadius.all(
+                                                  Radius.circular(8.r),
+                                                ),
+                                                text: 'cancel'.tr,
+                                                textStyle: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium!
+                                                    .copyWith(
+                                                      color: Colors.white,
+                                                      fontSize: 15.sp,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                onPressed: () {
+                                                  Get.back();
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               );
                             },
                           ),
                         ),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10.r),
-                          child: CachedNetworkImage(
-                            cacheManager: CacheManager(
-                              Config(
-                                'imagesCache',
-                                stalePeriod: const Duration(days: 7),
-                                maxNrOfCacheObjects: 100,
-                              ),
-                            ),
-                            imageBuilder: (context, imageProvider) => Container(
-                              width: 55.w,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: imageProvider,
-                                  fit: BoxFit.fill,
-                                  filterQuality: FilterQuality.medium,
+                          child: GestureDetector(
+                            onTap: () {
+                              showGeneralDialog(
+                                context: context,
+                                barrierDismissible: true,
+                                barrierLabel: 'Dismiss',
+                                barrierColor: Colors.black.withAlpha(128),
+                                transitionDuration:
+                                    const Duration(milliseconds: 300),
+                                pageBuilder: (context, anim1, anim2) {
+                                  return FullScreenZoomImage(
+                                    imageUrl: tasks.adminImg.isNotEmpty
+                                        ? tasks.adminImg.first
+                                        : AssetsManager.noImageNet,
+                                  );
+                                },
+                              );
+                            },
+                            child: CachedNetworkImage(
+                              cacheManager: CacheManager(
+                                Config(
+                                  'imagesCache',
+                                  stalePeriod: const Duration(days: 7),
+                                  maxNrOfCacheObjects: 100,
                                 ),
                               ),
-                            ),
-                            imageUrl: tasks.adminImg.isNotEmpty
-                                ? tasks.adminImg.first
-                                : AssetsManager.noImageNet,
-                            placeholder: (context, url) => SizedBox(
-                              width: 55.w,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
+                              imageBuilder: (context, imageProvider) =>
+                                  Container(
+                                width: 60.w,
+                                decoration: BoxDecoration(
+                                  image: DecorationImage(
+                                    image: imageProvider,
+                                    fit: BoxFit.fill,
+                                    filterQuality: FilterQuality.medium,
+                                  ),
+                                ),
                               ),
+                              imageUrl: tasks.adminImg.isNotEmpty
+                                  ? tasks.adminImg.first
+                                  : AssetsManager.noImageNet,
+                              fadeInDuration: const Duration(milliseconds: 200),
+                              fadeOutDuration:
+                                  const Duration(milliseconds: 200),
+                              placeholder: (context, url) => SizedBox(
+                                width: 60.w,
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.error),
                             ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.error),
                           ),
                         ),
                       ],
