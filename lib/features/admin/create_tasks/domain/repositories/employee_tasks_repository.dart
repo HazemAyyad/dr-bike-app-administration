@@ -36,5 +36,6 @@ abstract class CreateEmployeeTasksRepository {
     required List<File> adminImg,
     required File audio,
     required RxList subSpecialTasks,
+    required int specialTaskId,
   });
 }

@@ -9,8 +9,10 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/special_tasks_controller.dart';
 
 class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
@@ -20,7 +22,42 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     return Scaffold(
-      appBar: const CustomAppBar(title: 'privateTaskDetails', action: false),
+      appBar: CustomAppBar(
+        title: 'privateTaskDetails',
+        action: false,
+        actions: [
+          userType == 'admin'
+              ? TextButton.icon(
+                  icon: Icon(
+                    Icons.edit_calendar_outlined,
+                    color: ThemeService.isDark.value
+                        ? AppColors.primaryColor
+                        : AppColors.secondaryColor,
+                    size: 25.sp,
+                  ),
+                  onPressed: () {
+                    Get.toNamed(
+                      AppRoutes.CREATETASKSCREEN,
+                      arguments: {
+                        'title': 'editSpecialTask',
+                        'isEdit': true,
+                      },
+                    );
+                  },
+                  label: Text(
+                    'edit'.tr,
+                    style: theme.copyWith(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ],
+      ),
       body: Obx(
         () {
           if (controller.isGetLoading.value) {
@@ -108,6 +145,11 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
                   SupTextAndDis(
                     title: 'taskDescription',
                     discription: data.taskDescription,
+                  ),
+                if (data.notes.isNotEmpty)
+                  SupTextAndDis(
+                    title: 'taskNotes',
+                    discription: data.notes,
                   ),
                 if (data.subTasks.isNotEmpty)
                   Padding(

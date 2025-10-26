@@ -10,7 +10,6 @@ import 'package:intl/intl.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../core/utils/assets_manger.dart';
 import '../../data/models/debts_we_owe_model.dart';
 import '../controllers/debts_controller.dart';
 import 'show_user_transactions.dart';
@@ -85,18 +84,59 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                       Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 30.r,
-                        child: SizedBox(
-                          height: 30.h,
-                          child: Image.asset(
-                            AssetsManager.userIconNew,
-                            fit: BoxFit.contain,
-                            color: AppColors.primaryColor,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(5.r),
+                        child: GestureDetector(
+                          onTap: () {
+                            showGeneralDialog(
+                              context: context,
+                              barrierDismissible: true,
+                              barrierLabel: 'Dismiss',
+                              barrierColor: Colors.black.withAlpha(128),
+                              transitionDuration:
+                                  const Duration(milliseconds: 300),
+                              pageBuilder: (context, anim1, anim2) {
+                                return FullScreenZoomImage(
+                                  imageUrl: debt.receiptImage,
+                                );
+                              },
+                            );
+                          },
+                          child: CachedNetworkImage(
+                            cacheManager: CacheManager(
+                              Config(
+                                'imagesCache',
+                                stalePeriod: const Duration(days: 7),
+                                maxNrOfCacheObjects: 100,
+                              ),
+                            ),
+                            imageBuilder: (context, imageProvider) => Container(
+                              height: 60,
+                              width: 60,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: imageProvider,
+                                  fit: BoxFit.cover,
+                                  filterQuality: FilterQuality.medium,
+                                ),
+                              ),
+                            ),
+                            imageUrl: debt.receiptImage,
+                            placeholder: (context, url) => SizedBox(
+                              height: 50.h,
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.error,
+                              size: 50,
+                              color: Colors.red,
+                            ),
                           ),
                         ),
                       ),
-                      SizedBox(width: 20.w),
+                      SizedBox(width: 5.w),
                       Expanded(
                         child: Column(
                           children: [
@@ -147,7 +187,7 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                                 ),
                               ],
                             ),
-                            SizedBox(height: 5.h),
+                            SizedBox(height: 10.h),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -177,61 +217,62 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                                 ),
                               ],
                             ),
-                            SizedBox(height: 5.h),
-                            Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    showGeneralDialog(
-                                      context: context,
-                                      barrierDismissible: true,
-                                      barrierLabel: 'Dismiss',
-                                      barrierColor: Colors.black.withAlpha(128),
-                                      transitionDuration:
-                                          const Duration(milliseconds: 300),
-                                      pageBuilder: (context, anim1, anim2) {
-                                        return FullScreenZoomImage(
-                                          imageUrl: debt.receiptImage,
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: CachedNetworkImage(
-                                    cacheManager: CacheManager(
-                                      Config(
-                                        'imagesCache',
-                                        stalePeriod: const Duration(days: 7),
-                                        maxNrOfCacheObjects: 100,
-                                      ),
-                                    ),
-                                    imageBuilder: (context, imageProvider) =>
-                                        Container(
-                                      height: 50.h,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.cover,
-                                          filterQuality: FilterQuality.medium,
-                                        ),
-                                      ),
-                                    ),
-                                    imageUrl: debt.receiptImage,
-                                    placeholder: (context, url) => SizedBox(
-                                      height: 50.h,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(
-                                      Icons.error,
-                                      size: 50,
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
+                            // SizedBox(height: 5.h),
+                            // Row(
+                            //   children: [
+                            //     GestureDetector(
+                            //       onTap: () {
+                            //         showGeneralDialog(
+                            //           context: context,
+                            //           barrierDismissible: true,
+                            //           barrierLabel: 'Dismiss',
+                            //           barrierColor: Colors.black.withAlpha(128),
+                            //           transitionDuration:
+                            //               const Duration(milliseconds: 300),
+                            //           pageBuilder: (context, anim1, anim2) {
+                            //             return FullScreenZoomImage(
+                            //               imageUrl: debt.receiptImage,
+                            //             );
+                            //           },
+                            //         );
+                            //       },
+                            //       child: CachedNetworkImage(
+                            //         cacheManager: CacheManager(
+                            //           Config(
+                            //             'imagesCache',
+                            //             stalePeriod: const Duration(days: 7),
+                            //             maxNrOfCacheObjects: 100,
+                            //           ),
+                            //         ),
+                            //         imageBuilder: (context, imageProvider) =>
+                            //             Container(
+                            //           height: 50.h,
+                            //           width: 100.w,
+                            //           decoration: BoxDecoration(
+                            //             image: DecorationImage(
+                            //               image: imageProvider,
+                            //               fit: BoxFit.cover,
+                            //               filterQuality: FilterQuality.medium,
+                            //             ),
+                            //           ),
+                            //         ),
+                            //         imageUrl: debt.receiptImage,
+                            //         placeholder: (context, url) => SizedBox(
+                            //           height: 50.h,
+                            //           child: const Center(
+                            //             child: CircularProgressIndicator(),
+                            //           ),
+                            //         ),
+                            //         errorWidget: (context, url, error) =>
+                            //             const Icon(
+                            //           Icons.error,
+                            //           size: 50,
+                            //           color: Colors.red,
+                            //         ),
+                            //       ),
+                            //     ),
+                            //   ],
+                            // )
                           ],
                         ),
                       ),
@@ -240,7 +281,7 @@ class ShowDebtsWidget extends GetView<DebtsController> {
                 ),
                 // ),
                 Container(
-                  margin: EdgeInsets.symmetric(vertical: 10.h),
+                  margin: EdgeInsets.symmetric(vertical: 5.h),
                   height: 1.h,
                   color: AppColors.customGreyColor2,
                 ),

@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_tab_bar.dart';
+import '../../../../../core/services/theme_service.dart';
 import '../controllers/debts_controller.dart';
 import '../widgets/app_bar.dart';
 import '../widgets/build_debts_credits.dart';
@@ -82,24 +83,24 @@ class DebtsScreen extends GetView<DebtsController> {
                 ],
               ),
             ),
-            // SliverToBoxAdapter(
-            //   child: Padding(
-            //     padding: EdgeInsets.symmetric(horizontal: 50.w),
-            //     child: SearchBar(
-            //       shadowColor: WidgetStateProperty.all(Colors.transparent),
-            //       leading: const Icon(
-            //         Icons.search,
-            //       ),
-            //       hintText: 'search'.tr,
-            //       backgroundColor: WidgetStateProperty.all(
-            //         ThemeService.isDark.value
-            //             ? AppColors.customGreyColor
-            //             : AppColors.customGreyColor7,
-            //       ),
-            //       onChanged: (value) => controller.searchBar(value),
-            //     ),
-            //   ),
-            // ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 50.w),
+                child: SearchBar(
+                  shadowColor: WidgetStateProperty.all(Colors.transparent),
+                  leading: const Icon(
+                    Icons.search,
+                  ),
+                  hintText: 'search'.tr,
+                  backgroundColor: WidgetStateProperty.all(
+                    ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.customGreyColor7,
+                  ),
+                  onChanged: (value) => controller.searchBar(value),
+                ),
+              ),
+            ),
             const ShowDebtsWidget(),
           ],
         ),

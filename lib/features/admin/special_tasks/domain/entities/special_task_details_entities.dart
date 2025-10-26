@@ -4,17 +4,25 @@ class SpecialTaskDetailsEntities {
   final String taskDescription;
   final List<String> adminImg;
   final String taskRecurrence;
+  final String notes;
   final List<String> taskRecurrenceTime;
   final List<SubTaskEntity> subTasks;
+  final DateTime startTime;
+  final DateTime endTime;
+  final String audio;
 
   SpecialTaskDetailsEntities({
     required this.taskId,
     required this.taskName,
     required this.taskDescription,
+    required this.notes,
     required this.adminImg,
     required this.taskRecurrence,
     required this.taskRecurrenceTime,
     required this.subTasks,
+    required this.startTime,
+    required this.endTime,
+    required this.audio,
   });
 }
 

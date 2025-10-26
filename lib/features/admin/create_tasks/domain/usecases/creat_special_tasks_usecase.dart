@@ -24,6 +24,7 @@ class CreatSpecialTasksUsecase {
     required List<File> adminImg,
     required File audio,
     required RxList subSpecialTasks,
+    required int specialTaskId,
   }) {
     return createEmployeeTasksRepository.creatSpecialTasks(
       name: name,
@@ -38,6 +39,7 @@ class CreatSpecialTasksUsecase {
       adminImg: adminImg,
       audio: audio,
       subSpecialTasks: subSpecialTasks,
+      specialTaskId: specialTaskId,
     );
   }
 }

@@ -9,16 +9,24 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
     required String taskDescription,
     required List<String> adminImg,
     required String taskRecurrence,
+    required String notes,
     required List<String> taskRecurrenceTime,
     required List<SubTaskModel> subTasks,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String audio,
   }) : super(
           taskId: taskId,
           taskName: taskName,
           taskDescription: taskDescription,
           adminImg: adminImg,
+          notes: notes,
           taskRecurrence: taskRecurrence,
           taskRecurrenceTime: taskRecurrenceTime,
           subTasks: subTasks,
+          startTime: startTime,
+          endTime: endTime,
+          audio: audio,
         );
 
   factory SpecialTaskDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +34,7 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
       taskId: json['id'] ?? 0,
       taskName: json['name'] ?? '',
       taskDescription: json['description'] ?? '',
+      notes: json['notes'] ?? '',
       adminImg: json['admin_img'] != null && json['admin_img'] != 'null'
           ? List<String>.from(
               json['admin_img'].map((e) => ShowNetImage.getPhoto(e)))
@@ -35,6 +44,9 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
       subTasks: (json['sub_tasks'] as List<dynamic>? ?? [])
           .map((e) => SubTaskModel.fromJson(e))
           .toList(),
+      startTime: DateTime.parse(json['start_time'] ?? DateTime.now()),
+      endTime: DateTime.parse(json['end_time'] ?? DateTime.now()),
+      audio: json['audio'] ?? '',
     );
   }
 }

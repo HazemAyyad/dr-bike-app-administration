@@ -176,7 +176,10 @@ class CreateDebts extends GetView<DebtsController> {
                     IconButton(
                       onPressed: () =>
                           Get.toNamed(AppRoutes.CREATEBOXESSCREEN)?.then(
-                        (value) => controller.getShowBoxes(),
+                        (value) {
+                          Get.back();
+                          controller.getShowBoxes();
+                        },
                       ),
                       icon: Icon(
                         Icons.add_circle_sharp,

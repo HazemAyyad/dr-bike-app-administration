@@ -150,7 +150,7 @@ class ProductImagesSlider extends StatelessWidget {
                       image: DecorationImage(
                         image: imageProvider,
                         fit: BoxFit.cover,
-                        filterQuality: FilterQuality.medium,
+                        filterQuality: FilterQuality.low,
                       ),
                     ),
                   ),

@@ -157,7 +157,6 @@ class CreateTaskController extends GetxController {
         return;
       }
       isLoding(true);
-
       final result = await createTaskUsecase.call(
         employeeTaskId: employeeTaskId,
         name: taskNameController.text,
@@ -208,11 +207,12 @@ class CreateTaskController extends GetxController {
   }
 
   // دالة لإنشاء المهمة خاصة
-  void createSpecialTask(BuildContext context) async {
+  void createSpecialTask(BuildContext context, {int specialTaskId = 0}) async {
     if (formKey.currentState!.validate()) {
       isLoding(true);
 
       final result = await creatSpecialTasksUsecase.call(
+        specialTaskId: specialTaskId,
         name: taskNameController.text,
         description: taskDescriptionController.text,
         notes: taskNotesController.text,
@@ -252,6 +252,11 @@ class CreateTaskController extends GetxController {
         },
         (success) {
           Get.find<SpecialTasksController>().getSpecialTasks();
+          if (isEdit) {
+            Get.find<SpecialTasksController>().getSpecialTasksDetails(
+              specialTaskId: specialTaskId.toString(),
+            );
+          }
           Future.delayed(
             const Duration(milliseconds: 1500),
             () {
@@ -288,24 +293,17 @@ class CreateTaskController extends GetxController {
   final bool isEdit = Get.arguments['isEdit'];
   final String title = Get.arguments['title'];
 
-  final RxBool deleteImage = false.obs;
-  void updatePrivateTask() {
-    taskNameController.text =
-        specialTasksService.specialTaskDetails.value!.taskName;
-    taskDescriptionController.text =
-        specialTasksService.specialTaskDetails.value!.taskDescription;
-    //  taskNotesController.text = specialTasksService.specialTaskDetails.value!.;
-    selectedDays.value =
-        specialTasksService.specialTaskDetails.value!.taskRecurrence;
-    for (var element
-        in specialTasksService.specialTaskDetails.value!.taskRecurrenceTime) {
+  void updateSpecialTask() {
+    final data = specialTasksService.specialTaskDetails.value!;
+    taskNameController.text = data.taskName;
+    taskDescriptionController.text = data.taskDescription;
+    taskNotesController.text = data.notes;
+    selectedDays.value = data.taskRecurrence;
+    for (var element in data.taskRecurrenceTime) {
       selectedDaysList.add(element);
     }
-    selectedFile = specialTasksService.specialTaskDetails.value!.adminImg
-        .map((e) => File(e))
-        .toList();
-    for (var element
-        in specialTasksService.specialTaskDetails.value!.subTasks) {
+    selectedFile = data.adminImg.map((e) => File(e)).toList();
+    for (var element in data.subTasks) {
       subTasks.add({
         'subTaskId': element.subTaskId,
         'subTaskName': element.subTaskName,
@@ -313,6 +311,11 @@ class CreateTaskController extends GetxController {
         'subTaskImage': element.adminImg,
         'imageIsRequired': element.forceEmployeeToAddImg,
       });
+      startDate.value = data.startTime;
+      endDate.value = data.endTime;
+      recordedPath.value = data.audio.isNotEmpty && data.audio.contains('.aac')
+          ? data.audio
+          : '';
     }
   }
 
@@ -345,7 +348,6 @@ class CreateTaskController extends GetxController {
         ? data.audio!
         : '';
     selectedFile.addAll(data.adminImg?.map((e) => File(e)).toList() ?? []);
-    selectedDays.value = data.taskRecurrence;
   }
 
   @override
@@ -353,8 +355,7 @@ class CreateTaskController extends GetxController {
     super.onInit();
     getEmployee();
     if (isEdit) {
-      // title == 'editPrivateTask' ? updatePrivateTask() :
-      updateEmployeeTask();
+      title == 'editSpecialTask' ? updateSpecialTask() : updateEmployeeTask();
     }
   }
 

@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -11,6 +10,8 @@ import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
 import '../widgets/add_sub_task.dart';
 import '../widgets/select_date.dart';
@@ -104,6 +105,8 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                       hintText: 'taskDescriptionExample',
                       controller: controller.taskNotesController,
                       validator: (p0) => null,
+                      maxLines: 5,
+                      minLines: 5,
                     ),
               SizedBox(height: 15.h),
               // إضافة مهمة فرعية
@@ -153,10 +156,10 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 value: controller.selectedDays.value.isEmpty
                     ? null
                     : controller.selectedDays.value,
-                hint: controller.isEdit && controller.title == 'editPrivateTask'
+                hint: controller.isEdit && controller.title == 'editSpecialTask'
                     ? controller.specialTasksService.specialTaskDetails.value!
                         .taskRecurrence
-                    : controller.isEdit && controller.title != 'editPrivateTask'
+                    : controller.isEdit && controller.title != 'editSpecialTask'
                         ? controller.employeeTaskService.taskDetails.value!
                             .taskRecurrence
                         : 'taskRepeatExample'.tr,
@@ -180,116 +183,102 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 ),
               if (!controller.isEdit) SizedBox(height: 20.h),
               // صورة المهمة
-              // controller.isEdit
-              //     ? Column(
-              //         crossAxisAlignment: CrossAxisAlignment.start,
-              //         children: [
-              //           controller.selectedFile.isEmpty
-              //               ? const SizedBox.shrink()
-              //               : Text(
-              //                   'documentsImages'.tr,
-              //                   style: Theme.of(context)
-              //                       .textTheme
-              //                       .bodyMedium!
-              //                       .copyWith(
-              //                         color: (ThemeService.isDark.value
-              //                             ? AppColors.customGreyColor6
-              //                             : AppColors.customGreyColor),
-              //                         fontSize: 15.sp,
-              //                         fontWeight: FontWeight.w400,
-              //                       ),
-              //                 ),
-              //           SizedBox(height: 5.h),
-              //           SingleChildScrollView(
-              //             scrollDirection: Axis.horizontal,
-              //             child: Obx(
-              //               () => controller.deleteImage.value
-              //                   ? const SizedBox.shrink()
-              //                   : Row(
-              //                       children: [
-              //                         ...controller.selectedFile
-              //                             .asMap()
-              //                             .entries
-              //                             .map(
-              //                           (entry) {
-              //                             final index = entry.key;
-              //                             final file = entry.value;
-              //                             return Padding(
-              //                               padding: EdgeInsets.symmetric(
-              //                                   horizontal: 5.w),
-              //                               child: Stack(
-              //                                 children: [
-              //                                   ClipRRect(
-              //                                     borderRadius:
-              //                                         BorderRadius.circular(
-              //                                             5.r),
-              //                                     child: file.path
-              //                                             .contains('http')
-              //                                         ? CachedNetworkImage(
-              //                                             imageUrl: file.path,
-              //                                             height: 200.h,
-              //                                             width: 200.w,
-              //                                             fit: BoxFit.fill,
-              //                                             fadeInDuration:
-              //                                                 const Duration(
-              //                                                     milliseconds:
-              //                                                         200),
-              //                                             fadeOutDuration:
-              //                                                 const Duration(
-              //                                                     milliseconds:
-              //                                                         200),
-              //                                             placeholder:
-              //                                                 (context, url) =>
-              //                                                     const Center(
-              //                                               child:
-              //                                                   CircularProgressIndicator(),
-              //                                             ),
-              //                                             errorWidget: (context,
-              //                                                     url, error) =>
-              //                                                 const Icon(
-              //                                                     Icons.error),
-              //                                           )
-              //                                         : Image.file(
-              //                                             file,
-              //                                             height: 200.h,
-              //                                             width: 200.w,
-              //                                             fit: BoxFit.fill,
-              //                                           ),
-              //                                   ),
-              //                                   // زرار فوق الصورة
-              //                                   Positioned(
-              //                                     right: 8,
-              //                                     top: 8,
-              //                                     child: IconButton(
-              //                                       icon: const Icon(
-              //                                           Icons.delete,
-              //                                           color: Colors.red),
-              //                                       onPressed: () {
-              //                                         controller
-              //                                             .deleteImage(true);
-              //                                         controller.selectedFile
-              //                                             .removeAt(index);
-              //                                         controller
-              //                                             .deleteImage(false);
-              //                                       },
-              //                                     ),
-              //                                   ),
-              //                                 ],
-              //                               ),
-              //                             );
-              //                           },
-              //                         ),
-              //                       ],
-              //                     ),
-              //             ),
-              //           ),
-              //           SizedBox(height: 15.h),
-              //         ],
-              //       )
-              //     : const SizedBox.shrink(),
+              controller.isEdit
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        controller.selectedFile.isEmpty
+                            ? const SizedBox.shrink()
+                            : Text(
+                                'documentsImages'.tr,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: (ThemeService.isDark.value
+                                          ? AppColors.customGreyColor6
+                                          : AppColors.customGreyColor),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                              ),
+                        SizedBox(height: 5.h),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: GetBuilder<CreateTaskController>(
+                            builder: (controller) => Row(
+                              children: [
+                                ...controller.selectedFile.asMap().entries.map(
+                                  (entry) {
+                                    final index = entry.key;
+                                    final file = entry.value;
+                                    return Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 5.w),
+                                      child: Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(5.r),
+                                            child: file.path.contains('http')
+                                                ? CachedNetworkImage(
+                                                    imageUrl: file.path,
+                                                    height: 200.h,
+                                                    width: 200.w,
+                                                    fit: BoxFit.fill,
+                                                    fadeInDuration:
+                                                        const Duration(
+                                                            milliseconds: 200),
+                                                    fadeOutDuration:
+                                                        const Duration(
+                                                            milliseconds: 200),
+                                                    placeholder:
+                                                        (context, url) =>
+                                                            const Center(
+                                                      child:
+                                                          CircularProgressIndicator(),
+                                                    ),
+                                                    errorWidget: (context, url,
+                                                            error) =>
+                                                        const Icon(Icons.error),
+                                                  )
+                                                : Image.file(
+                                                    file,
+                                                    height: 200.h,
+                                                    width: 200.w,
+                                                    fit: BoxFit.fill,
+                                                  ),
+                                          ),
+                                          // زرار فوق الصورة
+                                          Positioned(
+                                            right: 8,
+                                            top: 8,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.delete,
+                                                  color: Colors.red),
+                                              onPressed: () {
+                                                controller.selectedFile
+                                                    .removeAt(index);
+                                                controller.update();
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 15.h),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
               Column(
                 children: [
-                  // controller.isEdit && controller.title == 'editPrivateTask'
+                  // controller.isEdit && controller.title == 'editSpecialTask'
                   //     ? controller.selectedFile.isNotEmpty
                   //         ? controller.selectedFile.first.path.contains('http')
                   //             ? CachedNetworkImage(
@@ -313,21 +302,20 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                   //             title: 'uploadImage',
                   //           )
                   //     :
-                  if (!controller.isEdit)
-                    MediaUploadButton(
-                      allowedType: MediaType.image,
-                      onFilesChanged: (files) {
-                        controller.selectedFile
-                          ..clear()
-                          ..addAll(files);
-                        controller.selectedFile.addAll(controller
-                                .employeeTaskService.taskDetails.value!.adminImg
-                                ?.map((e) => File(e))
-                                .toList() ??
-                            []);
-                      },
-                      title: 'uploadImage',
-                    ),
+                  // if (!controller.isEdit)
+                  MediaUploadButton(
+                    allowedType: MediaType.image,
+                    isShowPreview: controller.isEdit ? false : true,
+                    onFilesChanged: (files) {
+                      for (var file in files) {
+                        if (!controller.selectedFile.contains(file)) {
+                          controller.selectedFile.add(file);
+                        }
+                      }
+                      controller.update();
+                    },
+                    title: 'uploadImage',
+                  ),
                   SizedBox(height: 10.h),
                   title == 'editEmployeeTask' ||
                           title == 'createNewEmployeeTask'
@@ -354,14 +342,17 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                     ),
                 onPressed: () {
                   if (controller.isEdit) {
-                    // title == 'editPrivateTask'
-                    //     ? controller.createSpecialTask(context)
-                    //     :
-                    controller.createTask(
-                      context,
-                      employeeTaskId: controller
-                          .employeeTaskService.taskDetails.value!.taskId,
-                    );
+                    title == 'editSpecialTask'
+                        ? controller.createSpecialTask(
+                            context,
+                            specialTaskId: controller.specialTasksService
+                                .specialTaskDetails.value!.taskId,
+                          )
+                        : controller.createTask(
+                            context,
+                            employeeTaskId: controller
+                                .employeeTaskService.taskDetails.value!.taskId,
+                          );
                   } else {
                     title == 'createNewEmployeeTask'
                         ? controller.createTask(context)

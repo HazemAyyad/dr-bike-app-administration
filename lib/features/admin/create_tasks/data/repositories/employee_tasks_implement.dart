@@ -86,6 +86,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     required List<File> adminImg,
     required File audio,
     required RxList subSpecialTasks,
+    required int specialTaskId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -104,6 +105,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
         forceEmployeeToAddImg: forceEmployeeToAddImg,
         adminImg: adminImg,
         audio: audio,
+        specialTaskId: specialTaskId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

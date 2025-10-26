@@ -142,6 +142,7 @@ class UserTransactionsWidget extends StatelessWidget {
                           ),
                           imageBuilder: (context, imageProvider) => Container(
                             height: 50.h,
+                            width: 100.w,
                             decoration: BoxDecoration(
                               image: DecorationImage(
                                 image: imageProvider,

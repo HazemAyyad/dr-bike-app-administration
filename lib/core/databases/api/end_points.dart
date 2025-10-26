@@ -74,8 +74,6 @@ class EndPoints {
   static const String createEmployeeTask = 'create/employee/task';
   static const String editEmployeeTask = 'edit/employee/task';
 
-  static const String createSpecialTask = 'create/special/task';
-
   static const String getEmployeeTasks = 'employee/ongoing/tasks';
   static const String getCompletedTasks = 'employee/completed/tasks';
   static const String getCanceledTasks = 'employee/canceled/tasks';
@@ -87,6 +85,7 @@ class EndPoints {
       'employee/edit/employee/task/images';
 
   // special tasks
+  static const String createSpecialTask = 'create/special/task';
   static const String getOngoingSpecialTasks = 'ongoing/special/tasks';
   static const String getNoDateSpecialTasks = 'no-date/special/tasks';
   static const String getCompletedSpecialTasks = 'completed/special/tasks';
@@ -99,6 +98,7 @@ class EndPoints {
   static const String transferSpecialTask = 'transfer/special/task';
   static const String changeSubSpecialTaskToCompleted =
       'change/sub/special/task/to/completed';
+  static const String updateSpecialTask = 'update/special/task';
 
   // Boxes
   static const String addBox = 'add/box';

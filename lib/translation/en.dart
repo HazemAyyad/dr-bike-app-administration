@@ -338,7 +338,7 @@ const Map<String, String> en = {
   'weeklyTasks': 'Weekly Tasks',
   'noDateTasks': 'No Date Tasks',
   'transferTask': 'Transfer Task',
-  'editPrivateTask': 'Edit Private Task',
+  'editSpecialTask': 'Edit Special Task',
 
   // employee Section
   'employeeList': 'Employee List',

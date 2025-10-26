@@ -15,10 +15,8 @@ class ShowNetImage {
         photoUrl == 'no employee image' ||
         photoUrl == 'no audio' ||
         photoUrl == 'no image files') {
-      return AssetsManager
-          .noImageNet; // صورة افتراضية إذا كانت الصورة غير متاحة
+      return AssetsManager.noImageNet;
     }
-
     return "${EndPoints.baserUrlForImage}$photoUrl";
   }
 }

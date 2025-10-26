@@ -142,12 +142,12 @@ class BuildProductCard extends GetView<StockController> {
                           image: DecorationImage(
                             image: imageProvider,
                             fit: BoxFit.cover,
-                            filterQuality: FilterQuality.medium,
+                            filterQuality: FilterQuality.low,
                           ),
                         ),
                       ),
                       imageUrl: product.image,
-                      filterQuality: FilterQuality.medium,
+                      filterQuality: FilterQuality.low,
                       placeholder: (context, url) => SizedBox(
                         height: 65.h,
                         width: 90.w,

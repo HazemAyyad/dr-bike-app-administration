@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -150,6 +151,13 @@ class DebtsController extends GetxController {
     update();
   }
 
+  final RxString searchQuery = ''.obs;
+
+  void searchBar(String value) {
+    searchQuery.value = value;
+    update();
+  }
+
   List get filteredDebts {
     List filtered = (currentTab.value == 0
                 ? dataService.debtsOwedToUsModel.value?.debts
@@ -159,6 +167,36 @@ class DebtsController extends GetxController {
                 (currentTab.value == 0 ? 'owed to us' : 'we owe'))
             .toList() ??
         [];
+    // 🟢 هنا نفلتر حسب البحث
+    if (searchQuery.value.isNotEmpty) {
+      final query = searchQuery.value.toLowerCase().trim();
+
+      filtered = filtered.where((debt) {
+        final nameMatch = debt.customerName.toLowerCase().contains(query) ||
+            debt.sellerName.toLowerCase().contains(query);
+
+        // فلترة حسب المبلغ (total)
+        final totalMatch = debt.total.toLowerCase().contains(query);
+
+        // فلترة حسب التاريخ (بصيغة yyyy-MM-dd أو dd/MM/yyyy)
+        final formattedDate1 =
+            DateFormat('yyyy-MM-dd').format(debt.debtCreatedAt);
+        final formattedDate2 =
+            DateFormat('dd/MM/yyyy').format(debt.debtCreatedAt);
+        final dateMatch =
+            formattedDate1.contains(query) || formattedDate2.contains(query);
+
+        // فلترة حسب الحالة (paid / unpaid) أو بالعربي “دفعت / لم تُدفع”
+        final statusMatch = debt.status.toLowerCase().contains(query) ||
+            (query.contains('دفعت') && debt.status == 'paid') ||
+            (query.contains('لم') && debt.status != 'paid') ||
+            (query.contains('اخذت') && debt.debtType == 'we owe') ||
+            (query.contains('اعطيت') && debt.debtType == 'owed to us');
+
+        // أي شرط من دول يتحقق => نعرض العنصر
+        return nameMatch || totalMatch || dateMatch || statusMatch;
+      }).toList();
+    }
 
     switch (sortBy.value) {
       case 'ended':
@@ -182,7 +220,9 @@ class DebtsController extends GetxController {
             (a, b) => double.parse(b.total).compareTo(double.parse(a.total)));
         break;
       case 'alphabetical':
-        filtered.sort((a, b) => a.customerName.compareTo(b.customerName));
+        filtered.sort((a, b) => a.customerName.isNotEmpty
+            ? a.customerName.compareTo(b.customerName)
+            : a.sellerName.compareTo(b.sellerName));
         break;
       default:
         // 'all' - no additional filtering

@@ -107,7 +107,7 @@ class CreateEmployeeTasksDatasource {
           ...subEmployeeTasksMap,
           'not_shown_for_employee': notShownForEmployee,
           'is_forced_to_upload_img': isForcedToUploadImg,
-          if (employeeTaskId == 0)
+          if (adminImg.isNotEmpty)
             'admin_img[]': await Future.wait(
               adminImg.map((e) async {
                 if (e.path.startsWith('http')) {
@@ -121,16 +121,14 @@ class CreateEmployeeTasksDatasource {
                 }
               }),
             ),
-          if (employeeTaskId == 0)
-            'audio': audio.path.isEmpty
-                ? ''
-                : audio.path.startsWith('http')
-                    ? audio.path
-                    : await MultipartFile.fromFile(
-                        audio.path,
-                        filename: audio.path.split('/').last,
-                        contentType: MediaType("audio", "x-m4a"),
-                      ),
+          if (audio.path.isNotEmpty)
+            'audio': audio.path.startsWith('http')
+                ? audio.path
+                : await MultipartFile.fromFile(
+                    audio.path,
+                    filename: audio.path.split('/').last,
+                    contentType: MediaType("audio", "x-m4a"),
+                  ),
         },
         isFormData: true,
       );
@@ -162,34 +160,49 @@ class CreateEmployeeTasksDatasource {
     required List<File> adminImg,
     required File audio,
     required RxList subSpecialTasks,
+    required int specialTaskId,
   }) async {
     try {
       final subSpecialTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subSpecialTasks.length; i++) {
-        subSpecialTasksMap['sub_special_tasks[$i][name]'] =
-            subSpecialTasks[i]['subTaskName'];
-        if (subSpecialTasks[i]['subTaskImage'] != null) {
-          final compressedImg =
-              await compressImage(XFile(subSpecialTasks[i]['subTaskImage']));
-          subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img][]'] =
-              await MultipartFile.fromFile(
-            compressedImg.path,
-            filename: compressedImg.path.split('/').last,
-          );
+        if (subSpecialTasks[i]['subTaskId'] != null) {
+          subSpecialTasksMap['sub_special_tasks[$i][id]'] =
+              subSpecialTasks[i]['subTaskId'];
         } else {
-          subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img][]'] =
-              '';
+          subSpecialTasksMap['sub_special_tasks[$i][name]'] =
+              subSpecialTasks[i]['subTaskName'];
+          if (subSpecialTasks[i]['subTaskImage'] != null) {
+            final compressedImg =
+                await compressImage(XFile(subSpecialTasks[i]['subTaskImage']));
+            if (specialTaskId == 0) {
+              subSpecialTasksMap[
+                      'sub_special_tasks[$i][admin_subtask__img][]'] =
+                  await MultipartFile.fromFile(
+                compressedImg.path,
+                filename: compressedImg.path.split('/').last,
+              );
+            } else {
+              subSpecialTasksMap['sub_special_tasks[$i][admin_subtask_img][]'] =
+                  await MultipartFile.fromFile(
+                compressedImg.path,
+                filename: compressedImg.path.split('/').last,
+              );
+            }
+          }
+          subSpecialTasksMap['sub_special_tasks[$i][description]'] =
+              subSpecialTasks[i]['subTaskdescription'];
+          subSpecialTasksMap[
+                  'sub_special_tasks[$i][force_employee_to_add_img_for_sub_task]'] =
+              subSpecialTasks[i]['imageIsRequired'] == true ? 1 : 0;
         }
-        subSpecialTasksMap['sub_special_tasks[$i][description]'] =
-            subSpecialTasks[i]['subTaskdescription'];
-        subSpecialTasksMap[
-                'sub_special_tasks[$i][force_employee_to_add_img_for_sub_task]'] =
-            subSpecialTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
       final response = await api.post(
-        EndPoints.createSpecialTask,
+        specialTaskId != 0
+            ? EndPoints.updateSpecialTask
+            : EndPoints.createSpecialTask,
         data: {
+          if (specialTaskId != 0) 'special_task_id': specialTaskId,
           'name': name,
           'description': description,
           'notes': notes,
@@ -200,28 +213,28 @@ class CreateEmployeeTasksDatasource {
           'task_recurrence_time[]': taskRecurrenceTime,
           ...subSpecialTasksMap,
           'force_employee_to_add_img': forceEmployeeToAddImg ? 1 : 0,
-          'admin_img[]': await Future.wait(
-            adminImg.map((e) async {
-              if (e.path.startsWith('http')) {
-                // صورة جاية من السيرفر → رجعها كـ string
-                return e.path;
-              } else {
-                // صورة محلية → حولها لـ MultipartFile
-                final compressedImg = await compressImage(XFile(e.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
-              }
-            }),
-          ),
-          'audio': audio.path.isEmpty
-              ? ''
-              : await MultipartFile.fromFile(
-                  audio.path,
-                  filename: audio.path.split('/').last,
-                  contentType: MediaType("audio", "x-m4a"),
-                ),
+          if (adminImg.isNotEmpty)
+            'admin_img[]': await Future.wait(
+              adminImg.map((e) async {
+                if (e.path.startsWith('http')) {
+                  return e.path;
+                } else {
+                  final compressedImg = await compressImage(XFile(e.path));
+                  return await MultipartFile.fromFile(
+                    compressedImg.path,
+                    filename: compressedImg.path.split('/').last,
+                  );
+                }
+              }),
+            ),
+          if (audio.path.isNotEmpty)
+            'audio': audio.path.startsWith('http')
+                ? audio.path
+                : await MultipartFile.fromFile(
+                    audio.path,
+                    filename: audio.path.split('/').last,
+                    contentType: MediaType("audio", "x-m4a"),
+                  ),
         },
         isFormData: true,
         options: Options(
