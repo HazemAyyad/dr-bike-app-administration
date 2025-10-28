@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../data/models/employee_task_model.dart';
 import '../../data/models/task_details_model.dart';
 import '../../domain/usecases/cancel_employee_task_usecase.dart';
@@ -467,11 +468,11 @@ class EmployeeTasksController extends GetxController {
     super.onInit();
     startDate = getStartOfWeek(DateTime.now());
     endDate = startDate.add(const Duration(days: 6));
-    // if (userType == 'admin') {
-    getEmployeeTasks();
-    // } else {
-    // employeePermissions.contains(7) ? getEmployeeTasks() : null;
-    // }
+    if (userType == 'admin') {
+      getEmployeeTasks();
+    } else {
+      employeePermissions.contains(7) ? getEmployeeTasks() : null;
+    }
     ongoingTasksFilter.assignAll(
         filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)));
     completedTasksFilter.assignAll(
