@@ -51,6 +51,7 @@ class SubTaskEntity {
   final String status;
   final List<String>? adminImg;
   final bool isForcedToUploadImg;
+  final List<String>? employeeImg;
 
   const SubTaskEntity({
     required this.id,
@@ -59,6 +60,7 @@ class SubTaskEntity {
     required this.status,
     this.adminImg,
     required this.isForcedToUploadImg,
+    this.employeeImg,
   });
 }
 

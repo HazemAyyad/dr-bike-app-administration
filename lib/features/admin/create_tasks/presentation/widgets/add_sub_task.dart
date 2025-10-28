@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
+import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -148,15 +149,16 @@ class AddSubTask extends GetView<CreateTaskController> {
                           selectedFile: controller.subTaskFile,
                           title: 'uploadImage',
                         ),
-                        // title == 'createNewEmployeeTask'
-                        //     ? CustomCheckBox(
-                        //         value: controller.requireSubTasImage,
-                        //         title: 'requireImage',
-                        //         onChanged: (value) {
-                        //           controller.requireSubTasImage.value = value!;
-                        //         },
-                        //       )
-                        //     : const SizedBox.shrink(),
+                        SizedBox(height: 10.h),
+                        title == 'createNewEmployeeTask'
+                            ? CustomCheckBox(
+                                value: controller.requireSubTasImage,
+                                title: 'requireImage',
+                                onChanged: (value) {
+                                  controller.requireSubTasImage.value = value!;
+                                },
+                              )
+                            : const SizedBox.shrink(),
                         SizedBox(height: 15.h),
                         // أزرار الإجراءات
                         Obx(

@@ -164,7 +164,6 @@ class CreateEmployeeTasksDatasource {
   }) async {
     try {
       final subSpecialTasksMap = <String, dynamic>{};
-      print(audio.path);
       for (int i = 0; i < subSpecialTasks.length; i++) {
         if (subSpecialTasks[i]['subTaskId'] != null) {
           subSpecialTasksMap['sub_special_tasks[$i][id]'] =

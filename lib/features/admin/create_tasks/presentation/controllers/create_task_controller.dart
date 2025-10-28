@@ -147,7 +147,7 @@ class CreateTaskController extends GetxController {
 
   // دالة لإنشاء المهمة
   void createTask(BuildContext context, {int employeeTaskId = 0}) async {
-    if (formKey.currentState!.validate() && selectedDays.value.isNotEmpty) {
+    if (formKey.currentState!.validate()) {
       if (endDate.value.isBefore(startDate.value)) {
         Helpers.showCustomDialogError(
           context: context,
@@ -166,7 +166,8 @@ class CreateTaskController extends GetxController {
         points: pointsController.text.isEmpty ? '0' : pointsController.text,
         startTime: startDate.value,
         endTime: endDate.value,
-        taskRecurrence: selectedDays.value,
+        taskRecurrence:
+            selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
         taskRecurrenceTime: selectedDaysList,
         subEmployeeTasks: subTasks,
         notShownForEmployee: hideTask.value ? '1' : '0',

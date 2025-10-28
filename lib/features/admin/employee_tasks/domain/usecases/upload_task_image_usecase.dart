@@ -7,10 +7,15 @@ class UploadTaskImageUsecase {
 
   UploadTaskImageUsecase({required this.employeeTasksRepository});
 
-  Future<dynamic> call({required String taskId, required List<File> image}) {
+  Future<dynamic> call({
+    required String taskId,
+    required List<File> image,
+    required bool isSubTask,
+  }) {
     return employeeTasksRepository.uplodeTaskImage(
       taskId: taskId,
       image: image,
+      isSubTask: isSubTask,
     );
   }
 }

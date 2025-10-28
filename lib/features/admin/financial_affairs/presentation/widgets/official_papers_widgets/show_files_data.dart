@@ -39,7 +39,7 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                           color: ThemeService.isDark.value
                               ? AppColors.whiteColor
                               : AppColors.secondaryColor,
-                          fontSize: 20.sp,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.w800,
                         ),
                   ),

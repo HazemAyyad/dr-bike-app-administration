@@ -122,6 +122,7 @@ class SubTaskModel extends SubTaskEntity {
     required String status,
     List<String>? adminImg,
     required bool isForcedToUploadImg,
+    List<String>? employeeImg,
   }) : super(
           id: id,
           name: name,
@@ -129,6 +130,7 @@ class SubTaskModel extends SubTaskEntity {
           status: status,
           adminImg: adminImg,
           isForcedToUploadImg: isForcedToUploadImg,
+          employeeImg: employeeImg,
         );
 
   factory SubTaskModel.fromJson(Map<String, dynamic> json) {
@@ -144,6 +146,11 @@ class SubTaskModel extends SubTaskEntity {
               ? List<String>.from(
                   json[ApiKey.admin_img].map((e) => ShowNetImage.getPhoto(e)))
               : [],
+      employeeImg: (json[ApiKey.employee_img] != null &&
+              json[ApiKey.employee_img] is List)
+          ? List<String>.from(
+              json[ApiKey.employee_img].map((e) => ShowNetImage.getPhoto(e)))
+          : [],
     );
   }
 
@@ -155,6 +162,7 @@ class SubTaskModel extends SubTaskEntity {
       ApiKey.status: status,
       ApiKey.admin_img: adminImg,
       ApiKey.is_forced_to_upload_img: isForcedToUploadImg ? "1" : "0",
+      ApiKey.employee_img: employeeImg,
     };
   }
 }

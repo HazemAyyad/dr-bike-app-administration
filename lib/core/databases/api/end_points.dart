@@ -83,7 +83,8 @@ class EndPoints {
   static const String showEmployeeTask = 'show/employee/task';
   static const String editEmployeeTaskImages =
       'employee/edit/employee/task/images';
-
+  static const String editEmployeeSubTaskImages =
+      'employee/edit/employee/sub/task/images';
   // special tasks
   static const String createSpecialTask = 'create/special/task';
   static const String getOngoingSpecialTasks = 'ongoing/special/tasks';

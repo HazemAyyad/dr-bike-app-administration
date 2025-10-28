@@ -33,7 +33,7 @@ class EmployeeTasksLists extends StatelessWidget {
       children: [
         SizedBox(height: 8.h),
         GestureDetector(
-          onLongPress: () => controller.currentTab.value == 0
+          onLongPress: () => controller.currentTab.value != 2
               ? Get.dialog(
                   Dialog(
                     backgroundColor: ThemeService.isDark.value

@@ -192,6 +192,7 @@ class EmployeeTasksDatasource {
 
   // uplode task image
   Future<dynamic> uplodeTaskImage({
+    required bool isSubTask,
     required String taskId,
     required List<File> image,
   }) async {
@@ -207,9 +208,12 @@ class EmployeeTasksDatasource {
         }),
       );
       final response = await api.post(
-        EndPoints.editEmployeeTaskImages,
+        isSubTask
+            ? EndPoints.editEmployeeSubTaskImages
+            : EndPoints.editEmployeeTaskImages,
         data: {
-          'employee_task_id': taskId,
+          if (isSubTask) 'sub_employee_task_id': taskId,
+          if (!isSubTask) 'employee_task_id': taskId,
           ...subEmployeeTasksMap,
         },
         isFormData: true,

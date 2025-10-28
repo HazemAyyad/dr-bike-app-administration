@@ -36,5 +36,6 @@ abstract class EmployeeTasksRepository {
   Future<dynamic> uplodeTaskImage({
     required String taskId,
     required List<File> image,
+    required bool isSubTask,
   });
 }

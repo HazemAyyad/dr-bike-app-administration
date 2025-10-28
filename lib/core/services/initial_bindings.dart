@@ -173,6 +173,7 @@ class InitialBindings implements Bindings {
       employeePermissions.addAll(permissionIds);
       userType = userdata.user.type;
       userName = userdata.user.name;
+      print('0000000000000000000000000${userdata.employeePermissions}');
       // print('User Type: $userType');
       // print('User Type: $employeePermissions');
     }

@@ -150,7 +150,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                           style:
                               Theme.of(context).textTheme.bodyLarge!.copyWith(
                                     color: AppColors.graywhiteColor,
-                                    fontSize: 14.sp,
+                                    fontSize: 10.sp,
                                     fontWeight: FontWeight.w700,
                                   ),
                         ),
@@ -161,8 +161,8 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                           style:
                               Theme.of(context).textTheme.bodyLarge!.copyWith(
                                     color: AppColors.graywhiteColor,
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w700,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w500,
                                   ),
                         ),
                       ],
@@ -199,7 +199,7 @@ class OfficialPapersCard extends GetView<OfficialPapersController> {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             color: AppColors.secondaryColor,
-                            fontSize: 10.sp,
+                            fontSize: 9.sp,
                             fontWeight: FontWeight.w700,
                           ),
                     ),

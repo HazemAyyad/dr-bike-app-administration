@@ -286,7 +286,7 @@ class EmployeeDashbordController extends GetxController
       },
       (success) {
         Get.closeAllSnackbars();
-        Get.back();
+        // Get.back();
         if (mainTaskId != null) {
           Get.find<EmployeeTasksController>()
               .getTaskDetails(taskId: mainTaskId.toString());

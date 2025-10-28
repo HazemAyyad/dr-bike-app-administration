@@ -243,7 +243,7 @@ class OfficialPapersController extends GetxController
     update();
   }
 
-  // add document
+  // add Paper
   void addPaper() async {
     isLoading(true);
     if (formKey.currentState!.validate()) {
@@ -260,7 +260,7 @@ class OfficialPapersController extends GetxController
           Get.back();
           Get.snackbar(
             failure.errMessage,
-            failure.data['message'],
+            failure.data['message'] ?? 'Unknown error',
             snackPosition: SnackPosition.BOTTOM,
             duration: const Duration(milliseconds: 1500),
           );

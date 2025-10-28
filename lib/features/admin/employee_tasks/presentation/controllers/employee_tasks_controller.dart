@@ -1,14 +1,14 @@
 import 'dart:collection';
 import 'dart:io';
 
-import 'package:doctorbike/core/services/initial_bindings.dart';
-import 'package:doctorbike/features/admin/employee_tasks/data/models/task_details_model.dart';
-import 'package:doctorbike/features/admin/employee_tasks/domain/usecases/get_task_details_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/models/employee_task_model.dart';
+import '../../data/models/task_details_model.dart';
 import '../../domain/usecases/cancel_employee_task_usecase.dart';
 import '../../domain/usecases/employee_tasks_usecase.dart';
+import '../../domain/usecases/get_task_details_usecase.dart';
 import '../../domain/usecases/upload_task_image_usecase.dart';
 import 'employee_task_service.dart';
 
@@ -40,6 +40,7 @@ class EmployeeTasksController extends GetxController {
   RxBool isLoading = false.obs;
 
   List<File> selectedFile = [];
+  List<File> selectedSubFile = [];
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -281,14 +282,100 @@ class EmployeeTasksController extends GetxController {
         ? {
             isLoading(true),
             await uploadTaskImageUsecase.call(
+              isSubTask: false,
               taskId: taskId,
               image: selectedFile,
             ),
-            Get.back(),
+            // Get.back(),
             isLoading(false),
           }
         : null;
     // isTaskDetailsLoading(false);
+  }
+
+  final ImagePicker picker = ImagePicker();
+
+  Future<void> uploadSubTaskImage({
+    required String taskId,
+    required BuildContext context,
+  }) async {
+    // دالة محلية لبناء نافذة الاختيار
+    Widget buildSourceOptionsBoth(BuildContext context) {
+      return SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: Text("takeImage".tr),
+              onTap: () => Navigator.pop(context, 'camera_image'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.image),
+              title: Text("selectImage".tr),
+              onTap: () => Navigator.pop(context, 'gallery_image'),
+            ),
+            // ListTile(
+            //   leading: const Icon(Icons.videocam),
+            //   title: Text("takeVideo".tr),
+            //   onTap: () => Navigator.pop(context, 'camera_video'),
+            // ),
+            // ListTile(
+            //   leading: const Icon(Icons.video_library),
+            //   title: Text("selectVideo".tr),
+            //   onTap: () => Navigator.pop(context, 'gallery_video'),
+            // ),
+          ],
+        ),
+      );
+    }
+
+    // افتح الخيارات
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => buildSourceOptionsBoth(context),
+    );
+
+    if (choice == null) return;
+
+    XFile? pickedFile;
+    List<XFile>? pickedFiles;
+
+    switch (choice) {
+      case 'camera_image':
+        pickedFile = await picker.pickImage(source: ImageSource.camera);
+        if (pickedFile != null) selectedSubFile.add(File(pickedFile.path));
+        break;
+
+      case 'gallery_image':
+        pickedFiles = await picker.pickMultiImage();
+        selectedSubFile.addAll(pickedFiles.map((e) => File(e.path)));
+        break;
+
+      // case 'camera_video':
+      //   pickedFile = await picker.pickVideo(source: ImageSource.camera);
+      //   if (pickedFile != null) selectedSubFile.add(File(pickedFile.path));
+      //   break;
+
+      // case 'gallery_video':
+      //   pickedFile = await picker.pickVideo(source: ImageSource.gallery);
+      //   if (pickedFile != null) selectedSubFile.add(File(pickedFile.path));
+      //   break;
+    }
+
+    if (selectedSubFile.isNotEmpty) {
+      isLoading(true);
+      try {
+        await uploadTaskImageUsecase.call(
+          isSubTask: true,
+          taskId: taskId,
+          image: selectedSubFile, // أو .first حسب الـ API
+        );
+        // Get.back(); // قفل الشاشة بعد الرفع
+      } finally {
+        isLoading(false);
+        selectedSubFile.clear(); // نظف الملفات بعد الرفع
+      }
+    }
   }
 
   final RxBool isTaskDetailsLoading = false.obs;
@@ -380,11 +467,11 @@ class EmployeeTasksController extends GetxController {
     super.onInit();
     startDate = getStartOfWeek(DateTime.now());
     endDate = startDate.add(const Duration(days: 6));
-    if (userType == 'admin') {
-      getEmployeeTasks();
-    } else {
-      employeePermissions.contains(7) ? getEmployeeTasks() : null;
-    }
+    // if (userType == 'admin') {
+    getEmployeeTasks();
+    // } else {
+    // employeePermissions.contains(7) ? getEmployeeTasks() : null;
+    // }
     ongoingTasksFilter.assignAll(
         filterByRange(sortByDate(employeeTaskService.ongoingEmployeeTasks)));
     completedTasksFilter.assignAll(

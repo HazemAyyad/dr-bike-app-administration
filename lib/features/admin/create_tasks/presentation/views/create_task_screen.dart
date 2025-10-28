@@ -152,7 +152,6 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                   : const SizedBox.shrink(),
               // التكرار
               CustomDropdownField(
-                isRequired: true,
                 label: 'taskRepeat'.tr,
                 value: controller.selectedDays.value.isEmpty
                     ? null
@@ -168,6 +167,7 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                 onChanged: (value) {
                   controller.selectedDays.value = value!;
                 },
+                validator: (p0) => null,
               ),
               SizedBox(height: 10.h),
               MultiSelectDropdown(

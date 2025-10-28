@@ -50,7 +50,7 @@ class CustomDataWidget extends StatelessWidget {
                       color: ThemeService.isDark.value
                           ? AppColors.whiteColor
                           : AppColors.secondaryColor,
-                      fontSize: 17.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
                     ),
               ),
@@ -58,11 +58,11 @@ class CustomDataWidget extends StatelessWidget {
             Flexible(
               child: Text(
                 value,
-                maxLines: 1,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       color: AppColors.primaryColor,
-                      fontSize: 15.sp,
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.w700,
                     ),
               ),

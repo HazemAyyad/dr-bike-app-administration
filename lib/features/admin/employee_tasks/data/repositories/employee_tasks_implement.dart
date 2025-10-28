@@ -136,6 +136,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
   // uplode task image
   @override
   Future uplodeTaskImage({
+    required bool isSubTask,
     required String taskId,
     required List<File> image,
   }) async {
@@ -146,6 +147,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
       final result = await employeeTasksDataSource.uplodeTaskImage(
         taskId: taskId,
         image: image,
+        isSubTask: isSubTask,
       );
       return result;
     } on ServerException catch (e) {
