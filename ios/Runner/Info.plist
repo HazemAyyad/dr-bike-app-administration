@@ -52,8 +52,8 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>نحتاج صلاحية لاستخدام الكاميرا لالتقاط الصور.</string>
+	<string>نحتاج صلاحية لاستخدام الكاميرا لالتقاط صورة الموظف والمستندات الخاصة به عند إضافته للتطبيق.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>نحتاج صلاحية لاستخدام الميكروفون لتسجيل الصوت أثناء التقاط الفيديو.</string>
+	<string>نحتاج صلاحية لاستخدام الميكروفون لتسجيل الصوت أثناء التقاط الفيديو او تسجيل الصوت.</string>
 </dict>
 </plist>
