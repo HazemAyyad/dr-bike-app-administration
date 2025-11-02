@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart' hide MultipartFile;
-import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
@@ -360,7 +357,7 @@ class ChecksDatasource {
 Future<XFile> compressImage(XFile file) async {
   final path = file.path.toLowerCase();
 
-  // لو فيديو 🎥
+  // 🎥 لو فيديو → رجعه كما هو
   if (path.endsWith('.mp4') ||
       path.endsWith('.mov') ||
       path.endsWith('.avi') ||
@@ -368,36 +365,43 @@ Future<XFile> compressImage(XFile file) async {
       path.endsWith('.webm')) {
     return file;
   }
-  // لو صورة 🖼️
-  final originalFile = File(file.path);
-  final imageBytes = await originalFile.readAsBytes();
-  final decoded = img.decodeImage(imageBytes);
-  if (decoded == null) {
+
+  try {
+    final tempDir = await getTemporaryDirectory();
+
+    // 🔄 لو الصورة HEIC أو HEIF نحولها إلى JPG مؤقتًا
+    String sourcePath = file.path;
+    if (path.endsWith('.heic') || path.endsWith('.heif')) {
+      final jpgPath =
+          '${tempDir.path}/converted_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final converted = await FlutterImageCompress.compressAndGetFile(
+        file.path,
+        jpgPath,
+        quality: 95, // تحويل بدون فقد كبير للجودة
+        format: CompressFormat.jpeg,
+      );
+      if (converted != null) {
+        sourcePath = converted.path;
+      }
+    }
+
+    // 🖼️ ضغط الصورة مرة واحدة فقط
+    final targetPath =
+        '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    final compressedFile = await FlutterImageCompress.compressAndGetFile(
+      sourcePath,
+      targetPath,
+      quality: 80, // جودة مناسبة
+      format: CompressFormat.jpeg,
+      keepExif: false,
+    );
+    if (compressedFile == null) {
+      return file;
+    }
+
+    return XFile(compressedFile.path);
+  } catch (e) {
     return file;
   }
-  final tempDir = await getTemporaryDirectory();
-  final convertedPath =
-      '${tempDir.path}/converted_${DateTime.now().millisecondsSinceEpoch}.jpg';
-  final convertedFile = File(convertedPath)
-    ..writeAsBytesSync(img.encodeJpg(decoded, quality: 95));
-  // ضغط تدريجي
-  int quality = 90;
-  File result = convertedFile;
-  int maxFileSize = 1024 * 1024; // 1MB
-  int currentSize = await convertedFile.length();
-  while (currentSize > maxFileSize && quality > 10) {
-    final compressed = await FlutterImageCompress.compressAndGetFile(
-      convertedFile.path,
-      '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg',
-      quality: quality,
-      minWidth: 1920,
-      minHeight: 1080,
-      format: CompressFormat.jpeg,
-    );
-    if (compressed == null) break;
-    result = File(compressed.path);
-    currentSize = await compressed.length();
-    quality -= 10;
-  }
-  return XFile(result.path);
 }
