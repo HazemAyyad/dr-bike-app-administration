@@ -108,7 +108,7 @@ class OfficialPapersScreen extends GetView<OfficialPapersController> {
                       crossAxisCount: 3,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
-                      childAspectRatio: 0.75,
+                      childAspectRatio: 0.73,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {

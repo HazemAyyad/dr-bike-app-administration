@@ -265,6 +265,8 @@ class ChecksController extends GetxController
     required bool isInComing,
     required String checkId,
   }) async {
+    print(editCheckFrontImage.value);
+    print(checkFrontImage.value);
     if ((formKey.currentState as FormState).validate()) {
       isLoading(true);
       final result = await editChecksUsecase.call(

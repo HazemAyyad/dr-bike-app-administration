@@ -2,7 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -355,7 +358,7 @@ class FinancialAffairsDatasource {
     }
   }
 
-  // add document
+  // add Paper
   Future<Map<String, dynamic>> addPaper({
     required String paperId,
     required String name,
@@ -364,25 +367,33 @@ class FinancialAffairsDatasource {
     required String notes,
   }) async {
     try {
+      // تجهيز قائمة الملفات اللي هترفعها
+      final List filesToUpload = [];
+      for (var file in media) {
+        if (file == null) continue;
+
+        // لو الـ path يحتوي "http"، يمكن ترسله كرابط مباشرة
+        if (file.path.contains('http')) {
+          filesToUpload.add(file.path);
+        } else {
+          // نضغط الصورة أولاً باستخدام الـ compressImage (نفس الفانكشن اللي اعددناه)
+          final compressed =
+              await compressImageFile(inputFile: XFile(file.path));
+          final mf = await MultipartFile.fromFile(
+            compressed.path,
+            filename: compressed.path.split('/').last,
+          );
+          filesToUpload.add(mf);
+        }
+      }
+
       final response = await api.post(
         paperId.isNotEmpty ? EndPoints.editPaper : EndPoints.addPaper,
         data: {
           if (paperId.isNotEmpty) 'paper_id': paperId,
           'name': name,
           'file_id': fileId,
-          if (media.isNotEmpty)
-            'img[]': await Future.wait(
-              media.map((file) async {
-                if (file!.path.contains('http')) {
-                  return file.path;
-                }
-                final compressedImg = await compressImage(XFile(file.path));
-                return await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
-              }),
-            ),
+          if (filesToUpload.isNotEmpty) 'img[]': filesToUpload,
           'notes': notes,
         },
         isFormData: true,
@@ -528,4 +539,29 @@ class FinancialAffairsDatasource {
       );
     }
   }
+}
+
+Future<XFile> compressImageFile({required XFile inputFile}) async {
+  final file = File(inputFile.path);
+  final tempDir = await getTemporaryDirectory();
+  final targetPath = p.join(
+    tempDir.path,
+    "${DateTime.now().millisecondsSinceEpoch}_${p.basename(inputFile.path)}",
+  );
+
+  // نستخدم compressAndGetFile للحصول على ملف مضغوط
+  final compressedFile = await FlutterImageCompress.compressAndGetFile(
+    file.absolute.path,
+    targetPath,
+    quality: 90,
+    format: CompressFormat.jpeg,
+    keepExif: false,
+  );
+
+  if (compressedFile == null) {
+    // في حال فشل الضغط، رجّع الصورة الأصلية
+    return inputFile;
+  }
+
+  return XFile(compressedFile.path);
 }

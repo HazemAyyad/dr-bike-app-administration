@@ -103,7 +103,7 @@ class PictureCard extends GetView<OfficialPapersController> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.only(top: 4),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(9.r),
                 child: CachedNetworkImage(
@@ -115,7 +115,7 @@ class PictureCard extends GetView<OfficialPapersController> {
                     ),
                   ),
                   imageBuilder: (context, imageProvider) => Container(
-                    height: 80,
+                    height: 70,
                     width: 100,
                     decoration: BoxDecoration(
                       image: DecorationImage(

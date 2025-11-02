@@ -208,8 +208,9 @@ class NewCheckScreen extends GetView<ChecksController> {
                 minLines: 5,
                 validator: (p0) => null,
               ),
+              SizedBox(height: 20.h),
               if (controller.editCheckBackImage.value == null)
-                SizedBox(height: 30.h),
+                SizedBox(height: 20.h),
               if (controller.editCheckFrontImage.value != null &&
                   controller.isEdit.value)
                 Column(
@@ -223,57 +224,110 @@ class NewCheckScreen extends GetView<ChecksController> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            showGeneralDialog(
-                              context: context,
-                              barrierDismissible: true,
-                              barrierLabel: 'Dismiss',
-                              barrierColor: Colors.black.withAlpha(128),
-                              transitionDuration:
-                                  const Duration(milliseconds: 300),
-                              pageBuilder: (context, anim1, anim2) {
-                                return FullScreenZoomImage(
-                                  imageUrl: controller
-                                      .editCheckFrontImage.value!.path,
-                                );
+                        Stack(
+                          alignment: Alignment.topRight,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                if (controller.editCheckFrontImage.value !=
+                                    null) {
+                                  showGeneralDialog(
+                                    context: context,
+                                    barrierDismissible: true,
+                                    barrierLabel: 'Dismiss',
+                                    barrierColor: Colors.black.withAlpha(128),
+                                    transitionDuration:
+                                        const Duration(milliseconds: 300),
+                                    pageBuilder: (context, anim1, anim2) {
+                                      return FullScreenZoomImage(
+                                        imageUrl: controller
+                                            .editCheckFrontImage.value!.path,
+                                      );
+                                    },
+                                  );
+                                }
                               },
-                            );
-                          },
-                          child: CachedNetworkImage(
-                            cacheManager: CacheManager(
-                              Config(
-                                'paperImagesCache',
-                                stalePeriod: const Duration(days: 7),
-                                maxNrOfCacheObjects: 100,
-                              ),
+                              child: Obx(() {
+                                final img =
+                                    controller.editCheckFrontImage.value;
+                                if (img == null) {
+                                  // لو ما في صورة — تعرض عنصر بديل أو مكان الاحتياطي
+                                  return Container(
+                                    height: 300.h,
+                                    width: 300.w,
+                                    color: Colors.grey[300],
+                                    child: const Center(
+                                        child: Text("لا توجد صورة")),
+                                  );
+                                }
+                                return CachedNetworkImage(
+                                  cacheManager: CacheManager(
+                                    Config(
+                                      'paperImagesCache',
+                                      stalePeriod: const Duration(days: 7),
+                                      maxNrOfCacheObjects: 100,
+                                    ),
+                                  ),
+                                  imageBuilder: (context, imageProvider) =>
+                                      Container(
+                                    height: 300.h,
+                                    width: 300.w,
+                                    decoration: BoxDecoration(
+                                      image: DecorationImage(
+                                        image: imageProvider,
+                                        fit: BoxFit.cover,
+                                        filterQuality: FilterQuality.medium,
+                                      ),
+                                    ),
+                                  ),
+                                  imageUrl: img.path,
+                                  placeholder: (context, url) => SizedBox(
+                                    height: 300.h,
+                                    width: 300.w,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(
+                                    Icons.error,
+                                    size: 50,
+                                    color: Colors.red,
+                                  ),
+                                );
+                              }),
                             ),
-                            imageBuilder: (context, imageProvider) => Container(
-                              height: 300.h,
-                              width: 300.w,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: imageProvider,
-                                  fit: BoxFit.cover,
-                                  filterQuality: FilterQuality.medium,
-                                ),
-                              ),
+                            // زر الحذف
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Obx(() {
+                                final img =
+                                    controller.editCheckFrontImage.value;
+                                if (img == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return GestureDetector(
+                                  onTap: () {
+                                    // تنفيذ حذف الصورة من الحالة
+                                    controller.editCheckFrontImage.value = null;
+                                    controller.checkFrontImage.value = null;
+                                  },
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black45,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                      size: 35,
+                                    ),
+                                  ),
+                                );
+                              }),
                             ),
-                            imageUrl:
-                                controller.editCheckFrontImage.value!.path,
-                            placeholder: (context, url) => SizedBox(
-                              height: 300.h,
-                              width: 300.w,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.error,
-                              size: 50,
-                              color: Colors.red,
-                            ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -284,8 +338,9 @@ class NewCheckScreen extends GetView<ChecksController> {
                 selectedFile: controller.checkFrontImage,
                 title: 'checkFrontImage',
               ),
+              SizedBox(height: 20.h),
               if (controller.editCheckBackImage.value == null)
-                SizedBox(height: 30.h),
+                SizedBox(height: 20.h),
               if (controller.editCheckBackImage.value != null &&
                   controller.isEdit.value &&
                   controller.isInComing)
@@ -300,56 +355,106 @@ class NewCheckScreen extends GetView<ChecksController> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            showGeneralDialog(
-                              context: context,
-                              barrierDismissible: true,
-                              barrierLabel: 'Dismiss',
-                              barrierColor: Colors.black.withAlpha(128),
-                              transitionDuration:
-                                  const Duration(milliseconds: 300),
-                              pageBuilder: (context, anim1, anim2) {
-                                return FullScreenZoomImage(
-                                  imageUrl:
-                                      controller.editCheckBackImage.value!.path,
-                                );
+                        Stack(
+                          alignment: Alignment.topRight,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                final img = controller.editCheckBackImage.value;
+                                if (img != null) {
+                                  showGeneralDialog(
+                                    context: context,
+                                    barrierDismissible: true,
+                                    barrierLabel: 'Dismiss',
+                                    barrierColor: Colors.black.withAlpha(128),
+                                    transitionDuration:
+                                        const Duration(milliseconds: 300),
+                                    pageBuilder: (context, anim1, anim2) {
+                                      return FullScreenZoomImage(
+                                        imageUrl: img.path,
+                                      );
+                                    },
+                                  );
+                                }
                               },
-                            );
-                          },
-                          child: CachedNetworkImage(
-                            cacheManager: CacheManager(
-                              Config(
-                                'imagesCache',
-                                stalePeriod: const Duration(days: 7),
-                                maxNrOfCacheObjects: 100,
-                              ),
+                              child: Obx(() {
+                                final img = controller.editCheckBackImage.value;
+                                if (img == null) {
+                                  // لو ما في صورة خلفية — تعرض مساحة بديلة
+                                  return Container(
+                                    height: 300.h,
+                                    width: 300.w,
+                                    color: Colors.grey[300],
+                                    child: const Center(
+                                        child: Text("لا توجد صورة خلفية")),
+                                  );
+                                }
+                                return CachedNetworkImage(
+                                  cacheManager: CacheManager(
+                                    Config(
+                                      'imagesCache',
+                                      stalePeriod: const Duration(days: 7),
+                                      maxNrOfCacheObjects: 100,
+                                    ),
+                                  ),
+                                  imageBuilder: (context, imageProvider) =>
+                                      Container(
+                                    height: 300.h,
+                                    width: 300.w,
+                                    decoration: BoxDecoration(
+                                      image: DecorationImage(
+                                        image: imageProvider,
+                                        fit: BoxFit.cover,
+                                        filterQuality: FilterQuality.medium,
+                                      ),
+                                    ),
+                                  ),
+                                  imageUrl: img.path,
+                                  placeholder: (context, url) => SizedBox(
+                                    height: 300.h,
+                                    width: 300.w,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(
+                                    Icons.error,
+                                    size: 50,
+                                    color: Colors.red,
+                                  ),
+                                );
+                              }),
                             ),
-                            imageBuilder: (context, imageProvider) => Container(
-                              height: 300.h,
-                              width: 300.w,
-                              decoration: BoxDecoration(
-                                image: DecorationImage(
-                                  image: imageProvider,
-                                  fit: BoxFit.cover,
-                                  filterQuality: FilterQuality.medium,
-                                ),
-                              ),
+                            // زر الحذف للخلفية
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Obx(() {
+                                final img = controller.editCheckBackImage.value;
+                                if (img == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return GestureDetector(
+                                  onTap: () {
+                                    // حذف الصورة الخلفية من الحالة
+                                    controller.editCheckBackImage.value = null;
+                                  },
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black45,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                      size: 35,
+                                    ),
+                                  ),
+                                );
+                              }),
                             ),
-                            imageUrl: controller.editCheckBackImage.value!.path,
-                            placeholder: (context, url) => SizedBox(
-                              height: 300.h,
-                              width: 300.w,
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.error,
-                              size: 50,
-                              color: Colors.red,
-                            ),
-                          ),
+                          ],
                         ),
                       ],
                     ),

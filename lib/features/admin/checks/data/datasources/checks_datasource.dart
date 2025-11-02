@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart' hide MultipartFile;
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -274,6 +275,8 @@ class ChecksDatasource {
       } else {
         compressedBackImage = backImage;
       }
+      print('----------------------$compressedFrontImage');
+      print('----------------------$compressedBackImage');
       final response = await api.post(
         isInComing ? EndPoints.editIncomingCheck : EndPoints.editOutgoingCheck,
         data: {
@@ -282,6 +285,7 @@ class ChecksDatasource {
           'due_date': dueDate,
           'check_id': checkId,
           'bank_name': bankName,
+          if (frontImage == null) 'img': '',
           if (compressedFrontImage != null)
             if (compressedFrontImage.path.contains('http'))
               'img': compressedFrontImage.path.split('/').last,
@@ -291,6 +295,7 @@ class ChecksDatasource {
                 compressedFrontImage.path,
                 filename: compressedFrontImage.path.split('/').last,
               ),
+          if (frontImage == null) 'front_image': '',
           if (compressedFrontImage != null)
             if (compressedFrontImage.path.contains('http'))
               'front_image': compressedFrontImage.path.split('/').last,
@@ -300,6 +305,7 @@ class ChecksDatasource {
                 compressedFrontImage.path,
                 filename: compressedFrontImage.path.split('/').last,
               ),
+          if (backImage == null) 'back_image': '',
           if (compressedBackImage != null)
             if (compressedBackImage.path.contains('http'))
               'back_image': compressedBackImage.path.split('/').last,
@@ -355,53 +361,59 @@ class ChecksDatasource {
 }
 
 Future<XFile> compressImage(XFile file) async {
-  final path = file.path.toLowerCase();
+  final lower = file.path.toLowerCase();
 
-  // 🎥 لو فيديو → رجعه كما هو
-  if (path.endsWith('.mp4') ||
-      path.endsWith('.mov') ||
-      path.endsWith('.avi') ||
-      path.endsWith('.mkv') ||
-      path.endsWith('.webm')) {
+  // إذا كان فيديو، أعده كما هو
+  if (lower.endsWith('.mp4') ||
+      lower.endsWith('.mov') ||
+      lower.endsWith('.avi') ||
+      lower.endsWith('.mkv') ||
+      lower.endsWith('.webm')) {
     return file;
   }
 
   try {
     final tempDir = await getTemporaryDirectory();
 
-    // 🔄 لو الصورة HEIC أو HEIF نحولها إلى JPG مؤقتًا
+    // يمكن أن يُستخدم كمسار مؤقت مع الملحق الأصلي
     String sourcePath = file.path;
-    if (path.endsWith('.heic') || path.endsWith('.heif')) {
-      final jpgPath =
-          '${tempDir.path}/converted_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+    // إذا HEIC / HEIF، نحاول تحويلها أولاً إلى JPG
+    if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
+      final jpgPath = p.join(tempDir.path,
+          'converted_${DateTime.now().millisecondsSinceEpoch}.jpg');
       final converted = await FlutterImageCompress.compressAndGetFile(
         file.path,
         jpgPath,
-        quality: 95, // تحويل بدون فقد كبير للجودة
+        quality: 95,
         format: CompressFormat.jpeg,
+        // يمكن هنا وضع keepExif: true إذا تود الاحتفاظ بالـ EXIF من HEIC
       );
       if (converted != null) {
         sourcePath = converted.path;
       }
     }
 
-    // 🖼️ ضغط الصورة مرة واحدة فقط
-    final targetPath =
-        '${tempDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    // تحديد مسار الهدف النهائي
+    final targetPath = p.join(tempDir.path,
+        'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-    final compressedFile = await FlutterImageCompress.compressAndGetFile(
+    final compressed = await FlutterImageCompress.compressAndGetFile(
       sourcePath,
       targetPath,
-      quality: 80, // جودة مناسبة
+      quality: 95,
       format: CompressFormat.jpeg,
       keepExif: false,
     );
-    if (compressedFile == null) {
+
+    if (compressed == null) {
+      // فشل الضغط أو الملف غير موجود → أرجع الأصلية
       return file;
     }
 
-    return XFile(compressedFile.path);
+    return XFile(compressed.path);
   } catch (e) {
+    // في حالة خطأ — أرجع الصورة الأصلية
     return file;
   }
 }
