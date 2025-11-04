@@ -49,6 +49,7 @@ class AddPicture extends GetView<OfficialPapersController> {
                 ),
                 SizedBox(height: 20.h),
                 CustomTextField(
+                  isRequired: true,
                   label: 'image_name'.tr,
                   hintText: 'image_name'.tr,
                   controller: controller.pictureNameController,
@@ -60,6 +61,7 @@ class AddPicture extends GetView<OfficialPapersController> {
                   controller: controller.pictureDescriptionController,
                   maxLines: 4,
                   minLines: 4,
+                  validator: (p0) => null,
                 ),
                 // if (controller.isEdit)
                 //   Column(

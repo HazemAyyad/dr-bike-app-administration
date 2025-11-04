@@ -3,19 +3,19 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
+// ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
-import '../models/official_papers_models/file_data_model.dart';
 import '../models/assets_models/assets_detials_model.dart';
 import '../models/assets_models/assets_log_model.dart';
 import '../models/expenses_models/expense_detail_model.dart';
+import '../models/official_papers_models/file_data_model.dart';
 
 class FinancialAffairsDatasource {
   final ApiConsumer api;

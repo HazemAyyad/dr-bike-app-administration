@@ -265,8 +265,6 @@ class ChecksController extends GetxController
     required bool isInComing,
     required String checkId,
   }) async {
-    print(editCheckFrontImage.value);
-    print(checkFrontImage.value);
     if ((formKey.currentState as FormState).validate()) {
       isLoading(true);
       final result = await editChecksUsecase.call(
@@ -544,7 +542,6 @@ class ChecksController extends GetxController
   final Rxn<NotCashedModel> inComingChecksList = Rxn<NotCashedModel>(null);
   final Map<String, List<CheckModel>> inComingTasks = {};
   final Map<String, double> totalInComing = {};
-
   Future<void> getNotCashed({bool isStopLoding = true}) async {
     isLoading(true);
 
@@ -557,14 +554,13 @@ class ChecksController extends GetxController
           ? EndPoints.inComingChecks
           : EndPoints.notCashedOutgoingChecks,
     );
+
     inComingChecksList.value =
         NotCashedModel.fromJson(result, checksPath: 'not_cashed_checks');
 
     for (var task in inComingChecksList.value!.inComingChecksList) {
       String dateKey =
           "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
-
-      // group by month
       if (inComingTasks.containsKey(dateKey)) {
         if (!inComingTasks[dateKey]!.any((a) => a.id == task.id)) {
           inComingTasks[dateKey]!.add(task);
@@ -577,11 +573,30 @@ class ChecksController extends GetxController
     }
 
     inComingTasks.forEach((key, tasks) {
-      tasks.sort((a, b) => a.dueDate.day.compareTo(b.dueDate.day));
+      tasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
     });
 
+    // 📆 رتب الشهور تصاعديًا (الأقدم → الأحدث)
+    var entries = inComingTasks.entries.toList();
+    entries.sort((e1, e2) {
+      final parts1 = e1.key.split('/');
+      final parts2 = e2.key.split('/');
+      final year1 = int.tryParse(parts1[0]) ?? 0;
+      final month1 = int.tryParse(parts1[1]) ?? 0;
+      final year2 = int.tryParse(parts2[0]) ?? 0;
+      final month2 = int.tryParse(parts2[1]) ?? 0;
+      if (year1 != year2) return year1.compareTo(year2);
+      return month1.compareTo(month2);
+    });
+
+    entries = entries.reversed.toList(); // الأحدث فوق
+
+    final sortedMap = Map<String, List<CheckModel>>.fromEntries(entries);
+    inComingTasks
+      ..clear()
+      ..addAll(sortedMap);
     filteredInComingTasks.assignAll(inComingTasks);
-    update();
+
     if (isStopLoding) isLoading(false);
     update();
   }
@@ -893,6 +908,7 @@ class ChecksController extends GetxController
     checkNumberController.dispose();
     bankNameController.dispose();
     notesController.dispose();
+    employeeNameController.dispose();
     super.onClose();
   }
 }

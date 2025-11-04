@@ -306,7 +306,6 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                   //     :
                   // if (!controller.isEdit)
                   MediaUploadButton(
-                    allowedType: MediaType.image,
                     isShowPreview: controller.isEdit ? false : true,
                     onFilesChanged: (files) {
                       for (var file in files) {

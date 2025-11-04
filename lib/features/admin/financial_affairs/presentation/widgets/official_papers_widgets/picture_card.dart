@@ -103,7 +103,7 @@ class PictureCard extends GetView<OfficialPapersController> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 4, right: 4, left: 4),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(9.r),
                 child: CachedNetworkImage(
@@ -125,7 +125,9 @@ class PictureCard extends GetView<OfficialPapersController> {
                       ),
                     ),
                   ),
-                  imageUrl: data.file,
+                  imageUrl: data.file.contains('.mp4')
+                      ? AssetsManager.noImageNet
+                      : data.file,
                   errorWidget: (context, url, error) =>
                       Image.network(AssetsManager.noImageNet),
                   placeholder: (context, url) =>

@@ -222,10 +222,10 @@ class OfficialPapersController extends GetxController
           );
         },
         (success) async {
+          getAllExpenses();
           pictureNameController.clear();
           pictureDescriptionController.clear();
           selectedFile.value = null;
-          getAllExpenses();
           if (isEdit) {
             Get.back();
           }

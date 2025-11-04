@@ -60,9 +60,10 @@ class CustomDataWidget extends StatelessWidget {
                 value,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       color: AppColors.primaryColor,
-                      fontSize: 10.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w700,
                     ),
               ),

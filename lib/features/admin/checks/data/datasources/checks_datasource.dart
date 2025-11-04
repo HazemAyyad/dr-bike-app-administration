@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart' hide MultipartFile;
-import 'package:path_provider/path_provider.dart';
+// ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:video_compress/video_compress.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -275,8 +277,6 @@ class ChecksDatasource {
       } else {
         compressedBackImage = backImage;
       }
-      print('----------------------$compressedFrontImage');
-      print('----------------------$compressedBackImage');
       final response = await api.post(
         isInComing ? EndPoints.editIncomingCheck : EndPoints.editOutgoingCheck,
         data: {
@@ -362,58 +362,55 @@ class ChecksDatasource {
 
 Future<XFile> compressImage(XFile file) async {
   final lower = file.path.toLowerCase();
-
-  // إذا كان فيديو، أعده كما هو
-  if (lower.endsWith('.mp4') ||
-      lower.endsWith('.mov') ||
-      lower.endsWith('.avi') ||
-      lower.endsWith('.mkv') ||
-      lower.endsWith('.webm')) {
-    return file;
-  }
-
   try {
     final tempDir = await getTemporaryDirectory();
-
-    // يمكن أن يُستخدم كمسار مؤقت مع الملحق الأصلي
+    // 🎥 ضغط الفيديوهات
+    if (lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.avi') ||
+        lower.endsWith('.mkv') ||
+        lower.endsWith('.webm')) {
+      final compressedVideo = await VideoCompress.compressVideo(
+        file.path,
+        quality: VideoQuality.MediumQuality, // اختيارات: Low / Medium / High
+        deleteOrigin: false,
+        includeAudio: true,
+      );
+      if (compressedVideo != null && compressedVideo.file != null) {
+        return XFile(compressedVideo.file!.path);
+      } else {
+        return file;
+      }
+    }
+    // 🖼️ ضغط الصور
     String sourcePath = file.path;
-
-    // إذا HEIC / HEIF، نحاول تحويلها أولاً إلى JPG
     if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
-      final jpgPath = p.join(tempDir.path,
-          'converted_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final jpgPath = p.join(
+        tempDir.path,
+        'converted_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       final converted = await FlutterImageCompress.compressAndGetFile(
         file.path,
         jpgPath,
         quality: 95,
         format: CompressFormat.jpeg,
-        // يمكن هنا وضع keepExif: true إذا تود الاحتفاظ بالـ EXIF من HEIC
       );
-      if (converted != null) {
-        sourcePath = converted.path;
-      }
+      if (converted != null) sourcePath = converted.path;
     }
-
-    // تحديد مسار الهدف النهائي
-    final targetPath = p.join(tempDir.path,
-        'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg');
-
-    final compressed = await FlutterImageCompress.compressAndGetFile(
+    final targetPath = p.join(
+      tempDir.path,
+      'compressed_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
+    final compressedImage = await FlutterImageCompress.compressAndGetFile(
       sourcePath,
       targetPath,
-      quality: 95,
+      quality: 85,
       format: CompressFormat.jpeg,
       keepExif: false,
     );
-
-    if (compressed == null) {
-      // فشل الضغط أو الملف غير موجود → أرجع الأصلية
-      return file;
-    }
-
-    return XFile(compressed.path);
+    if (compressedImage == null) return file;
+    return XFile(compressedImage.path);
   } catch (e) {
-    // في حالة خطأ — أرجع الصورة الأصلية
     return file;
   }
 }

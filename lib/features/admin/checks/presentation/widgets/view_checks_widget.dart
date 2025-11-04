@@ -70,16 +70,19 @@ class ViewChecksWidget extends GetView<ChecksController> {
                         ],
                       ),
                       child: Center(
-                        child: Text(
-                          "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency}",
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineMedium!
-                              .copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15.sp,
-                              ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          child: Text(
+                            "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency}",
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium!
+                                .copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15.sp,
+                                ),
+                          ),
                         ),
                       ),
                     ),
