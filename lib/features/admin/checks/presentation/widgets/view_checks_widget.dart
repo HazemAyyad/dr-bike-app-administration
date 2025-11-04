@@ -25,6 +25,30 @@ class ViewChecksWidget extends GetView<ChecksController> {
 
   @override
   Widget build(BuildContext context) {
+    // final now = DateTime.now();
+    // final diff = check.dueDate.difference(now);
+
+    // String remainingTime;
+
+    // if (diff.isNegative) {
+    //   // ✅ لو التاريخ فات فعلاً
+    //   remainingTime = "منتهي";
+    // } else if (diff.inDays >= 1) {
+    //   // ✅ لو باقي يوم أو أكثر
+    //   final daysLeft = diff.inDays + (diff.inHours % 24 > 0 ? 1 : 0);
+    //   remainingTime = "$daysLeft يوم";
+    // } else {
+    //   // ✅ لو باقي أقل من يوم → أظهر الساعات
+    //   final hoursLeft = diff.inHours;
+    //   if (hoursLeft <= 0) {
+    //     // لو باقي أقل من ساعة
+    //     final minutesLeft = diff.inMinutes;
+    //     remainingTime = "$minutesLeft دقيقة";
+    //   } else {
+    //     remainingTime = "$hoursLeft ساعة";
+    //   }
+    // }
+
     return GestureDetector(
       onTap: () => Get.dialog(CheckDetails(check: check, type: type)),
       child: Container(
@@ -202,9 +226,14 @@ class ViewChecksWidget extends GetView<ChecksController> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          check.dueDate
-                              .difference(DateTime.now())
-                              .inDays
+                          (check.dueDate.difference(DateTime.now()).inDays +
+                                  (check.dueDate
+                                                  .difference(DateTime.now())
+                                                  .inHours %
+                                              24 >
+                                          0
+                                      ? 1
+                                      : 0))
                               .toString(),
                           textAlign: TextAlign.center,
                           style:
