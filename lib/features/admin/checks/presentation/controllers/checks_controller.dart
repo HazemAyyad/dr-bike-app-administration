@@ -579,25 +579,25 @@ class ChecksController extends GetxController
 
     // 📆 رتب الشهور تصاعديًا (الأقدم → الأحدث)
     var entries = inComingTasks.entries.toList();
-    final now = DateTime.now();
-
-    entries.sort((a, b) {
-      final aParts = a.key.split('/');
-      final bParts = b.key.split('/');
-
-      final aDate = DateTime(int.parse(aParts[0]), int.parse(aParts[1]));
-      final bDate = DateTime(int.parse(bParts[0]), int.parse(bParts[1]));
-
-      final diffA = aDate.difference(now).inDays.abs();
-      final diffB = bDate.difference(now).inDays.abs();
-
-      return diffA.compareTo(diffB);
+    entries.sort((e1, e2) {
+      final parts1 = e1.key.split('/');
+      final parts2 = e2.key.split('/');
+      final year1 = int.tryParse(parts1[0]) ?? 0;
+      final month1 = int.tryParse(parts1[1]) ?? 0;
+      final year2 = int.tryParse(parts2[0]) ?? 0;
+      final month2 = int.tryParse(parts2[1]) ?? 0;
+      if (year1 != year2) return year1.compareTo(year2);
+      return month1.compareTo(month2);
     });
+
+    entries = entries.reversed.toList(); // الأحدث فوق
+
     final sortedMap = Map<String, List<CheckModel>>.fromEntries(entries);
     inComingTasks
       ..clear()
       ..addAll(sortedMap);
     filteredInComingTasks.assignAll(inComingTasks);
+
     if (isStopLoding) isLoading(false);
     update();
   }
@@ -636,32 +636,31 @@ class ChecksController extends GetxController
       totalCashedToPerson[dateKey] =
           (totalCashedToPerson[dateKey] ?? 0.0) + total;
     }
-    cashedToPersonTasks.forEach((key, tasks) {
-      tasks.sort((a, b) => a.dueDate.day.compareTo(b.dueDate.day));
+    inComingTasks.forEach((key, tasks) {
+      tasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
     });
 
     // 📆 رتب الشهور تصاعديًا (الأقدم → الأحدث)
-    var entries = cashedToPersonTasks.entries.toList();
-    final now = DateTime.now();
-
-    entries.sort((a, b) {
-      final aParts = a.key.split('/');
-      final bParts = b.key.split('/');
-
-      final aDate = DateTime(int.parse(aParts[0]), int.parse(aParts[1]));
-      final bDate = DateTime(int.parse(bParts[0]), int.parse(bParts[1]));
-
-      final diffA = aDate.difference(now).inDays.abs();
-      final diffB = bDate.difference(now).inDays.abs();
-
-      return diffA.compareTo(diffB);
+    var entries = inComingTasks.entries.toList();
+    entries.sort((e1, e2) {
+      final parts1 = e1.key.split('/');
+      final parts2 = e2.key.split('/');
+      final year1 = int.tryParse(parts1[0]) ?? 0;
+      final month1 = int.tryParse(parts1[1]) ?? 0;
+      final year2 = int.tryParse(parts2[0]) ?? 0;
+      final month2 = int.tryParse(parts2[1]) ?? 0;
+      if (year1 != year2) return year1.compareTo(year2);
+      return month1.compareTo(month2);
     });
 
+    entries = entries.reversed.toList(); // الأحدث فوق
+
     final sortedMap = Map<String, List<CheckModel>>.fromEntries(entries);
-    cashedToPersonTasks
+    inComingTasks
       ..clear()
       ..addAll(sortedMap);
-    filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+    filteredInComingTasks.assignAll(inComingTasks);
+
     update();
     if (isStopLoding) isLoading(false);
     update();

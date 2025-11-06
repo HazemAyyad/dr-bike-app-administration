@@ -55,7 +55,7 @@ class MarkTaskComplete extends GetView<EmployeeTasksController> {
                       decoration: tasks.status == 'ongoing'
                           ? TextDecoration.none
                           : TextDecoration.lineThrough,
-                      fontSize: 10.sp,
+                      fontSize: 11.sp,
                       fontWeight: FontWeight.w500,
                       color: ThemeService.isDark.value
                           ? AppColors.customGreyColor6

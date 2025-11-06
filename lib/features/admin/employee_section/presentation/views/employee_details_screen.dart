@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -235,11 +236,35 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                           ],
                         ),
                       ),
-                      SizedBox(height: 10.h),
-                      SupTextAndDiscr(
-                        title: 'email',
-                        discription: controller
-                            .employeeService.employeeDetails.value!.email,
+                      SizedBox(height: 5.h),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: SupTextAndDiscr(
+                              title: 'email',
+                              discription: controller
+                                  .employeeService.employeeDetails.value!.email,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () async {
+                              // نسخ النص إلى الكليب بورد
+                              await Clipboard.setData(ClipboardData(
+                                  text: controller.employeeService
+                                      .employeeDetails.value!.email));
+                              // عرض رسالة تأكيد
+                              // ignore: use_build_context_synchronously
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                      '✅ تم نسخ النص: "${controller.employeeService.employeeDetails.value!.email}"'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.copy),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 10.h),
                       SupTextAndDiscr(

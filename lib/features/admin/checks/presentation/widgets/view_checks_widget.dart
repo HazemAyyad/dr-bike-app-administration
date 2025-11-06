@@ -226,14 +226,11 @@ class ViewChecksWidget extends GetView<ChecksController> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          (check.dueDate.difference(DateTime.now()).inDays +
-                                  (check.dueDate
-                                                  .difference(DateTime.now())
-                                                  .inHours %
-                                              24 >
-                                          0
-                                      ? 1
-                                      : 0))
+                          (DateTime(check.dueDate.year, check.dueDate.month,
+                                      check.dueDate.day)
+                                  .difference(DateTime(DateTime.now().year,
+                                      DateTime.now().month, DateTime.now().day))
+                                  .inDays)
                               .toString(),
                           textAlign: TextAlign.center,
                           style:
