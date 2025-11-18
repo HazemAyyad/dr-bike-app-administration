@@ -174,6 +174,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                     minLines: 6,
                     maxLines: 10,
                     keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
                   ),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,

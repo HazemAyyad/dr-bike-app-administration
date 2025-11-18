@@ -289,7 +289,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                       SupTextAndDiscr(
                         title: 'hourlyRate',
                         discription:
-                            '${controller.employeeService.employeeDetails.value!.hourWorkPrice} ${'currency'.tr}',
+                            '${controller.employeeService.employeeDetails.value!.hourWorkPrice.toString()} ${'currency'.tr}',
                       ),
                       SizedBox(height: 10.h),
                       SupTextAndDiscr(

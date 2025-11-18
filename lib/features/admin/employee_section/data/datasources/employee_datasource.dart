@@ -76,7 +76,6 @@ class EmployeeDatasource {
           }
         }),
       );
-
       final response = await api.post(
         employeeId != null ? EndPoints.editEmployee : EndPoints.createEmployee,
         data: {
@@ -84,7 +83,7 @@ class EmployeeDatasource {
           'name': name,
           'email': email,
           'phone': phone,
-          'sub_phone': subPhone,
+          if (subPhone != '+972 ' && subPhone != '+970 ') 'sub_phone': subPhone,
           if (employeeId == null) 'password': password,
           if (employeeId == null) 'password_confirmation': passwordConfirmation,
           'hour_work_price': hourWorkPrice,

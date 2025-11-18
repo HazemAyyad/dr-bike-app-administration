@@ -71,6 +71,7 @@ class AddProductManagementScreen extends StatelessWidget {
                           maxLines: 5,
                           minLines: 4,
                           keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
                         ),
                       ],
                     );

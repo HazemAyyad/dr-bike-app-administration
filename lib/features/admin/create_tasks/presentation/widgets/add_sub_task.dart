@@ -21,33 +21,6 @@ class AddSubTask extends GetView<CreateTaskController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextButton.icon(
-          onPressed: () => controller.toggleSubtasksList(),
-          icon: Obx(
-            () => AnimatedRotation(
-              turns: controller.isSubtasksListVisible.value
-                  ? -0.125
-                  : 0, // 0.125 = 45 درجة
-              duration: const Duration(milliseconds: 300),
-              child: Icon(
-                Icons.add_rounded,
-                key: ValueKey(controller.isSubtasksListVisible.value),
-                color: AppColors.primaryColor,
-                size: 20.sp,
-              ),
-            ),
-          ),
-          label: Text(
-            'addSubTask'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: ThemeService.isDark.value
-                      ? AppColors.primaryColor
-                      : AppColors.secondaryColor,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
         // قائمة المهام الفرعية
         Obx(
           () => Column(
@@ -105,6 +78,42 @@ class AddSubTask extends GetView<CreateTaskController> {
           ),
         ),
         Obx(
+          () => controller.subTasks.isNotEmpty
+              ? Container(
+                  width: double.infinity,
+                  height: 1.h,
+                  color: AppColors.primaryColor,
+                )
+              : const SizedBox.shrink(),
+        ),
+        TextButton.icon(
+          onPressed: () => controller.toggleSubtasksList(),
+          icon: Obx(
+            () => AnimatedRotation(
+              turns: controller.isSubtasksListVisible.value
+                  ? -0.125
+                  : 0, // 0.125 = 45 درجة
+              duration: const Duration(milliseconds: 300),
+              child: Icon(
+                Icons.add_rounded,
+                key: ValueKey(controller.isSubtasksListVisible.value),
+                color: AppColors.primaryColor,
+                size: 20.sp,
+              ),
+            ),
+          ),
+          label: Text(
+            'addSubTask'.tr,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: ThemeService.isDark.value
+                      ? AppColors.primaryColor
+                      : AppColors.secondaryColor,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ),
+        Obx(
           () => AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.decelerate,
@@ -150,7 +159,8 @@ class AddSubTask extends GetView<CreateTaskController> {
                           title: 'uploadImage',
                         ),
                         SizedBox(height: 10.h),
-                        title == 'createNewEmployeeTask'
+                        title == 'createNewEmployeeTask' ||
+                                title == 'editEmployeeTask'
                             ? CustomCheckBox(
                                 value: controller.requireSubTasImage,
                                 title: 'requireImage',

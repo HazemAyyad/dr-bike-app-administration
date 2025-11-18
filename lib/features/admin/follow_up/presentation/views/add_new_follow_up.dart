@@ -153,6 +153,8 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                     minLines: 6,
                     maxLines: 10,
                     validator: (p0) => null,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
                   ),
                   SizedBox(height: 20.h),
                   Row(

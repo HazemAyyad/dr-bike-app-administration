@@ -219,7 +219,8 @@ class CreateTaskController extends GetxController {
         notes: taskNotesController.text,
         startDate: startDate.value,
         endDate: endDate.value,
-        taskRecurrence: selectedDays.value,
+        taskRecurrence:
+            selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
         taskRecurrenceTime: selectedDaysList,
         subSpecialTasks: subTasks,
         notShownForEmployee: hideTask.value ? '1' : '0',
@@ -354,6 +355,7 @@ class CreateTaskController extends GetxController {
         ? data.audio!
         : '';
     selectedFile.addAll(data.adminImg?.map((e) => File(e)).toList() ?? []);
+    requireImage.value = data.isForcedToUploadImg;
   }
 
   @override

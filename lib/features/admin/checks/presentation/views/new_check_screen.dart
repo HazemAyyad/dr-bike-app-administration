@@ -202,7 +202,7 @@ class NewCheckScreen extends GetView<ChecksController> {
                 label: 'notes',
                 hintText: 'notes',
                 controller: controller.notesController,
-                textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.newline,
                 keyboardType: TextInputType.multiline,
                 maxLines: 5,
                 minLines: 5,

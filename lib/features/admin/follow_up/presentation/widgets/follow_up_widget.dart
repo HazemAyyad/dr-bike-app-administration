@@ -224,7 +224,7 @@ class FollowUpWidget extends StatelessWidget {
                                     ),
                                 ],
                               ),
-                              SizedBox(height: 5.h),
+                              // SizedBox(height: 5.h),
                               Row(
                                 children: [
                                   ClipRRect(
@@ -261,8 +261,8 @@ class FollowUpWidget extends StatelessWidget {
                                         imageBuilder:
                                             (context, imageProvider) =>
                                                 Container(
-                                          height: 80.h,
-                                          width: 80.w,
+                                          height: 60.h,
+                                          width: 60.w,
                                           decoration: BoxDecoration(
                                             image: DecorationImage(
                                               image: imageProvider,
