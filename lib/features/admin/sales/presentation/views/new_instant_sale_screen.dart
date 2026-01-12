@@ -68,11 +68,11 @@ class NewInstantSaleScreen extends GetView<SalesController> {
                       return;
                     }
 
-                    Get.bottomSheet(
-                      const PaymentScreen(type: 'receive'),
-                      backgroundColor: Colors.white,
-                      isScrollControlled: true,
-                    ).then((value) {
+                    Get.to(
+                      () => const PaymentScreen(type: 'receive'),
+                      fullscreenDialog: true,
+                    )!
+                        .then((value) {
                       if (value == true) {
                         // ignore: use_build_context_synchronously
                         controller.addInstantSale(context);

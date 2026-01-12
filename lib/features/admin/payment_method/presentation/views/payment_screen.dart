@@ -48,16 +48,14 @@ class PaymentScreen extends GetView<PaymentController> {
     controller.selectedCustomersSellers.value = isSeller ?? false;
 
     return Scaffold(
+      appBar: CustomAppBar(
+        title: type == 'payment' ? 'paymentMethod' : 'paymentMethodReceive',
+        action: false,
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.h),
         child: Column(
           children: [
-            SizedBox(height: 25.h),
-            CustomAppBar(
-              title:
-                  type == 'payment' ? 'paymentMethod' : 'paymentMethodReceive',
-              action: false,
-            ),
             Obx(
               () {
                 return Row(
@@ -345,13 +343,14 @@ class PaymentScreen extends GetView<PaymentController> {
                 ),
               ],
             ),
-            SizedBox(
-              height: 40.h,
-            ),
+            // SizedBox(height: 20.h),
             AppButton(
               isLoading: controller.isLoading,
               text: type == 'payment' ? 'payment'.tr : 'receiptt'.tr,
               onPressed: () {
+                if (controller.partnerIdController.text.isEmpty) {
+                  return;
+                }
                 controller.addPayment(context: context, type: type!);
               },
             )

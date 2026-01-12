@@ -174,9 +174,13 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             ),
                                             imageUrl: item.mediaFiles,
                                             placeholder: (context, url) =>
-                                                const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
+                                                SizedBox(
+                                              height: 60.h,
+                                              width: 80.w,
+                                              child: const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
                                             ),
                                             errorWidget:
                                                 (context, url, error) =>
@@ -184,7 +188,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 20.w),
+                                      SizedBox(width: 5.w),
                                       Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,

@@ -190,6 +190,32 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                                 },
                                 title: 'employeeImage'.tr,
                               ),
+                              userType == 'admin'
+                                  ? const SizedBox.shrink()
+                                  : SizedBox(height: 10.h),
+                              userType == 'admin'
+                                  ? const SizedBox.shrink()
+                                  : AppButton(
+                                      isLoading: controller.isLoading,
+                                      text: 'uploadPersonalIdImage',
+                                      onPressed: () async {
+                                        // final args = Get.arguments
+                                        //     as Map<String, dynamic>?;
+                                        // final EmployeeDashbordController
+                                        // controller1 =
+                                        // args?['EmployeeDashbordController'];
+                                        await controller.uploadTaskImage(
+                                          taskId: data.taskId.toString(),
+                                        );
+                                        // controller1.changeTaskToCompleted(
+                                        //   taskId: data.taskId,
+                                        //   isSubTask: false,
+                                        //   // ignore: use_build_context_synchronously
+                                        //   context: context,
+                                        // );
+                                        Get.back();
+                                      },
+                                    )
                             ],
                           )
                         : const SizedBox(),

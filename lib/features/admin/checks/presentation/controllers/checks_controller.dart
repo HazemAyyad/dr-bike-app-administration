@@ -613,56 +613,54 @@ class ChecksController extends GetxController
     filteredCashedToPersonTasks.clear();
     cashedToPersonTasks.clear();
     totalCashedToPerson.clear();
+
     final result = await getChecksUsecase.call(
       endPoint: isInComing
           ? EndPoints.cashedIncomingChecks
           : EndPoints.cashedOutgoingChecks,
     );
+
     cashedToPerson.value =
         NotCashedModel.fromJson(result, checksPath: 'cashed_to_person_checks');
 
     for (var task in cashedToPerson.value!.inComingChecksList) {
-      String dateKey =
+      final dateKey =
           "${task.dueDate.year}/${task.dueDate.month.toString().padLeft(2, '0')}";
-      if (cashedToPersonTasks.containsKey(dateKey)) {
-        if (!cashedToPersonTasks[dateKey]!.any((a) => a.id == task.id)) {
-          cashedToPersonTasks[dateKey]!.add(task);
-        }
-      } else {
-        cashedToPersonTasks[dateKey] = [task];
+
+      cashedToPersonTasks.putIfAbsent(dateKey, () => []);
+      if (!cashedToPersonTasks[dateKey]!.any((a) => a.id == task.id)) {
+        cashedToPersonTasks[dateKey]!.add(task);
       }
+
       final total = double.tryParse(task.total.toString()) ?? 0.0;
-      // accumulate totals by month
       totalCashedToPerson[dateKey] =
           (totalCashedToPerson[dateKey] ?? 0.0) + total;
     }
-    inComingTasks.forEach((key, tasks) {
+
+    // ترتيب الشيكات داخل كل شهر
+    cashedToPersonTasks.forEach((key, tasks) {
       tasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
     });
 
-    // 📆 رتب الشهور تصاعديًا (الأقدم → الأحدث)
-    var entries = inComingTasks.entries.toList();
-    entries.sort((e1, e2) {
-      final parts1 = e1.key.split('/');
-      final parts2 = e2.key.split('/');
-      final year1 = int.tryParse(parts1[0]) ?? 0;
-      final month1 = int.tryParse(parts1[1]) ?? 0;
-      final year2 = int.tryParse(parts2[0]) ?? 0;
-      final month2 = int.tryParse(parts2[1]) ?? 0;
-      if (year1 != year2) return year1.compareTo(year2);
-      return month1.compareTo(month2);
-    });
-
-    entries = entries.reversed.toList(); // الأحدث فوق
+    // ترتيب الشهور (الأحدث فوق)
+    final entries = cashedToPersonTasks.entries.toList()
+      ..sort((e1, e2) {
+        final y1 = int.parse(e1.key.split('/')[0]);
+        final m1 = int.parse(e1.key.split('/')[1]);
+        final y2 = int.parse(e2.key.split('/')[0]);
+        final m2 = int.parse(e2.key.split('/')[1]);
+        return y1 != y2 ? y2.compareTo(y1) : m2.compareTo(m1);
+      });
 
     final sortedMap = Map<String, List<CheckModel>>.fromEntries(entries);
-    inComingTasks
+
+    cashedToPersonTasks
       ..clear()
       ..addAll(sortedMap);
-    filteredInComingTasks.assignAll(inComingTasks);
 
-    update();
-    if (isStopLoding) isLoading(false);
+    filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+
+    isLoading(false);
     update();
   }
 
