@@ -77,6 +77,7 @@ class ReturnItem {
   final String quantity;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String productName;
 
   ReturnItem({
     required this.id,
@@ -86,6 +87,7 @@ class ReturnItem {
     required this.quantity,
     required this.createdAt,
     required this.updatedAt,
+    required this.productName,
   });
 
   factory ReturnItem.fromJson(Map<String, dynamic> json) {
@@ -97,6 +99,7 @@ class ReturnItem {
       quantity: json['quantity'] ?? "",
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
+      productName: json['product_name'] ?? "",
     );
   }
 
@@ -109,6 +112,7 @@ class ReturnItem {
       'quantity': quantity,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'product_name': productName,
     };
   }
 }

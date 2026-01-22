@@ -74,56 +74,82 @@ class ReturnPurchasesList extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20.w,
-                        vertical: 5.h,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${'sellerName1'.tr}: ${bill.seller.name}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.customGreyColor7
-                                      : AppColors.customGreyColor,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 15.sp,
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20.w,
+                          vertical: 5.h,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${'sellerName1'.tr}: ${bill.seller.name}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.customGreyColor7
+                                        : AppColors.customGreyColor,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 15.sp,
+                                  ),
+                            ),
+                            SizedBox(height: 5.h),
+                            Text(
+                              "${'productName'.tr}: ${bill.items.first.productName}",
+                              maxLines: 2,
+                              softWrap: true,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.customGreyColor7
+                                        : AppColors.customGreyColor,
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 15.sp,
+                                  ),
+                            ),
+                            SizedBox(height: 5.h),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    "${'quantity'.tr}: ${bill.items.first.quantity.toString()}",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: ThemeService.isDark.value
+                                              ? AppColors.customGreyColor7
+                                              : AppColors.customGreyColor,
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 15.sp,
+                                        ),
+                                  ),
                                 ),
-                          ),
-                          SizedBox(height: 5.h),
-                          Text(
-                            "${'quantity'.tr}: ${bill.items.first.quantity.toString()}",
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.customGreyColor7
-                                      : AppColors.customGreyColor,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 15.sp,
+                                Expanded(
+                                  child: Text(
+                                    "${'price'.tr}: ${NumberFormat("#,###").format(double.parse(bill.items.first.price.toString()))}",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: ThemeService.isDark.value
+                                              ? AppColors.customGreyColor7
+                                              : AppColors.customGreyColor,
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 15.sp,
+                                        ),
+                                  ),
                                 ),
-                          ),
-                          SizedBox(height: 5.h),
-                          Text(
-                            "${'price'.tr}: ${NumberFormat("#,###").format(double.parse(bill.items.first.price.toString()))}",
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.customGreyColor7
-                                      : AppColors.customGreyColor,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 15.sp,
-                                ),
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Container(

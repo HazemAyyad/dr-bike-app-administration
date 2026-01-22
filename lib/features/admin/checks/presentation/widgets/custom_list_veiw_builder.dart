@@ -70,11 +70,10 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                     .toList()[section]
                 : controller.currentTab.value == 1
                     ? controller.filteredCashedToPersonTasks.keys
-                        .toList()[section]
-                    : controller.filteredArchiveTasks.keys
                         .toList()
                         .reversed
-                        .toList()[section];
+                        .toList()[section]
+                    : controller.filteredArchiveTasks.keys.toList()[section];
 
             final checks = controller.currentTab.value == 0
                 ? controller.dateFilter.value
