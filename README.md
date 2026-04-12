@@ -1,4 +1,6 @@
-# doctorbike
+# dr-bike-app-administration
+
+Flutter project (doctorbike).
 
 A new Flutter project.
 
