@@ -51,8 +51,8 @@ Map<String, dynamic> asMap(dynamic value) {
 List<Map<String, dynamic>> asMapList(dynamic value) {
   if (value is List) {
     return value
-        .where((e) => e is Map)
-        .map((e) => Map<String, dynamic>.from(e as Map))
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
         .toList();
   }
   return <Map<String, dynamic>>[];
@@ -117,19 +117,57 @@ void debugParseLog(String scope, String message) {
   }
 }
 
-/// يستخرج قائمة من `response.data` (Map) عبر [key] ويُحوّلها بـ [builder] بأمان.
-List<T> mapListFromResponseKey<T>(
+/// يستخرج قائمة خرائط من استجابة API بأشكال متعددة:
+/// قائمة جذر، `{ key: [...] }`, `{ data: [...] }`, `{ data: { key: [...] } }`.
+List<Map<String, dynamic>> extractMapListFromResponse(
   dynamic responseData,
-  String key,
-  T Function(Map<String, dynamic>) builder,
+  String primaryKey,
 ) {
+  if (responseData is List) {
+    return asMapList(responseData);
+  }
   if (responseData is! Map) {
     debugParseLog(
-      'mapListFromResponseKey',
-      'expected Map, got ${responseData.runtimeType} key=$key',
+      'extractMapListFromResponse',
+      'expected Map or List, got ${responseData.runtimeType} key=$primaryKey',
     );
     return [];
   }
-  final v = Map<String, dynamic>.from(responseData as Map)[key];
-  return mapList(v, builder);
+  final m = Map<String, dynamic>.from(responseData);
+
+  var v = m[primaryKey];
+  if (v is List) return asMapList(v);
+
+  final data = m['data'];
+  if (data is List) return asMapList(data);
+  if (data is Map) {
+    final dm = Map<String, dynamic>.from(data);
+    v = dm[primaryKey];
+    if (v is List) return asMapList(v);
+  }
+
+  return readListFromKnownKeys(m, [primaryKey, 'items', 'results']);
+}
+
+/// يستخرج قائمة من `response.data` عبر [key] ويُحوّلها بـ [builder] بأمان.
+List<T> mapListFromResponseKey<T>(
+  dynamic responseData,
+  String key,
+  T Function(Map<String, dynamic>) builder, {
+  String? debugScope,
+}) {
+  final list = extractMapListFromResponse(responseData, key);
+  final out = <T>[];
+  for (var i = 0; i < list.length; i++) {
+    final m = list[i];
+    try {
+      out.add(builder(m));
+    } catch (e, _) {
+      debugParseLog(
+        debugScope ?? 'mapListFromResponseKey',
+        'key=$key index=$i err=$e sample=$m',
+      );
+    }
+  }
+  return out;
 }

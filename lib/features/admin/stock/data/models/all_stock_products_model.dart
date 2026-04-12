@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class AllStockProductsModel {
   final int closeoutId;
   final String closeoutStatus;
@@ -21,14 +23,14 @@ class AllStockProductsModel {
 
   factory AllStockProductsModel.fromJson(Map<String, dynamic> json) {
     return AllStockProductsModel(
-      closeoutId: json['closeout_id'] ?? 0,
-      closeoutStatus: json['closeout_status'] ?? 'unarchived',
-      productId: json['product_id'] ?? '0',
-      name: json['product_name'] ?? 'Unknown',
-      stock: json['product_stock'] ?? '0',
-      productMinSalePrice: json['product_min_sale_price'] ?? '0',
-      image: json['product_image'] ?? '',
-      numberOfUsedProducts: json['number_of_used_products'] ?? '0',
+      closeoutId: asInt(json['closeout_id']),
+      closeoutStatus: asString(json['closeout_status'], 'unarchived'),
+      productId: asString(json['product_id'], '0'),
+      name: asString(json['product_name'], 'Unknown'),
+      stock: asString(json['product_stock'], '0'),
+      productMinSalePrice: asString(json['product_min_sale_price'], '0'),
+      image: asString(json['product_image']),
+      numberOfUsedProducts: asString(json['number_of_used_products'], '0'),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class InstantSalesModel {
   final int id;
   final String product;
@@ -21,18 +23,17 @@ class InstantSalesModel {
 
   factory InstantSalesModel.fromJson(Map<String, dynamic> json) {
     return InstantSalesModel(
-      id: json['id'] ?? 0,
-      product: json['product'] ?? '',
-      cost: json['cost'] ?? '0',
-      totalCost: json['total_cost'] ?? '0',
-      quantity: json['quantity'] ?? '0',
-      date:
-          json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
-      notes: json['notes'] ?? '',
-      subProducts: (json['sub_products'] as List<dynamic>?)
-              ?.map((e) => SubProductsModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      id: asInt(json['id']),
+      product: asString(json['product']),
+      cost: asString(json['cost'], '0'),
+      totalCost: asString(json['total_cost'], '0'),
+      quantity: asString(json['quantity'], '0'),
+      date: parseApiDateTime(json['date']),
+      notes: asString(json['notes']),
+      subProducts: mapList(
+        json['sub_products'],
+        (Map<String, dynamic> m) => SubProductsModel.fromJson(m),
+      ),
     );
   }
 
@@ -65,10 +66,10 @@ class SubProductsModel {
 
   factory SubProductsModel.fromJson(Map<String, dynamic> json) {
     return SubProductsModel(
-      id: json['id'] ?? 0,
-      productName: json['product_name'] ?? '',
-      cost: json['cost'] ?? '0',
-      quantity: json['quantity'] ?? '0',
+      id: asInt(json['id']),
+      productName: asString(json['product_name']),
+      cost: asString(json['cost'], '0'),
+      quantity: asString(json['quantity'], '0'),
     );
   }
 

@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class BillDataModel {
   final int id;
   final String total;
@@ -15,11 +17,11 @@ class BillDataModel {
 
   factory BillDataModel.fromJson(Map<String, dynamic> json) {
     return BillDataModel(
-      id: json['id'] ?? 0,
-      total: json['total'] ?? "0.0",
-      seller: json['seller'] ?? '',
-      createdAt: json['created_at'] ?? '',
-      status: json['status'] ?? '',
+      id: asInt(json['id']),
+      total: asString(json['total'], '0.0'),
+      seller: asString(json['seller']),
+      createdAt: asString(json['created_at']),
+      status: asString(json['status']),
     );
   }
 

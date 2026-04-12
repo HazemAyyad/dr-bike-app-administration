@@ -1,29 +1,27 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class ProfitSale {
   final int id;
   final String totalCost;
-  final String? notes;
+  final String notes;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   const ProfitSale({
     required this.id,
     required this.totalCost,
-    this.notes,
+    required this.notes,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory ProfitSale.fromJson(Map<String, dynamic> json) {
     return ProfitSale(
-      id: json['id'] ?? 0,
-      totalCost: json['total_cost'] ?? '0',
-      notes: json['notes'] ?? 'no notes',
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : DateTime.now(),
+      id: asInt(json['id']),
+      totalCost: asString(json['total_cost'], '0'),
+      notes: asString(json['notes'], 'no notes'),
+      createdAt: parseApiDateTime(json['created_at']),
+      updatedAt: parseApiDateTime(json['updated_at']),
     );
   }
 

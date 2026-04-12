@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../../sales/data/models/product_model.dart';
@@ -146,17 +147,24 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }
 
     final bills = await getBillsUsecase.call(page: '0');
-    final allBillsTasks =
-        (bills['bills'] as List).map((e) => BillDataModel.fromJson(e)).toList();
+    final allBillsTasks = mapListFromResponseKey(
+      bills,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'BillsController.getBills.unfinished',
+    );
     BuyingServes().allBillsTasks.value = groupByDate(allBillsTasks);
     allBillsSearch.assignAll(BuyingServes().allBillsTasks);
     isLoading(false);
     update();
 
     final billsArchive = await getBillsUsecase.call(page: '1');
-    final billsArchiveTasks = (billsArchive['bills'] as List)
-        .map((e) => BillDataModel.fromJson(e))
-        .toList();
+    final billsArchiveTasks = mapListFromResponseKey(
+      billsArchive,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'BillsController.getBills.archive',
+    );
     BuyingServes().allBillsArchiveTasks.value = groupByDate(billsArchiveTasks);
     allBillsArchiveSearch.assignAll(BuyingServes().allBillsArchiveTasks);
 

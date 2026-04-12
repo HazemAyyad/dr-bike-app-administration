@@ -10,6 +10,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../models/invoice_model.dart';
 import '../models/product_model.dart';
 
@@ -48,9 +49,12 @@ class SalesDatasource {
   Future<List<ProfitSale>> getProfitSales() async {
     try {
       final response = await api.get(EndPoints.allProfitSales);
-      return (response.data['profit_sales'] as List)
-          .map((e) => ProfitSale.fromJson(e))
-          .toList();
+      return mapListFromResponseKey(
+        response.data,
+        'profit_sales',
+        (Map<String, dynamic> m) => ProfitSale.fromJson(m),
+        debugScope: 'SalesDatasource.getProfitSales',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -67,9 +71,12 @@ class SalesDatasource {
   Future<List<InstantSalesModel>> getInstantSales() async {
     try {
       final response = await api.get(EndPoints.allInstantSales);
-      return (response.data['instant_sales'] as List)
-          .map((e) => InstantSalesModel.fromJson(e))
-          .toList();
+      return mapListFromResponseKey(
+        response.data,
+        'instant_sales',
+        (Map<String, dynamic> m) => InstantSalesModel.fromJson(m),
+        debugScope: 'SalesDatasource.getInstantSales',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -87,13 +94,17 @@ class SalesDatasource {
     try {
       final response =
           await api.get(endPoint.isNotEmpty ? endPoint : EndPoints.allProducts);
-      return (response.data[endPoint == 'get/all/categories'
-              ? 'categories'
-              : endPoint == 'get/all/subcategories'
-                  ? 'sub_categories'
-                  : 'products'] as List)
-          .map((e) => ProductModel.fromJson(e))
-          .toList();
+      final listKey = endPoint == 'get/all/categories'
+          ? 'categories'
+          : endPoint == 'get/all/subcategories'
+              ? 'sub_categories'
+              : 'products';
+      return mapListFromResponseKey(
+        response.data,
+        listKey,
+        (Map<String, dynamic> m) => ProductModel.fromJson(m),
+        debugScope: 'SalesDatasource.getAllProducts',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../data/models/bills_models/bills_model.dart';
 import '../../domain/usecases/purchase_orders_usecases/cancel_bill_usecase.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
@@ -101,32 +102,44 @@ class PurchaseOrdersController extends GetxController {
     }
 
     final unprocessed = await getBillsUsecase.call(page: '2');
-    final unprocessedList = (unprocessed['bills'] as List)
-        .map((e) => BillDataModel.fromJson(e))
-        .toList();
+    final unprocessedList = mapListFromResponseKey(
+      unprocessed,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'PurchaseOrdersController.unprocessed',
+    );
     BuyingServes().unprocessedTasks.value = groupByDate(unprocessedList);
     unprocessedSearch.assignAll(BuyingServes().unprocessedTasks);
     isLoading(false);
     update();
 
     final notMatched = await getBillsUsecase.call(page: '3');
-    final notMatchedList = (notMatched['bills'] as List)
-        .map((e) => BillDataModel.fromJson(e))
-        .toList();
+    final notMatchedList = mapListFromResponseKey(
+      notMatched,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'PurchaseOrdersController.notMatched',
+    );
     BuyingServes().notMatchedTasks.value = groupByDate(notMatchedList);
     notMatchedSearch.assignAll(BuyingServes().notMatchedTasks);
 
     final completed = await getBillsUsecase.call(page: '4');
-    final completedList = (completed['bills'] as List)
-        .map((e) => BillDataModel.fromJson(e))
-        .toList();
+    final completedList = mapListFromResponseKey(
+      completed,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'PurchaseOrdersController.completed',
+    );
     BuyingServes().completedTasks.value = groupByDate(completedList);
     completedSearch.assignAll(BuyingServes().completedTasks);
 
     final deposits = await getBillsUsecase.call(page: '5');
-    final depositsList = (deposits['bills'] as List)
-        .map((e) => BillDataModel.fromJson(e))
-        .toList();
+    final depositsList = mapListFromResponseKey(
+      deposits,
+      'bills',
+      (Map<String, dynamic> m) => BillDataModel.fromJson(m),
+      debugScope: 'PurchaseOrdersController.deposits',
+    );
     BuyingServes().depositsTasks.value = groupByDate(depositsList);
     depositsSearch.assignAll(BuyingServes().depositsTasks);
 
