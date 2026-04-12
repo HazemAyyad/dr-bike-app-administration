@@ -9,6 +9,7 @@ import '../../../../core/services/initial_bindings.dart';
 import '../../../../core/services/user_data.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
+import '../models/login_response_parser.dart';
 import '../models/user_model.dart';
 
 class AuthImplement implements AuthRepository {
@@ -120,24 +121,42 @@ class AuthImplement implements AuthRepository {
       }
       final data = Map<String, dynamic>.from(raw);
 
-      if (data['status'] == 'success') {
-        await UserData.saveToken(data['token']);
-        await UserData.saveUser(UserModel.fromJson(data));
-        final userdata = await UserData.getSavedUser();
-        if (userdata != null) {
-          final permissionIds =
-              userdata.employeePermissions.map((p) => p.permissionId).toList();
-          employeePermissions.addAll(permissionIds);
-          userType = userdata.user.type;
-        }
-        return Right(UserModel.fromJson(data));
+      log('AuthLogin: full response = $data', name: 'AuthLogin');
+
+      if (!isLoginSuccessStatus(data['status'])) {
+        return Left(
+          ValidationFailure(
+            data['message']?.toString() ?? 'فشل تسجيل الدخول',
+            data,
+          ),
+        );
       }
-      return Left(
-        ValidationFailure(
-          data['message'] ?? 'Unknown error',
-          data,
-        ),
+
+      final token = data['token']?.toString();
+      if (token == null || token.isEmpty) {
+        return Left(
+          ServerFailure('لا يوجد رمز دخول (token) في الاستجابة', data),
+        );
+      }
+      log(
+        'AuthLogin: token prefix = ${token.length > 20 ? '${token.substring(0, 20)}...' : token}',
+        name: 'AuthLogin',
       );
+
+      await UserData.saveToken(token);
+
+      final userModel = UserModel.fromJson(data);
+      log('AuthLogin: parsed user name = ${userModel.user.name}', name: 'AuthLogin');
+
+      await UserData.saveUser(userModel);
+      final userdata = await UserData.getSavedUser();
+      if (userdata != null) {
+        final permissionIds =
+            userdata.employeePermissions.map((p) => p.permissionId).toList();
+        employeePermissions.addAll(permissionIds);
+        userType = userdata.user.type;
+      }
+      return Right(userModel);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     } catch (e, st) {

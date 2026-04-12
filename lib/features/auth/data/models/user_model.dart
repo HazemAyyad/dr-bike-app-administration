@@ -1,5 +1,7 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
 
+import 'login_response_parser.dart';
+
 class UserModel {
   final UserDataModel user;
   final List<PermissionModel> employeePermissions;
@@ -9,8 +11,10 @@ class UserModel {
     required this.employeePermissions,
   });
 
+  /// يدعم الاستجابة المباشرة أو الملفوفة داخل [data] بعد [unwrapLoginEnvelope].
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final epRaw = json[ApiKey.employee_permissions];
+    final root = unwrapLoginEnvelope(Map<String, dynamic>.from(json));
+    final epRaw = root[ApiKey.employee_permissions];
     final List<PermissionModel> permissions = [];
     if (epRaw is List) {
       for (final p in epRaw) {
@@ -21,7 +25,7 @@ class UserModel {
         }
       }
     }
-    final userRaw = json[ApiKey.user];
+    final userRaw = root[ApiKey.user];
     return UserModel(
       user: UserDataModel.fromJson(
         userRaw is Map

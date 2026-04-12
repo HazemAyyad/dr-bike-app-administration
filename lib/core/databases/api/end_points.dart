@@ -3,8 +3,11 @@
 class EndPoints {
   /// ثابت: لا تربطه بـ [startApp] لأن أول قراءة لـ Firebase قد تجعل baseUrl فارغاً
   /// فيتجه Dio إلى نفس أصل الويب (localhost) ويبدو اللوجين عالقاً.
-  static const String baserUrl = "https://dr-bike.duosparktech.com/api/";
-  static const String baserUrlForImage = "https://dr-bike.duosparktech.com/";
+  /// يطابق مسار Laravel على الاستضافة: /public/api/...
+  static const String baserUrl =
+      "https://dr-bike.duosparktech.com/public/api/";
+  static const String baserUrlForImage =
+      "https://dr-bike.duosparktech.com/public/";
 
   static const String register = 'register';
   static const String sendCode = 'send/code';
