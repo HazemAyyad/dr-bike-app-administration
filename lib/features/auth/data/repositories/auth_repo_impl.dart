@@ -1,3 +1,5 @@
+import 'dart:developer' show log;
+
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/connection/network_info.dart';
@@ -112,7 +114,11 @@ class AuthImplement implements AuthRepository {
         password: password,
         fcmToken: fcmToken,
       );
-      final data = Map<String, dynamic>.from(result.data);
+      final raw = result.data;
+      if (raw is! Map) {
+        return Left(ServerFailure('استجابة غير صالحة من السيرفر', {'message': raw}));
+      }
+      final data = Map<String, dynamic>.from(raw);
 
       if (data['status'] == 'success') {
         await UserData.saveToken(data['token']);
@@ -134,6 +140,14 @@ class AuthImplement implements AuthRepository {
       );
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    } catch (e, st) {
+      log('login unexpected error', error: e, stackTrace: st);
+      return Left(
+        ServerFailure(
+          'تعذر إكمال تسجيل الدخول بعد استجابة السيرفر. جرّب تحديث الصفحة أو الدخول من التطبيق على الجوال.',
+          null,
+        ),
+      );
     }
   }
 

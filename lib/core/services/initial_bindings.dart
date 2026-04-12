@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/general_data_list/presentation/controllers/general_data_serves.dart';
 import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -79,7 +80,6 @@ String userName = '';
 class InitialBindings implements Bindings {
   @override
   void dependencies() async {
-    Firebase.initializeApp();
     NetworkInfo networkInfo = NetworkInfo();
     final connected = await networkInfo.isConnected;
     Get.lazyPut<NetworkInfo>(() => NetworkInfo(), fenix: true);
@@ -139,19 +139,22 @@ class InitialBindings implements Bindings {
     );
     Get.lazyPut<DebtsDataService>(() => DebtsDataService(), fenix: true);
 
-    // firebase init
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-
-    connected
-        ? await NotificationFirebaseService.instance.intNotification()
-        : null;
+    // firebase: على الويب لا يوجد في [firebase_options] إعداد Web، فيرمي ويُبقى التطبيق بدون Firebase.
+    if (kIsWeb) {
+      startApp.value = true;
+    } else {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      if (connected) {
+        await NotificationFirebaseService.instance.intNotification();
+      }
+      final doc =
+          await FirebaseFirestore.instance.collection('Test').doc('Test').get();
+      final bool? value = doc.data()?['Test'] as bool?;
+      startApp.value = value ?? true;
+    }
     await initializeDateFormatting();
-    final doc =
-        await FirebaseFirestore.instance.collection('Test').doc('Test').get();
-    final bool? value = doc.data()?['Test'] as bool?;
-    startApp.value = value!;
     await Supabase.initialize(
       url: 'https://tigmezfjgepmzuefrogq.supabase.co',
       anonKey:

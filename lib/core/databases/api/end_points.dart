@@ -1,11 +1,10 @@
 // ignore_for_file: constant_identifier_names
 
-import '../../services/initial_bindings.dart';
-
 class EndPoints {
-  static String baserUrl =
-      startApp.value ? "http://doctorbike.mj-sall.com/api/" : '';
-  static const String baserUrlForImage = "http://doctorbike.mj-sall.com/";
+  /// ثابت: لا تربطه بـ [startApp] لأن أول قراءة لـ Firebase قد تجعل baseUrl فارغاً
+  /// فيتجه Dio إلى نفس أصل الويب (localhost) ويبدو اللوجين عالقاً.
+  static const String baserUrl = "https://dr-bike.duosparktech.com/api/";
+  static const String baserUrlForImage = "https://dr-bike.duosparktech.com/";
 
   static const String register = 'register';
   static const String sendCode = 'send/code';

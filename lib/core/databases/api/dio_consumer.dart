@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
 
 import '../../../routes/app_routes.dart';
+import '../../helpers/api_error_message.dart';
 import '../../errors/error_model.dart';
 import '../../errors/expentions.dart';
 import '../../services/languague_service.dart';
@@ -72,9 +73,12 @@ class DioConsumer extends ApiConsumer {
         // رسالة مخصصة للمستخدم
         errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة بعد قليل.";
       } else {
-        errorMessage = (data is Map && data['message'] != null)
-            ? data['message']
-            : e.message ?? 'حدث خطأ غير معروف';
+        final dynamic rawMsg =
+            (data is Map && data['message'] != null) ? data['message'] : e.message;
+        errorMessage = apiErrorMessageFromPayload(
+          rawMsg,
+          fallback: 'حدث خطأ غير معروف',
+        );
       }
 
       if (data is Map && data['message'] == 'Unauthenticated.') {
@@ -130,9 +134,12 @@ class DioConsumer extends ApiConsumer {
         // رسالة مخصصة للمستخدم
         errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة بعد قليل.";
       } else {
-        errorMessage = (data is Map && data['message'] != null)
-            ? data['message']
-            : e.message ?? 'حدث خطأ غير معروف';
+        final dynamic rawMsg =
+            (data is Map && data['message'] != null) ? data['message'] : e.message;
+        errorMessage = apiErrorMessageFromPayload(
+          rawMsg,
+          fallback: 'حدث خطأ غير معروف',
+        );
       }
       if (data is Map && data['message'] == 'Unauthenticated.') {
         await DefaultCacheManager().emptyCache();

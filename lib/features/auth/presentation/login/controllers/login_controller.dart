@@ -1,7 +1,9 @@
 import 'package:doctorbike/core/services/user_data.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/api_error_message.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../routes/app_routes.dart';
@@ -35,21 +37,25 @@ class LoginController extends GetxController {
   }
 
   void sendOtp(BuildContext context) async {
-    if (formKey.currentState!.validate()) {
-      isLoading(true);
+    if (!formKey.currentState!.validate()) return;
+    isLoading(true);
+    try {
       final result = await login.call(
         email: emailController.text,
         password: passwordController.text,
-        fcmToken: NotificationFirebaseService.instance.finalToken.isEmpty
+        // على الويب لا نُهيّئ Firebase؛ قراءة FCM ترمي FirebaseException مع interop.
+        fcmToken: kIsWeb
             ? 'no_token'
-            : NotificationFirebaseService.instance.finalToken,
+            : (NotificationFirebaseService.instance.finalToken.isEmpty
+                ? 'no_token'
+                : NotificationFirebaseService.instance.finalToken),
       );
       result.fold(
         (failure) {
           Helpers.showCustomDialogError(
             context: context,
             title: 'error'.tr,
-            message: failure.data['message'].toString(),
+            message: userFacingMessageFromFailure(failure),
           );
         },
         (success) {
@@ -69,6 +75,16 @@ class LoginController extends GetxController {
           );
         },
       );
+    } catch (e, st) {
+      debugPrint('login error: $e\n$st');
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: kIsWeb
+            ? 'حدث خطأ أثناء تسجيل الدخول. تحقق من الاتصال والبيانات وحاول مرة أخرى.'
+            : e.toString(),
+      );
+    } finally {
       isLoading(false);
     }
   }

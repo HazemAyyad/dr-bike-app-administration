@@ -10,11 +10,25 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final epRaw = json[ApiKey.employee_permissions];
+    final List<PermissionModel> permissions = [];
+    if (epRaw is List) {
+      for (final p in epRaw) {
+        if (p is Map) {
+          permissions.add(
+            PermissionModel.fromJson(Map<String, dynamic>.from(p)),
+          );
+        }
+      }
+    }
+    final userRaw = json[ApiKey.user];
     return UserModel(
-      user: UserDataModel.fromJson(json[ApiKey.user] ?? {}),
-      employeePermissions: (json[ApiKey.employee_permissions] as List? ?? [])
-          .map((p) => PermissionModel.fromJson(p))
-          .toList(),
+      user: UserDataModel.fromJson(
+        userRaw is Map
+            ? Map<String, dynamic>.from(userRaw)
+            : <String, dynamic>{},
+      ),
+      employeePermissions: permissions,
     );
   }
 
