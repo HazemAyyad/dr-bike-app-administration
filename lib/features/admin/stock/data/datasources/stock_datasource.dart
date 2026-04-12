@@ -41,7 +41,7 @@ class StockDatasource {
       return mapListFromResponseKey(
         response.data,
         key,
-        AllStockProductsModel.fromJson,
+        (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
       );
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -109,7 +109,7 @@ class StockDatasource {
       return mapListFromResponseKey(
         response.data,
         'closeoutes',
-        AllStockProductsModel.fromJson,
+        (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
       );
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -132,7 +132,7 @@ class StockDatasource {
       return mapListFromResponseKey(
         response.data,
         key,
-        ProductModel.fromJson,
+        (Map<String, dynamic> m) => ProductModel.fromJson(m),
       );
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -155,7 +155,7 @@ class StockDatasource {
       return mapListFromResponseKey(
         response.data,
         'products',
-        AllStockProductsModel.fromJson,
+        (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
       );
     } on DioException catch (e) {
       Get.snackbar(

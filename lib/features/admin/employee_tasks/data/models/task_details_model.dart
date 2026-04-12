@@ -87,7 +87,10 @@ class TaskDetailsModel extends TaskDetailsEntity {
       adminImg: mapImgList(json[ApiKey.admin_img]),
       employeeImg: mapImgList(json[ApiKey.employee_img]),
       audio: ShowNetImage.getPhoto(asNullableString(json[ApiKey.audio])),
-      subTasks: mapList(json[ApiKey.sub_tasks], SubTaskModel.fromJson),
+      subTasks: mapList(
+        json[ApiKey.sub_tasks],
+        (Map<String, dynamic> m) => SubTaskModel.fromJson(m),
+      ),
     );
   }
 

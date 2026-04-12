@@ -141,7 +141,10 @@ class EmployeeTasksDatasource {
         );
         return [];
       }
-      return mapList(listRaw, EmployeeTaskModel.fromJson);
+      return mapList(
+        listRaw,
+        (Map<String, dynamic> m) => EmployeeTaskModel.fromJson(m),
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -17,7 +17,10 @@ class UserTransactionsDataModel {
     return UserTransactionsDataModel(
       status: asString(json[ApiKey.status], 'failed'),
       customerBalance: asString(json['person_balance'], '0'),
-      customerDebts: mapList(json['person_debts'], Debt.fromJson),
+      customerDebts: mapList(
+        json['person_debts'],
+        (Map<String, dynamic> m) => Debt.fromJson(m),
+      ),
     );
   }
 

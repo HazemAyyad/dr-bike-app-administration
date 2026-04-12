@@ -43,9 +43,15 @@ class DashbordEmployeeDetailsModel {
       startWorkTime: asString(json['start_work_time'], '0'),
       endWorkTime: asString(json['end_work_time'], '0'),
       totalWorkHours: asString(json['total_work_hours'], '0'),
-      permissions: mapList(json['permissions'], Permission.fromJson),
+      permissions: mapList(
+        json['permissions'],
+        (Map<String, dynamic> m) => Permission.fromJson(m),
+      ),
       user: User.fromJson(asMap(json['user'])),
-      tasks: mapList(json['tasks'], Task.fromJson),
+      tasks: mapList(
+        json['tasks'],
+        (Map<String, dynamic> m) => Task.fromJson(m),
+      ),
     );
   }
 }
