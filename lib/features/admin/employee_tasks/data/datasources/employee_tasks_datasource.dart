@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
@@ -118,14 +119,29 @@ class EmployeeTasksDatasource {
                 ? EndPoints.getCompletedTasks
                 : EndPoints.getCanceledTasks,
       );
-      List<EmployeeTaskModel> tasks = (response.data[page == 0
-              ? 'ongoing employee tasks'
-              : page == 1
-                  ? 'completed employee tasks'
-                  : 'canceled employee tasks'] as List)
-          .map((e) => EmployeeTaskModel.fromJson(e))
-          .toList();
-      return tasks;
+      final raw = response.data;
+      if (raw is! Map) {
+        debugParseLog(
+          'EmployeeTasksDS',
+          'getEmployeeTasks: expected Map, got ${raw.runtimeType}',
+        );
+        return [];
+      }
+      final map = Map<String, dynamic>.from(raw);
+      final key = page == 0
+          ? 'ongoing employee tasks'
+          : page == 1
+              ? 'completed employee tasks'
+              : 'canceled employee tasks';
+      final listRaw = map[key];
+      if (listRaw == null) {
+        debugParseLog(
+          'EmployeeTasksDS',
+          'getEmployeeTasks: missing "$key", keys=${map.keys.toList()}',
+        );
+        return [];
+      }
+      return mapList(listRaw, EmployeeTaskModel.fromJson);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class DashbordEmployeeDetailsModel {
   final int id;
   final String userId;
@@ -31,23 +33,19 @@ class DashbordEmployeeDetailsModel {
 
   factory DashbordEmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
     return DashbordEmployeeDetailsModel(
-      id: json['id'] ?? 0,
-      userId: json['user_id'] ?? '0',
-      numberOfWorkHours: json['number_of_work_hours'] ?? '0',
-      hourWorkPrice: json['hour_work_price'] ?? '0',
-      debts: json['debts'] ?? '0',
-      salary: json['salary'] ?? '0',
-      points: json['points'] ?? '0',
-      startWorkTime: json['start_work_time'] ?? '0',
-      endWorkTime: json['end_work_time'] ?? '0',
-      totalWorkHours: json['total_work_hours'] ?? '0',
-      permissions: (json['permissions'] as List<dynamic>)
-          .map((e) => Permission.fromJson(e))
-          .toList(),
-      user: User.fromJson(json['user']),
-      tasks: (json['tasks'] as List<dynamic>)
-          .map((e) => Task.fromJson(e))
-          .toList(),
+      id: asInt(json['id']),
+      userId: asString(json['user_id'], '0'),
+      numberOfWorkHours: asString(json['number_of_work_hours'], '0'),
+      hourWorkPrice: asString(json['hour_work_price'], '0'),
+      debts: asString(json['debts'], '0'),
+      salary: asString(json['salary'], '0'),
+      points: asString(json['points'], '0'),
+      startWorkTime: asString(json['start_work_time'], '0'),
+      endWorkTime: asString(json['end_work_time'], '0'),
+      totalWorkHours: asString(json['total_work_hours'], '0'),
+      permissions: mapList(json['permissions'], Permission.fromJson),
+      user: User.fromJson(asMap(json['user'])),
+      tasks: mapList(json['tasks'], Task.fromJson),
     );
   }
 }
@@ -60,8 +58,8 @@ class Permission {
 
   factory Permission.fromJson(Map<String, dynamic> json) {
     return Permission(
-      id: json['id'],
-      name: json['name'],
+      id: asInt(json['id']),
+      name: asString(json['name']),
     );
   }
 }
@@ -74,8 +72,8 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      name: json['name'],
+      id: asInt(json['id']),
+      name: asString(json['name']),
     );
   }
 }
@@ -99,16 +97,12 @@ class Task {
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      id: json['id'],
-      employeeId: int.parse(json['employee_id']),
-      name: json['name'],
-      startTime: json['start_time'] != null
-          ? DateTime.parse(json['start_time'])
-          : DateTime.now(),
-      endTime: json['end_time'] != null
-          ? DateTime.parse(json['end_time'])
-          : DateTime.now(),
-      status: json['status'],
+      id: asInt(json['id']),
+      employeeId: asInt(json['employee_id']),
+      name: asString(json['name']),
+      startTime: parseApiDateTime(json['start_time']),
+      endTime: parseApiDateTime(json['end_time']),
+      status: asString(json['status']),
     );
   }
 }

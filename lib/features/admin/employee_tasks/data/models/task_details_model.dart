@@ -1,4 +1,5 @@
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../domain/entities/task_details_entiny.dart';
 
@@ -48,42 +49,45 @@ class TaskDetailsModel extends TaskDetailsEntity {
         );
 
   factory TaskDetailsModel.fromJson(Map<String, dynamic> json) {
+    final trt = json[ApiKey.task_recurrence_time];
+    final List<String> recurrenceTimes = trt is List
+        ? trt.map((e) => asString(e)).toList()
+        : <String>[];
+
+    List<String> mapImgList(dynamic raw) {
+      if (raw is! List) return [];
+      return raw
+          .map((e) => ShowNetImage.getPhoto(asNullableString(e)))
+          .toList();
+    }
+
     return TaskDetailsModel(
-      taskId: json[ApiKey.id] ?? 0,
-      taskName: json[ApiKey.name] ?? 'Unknown',
-      taskDescription: json[ApiKey.description] ?? '',
-      notes: json[ApiKey.notes] ?? '',
-      points: int.tryParse(json[ApiKey.points]?.toString() ?? "0") ?? 0,
-      notShownForEmployee:
-          (json[ApiKey.not_shown_for_employee]?.toString() ?? "0") == "1",
-      startTime: DateTime.tryParse(json[ApiKey.start_time] ?? "") ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-      endTime: DateTime.tryParse(json[ApiKey.end_time] ?? "") ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-      status: json[ApiKey.status] ?? '',
-      isForcedToUploadImg:
-          (json[ApiKey.is_forced_to_upload_img]?.toString() ?? "0") == "1",
-      taskRecurrence: json[ApiKey.task_recurrence] ?? '',
-      taskRecurrenceTime:
-          List<String>.from(json[ApiKey.task_recurrence_time] ?? []),
-      employeeId: json[ApiKey.employee_id] ?? 'Unknown',
-      employeeName: json[ApiKey.employee_name] ?? '',
-      isCanceled: (json[ApiKey.is_canceled]?.toString() ?? "0") == "1",
-      parentId: json[ApiKey.parent_id]?.toString(),
-      adminImg:
-          (json[ApiKey.admin_img] != null && json[ApiKey.admin_img] is List)
-              ? List<String>.from(
-                  json[ApiKey.admin_img].map((e) => ShowNetImage.getPhoto(e)))
-              : [],
-      employeeImg: (json[ApiKey.employee_img] != null &&
-              json[ApiKey.employee_img] is List)
-          ? List<String>.from(
-              json[ApiKey.employee_img].map((e) => ShowNetImage.getPhoto(e)))
-          : [],
-      audio: ShowNetImage.getPhoto(json[ApiKey.audio] ?? ''),
-      subTasks: (json[ApiKey.sub_tasks] as List<dynamic>? ?? [])
-          .map((e) => SubTaskModel.fromJson(e))
-          .toList(),
+      taskId: asInt(json[ApiKey.id]),
+      taskName: asString(json[ApiKey.name], 'Unknown'),
+      taskDescription: asString(json[ApiKey.description]),
+      notes: asString(json[ApiKey.notes]),
+      points: asInt(json[ApiKey.points]),
+      notShownForEmployee: asBool(json[ApiKey.not_shown_for_employee]),
+      startTime: parseApiDateTime(
+        json[ApiKey.start_time],
+        DateTime.fromMillisecondsSinceEpoch(0),
+      ),
+      endTime: parseApiDateTime(
+        json[ApiKey.end_time],
+        DateTime.fromMillisecondsSinceEpoch(0),
+      ),
+      status: asString(json[ApiKey.status]),
+      isForcedToUploadImg: asBool(json[ApiKey.is_forced_to_upload_img]),
+      taskRecurrence: asString(json[ApiKey.task_recurrence]),
+      taskRecurrenceTime: recurrenceTimes,
+      employeeId: asString(json[ApiKey.employee_id], 'Unknown'),
+      employeeName: asString(json[ApiKey.employee_name]),
+      isCanceled: asBool(json[ApiKey.is_canceled]),
+      parentId: asNullableString(json[ApiKey.parent_id]),
+      adminImg: mapImgList(json[ApiKey.admin_img]),
+      employeeImg: mapImgList(json[ApiKey.employee_img]),
+      audio: ShowNetImage.getPhoto(asNullableString(json[ApiKey.audio])),
+      subTasks: mapList(json[ApiKey.sub_tasks], SubTaskModel.fromJson),
     );
   }
 
@@ -134,23 +138,21 @@ class SubTaskModel extends SubTaskEntity {
         );
 
   factory SubTaskModel.fromJson(Map<String, dynamic> json) {
+    List<String> mapImgList(dynamic raw) {
+      if (raw is! List) return [];
+      return raw
+          .map((e) => ShowNetImage.getPhoto(asNullableString(e)))
+          .toList();
+    }
+
     return SubTaskModel(
-      id: json[ApiKey.id] ?? 0,
-      name: json[ApiKey.name] ?? '',
-      description: json[ApiKey.description] ?? '',
-      status: json[ApiKey.status] ?? '',
-      isForcedToUploadImg:
-          (json[ApiKey.is_forced_to_upload_img]?.toString() ?? "0") == "1",
-      adminImg:
-          (json[ApiKey.admin_img] != null && json[ApiKey.admin_img] is List)
-              ? List<String>.from(
-                  json[ApiKey.admin_img].map((e) => ShowNetImage.getPhoto(e)))
-              : [],
-      employeeImg: (json[ApiKey.employee_img] != null &&
-              json[ApiKey.employee_img] is List)
-          ? List<String>.from(
-              json[ApiKey.employee_img].map((e) => ShowNetImage.getPhoto(e)))
-          : [],
+      id: asInt(json[ApiKey.id]),
+      name: asString(json[ApiKey.name]),
+      description: asString(json[ApiKey.description]),
+      status: asString(json[ApiKey.status]),
+      isForcedToUploadImg: asBool(json[ApiKey.is_forced_to_upload_img]),
+      adminImg: mapImgList(json[ApiKey.admin_img]),
+      employeeImg: mapImgList(json[ApiKey.employee_img]),
     );
   }
 
@@ -174,9 +176,7 @@ class ImagesPathInfoModel extends ImagesPathInfoEntity {
   factory ImagesPathInfoModel.fromJson(Map<String, dynamic> json) {
     return ImagesPathInfoModel(
       subtaskAdminImgPath: ShowNetImage.getPhoto(
-        _emptyToNull(
-          json[ApiKey.subtask_admin_img_path],
-        ),
+        _emptyToNull(asNullableString(json[ApiKey.subtask_admin_img_path])),
       ),
     );
   }

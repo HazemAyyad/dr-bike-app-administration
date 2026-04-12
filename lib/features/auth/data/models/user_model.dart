@@ -1,28 +1,7 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
 import 'login_response_parser.dart';
-
-/// تحويل آمن لقيم الـ API (int/double/String/null) إلى [String].
-String asString(dynamic value, [String fallback = '']) {
-  if (value == null) return fallback;
-  return value.toString();
-}
-
-/// حقول اختيارية قد تكون null أو فارغة بعد التحويل.
-String? asNullableString(dynamic value) {
-  if (value == null) return null;
-  final s = value.toString();
-  return s.isEmpty ? null : s;
-}
-
-/// [id] وغيره من الأعداد الصحيحة في JSON قد يصل كـ int أو double أو String.
-int asInt(dynamic value, [int fallback = 0]) {
-  if (value == null) return fallback;
-  if (value is int) return value;
-  if (value is double) return value.round();
-  if (value is String) return int.tryParse(value) ?? fallback;
-  return fallback;
-}
 
 class UserModel {
   final UserDataModel user;

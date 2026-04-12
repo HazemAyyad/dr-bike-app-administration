@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class UserTransactionsDataModel {
@@ -14,12 +15,9 @@ class UserTransactionsDataModel {
 
   factory UserTransactionsDataModel.fromJson(Map<String, dynamic> json) {
     return UserTransactionsDataModel(
-      status: json[ApiKey.status] ?? 'failed',
-      customerBalance: (json['person_balance'] ?? 0.0).toString(),
-      customerDebts: (json['person_debts'] as List<dynamic>?)
-              ?.map((e) => Debt.fromJson(e))
-              .toList() ??
-          [],
+      status: asString(json[ApiKey.status], 'failed'),
+      customerBalance: asString(json['person_balance'], '0'),
+      customerDebts: mapList(json['person_debts'], Debt.fromJson),
     );
   }
 
@@ -61,21 +59,18 @@ class Debt {
 
   factory Debt.fromJson(Map<String, dynamic> json) {
     return Debt(
-      id: json[ApiKey.id] ?? 0,
-      customerId: json[ApiKey.customer_id] ?? 0,
-      customerName: json[ApiKey.customer_name] ?? '',
-      isCanceledCustomer: json[ApiKey.customer_is_canceled] == '1',
-      debtType: json[ApiKey.debt_type] ?? '',
-      dueDate: json[ApiKey.due_date] != null
-          ? DateTime.parse(json[ApiKey.due_date])
-          : DateTime.now(),
-      total: json[ApiKey.total] ?? '0',
-      receiptImage: ShowNetImage.getPhoto(json[ApiKey.receipt_image]),
-      notes: json[ApiKey.notes] ?? '',
-      debtCreatedAt: json[ApiKey.debt_created_at] != null
-          ? DateTime.parse(json[ApiKey.debt_created_at])
-          : DateTime.now(),
-      status: json[ApiKey.status] ?? '',
+      id: asInt(json[ApiKey.id]),
+      customerId: asInt(json[ApiKey.customer_id]),
+      customerName: asString(json[ApiKey.customer_name]),
+      isCanceledCustomer: asBool(json[ApiKey.customer_is_canceled]) ||
+          asString(json[ApiKey.customer_is_canceled]) == '1',
+      debtType: asString(json[ApiKey.debt_type]),
+      dueDate: parseApiDateTime(json[ApiKey.due_date]),
+      total: asString(json[ApiKey.total], '0'),
+      receiptImage: ShowNetImage.getPhoto(asNullableString(json[ApiKey.receipt_image])),
+      notes: asNullableString(json[ApiKey.notes]),
+      debtCreatedAt: parseApiDateTime(json[ApiKey.debt_created_at]),
+      status: asString(json[ApiKey.status]),
     );
   }
 

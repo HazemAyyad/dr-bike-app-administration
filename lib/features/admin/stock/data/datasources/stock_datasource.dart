@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
+import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../core/errors/error_model.dart';
 import '../../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
@@ -32,15 +33,16 @@ class StockDatasource {
                   ? EndPoints.getUnarchivedCloseouts
                   : EndPoints.getProductsList,
           queryParameters: {'page': page});
-      List<AllStockProductsModel> allStockProductsList =
-          (response.data[ifCombinations
-                  ? 'combinations'
-                  : ifCloseouts
-                      ? 'closeoutes'
-                      : 'products'] as List)
-              .map((e) => AllStockProductsModel.fromJson(e))
-              .toList();
-      return allStockProductsList;
+      final key = ifCombinations
+          ? 'combinations'
+          : ifCloseouts
+              ? 'closeoutes'
+              : 'products';
+      return mapListFromResponseKey(
+        response.data,
+        key,
+        AllStockProductsModel.fromJson,
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -60,9 +62,9 @@ class StockDatasource {
     try {
       final response = await api.post(EndPoints.getProductDetails,
           queryParameters: {'product_id': productId});
-      ProductDetailsModel productDetails =
-          ProductDetailsModel.fromJson(response.data['product']);
-      return productDetails;
+      final raw = response.data;
+      final productMap = raw is Map ? asMap((raw as Map)['product']) : <String, dynamic>{};
+      return ProductDetailsModel.fromJson(productMap);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -104,11 +106,11 @@ class StockDatasource {
   Future<List<AllStockProductsModel>> getArchived() async {
     try {
       final response = await api.get(EndPoints.getArchivedCloseouts);
-      List<AllStockProductsModel> archivedProductsList =
-          (response.data['closeoutes'] as List)
-              .map((e) => AllStockProductsModel.fromJson(e))
-              .toList();
-      return archivedProductsList;
+      return mapListFromResponseKey(
+        response.data,
+        'closeoutes',
+        AllStockProductsModel.fromJson,
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -126,11 +128,12 @@ class StockDatasource {
     try {
       final response = await api
           .get(isProject ? EndPoints.getProjects : EndPoints.getCategories);
-      List<ProductModel> categoriesList =
-          (response.data[isProject ? 'projects' : 'sub_categories'] as List)
-              .map((e) => ProductModel.fromJson(e))
-              .toList();
-      return categoriesList;
+      final key = isProject ? 'projects' : 'sub_categories';
+      return mapListFromResponseKey(
+        response.data,
+        key,
+        ProductModel.fromJson,
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -149,14 +152,11 @@ class StockDatasource {
     try {
       final response = await api
           .post(EndPoints.searchProducts, queryParameters: {'name': name});
-      if (response.data['products'] == null) {
-        return [];
-      }
-      List<AllStockProductsModel> searchProductsList =
-          (response.data['products'] as List)
-              .map((e) => AllStockProductsModel.fromJson(e))
-              .toList();
-      return searchProductsList;
+      return mapListFromResponseKey(
+        response.data,
+        'products',
+        AllStockProductsModel.fromJson,
+      );
     } on DioException catch (e) {
       Get.snackbar(
         "error".tr,

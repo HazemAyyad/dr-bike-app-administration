@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../domain/entities/employee_task_entity.dart';
@@ -30,20 +31,16 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
 
   factory EmployeeTaskModel.fromJson(Map<String, dynamic> json) {
     return EmployeeTaskModel(
-      taskId: json[ApiKey.task_id] ?? 0,
-      taskName: json[ApiKey.task_name] ?? 'Unknown',
-      employeeId: json[ApiKey.employee_id] ?? 'Unknown',
-      employeeName: json[ApiKey.employee_name] ?? 'Unknown',
-      startTime: json[ApiKey.start_time] != null
-          ? DateTime.parse(json[ApiKey.start_time] ?? DateTime.now())
-          : DateTime.now(),
-      endTime: json[ApiKey.end_time] != null
-          ? DateTime.parse(json[ApiKey.end_time] ?? DateTime.now())
-          : DateTime.now(),
-      isCanceled: (json[ApiKey.is_canceled] ?? '0') == '1',
-      employeeImg: ShowNetImage.getPhoto(json[ApiKey.employee_img]),
-      adminImg: ShowNetImage.getPhoto(json[ApiKey.admin_img]),
-      audio: ShowNetImage.getPhoto(json[ApiKey.audio]),
+      taskId: asInt(json[ApiKey.task_id]),
+      taskName: asString(json[ApiKey.task_name], 'Unknown'),
+      employeeId: asString(json[ApiKey.employee_id], 'Unknown'),
+      employeeName: asString(json[ApiKey.employee_name], 'Unknown'),
+      startTime: parseApiDateTime(json[ApiKey.start_time]),
+      endTime: parseApiDateTime(json[ApiKey.end_time]),
+      isCanceled: asBool(json[ApiKey.is_canceled]),
+      employeeImg: ShowNetImage.getPhoto(asNullableString(json[ApiKey.employee_img])),
+      adminImg: ShowNetImage.getPhoto(asNullableString(json[ApiKey.admin_img])),
+      audio: ShowNetImage.getPhoto(asNullableString(json[ApiKey.audio])),
     );
   }
 
@@ -60,14 +57,4 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       ApiKey.audio: audio ?? 'no audio',
     };
   }
-
-  // static String? _emptyToNull(String? value) {
-  //   if (value == null) return null;
-  //   return (value.startsWith('public/') ||
-  //           value != 'no employee image' &&
-  //               value != 'no admin image' &&
-  //               value != 'no audio')
-  //       ? value
-  //       : null;
-  // }
 }
