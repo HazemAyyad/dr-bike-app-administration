@@ -147,6 +147,10 @@ class AuthImplement implements AuthRepository {
 
       final userModel = UserModel.fromJson(data);
       log('AuthLogin: parsed user name = ${userModel.user.name}', name: 'AuthLogin');
+      log(
+        'AuthLogin: employee ok id=${userModel.user.employee.id} userId=${userModel.user.employee.userId} points=${userModel.user.employee.points}',
+        name: 'AuthLogin',
+      );
 
       await UserData.saveUser(userModel);
       final userdata = await UserData.getSavedUser();

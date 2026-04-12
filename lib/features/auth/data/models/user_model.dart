@@ -2,6 +2,28 @@ import 'package:doctorbike/core/databases/api/end_points.dart';
 
 import 'login_response_parser.dart';
 
+/// تحويل آمن لقيم الـ API (int/double/String/null) إلى [String].
+String asString(dynamic value, [String fallback = '']) {
+  if (value == null) return fallback;
+  return value.toString();
+}
+
+/// حقول اختيارية قد تكون null أو فارغة بعد التحويل.
+String? asNullableString(dynamic value) {
+  if (value == null) return null;
+  final s = value.toString();
+  return s.isEmpty ? null : s;
+}
+
+/// [id] وغيره من الأعداد الصحيحة في JSON قد يصل كـ int أو double أو String.
+int asInt(dynamic value, [int fallback = 0]) {
+  if (value == null) return fallback;
+  if (value is int) return value;
+  if (value is double) return value.round();
+  if (value is String) return int.tryParse(value) ?? fallback;
+  return fallback;
+}
+
 class UserModel {
   final UserDataModel user;
   final List<PermissionModel> employeePermissions;
@@ -77,20 +99,23 @@ class UserDataModel {
   });
 
   factory UserDataModel.fromJson(Map<String, dynamic> json) {
+    final emp = json[ApiKey.employee];
     return UserDataModel(
-      id: json[ApiKey.id] ?? 0,
-      name: json[ApiKey.name] ?? '',
-      email: json[ApiKey.email] ?? '',
-      emailVerifiedAt: json[ApiKey.email_verified_at],
-      phone: json[ApiKey.phone] ?? '',
-      subPhone: json[ApiKey.sub_phone],
-      city: json[ApiKey.city],
-      address: json[ApiKey.address],
-      createdAt: json[ApiKey.created_at] ?? '',
-      updatedAt: json[ApiKey.updated_at] ?? '',
-      type: json[ApiKey.type] ?? '',
-      fcmToken: json[ApiKey.fcm_token],
-      employee: EmployeeModel.fromJson(json[ApiKey.employee] ?? {}),
+      id: asInt(json[ApiKey.id]),
+      name: asString(json[ApiKey.name]),
+      email: asString(json[ApiKey.email]),
+      emailVerifiedAt: asNullableString(json[ApiKey.email_verified_at]),
+      phone: asString(json[ApiKey.phone]),
+      subPhone: asNullableString(json[ApiKey.sub_phone]),
+      city: asNullableString(json[ApiKey.city]),
+      address: asNullableString(json[ApiKey.address]),
+      createdAt: asString(json[ApiKey.created_at]),
+      updatedAt: asString(json[ApiKey.updated_at]),
+      type: asString(json[ApiKey.type]),
+      fcmToken: asNullableString(json[ApiKey.fcm_token]),
+      employee: EmployeeModel.fromJson(
+        emp is Map ? Map<String, dynamic>.from(emp) : <String, dynamic>{},
+      ),
     );
   }
 
@@ -154,23 +179,23 @@ class EmployeeModel {
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     return EmployeeModel(
-      id: json[ApiKey.id] ?? 0,
-      userId: json['user_id'] ?? '',
-      points: json['points'] ?? '0',
-      hourWorkPrice: json['hour_work_price'] ?? '',
-      overtimeWorkPrice: json['overtime_work_price'] ?? '',
-      numberOfWorkHours: json['number_of_work_hours'] ?? '',
-      startWorkTime: json['start_work_time'] ?? '',
-      endWorkTime: json['end_work_time'] ?? '',
-      jobTitle: json['job_title'],
-      salary: json['salary'] ?? '',
-      debts: json['debts'] ?? '',
-      createdAt: json['created_at'] ?? '',
-      updatedAt: json['updated_at'] ?? '',
-      workTime: json['work_time'],
-      employeeImg: json['employee_img'] ?? '',
-      documentImg: json['document_img'] ?? '',
-      totalWorkHours: json['total_work_hours'] ?? '',
+      id: asInt(json[ApiKey.id]),
+      userId: asString(json['user_id']),
+      points: asString(json['points'], '0'),
+      hourWorkPrice: asString(json['hour_work_price']),
+      overtimeWorkPrice: asString(json['overtime_work_price']),
+      numberOfWorkHours: asString(json['number_of_work_hours']),
+      startWorkTime: asString(json['start_work_time']),
+      endWorkTime: asString(json['end_work_time']),
+      jobTitle: asNullableString(json['job_title']),
+      salary: asString(json['salary']),
+      debts: asString(json['debts']),
+      createdAt: asString(json['created_at']),
+      updatedAt: asString(json['updated_at']),
+      workTime: asNullableString(json['work_time']),
+      employeeImg: asString(json['employee_img']),
+      documentImg: asString(json['document_img']),
+      totalWorkHours: asString(json['total_work_hours']),
     );
   }
 
@@ -210,9 +235,9 @@ class PermissionModel {
 
   factory PermissionModel.fromJson(Map<String, dynamic> json) {
     return PermissionModel(
-      permissionId: json[ApiKey.permission_id] ?? 0,
-      permissionName: json[ApiKey.permission_name] ?? '',
-      permissionNameEn: json[ApiKey.permission_name_en] ?? '',
+      permissionId: asInt(json[ApiKey.permission_id]),
+      permissionName: asString(json[ApiKey.permission_name]),
+      permissionNameEn: asString(json[ApiKey.permission_name_en]),
     );
   }
 
