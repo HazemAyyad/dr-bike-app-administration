@@ -1,4 +1,5 @@
-import '../../../../../core/helpers/show_net_image.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class MaintenanceDataModel {
   final int id;
@@ -22,15 +23,16 @@ class MaintenanceDataModel {
   });
 
   factory MaintenanceDataModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return MaintenanceDataModel(
-      id: json['id'],
-      customerName: json['customer_name'] ?? '',
-      sellerName: json['seller_name'] ?? '',
-      receiptDate: json['receipt_date'] ?? '',
-      receiptTime: json['receipt_time'] ?? '',
-      createdAt: json['created_at'] ?? '',
-      status: json['status'] ?? '',
-      mediaFiles: ShowNetImage.getPhoto(json['media_files']),
+      id: asInt(j['id']),
+      customerName: asString(j['customer_name']),
+      sellerName: asNullableString(j['seller_name']),
+      receiptDate: asString(j['receipt_date']),
+      receiptTime: asString(j['receipt_time']),
+      createdAt: asString(j['created_at']),
+      status: asString(j['status']),
+      mediaFiles: ShowNetImage.getPhoto(asNullableString(j['media_files'])),
     );
   }
 

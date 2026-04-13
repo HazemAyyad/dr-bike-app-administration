@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -19,12 +20,13 @@ class FinancialDuesModel extends FinancialDuesEntity {
         );
 
   factory FinancialDuesModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FinancialDuesModel(
-      id: json[ApiKey.id] ?? 0,
-      employeeName: json[ApiKey.user_name] ?? 'unknown',
-      salary: json[ApiKey.salary] ?? '0',
-      debts: json[ApiKey.debts] ?? '0',
-      employeeImg: ShowNetImage.getPhoto(json[ApiKey.employee_img]),
+      id: asInt(j[ApiKey.id]),
+      employeeName: asString(j[ApiKey.user_name], 'unknown'),
+      salary: asString(j[ApiKey.salary], '0'),
+      debts: asString(j[ApiKey.debts], '0'),
+      employeeImg: ShowNetImage.getPhoto(asNullableString(j[ApiKey.employee_img])),
     );
   }
 

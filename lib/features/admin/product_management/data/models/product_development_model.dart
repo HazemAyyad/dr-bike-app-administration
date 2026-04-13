@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class ProductDevelopmentModel {
   final int id;
   final String productName;
@@ -14,12 +16,13 @@ class ProductDevelopmentModel {
   });
 
   factory ProductDevelopmentModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProductDevelopmentModel(
-      id: json['id'] ?? 0,
-      productName: json['product_name'] ?? '',
-      productImage: json['product_image'] ?? '',
-      description: json['description'] ?? '',
-      currentStep: json['current_step'] ?? '',
+      id: asInt(j['id']),
+      productName: asString(j['product_name']),
+      productImage: asString(j['product_image']),
+      description: asString(j['description']),
+      currentStep: asString(j['current_step']),
     );
   }
 

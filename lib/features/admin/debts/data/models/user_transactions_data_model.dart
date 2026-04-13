@@ -14,12 +14,15 @@ class UserTransactionsDataModel {
   });
 
   factory UserTransactionsDataModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return UserTransactionsDataModel(
-      status: asString(json[ApiKey.status], 'failed'),
-      customerBalance: asString(json['person_balance'], '0'),
-      customerDebts: mapList(
-        json['person_debts'],
+      status: asString(j[ApiKey.status], 'failed'),
+      customerBalance: asString(j['person_balance'], '0'),
+      customerDebts: mapListFromResponseKey(
+        j,
+        'person_debts',
         (Map<String, dynamic> m) => Debt.fromJson(m),
+        debugScope: 'UserTransactionsDataModel',
       ),
     );
   }
@@ -61,19 +64,20 @@ class Debt {
   });
 
   factory Debt.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Debt(
-      id: asInt(json[ApiKey.id]),
-      customerId: asInt(json[ApiKey.customer_id]),
-      customerName: asString(json[ApiKey.customer_name]),
-      isCanceledCustomer: asBool(json[ApiKey.customer_is_canceled]) ||
-          asString(json[ApiKey.customer_is_canceled]) == '1',
-      debtType: asString(json[ApiKey.debt_type]),
-      dueDate: parseApiDateTime(json[ApiKey.due_date]),
-      total: asString(json[ApiKey.total], '0'),
-      receiptImage: ShowNetImage.getPhoto(asNullableString(json[ApiKey.receipt_image])),
-      notes: asNullableString(json[ApiKey.notes]),
-      debtCreatedAt: parseApiDateTime(json[ApiKey.debt_created_at]),
-      status: asString(json[ApiKey.status]),
+      id: asInt(j[ApiKey.id]),
+      customerId: asInt(j[ApiKey.customer_id]),
+      customerName: asString(j[ApiKey.customer_name]),
+      isCanceledCustomer: asBool(j[ApiKey.customer_is_canceled]),
+      debtType: asString(j[ApiKey.debt_type]),
+      dueDate: parseApiDateTime(j[ApiKey.due_date]),
+      total: asString(j[ApiKey.total], '0'),
+      receiptImage:
+          ShowNetImage.getPhoto(asNullableString(j[ApiKey.receipt_image])),
+      notes: asNullableString(j[ApiKey.notes]),
+      debtCreatedAt: parseApiDateTime(j[ApiKey.debt_created_at]),
+      status: asString(j[ApiKey.status]),
     );
   }
 

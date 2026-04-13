@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../domain/entities/special_task_details_entities.dart';
@@ -30,23 +31,35 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
         );
 
   factory SpecialTaskDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    List<String> mapAdminImg(dynamic raw) {
+      if (raw == null || raw == 'null') return [];
+      if (raw is! List) return [];
+      return raw
+          .map((e) => ShowNetImage.getPhoto(asNullableString(e)))
+          .toList();
+    }
+
+    List<String> mapRecurrenceTimes(dynamic raw) {
+      if (raw is! List) return [];
+      return raw.map((e) => asString(e)).toList();
+    }
+
     return SpecialTaskDetailsModel(
-      taskId: json['id'] ?? 0,
-      taskName: json['name'] ?? '',
-      taskDescription: json['description'] ?? '',
-      notes: json['notes'] ?? '',
-      adminImg: json['admin_img'] != null && json['admin_img'] != 'null'
-          ? List<String>.from(
-              json['admin_img'].map((e) => ShowNetImage.getPhoto(e)))
-          : [],
-      audio: ShowNetImage.getPhoto(json['audio']),
-      taskRecurrence: json['task_recurrence'] ?? '',
-      taskRecurrenceTime: List<String>.from(json['task_recurrence_time'] ?? []),
-      subTasks: (json['sub_tasks'] as List<dynamic>? ?? [])
-          .map((e) => SubTaskModel.fromJson(e))
-          .toList(),
-      startTime: DateTime.parse(json['start_time'] ?? DateTime.now()),
-      endTime: DateTime.parse(json['end_time'] ?? DateTime.now()),
+      taskId: asInt(j['id']),
+      taskName: asString(j['name']),
+      taskDescription: asString(j['description']),
+      notes: asString(j['notes']),
+      adminImg: mapAdminImg(j['admin_img']),
+      audio: ShowNetImage.getPhoto(asNullableString(j['audio'])),
+      taskRecurrence: asString(j['task_recurrence']),
+      taskRecurrenceTime: mapRecurrenceTimes(j['task_recurrence_time']),
+      subTasks: mapList(
+        j['sub_tasks'],
+        (Map<String, dynamic> m) => SubTaskModel.fromJson(m),
+      ),
+      startTime: parseApiDateTime(j['start_time']),
+      endTime: parseApiDateTime(j['end_time']),
     );
   }
 }
@@ -71,18 +84,24 @@ class SubTaskModel extends SubTaskEntity {
         );
 
   factory SubTaskModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    List<String> mapAdminImg(dynamic raw) {
+      if (raw == null || raw == 'null') return [];
+      if (raw is! List) return [];
+      return raw
+          .map((e) => ShowNetImage.getPhoto(asNullableString(e)))
+          .toList();
+    }
+
     return SubTaskModel(
-      subTaskId: json['id'] ?? 0,
-      specialTaskId: json['special_task_id'] ?? '',
-      subTaskName: json['name'] ?? '',
-      subTaskDescription: json['description'] ?? '',
-      status: json['status'] ?? '',
-      adminImg: json['admin_img'] != null && json['admin_img'] != 'null'
-          ? List<String>.from(
-              json['admin_img'].map((e) => ShowNetImage.getPhoto(e)))
-          : [],
+      subTaskId: asInt(j['id']),
+      specialTaskId: asString(j['special_task_id']),
+      subTaskName: asString(j['name']),
+      subTaskDescription: asString(j['description']),
+      status: asString(j['status']),
+      adminImg: mapAdminImg(j['admin_img']),
       forceEmployeeToAddImg:
-          (json['force_employee_to_add_img_for_sub_task'] ?? "0") == "1",
+          asBool(j['force_employee_to_add_img_for_sub_task']),
     );
   }
 }

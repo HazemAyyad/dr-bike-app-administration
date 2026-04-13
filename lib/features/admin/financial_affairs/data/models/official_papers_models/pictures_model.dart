@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class PictureModel {
@@ -16,12 +17,13 @@ class PictureModel {
   });
 
   factory PictureModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return PictureModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      file: ShowNetImage.getPhoto(json['file']),
-      createdAt: json['created_at'] ?? '',
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      description: asString(j['description']),
+      file: ShowNetImage.getPhoto(asNullableString(j['file'])),
+      createdAt: asString(j['created_at']),
     );
   }
 

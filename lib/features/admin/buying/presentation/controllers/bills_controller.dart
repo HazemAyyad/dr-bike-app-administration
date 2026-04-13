@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:doctorbike/core/helpers/helpers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +21,28 @@ import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/get_billt_details_usecase.dart';
 import 'buying_serves.dart';
 import 'return_purchases_controller.dart';
+
+/// Resolves `bill_details` whether it is top-level or under `data`.
+Map<String, dynamic> _billDetailsMap(dynamic result) {
+  final m = asMap(result);
+  dynamic raw = m['bill_details'];
+  raw ??= asMap(m['data'])['bill_details'];
+  if (kDebugMode) {
+    debugParseLog(
+      'BillsController.getBillDetails',
+      'bill_detailsKeys=${asMap(raw).keys.toList()}',
+    );
+    final prods = asMap(raw)['products'];
+    if (prods is List && prods.isNotEmpty && prods.first is Map) {
+      final pm = Map<String, dynamic>.from(prods.first as Map);
+      debugParseLog(
+        'BillsController.getBillDetails',
+        'sampleProductFieldTypes=${pm.map((k, v) => MapEntry(k, v.runtimeType))}',
+      );
+    }
+  }
+  return asMap(raw);
+}
 
 class BillsController extends GetxController with GetTickerProviderStateMixin {
   final GetBillsUsecase getBillsUsecase;
@@ -147,6 +170,12 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     }
 
     final bills = await getBillsUsecase.call(page: '0');
+    if (kDebugMode) {
+      debugParseLog(
+        'BillsController.getBills',
+        'unfinished rawType=${bills.runtimeType} keys=${bills is Map ? (bills as Map).keys.toList() : []}',
+      );
+    }
     final allBillsTasks = mapListFromResponseKey(
       bills,
       'bills',
@@ -159,6 +188,12 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
     update();
 
     final billsArchive = await getBillsUsecase.call(page: '1');
+    if (kDebugMode) {
+      debugParseLog(
+        'BillsController.getBills',
+        'archive rawType=${billsArchive.runtimeType} keys=${billsArchive is Map ? (billsArchive as Map).keys.toList() : []}',
+      );
+    }
     final billsArchiveTasks = mapListFromResponseKey(
       billsArchive,
       'bills',
@@ -232,7 +267,7 @@ class BillsController extends GetxController with GetTickerProviderStateMixin {
         billId: billId,
         isDownload: isDownload,
       );
-      billDetails = BillDetailsModel.fromJson(result['bill_details']);
+      billDetails = BillDetailsModel.fromJson(_billDetailsMap(result));
     }
 
     isAddLoading(false);

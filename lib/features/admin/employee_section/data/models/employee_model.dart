@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -19,12 +20,13 @@ class EmployeeModel extends EmployeeEntity {
         );
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return EmployeeModel(
-      id: json[ApiKey.id] ?? 0,
-      name: json[ApiKey.employee_name] ?? 'unknown',
-      hourWorkPrice: json[ApiKey.hour_work_price] ?? '0',
-      points: json[ApiKey.points] ?? '0',
-      image: ShowNetImage.getPhoto(json[ApiKey.employee_img]),
+      id: asInt(j[ApiKey.id]),
+      name: asString(j[ApiKey.employee_name], 'unknown'),
+      hourWorkPrice: asString(j[ApiKey.hour_work_price], '0'),
+      points: asString(j[ApiKey.points], '0'),
+      image: ShowNetImage.getPhoto(asNullableString(j[ApiKey.employee_img])),
     );
   }
 

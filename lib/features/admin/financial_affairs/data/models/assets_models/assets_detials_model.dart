@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class AssetDetailsModel {
@@ -26,39 +27,46 @@ class AssetDetailsModel {
   });
 
   factory AssetDetailsModel.fromJson(Map<String, dynamic> json) {
-    final asset = json['asset'] ?? json; // في حال جاء الـ JSON مباشر من API
+    final root = Map<String, dynamic>.from(json);
+    final assetRaw = root['asset'] ?? root;
+    final asset = assetRaw is Map
+        ? Map<String, dynamic>.from(assetRaw)
+        : <String, dynamic>{};
+
+    List<String> mapMedia(dynamic raw) {
+      if (raw is! List) return [];
+      return raw.map((x) => ShowNetImage.getPhoto(asNullableString(x))).toList();
+    }
+
     return AssetDetailsModel(
-      id: asset['id'],
-      name: asset['name'] ?? '',
-      price: asset['price'] ?? '',
-      notes: asset['notes'] ?? '',
-      depreciationRate: asset['depreciation_rate'] ?? '',
-      monthsNumber: asset['months_number'] ?? '',
-      media: List<String>.from(
-        (asset['media'] ?? []).map((x) => ShowNetImage.getPhoto(x)),
+      id: asInt(asset['id']),
+      name: asString(asset['name']),
+      price: asString(asset['price']),
+      notes: asNullableString(asset['notes']),
+      depreciationRate: asString(asset['depreciation_rate']),
+      monthsNumber: asString(asset['months_number']),
+      media: mapMedia(asset['media']),
+      logs: mapList(
+        asset['logs'],
+        (Map<String, dynamic> m) => AssetLog.fromJson(m),
       ),
-      logs: asset['logs'] != null
-          ? List<AssetLog>.from(
-              asset['logs'].map((log) => AssetLog.fromJson(log)),
-            )
-          : [],
-      createdAt: DateTime.parse(asset['created_at']),
-      updatedAt: DateTime.parse(asset['updated_at']),
+      createdAt: parseApiDateTime(asset['created_at']),
+      updatedAt: parseApiDateTime(asset['updated_at']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "name": name,
-      "price": price,
-      "notes": notes,
-      "depreciation_rate": depreciationRate,
-      "months_number": monthsNumber,
-      "media": media,
-      "logs": logs.map((e) => e.toJson()).toList(),
-      "created_at": createdAt.toIso8601String(),
-      "updated_at": updatedAt.toIso8601String(),
+      'id': id,
+      'name': name,
+      'price': price,
+      'notes': notes,
+      'depreciation_rate': depreciationRate,
+      'months_number': monthsNumber,
+      'media': media,
+      'logs': logs.map((e) => e.toJson()).toList(),
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }
@@ -75,18 +83,19 @@ class AssetLog {
   });
 
   factory AssetLog.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return AssetLog(
-      total: json['total'] ?? '',
-      createdAt: DateTime.parse(json['created_at']),
-      type: json['type'] ?? '',
+      total: asString(j['total']),
+      createdAt: parseApiDateTime(j['created_at']),
+      type: asString(j['type']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "total": total,
-      "created_at": createdAt.toIso8601String(),
-      "type": type,
+      'total': total,
+      'created_at': createdAt.toIso8601String(),
+      'type': type,
     };
   }
 }

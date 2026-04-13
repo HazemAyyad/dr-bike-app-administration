@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class ProjectDetailsModel {
@@ -34,47 +35,52 @@ class ProjectDetailsModel {
   });
 
   factory ProjectDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    List<String> mapPhotoList(dynamic raw) {
+      if (raw is! List) return [];
+      return raw.map((x) => ShowNetImage.getPhoto(asNullableString(x))).toList();
+    }
+
+    final partnershipRaw = j['partnership'];
     return ProjectDetailsModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? "",
-      projectCost: json['project_cost'] ?? "",
-      images: List<String>.from(
-          json['images'].map((x) => ShowNetImage.getPhoto(x))),
-      paymentMethod: json['payment_method'] ?? "",
-      notes: json['notes'] ?? "",
-      partnershipPapers: List<String>.from(
-          json['partnership_papers'].map((x) => ShowNetImage.getPhoto(x))),
-      createdAt: json['created_at'] ?? "",
-      updatedAt: json['updated_at'] ?? "",
-      achievementPercentage: json['achievement_percentage'] ?? "",
-      status: json['status'] ?? "",
-      paymentNotes: json['payment_notes'] ?? "",
-      partnership: (json['partnership'] != null &&
-              json['partnership'] is Map<String, dynamic>)
-          ? PartnershipModel.fromJson(json['partnership'])
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      projectCost: asString(j['project_cost']),
+      images: mapPhotoList(j['images']),
+      paymentMethod: asString(j['payment_method']),
+      notes: asString(j['notes']),
+      partnershipPapers: mapPhotoList(j['partnership_papers']),
+      createdAt: asString(j['created_at']),
+      updatedAt: asString(j['updated_at']),
+      achievementPercentage: asString(j['achievement_percentage']),
+      status: asString(j['status']),
+      paymentNotes: asString(j['payment_notes']),
+      partnership: partnershipRaw is Map
+          ? PartnershipModel.fromJson(Map<String, dynamic>.from(partnershipRaw))
           : null,
-      products: (json['products'] as List<dynamic>)
-          .map((e) => ProjectProductModel.fromJson(e))
-          .toList(),
+      products: mapList(
+        j['products'],
+        (Map<String, dynamic> m) => ProjectProductModel.fromJson(m),
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "name": name,
-      "project_cost": projectCost,
-      "images": images,
-      "payment_method": paymentMethod,
-      "notes": notes,
-      "partnership_papers": partnershipPapers,
-      "created_at": createdAt,
-      "updated_at": updatedAt,
-      "achievement_percentage": achievementPercentage,
-      "status": status,
-      "payment_notes": paymentNotes,
-      "partnership": partnership?.toJson(),
-      "products": products.map((e) => e.toJson()).toList(),
+      'id': id,
+      'name': name,
+      'project_cost': projectCost,
+      'images': images,
+      'payment_method': paymentMethod,
+      'notes': notes,
+      'partnership_papers': partnershipPapers,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'achievement_percentage': achievementPercentage,
+      'status': status,
+      'payment_notes': paymentNotes,
+      'partnership': partnership?.toJson(),
+      'products': products.map((e) => e.toJson()).toList(),
     };
   }
 }
@@ -97,24 +103,25 @@ class PartnershipModel {
   });
 
   factory PartnershipModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return PartnershipModel(
-      customerId: json['customer_id'] ?? "",
-      customerName: json['customer_name'] ?? "",
-      sellerId: json['seller_id'] ?? "",
-      sellerName: json['seller_name'] ?? "",
-      share: json['share'] ?? "",
-      partnershipPercentage: json['partnership_percentage'] ?? "",
+      customerId: asNullableString(j['customer_id']),
+      customerName: asNullableString(j['customer_name']),
+      sellerId: asNullableString(j['seller_id']),
+      sellerName: asNullableString(j['seller_name']),
+      share: asString(j['share']),
+      partnershipPercentage: asString(j['partnership_percentage']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "customer_id": customerId,
-      "customer_name": customerName,
-      "seller_id": sellerId,
-      "seller_name": sellerName,
-      "share": share,
-      "partnership_percentage": partnershipPercentage,
+      'customer_id': customerId,
+      'customer_name': customerName,
+      'seller_id': sellerId,
+      'seller_name': sellerName,
+      'share': share,
+      'partnership_percentage': partnershipPercentage,
     };
   }
 }
@@ -129,16 +136,17 @@ class ProjectProductModel {
   });
 
   factory ProjectProductModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProjectProductModel(
-      productId: json['product_id'] ?? '0',
-      productName: json['product_name'] ?? "",
+      productId: asString(j['product_id'], '0'),
+      productName: asString(j['product_name']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "product_id": productId,
-      "product_name": productName,
+      'product_id': productId,
+      'product_name': productName,
     };
   }
 }

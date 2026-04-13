@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../models/all_boxes_logs_model.dart';
 import '../models/box_details_model.dart';
 import '../models/get_shown_boxes_model.dart';
@@ -12,6 +14,18 @@ class BoxesDatasource {
   final ApiConsumer api;
 
   BoxesDatasource({required this.api});
+
+  Map<String, dynamic> _unwrapResponse(dynamic raw) {
+    final root = asMap(raw);
+    final data = root['data'];
+    if (data is Map) {
+      final merged = Map<String, dynamic>.from(asMap(data));
+      if (root.containsKey('status')) merged['status'] = root['status'];
+      if (root.containsKey('message')) merged['message'] = root['message'];
+      return merged;
+    }
+    return root;
+  }
 
   // add box
   Future<Map<String, dynamic>> addBox({
@@ -52,8 +66,26 @@ class BoxesDatasource {
                 ? EndPoints.getHiddenBoxes
                 : EndPoints.getHiddenBoxes,
       );
-      final data = response.data['boxes'] as List;
-      return data.map((e) => ShownBoxesModel.fromJson(e)).toList();
+      final raw = response.data;
+      if (kDebugMode) {
+        debugParseLog(
+          'BoxesDatasource.getShownBoxes',
+          'endpoint screen=$screen rawKeys=${asMap(raw).keys.toList()}',
+        );
+        final sample = extractMapListFromResponse(raw, 'boxes');
+        if (sample.isNotEmpty) {
+          debugParseLog(
+            'BoxesDatasource.getShownBoxes',
+            'sampleShownBox=${sample.first}',
+          );
+        }
+      }
+      return mapListFromResponseKey(
+        raw,
+        'boxes',
+        (Map<String, dynamic> m) => ShownBoxesModel.fromJson(m),
+        debugScope: 'BoxesDatasource.getShownBoxes',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -70,8 +102,26 @@ class BoxesDatasource {
   Future<List<BoxLogModel>> getAllBoxesLogs() async {
     try {
       final response = await api.get(EndPoints.getBoxLogs);
-      final data = response.data['box_logs'] as List;
-      return data.map((e) => BoxLogModel.fromJson(e)).toList();
+      final raw = response.data;
+      if (kDebugMode) {
+        debugParseLog(
+          'BoxesDatasource.getAllBoxesLogs',
+          'rawKeys=${asMap(raw).keys.toList()}',
+        );
+        final sample = extractMapListFromResponse(raw, 'box_logs');
+        if (sample.isNotEmpty) {
+          debugParseLog(
+            'BoxesDatasource.getAllBoxesLogs',
+            'sampleLog=${sample.first}',
+          );
+        }
+      }
+      return mapListFromResponseKey(
+        raw,
+        'box_logs',
+        (Map<String, dynamic> m) => BoxLogModel.fromJson(m),
+        debugScope: 'BoxesDatasource.getAllBoxesLogs',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -115,8 +165,24 @@ class BoxesDatasource {
     try {
       final response =
           await api.post(EndPoints.showBox, data: {'box_id': boxId});
-      final data = response.data['box details'];
-      return BoxDetailsModel.fromJson(data as Map<String, dynamic>);
+      final raw = response.data;
+      final root = _unwrapResponse(raw);
+      if (kDebugMode) {
+        debugParseLog(
+          'BoxesDatasource.boxDetails',
+          'endpoint=${EndPoints.showBox} keys=${root.keys.toList()}',
+        );
+      }
+      dynamic details = root['box details'];
+      details ??= asMap(raw)['box details'];
+      final detailsMap = asMap(details);
+      if (kDebugMode && detailsMap.isNotEmpty) {
+        debugParseLog(
+          'BoxesDatasource.boxDetails',
+          'sampleFields=${detailsMap.map((k, v) => MapEntry(k, v.runtimeType))}',
+        );
+      }
+      return BoxDetailsModel.fromJson(detailsMap);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

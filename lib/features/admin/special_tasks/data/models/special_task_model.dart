@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
 import '../../domain/entities/special_tasks_entities.dart';
 
@@ -20,17 +21,14 @@ class SpecialTaskModel extends SpecialTaskEntity {
         );
 
   factory SpecialTaskModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return SpecialTaskModel(
-      id: json[ApiKey.id] ?? 0,
-      name: json[ApiKey.name] ?? 'Unknown',
-      startDate: json[ApiKey.start_date] != null
-          ? DateTime.parse(json[ApiKey.start_date])
-          : DateTime.now(),
-      endDate: json[ApiKey.end_date] != null
-          ? DateTime.parse(json[ApiKey.end_date])
-          : DateTime.now(),
-      isCanceled: json[ApiKey.is_canceled] == "1",
-      status: json[ApiKey.status] ?? '',
+      id: asInt(j[ApiKey.id]),
+      name: asString(j[ApiKey.name], 'Unknown'),
+      startDate: parseApiDateTime(j[ApiKey.start_date]),
+      endDate: parseApiDateTime(j[ApiKey.end_date]),
+      isCanceled: asBool(j[ApiKey.is_canceled]),
+      status: asString(j[ApiKey.status]),
     );
   }
 
@@ -40,7 +38,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
       ApiKey.name: name,
       ApiKey.start_date: startDate.toIso8601String(),
       ApiKey.end_date: endDate.toIso8601String(),
-      ApiKey.is_canceled: isCanceled ? "1" : "0",
+      ApiKey.is_canceled: isCanceled ? '1' : '0',
       ApiKey.status: status,
     };
   }

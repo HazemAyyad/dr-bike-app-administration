@@ -179,6 +179,8 @@
 //   }
 // }
 
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class GoalDetailsModel {
   final Goal goal;
   final List<GoalLog> goalLogs;
@@ -189,11 +191,10 @@ class GoalDetailsModel {
   });
 
   factory GoalDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return GoalDetailsModel(
-      goal: Goal.fromJson(json['goal']),
-      goalLogs: List<GoalLog>.from(
-        json['goal_logs'].map((x) => GoalLog.fromJson(x)),
-      ),
+      goal: Goal.fromJson(asMap(j['goal'])),
+      goalLogs: mapList(j['goal_logs'], (m) => GoalLog.fromJson(m)),
     );
   }
 
@@ -248,43 +249,30 @@ class Goal {
   });
 
   factory Goal.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Goal(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      type: json['type'] ?? '',
-      achievementPercentage: json['achievement_percentage'] ?? '',
-      currentValue: json['current_value'] ?? '',
-      targetedValue: json['targeted_value'] ?? '',
-      notes: json['notes'] ?? '',
-      createdAt: json['created_at'] ?? '',
-      updatedAt: json['updated_at'] ?? '',
-      isCanceled: json['is_canceled'] ?? '',
-      form: json['form'] ?? '',
-      scope: json['scope'] ?? '',
-      dueDate: json['due_date'] ?? '',
-      mainCategories: json['main_categories'] == null
-          ? []
-          : List<Category>.from(
-              json['main_categories'].map((x) => Category.fromJson(x)),
-            ),
-      subCategories: json['sub_categories'] == null
-          ? []
-          : List<SubCategory>.from(
-              json['sub_categories'].map((x) => SubCategory.fromJson(x)),
-            ),
-      products: json['products'] == null
-          ? []
-          : List<Product>.from(
-              json['products'].map((x) => Product.fromJson(x)),
-            ),
-      people: json['people'] == null
-          ? []
-          : List<Person>.from(
-              json['people'].map((x) => Person.fromJson(x)),
-            ),
-      box: json['box'] != null ? Box.fromJson(json['box']) : null,
-      employee:
-          json['employee'] != null ? Employee.fromJson(json['employee']) : null,
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      type: asString(j['type']),
+      achievementPercentage: asString(j['achievement_percentage']),
+      currentValue: asString(j['current_value']),
+      targetedValue: asString(j['targeted_value']),
+      notes: asNullableString(j['notes']),
+      createdAt: asString(j['created_at']),
+      updatedAt: asString(j['updated_at']),
+      isCanceled: asString(j['is_canceled']),
+      form: asString(j['form']),
+      scope: asString(j['scope']),
+      dueDate: asString(j['due_date']),
+      mainCategories: mapList(j['main_categories'], (m) => Category.fromJson(m)),
+      subCategories:
+          mapList(j['sub_categories'], (m) => SubCategory.fromJson(m)),
+      products: mapList(j['products'], (m) => Product.fromJson(m)),
+      people: mapList(j['people'], (m) => Person.fromJson(m)),
+      box: j['box'] == null ? null : Box.fromJson(asMap(j['box'])),
+      employee: j['employee'] == null
+          ? null
+          : Employee.fromJson(asMap(j['employee'])),
     );
   }
 
@@ -317,10 +305,13 @@ class Category {
 
   Category({required this.id, required this.name});
 
-  factory Category.fromJson(Map<String, dynamic> json) => Category(
-        id: json['category_id']?.toString() ?? '',
-        name: json['category_name'] ?? '',
-      );
+  factory Category.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return Category(
+      id: asString(j['category_id']),
+      name: asString(j['category_name']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'category_id': id,
@@ -334,10 +325,13 @@ class SubCategory {
 
   SubCategory({required this.id, required this.name});
 
-  factory SubCategory.fromJson(Map<String, dynamic> json) => SubCategory(
-        id: json['sub_category_id']?.toString() ?? '',
-        name: json['sub_category_name'] ?? '',
-      );
+  factory SubCategory.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return SubCategory(
+      id: asString(j['sub_category_id']),
+      name: asString(j['sub_category_name']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'sub_category_id': id,
@@ -351,10 +345,13 @@ class Product {
 
   Product({required this.id, required this.name});
 
-  factory Product.fromJson(Map<String, dynamic> json) => Product(
-        id: json['product_id']?.toString() ?? '',
-        name: json['product_name'] ?? '',
-      );
+  factory Product.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return Product(
+      id: asString(j['product_id']),
+      name: asString(j['product_name']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'product_id': id,
@@ -375,12 +372,15 @@ class Person {
     required this.sellerName,
   });
 
-  factory Person.fromJson(Map<String, dynamic> json) => Person(
-        customerId: json['customer_id']?.toString() ?? '',
-        customerName: json['customer_name'] ?? '',
-        sellerId: json['seller_id']?.toString() ?? '',
-        sellerName: json['seller_name'] ?? '',
-      );
+  factory Person.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return Person(
+      customerId: asString(j['customer_id']),
+      customerName: asString(j['customer_name']),
+      sellerId: asString(j['seller_id']),
+      sellerName: asString(j['seller_name']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'customer_id': customerId,
@@ -396,10 +396,13 @@ class Box {
 
   Box({required this.id, required this.name});
 
-  factory Box.fromJson(Map<String, dynamic> json) => Box(
-        id: json['id'] ?? 0,
-        name: json['name'] ?? '',
-      );
+  factory Box.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return Box(
+      id: asInt(j['id']),
+      name: asString(j['name']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -413,10 +416,13 @@ class Employee {
 
   Employee({required this.id, required this.name});
 
-  factory Employee.fromJson(Map<String, dynamic> json) => Employee(
-        id: json['id']?.toString() ?? '',
-        name: json['name'] ?? '',
-      );
+  factory Employee.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return Employee(
+      id: asString(j['id']),
+      name: asString(j['name']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -430,10 +436,13 @@ class GoalLog {
 
   GoalLog({required this.title, required this.description});
 
-  factory GoalLog.fromJson(Map<String, dynamic> json) => GoalLog(
-        title: json['title'] ?? '',
-        description: json['description'] ?? '',
-      );
+  factory GoalLog.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return GoalLog(
+      title: asString(j['title']),
+      description: asString(j['description']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'title': title,

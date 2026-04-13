@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/features/admin/general_data_list/domain/entity/add_person_entity.dart';
 
@@ -45,30 +46,32 @@ class PersonDataModel extends AddPersonEntity {
         );
 
   factory PersonDataModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    List<File> mapUrlList(dynamic raw) {
+      if (raw is! List) return [];
+      return raw
+          .map((e) => File(ShowNetImage.getPhoto(asNullableString(e))))
+          .toList();
+    }
+
     return PersonDataModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      address: json['address'] ?? '',
-      phone: json['phone'] ?? '',
-      subPhone: json['sub_phone'] ?? '',
-      jobTitle: json['job_title'] ?? '',
-      personType: json['type'] ?? '',
-      facebookUsername: json['facebook_username'] ?? '',
-      facebookLink: json['facebook_link'] ?? '',
-      instagramUsername: json['instagram_username'] ?? '',
-      instagramLink: json['instagram_link'] ?? '',
-      relatedPeople: json['related_people'] ?? '',
-      relativePhone: json['relative_phone'] ?? '',
-      relativeJobTitle: json['relative_job_title'] ?? '',
-      workAddress: json['work_address'] ?? '',
-      iDImage: (json['ID_image'] as List<dynamic>?)
-              ?.map((e) => File(ShowNetImage.getPhoto(e)))
-              .toList() ??
-          [],
-      licenseImage: (json['license_image'] as List<dynamic>?)
-              ?.map((e) => File(ShowNetImage.getPhoto(e)))
-              .toList() ??
-          [],
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      address: asString(j['address']),
+      phone: asString(j['phone']),
+      subPhone: asString(j['sub_phone']),
+      jobTitle: asString(j['job_title']),
+      personType: asString(j['type']),
+      facebookUsername: asString(j['facebook_username']),
+      facebookLink: asString(j['facebook_link']),
+      instagramUsername: asString(j['instagram_username']),
+      instagramLink: asString(j['instagram_link']),
+      relatedPeople: asString(j['related_people']),
+      relativePhone: asString(j['relative_phone']),
+      relativeJobTitle: asString(j['relative_job_title']),
+      workAddress: asString(j['work_address']),
+      iDImage: mapUrlList(j['ID_image']),
+      licenseImage: mapUrlList(j['license_image']),
     );
   }
 

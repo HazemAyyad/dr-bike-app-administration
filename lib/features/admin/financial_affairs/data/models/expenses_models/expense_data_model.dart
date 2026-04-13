@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class ExpenseModel {
@@ -16,22 +17,23 @@ class ExpenseModel {
   });
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ExpenseModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      price: json['price'] ?? '0.0',
-      createdAt: DateTime.parse(json['created_at']),
-      image: ShowNetImage.getPhoto(json['image']),
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      price: asString(j['price'], '0.0'),
+      createdAt: parseApiDateTime(j['created_at']),
+      image: ShowNetImage.getPhoto(asNullableString(j['image'])),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "name": name,
-      "price": price,
-      "created_at": createdAt.toIso8601String(),
-      "image": image,
+      'id': id,
+      'name': name,
+      'price': price,
+      'created_at': createdAt.toIso8601String(),
+      'image': image,
     };
   }
 }

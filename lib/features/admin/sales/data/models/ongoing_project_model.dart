@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class OngoingProject {
   final int id;
   final String name;
@@ -8,9 +10,10 @@ class OngoingProject {
   });
 
   factory OngoingProject.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return OngoingProject(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      id: asInt(j['id']),
+      name: asString(j['name']),
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:core';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:doctorbike/features/admin/sales/data/models/instant_sales_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
@@ -99,6 +100,15 @@ class SalesDatasource {
           : endPoint == 'get/all/subcategories'
               ? 'sub_categories'
               : 'products';
+      if (kDebugMode) {
+        final rows = extractMapListFromResponse(response.data, listKey);
+        if (rows.isNotEmpty) {
+          debugParseLog(
+            'SalesDatasource.getAllProducts',
+            'listKey=$listKey sample=${rows.first}',
+          );
+        }
+      }
       return mapListFromResponseKey(
         response.data,
         listKey,

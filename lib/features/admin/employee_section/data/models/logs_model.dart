@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class LogsModel {
   final int id;
   final String name;
@@ -18,26 +20,27 @@ class LogsModel {
   });
 
   factory LogsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return LogsModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      type: json['type'] ?? '',
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
-      isCanceled: json['is_canceled']?.toString() == "1",
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      description: asString(j['description']),
+      type: asString(j['type']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
+      isCanceled: asBool(j['is_canceled']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "name": name,
-      "description": description,
-      "type": type,
-      "created_at": createdAt.toIso8601String(),
-      "updated_at": updatedAt.toIso8601String(),
-      "is_canceled": isCanceled ? "1" : "0",
+      'id': id,
+      'name': name,
+      'description': description,
+      'type': type,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'is_canceled': isCanceled ? '1' : '0',
     };
   }
 }

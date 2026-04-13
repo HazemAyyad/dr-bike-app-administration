@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 import '../../domain/entity/general_checks_data_entity.dart';
 
 class GeneralChecksDataModel extends GeneralChecksDataEntity {
@@ -28,27 +30,28 @@ class GeneralChecksDataModel extends GeneralChecksDataEntity {
         );
 
   factory GeneralChecksDataModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return GeneralChecksDataModel(
       notCashedOutgoingChecksCount:
-          json['not_cashed_outgoing_checks_count'] ?? 0,
-      cashedOutgoingChecksCount: json['cashed_outgoing_checks_count'] ?? 0,
+          asInt(j['not_cashed_outgoing_checks_count']),
+      cashedOutgoingChecksCount: asInt(j['cashed_outgoing_checks_count']),
       notCashedIncomingChecksCount:
-          json['not_cashed_incoming_checks_count'] ?? 0,
-      cashedIncomingChecksCount: json['cashed_incoming_checks_count'] ?? 0,
+          asInt(j['not_cashed_incoming_checks_count']),
+      cashedIncomingChecksCount: asInt(j['cashed_incoming_checks_count']),
       cashedToBoxIncomingChecksCount:
-          json['cashedto_box_incoming_checks_count'] ?? 0,
+          asInt(j['cashedto_box_incoming_checks_count']),
       totalOutgoingChecksDollar:
-          (json['total_outgoing_checks_dollar'] ?? '0').toString(),
+          asString(j['total_outgoing_checks_dollar'], '0'),
       totalOutgoingChecksDinar:
-          (json['total_outgoing_checks_dinar'] ?? '0').toString(),
+          asString(j['total_outgoing_checks_dinar'], '0'),
       totalOutgoingChecksShekel:
-          (json['total_outgoing_checks_shekel'] ?? '0').toString(),
+          asString(j['total_outgoing_checks_shekel'], '0'),
       totalIncomingChecksDollar:
-          (json['total_incoming_checks_dollar'] ?? '0').toString(),
+          asString(j['total_incoming_checks_dollar'], '0'),
       totalIncomingChecksDinar:
-          (json['total_incoming_checks_dinar'] ?? '0').toString(),
+          asString(j['total_incoming_checks_dinar'], '0'),
       totalIncomingChecksShekel:
-          (json['total_incoming_checks_shekel'] ?? '0').toString(),
+          asString(j['total_incoming_checks_shekel'], '0'),
     );
   }
 

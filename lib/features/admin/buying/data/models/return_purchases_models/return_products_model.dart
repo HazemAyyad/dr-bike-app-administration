@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class ReturnProduct {
   final int id;
   final String sellerId;
@@ -20,17 +22,19 @@ class ReturnProduct {
   });
 
   factory ReturnProduct.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ReturnProduct(
-      id: json['id'] ?? 0,
-      sellerId: json['seller_id'] ?? "",
-      total: json['total'] ?? "0.0",
-      status: json['status'] ?? "",
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-      seller: Seller.fromJson(json['seller']),
-      items: (json['items'] as List<dynamic>)
-          .map((e) => ReturnItem.fromJson(e))
-          .toList(),
+      id: asInt(j['id']),
+      sellerId: asString(j['seller_id']),
+      total: asString(j['total'], '0.0'),
+      status: asString(j['status']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
+      seller: Seller.fromJson(asMap(j['seller'])),
+      items: mapList(
+        j['items'],
+        (Map<String, dynamic> m) => ReturnItem.fromJson(m),
+      ),
     );
   }
 
@@ -55,9 +59,10 @@ class Seller {
   Seller({required this.id, required this.name});
 
   factory Seller.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Seller(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? "",
+      id: asInt(j['id']),
+      name: asString(j['name']),
     );
   }
 
@@ -91,15 +96,16 @@ class ReturnItem {
   });
 
   factory ReturnItem.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ReturnItem(
-      id: json['id'] ?? 0,
-      returnId: json['return_id'] ?? "",
-      productId: json['product_id'] ?? "",
-      price: json['price'] ?? "",
-      quantity: json['quantity'] ?? "",
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-      productName: json['product_name'] ?? "",
+      id: asInt(j['id']),
+      returnId: asString(j['return_id']),
+      productId: asString(j['product_id']),
+      price: asString(j['price']),
+      quantity: asString(j['quantity']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
+      productName: asString(j['product_name']),
     );
   }
 

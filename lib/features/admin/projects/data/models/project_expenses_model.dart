@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class ProjectExpensesModel {
   final List<ProjectExpense> projectExpenses;
   final double totalExpenses;
@@ -8,11 +10,11 @@ class ProjectExpensesModel {
   });
 
   factory ProjectExpensesModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProjectExpensesModel(
-      projectExpenses: (json['project_expenses'] as List<dynamic>? ?? [])
-          .map((e) => ProjectExpense.fromJson(e))
-          .toList(),
-      totalExpenses: double.tryParse(json['total_expenses'].toString()) ?? 0.0,
+      projectExpenses:
+          mapList(j['project_expenses'], (m) => ProjectExpense.fromJson(m)),
+      totalExpenses: asDouble(j['total_expenses']),
     );
   }
 
@@ -42,13 +44,14 @@ class ProjectExpense {
   });
 
   factory ProjectExpense.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProjectExpense(
-      id: json['id'],
-      projectId: json['project_id'].toString(),
-      expenses: double.tryParse(json['expenses'].toString()) ?? 0.0,
-      notes: json['notes'] ?? '',
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      id: asInt(j['id']),
+      projectId: asString(j['project_id']),
+      expenses: asDouble(j['expenses']),
+      notes: asString(j['notes']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
     );
   }
 

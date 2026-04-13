@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class GoalsModel {
   final int id;
   final String scope;
@@ -22,30 +24,31 @@ class GoalsModel {
   });
 
   factory GoalsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return GoalsModel(
-      id: json['id'] ?? 0,
-      scope: json['scope'] ?? '',
-      name: json['name'] ?? '',
-      achievementPercentage: json['achievement_percentage']?.toString() ?? '0',
-      targetValue: json['targeted_value']?.toString() ?? '0',
-      currentValue: json['current_value']?.toString() ?? '0',
-      isCanceled: json['is_canceled'].toString() == "1",
-      createdAt: DateTime.parse(json['created_at']),
-      dueDate: DateTime.parse(json['due_date']),
+      id: asInt(j['id']),
+      scope: asString(j['scope']),
+      name: asString(j['name']),
+      achievementPercentage: asString(j['achievement_percentage'], '0'),
+      targetValue: asString(j['targeted_value'], '0'),
+      currentValue: asString(j['current_value'], '0'),
+      isCanceled: asBool(j['is_canceled']),
+      createdAt: parseApiDateTime(j['created_at']),
+      dueDate: parseApiDateTime(j['due_date']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "scope": scope,
-      "name": name,
-      "achievement_percentage": achievementPercentage,
-      "targeted_value": targetValue,
-      "current_value": currentValue,
-      "is_canceled": isCanceled ? "1" : "0",
-      "created_at": createdAt.toIso8601String(),
-      "due_date": dueDate.toIso8601String(),
+      'id': id,
+      'scope': scope,
+      'name': name,
+      'achievement_percentage': achievementPercentage,
+      'targeted_value': targetValue,
+      'current_value': currentValue,
+      'is_canceled': isCanceled ? '1' : '0',
+      'created_at': createdAt.toIso8601String(),
+      'due_date': dueDate.toIso8601String(),
     };
   }
 }

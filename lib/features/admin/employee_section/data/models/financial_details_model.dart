@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/features/admin/employee_section/domain/entities/financial_details_entity.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -28,17 +29,18 @@ class FinancialDetailsModel extends FinancialDetailsEntity {
         );
 
   factory FinancialDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FinancialDetailsModel(
-      employeeId: json[ApiKey.employee_id] ?? 0,
-      employeeName: json[ApiKey.employee_name] ?? 'unknown',
-      salary: json[ApiKey.salary] ?? '0',
-      debts: json[ApiKey.debts] ?? '0',
-      points: json[ApiKey.points] ?? '0',
-      hourWorkPrice: json[ApiKey.hour_work_price] ?? '0',
-      totalWorkHours: json[ApiKey.total_work_hours] ?? '0',
-      numberOfWorkHours: json[ApiKey.number_of_work_hours] ?? '0',
-      pointsRevenue: json[ApiKey.points_revenue] ?? '0',
-      total: json[ApiKey.total] ?? 0,
+      employeeId: asInt(j[ApiKey.employee_id]),
+      employeeName: asString(j[ApiKey.employee_name], 'unknown'),
+      salary: asString(j[ApiKey.salary], '0'),
+      debts: asString(j[ApiKey.debts], '0'),
+      points: asString(j[ApiKey.points], '0'),
+      hourWorkPrice: asString(j[ApiKey.hour_work_price], '0'),
+      totalWorkHours: asString(j[ApiKey.total_work_hours], '0'),
+      numberOfWorkHours: asString(j[ApiKey.number_of_work_hours], '0'),
+      pointsRevenue: j[ApiKey.points_revenue],
+      total: j[ApiKey.total],
     );
   }
 

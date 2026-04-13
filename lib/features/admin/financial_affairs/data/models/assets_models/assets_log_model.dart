@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class AssetLogModel {
   final String assetId;
   final String assetName;
@@ -16,24 +18,25 @@ class AssetLogModel {
   });
 
   factory AssetLogModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return AssetLogModel(
-      assetId: json['asset_id'] ?? '',
-      assetName: json['asset_name'] ?? '',
-      depreciationDate: DateTime.parse(json['date']),
-      depreciationRate: json['depreciation_rate'] ?? '0',
-      total: json['total'] ?? '0',
-      type: json['type'] ?? '',
+      assetId: asString(j['asset_id']),
+      assetName: asString(j['asset_name']),
+      depreciationDate: parseApiDateTime(j['date']),
+      depreciationRate: asString(j['depreciation_rate'], '0'),
+      total: asString(j['total'], '0'),
+      type: asString(j['type']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "asset_id": assetId,
-      "asset_name": assetName,
-      "date": depreciationDate.toIso8601String(),
-      "depreciation_rate": depreciationRate,
-      "total": total,
-      "type": type,
+      'asset_id': assetId,
+      'asset_name': assetName,
+      'date': depreciationDate.toIso8601String(),
+      'depreciation_rate': depreciationRate,
+      'total': total,
+      'type': type,
     };
   }
 }

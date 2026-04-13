@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class FollowupDetailsModel {
   final int id;
   final String status;
@@ -22,32 +24,35 @@ class FollowupDetailsModel {
   });
 
   factory FollowupDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FollowupDetailsModel(
-      id: json['id'] ?? 0,
-      status: json['status'] ?? '',
-      notes: json['notes'] ?? '',
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-      isCanceled: json['is_canceled'] == "1",
-      customer:
-          json['customer'] != null ? Customer.fromJson(json['customer']) : null,
-      seller: json['seller'] != null ? Seller.fromJson(json['seller']) : null,
+      id: asInt(j['id']),
+      status: asString(j['status']),
+      notes: asNullableString(j['notes']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
+      isCanceled: asBool(j['is_canceled']),
+      customer: j['customer'] != null
+          ? Customer.fromJson(asMap(j['customer']))
+          : null,
+      seller:
+          j['seller'] != null ? Seller.fromJson(asMap(j['seller'])) : null,
       product:
-          json['product'] != null ? Product.fromJson(json['product']) : null,
+          j['product'] != null ? Product.fromJson(asMap(j['product'])) : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "status": status,
-      "notes": notes,
-      "created_at": createdAt.toIso8601String(),
-      "updated_at": updatedAt.toIso8601String(),
-      "is_canceled": isCanceled ? "1" : "0",
-      "customer": customer?.toJson(),
-      "seller": seller?.toJson(),
-      "product": product?.toJson(),
+      'id': id,
+      'status': status,
+      'notes': notes,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+      'is_canceled': isCanceled ? '1' : '0',
+      'customer': customer?.toJson(),
+      'seller': seller?.toJson(),
+      'product': product?.toJson(),
     };
   }
 }
@@ -62,16 +67,17 @@ class Customer {
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Customer(
-      id: json['id'] as int,
-      name: json['name'] ?? '',
+      id: asInt(j['id']),
+      name: asString(j['name']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "name": name,
+      'id': id,
+      'name': name,
     };
   }
 }
@@ -86,16 +92,17 @@ class Seller {
   });
 
   factory Seller.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Seller(
-      id: json['id'] as int,
-      name: json['name'] ?? '',
+      id: asInt(j['id']),
+      name: asString(j['name']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "name": name,
+      'id': id,
+      'name': name,
     };
   }
 }
@@ -110,16 +117,17 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Product(
-      id: json['id'] ?? '0',
-      nameAr: json['nameAr'] ?? '',
+      id: asInt(j['id']),
+      nameAr: asString(j['nameAr']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "nameAr": nameAr,
+      'id': id,
+      'nameAr': nameAr,
     };
   }
 }

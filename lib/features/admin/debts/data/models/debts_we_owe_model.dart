@@ -1,6 +1,6 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
-
-import '../../../../../core/helpers/show_net_image.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class DebtsWeOweModel {
   final String status;
@@ -9,11 +9,15 @@ class DebtsWeOweModel {
   DebtsWeOweModel({required this.status, required this.debts});
 
   factory DebtsWeOweModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return DebtsWeOweModel(
-      status: json[ApiKey.status],
-      debts: (json[ApiKey.debts] as List<dynamic>)
-          .map((e) => DebtsWeOwe.fromJson(e))
-          .toList(),
+      status: asString(j[ApiKey.status]),
+      debts: mapListFromResponseKey(
+        j,
+        ApiKey.debts,
+        (Map<String, dynamic> m) => DebtsWeOwe.fromJson(m),
+        debugScope: 'DebtsWeOweModel',
+      ),
     );
   }
 }
@@ -52,26 +56,31 @@ class DebtsWeOwe {
   });
 
   factory DebtsWeOwe.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return DebtsWeOwe(
-      debtId: json['debt_id'] ?? 0,
-      customerId: json[ApiKey.customer_id] ?? 0,
-      customerName: json[ApiKey.customer_name] ?? '',
-      customerIsCanceled: json[ApiKey.customer_is_canceled] == '1',
-      sellerId: json['seller_id'] ?? 0,
-      sellerName: json['seller_name'] ?? '',
-      sellerIsCanceled: json['seller_is_canceled'] == '1',
-      dueDate: json[ApiKey.due_date] != null
-          ? DateTime.parse(json[ApiKey.due_date])
-          : DateTime.now(),
-      total: json[ApiKey.total] ?? '0',
-      status: json[ApiKey.status] ?? 'unpaid',
-      receiptImage: ShowNetImage.getPhoto(json[ApiKey.receipt_image]),
-      debtType: json[ApiKey.debt_type] ?? '',
-      debtCreatedAt: json[ApiKey.debt_created_at] != null
-          ? DateTime.parse(json[ApiKey.debt_created_at])
-          : DateTime.now(),
-      notes: json[ApiKey.notes] ?? '',
+      debtId: asInt(j['debt_id']),
+      customerId: j[ApiKey.customer_id] == null
+          ? null
+          : asInt(j[ApiKey.customer_id]),
+      customerName: asString(j[ApiKey.customer_name]),
+      customerIsCanceled: _nullableBool(j[ApiKey.customer_is_canceled]),
+      sellerId: j['seller_id'] == null ? null : asInt(j['seller_id']),
+      sellerName: asString(j['seller_name']),
+      sellerIsCanceled: _nullableBool(j['seller_is_canceled']),
+      dueDate: parseApiDateTime(j[ApiKey.due_date]),
+      total: asString(j[ApiKey.total], '0'),
+      status: asString(j[ApiKey.status], 'unpaid'),
+      receiptImage:
+          ShowNetImage.getPhoto(asNullableString(j[ApiKey.receipt_image])),
+      debtType: asString(j[ApiKey.debt_type]),
+      debtCreatedAt: parseApiDateTime(j[ApiKey.debt_created_at]),
+      notes: asString(j[ApiKey.notes]),
     );
+  }
+
+  static bool? _nullableBool(dynamic v) {
+    if (v == null) return null;
+    return asBool(v);
   }
 
   Map<String, dynamic> toJson() {

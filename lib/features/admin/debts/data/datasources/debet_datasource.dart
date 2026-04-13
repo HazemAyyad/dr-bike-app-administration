@@ -1,12 +1,27 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
+
+void _debugLogDebtListSample(
+  String flow,
+  String endpoint,
+  dynamic responseData,
+) {
+  if (!kDebugMode) return;
+  final sample = extractMapListFromResponse(responseData, ApiKey.debts);
+  if (sample.isEmpty) return;
+  debugParseLog(
+    'DebetDatasource.$flow',
+    'endpoint=$endpoint model=DebtsWeOwe sample=${sample.first}',
+  );
+}
 
 class DebetDatasource {
   final ApiConsumer api;
@@ -50,6 +65,7 @@ class DebetDatasource {
       final response = await api.get(
         EndPoints.getDebtsOwedToUs,
       );
+      _debugLogDebtListSample('debtsOwedToUs', EndPoints.getDebtsOwedToUs, response.data);
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -66,8 +82,7 @@ class DebetDatasource {
   Future<Map<String, dynamic>> debtsWeOwe() async {
     try {
       final response = await api.get(EndPoints.getDebtsWeOwe);
-      // final data = response.data;
-      // print('Response data: $response');
+      _debugLogDebtListSample('debtsWeOwe', EndPoints.getDebtsWeOwe, response.data);
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

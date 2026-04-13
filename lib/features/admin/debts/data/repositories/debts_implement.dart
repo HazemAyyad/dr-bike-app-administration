@@ -7,6 +7,7 @@ import 'package:doctorbike/features/admin/debts/domain/repositories/debts_reposi
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../datasources/debet_datasource.dart';
 import '../models/debts_we_owe_model.dart';
 import '../models/total_debts_owed_to_us_model.dart';
@@ -27,7 +28,7 @@ class DebtsImplement implements DebtsRepository {
     try {
       final result = await debetDatasource.totalDebtsOwedToUs();
       if (result['status'] == 'success') {
-        return Right(TotalDebtsOwedToUsModel.fromJson(result));
+        return Right(TotalDebtsOwedToUsModel.fromJson(asMap(result)));
       }
       return Left(
         ValidationFailure(
@@ -48,7 +49,7 @@ class DebtsImplement implements DebtsRepository {
     try {
       final result = await debetDatasource.totalDebtsWeOwe();
       if (result['status'] == 'success') {
-        return Right(TotalDebtsWeOweModel.fromJson(result));
+        return Right(TotalDebtsWeOweModel.fromJson(asMap(result)));
       }
       return Left(
         ValidationFailure(
@@ -69,7 +70,7 @@ class DebtsImplement implements DebtsRepository {
     try {
       final result = await debetDatasource.debtsOwedToUs();
       if (result['status'] == 'success') {
-        return Right(DebtsWeOweModel.fromJson(result));
+        return Right(DebtsWeOweModel.fromJson(asMap(result)));
       }
       return Left(
         ValidationFailure(
@@ -90,7 +91,7 @@ class DebtsImplement implements DebtsRepository {
     try {
       final result = await debetDatasource.debtsWeOwe();
       if (result['status'] == 'success') {
-        return Right(DebtsWeOweModel.fromJson(result));
+        return Right(DebtsWeOweModel.fromJson(asMap(result)));
       }
       return Left(
         ValidationFailure(
@@ -115,7 +116,7 @@ class DebtsImplement implements DebtsRepository {
         sellerId: sellerId,
       );
       if (result['status'] == 'success') {
-        return Right(UserTransactionsDataModel.fromJson(result));
+        return Right(UserTransactionsDataModel.fromJson(asMap(result)));
       }
       return Left(
         ValidationFailure(

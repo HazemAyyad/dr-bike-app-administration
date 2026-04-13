@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class ProductDetailsModel {
   String id;
   String nameAr;
@@ -78,64 +80,62 @@ class ProductDetailsModel {
   });
 
   factory ProductDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProductDetailsModel(
-      id: json['id']?.toString() ?? '',
-      nameAr: json['nameAr'] ?? '',
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
-      price: json['price'] ?? '0',
-      nameEng: json['nameEng'] ?? '',
-      nameAbree: json['nameAbree'] ?? '',
-      isShow: json['isShow'] ?? '',
-      descriptionAr: json['descriptionAr'] ?? '',
-      descriptionEng: json['descriptionEng'] ?? '',
-      descriptionAbree: json['descriptionAbree'] ?? '',
-      videoUrl: json['videoUrl'] ?? '',
-      normailPrice: json['normailPrice'] ?? '0',
-      stock: json['stock'] ?? '0',
-      model: json['model'] ?? '',
-      isNewItem: json['isNewItem'] ?? '',
-      isMoreSales: json['isMoreSales'] ?? '',
-      rate: json['rate'] ?? '0',
-      manufactureYear: json['manufactureYear'] ?? '',
-      discount: json['discount'] ?? '0',
-      userIdAdd: json['userIdAdd'] ?? '0',
-      dateAdd: DateTime.tryParse(json['dateAdd'] ?? '') ?? DateTime.now(),
-      userIdUpdate: json['userIdUpdate'] ?? '0',
-      dateUpdate: DateTime.tryParse(json['dateUpdate'] ?? '') ?? DateTime.now(),
-      minStock: json['min_stock'] ?? '0',
-      rotationDate: json['rotation_date'] ?? '',
-      minSalePrice: json['min_sale_price'] ?? '0',
-      isSoldWithPaper: json['is_sold_with_paper'] ?? '0',
-      projectId: json['project_id'] ?? '0',
-      productSubCategories: json['product_subCategories'] != null
-          ? (json['product_subCategories'] as List)
-              .map((v) => ProductSubCategory.fromJson(v))
-              .toList()
+      id: asString(j['id']),
+      nameAr: asString(j['nameAr']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
+      price: j['price'],
+      nameEng: asString(j['nameEng']),
+      nameAbree: asNullableString(j['nameAbree']),
+      isShow: asNullableString(j['isShow']),
+      descriptionAr: asNullableString(j['descriptionAr']),
+      descriptionEng: asNullableString(j['descriptionEng']),
+      descriptionAbree: asNullableString(j['descriptionAbree']),
+      videoUrl: j['videoUrl'],
+      normailPrice: asNullableString(j['normailPrice']),
+      stock: asNullableString(j['stock']),
+      model: asNullableString(j['model']),
+      isNewItem: asNullableString(j['isNewItem']),
+      isMoreSales: asNullableString(j['isMoreSales']),
+      rate: asNullableString(j['rate']),
+      manufactureYear: asNullableString(j['manufactureYear']),
+      discount: asNullableString(j['discount']),
+      userIdAdd: j['userIdAdd'],
+      dateAdd: j['dateAdd'] == null ? null : parseApiDateTime(j['dateAdd']),
+      userIdUpdate: j['userIdUpdate'],
+      dateUpdate: j['dateUpdate'] == null ? null : parseApiDateTime(j['dateUpdate']),
+      minStock: j['min_stock'],
+      rotationDate: j['rotation_date'],
+      minSalePrice: j['min_sale_price'],
+      isSoldWithPaper: j['is_sold_with_paper'],
+      projectId: j['project_id'],
+      productSubCategories: j['product_subCategories'] == null
+          ? null
+          : mapList(
+              j['product_subCategories'],
+              (m) => ProductSubCategory.fromJson(m),
+            ),
+      purchasePrices: j['purchase_prices'] == null
+          ? null
+          : mapList(j['purchase_prices'], (m) => PurchasePrice.fromJson(m)),
+      sizes: j['sizes'] == null
+          ? null
+          : mapList(j['sizes'], (m) => Size.fromJson(m)),
+      wholesales: j['wholesales'] is List
+          ? List<dynamic>.from(j['wholesales'] as List)
           : null,
-      purchasePrices: json['purchase_prices'] != null
-          ? (json['purchase_prices'] as List)
-              .map((v) => PurchasePrice.fromJson(v))
-              .toList()
+      normalImages: j['product_normalImages'] is List
+          ? (j['product_normalImages'] as List).map((v) => asString(v)).toList()
           : null,
-      sizes: json['sizes'] != null
-          ? (json['sizes'] as List).map((v) => Size.fromJson(v)).toList()
+      viewImages: j['product_viewImages'] is List
+          ? (j['product_viewImages'] as List).map((v) => asString(v)).toList()
           : null,
-      wholesales: json['wholesales']?.cast<dynamic>(),
-      normalImages: json['product_normalImages'] != null
-          ? (json['product_normalImages'] as List)
-              .map((v) => v.toString())
-              .toList()
+      image3d: j['product_image3d'] is List
+          ? (j['product_image3d'] as List).map((v) => asString(v)).toList()
           : null,
-      viewImages: json['product_viewImages'] != null
-          ? (json['product_viewImages'] as List)
-              .map((v) => v.toString())
-              .toList()
-          : null,
-      image3d: json['product_image3d'] != null
-          ? (json['product_image3d'] as List).map((v) => v.toString()).toList()
-          : null,
-      purchase: json['purchase'],
+      purchase: j['purchase'],
     );
   }
 
@@ -211,11 +211,12 @@ class ProductSubCategory {
   });
 
   factory ProductSubCategory.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProductSubCategory(
-      subCategoryId: json['sub_category_id']?.toString(),
-      subCategoryName: json['sub_category_name'],
-      mainCategoryId: json['main_category_id']?.toString(),
-      mainCategoryName: json['main_category_name'],
+      subCategoryId: asNullableString(j['sub_category_id']),
+      subCategoryName: asNullableString(j['sub_category_name']),
+      mainCategoryId: asNullableString(j['main_category_id']),
+      mainCategoryName: asNullableString(j['main_category_name']),
     );
   }
 
@@ -236,9 +237,10 @@ class PurchasePrice {
   PurchasePrice({this.sellerId, this.price});
 
   factory PurchasePrice.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return PurchasePrice(
-      sellerId: json['seller_id'] ?? '0',
-      price: json['price'] ?? '0',
+      sellerId: asString(j['seller_id'], '0'),
+      price: asString(j['price'], '0'),
     );
   }
 
@@ -259,15 +261,14 @@ class Size {
   Size({this.id, this.size, this.itemId, this.colorSizes});
 
   factory Size.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Size(
-      id: json['id']?.toString(),
-      size: json['size']?.toString(),
-      itemId: json['itemId']?.toString(),
-      colorSizes: json['color_sizes'] != null
-          ? (json['color_sizes'] as List)
-              .map((v) => ColorSize.fromJson(v))
-              .toList()
-          : null,
+      id: asNullableString(j['id']),
+      size: asNullableString(j['size']),
+      itemId: asNullableString(j['itemId']),
+      colorSizes: j['color_sizes'] == null
+          ? null
+          : mapList(j['color_sizes'], (m) => ColorSize.fromJson(m)),
     );
   }
 
@@ -301,14 +302,15 @@ class ColorSize {
   });
 
   factory ColorSize.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ColorSize(
-      id: json['id'] ?? '0',
-      colorAr: json['colorAr'] ?? '0',
-      normailPrice: json['normailPrice'] ?? '0',
-      wholesalePrice: json['wholesalePrice'] ?? '0',
-      discount: json['discount'] ?? '0',
-      stock: json['stock'] ?? '0',
-      sizeId: json['sizeId'] ?? '0',
+      id: asString(j['id'], '0'),
+      colorAr: asString(j['colorAr'], '0'),
+      normailPrice: asString(j['normailPrice'], '0'),
+      wholesalePrice: asString(j['wholesalePrice'], '0'),
+      discount: asString(j['discount'], '0'),
+      stock: asString(j['stock'], '0'),
+      sizeId: asString(j['sizeId'], '0'),
     );
   }
 

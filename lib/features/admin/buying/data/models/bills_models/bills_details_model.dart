@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class BillDetailsModel {
@@ -18,15 +19,17 @@ class BillDetailsModel {
   });
 
   factory BillDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return BillDetailsModel(
-      billId: json['bill_id'] ?? 0,
-      products: (json['products'] as List<dynamic>)
-          .map((e) => BillProductModel.fromJson(e))
-          .toList(),
-      sellerId: json['seller_id'] ?? '',
-      sellerName: json['seller_name'] ?? '',
-      createdAt: json['created_at'] ?? '',
-      totalBill: json['total_bill'] ?? '0.0',
+      billId: asInt(j['bill_id']),
+      products: mapList(
+        j['products'],
+        (Map<String, dynamic> m) => BillProductModel.fromJson(m),
+      ),
+      sellerId: asString(j['seller_id']),
+      sellerName: asString(j['seller_name']),
+      createdAt: asString(j['created_at']),
+      totalBill: asString(j['total_bill'], '0.0'),
     );
   }
 
@@ -70,18 +73,20 @@ class BillProductModel {
   });
 
   factory BillProductModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return BillProductModel(
-      billId: json['bill_id'] ?? 0,
-      productId: json['product_id'] ?? '',
-      productName: json['product_name'] ?? '',
-      productImage: ShowNetImage.getPhoto(json['product_image']),
-      quantity: json['quantity'] ?? '0',
-      price: json['price'] ?? '0',
-      productStatus: json['product_status'] ?? '',
-      subTotal: json['sub_total'] ?? 0,
-      extraAmount: json['extra_amount'] ?? '',
-      missingAmount: json['missing_amount'] ?? '',
-      notCompatibleAmount: json['not_compatible_amount'] ?? '',
+      billId: asInt(j['bill_id']),
+      productId: asString(j['product_id']),
+      productName: asString(j['product_name']),
+      productImage:
+          ShowNetImage.getPhoto(asNullableString(j['product_image'])),
+      quantity: asString(j['quantity'], '0'),
+      price: asString(j['price'], '0'),
+      productStatus: asString(j['product_status']),
+      subTotal: asDouble(j['sub_total']),
+      extraAmount: asString(j['extra_amount']),
+      missingAmount: asString(j['missing_amount']),
+      notCompatibleAmount: asString(j['not_compatible_amount']),
     );
   }
 

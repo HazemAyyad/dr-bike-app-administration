@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class DestructionModel {
@@ -22,18 +23,23 @@ class DestructionModel {
   });
 
   factory DestructionModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    List<String> mapImages(dynamic raw) {
+      if (raw is! List) return [];
+      return raw
+          .map((x) => ShowNetImage.getPhoto(asNullableString(x)))
+          .toList();
+    }
+
     return DestructionModel(
-      destructionId: json['destruction_id'] ?? 0,
-      productId: json['product_id'] ?? '',
-      productName: json['product_name'] ?? '',
-      destructionValue: json['destruction_value'] ?? 0,
-      piecesNumber: json['pieces_number'] ?? '',
-      destructionReason: json['destruction_reason'] ?? '',
-      createdAt: DateTime.tryParse(json['created_at']) ?? DateTime.now(),
-      image: json['image'] != null
-          ? List<String>.from(
-              json['image'].map((x) => ShowNetImage.getPhoto(x)))
-          : [],
+      destructionId: asInt(j['destruction_id']),
+      productId: asString(j['product_id']),
+      productName: asString(j['product_name']),
+      destructionValue: asInt(j['destruction_value']),
+      piecesNumber: asString(j['pieces_number']),
+      destructionReason: asString(j['destruction_reason']),
+      createdAt: parseApiDateTime(j['created_at']),
+      image: mapImages(j['image']),
     );
   }
 

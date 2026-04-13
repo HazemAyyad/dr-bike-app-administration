@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class FilesModel {
   final int id;
   final String name;
@@ -16,13 +18,14 @@ class FilesModel {
   });
 
   factory FilesModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FilesModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      fileBoxId: json['file_box_id'] ?? '',
-      createdAt: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updated_at'] ?? '') ?? DateTime.now(),
-      isCanceled: json['is_canceled'] ?? '0',
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      fileBoxId: asString(j['file_box_id']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
+      isCanceled: asString(j['is_canceled'], '0'),
     );
   }
 

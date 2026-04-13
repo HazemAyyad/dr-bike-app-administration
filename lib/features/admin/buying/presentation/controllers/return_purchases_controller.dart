@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../data/models/return_purchases_models/return_products_model.dart';
 import '../../domain/usecases/get_bills_usecase.dart';
 import '../../domain/usecases/return_purchases_usecases/change_return_to_delivered_usecase.dart';
@@ -66,18 +67,23 @@ class ReturnPurchasesController extends GetxController {
     }
 
     final returnPurchases = await getBillsUsecase.call(page: '6');
-    final returnPurchasesList = (returnPurchases['return_products'] as List)
-        .map((e) => ReturnProduct.fromJson(e))
-        .toList();
+    final returnPurchasesList = mapListFromResponseKey(
+      returnPurchases,
+      'return_products',
+      (Map<String, dynamic> m) => ReturnProduct.fromJson(m),
+      debugScope: 'ReturnPurchasesController.pendingReturns',
+    );
     BuyingServes().returnPurchasesListTasks.value =
         groupByDate(returnPurchasesList);
     returnPurchasesSearch.assignAll(BuyingServes().returnPurchasesListTasks);
 
     final deliveredPurchases = await getBillsUsecase.call(page: '7');
-    final deliveredPurchasesList =
-        (deliveredPurchases['return_products'] as List)
-            .map((e) => ReturnProduct.fromJson(e))
-            .toList();
+    final deliveredPurchasesList = mapListFromResponseKey(
+      deliveredPurchases,
+      'return_products',
+      (Map<String, dynamic> m) => ReturnProduct.fromJson(m),
+      debugScope: 'ReturnPurchasesController.deliveredReturns',
+    );
     BuyingServes().deliveredPurchasesTasks.value =
         groupByDate(deliveredPurchasesList);
     deliveredPurchasesSearch.assignAll(BuyingServes().deliveredPurchasesTasks);

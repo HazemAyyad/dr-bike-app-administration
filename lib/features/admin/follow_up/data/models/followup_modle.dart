@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class FollowupModel {
@@ -26,19 +27,18 @@ class FollowupModel {
   });
 
   factory FollowupModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FollowupModel(
-      id: json['id'] ?? 0,
-      customerName: json['customer_name'] ?? '',
-      customerPhone: json['customer_phone'] ?? '',
-      customerImg: ShowNetImage.getPhoto(json['customer_img']),
-      sellerName: json['seller_name'] ?? '',
-      sellerPhone: json['seller_phone'] ?? '',
-      sellerImg: ShowNetImage.getPhoto(json['seller_img']),
-      productName: json['product_name'] ?? '',
-      followupStatus: json['followup_status'] ?? '',
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
+      id: asInt(j['id']),
+      customerName: asString(j['customer_name']),
+      customerPhone: asString(j['customer_phone']),
+      customerImg: ShowNetImage.getPhoto(asNullableString(j['customer_img'])),
+      sellerName: asString(j['seller_name']),
+      sellerPhone: asString(j['seller_phone']),
+      sellerImg: ShowNetImage.getPhoto(asNullableString(j['seller_img'])),
+      productName: asString(j['product_name']),
+      followupStatus: asString(j['followup_status']),
+      createdAt: parseApiDateTime(j['created_at']),
     );
   }
 

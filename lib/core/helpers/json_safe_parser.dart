@@ -111,6 +111,27 @@ List<Map<String, dynamic>> readListFromKnownKeys(
   return [];
 }
 
+/// Alias لـ [readListFromKnownKeys] (تسمية موحّدة في المشروع).
+List<Map<String, dynamic>> mapListFromKnownKeys(
+  Map<String, dynamic> json,
+  List<String> keys,
+) =>
+    readListFromKnownKeys(json, keys);
+
+/// يحاول استخراج كائن Map من أول مفتاح موجود وقيمته Map.
+Map<String, dynamic> mapObjectFromKnownKeys(
+  Map<String, dynamic> json,
+  List<String> keys,
+) {
+  for (final k in keys) {
+    final v = json[k];
+    if (v is Map) {
+      return Map<String, dynamic>.from(v);
+    }
+  }
+  return <String, dynamic>{};
+}
+
 void debugParseLog(String scope, String message) {
   if (kDebugMode) {
     debugPrint('[$scope] $message');
@@ -163,9 +184,12 @@ List<T> mapListFromResponseKey<T>(
     try {
       out.add(builder(m));
     } catch (e, _) {
+      final fieldTypes = m.map(
+        (k, v) => MapEntry(k.toString(), v.runtimeType.toString()),
+      );
       debugParseLog(
         debugScope ?? 'mapListFromResponseKey',
-        'key=$key index=$i err=$e sample=$m',
+        'modelMap key=$key index=$i err=$e rawItem=$m fieldTypes=$fieldTypes',
       );
     }
   }

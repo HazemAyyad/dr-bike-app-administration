@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class ProjectSaleModel {
   final List<ProjectSale> projectSales;
   final double totalCosts;
@@ -8,11 +10,13 @@ class ProjectSaleModel {
   });
 
   factory ProjectSaleModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProjectSaleModel(
-      projectSales: (json['project_sales'] as List<dynamic>? ?? [])
-          .map((e) => ProjectSale.fromJson(e))
-          .toList(),
-      totalCosts: double.tryParse(json['total_costs'].toString()) ?? 0.0,
+      projectSales: mapList(
+        j['project_sales'],
+        (Map<String, dynamic> m) => ProjectSale.fromJson(m),
+      ),
+      totalCosts: asDouble(j['total_costs']),
     );
   }
 
@@ -36,10 +40,11 @@ class ProjectSale {
   });
 
   factory ProjectSale.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return ProjectSale(
-      productName: json['product_name'] ?? '',
-      productCost: json['product_cost'] ?? '0',
-      productQuantity: json['product_quantity'] ?? '0',
+      productName: asString(j['product_name']),
+      productCost: asString(j['product_cost'], '0'),
+      productQuantity: asString(j['product_quantity'], '0'),
     );
   }
 

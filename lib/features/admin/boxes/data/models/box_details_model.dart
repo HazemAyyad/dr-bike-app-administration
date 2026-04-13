@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 import '../../domain/entity/all_boxes_logs_entity.dart';
 import '../../domain/entity/box_details_entity.dart';
 import 'all_boxes_logs_model.dart';
@@ -18,15 +20,16 @@ class BoxDetailsModel extends BoxDetailsEntity {
         );
 
   factory BoxDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return BoxDetailsModel(
-      boxName: json['box_name'] ?? '',
-      totalBalance: json['totla_balance'] ?? '0.00',
-      isShown: json['is_shown'] ?? '0',
-      boxLogs: (json['box_logs'] as List<dynamic>?)
-              ?.map((e) => BoxLogModel.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      currency: json['box_currency'] ?? '',
+      boxName: asString(j['box_name']),
+      totalBalance: asString(j['totla_balance'], '0.00'),
+      isShown: asString(j['is_shown'], '0'),
+      boxLogs: mapList(
+        j['box_logs'],
+        (Map<String, dynamic> m) => BoxLogModel.fromJson(m),
+      ),
+      currency: asString(j['box_currency']),
     );
   }
 
@@ -39,8 +42,7 @@ class BoxDetailsModel extends BoxDetailsEntity {
         if (e is BoxLogModel) {
           return e.toJson();
         }
-        // fallback لو جالك Entity مش Model
-        // return (e).toJson();
+        return <String, dynamic>{};
       }).toList(),
       'box_currency': currency,
     };

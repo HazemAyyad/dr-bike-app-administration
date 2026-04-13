@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -118,14 +119,19 @@ class BuildProductCard extends GetView<StockController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // صورة المنتج
-            product.image.isEmpty || product.image == 'no image'
-                ? Image.asset(
-                    AssetsManager.stockImage,
-                    height: 65.h,
-                    width: 90.w,
-                  )
-                : ClipRRect(
+            // صورة المنتج (ShowNetImage: relative path + legacy STORE_DOMAIN host rewrite)
+            () {
+              final resolved = ShowNetImage.getPhoto(product.image);
+              final missing = resolved == AssetsManager.noImageNet ||
+                  product.image == 'no image';
+              if (missing) {
+                return Image.asset(
+                  AssetsManager.stockImage,
+                  height: 65.h,
+                  width: 90.w,
+                );
+              }
+              return ClipRRect(
                     borderRadius: BorderRadius.circular(12.r),
                     child: CachedNetworkImage(
                       cacheManager: CacheManager(
@@ -146,7 +152,7 @@ class BuildProductCard extends GetView<StockController> {
                           ),
                         ),
                       ),
-                      imageUrl: product.image,
+                      imageUrl: resolved,
                       filterQuality: FilterQuality.low,
                       placeholder: (context, url) => SizedBox(
                         height: 65.h,
@@ -161,7 +167,8 @@ class BuildProductCard extends GetView<StockController> {
                         width: 90.w,
                       ),
                     ),
-                  ),
+                  );
+            }(),
             // معلومات المنتج
             Expanded(
               flex: 2,

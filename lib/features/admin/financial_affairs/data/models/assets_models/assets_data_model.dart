@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class AssetsModel {
@@ -14,15 +15,17 @@ class AssetsModel {
   });
 
   factory AssetsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return AssetsModel(
-      assets: (json['assets'] as List)
-          .map((e) => Asset.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      assets: mapList(
+        j['assets'],
+        (Map<String, dynamic> m) => Asset.fromJson(m),
+      ),
       totalAssetsOriginalPrices:
-          json['total_assets_original_prices'].toString(),
+          asString(j['total_assets_original_prices']),
       totalAssetsDepreciatePrices:
-          json['total_assets_depreciate_prices'].toString(),
-      averageDepreciationRate: json['average_depreciation_rate'] ?? '0.0',
+          asString(j['total_assets_depreciate_prices']),
+      averageDepreciationRate: j['average_depreciation_rate'] ?? '0.0',
     );
   }
 
@@ -56,16 +59,15 @@ class Asset {
   });
 
   factory Asset.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return Asset(
-      assetId: json['asset_id'] as int,
-      name: json['name'] ?? '',
-      originalPrice: json['original_price'] ?? '0.0',
-      depreciationRate: json['depreciation_rate'] ?? '0.0',
-      depreciationPrice: json['depreciation_price'] ?? '0.0',
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
-      image: ShowNetImage.getPhoto(json['image']),
+      assetId: asInt(j['asset_id']),
+      name: asString(j['name']),
+      originalPrice: asString(j['original_price'], '0.0'),
+      depreciationRate: asString(j['depreciation_rate'], '0.0'),
+      depreciationPrice: asString(j['depreciation_price'], '0.0'),
+      createdAt: parseApiDateTime(j['created_at']),
+      image: ShowNetImage.getPhoto(asNullableString(j['image'])),
     );
   }
 

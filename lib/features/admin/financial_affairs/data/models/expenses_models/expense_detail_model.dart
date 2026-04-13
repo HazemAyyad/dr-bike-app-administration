@@ -1,3 +1,4 @@
+import '../../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 
 class ExpenseDetailModel {
@@ -24,32 +25,37 @@ class ExpenseDetailModel {
   });
 
   factory ExpenseDetailModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    final box = asMap(j['box']);
+    List<String> mapPhotoList(dynamic raw) {
+      if (raw is! List) return [];
+      return raw.map((x) => ShowNetImage.getPhoto(asNullableString(x))).toList();
+    }
+
     return ExpenseDetailModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      price: json['price'].toString(),
-      boxId: json['box']?['id']?.toString() ?? '0',
-      notes: json['notes'] ?? '',
-      invoiceImg: List<String>.from(
-          json['invoice_img'].map((x) => ShowNetImage.getPhoto(x))),
-      media:
-          List<String>.from(json['media'].map((x) => ShowNetImage.getPhoto(x))),
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      price: asString(j['price'], '0'),
+      boxId: asString(box['id'], '0'),
+      notes: asNullableString(j['notes']),
+      invoiceImg: mapPhotoList(j['invoice_img']),
+      media: mapPhotoList(j['media']),
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      "id": id,
-      "name": name,
-      "price": price,
-      "box": boxId,
-      "notes": notes,
-      "invoice_img": invoiceImg,
-      "media": media,
-      "created_at": createdAt.toIso8601String(),
-      "updated_at": updatedAt.toIso8601String(),
+      'id': id,
+      'name': name,
+      'price': price,
+      'box': boxId,
+      'notes': notes,
+      'invoice_img': invoiceImg,
+      'media': media,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

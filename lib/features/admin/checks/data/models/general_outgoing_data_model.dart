@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class GeneralOutgoingDataModel {
   final int outgoingChecksCount;
   final double totalOutgoingChecks;
@@ -12,13 +14,12 @@ class GeneralOutgoingDataModel {
   });
 
   factory GeneralOutgoingDataModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return GeneralOutgoingDataModel(
-      outgoingChecksCount: json['outgoing_checks_count'] ?? 0,
-      totalOutgoingChecks:
-          double.tryParse(json['total_outgoing_checks'].toString()) ?? 0.0,
-      totalBoxes: double.tryParse(json['total_boxes'].toString()) ?? 0.0,
-      coveragePercentage:
-          (json['coverage_percentage'] as num?)?.toDouble() ?? 0.0,
+      outgoingChecksCount: asInt(j['outgoing_checks_count']),
+      totalOutgoingChecks: asDouble(j['total_outgoing_checks']),
+      totalBoxes: asDouble(j['total_boxes']),
+      coveragePercentage: asDouble(j['coverage_percentage']),
     );
   }
 

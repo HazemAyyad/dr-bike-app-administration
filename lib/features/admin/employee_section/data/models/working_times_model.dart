@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -21,13 +22,14 @@ class WorkingTimesModel extends WorkingTimesEntity {
         );
 
   factory WorkingTimesModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return WorkingTimesModel(
-      id: json[ApiKey.id] ?? 0,
-      employeeName: json[ApiKey.user_name] ?? 'unknown',
-      startWorkTime: json[ApiKey.start_work_time] ?? '00:00',
-      endWorkTime: json[ApiKey.end_work_time] ?? '0',
-      numberOfWorkHours: json[ApiKey.number_of_work_hours] ?? '0',
-      employeeImg: ShowNetImage.getPhoto(json[ApiKey.employee_img]),
+      id: asInt(j[ApiKey.id]),
+      employeeName: asString(j[ApiKey.user_name], 'unknown'),
+      startWorkTime: asString(j[ApiKey.start_work_time], '00:00'),
+      endWorkTime: asString(j[ApiKey.end_work_time], '0'),
+      numberOfWorkHours: asString(j[ApiKey.number_of_work_hours], '0'),
+      employeeImg: ShowNetImage.getPhoto(asNullableString(j[ApiKey.employee_img])),
     );
   }
 

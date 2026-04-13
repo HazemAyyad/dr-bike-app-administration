@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../../../../core/utils/assets_manger.dart';
@@ -22,16 +23,18 @@ class GeneralDataModel {
   });
 
   factory GeneralDataModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    final idImgRaw = j['ID_image'];
     return GeneralDataModel(
-      id: json['id'] ?? 0,
-      phone: json['phone'] ?? '',
-      jobTitle: json['job_title'] ?? '',
-      name: json['name'] ?? '',
-      isCanceled: json['is_canceled'] ?? '0',
-      idImage: (json['ID_image'] != null && json['ID_image'].isNotEmpty)
-          ? ShowNetImage.getPhoto(json['ID_image'])
+      id: asInt(j['id']),
+      phone: asString(j['phone']),
+      jobTitle: asString(j['job_title']),
+      name: asString(j['name']),
+      isCanceled: asString(j['is_canceled'], '0'),
+      idImage: (idImgRaw != null && asString(idImgRaw).isNotEmpty)
+          ? ShowNetImage.getPhoto(asNullableString(idImgRaw))
           : AssetsManager.noImageNet,
-      type: json['type'] ?? '',
+      type: asNullableString(j['type']),
     );
   }
 

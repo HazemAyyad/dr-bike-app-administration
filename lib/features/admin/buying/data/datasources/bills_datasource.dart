@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../presentation/controllers/bills_controller.dart';
 
 class BillsDatasource {
@@ -31,7 +33,25 @@ class BillsDatasource {
                                     ? EndPoints.getPendingReturnPurchases
                                     : EndPoints.getDeliveredReturnPurchases,
       );
-      return response.data;
+      final data = response.data;
+      if (kDebugMode && data is Map) {
+        final m = Map<String, dynamic>.from(data);
+        final bills = m['bills'];
+        if (bills is List && bills.isNotEmpty) {
+          debugParseLog(
+            'BillsDatasource.getBills',
+            'page=$page sampleBill=${bills.first}',
+          );
+        }
+        final rp = m['return_products'];
+        if (rp is List && rp.isNotEmpty) {
+          debugParseLog(
+            'BillsDatasource.getBills',
+            'page=$page sampleReturnProduct=${rp.first}',
+          );
+        }
+      }
+      return data;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -105,7 +125,26 @@ class BillsDatasource {
         options: isDownload ? Options(responseType: ResponseType.bytes) : null,
         isFormData: true,
       );
-      return response.data;
+      final raw = response.data;
+      if (kDebugMode && !isDownload) {
+        final ep =
+            isDownload ? EndPoints.billReport : EndPoints.getBillDetails;
+        debugParseLog(
+          'BillsDatasource.getBillDetails',
+          'endpoint=$ep billId=$billId rawKeys=${asMap(raw).keys.toList()}',
+        );
+        dynamic bd = asMap(raw)['bill_details'];
+        bd ??= asMap(asMap(raw)['data'])['bill_details'];
+        final bdm = asMap(bd);
+        final prods = bdm['products'];
+        if (prods is List && prods.isNotEmpty) {
+          debugParseLog(
+            'BillsDatasource.getBillDetails',
+            'sampleProduct=${prods.first}',
+          );
+        }
+      }
+      return raw;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -14,14 +14,32 @@ class ProductModel {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    final nameArCandidate = json['nameAr'] ?? json['name'];
-    final projectsRaw = json['projects'];
+    final j = Map<String, dynamic>.from(json);
+
+    final idRaw = j['id'] ??
+        j['product_id'] ??
+        j['category_id'] ??
+        j['sub_category_id'];
+    final nameRaw = j['nameAr'] ??
+        j['name'] ??
+        j['product_name'] ??
+        j['category_name'] ??
+        j['sub_category_name'] ??
+        j['title'];
+    final stockRaw = j['stock'] ?? j['product_stock'] ?? j['quantity'];
+
     return ProductModel(
-      id: asString(json['id']),
-      nameAr: asString(nameArCandidate),
-      stock: asString(json['stock']),
-      projects: projectsRaw is List ? List<dynamic>.from(projectsRaw) : <dynamic>[],
+      id: asString(idRaw),
+      nameAr: asString(nameRaw),
+      stock: asString(stockRaw),
+      projects: _projectsFromJson(j['projects']),
     );
+  }
+
+  static List<dynamic> _projectsFromJson(dynamic raw) {
+    if (raw == null) return <dynamic>[];
+    if (raw is List) return List<dynamic>.from(raw);
+    return <dynamic>[];
   }
 
   Map<String, dynamic> toJson() {

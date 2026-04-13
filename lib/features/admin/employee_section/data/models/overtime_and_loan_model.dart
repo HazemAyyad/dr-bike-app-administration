@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class OvertimeAndLoanModel {
@@ -24,18 +25,17 @@ class OvertimeAndLoanModel {
   });
 
   factory OvertimeAndLoanModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return OvertimeAndLoanModel(
-      id: json['id'] is String ? int.tryParse(json['id']) ?? 0 : json['id'],
-      employeeName: json['employee_name'] ?? '',
-      employeeImg: ShowNetImage.getPhoto(json['employee_img'] ?? ''),
-      orderStatus: json['order_status'] ?? '',
-      type: json['type'] ?? '',
-      overtimeValue: json['overtime_value'] ?? '',
-      loanValue: json['loan_value'] ?? '',
-      extraWorkHoursValue: json['extra_work_hours'] ?? '',
-      orderDate: json['order_date'] != null
-          ? DateTime.parse(json['order_date'])
-          : DateTime.now(),
+      id: asInt(j['id']),
+      employeeName: asString(j['employee_name']),
+      employeeImg: ShowNetImage.getPhoto(asNullableString(j['employee_img'])),
+      orderStatus: asString(j['order_status']),
+      type: asString(j['type']),
+      overtimeValue: asNullableString(j['overtime_value']),
+      loanValue: asNullableString(j['loan_value']),
+      extraWorkHoursValue: asNullableString(j['extra_work_hours']),
+      orderDate: parseApiDateTime(j['order_date']),
     );
   }
 

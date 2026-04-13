@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -13,9 +14,10 @@ class QrGenerationModel extends QrGenerationEntity {
         );
 
   factory QrGenerationModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return QrGenerationModel(
-      codeText: json[ApiKey.code_text] ?? '',
-      qrImageUrl: ShowNetImage.getPhoto(json[ApiKey.qr_image_url]),
+      codeText: asString(j[ApiKey.code_text]),
+      qrImageUrl: ShowNetImage.getPhoto(asNullableString(j[ApiKey.qr_image_url])),
     );
   }
 

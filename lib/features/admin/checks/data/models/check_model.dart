@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../domain/entity/check_entity.dart';
@@ -33,31 +34,44 @@ class NotCashedModel {
     required this.coverPercentage,
   });
 
-  factory NotCashedModel.fromJson(Map<String, dynamic> json,
-      {required String checksPath}) {
+  factory NotCashedModel.fromJson(
+    Map<String, dynamic> json, {
+    required String checksPath,
+  }) {
+    final j = Map<String, dynamic>.from(json);
+    final frontImgBase = asNullableString(j['front_checks_images_path']) ??
+        asNullableString(j['checks_images_path']) ??
+        '';
+    final backImgBase = asString(j['back_checks_images_path']);
+
+    List<CheckModel> mapChecks() {
+      final raw = j[checksPath];
+      if (raw is! List) return [];
+      return raw.map((e) {
+        final m = e is Map ? Map<String, dynamic>.from(e) : <String, dynamic>{};
+        return CheckModel.fromJson(
+          m,
+          frontImg: frontImgBase,
+          backImg: backImgBase,
+        );
+      }).toList();
+    }
+
     return NotCashedModel(
-      status: json['status'] ?? '',
-      checksStatus: json['checks_status'] ?? '',
-      checksImagesPath: json['checks_images_path'] ?? '',
-      inComingChecksList: (json[checksPath] as List<dynamic>?)
-              ?.map(
-                (e) => CheckModel.fromJson(
-                  e,
-                  frontImg: json['front_checks_images_path'] ??
-                      json['checks_images_path'],
-                  backImg: json['back_checks_images_path'] ?? '',
-                ),
-              )
-              .toList() ??
-          [],
-      checksCount: (json['checks_count'] ?? '').toString(),
-      checksTotalDollar: (json['checks_total_dollar'] ?? '').toString(),
-      checksTotalShekel: (json['checks_total_shekel'] ?? '').toString(),
-      checksTotalDinar: (json['checks_total_dinar'] ?? '').toString(),
-      boxesTotalDollar: (json['boxes_total_dollar'] ?? '').toString(),
-      boxesTotalShekel: (json['boxes_total_shekel'] ?? '').toString(),
-      boxesTotalDinar: (json['boxes_total_dinar'] ?? '').toString(),
-      coverPercentage: json['cover_percentage'],
+      status: asString(j['status']),
+      checksStatus: asString(j['checks_status']),
+      checksImagesPath: asString(j['checks_images_path']),
+      inComingChecksList: mapChecks(),
+      checksCount: asString(j['checks_count']),
+      checksTotalDollar: asString(j['checks_total_dollar']),
+      checksTotalShekel: asString(j['checks_total_shekel']),
+      checksTotalDinar: asString(j['checks_total_dinar']),
+      boxesTotalDollar: asString(j['boxes_total_dollar']),
+      boxesTotalShekel: asString(j['boxes_total_shekel']),
+      boxesTotalDinar: asString(j['boxes_total_dinar']),
+      coverPercentage: j['cover_percentage'] is Map
+          ? Map<String, dynamic>.from(j['cover_percentage'] as Map)
+          : j['cover_percentage'] as Map<String, dynamic>?,
     );
   }
 
@@ -91,10 +105,11 @@ class CoverPercentageModel {
   });
 
   factory CoverPercentageModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return CoverPercentageModel(
-      dollar: (json['dollar'] ?? 0).toDouble(),
-      dinar: (json['dinar'] ?? 0).toDouble(),
-      shekel: (json['shekel'] ?? 0).toDouble(),
+      dollar: asDouble(j['dollar']),
+      dinar: asDouble(j['dinar']),
+      shekel: asDouble(j['shekel']),
     );
   }
 
@@ -157,49 +172,48 @@ class CheckModel extends CheckEntity {
     required String frontImg,
     required String backImg,
   }) {
+    final j = Map<String, dynamic>.from(json);
+    final frontRel =
+        asNullableString(j['front_image']) ?? asNullableString(j['img']);
+    final backRel = asNullableString(j['back_image']);
+
     return CheckModel(
-      id: json['id'] ?? 0,
-      customerId: json['customer_id']?.toString(),
-      status: json['status'] ?? '',
-      total: json['total'] ?? '0.00',
-      dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'])
-          : DateTime.now(),
-      currency: json['currency'] ?? '',
-      checkId: json['check_id'] ?? '',
-      bankName: json['bank_name'] ?? '',
-      frontImage: json['front_image'] != null || json['img'] != null
-          ? ShowNetImage.getPhoto(
-              '$frontImg/${json['front_image'] ?? json['img']}')
+      id: asInt(j['id']),
+      customerId: asNullableString(j['customer_id']),
+      status: asString(j['status']),
+      total: asString(j['total'], '0.00'),
+      dueDate: parseApiDateTime(j['due_date']),
+      currency: asString(j['currency']),
+      checkId: asString(j['check_id']),
+      bankName: asString(j['bank_name']),
+      frontImage: frontRel != null
+          ? ShowNetImage.getPhoto('$frontImg/$frontRel')
           : null,
-      backImage: json['back_image'] != null
-          ? ShowNetImage.getPhoto('$backImg/${json['back_image']}')
+      backImage: backRel != null
+          ? ShowNetImage.getPhoto('$backImg/$backRel')
           : null,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'])
-          : DateTime.now(),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'])
-          : DateTime.now(),
-      sellerId: json['seller_id']?.toString(),
-      customer: json['customer'] != null
-          ? SellerModel.fromJson(json['customer'])
+      createdAt: parseApiDateTime(j['created_at']),
+      updatedAt: parseApiDateTime(j['updated_at']),
+      sellerId: asNullableString(j['seller_id']),
+      customer: j['customer'] != null
+          ? SellerModel.fromJson(asMap(j['customer']))
           : null,
-      seller:
-          json['seller'] != null ? SellerModel.fromJson(json['seller']) : null,
-      fromCustomer: json['from_customer'] != null
-          ? SellerModel.fromJson(json['from_customer'])
+      seller: j['seller'] != null
+          ? SellerModel.fromJson(asMap(j['seller']))
           : null,
-      fromSeller: json['from_seller'] != null
-          ? SellerModel.fromJson(json['from_seller'])
+      fromCustomer: j['from_customer'] != null
+          ? SellerModel.fromJson(asMap(j['from_customer']))
           : null,
-      toCustomer: json['to_customer'] != null
-          ? SellerModel.fromJson(json['to_customer'])
+      fromSeller: j['from_seller'] != null
+          ? SellerModel.fromJson(asMap(j['from_seller']))
           : null,
-      toSeller: json['to_seller'] != null
-          ? SellerModel.fromJson(json['to_seller'])
+      toCustomer: j['to_customer'] != null
+          ? SellerModel.fromJson(asMap(j['to_customer']))
           : null,
-      notes: json['notes'] ?? '',
+      toSeller: j['to_seller'] != null
+          ? SellerModel.fromJson(asMap(j['to_seller']))
+          : null,
+      notes: asString(j['notes']),
     );
   }
 
@@ -238,9 +252,10 @@ class SellerModel extends Seller {
         );
 
   factory SellerModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return SellerModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      id: asInt(j['id']),
+      name: asString(j['name']),
     );
   }
 

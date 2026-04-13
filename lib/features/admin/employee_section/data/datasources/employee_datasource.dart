@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/employee_details_model.dart';
 import '../models/employee_model.dart';
@@ -178,10 +180,22 @@ class EmployeeDatasource {
   Future<List<EmployeeModel>> getEmployees() async {
     try {
       final response = await api.get(EndPoints.employees);
-      List<EmployeeModel> employees = (response.data['employees'] as List)
-          .map((e) => EmployeeModel.fromJson(e))
-          .toList();
-      return employees;
+      final raw = response.data;
+      if (kDebugMode) {
+        final sample = extractMapListFromResponse(raw, ApiKey.employees);
+        if (sample.isNotEmpty) {
+          debugParseLog(
+            'EmployeeDatasource.getEmployees',
+            'model=EmployeeModel sample=${sample.first}',
+          );
+        }
+      }
+      return mapListFromResponseKey(
+        raw,
+        ApiKey.employees,
+        (Map<String, dynamic> m) => EmployeeModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getEmployees',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -198,11 +212,22 @@ class EmployeeDatasource {
   Future<List<WorkingTimesModel>> getWorkingTimes() async {
     try {
       final response = await api.get(EndPoints.workingTimes);
-      List<WorkingTimesModel> employees =
-          (response.data[ApiKey.working_times] as List)
-              .map((e) => WorkingTimesModel.fromJson(e))
-              .toList();
-      return employees;
+      final raw = response.data;
+      if (kDebugMode) {
+        final sample = extractMapListFromResponse(raw, ApiKey.working_times);
+        if (sample.isNotEmpty) {
+          debugParseLog(
+            'EmployeeDatasource.getWorkingTimes',
+            'model=WorkingTimesModel sample=${sample.first}',
+          );
+        }
+      }
+      return mapListFromResponseKey(
+        raw,
+        ApiKey.working_times,
+        (Map<String, dynamic> m) => WorkingTimesModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getWorkingTimes',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -219,11 +244,22 @@ class EmployeeDatasource {
   Future<List<FinancialDuesModel>> getFinancialDues() async {
     try {
       final response = await api.get(EndPoints.financialDues);
-      List<FinancialDuesModel> employees =
-          (response.data[ApiKey.financial_dues] as List)
-              .map((e) => FinancialDuesModel.fromJson(e))
-              .toList();
-      return employees;
+      final raw = response.data;
+      if (kDebugMode) {
+        final sample = extractMapListFromResponse(raw, ApiKey.financial_dues);
+        if (sample.isNotEmpty) {
+          debugParseLog(
+            'EmployeeDatasource.getFinancialDues',
+            'model=FinancialDuesModel sample=${sample.first}',
+          );
+        }
+      }
+      return mapListFromResponseKey(
+        raw,
+        ApiKey.financial_dues,
+        (Map<String, dynamic> m) => FinancialDuesModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getFinancialDues',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -246,7 +282,7 @@ class EmployeeDatasource {
         'employee_id': employeeId,
       });
       final employee = FinancialDetailsModel.fromJson(
-        response.data[ApiKey.financial_details] as Map<String, dynamic>,
+        asMap(response.data[ApiKey.financial_details]),
       );
       return employee;
     } on DioException catch (e) {
@@ -269,8 +305,8 @@ class EmployeeDatasource {
       final response = await api.post(EndPoints.employeePermissions, data: {
         'employee_id': employeeId,
       });
-      final employee =
-          EmployeeDetailsModel.fromJson(response.data as Map<String, dynamic>);
+      final raw = response.data;
+      final employee = EmployeeDetailsModel.fromJson(asMap(raw));
       return employee;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -288,8 +324,8 @@ class EmployeeDatasource {
   Future<QrGenerationModel> qrGeneration() async {
     try {
       final response = await api.get(EndPoints.qrGeneration);
-      final employee =
-          QrGenerationModel.fromJson(response.data as Map<String, dynamic>);
+      final raw = response.data;
+      final employee = QrGenerationModel.fromJson(asMap(raw));
       return employee;
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -310,11 +346,23 @@ class EmployeeDatasource {
     try {
       final response = await api
           .get(isOvertime ? EndPoints.overtimeOrders : EndPoints.loanOrders);
-      List<OvertimeAndLoanModel> employees =
-          (response.data['employee_orders'] as List)
-              .map((e) => OvertimeAndLoanModel.fromJson(e))
-              .toList();
-      return employees;
+      final raw = response.data;
+      const listKey = 'employee_orders';
+      if (kDebugMode) {
+        final sample = extractMapListFromResponse(raw, listKey);
+        if (sample.isNotEmpty) {
+          debugParseLog(
+            'EmployeeDatasource.getOvertimeAndLoan',
+            'model=OvertimeAndLoanModel isOvertime=$isOvertime sample=${sample.first}',
+          );
+        }
+      }
+      return mapListFromResponseKey(
+        raw,
+        listKey,
+        (Map<String, dynamic> m) => OvertimeAndLoanModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getOvertimeAndLoan',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -387,10 +435,22 @@ class EmployeeDatasource {
   Future<List<LogsModel>> getLogs() async {
     try {
       final response = await api.get(EndPoints.employeeLogs);
-      List<LogsModel> logs = (response.data['logs'] as List)
-          .map((e) => LogsModel.fromJson(e))
-          .toList();
-      return logs;
+      final raw = response.data;
+      if (kDebugMode) {
+        final sample = extractMapListFromResponse(raw, 'logs');
+        if (sample.isNotEmpty) {
+          debugParseLog(
+            'EmployeeDatasource.getLogs',
+            'model=LogsModel sample=${sample.first}',
+          );
+        }
+      }
+      return mapListFromResponseKey(
+        raw,
+        'logs',
+        (Map<String, dynamic> m) => LogsModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getLogs',
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

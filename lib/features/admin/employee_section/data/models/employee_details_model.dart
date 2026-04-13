@@ -1,7 +1,15 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../domain/entities/employee_details_entity.dart';
+
+List<String> _imageUrlList(dynamic raw) {
+  if (raw is! List) return [];
+  return raw
+      .map((img) => ShowNetImage.getPhoto(asNullableString(img)))
+      .toList();
+}
 
 class EmployeeDetailsModel extends EmployeeDetailsEntity {
   const EmployeeDetailsModel({
@@ -37,41 +45,29 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
         );
 
   factory EmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    final details = asMap(j[ApiKey.employee_details]);
     return EmployeeDetailsModel(
-      id: json[ApiKey.employee_details][ApiKey.id] ?? 0,
-      name: json[ApiKey.employee_details][ApiKey.name] ?? 'Unknown',
-      email: json[ApiKey.employee_details][ApiKey.email] ?? 'Unknown',
-      phone: json[ApiKey.employee_details][ApiKey.phone] ?? 'Unknown',
-      subPhone: json[ApiKey.employee_details][ApiKey.sub_phone] ?? 'Unknown',
-      hourWorkPrice:
-          json[ApiKey.employee_details][ApiKey.hour_work_price] ?? '0',
-      overtimeWorkPrice:
-          json[ApiKey.employee_details][ApiKey.overtime_work_price] ?? '0',
-      numberOfWorkHours:
-          json[ApiKey.employee_details][ApiKey.number_of_work_hours] ?? '0',
-      startWorkTime:
-          json[ApiKey.employee_details][ApiKey.start_work_time] ?? '',
-      endWorkTime: json[ApiKey.employee_details][ApiKey.end_work_time] ?? '',
-      employeeImg: (json[ApiKey.employee_details][ApiKey.employee_img] is List)
-          ? (json[ApiKey.employee_details][ApiKey.employee_img] as List)
-              .map((img) => ShowNetImage.getPhoto(img))
-              .toList()
-          : [],
-      documentImg: (json[ApiKey.employee_details][ApiKey.document_img] is List)
-          ? (json[ApiKey.employee_details][ApiKey.document_img] as List)
-              .map((img) => ShowNetImage.getPhoto(img))
-              .toList()
-          : [],
-      permissions: (json[ApiKey.permissions] is List)
-          ? (json[ApiKey.permissions] as List)
-              .map((p) => PermissionModel.fromJson(p))
-              .toList()
-          : [],
-      rewardPunishment: (json['rewards_and_punishments'] is List)
-          ? (json['rewards_and_punishments'] as List)
-              .map((p) => RewardPunishmentModel.fromJson(p))
-              .toList()
-          : [],
+      id: asInt(details[ApiKey.id]),
+      name: asString(details[ApiKey.name], 'Unknown'),
+      email: asString(details[ApiKey.email], 'Unknown'),
+      phone: asString(details[ApiKey.phone], 'Unknown'),
+      subPhone: asString(details[ApiKey.sub_phone], 'Unknown'),
+      hourWorkPrice: asString(details[ApiKey.hour_work_price], '0'),
+      overtimeWorkPrice: asString(details[ApiKey.overtime_work_price], '0'),
+      numberOfWorkHours: asString(details[ApiKey.number_of_work_hours], '0'),
+      startWorkTime: asString(details[ApiKey.start_work_time]),
+      endWorkTime: asString(details[ApiKey.end_work_time]),
+      employeeImg: _imageUrlList(details[ApiKey.employee_img]),
+      documentImg: _imageUrlList(details[ApiKey.document_img]),
+      permissions: mapList(
+        j[ApiKey.permissions],
+        (Map<String, dynamic> m) => PermissionModel.fromJson(m),
+      ),
+      rewardPunishment: mapList(
+        j['rewards_and_punishments'],
+        (Map<String, dynamic> m) => RewardPunishmentModel.fromJson(m),
+      ),
     );
   }
 }
@@ -88,10 +84,11 @@ class PermissionModel extends PermissionEntity {
         );
 
   factory PermissionModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return PermissionModel(
-      permissionId: json[ApiKey.permission_id],
-      permissionName: json[ApiKey.permission_name],
-      permissionNameEn: json[ApiKey.permission_name_en],
+      permissionId: asInt(j[ApiKey.permission_id]),
+      permissionName: asString(j[ApiKey.permission_name]),
+      permissionNameEn: asString(j[ApiKey.permission_name_en]),
     );
   }
 }
@@ -108,10 +105,11 @@ class RewardPunishmentModel extends RewardPunishmentEntity {
         );
 
   factory RewardPunishmentModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return RewardPunishmentModel(
-      points: json['points'] ?? '',
-      notes: json['notes'] ?? '',
-      type: json['type'] ?? '',
+      points: asString(j['points']),
+      notes: asString(j['notes']),
+      type: asString(j['type']),
     );
   }
 
