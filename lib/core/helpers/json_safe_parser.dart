@@ -48,12 +48,16 @@ Map<String, dynamic> asMap(dynamic value) {
   return <String, dynamic>{};
 }
 
+/// On Flutter web, lists from JSON/interop may be `JSArray`; copying with
+/// [List.from] yields a normal Dart [List] that matches `List<T>` expectations.
+List<T> dartList<T>(Iterable<T> source) => List<T>.from(source);
+
 List<Map<String, dynamic>> asMapList(dynamic value) {
   if (value is List) {
-    return value
+    final mapped = value
         .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
-        .toList();
+        .map((e) => Map<String, dynamic>.from(e));
+    return List<Map<String, dynamic>>.from(mapped);
   }
   return <Map<String, dynamic>>[];
 }
@@ -62,7 +66,7 @@ List<T> mapList<T>(
   dynamic value,
   T Function(Map<String, dynamic>) builder,
 ) {
-  return asMapList(value).map(builder).toList();
+  return dartList(asMapList(value).map(builder));
 }
 
 /// تواريخ API: غالباً ISO string؛ نادراً timestamp رقمي.
@@ -193,5 +197,5 @@ List<T> mapListFromResponseKey<T>(
       );
     }
   }
-  return out;
+  return dartList(out);
 }

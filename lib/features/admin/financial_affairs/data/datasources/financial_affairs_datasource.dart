@@ -491,9 +491,8 @@ class FinancialAffairsDatasource {
         data: {'file_id': fileId},
       );
       final rows = extractMapListFromResponse(response.data, 'file_papers');
-      return rows
-          .map((e) => FilePapersModel.fromJson(e))
-          .toList();
+      final list = rows.map((e) => FilePapersModel.fromJson(e)).toList();
+      return dartList(list);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

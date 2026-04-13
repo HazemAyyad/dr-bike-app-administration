@@ -8,7 +8,7 @@ import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/helpers/show_no_data.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../../../data/models/official_papers_models/safes_model.dart';
+import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/files_model.dart';
 import '../../controllers/finacial_service.dart';
 import '../../controllers/official_papers_controller.dart';
 import 'add_paper.dart';

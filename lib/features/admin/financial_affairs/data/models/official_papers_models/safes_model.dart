@@ -2,8 +2,6 @@ import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
 import 'files_model.dart';
 
-export 'files_model.dart';
-
 /// خزينة تحتوي صناديق ملفات؛ كل صندوق يحتوي ملفات ([FilesModel] من `files_model.dart`).
 class SafesModel {
   final int id;

@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../../core/helpers/json_safe_parser.dart';
-import '../../data/models/official_papers_models/papers_model.dart';
-import '../../data/models/official_papers_models/pictures_model.dart';
-import '../../data/models/official_papers_models/safes_model.dart';
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/files_model.dart';
+import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/papers_model.dart';
+import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/pictures_model.dart';
+import 'package:doctorbike/features/admin/financial_affairs/data/models/official_papers_models/safes_model.dart';
 import '../../domain/usecases/get_all_dinancial_usecase.dart';
 import '../../domain/usecases/paper_usecase/add_document_usecase.dart';
 import '../../domain/usecases/paper_usecase/add_paper_usecase.dart';
@@ -159,7 +160,7 @@ class OfficialPapersController extends GetxController
       (m) => PaperModel.fromJson(m),
       debugScope: 'OfficialPapers papers',
     );
-    FinacialService().papers.assignAll(papersList);
+    FinacialService().papers.assignAll(dartList(papersList));
     papersSearch = FinacialService().papers;
 
     // pictures
@@ -174,7 +175,7 @@ class OfficialPapersController extends GetxController
       (m) => PictureModel.fromJson(m),
       debugScope: 'OfficialPapers pictures',
     );
-    FinacialService().pictures.assignAll(picturesList);
+    FinacialService().pictures.assignAll(dartList(picturesList));
     picturesSearch = FinacialService().pictures;
 
     // files
@@ -189,7 +190,7 @@ class OfficialPapersController extends GetxController
       (m) => FilesModel.fromJson(m),
       debugScope: 'OfficialPapers files',
     );
-    FinacialService().filesData.assignAll(filesList);
+    FinacialService().updateFilesData(dartList(filesList));
     // filesSearch = FinacialService().files;
     isLoading(false);
     update();
@@ -210,7 +211,7 @@ class OfficialPapersController extends GetxController
       (m) => SafesModel.fromJson(m),
       debugScope: 'OfficialPapers treasuries',
     );
-    FinacialService().safes.assignAll(safesList);
+    FinacialService().safes.assignAll(dartList(safesList));
 
     isFilesLoading(false);
     update();
@@ -220,7 +221,7 @@ class OfficialPapersController extends GetxController
   void getFileData({required String fileId}) async {
     isLoading(true);
     final filePapers = await getFilePapersUsecase.call(fileId: fileId);
-    FinacialService().filesPapers.assignAll(filePapers);
+    FinacialService().filesPapers.assignAll(dartList(filePapers));
     isLoading(false);
     update();
   }
