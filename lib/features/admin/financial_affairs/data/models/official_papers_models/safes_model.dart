@@ -1,3 +1,10 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
+import 'files_model.dart';
+
+export 'files_model.dart';
+
+/// خزينة تحتوي صناديق ملفات؛ كل صندوق يحتوي ملفات ([FilesModel] من `files_model.dart`).
 class SafesModel {
   final int id;
   final String name;
@@ -10,12 +17,11 @@ class SafesModel {
   });
 
   factory SafesModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return SafesModel(
-      id: json['id'],
-      name: json['name'],
-      fileBoxes: (json['file_boxes'] as List<dynamic>)
-          .map((e) => FileBoxModel.fromJson(e))
-          .toList(),
+      id: asInt(j['id']),
+      name: asString(j['name']),
+      fileBoxes: mapList(j['file_boxes'], (m) => FileBoxModel.fromJson(m)),
     );
   }
 
@@ -42,13 +48,12 @@ class FileBoxModel {
   });
 
   factory FileBoxModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FileBoxModel(
-      id: json['id'],
-      treasuryId: json['treasury_id'],
-      name: json['name'],
-      files: (json['files'] as List<dynamic>)
-          .map((e) => FilesModel.fromJson(e))
-          .toList(),
+      id: asInt(j['id']),
+      treasuryId: asString(j['treasury_id']),
+      name: asString(j['name']),
+      files: mapList(j['files'], (m) => FilesModel.fromJson(m)),
     );
   }
 
@@ -58,34 +63,6 @@ class FileBoxModel {
       'treasury_id': treasuryId,
       'name': name,
       'files': files.map((e) => e.toJson()).toList(),
-    };
-  }
-}
-
-class FilesModel {
-  final int id;
-  final String fileBoxId;
-  final String name;
-
-  FilesModel({
-    required this.id,
-    required this.fileBoxId,
-    required this.name,
-  });
-
-  factory FilesModel.fromJson(Map<String, dynamic> json) {
-    return FilesModel(
-      id: json['id'],
-      fileBoxId: json['file_box_id'],
-      name: json['name'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'file_box_id': fileBoxId,
-      'name': name,
     };
   }
 }

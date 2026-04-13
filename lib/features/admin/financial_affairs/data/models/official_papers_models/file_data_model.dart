@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 class FilePapersModel {
@@ -20,14 +21,15 @@ class FilePapersModel {
   });
 
   factory FilePapersModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FilePapersModel(
-      fileId: json['file_id'],
-      fileName: json['file_name'],
-      paperId: json['paper_id'],
-      paperName: json['paper_name'],
-      paperImage: ShowNetImage.getPhoto(json['paper_image']),
-      fileBoxName: json['file_box_name'],
-      treasuryName: json['treasury_name'],
+      fileId: asInt(j['file_id']),
+      fileName: asString(j['file_name']),
+      paperId: asInt(j['paper_id']),
+      paperName: asString(j['paper_name']),
+      paperImage: ShowNetImage.getPhoto(asNullableString(j['paper_image'])),
+      fileBoxName: asString(j['file_box_name']),
+      treasuryName: asString(j['treasury_name']),
     );
   }
 

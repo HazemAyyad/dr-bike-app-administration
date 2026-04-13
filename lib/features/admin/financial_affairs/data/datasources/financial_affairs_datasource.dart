@@ -11,6 +11,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/assets_models/assets_detials_model.dart';
 import '../models/assets_models/assets_log_model.dart';
@@ -25,24 +26,28 @@ class FinancialAffairsDatasource {
   // get all financial
   Future<dynamic> getAllFinancial({required String page}) async {
     try {
-      final response = await api.get(
-        page == '1'
-            ? EndPoints.getAllAssets
-            : page == '2'
-                ? EndPoints.getAllExpenses
-                : page == '3'
-                    ? EndPoints.getAllDestructions
-                    : page == '4'
-                        ? EndPoints.getAllPapers
-                        : page == '5'
-                            ? EndPoints.getAllPictures
-                            : page == '6'
-                                ? EndPoints.getAllFiles
-                                : page == '7'
-                                    ? EndPoints.getAllTreasuries
-                                    : EndPoints.getAllAssets,
+      final endpoint = page == '1'
+          ? EndPoints.getAllAssets
+          : page == '2'
+              ? EndPoints.getAllExpenses
+              : page == '3'
+                  ? EndPoints.getAllDestructions
+                  : page == '4'
+                      ? EndPoints.getAllPapers
+                      : page == '5'
+                          ? EndPoints.getAllPictures
+                          : page == '6'
+                              ? EndPoints.getAllFiles
+                              : page == '7'
+                                  ? EndPoints.getAllTreasuries
+                                  : EndPoints.getAllAssets;
+      final response = await api.get(endpoint);
+      final raw = response.data;
+      debugParseLog(
+        'FinancialAffairsDatasource.getAllFinancial',
+        'page=$page endpoint=$endpoint rawType=${raw.runtimeType}',
       );
-      return response.data;
+      return raw;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -485,9 +490,9 @@ class FinancialAffairsDatasource {
         EndPoints.getFilePapers,
         data: {'file_id': fileId},
       );
-      final data = response.data['file_papers'] as List;
-      return data
-          .map((e) => FilePapersModel.fromJson(e as Map<String, dynamic>))
+      final rows = extractMapListFromResponse(response.data, 'file_papers');
+      return rows
+          .map((e) => FilePapersModel.fromJson(e))
           .toList();
     } on DioException catch (e) {
       final data = e.response?.data;

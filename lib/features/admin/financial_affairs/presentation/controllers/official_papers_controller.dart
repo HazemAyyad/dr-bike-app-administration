@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../data/models/official_papers_models/papers_model.dart';
 import '../../data/models/official_papers_models/pictures_model.dart';
 import '../../data/models/official_papers_models/safes_model.dart';
@@ -148,28 +149,46 @@ class OfficialPapersController extends GetxController
     update();
     // papers
     final papers = await getAllFinancialUsecase.call(page: '4');
-    final papersJson = papers['papers'] as List;
-    final papersList = papersJson
-        .map((e) => PaperModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    debugParseLog(
+      'OfficialPapersController.getAllExpenses',
+      'page=4 papers responseType=${papers.runtimeType}',
+    );
+    final papersList = mapListFromResponseKey(
+      papers,
+      'papers',
+      (m) => PaperModel.fromJson(m),
+      debugScope: 'OfficialPapers papers',
+    );
     FinacialService().papers.assignAll(papersList);
     papersSearch = FinacialService().papers;
 
     // pictures
     final pictures = await getAllFinancialUsecase.call(page: '5');
-    final picturesJson = pictures['pictures'] as List;
-    final picturesList = picturesJson
-        .map((e) => PictureModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    debugParseLog(
+      'OfficialPapersController.getAllExpenses',
+      'page=5 pictures responseType=${pictures.runtimeType}',
+    );
+    final picturesList = mapListFromResponseKey(
+      pictures,
+      'pictures',
+      (m) => PictureModel.fromJson(m),
+      debugScope: 'OfficialPapers pictures',
+    );
     FinacialService().pictures.assignAll(picturesList);
     picturesSearch = FinacialService().pictures;
 
     // files
     final files = await getAllFinancialUsecase.call(page: '6');
-    final filesJson = files['files'] as List;
-    final filesList = filesJson
-        .map((e) => FilesModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    debugParseLog(
+      'OfficialPapersController.getAllExpenses',
+      'page=6 files responseType=${files.runtimeType}',
+    );
+    final filesList = mapListFromResponseKey(
+      files,
+      'files',
+      (m) => FilesModel.fromJson(m),
+      debugScope: 'OfficialPapers files',
+    );
     FinacialService().filesData.assignAll(filesList);
     // filesSearch = FinacialService().files;
     isLoading(false);
@@ -181,10 +200,16 @@ class OfficialPapersController extends GetxController
   void getTreasury() async {
     isFilesLoading(true);
     final safes = await getAllFinancialUsecase.call(page: '7');
-    final safesJson = safes['treasuries'] as List;
-    final safesList = safesJson
-        .map((e) => SafesModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    debugParseLog(
+      'OfficialPapersController.getTreasury',
+      'page=7 treasuries responseType=${safes.runtimeType}',
+    );
+    final safesList = mapListFromResponseKey(
+      safes,
+      'treasuries',
+      (m) => SafesModel.fromJson(m),
+      debugScope: 'OfficialPapers treasuries',
+    );
     FinacialService().safes.assignAll(safesList);
 
     isFilesLoading(false);

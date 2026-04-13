@@ -1,3 +1,5 @@
+import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+
 class FileBoxDetailsModel {
   final int fileBoxId;
   final String fileBoxName;
@@ -16,13 +18,14 @@ class FileBoxDetailsModel {
   });
 
   factory FileBoxDetailsModel.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
     return FileBoxDetailsModel(
-      fileBoxId: json['file_box_id'],
-      fileBoxName: json['file_box_name'],
-      fileId: json['file_id'],
-      fileName: json['file_name'],
-      treasuryId: json['treasury_id'].toString(),
-      treasuryName: json['treasury_name'],
+      fileBoxId: asInt(j['file_box_id']),
+      fileBoxName: asString(j['file_box_name']),
+      fileId: asInt(j['file_id']),
+      fileName: asString(j['file_name']),
+      treasuryId: asString(j['treasury_id']),
+      treasuryName: asString(j['treasury_name']),
     );
   }
 
