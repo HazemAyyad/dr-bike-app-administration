@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/stock/data/models/product_details_model.dart';
 import 'package:doctorbike/features/admin/stock/presentation/controllers/stock_controller.dart';
 import 'package:flutter/material.dart';
@@ -133,6 +134,24 @@ class StockImplement implements StockRepository {
         combinationList: combinationId,
       );
       return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> saveProductFull({
+    required FormData formData,
+    required bool isCreate,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await stockDataSource.saveProductFull(
+        formData: formData,
+        isCreate: isCreate,
+      );
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }

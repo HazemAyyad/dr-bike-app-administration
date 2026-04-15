@@ -16,62 +16,68 @@ class EditProductScreen extends GetView<StockController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(
-        title: 'editProduct',
-        action: false,
-        // actions: [],
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Column(
-          children: [
-            CustomTextField(
-              label: 'productName',
-              hintText: 'productName',
-              controller: controller.productNameController,
-            ),
-            SizedBox(height: 10.h),
-            CustomTextField(
-              label: 'productDetails',
-              hintText: 'productDetails',
-              controller: controller.productDetailsController,
-            ),
-            SizedBox(height: 10.h),
-            CustomDropdownField(
-              label: 'subCategory',
-              hint: 'subCategory',
-              dropdownField: controller.categories
-                  .map(
-                    (e) => DropdownMenuItem<String>(
-                      value: e.id.toString(),
-                      child: Text(e.nameAr),
+    return Obx(
+      () => Scaffold(
+        appBar: CustomAppBar(
+          title: controller.editingProductId.value == null
+              ? 'addProduct'
+              : 'editProduct',
+          action: false,
+        ),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
+            children: [
+              CustomTextField(
+                label: 'productName',
+                hintText: 'productName',
+                controller: controller.productNameController,
+              ),
+              SizedBox(height: 10.h),
+              CustomTextField(
+                label: 'productDetails',
+                hintText: 'productDetails',
+                controller: controller.productDetailsController,
+              ),
+              SizedBox(height: 10.h),
+              CustomDropdownField(
+                label: 'subCategory',
+                hint: 'subCategory',
+                dropdownField: controller.categories
+                    .map(
+                      (e) => DropdownMenuItem<String>(
+                        value: e.id.toString(),
+                        child: Text(e.nameAr),
+                      ),
+                    )
+                    .toList(),
+                value: controller.categories.isEmpty
+                    ? null
+                    : controller.categories
+                        .firstWhere(
+                          (element) =>
+                              element.id ==
+                              (controller.subCategoryController.text.isEmpty
+                                  ? controller.categories.first.id
+                                  : controller.subCategoryController.text),
+                          orElse: () => controller.categories.first,
+                        )
+                        .id,
+                onChanged: (val) {
+                  controller.subCategoryController.text = val!;
+                },
+              ),
+              SizedBox(height: 10.h),
+              Row(
+                children: [
+                  Flexible(
+                    child: CustomTextField(
+                      enabled: controller.editingProductId.value == null,
+                      label: 'stock',
+                      hintText: 'stock',
+                      controller: controller.stockController,
                     ),
-                  )
-                  .toList(),
-              value: controller.categories
-                  .where((element) =>
-                      element.id ==
-                      (controller.subCategoryController.text.isEmpty
-                          ? '1'
-                          : controller.subCategoryController.text))
-                  .first
-                  .id,
-              onChanged: (val) {
-                controller.subCategoryController.text = val!;
-              },
-            ),
-            SizedBox(height: 10.h),
-            Row(
-              children: [
-                Flexible(
-                  child: CustomTextField(
-                    enabled: false,
-                    label: 'stock',
-                    hintText: 'stock',
-                    controller: controller.stockController,
                   ),
-                ),
                 SizedBox(width: 10.h),
                 Flexible(
                   child: CustomTextField(
@@ -314,13 +320,39 @@ class EditProductScreen extends GetView<StockController> {
               },
             ),
             SizedBox(height: 10.h),
+            Padding(
+              padding: EdgeInsets.only(bottom: 8.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      controller.saveScopeFull.value
+                          ? 'syncWithStore'.tr
+                          : 'saveLocalOnly'.tr,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
+                  ),
+                  Switch(
+                    value: controller.saveScopeFull.value,
+                    onChanged: (v) => controller.saveScopeFull.value = v,
+                  ),
+                ],
+              ),
+            ),
             AppButton(
-              text: 'editProduct',
-              onPressed: () {},
+              text: controller.editingProductId.value == null
+                  ? 'addProduct'
+                  : 'editProduct',
+              onPressed: controller.submitProduct,
+              isLoading: controller.isLoading,
             ),
           ],
         ),
       ),
+    ),
     );
   }
 }

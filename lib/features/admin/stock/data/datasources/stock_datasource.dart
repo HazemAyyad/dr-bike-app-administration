@@ -207,4 +207,47 @@ class StockDatasource {
       );
     }
   }
+
+  /// `create/product` أو `update/product/full` — الجسم جاهز كـ [FormData].
+  Future<Map<String, dynamic>> saveProductFull({
+    required FormData formData,
+    required bool isCreate,
+  }) async {
+    try {
+      final response = await api.post(
+        isCreate ? EndPoints.createProductFull : EndPoints.updateProductFull,
+        data: formData,
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: 'Invalid response',
+            status: 500,
+            data: {},
+          ),
+        );
+      }
+      final map = Map<String, dynamic>.from(raw);
+      if (map['status']?.toString() == 'error') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: map['message']?.toString() ?? 'Error',
+            status: 422,
+            data: map,
+          ),
+        );
+      }
+      return map;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message']?.toString() ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? Map<String, dynamic>.from(data) : {},
+        ),
+      );
+    }
+  }
 }

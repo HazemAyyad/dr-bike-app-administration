@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/errors/failure.dart';
@@ -30,6 +31,12 @@ abstract class StockRepository {
   Future<Either<Failure, String>> addCombination({
     required String productId,
     required RxList<NewCompositionModel> combinationId,
+  });
+
+  /// إنشاء/تعديل منتج عبر API الكامل (multipart).
+  Future<Map<String, dynamic>> saveProductFull({
+    required FormData formData,
+    required bool isCreate,
   });
 
   // Future<Either<Failure, String>> updateProduct({

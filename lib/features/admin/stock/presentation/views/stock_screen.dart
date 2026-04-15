@@ -9,8 +9,8 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/archive_dialog.dart';
 import '../widgets/search_widget.dart';
+import '../../../../../routes/app_routes.dart';
 import '../widgets/grid_view_items.dart';
-import 'web_view_test.dart';
 
 class StockScreen extends GetView<StockController> {
   const StockScreen({Key? key}) : super(key: key);
@@ -103,7 +103,8 @@ class StockScreen extends GetView<StockController> {
           route: '',
           onTap: () {
             controller.toggleAddMenu();
-            Get.to(() => const EditProductWebView());
+            controller.prepareCreateProduct();
+            Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
           },
         ),
       ),

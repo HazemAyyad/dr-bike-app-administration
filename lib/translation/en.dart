@@ -725,6 +725,8 @@ const Map<String, String> en = {
   'numberOfProductsUsed': 'Number Of Products Used',
   'minimumSale': 'Minimum sale',
   'addProduct': 'Add Product',
+  'syncWithStore': 'Full sync with store',
+  'saveLocalOnly': 'Local save only (no store sync)',
   'newClearance': 'New Clearance',
   'newProductComposition': 'New Product Composition',
   'mainCategory': 'Main Category',

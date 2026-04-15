@@ -723,6 +723,8 @@ const Map<String, String> ar = {
   'numberOfProductsUsed': 'عدد المنتجات المستخدمة',
   'minimumSale': 'الحد الادني للبيع',
   'addProduct': 'إضافة منتج',
+  'syncWithStore': 'مزامنة كاملة مع المتجر',
+  'saveLocalOnly': 'حفظ في التطبيق فقط (بدون متجر)',
   'newClearance': 'تصفية جديدة',
   'newProductComposition': 'تركيب منتج جديد',
   'mainCategory': 'الفئة الرئيسية',

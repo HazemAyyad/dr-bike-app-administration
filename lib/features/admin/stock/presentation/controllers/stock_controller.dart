@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:doctorbike/routes/app_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FormData;
 
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/models/all_stock_products_model.dart';
@@ -12,6 +14,7 @@ import '../../domain/usecases/get_archived_usecase.dart';
 import '../../domain/usecases/get_categories_usecase.dart';
 import '../../domain/usecases/get_product_details_usecase.dart';
 import '../../domain/usecases/move_to_archive_usecase.dart';
+import '../../domain/usecases/save_product_full_usecase.dart';
 import '../../domain/usecases/search_products_usecase.dart';
 import 'stock_services.dart';
 
@@ -23,6 +26,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final GetCategoriesUsecase getCategoriesUsecase;
   final SearchProductsUsecase searchProductsUsecase;
   final AddCombinationUsecase addCombinationUsecase;
+  final SaveProductFullUsecase saveProductFullUsecase;
 
   StockController({
     required this.getAllStockUsecase,
@@ -32,6 +36,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required this.getCategoriesUsecase,
     required this.searchProductsUsecase,
     required this.addCombinationUsecase,
+    required this.saveProductFullUsecase,
   });
 
   final TextEditingController productNameController = TextEditingController();
@@ -151,6 +156,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxBool isLoadingMore = false.obs;
 
   final RxBool isAddMenuOpen = false.obs;
+
+  /// `null` = إنشاء منتج جديد؛ وإلا تعديل المنتج ذو الـ id.
+  final Rxn<String> editingProductId = Rxn<String>();
+
+  /// يطابق `save_scope` في الـ API: `full` أو `local_only`.
+  final RxBool saveScopeFull = true.obs;
 
   void scrollToTop() {
     scrollController.animateTo(
@@ -366,45 +377,232 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   String closeoutsProductsId = '';
-  void initProductDetails() {
-    isLoading(true);
-    productNameController.text = productDetails.value!.nameAr;
-    productDetailsController.text = productDetails.value!.descriptionAr!;
+
+  /// نموذج فارغ لإضافة منتج من شاشة المخزون.
+  void prepareCreateProduct() {
+    editingProductId.value = null;
+    saveScopeFull.value = true;
+    productNameController.clear();
+    productDetailsController.clear();
     subCategoryController.text =
-        productDetails.value!.productSubCategories!.isNotEmpty &&
-                productDetails.value!.productSubCategories != null
+        categories.isNotEmpty ? categories.first.id.toString() : '';
+    stockController.text = '0';
+    minimumStockController.clear();
+    wholesalePricesController.clear();
+    retailPricesController.clear();
+    discountPercentageController.clear();
+    selectPurchaseController.clear();
+    purchasePriceController.clear();
+    for (final el in items) {
+      el.onClose();
+    }
+    items.clear();
+    items.add(SizedModel());
+    isForcedSale.value = false;
+    update();
+  }
+
+  void initProductDetails() {
+    editingProductId.value = productDetails.value?.id;
+    productNameController.text = productDetails.value!.nameAr;
+    productDetailsController.text = productDetails.value!.descriptionAr ?? '';
+    subCategoryController.text =
+        productDetails.value!.productSubCategories != null &&
+                productDetails.value!.productSubCategories!.isNotEmpty
             ? productDetails.value!.productSubCategories!.first.subCategoryId
                 .toString()
             : '';
-    stockController.text = productDetails.value!.stock.toString();
-    minimumStockController.text = productDetails.value!.minSalePrice.toString();
+    stockController.text = productDetails.value!.stock?.toString() ?? '0';
+    minimumStockController.text =
+        productDetails.value!.minStock?.toString() ?? '';
     purchasePriceController.text =
-        productDetails.value!.normailPrice!.isNotEmpty &&
-                productDetails.value!.purchasePrices != null
+        productDetails.value!.normailPrice != null &&
+                productDetails.value!.normailPrice!.isNotEmpty
             ? productDetails.value!.normailPrice.toString()
             : '';
     discountPercentageController.text =
-        productDetails.value!.discount.toString();
-    retailPricesController.text = productDetails.value!.normailPrice.toString();
+        productDetails.value!.discount?.toString() ?? '0';
+    retailPricesController.text =
+        productDetails.value!.normailPrice?.toString() ?? '';
 
-    for (var sizeJson in productDetails.value!.sizes!) {
-      items.clear();
-      final sizeModel = SizedModel();
-      sizeModel.sizeController.text = sizeJson.size!;
-
-      final colorsJson = sizeJson.colorSizes!;
-      for (var colorJson in colorsJson) {
-        final colorModel = ColorModel();
-        colorModel.colorController.text = colorJson.colorAr!;
-        colorModel.priceController.text = colorJson.normailPrice!;
-        colorModel.quantityController.text = colorJson.stock!;
-        sizeModel.colors.add(colorModel);
-      }
-      items.add(sizeModel);
+    for (final el in items) {
+      el.onClose();
     }
-    isForcedSale.value = productDetails.value!.isSoldWithPaper == '1';
-    isLoading(false);
+    items.clear();
+    final sizesList = productDetails.value!.sizes;
+    if (sizesList != null) {
+      for (final sizeJson in sizesList) {
+        final sizeModel = SizedModel();
+        sizeModel.dbSizeId = sizeJson.id;
+        sizeModel.sizeController.text = sizeJson.size ?? '';
+
+        sizeModel.colors.clear();
+        final colorsJson = sizeJson.colorSizes ?? [];
+        for (final colorJson in colorsJson) {
+          final colorModel = ColorModel();
+          colorModel.dbColorId = colorJson.id;
+          colorModel.colorController.text = colorJson.colorAr ?? '';
+          colorModel.priceController.text = colorJson.normailPrice ?? '';
+          colorModel.quantityController.text = colorJson.stock ?? '';
+          sizeModel.colors.add(colorModel);
+        }
+        if (sizeModel.colors.isEmpty) {
+          sizeModel.colors.add(ColorModel());
+        }
+        items.add(sizeModel);
+      }
+    }
+    if (items.isEmpty) {
+      items.add(SizedModel());
+    }
+    isForcedSale.value = productDetails.value!.isSoldWithPaper == '1' ||
+        productDetails.value!.isSoldWithPaper == 1;
     update();
+  }
+
+  FormData _buildProductFormData() {
+    final form = FormData();
+
+    void addField(String key, String value) {
+      form.fields.add(MapEntry(key, value));
+    }
+
+    addField('nameAr', productNameController.text.trim());
+    addField('descriptionAr', productDetailsController.text.trim());
+    addField('nameEng', productNameController.text.trim());
+    addField('nameAbree', productNameController.text.trim());
+    addField('descriptionEng', productDetailsController.text.trim());
+    addField('descriptionAbree', productDetailsController.text.trim());
+    addField(
+      'discount',
+      discountPercentageController.text.trim().isEmpty
+          ? '0'
+          : discountPercentageController.text.trim(),
+    );
+    addField(
+      'normailPrice',
+      retailPricesController.text.trim().isEmpty
+          ? '0'
+          : retailPricesController.text.trim(),
+    );
+    addField(
+      'min_stock',
+      minimumStockController.text.trim().isEmpty
+          ? '0'
+          : minimumStockController.text.trim(),
+    );
+    addField('is_sold_with_paper', isForcedSale.value ? '1' : '0');
+    addField('save_scope', saveScopeFull.value ? 'full' : 'local_only');
+    addField('isShow', '1');
+    addField('isNewItem', '1');
+    addField('isMoreSales', '0');
+    addField('rate', '4');
+    addField('manufactureYear', '0');
+    addField('model', '');
+    addField('wholesalePrice', '0');
+    if (stockController.text.trim().isNotEmpty) {
+      addField('stock', stockController.text.trim());
+    }
+    if (selectPurchaseController.text.trim().isNotEmpty) {
+      addField('project_id', selectPurchaseController.text.trim());
+    }
+    if (editingProductId.value != null) {
+      addField('product_id', editingProductId.value!);
+    }
+
+    final subId = subCategoryController.text.trim();
+    if (subId.isNotEmpty) {
+      form.fields.add(MapEntry('sub_categories[]', subId));
+    }
+
+    var sizeIndex = 0;
+    for (final sz in items) {
+      final sizeText = sz.sizeController.text.trim();
+      final hasId = sz.dbSizeId != null && sz.dbSizeId!.isNotEmpty;
+      if (sizeText.isEmpty && !hasId) {
+        continue;
+      }
+      addField('sizes[$sizeIndex][size]', sizeText);
+      if (hasId) {
+        addField('sizes[$sizeIndex][id]', sz.dbSizeId!);
+      }
+      for (var j = 0; j < sz.colors.length; j++) {
+        final c = sz.colors[j];
+        addField(
+          'sizes[$sizeIndex][color_sizes][$j][colorAr]',
+          c.colorController.text.trim(),
+        );
+        addField(
+          'sizes[$sizeIndex][color_sizes][$j][normailPrice]',
+          c.priceController.text.trim().isEmpty ? '0' : c.priceController.text.trim(),
+        );
+        addField(
+          'sizes[$sizeIndex][color_sizes][$j][stock]',
+          c.quantityController.text.trim().isEmpty ? '0' : c.quantityController.text.trim(),
+        );
+        final cid = c.dbColorId;
+        if (cid != null && cid.isNotEmpty && cid != '0') {
+          addField('sizes[$sizeIndex][color_sizes][$j][id]', cid);
+        }
+      }
+      sizeIndex++;
+    }
+
+    return form;
+  }
+
+  Future<void> submitProduct() async {
+    isLoading(true);
+    update();
+    try {
+      final form = _buildProductFormData();
+      final result = await saveProductFullUsecase.call(
+        formData: form,
+        isCreate: editingProductId.value == null,
+      );
+      final msg = result['message']?.toString() ?? 'success'.tr;
+      if (result['media_warning'] != null ||
+          result['image_warning'] != null) {
+        Get.snackbar(
+          'success'.tr,
+          '$msg\n${result['media_warning'] ?? result['image_warning']}',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+        );
+      } else {
+        Get.snackbar(
+          'success'.tr,
+          msg,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      allProducts.clear();
+      allClearances.clear();
+      allCombinations.clear();
+      page = 1;
+      getAllProducts();
+      if (editingProductId.value != null) {
+        await getProductDetails(productId: editingProductId.value!);
+      }
+      Get.back();
+    } on ServerFailure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 
   @override
@@ -472,6 +670,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 class SizedModel {
   final TextEditingController sizeController = TextEditingController();
   final RxList<ColorModel> colors = <ColorModel>[].obs;
+  String? dbSizeId;
+
   SizedModel() {
     colors.add(ColorModel());
   }
@@ -484,6 +684,8 @@ class ColorModel {
   final TextEditingController colorController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  String? dbColorId;
+
   void onClose() {
     colorController.dispose();
     quantityController.dispose();

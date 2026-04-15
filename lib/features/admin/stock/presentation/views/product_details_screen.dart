@@ -13,7 +13,7 @@ import '../widgets/custom_text_and_dis.dart';
 import '../widgets/product_images_slider.dart';
 import '../widgets/purchase_price_widget.dart';
 import '../widgets/show_wholesale_prices.dart';
-import 'web_view_test.dart';
+import '../../../../../routes/app_routes.dart';
 
 class ProductDetailsScreen extends GetView<StockController> {
   const ProductDetailsScreen({Key? key}) : super(key: key);
@@ -28,9 +28,8 @@ class ProductDetailsScreen extends GetView<StockController> {
           IconButton(
             icon: const Icon(Icons.edit_note_sharp),
             onPressed: () {
-              Get.to(() => const EditProductWebView());
-              // controller.initProductDetails();
-              // Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
+              controller.initProductDetails();
+              Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
             },
           ),
         ],

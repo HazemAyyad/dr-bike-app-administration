@@ -168,6 +168,9 @@ class EndPoints {
   static const String getProjects = 'get/all/projects';
   static const String searchProducts = 'search/products/by/name';
   static const String addCombination = 'add/combination';
+  /// نفس حقول صفحة اختبار Laravel: multipart + save_scope
+  static const String createProductFull = 'create/product';
+  static const String updateProductFull = 'update/product/full';
 
   // sales
   static const String allProducts = 'all/products';
