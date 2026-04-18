@@ -34,10 +34,7 @@ class EditProductScreen extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest
-          .withValues(alpha: 0.4),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Obx(
@@ -153,7 +150,7 @@ class EditProductScreen extends GetView<StockController> {
                     decoratorProps: DropDownDecoratorProps(
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: AppColors.whiteColor2,
+                        fillColor: Theme.of(context).colorScheme.surface,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(11.r),
                           borderSide: BorderSide.none,
@@ -164,6 +161,9 @@ class EditProductScreen extends GetView<StockController> {
                         ),
                         labelText: 'subCategorySelect2Hint'.tr,
                         hintText: 'subCategorySelect2Hint'.tr,
+                        hintStyle: TextStyle(
+                          color: Theme.of(context).hintColor,
+                        ),
                       ),
                     ),
                     onChanged: (list) {
@@ -229,8 +229,7 @@ class EditProductScreen extends GetView<StockController> {
                 'extraLaravelFields'.tr,
                 style: Theme.of(context).textTheme.titleSmall!.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: editProductSectionTitleColor(context)
-                          .withValues(alpha: 0.95),
+                      color: editProductSectionTitleColor(context),
                     ),
               ),
               SizedBox(height: 8.h),
@@ -419,7 +418,9 @@ class EditProductScreen extends GetView<StockController> {
                                           hint: Text('sizeSelectHint'.tr),
                                           decoration: InputDecoration(
                                             filled: true,
-                                            fillColor: AppColors.whiteColor2,
+                                            fillColor: Theme.of(context)
+                                                .colorScheme
+                                                .surface,
                                             border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(11.r),
@@ -669,13 +670,19 @@ class EditProductScreen extends GetView<StockController> {
                               top: 4,
                               right: 4,
                               child: Material(
-                                color: Colors.black54,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHigh,
                                 shape: const CircleBorder(),
                                 child: IconButton(
                                   tooltip: 'delete'.tr,
                                   onPressed: c.confirmRemoveExistingVideo,
-                                  icon: const Icon(Icons.close,
-                                      color: Colors.white, size: 20),
+                                  icon: Icon(
+                                    Icons.close,
+                                    color:
+                                        Theme.of(context).colorScheme.onSurface,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ),
@@ -784,19 +791,19 @@ class EditProductScreen extends GetView<StockController> {
       readOnly: true,
       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             fontSize: 15.sp,
-            color: AppColors.customGreyColor,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w400,
           ),
       decoration: InputDecoration(
         filled: true,
-        fillColor: AppColors.whiteColor2,
+        fillColor: Theme.of(context).colorScheme.surface,
         labelText: 'rotationDateField'.tr,
         labelStyle: TextStyle(
           color: editProductSectionTitleColor(context),
           fontWeight: FontWeight.w500,
         ),
         hintText: 'rotationDateHint'.tr,
-        hintStyle: TextStyle(color: AppColors.customGreyColor6),
+        hintStyle: TextStyle(color: Theme.of(context).hintColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(11.r),
           borderSide: BorderSide.none,
@@ -889,10 +896,7 @@ class EditProductScreen extends GetView<StockController> {
               color: Theme.of(context).dividerColor,
               style: BorderStyle.solid,
             ),
-            color: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withValues(alpha: 0.35),
+            color: Theme.of(context).colorScheme.surface,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -929,7 +933,9 @@ class EditProductScreen extends GetView<StockController> {
                           top: -6,
                           right: -6,
                           child: Material(
-                            color: Colors.black54,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHigh,
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
@@ -938,7 +944,9 @@ class EditProductScreen extends GetView<StockController> {
                                 padding: const EdgeInsets.all(4),
                                 child: Icon(
                                   Icons.close,
-                                  color: Colors.white,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
                                   size: 18.sp,
                                 ),
                               ),
@@ -967,7 +975,9 @@ class EditProductScreen extends GetView<StockController> {
                           top: -6,
                           right: -6,
                           child: Material(
-                            color: Colors.black54,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHigh,
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
@@ -976,7 +986,9 @@ class EditProductScreen extends GetView<StockController> {
                                 padding: const EdgeInsets.all(4),
                                 child: Icon(
                                   Icons.close,
-                                  color: Colors.white,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
                                   size: 18.sp,
                                 ),
                               ),
@@ -987,10 +999,7 @@ class EditProductScreen extends GetView<StockController> {
                     );
                   }),
                   Material(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.14),
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(10.r),
                     child: InkWell(
                       onTap: () async {

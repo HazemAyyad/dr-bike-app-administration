@@ -117,11 +117,9 @@ class _CustomTextFieldState extends State<CustomTextField>
             ? scheme.onSurface
             : AppColors.customGreyColor);
 
-    final Color defaultHintColor = widget.hintColor ??
-        (isDark ? scheme.onSurfaceVariant : AppColors.customGreyColor6);
-
     final Color defaultFillColor = widget.fillColor ??
-        (isDark ? AppColors.whiteColor2 : AppColors.whiteColor2);
+        (Theme.of(context).inputDecorationTheme.fillColor ??
+            Theme.of(context).colorScheme.surface);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +164,7 @@ class _CustomTextFieldState extends State<CustomTextField>
             enabled: widget.enabled,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontSize: 15.sp,
-                  color: AppColors.customGreyColor,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w400,
                 ),
             onTap: () {
@@ -177,11 +175,9 @@ class _CustomTextFieldState extends State<CustomTextField>
               fillColor: defaultFillColor,
               hintText: widget.hintText.tr,
               hintStyle: widget.hintStyle ??
-                  Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: defaultHintColor,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w400,
-                      ),
+                  TextStyle(
+                    color: widget.hintColor ?? Theme.of(context).hintColor,
+                  ),
               suffix: widget.suffix,
               suffixIcon: widget.suffixIcon,
               suffixIconColor: widget.suffixIconColor,
