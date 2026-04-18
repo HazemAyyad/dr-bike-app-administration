@@ -5,12 +5,15 @@ class ProductModel {
   final String nameAr;
   final String stock;
   final List<dynamic> projects;
+  /// Parent main category id when this row is a subcategory (from API).
+  final String? mainCategoryId;
 
   const ProductModel({
     required this.id,
     required this.nameAr,
     required this.stock,
     required this.projects,
+    this.mainCategoryId,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -27,12 +30,14 @@ class ProductModel {
         j['sub_category_name'] ??
         j['title'];
     final stockRaw = j['stock'] ?? j['product_stock'] ?? j['quantity'];
+    final mainCatRaw = j['mainCategoryId'] ?? j['main_category_id'];
 
     return ProductModel(
       id: asString(idRaw),
       nameAr: asString(nameRaw),
       stock: asString(stockRaw),
       projects: _projectsFromJson(j['projects']),
+      mainCategoryId: mainCatRaw == null ? null : asString(mainCatRaw),
     );
   }
 
@@ -48,6 +53,7 @@ class ProductModel {
       'nameAr': nameAr,
       'stock': stock,
       'projects': projects,
+      if (mainCategoryId != null) 'mainCategoryId': mainCategoryId,
     };
   }
 }

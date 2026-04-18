@@ -5,7 +5,6 @@ import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
-import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -14,10 +13,11 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../sales/data/models/product_model.dart';
 import '../../data/models/product_details_model.dart' show ProductMediaItem;
 import '../controllers/stock_controller.dart';
+import '../widgets/category_selector_section.dart';
 import '../widgets/product_inline_video.dart';
+import '../widgets/product_language_tabs_edit.dart';
 
 /// عناوين الأقسام: على الخلفية الداكنة لا يُستخدم [AppColors.secondaryColor] لأنه شبه أسود ويختفي.
 Color editProductSectionTitleColor(BuildContext context) {
@@ -51,300 +51,185 @@ class EditProductScreen extends GetView<StockController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'sectionProductNames'.tr,
-                style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: editProductSectionTitleColor(context),
+              EditProductSectionCard(
+                titleKey: 'sectionProductContent',
+                child: ProductLanguageTabsEdit(controller: controller),
+              ),
+              EditProductSectionCard(
+                titleKey: 'sectionCategories',
+                child: CategorySelectorSection(controller: controller),
+              ),
+              EditProductSectionCard(
+                titleKey: 'sectionPricingStock',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: CustomTextField(
+                            enabled:
+                                controller.editingProductId.value == null,
+                            label: 'stock',
+                            hintText: 'stock',
+                            controller: controller.stockController,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'minimumStock',
+                            hintText: 'minimumStock',
+                            controller: controller.minimumStockController,
+                          ),
+                        ),
+                      ],
                     ),
-              ),
-              SizedBox(height: 8.h),
-              CustomTextField(
-                label: 'productName',
-                hintText: 'productName',
-                controller: controller.productNameController,
-              ),
-              SizedBox(height: 10.h),
-              CustomTextField(
-                label: 'nameEnglish',
-                hintText: 'nameEnglish',
-                controller: controller.nameEngController,
-              ),
-              SizedBox(height: 10.h),
-              CustomTextField(
-                label: 'nameHebrew',
-                hintText: 'nameHebrew',
-                controller: controller.nameAbreeController,
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                'sectionDescriptions'.tr,
-                style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: editProductSectionTitleColor(context),
+                    SizedBox(height: 10.h),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'wholesalePriceField',
+                            hintText: 'wholesalePriceField',
+                            controller: controller.wholesalePricesController,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'retailPrice',
+                            hintText: 'retailPrice',
+                            controller: controller.retailPricesController,
+                          ),
+                        ),
+                      ],
                     ),
-              ),
-              SizedBox(height: 8.h),
-              CustomTextField(
-                label: 'productDetails',
-                hintText: 'productDetails',
-                controller: controller.productDetailsController,
-              ),
-              SizedBox(height: 10.h),
-              CustomTextField(
-                label: 'descriptionEnglish',
-                hintText: 'descriptionEnglish',
-                controller: controller.descriptionEngController,
-              ),
-              SizedBox(height: 10.h),
-              CustomTextField(
-                label: 'descriptionHebrew',
-                hintText: 'descriptionHebrew',
-                controller: controller.descriptionAbreeController,
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                'subCategoryMulti'.tr,
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: editProductSectionTitleColor(context),
+                    SizedBox(height: 14.h),
+                    Text(
+                      'extraLaravelFields'.tr,
+                      style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: editProductSectionTitleColor(context),
+                          ),
                     ),
-              ),
-              SizedBox(height: 8.h),
-              Obx(
-                () {
-                  final ids = controller.selectedSubCategoryIds.toList();
-                  final selected = controller.categories
-                      .where((c) => ids.contains(c.id))
-                      .toList();
-                  if (controller.categories.isEmpty) {
-                    return Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
-                      child: Text('noCategories'.tr),
-                    );
-                  }
-                  return DropdownSearch<ProductModel>.multiSelection(
-                    key: ValueKey(ids.join(',')),
-                    selectedItems: selected,
-                    items: (filter, loadProps) async => controller.categories,
-                    itemAsString: (c) => c.nameAr,
-                    compareFn: (a, b) => a.id == b.id,
-                    popupProps: PopupPropsMultiSelection.menu(
-                      showSearchBox: true,
-                      constraints: const BoxConstraints(maxHeight: 320),
-                      // إخفاء زر OK — التحديث فوري عبر onItemAdded / onItemRemoved
-                      validationBuilder: (_, __) => const SizedBox.shrink(),
-                      onItemAdded: (selectedItems, _) {
-                        controller.selectedSubCategoryIds.clear();
-                        controller.selectedSubCategoryIds
-                            .addAll(selectedItems.map((e) => e.id));
-                        controller.update();
+                    SizedBox(height: 8.h),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'minSalePriceField',
+                            hintText: 'minSalePriceField',
+                            controller: controller.minSalePriceController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'listPriceField',
+                            hintText: 'listPriceField',
+                            controller: controller.listPriceController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10.h),
+                    _rotationDateField(context),
+                    SizedBox(height: 10.h),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'discountPercentage',
+                            hintText: 'discountPercentage',
+                            controller:
+                                controller.discountPercentageController,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'manufactureYear',
+                            hintText: 'manufactureYear',
+                            controller: controller.manufactureYearController,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10.h),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'productModel',
+                            hintText: 'productModel',
+                            controller: controller.modelController,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Flexible(
+                          child: CustomTextField(
+                            label: 'rateLabel',
+                            hintText: 'rateLabel',
+                            controller: controller.rateController,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10.h),
+                    CustomDropdownField(
+                      label: 'selectPurchase',
+                      hint: 'selectPurchase',
+                      dropdownField: controller.projects
+                          .map(
+                            (e) => DropdownMenuItem<String>(
+                              value: e.id.toString(),
+                              child: Text(e.nameAr),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        controller.selectPurchaseController.text = val!;
                       },
-                      onItemRemoved: (selectedItems, _) {
-                        controller.selectedSubCategoryIds.clear();
-                        controller.selectedSubCategoryIds
-                            .addAll(selectedItems.map((e) => e.id));
-                        controller.update();
-                      },
                     ),
-                    decoratorProps: DropDownDecoratorProps(
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Theme.of(context).colorScheme.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(11.r),
-                          borderSide: BorderSide.none,
+                    SizedBox(height: 12.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomCheckBox(
+                            title: 'productVisible',
+                            value: controller.isShowProduct,
+                            onChanged: (value) {
+                              controller.isShowProduct.value = value!;
+                            },
+                          ),
                         ),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 14.w,
-                          vertical: 12.h,
+                        Expanded(
+                          child: CustomCheckBox(
+                            title: 'productNewBadge',
+                            value: controller.isNewItemProduct,
+                            onChanged: (value) {
+                              controller.isNewItemProduct.value = value!;
+                            },
+                          ),
                         ),
-                        labelText: 'subCategorySelect2Hint'.tr,
-                        hintText: 'subCategorySelect2Hint'.tr,
-                        hintStyle: TextStyle(
-                          color: Theme.of(context).hintColor,
-                        ),
-                      ),
+                      ],
                     ),
-                    onChanged: (list) {
-                      controller.selectedSubCategoryIds.clear();
-                      controller.selectedSubCategoryIds
-                          .addAll(list.map((e) => e.id));
-                      controller.update();
-                    },
-                  );
-                },
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                'sectionPricingStock'.tr,
-                style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: editProductSectionTitleColor(context),
-                    ),
-              ),
-              SizedBox(height: 8.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      enabled: controller.editingProductId.value == null,
-                      label: 'stock',
-                      hintText: 'stock',
-                      controller: controller.stockController,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'minimumStock',
-                      hintText: 'minimumStock',
-                      controller: controller.minimumStockController,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 10.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'wholesalePriceField',
-                      hintText: 'wholesalePriceField',
-                      controller: controller.wholesalePricesController,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'retailPrice',
-                      hintText: 'retailPrice',
-                      controller: controller.retailPricesController,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 14.h),
-              Text(
-                'extraLaravelFields'.tr,
-                style: Theme.of(context).textTheme.titleSmall!.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: editProductSectionTitleColor(context),
-                    ),
-              ),
-              SizedBox(height: 8.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'minSalePriceField',
-                      hintText: 'minSalePriceField',
-                      controller: controller.minSalePriceController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'listPriceField',
-                      hintText: 'listPriceField',
-                      controller: controller.listPriceController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 10.h),
-              _rotationDateField(context),
-              SizedBox(height: 10.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'discountPercentage',
-                      hintText: 'discountPercentage',
-                      controller: controller.discountPercentageController,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'manufactureYear',
-                      hintText: 'manufactureYear',
-                      controller: controller.manufactureYearController,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 10.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'productModel',
-                      hintText: 'productModel',
-                      controller: controller.modelController,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'rateLabel',
-                      hintText: 'rateLabel',
-                      controller: controller.rateController,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 10.h),
-              CustomDropdownField(
-                label: 'selectPurchase',
-                hint: 'selectPurchase',
-                dropdownField: controller.projects
-                    .map(
-                      (e) => DropdownMenuItem<String>(
-                        value: e.id.toString(),
-                        child: Text(e.nameAr),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (val) {
-                  controller.selectPurchaseController.text = val!;
-                },
-              ),
-              SizedBox(height: 12.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: CustomCheckBox(
-                      title: 'productVisible',
-                      value: controller.isShowProduct,
+                    CustomCheckBox(
+                      title: 'productBestSeller',
+                      value: controller.isMoreSalesProduct,
                       onChanged: (value) {
-                        controller.isShowProduct.value = value!;
+                        controller.isMoreSalesProduct.value = value!;
                       },
                     ),
-                  ),
-                  Expanded(
-                    child: CustomCheckBox(
-                      title: 'productNewBadge',
-                      value: controller.isNewItemProduct,
-                      onChanged: (value) {
-                        controller.isNewItemProduct.value = value!;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              CustomCheckBox(
-                title: 'productBestSeller',
-                value: controller.isMoreSalesProduct,
-                onChanged: (value) {
-                  controller.isMoreSalesProduct.value = value!;
-                },
+                  ],
+                ),
               ),
               SizedBox(height: 16.h),
               Text(

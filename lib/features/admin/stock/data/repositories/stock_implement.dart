@@ -119,6 +119,18 @@ class StockImplement implements StockRepository {
   }
 
   @override
+  Future<List<ProductModel>> getMainCategories() async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await stockDataSource.getMainCategories();
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
   Future<List<AllStockProductsModel>> searchProducts(
       {required String name}) async {
     if (!await networkInfo.isConnected) {

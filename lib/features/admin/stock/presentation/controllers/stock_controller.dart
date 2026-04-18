@@ -15,6 +15,7 @@ import '../../domain/usecases/add_combination_usecase.dart';
 import '../../domain/usecases/get_all_stock_usecase.dart';
 import '../../domain/usecases/get_archived_usecase.dart';
 import '../../domain/usecases/get_categories_usecase.dart';
+import '../../domain/usecases/get_main_categories_usecase.dart';
 import '../../domain/usecases/get_product_details_usecase.dart';
 import '../../domain/usecases/get_product_size_options_usecase.dart';
 import '../../domain/usecases/move_to_archive_usecase.dart';
@@ -28,6 +29,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final MoveToArchiveUsecase moveToArchiveUsecase;
   final GetArchivedUsecase getArchivedUsecase;
   final GetCategoriesUsecase getCategoriesUsecase;
+  final GetMainCategoriesUsecase getMainCategoriesUsecase;
   final SearchProductsUsecase searchProductsUsecase;
   final AddCombinationUsecase addCombinationUsecase;
   final SaveProductFullUsecase saveProductFullUsecase;
@@ -39,6 +41,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required this.moveToArchiveUsecase,
     required this.getArchivedUsecase,
     required this.getCategoriesUsecase,
+    required this.getMainCategoriesUsecase,
     required this.searchProductsUsecase,
     required this.addCombinationUsecase,
     required this.saveProductFullUsecase,
@@ -77,6 +80,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxBool isMoreSalesProduct = false.obs;
 
   final RxList<String> selectedSubCategoryIds = <String>[].obs;
+
+  /// Main category for dependent subcategory picker (UI); API still uses `sub_categories[]` only.
+  final Rxn<String> selectedMainCategoryId = Rxn<String>();
 
   final List<XFile> pendingNormalImages = [];
   final List<XFile> pendingViewImages = [];
@@ -547,12 +553,50 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   // get categories & projects
-  List<ProductModel> categories = [];
+  /// Main categories (`get/all/categories`).
+  List<ProductModel> mainCategories = [];
+
+  /// All subcategories with optional [ProductModel.mainCategoryId] for filtering.
+  List<ProductModel> allSubCategories = [];
+
   List<ProductModel> projects = [];
 
-  void getCategories() async {
-    categories.assignAll(await getCategoriesUsecase.call(isProject: false));
+  /// Subcategories belonging to [selectedMainCategoryId], for the subcategory dropdown.
+  List<ProductModel> getFilteredSubCategories() {
+    final mid = selectedMainCategoryId.value;
+    if (mid == null || mid.isEmpty) {
+      return <ProductModel>[];
+    }
+    return allSubCategories
+        .where((s) => s.mainCategoryId != null && s.mainCategoryId == mid)
+        .toList();
+  }
 
+  void setMainCategory(String? id) {
+    selectedMainCategoryId.value = id;
+    syncSelectedSubCategoriesWithMainCategory();
+    update();
+  }
+
+  /// Drops selected subcategories that are not under the current main category.
+  /// If main is unknown, keeps existing sub selections (legacy / incomplete API data).
+  void syncSelectedSubCategoriesWithMainCategory() {
+    final mid = selectedMainCategoryId.value;
+    if (mid == null || mid.isEmpty) {
+      update();
+      return;
+    }
+    final allowed = allSubCategories
+        .where((s) => s.mainCategoryId == mid)
+        .map((s) => s.id)
+        .toSet();
+    selectedSubCategoryIds.removeWhere((id) => !allowed.contains(id));
+    update();
+  }
+
+  void getCategories() async {
+    mainCategories.assignAll(await getMainCategoriesUsecase.call());
+    allSubCategories.assignAll(await getCategoriesUsecase.call(isProject: false));
     projects.assignAll(await getCategoriesUsecase.call(isProject: true));
     isProductLoading(false);
     update();
@@ -655,6 +699,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     descriptionEngController.clear();
     descriptionAbreeController.clear();
     subCategoryController.clear();
+    selectedMainCategoryId.value = null;
     selectedSubCategoryIds.clear();
     stockController.text = '0';
     minimumStockController.clear();
@@ -698,12 +743,24 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
             ? p.productSubCategories!.first.subCategoryId.toString()
             : '';
     selectedSubCategoryIds.clear();
+    selectedMainCategoryId.value = null;
     if (p.productSubCategories != null) {
       for (final s in p.productSubCategories!) {
         final sid = s.subCategoryId;
         if (sid != null && sid.isNotEmpty) {
           selectedSubCategoryIds.add(sid);
         }
+      }
+      final firstMain = p.productSubCategories!.first.mainCategoryId;
+      if (firstMain != null && firstMain.isNotEmpty) {
+        selectedMainCategoryId.value = firstMain;
+      } else if (selectedSubCategoryIds.isNotEmpty) {
+        try {
+          final sub = allSubCategories.firstWhere(
+            (x) => selectedSubCategoryIds.contains(x.id),
+          );
+          selectedMainCategoryId.value = sub.mainCategoryId;
+        } catch (_) {}
       }
     }
     stockController.text = p.stock?.toString() ?? '0';
@@ -980,6 +1037,33 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       Get.snackbar('error'.tr, 'productDetailsRequired'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
+    }
+    if (selectedSubCategoryIds.isNotEmpty) {
+      var mid = selectedMainCategoryId.value;
+      if (mid == null || mid.isEmpty) {
+        try {
+          final sub = allSubCategories.firstWhere(
+            (x) => selectedSubCategoryIds.contains(x.id),
+          );
+          if (sub.mainCategoryId != null && sub.mainCategoryId!.isNotEmpty) {
+            selectedMainCategoryId.value = sub.mainCategoryId;
+            mid = sub.mainCategoryId;
+          }
+        } catch (_) {}
+      }
+      if (mid == null || mid.isEmpty) {
+        Get.snackbar('error'.tr, 'selectMainCategoryFirst'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+      final allowed = getFilteredSubCategories().map((e) => e.id).toSet();
+      for (final id in selectedSubCategoryIds) {
+        if (!allowed.contains(id)) {
+          Get.snackbar('error'.tr, 'invalidCategoryCombination'.tr,
+              snackPosition: SnackPosition.BOTTOM);
+          return;
+        }
+      }
     }
 
     isSubmittingProduct(true);

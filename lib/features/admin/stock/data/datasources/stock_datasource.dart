@@ -175,6 +175,27 @@ class StockDatasource {
     }
   }
 
+  /// Main categories (`categories` key).
+  Future<List<ProductModel>> getMainCategories() async {
+    try {
+      final response = await api.get(EndPoints.categories);
+      return mapListFromResponseKey(
+        response.data,
+        'categories',
+        (Map<String, dynamic> m) => ProductModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   // search products
   Future<List<AllStockProductsModel>> searchProducts(
       {required String name}) async {

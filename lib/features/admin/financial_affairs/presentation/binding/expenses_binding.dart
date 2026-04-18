@@ -11,6 +11,7 @@ import '../../../stock/domain/usecases/add_combination_usecase.dart';
 import '../../../stock/domain/usecases/get_all_stock_usecase.dart';
 import '../../../stock/domain/usecases/get_archived_usecase.dart';
 import '../../../stock/domain/usecases/get_categories_usecase.dart';
+import '../../../stock/domain/usecases/get_main_categories_usecase.dart';
 import '../../../stock/domain/usecases/move_to_archive_usecase.dart';
 import '../../../stock/presentation/controllers/stock_controller.dart';
 import '../../data/repositories/financial_affairs_implement.dart';
@@ -57,6 +58,9 @@ class ExpensesBinding extends Bindings {
           stockRepository: Get.find<StockImplement>(),
         ),
         getCategoriesUsecase: GetCategoriesUsecase(
+          stockRepository: Get.find<StockImplement>(),
+        ),
+        getMainCategoriesUsecase: GetMainCategoriesUsecase(
           stockRepository: Get.find<StockImplement>(),
         ),
         searchProductsUsecase: SearchProductsUsecase(

@@ -10,11 +10,68 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/custom_text_and_dis.dart';
+import '../widgets/product_language_details_tabs.dart';
 import '../widgets/product_images_slider.dart';
 import '../widgets/product_inline_video.dart';
 import '../widgets/purchase_price_widget.dart';
 import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../data/models/product_details_model.dart';
+
+Widget _productDetailsCategoryBlock(
+  BuildContext context,
+  ProductDetailsModel product,
+) {
+  final subs = product.productSubCategories;
+  var mainName = '';
+  final subNames = <String>[];
+  if (subs != null && subs.isNotEmpty) {
+    mainName = subs.first.mainCategoryName ?? '';
+    for (final s in subs) {
+      final n = s.subCategoryName ?? '';
+      if (n.isNotEmpty) {
+        subNames.add(n);
+      }
+    }
+  }
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      CustomTextAndDis(
+        title: 'mainCategory',
+        discription: mainName.isEmpty ? '—' : mainName,
+      ),
+      SizedBox(height: 10.h),
+      Text(
+        'subCategory'.tr,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+      SizedBox(height: 6.h),
+      if (subNames.isEmpty)
+        Text(
+          '—',
+          style: Theme.of(context).textTheme.bodyLarge,
+        )
+      else
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: subNames
+              .map(
+                (n) => Chip(
+                  label: Text(n),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHigh,
+                  side: BorderSide.none,
+                ),
+              )
+              .toList(),
+        ),
+    ],
+  );
+}
 
 Widget _pdDivider(BuildContext context) {
   return Padding(
@@ -82,48 +139,11 @@ class ProductDetailsScreen extends GetView<StockController> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SizedBox(height: 8.h),
-                      _pdSectionTitle(context, 'productDetailsSectionInfo'),
-                      CustomTextAndDis(
-                        title: 'productName',
-                        discription: product.nameAr,
-                      ),
-                      CustomTextAndDis(
-                        title: 'nameEnglish',
-                        discription: product.nameEng,
-                      ),
-                      CustomTextAndDis(
-                        title: 'nameHebrew',
-                        discription: product.nameAbree ?? '',
-                      ),
-                      CustomTextAndDis(
-                        title: 'productDetails',
-                        discription: product.descriptionAr ?? '',
-                      ),
-                      CustomTextAndDis(
-                        title: 'descriptionEnglish',
-                        discription: product.descriptionEng ?? '',
-                      ),
-                      CustomTextAndDis(
-                        title: 'descriptionHebrew',
-                        discription: product.descriptionAbree ?? '',
-                      ),
-                      CustomTextAndDis(
-                        title: 'subCategory',
-                        discription: product.productSubCategories != null &&
-                                product.productSubCategories!.isNotEmpty
-                            ? product.productSubCategories!
-                                .map((e) => e.subCategoryName ?? '')
-                                .where((e) => e.isNotEmpty)
-                                .join('، ')
-                            : '',
-                      ),
-                      CustomTextAndDis(
-                        title: 'mainCategory',
-                        discription: product.productSubCategories != null &&
-                                product.productSubCategories!.isNotEmpty
-                            ? product.productSubCategories!.first.mainCategoryName ?? ''
-                            : '',
-                      ),
+                      _pdSectionTitle(context, 'languagesSection'),
+                      ProductLanguageDetailsTabs(product: product),
+                      SizedBox(height: 12.h),
+                      _pdSectionTitle(context, 'sectionCategories'),
+                      _productDetailsCategoryBlock(context, product),
                       _pdSectionTitle(context, 'productDetailsSectionPricing'),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
