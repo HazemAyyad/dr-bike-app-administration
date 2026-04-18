@@ -18,6 +18,64 @@ import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/product_details_model.dart';
 
+Widget _pdKV(
+  BuildContext context,
+  String titleKey,
+  String value,
+) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        titleKey.tr,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+      ),
+      SizedBox(height: 4.h),
+      Text(
+        value,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+              height: 1.35,
+            ),
+      ),
+    ],
+  );
+}
+
+Widget _pdSectionCard(
+  BuildContext context, {
+  required String titleKey,
+  required Widget child,
+}) {
+  return Card(
+    elevation: 0,
+    color: Theme.of(context).colorScheme.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16.r),
+    ),
+    child: Padding(
+      padding: EdgeInsets.all(16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            titleKey.tr,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          SizedBox(height: 16.h),
+          child,
+        ],
+      ),
+    ),
+  );
+}
+
 Widget _productDetailsCategoryBlock(
   BuildContext context,
   ProductDetailsModel product,
@@ -37,22 +95,26 @@ Widget _productDetailsCategoryBlock(
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      CustomTextAndDis(
-        title: 'mainCategory',
-        discription: mainName.isEmpty ? '—' : mainName,
+      _pdKV(
+        context,
+        'mainCategory',
+        mainName.isEmpty ? '—' : mainName,
       ),
-      SizedBox(height: 10.h),
+      SizedBox(height: 16.h),
       Text(
         'subCategory'.tr,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
       ),
-      SizedBox(height: 6.h),
+      SizedBox(height: 4.h),
       if (subNames.isEmpty)
         Text(
           '—',
-          style: Theme.of(context).textTheme.bodyLarge,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
         )
       else
         Wrap(
@@ -86,12 +148,12 @@ Widget _pdDivider(BuildContext context) {
 
 Widget _pdSectionTitle(BuildContext context, String keyTr) {
   return Padding(
-    padding: EdgeInsets.only(bottom: 8.h, top: 4.h),
+    padding: EdgeInsets.only(bottom: 8.h, top: 8.h),
     child: Text(
       keyTr.tr,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w800,
-            color: AppColors.secondaryColor,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
     ),
   );
@@ -103,6 +165,7 @@ class ProductDetailsScreen extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: CustomAppBar(
         title: 'productDetails',
         action: false,
@@ -139,174 +202,193 @@ class ProductDetailsScreen extends GetView<StockController> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       SizedBox(height: 8.h),
-                      _pdSectionTitle(context, 'languagesSection'),
-                      ProductLanguageDetailsTabs(product: product),
-                      SizedBox(height: 12.h),
-                      _pdSectionTitle(context, 'sectionCategories'),
-                      _productDetailsCategoryBlock(context, product),
-                      _pdSectionTitle(context, 'productDetailsSectionPricing'),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            flex: 1,
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              discriptionColor:
-                                  const Color.fromARGB(255, 95, 77, 255),
-                              title: 'stock',
-                              discription: controller
-                                  .productDetails.value!.stock
-                                  .toString(),
-                            ),
-                          ),
-                          Flexible(
-                            flex: 1,
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              titleColor: Colors.white,
-                              discriptionColor:
-                                  const Color.fromARGB(255, 95, 77, 255),
-                              title: 'minimumStock',
-                              discription: product.minStock.toString(),
-                            ),
-                          ),
-                        ],
+                      _pdSectionCard(
+                        context,
+                        titleKey: 'sectionProductContent',
+                        child: ProductLanguageDetailsTabs(product: product),
                       ),
-                      _pdDivider(context),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Row(
+                      SizedBox(height: 24.h),
+                      _pdSectionCard(
+                        context,
+                        titleKey: 'sectionCategories',
+                        child: _productDetailsCategoryBlock(
+                          context,
+                          product,
+                        ),
+                      ),
+                      SizedBox(height: 24.h),
+                      _pdSectionCard(
+                        context,
+                        titleKey: 'productDetailsSectionPricing',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'wholesalePrices'.tr,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge!
-                                      .copyWith(
-                                          fontSize: 17.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: ThemeService.isDark.value
-                                              ? AppColors.customGreyColor6
-                                              : AppColors.customGreyColor),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.file_copy,
-                                    color: AppColors.primaryColor,
-                                    size: 25.sp,
+                                Flexible(
+                                  flex: 1,
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'stock',
+                                    discription: controller
+                                        .productDetails.value!.stock
+                                        .toString(),
                                   ),
-                                  onPressed: () {
-                                    Get.dialog(
-                                      ShowWholesalePrices(product: product),
-                                    );
-                                  },
+                                ),
+                                Flexible(
+                                  flex: 1,
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'minimumStock',
+                                    discription: product.minStock.toString(),
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          Flexible(
-                            flex: 1,
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              discriptionColor: Colors.green,
-                              title: 'retailPrice',
-                              discription: product.normailPrice.toString(),
+                            _pdDivider(context),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        'wholesalePrices'.tr,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge!
+                                            .copyWith(
+                                              fontSize: 17.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface,
+                                            ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.file_copy,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                          size: 25.sp,
+                                        ),
+                                        onPressed: () {
+                                          Get.dialog(
+                                            ShowWholesalePrices(
+                                                product: product),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Flexible(
+                                  flex: 1,
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'retailPrice',
+                                    discription: product.normailPrice.toString(),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
+                            CustomTextAndDis(
+                              title: 'wholesalePriceField',
+                              discription: product.wholesalePrice ?? '',
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'manufactureYear',
+                                    discription: product.manufactureYear ?? '',
+                                  ),
+                                ),
+                                Flexible(
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'productModel',
+                                    discription: product.model ?? '',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'rateLabel',
+                                    discription: product.rate ?? '',
+                                  ),
+                                ),
+                                Flexible(
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'listPriceField',
+                                    discription:
+                                        product.price?.toString() ?? '',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'minSalePriceField',
+                                    discription:
+                                        product.minSalePrice?.toString() ?? '',
+                                  ),
+                                ),
+                                Flexible(
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'rotationDateField',
+                                    discription:
+                                        product.rotationDate?.toString() ?? '',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            _pdDivider(context),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Flexible(
+                                  flex: 1,
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'discountPercentage',
+                                    discription: '${product.discount}%',
+                                  ),
+                                ),
+                                Flexible(
+                                  flex: 1,
+                                  child: CustomTextAndDis(
+                                    noSized: true,
+                                    title: 'ThePurchase',
+                                    discription: product.purchasePrices !=
+                                                null &&
+                                            product.purchasePrices!.isNotEmpty
+                                        ? product.purchasePrices!.first.price
+                                            .toString()
+                                        : '',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      CustomTextAndDis(
-                        title: 'wholesalePriceField',
-                        discription: product.wholesalePrice ?? '',
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              title: 'manufactureYear',
-                              discription: product.manufactureYear ?? '',
-                            ),
-                          ),
-                          Flexible(
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              title: 'productModel',
-                              discription: product.model ?? '',
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              title: 'rateLabel',
-                              discription: product.rate ?? '',
-                            ),
-                          ),
-                          Flexible(
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              title: 'listPriceField',
-                              discription: product.price?.toString() ?? '',
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              title: 'minSalePriceField',
-                              discription: product.minSalePrice?.toString() ?? '',
-                            ),
-                          ),
-                          Flexible(
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              title: 'rotationDateField',
-                              discription: product.rotationDate?.toString() ?? '',
-                            ),
-                          ),
-                        ],
-                      ),
-                      _pdDivider(context),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            flex: 1,
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              title: 'discountPercentage',
-                              discription: '${product.discount}%',
-                            ),
-                          ),
-                          Flexible(
-                            flex: 1,
-                            child: CustomTextAndDis(
-                              noSized: true,
-                              discriptionColor: Colors.green,
-                              title: 'ThePurchase',
-                              discription: product.purchasePrices != null &&
-                                      product.purchasePrices!.isNotEmpty
-                                  ? product.purchasePrices!.first.price
-                                      .toString()
-                                  : '',
-                            ),
-                          ),
-                        ],
-                      ),
-                      _pdDivider(context),
+                      SizedBox(height: 24.h),
                       _pdSectionTitle(context, 'productDetailsSectionSizes'),
                       ...(product.sizes ?? []).map(
                         (e) => Column(

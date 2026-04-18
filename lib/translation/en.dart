@@ -795,7 +795,7 @@ const Map<String, String> en = {
   'subCategorySelect2Hint': 'Search and select one or more',
   'sectionProductContent': 'Product content',
   'sectionCategories': 'Categories',
-  'languagesSection': 'Languages',
+  'languagesSection': 'Product content',
   'langArabic': 'Arabic',
   'langEnglish': 'English',
   'langHebrew': 'Hebrew',

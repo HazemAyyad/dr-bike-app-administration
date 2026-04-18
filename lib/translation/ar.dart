@@ -793,7 +793,7 @@ const Map<String, String> ar = {
   'subCategorySelect2Hint': 'ابحث واختر فئة أو أكثر',
   'sectionProductContent': 'محتوى المنتج',
   'sectionCategories': 'التصنيفات',
-  'languagesSection': 'اللغات',
+  'languagesSection': 'محتوى المنتج',
   'langArabic': 'العربية',
   'langEnglish': 'الإنجليزية',
   'langHebrew': 'العبرية',

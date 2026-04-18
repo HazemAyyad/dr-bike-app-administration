@@ -11,6 +11,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/outline_input_style.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/product_details_model.dart' show ProductMediaItem;
@@ -85,7 +86,7 @@ class EditProductScreen extends GetView<StockController> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 16.h),
                     Row(
                       children: [
                         Flexible(
@@ -105,7 +106,7 @@ class EditProductScreen extends GetView<StockController> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 14.h),
+                    SizedBox(height: 16.h),
                     Text(
                       'extraLaravelFields'.tr,
                       style: Theme.of(context).textTheme.titleSmall!.copyWith(
@@ -139,9 +140,9 @@ class EditProductScreen extends GetView<StockController> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 16.h),
                     _rotationDateField(context),
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 16.h),
                     Row(
                       children: [
                         Flexible(
@@ -162,7 +163,7 @@ class EditProductScreen extends GetView<StockController> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 16.h),
                     Row(
                       children: [
                         Flexible(
@@ -182,7 +183,7 @@ class EditProductScreen extends GetView<StockController> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 10.h),
+                    SizedBox(height: 16.h),
                     CustomDropdownField(
                       label: 'selectPurchase',
                       hint: 'selectPurchase',
@@ -198,7 +199,7 @@ class EditProductScreen extends GetView<StockController> {
                         controller.selectPurchaseController.text = val!;
                       },
                     ),
-                    SizedBox(height: 12.h),
+                    SizedBox(height: 16.h),
                     Row(
                       children: [
                         Expanded(
@@ -299,6 +300,9 @@ class EditProductScreen extends GetView<StockController> {
                                     children: [
                                       Expanded(
                                         child: DropdownButtonFormField<String>(
+                                          key: ValueKey<String>(
+                                            'size_${blockIndex}_$cur',
+                                          ),
                                           isExpanded: true,
                                           hint: Text('sizeSelectHint'.tr),
                                           decoration: InputDecoration(
@@ -318,9 +322,11 @@ class EditProductScreen extends GetView<StockController> {
                                             ),
                                             labelText: 'size'.tr,
                                           ),
-                                          value: cur.isEmpty
+                                          initialValue: cur.isEmpty
                                               ? null
-                                              : (opts.contains(cur) ? cur : null),
+                                              : (opts.contains(cur)
+                                                  ? cur
+                                                  : null),
                                           items: opts
                                               .map(
                                                 (s) => DropdownMenuItem<String>(
@@ -479,7 +485,7 @@ class EditProductScreen extends GetView<StockController> {
                             ),
                       ),
                       if (c.editingProductId.value != null) ...[
-                        SizedBox(height: 10.h),
+                        SizedBox(height: 16.h),
                         Text(
                           'existingMediaHeading'.tr,
                           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -500,7 +506,7 @@ class EditProductScreen extends GetView<StockController> {
                         onRemoveExisting: c.confirmRemoveExistingNormal,
                         onRemovePending: c.removePendingNormalAt,
                       ),
-                      SizedBox(height: 10.h),
+                      SizedBox(height: 16.h),
                       _mediaTypeStrip(
                         context,
                         c,
@@ -512,7 +518,7 @@ class EditProductScreen extends GetView<StockController> {
                         onRemoveExisting: c.confirmRemoveExistingView,
                         onRemovePending: c.removePendingViewAt,
                       ),
-                      SizedBox(height: 10.h),
+                      SizedBox(height: 16.h),
                       _mediaTypeStrip(
                         context,
                         c,
@@ -524,7 +530,7 @@ class EditProductScreen extends GetView<StockController> {
                         onRemoveExisting: c.confirmRemoveExistingThreeD,
                         onRemovePending: c.removePendingThreeDAt,
                       ),
-                      SizedBox(height: 10.h),
+                      SizedBox(height: 16.h),
                       Text(
                         'productVideo'.tr,
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -573,12 +579,12 @@ class EditProductScreen extends GetView<StockController> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 10.h),
+                        SizedBox(height: 16.h),
                       ],
                       if (c.pendingVideo != null) ...[
                         Row(
                           children: [
-                            Icon(Icons.video_file,
+                            const Icon(Icons.video_file,
                                 color: AppColors.secondaryColor),
                             SizedBox(width: 8.w),
                             Expanded(
@@ -605,7 +611,7 @@ class EditProductScreen extends GetView<StockController> {
                             await c.pickProductVideo();
                             c.update();
                           },
-                          icon: Icon(Icons.add_circle_outline,
+                          icon: const Icon(Icons.add_circle_outline,
                               color: AppColors.secondaryColor),
                           label: Text('pickVideo'.tr),
                         ),
@@ -630,7 +636,7 @@ class EditProductScreen extends GetView<StockController> {
                   controller.isForcedSale.value = value!;
                 },
               ),
-              SizedBox(height: 10.h),
+              SizedBox(height: 16.h),
               Padding(
                 padding: EdgeInsets.only(bottom: 8.h),
                 child: Row(
@@ -675,29 +681,24 @@ class EditProductScreen extends GetView<StockController> {
       controller: controller.rotationDateController,
       readOnly: true,
       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            fontSize: 15.sp,
+            fontSize: 16.sp,
             color: Theme.of(context).colorScheme.onSurface,
             fontWeight: FontWeight.w400,
           ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
+      decoration: OutlineInputStyle.merge(
+        context,
         labelText: 'rotationDateField'.tr,
-        labelStyle: TextStyle(
-          color: editProductSectionTitleColor(context),
-          fontWeight: FontWeight.w500,
-        ),
         hintText: 'rotationDateHint'.tr,
-        hintStyle: TextStyle(color: Theme.of(context).hintColor),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(11.r),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
         suffixIcon: Icon(
           Icons.calendar_month_outlined,
           size: 22.sp,
           color: Theme.of(context).colorScheme.primary,
+        ),
+      ).copyWith(
+        labelStyle: TextStyle(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
+          fontSize: 16.sp,
         ),
       ),
       onTap: () async {

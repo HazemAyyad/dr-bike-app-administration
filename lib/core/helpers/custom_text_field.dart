@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get_utils/get_utils.dart';
 
 import '../utils/app_colors.dart';
+import 'outline_input_style.dart';
 
 class CustomTextField extends StatefulWidget {
   const CustomTextField({
@@ -110,7 +111,8 @@ class _CustomTextFieldState extends State<CustomTextField>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final labelGap = math.max(8.0, 10.h);
+    final labelGap =
+        widget.label == '' ? 0.0 : math.max(16.0, 16.h);
 
     final Color defaultLabelColor = widget.labelColor ??
         (isDark
@@ -132,8 +134,8 @@ class _CustomTextFieldState extends State<CustomTextField>
                   style: widget.labelTextstyle ??
                       Theme.of(context).textTheme.bodyMedium!.copyWith(
                             color: defaultLabelColor,
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
                           ),
                   children: widget.isRequired
                       ? [
@@ -163,52 +165,59 @@ class _CustomTextFieldState extends State<CustomTextField>
             controller: widget.controller,
             enabled: widget.enabled,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontSize: 15.sp,
+                  fontSize: 16.sp,
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w400,
                 ),
             onTap: () {
               _shouldKeepKeyboard = true;
             },
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: defaultFillColor,
-              hintText: widget.hintText.tr,
-              hintStyle: widget.hintStyle ??
-                  TextStyle(
-                    color: widget.hintColor ?? Theme.of(context).hintColor,
+            decoration: widget.border != null
+                ? InputDecoration(
+                    filled: true,
+                    fillColor: defaultFillColor,
+                    hintText: widget.hintText.tr,
+                    hintStyle: widget.hintStyle ??
+                        TextStyle(
+                          color:
+                              widget.hintColor ?? Theme.of(context).hintColor,
+                          fontSize: 16.sp,
+                        ),
+                    suffix: widget.suffix,
+                    suffixIcon: widget.suffixIcon,
+                    suffixIconColor: widget.suffixIconColor,
+                    contentPadding: OutlineInputStyle.contentPadding(context),
+                    border: widget.border,
+                    enabledBorder: widget.border,
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(OutlineInputStyle.radius.r),
+                      borderSide: const BorderSide(color: Colors.transparent),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(OutlineInputStyle.radius.r),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                  )
+                : OutlineInputStyle.merge(
+                    context,
+                    hintText: widget.hintText.tr,
+                    hintStyle: widget.hintStyle ??
+                        TextStyle(
+                          color: widget.hintColor ??
+                              Theme.of(context).hintColor,
+                          fontSize: 16.sp,
+                        ),
+                    suffixIcon: widget.suffixIcon,
+                  ).copyWith(
+                    fillColor: defaultFillColor,
+                    suffix: widget.suffix,
+                    suffixIconColor: widget.suffixIconColor,
                   ),
-              suffix: widget.suffix,
-              suffixIcon: widget.suffixIcon,
-              suffixIconColor: widget.suffixIconColor,
-              contentPadding:
-                  EdgeInsets.symmetric(vertical: 13.h, horizontal: 10.w),
-              border: widget.border ??
-                  OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11.r),
-                    gapPadding: 1.w,
-                    borderSide: const BorderSide(color: Colors.transparent),
-                  ),
-              enabledBorder: widget.border ??
-                  OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11.r),
-                    gapPadding: 1.w,
-                    borderSide: const BorderSide(color: Colors.transparent),
-                  ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11.r),
-                borderSide:
-                    const BorderSide(color: Colors.transparent, width: 0),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(11.r),
-                gapPadding: 1.w,
-                borderSide: const BorderSide(
-                  color: AppColors.secondaryColor,
-                  width: 2,
-                ),
-              ),
-            ),
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction ?? TextInputAction.next,
             validator: widget.validator ??

@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/outline_input_style.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -28,26 +29,17 @@ class CategorySelectorSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
-              value: mainId != null &&
+              key: ValueKey<String?>(mainId),
+              initialValue: mainId != null &&
                       mainId.isNotEmpty &&
                       controller.mainCategories.any((m) => m.id == mainId)
                   ? mainId
                   : null,
               isExpanded: true,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(11.r),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 14.w,
-                  vertical: 12.h,
-                ),
+              decoration: OutlineInputStyle.merge(
+                context,
                 labelText: 'mainCategory'.tr,
                 hintText: 'mainCategoryHint'.tr,
-                hintStyle: TextStyle(color: Theme.of(context).hintColor),
               ),
               items: controller.mainCategories
                   .map(
@@ -61,7 +53,7 @@ class CategorySelectorSection extends StatelessWidget {
                 controller.setMainCategory(v);
               },
             ),
-            SizedBox(height: 12.h),
+            SizedBox(height: 16.h),
             if (controller.mainCategories.isEmpty)
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -95,24 +87,12 @@ class CategorySelectorSection extends StatelessWidget {
                   },
                 ),
                 decoratorProps: DropDownDecoratorProps(
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Theme.of(context).colorScheme.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(11.r),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 14.w,
-                      vertical: 12.h,
-                    ),
+                  decoration: OutlineInputStyle.merge(
+                    context,
                     labelText: 'subCategoryMulti'.tr,
                     hintText: hasMain
                         ? 'selectSubCategoryHint'.tr
                         : 'selectMainCategoryFirst'.tr,
-                    hintStyle: TextStyle(
-                      color: Theme.of(context).hintColor,
-                    ),
                   ),
                 ),
                 onChanged: (list) {

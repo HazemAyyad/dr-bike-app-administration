@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../data/models/product_details_model.dart';
-import 'custom_text_and_dis.dart';
 
 /// Read-only Arabic / English / Hebrew tabs for name + description on product details.
 class ProductLanguageDetailsTabs extends StatelessWidget {
@@ -15,6 +14,9 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedTab =
+        isDark ? Colors.grey.shade400 : Colors.grey.shade600;
     return DefaultTabController(
       length: 3,
       child: Column(
@@ -22,7 +24,7 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
         children: [
           TabBar(
             labelColor: cs.primary,
-            unselectedLabelColor: Theme.of(context).hintColor,
+            unselectedLabelColor: unselectedTab,
             indicatorColor: cs.primary,
             indicatorWeight: 3,
             tabs: [
@@ -31,20 +33,23 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
               Tab(text: 'langHebrew'.tr),
             ],
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 16.h),
           SizedBox(
-            height: 200.h,
+            height: 240.h,
             child: TabBarView(
               children: [
                 _langPane(
+                  context,
                   name: product.nameAr,
                   description: product.descriptionAr ?? '',
                 ),
                 _langPane(
+                  context,
                   name: product.nameEng,
                   description: product.descriptionEng ?? '',
                 ),
                 _langPane(
+                  context,
                   name: product.nameAbree ?? '',
                   description: product.descriptionAbree ?? '',
                 ),
@@ -56,21 +61,48 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
     );
   }
 
-  Widget _langPane({required String name, required String description}) {
+  Widget _langPane(
+    BuildContext context, {
+    required String name,
+    required String description,
+  }) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CustomTextAndDis(
-            title: 'productName',
-            discription: name.isEmpty ? '—' : name,
-          ),
-          CustomTextAndDis(
-            title: 'productDetails',
-            discription: description.isEmpty ? '—' : description,
-          ),
+          _pdReadonlyField(context, 'productName', name),
+          SizedBox(height: 16.h),
+          _pdReadonlyField(context, 'productDetails', description),
         ],
       ),
+    );
+  }
+
+  Widget _pdReadonlyField(
+    BuildContext context,
+    String titleKey,
+    String value,
+  ) {
+    final display = value.trim().isEmpty ? '—' : value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          titleKey.tr,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          display,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                height: 1.4,
+              ),
+        ),
+      ],
     );
   }
 }

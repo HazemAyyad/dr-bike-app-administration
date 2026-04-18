@@ -1,18 +1,9 @@
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
-import 'package:doctorbike/core/utils/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../controllers/stock_controller.dart';
-
-Color _editSectionTitleColor(BuildContext context) {
-  final t = Theme.of(context);
-  if (t.brightness == Brightness.dark) {
-    return t.colorScheme.primary;
-  }
-  return AppColors.secondaryColor;
-}
 
 /// Name + description fields grouped by language (Arabic / English / Hebrew).
 class ProductLanguageTabsEdit extends StatelessWidget {
@@ -24,6 +15,9 @@ class ProductLanguageTabsEdit extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedTab =
+        isDark ? Colors.grey.shade400 : Colors.grey.shade600;
     return DefaultTabController(
       length: 3,
       child: Column(
@@ -31,7 +25,7 @@ class ProductLanguageTabsEdit extends StatelessWidget {
         children: [
           TabBar(
             labelColor: cs.primary,
-            unselectedLabelColor: Theme.of(context).hintColor,
+            unselectedLabelColor: unselectedTab,
             indicatorColor: cs.primary,
             indicatorWeight: 3,
             labelStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -39,7 +33,8 @@ class ProductLanguageTabsEdit extends StatelessWidget {
                 ),
             unselectedLabelStyle:
                 Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      color: unselectedTab,
                     ),
             tabs: [
               Tab(text: 'langArabic'.tr),
@@ -47,9 +42,9 @@ class ProductLanguageTabsEdit extends StatelessWidget {
               Tab(text: 'langHebrew'.tr),
             ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 16.h),
           SizedBox(
-            height: 280.h,
+            height: 300.h,
             child: TabBarView(
               children: [
                 _langColumn(
@@ -89,7 +84,7 @@ class ProductLanguageTabsEdit extends StatelessWidget {
             hintText: 'productName',
             controller: nameController,
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 16.h),
           CustomTextField(
             label: 'productDetails',
             hintText: 'productDetails',
@@ -117,14 +112,11 @@ class EditProductSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.only(bottom: 16.h),
+      margin: EdgeInsets.only(bottom: 24.h),
       elevation: 0,
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.r),
-        side: BorderSide(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
-        ),
+        borderRadius: BorderRadius.circular(16.r),
       ),
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -135,10 +127,10 @@ class EditProductSectionCard extends StatelessWidget {
               titleKey.tr,
               style: Theme.of(context).textTheme.titleSmall!.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: _editSectionTitleColor(context),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
             ),
-            SizedBox(height: 12.h),
+            SizedBox(height: 16.h),
             child,
           ],
         ),
