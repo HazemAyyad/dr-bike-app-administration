@@ -1,4 +1,6 @@
 import 'package:doctorbike/features/admin/stock/domain/usecases/get_product_details_usecase.dart';
+import 'package:doctorbike/features/admin/stock/domain/usecases/get_product_size_options_usecase.dart';
+import 'package:doctorbike/features/admin/stock/domain/usecases/save_product_full_usecase.dart';
 import 'package:doctorbike/features/admin/stock/domain/usecases/search_products_usecase.dart';
 import 'package:get/get.dart';
 
@@ -61,6 +63,12 @@ class ExpensesBinding extends Bindings {
           stockRepository: Get.find<StockImplement>(),
         ),
         addCombinationUsecase: AddCombinationUsecase(
+          stockRepository: Get.find<StockImplement>(),
+        ),
+        saveProductFullUsecase: SaveProductFullUsecase(
+          stockRepository: Get.find<StockImplement>(),
+        ),
+        getProductSizeOptionsUsecase: GetProductSizeOptionsUsecase(
           stockRepository: Get.find<StockImplement>(),
         ),
       ),

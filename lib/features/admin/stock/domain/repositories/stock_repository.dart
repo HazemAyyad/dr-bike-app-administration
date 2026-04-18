@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FormData;
 
 import '../../../../../core/errors/failure.dart';
 import '../../../sales/data/models/product_model.dart';
@@ -16,6 +16,9 @@ abstract class StockRepository {
   });
 
   Future<ProductDetailsModel> getProductDetails({required String productId});
+
+  /// خيارات الحجم (config + قاعدة البيانات + أحجام المنتج عند التعديل).
+  Future<List<String>> getProductSizeOptions({String? productId});
 
   Future<Either<Failure, String>> moveToArchive({
     required String productId,

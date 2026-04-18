@@ -134,6 +134,10 @@ class BuildProductCard extends GetView<StockController> {
               return ClipRRect(
                     borderRadius: BorderRadius.circular(12.r),
                     child: CachedNetworkImage(
+                      key: ValueKey(
+                        '${product.productId}_${resolved.hashCode}',
+                      ),
+                      cacheKey: '${product.productId}_$resolved',
                       cacheManager: CacheManager(
                         Config(
                           'imagesCache',

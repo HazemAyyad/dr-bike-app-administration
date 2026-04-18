@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FormData;
 
 import '../../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
@@ -50,6 +50,35 @@ class StockDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<String>> getProductSizeOptions({String? productId}) async {
+    try {
+      final response = await api.get(
+        EndPoints.productSizeOptions,
+        queryParameters: {
+          if (productId != null && productId.isNotEmpty) 'product_id': productId,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        return [];
+      }
+      final list = raw['sizes'];
+      if (list is! List) {
+        return [];
+      }
+      return list.map((e) => e.toString()).toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
         ),
       );
     }

@@ -11,8 +11,117 @@ import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+
+/// يزيل القيم الوهمية من الـ API ويزيل التكرار بنفس المسار.
+List<String> _filterProductImageList(List<String> images) {
+  final seen = <String>{};
+  final out = <String>[];
+  for (final r in images) {
+    final t = r.toString().trim();
+    if (t.isEmpty) continue;
+    final tl = t.toLowerCase();
+    if (tl == 'no image' ||
+        tl == 'no img' ||
+        tl == 'no images' ||
+        tl == 'null') {
+      continue;
+    }
+    if (!seen.add(t)) continue;
+    out.add(t);
+  }
+  return out;
+}
+
+CarouselOptions _carouselOptionsForCount(int n, {double height = 150}) {
+  final h = height;
+  if (n <= 0) {
+    return CarouselOptions(height: h, viewportFraction: 1);
+  }
+  // صورة واحدة: شريحة مدمجة (~ربع المساحة السابقة) + بدون لف لا نهائي
+  if (n == 1) {
+    return CarouselOptions(
+      height: h,
+      viewportFraction: 0.58,
+      enlargeCenterPage: false,
+      enableInfiniteScroll: false,
+      autoPlay: false,
+      padEnds: true,
+    );
+  }
+  if (n == 2) {
+    return CarouselOptions(
+      height: h,
+      viewportFraction: 0.48,
+      enlargeCenterPage: true,
+      enableInfiniteScroll: true,
+      autoPlay: false,
+      padEnds: true,
+    );
+  }
+  return CarouselOptions(
+    height: h,
+    viewportFraction: 0.34,
+    enlargeCenterPage: true,
+    enableInfiniteScroll: true,
+    autoPlay: false,
+    padEnds: true,
+  );
+}
+
+/// شارة صغيرة تبيّن إن الصورة من متجر .NET القديم أو من تخزين Laravel.
+class _ImageSourceBadge extends StatelessWidget {
+  const _ImageSourceBadge({required this.source});
+
+  final ProductImageSource source;
+
+  @override
+  Widget build(BuildContext context) {
+    if (source == ProductImageSource.unknown) {
+      return const SizedBox.shrink();
+    }
+    final legacy = source == ProductImageSource.legacyDotNetStore;
+    return Align(
+      alignment: Alignment.topRight,
+      child: Padding(
+        padding: EdgeInsets.all(6.r),
+        child: Material(
+          elevation: 2,
+          borderRadius: BorderRadius.circular(8.r),
+          color: legacy
+              ? const Color(0xFFE65100).withValues(alpha: 0.95)
+              : const Color(0xFF00695C).withValues(alpha: 0.95),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  legacy ? Icons.storefront_outlined : Icons.storage_outlined,
+                  size: 14.sp,
+                  color: Colors.white,
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  legacy
+                      ? 'imageBadgeLegacyStore'.tr
+                      : 'imageBadgeLaravel'.tr,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class ProductImagesSlider extends StatelessWidget {
   final List<String> images;
@@ -70,14 +179,21 @@ class ProductImagesSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final slides = _filterProductImageList(images);
+    if (slides.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final n = slides.length;
+    final carouselOptions = _carouselOptionsForCount(n, height: 86.h);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Center(
           child: Container(
-            margin: EdgeInsets.symmetric(vertical: 10.h),
+            margin: EdgeInsets.symmetric(vertical: 6.h),
             height: 1.h,
-            width: 300.w,
+            width: double.infinity,
             decoration: BoxDecoration(
               color: ThemeService.isDark.value
                   ? AppColors.customGreyColor
@@ -97,18 +213,14 @@ class ProductImagesSlider extends StatelessWidget {
               ),
         ),
         SizedBox(height: 10.h),
-        /// ✅ السلايدر الأساسي
+        /// سلايدر — مع صورة واحدة: عرض كامل بدون تكرار (كان viewportFraction=0.3 + infinite يسبب 3 نسخ).
         CarouselSlider.builder(
-          itemCount: images.length,
-          options: CarouselOptions(
-            height: 150.h,
-            enlargeCenterPage: true,
-            enableInfiniteScroll: true,
-            autoPlay: false,
-            viewportFraction: 0.3,
-          ),
+          itemCount: n,
+          options: carouselOptions,
           itemBuilder: (context, index, realIdx) {
-            final image = images[index];
+            final raw = slides[index];
+            final image = ShowNetImage.getPhoto(raw);
+            final src = ShowNetImage.classifySource(raw);
             return GestureDetector(
               onTap: () {
                 final CarouselSliderController controller =
@@ -147,7 +259,9 @@ class ProductImagesSlider extends StatelessWidget {
                             ),
                             onPressed: () => downloadImage(
                               context,
-                              images[currentIndex.value],
+                              ShowNetImage.getPhoto(
+                                slides[currentIndex.value],
+                              ),
                             ),
                           ),
                         ),
@@ -155,44 +269,58 @@ class ProductImagesSlider extends StatelessWidget {
                         Center(
                           child: CarouselSlider.builder(
                             carouselController: controller,
-                            itemCount: images.length,
+                            itemCount: n,
                             itemBuilder: (context, index, realIdx) {
-                              return CachedNetworkImage(
-                                cacheManager: CacheManager(
-                                  Config(
-                                    'imagesCache',
-                                    stalePeriod: const Duration(days: 7),
-                                    maxNrOfCacheObjects: 100,
+                              final rawDlg = slides[index];
+                              return Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  CachedNetworkImage(
+                                    cacheManager: CacheManager(
+                                      Config(
+                                        'imagesCache',
+                                        stalePeriod: const Duration(days: 7),
+                                        maxNrOfCacheObjects: 100,
+                                      ),
+                                    ),
+                                    imageBuilder: (context, imageProvider) =>
+                                        Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        image: DecorationImage(
+                                          image: imageProvider,
+                                          fit: BoxFit.cover,
+                                          filterQuality: FilterQuality.medium,
+                                        ),
+                                      ),
+                                    ),
+                                    imageUrl:
+                                        ShowNetImage.getPhoto(rawDlg),
+                                    fadeInDuration:
+                                        const Duration(milliseconds: 200),
+                                    fadeOutDuration:
+                                        const Duration(milliseconds: 200),
+                                    placeholder: (context, url) =>
+                                        const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error),
                                   ),
-                                ),
-                                imageBuilder: (context, imageProvider) =>
-                                    Container(
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    image: DecorationImage(
-                                      image: imageProvider,
-                                      fit: BoxFit.cover,
-                                      filterQuality: FilterQuality.medium,
+                                  _ImageSourceBadge(
+                                    source: ShowNetImage.classifySource(
+                                      rawDlg,
                                     ),
                                   ),
-                                ),
-                                imageUrl: images[index],
-                                fadeInDuration:
-                                    const Duration(milliseconds: 200),
-                                fadeOutDuration:
-                                    const Duration(milliseconds: 200),
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error),
+                                ],
                               );
                             },
                             options: CarouselOptions(
-                              enlargeCenterPage: true,
-                              enableInfiniteScroll: true,
+                              height: MediaQuery.sizeOf(context).height * 0.55,
+                              enlargeCenterPage: n > 1,
+                              enableInfiniteScroll: n > 1,
                               autoPlay: false,
-                              viewportFraction: 0.8,
+                              viewportFraction: n == 1 ? 1.0 : 0.85,
                               initialPage: index,
                               onPageChanged: (i, reason) {
                                 currentIndex.value = i;
@@ -205,34 +333,44 @@ class ProductImagesSlider extends StatelessWidget {
                   },
                 );
               },
-              child: CachedNetworkImage(
-                cacheManager: CacheManager(
-                  Config(
-                    'imagesCache',
-                    stalePeriod: const Duration(days: 7),
-                    maxNrOfCacheObjects: 100,
-                  ),
-                ),
-                imageBuilder: (context, imageProvider) => Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: imageProvider,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.low,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10.r),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CachedNetworkImage(
+                      cacheManager: CacheManager(
+                        Config(
+                          'imagesCache',
+                          stalePeriod: const Duration(days: 7),
+                          maxNrOfCacheObjects: 100,
+                        ),
+                      ),
+                      imageBuilder: (context, imageProvider) => Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: imageProvider,
+                            fit: BoxFit.cover,
+                            filterQuality: FilterQuality.low,
+                          ),
+                        ),
+                      ),
+                      imageUrl: image,
+                      fadeInDuration: const Duration(milliseconds: 200),
+                      fadeOutDuration: const Duration(milliseconds: 200),
+                      placeholder: (context, url) => const SizedBox(
+                        width: double.infinity,
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) =>
+                          const Icon(Icons.error),
                     ),
-                  ),
+                    _ImageSourceBadge(source: src),
+                  ],
                 ),
-                imageUrl: image,
-                fadeInDuration: const Duration(milliseconds: 200),
-                fadeOutDuration: const Duration(milliseconds: 200),
-                placeholder: (context, url) => const SizedBox(
-                  width: double.infinity,
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
               ),
             );
           },

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import 'package:doctorbike/core/helpers/custom_chechbox.dart';
-
+import '../../../../../core/helpers/show_net_image.dart';
+import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -11,9 +11,34 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/custom_text_and_dis.dart';
 import '../widgets/product_images_slider.dart';
+import '../widgets/product_inline_video.dart';
 import '../widgets/purchase_price_widget.dart';
 import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
+
+Widget _pdDivider(BuildContext context) {
+  return Padding(
+    padding: EdgeInsets.symmetric(vertical: 10.h),
+    child: Divider(
+      height: 1,
+      thickness: 1,
+      color: Theme.of(context).dividerColor.withValues(alpha: 0.45),
+    ),
+  );
+}
+
+Widget _pdSectionTitle(BuildContext context, String keyTr) {
+  return Padding(
+    padding: EdgeInsets.only(bottom: 8.h, top: 4.h),
+    child: Text(
+      keyTr.tr,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AppColors.secondaryColor,
+          ),
+    ),
+  );
+}
 
 class ProductDetailsScreen extends GetView<StockController> {
   const ProductDetailsScreen({Key? key}) : super(key: key);
@@ -52,35 +77,54 @@ class ProductDetailsScreen extends GetView<StockController> {
               final product = controller.productDetails.value!;
               return SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(height: 10.h),
+                      SizedBox(height: 8.h),
+                      _pdSectionTitle(context, 'productDetailsSectionInfo'),
                       CustomTextAndDis(
                         title: 'productName',
                         discription: product.nameAr,
+                      ),
+                      CustomTextAndDis(
+                        title: 'nameEnglish',
+                        discription: product.nameEng,
+                      ),
+                      CustomTextAndDis(
+                        title: 'nameHebrew',
+                        discription: product.nameAbree ?? '',
                       ),
                       CustomTextAndDis(
                         title: 'productDetails',
                         discription: product.descriptionAr ?? '',
                       ),
                       CustomTextAndDis(
-                        title: 'mainCategory',
-                        discription: product.productSubCategories != null &&
-                                product.productSubCategories!.isNotEmpty
-                            ? product
-                                .productSubCategories!.first.mainCategoryName!
-                            : '',
+                        title: 'descriptionEnglish',
+                        discription: product.descriptionEng ?? '',
+                      ),
+                      CustomTextAndDis(
+                        title: 'descriptionHebrew',
+                        discription: product.descriptionAbree ?? '',
                       ),
                       CustomTextAndDis(
                         title: 'subCategory',
                         discription: product.productSubCategories != null &&
                                 product.productSubCategories!.isNotEmpty
-                            ? product
-                                .productSubCategories!.first.subCategoryName!
+                            ? product.productSubCategories!
+                                .map((e) => e.subCategoryName ?? '')
+                                .where((e) => e.isNotEmpty)
+                                .join('، ')
                             : '',
                       ),
+                      CustomTextAndDis(
+                        title: 'mainCategory',
+                        discription: product.productSubCategories != null &&
+                                product.productSubCategories!.isNotEmpty
+                            ? product.productSubCategories!.first.mainCategoryName ?? ''
+                            : '',
+                      ),
+                      _pdSectionTitle(context, 'productDetailsSectionPricing'),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -109,19 +153,7 @@ class ProductDetailsScreen extends GetView<StockController> {
                           ),
                         ],
                       ),
-                      Center(
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 10.h),
-                          height: 1.h,
-                          width: 300.w,
-                          decoration: BoxDecoration(
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor
-                                : AppColors.customGreyColor3,
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                        ),
-                      ),
+                      _pdDivider(context),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -166,19 +198,68 @@ class ProductDetailsScreen extends GetView<StockController> {
                           ),
                         ],
                       ),
-                      Center(
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 10.h),
-                          height: 1.h,
-                          width: 300.w,
-                          decoration: BoxDecoration(
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor
-                                : AppColors.customGreyColor3,
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                        ),
+                      CustomTextAndDis(
+                        title: 'wholesalePriceField',
+                        discription: product.wholesalePrice ?? '',
                       ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: CustomTextAndDis(
+                              noSized: true,
+                              title: 'manufactureYear',
+                              discription: product.manufactureYear ?? '',
+                            ),
+                          ),
+                          Flexible(
+                            child: CustomTextAndDis(
+                              noSized: true,
+                              title: 'productModel',
+                              discription: product.model ?? '',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: CustomTextAndDis(
+                              noSized: true,
+                              title: 'rateLabel',
+                              discription: product.rate ?? '',
+                            ),
+                          ),
+                          Flexible(
+                            child: CustomTextAndDis(
+                              noSized: true,
+                              title: 'listPriceField',
+                              discription: product.price?.toString() ?? '',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: CustomTextAndDis(
+                              noSized: true,
+                              title: 'minSalePriceField',
+                              discription: product.minSalePrice?.toString() ?? '',
+                            ),
+                          ),
+                          Flexible(
+                            child: CustomTextAndDis(
+                              noSized: true,
+                              title: 'rotationDateField',
+                              discription: product.rotationDate?.toString() ?? '',
+                            ),
+                          ),
+                        ],
+                      ),
+                      _pdDivider(context),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -205,20 +286,9 @@ class ProductDetailsScreen extends GetView<StockController> {
                           ),
                         ],
                       ),
-                      Center(
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 10.h),
-                          height: 1.h,
-                          width: 300.w,
-                          decoration: BoxDecoration(
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor
-                                : AppColors.customGreyColor3,
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                        ),
-                      ),
-                      ...product.sizes!.map(
+                      _pdDivider(context),
+                      _pdSectionTitle(context, 'productDetailsSectionSizes'),
+                      ...(product.sizes ?? []).map(
                         (e) => Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -227,35 +297,51 @@ class ProductDetailsScreen extends GetView<StockController> {
                               title: 'size',
                               discription: e.size.toString(),
                             ),
-                            ...e.colorSizes!.map(
-                              (e) => Padding(
+                            ...(e.colorSizes ?? []).map(
+                              (cs) => Padding(
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8.0, horizontal: 16.0),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: CustomTextAndDis(
-                                        noSized: true,
-                                        title: 'color',
-                                        discription: e.colorAr.toString(),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: CustomTextAndDis(
+                                            noSized: true,
+                                            title: 'color',
+                                            discription: cs.colorAr.toString(),
+                                          ),
+                                        ),
+                                        CustomTextAndDis(
+                                          noSized: true,
+                                          discriptionColor: const Color.fromARGB(
+                                              255, 95, 77, 255),
+                                          title: 'stock',
+                                          discription: cs.stock.toString(),
+                                        ),
+                                        SizedBox(width: 5.w),
+                                        CustomTextAndDis(
+                                          noSized: true,
+                                          discriptionColor: Colors.green,
+                                          title: 'price',
+                                          discription:
+                                              cs.normailPrice.toString(),
+                                        ),
+                                      ],
+                                    ),
+                                    if ((cs.colorEn ?? '').isNotEmpty ||
+                                        (cs.colorAbbr ?? '').isNotEmpty)
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 4.h),
+                                        child: Text(
+                                          '${'colorEnglish'.tr}: ${cs.colorEn ?? '—'}  |  ${'colorHebrew'.tr}: ${cs.colorAbbr ?? '—'}',
+                                          style: Theme.of(context)
+                                              .textTheme.bodySmall,
+                                        ),
                                       ),
-                                    ),
-                                    CustomTextAndDis(
-                                      noSized: true,
-                                      discriptionColor: const Color.fromARGB(
-                                          255, 95, 77, 255),
-                                      title: 'stock',
-                                      discription: e.stock.toString(),
-                                    ),
-                                    SizedBox(width: 5.w),
-                                    CustomTextAndDis(
-                                      noSized: true,
-                                      discriptionColor: Colors.green,
-                                      title: 'price',
-                                      discription: e.normailPrice.toString(),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -263,19 +349,7 @@ class ProductDetailsScreen extends GetView<StockController> {
                           ],
                         ),
                       ),
-                      Center(
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 10.h),
-                          height: 1.h,
-                          width: 300.w,
-                          decoration: BoxDecoration(
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor
-                                : AppColors.customGreyColor3,
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                        ),
-                      ),
+                      _pdDivider(context),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -321,48 +395,40 @@ class ProductDetailsScreen extends GetView<StockController> {
                           ),
                         ],
                       ),
-                      Center(
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 10.h),
-                          height: 1.h,
-                          width: 300.w,
-                          decoration: BoxDecoration(
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor
-                                : AppColors.customGreyColor3,
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
+                      _pdDivider(context),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 4.h, top: 2.h),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              product.isSoldWithPaper == 1 ||
+                                      product.isSoldWithPaper == '1'
+                                  ? Icons.check_circle
+                                  : Icons.cancel,
+                              size: 22.sp,
+                              color: product.isSoldWithPaper == 1 ||
+                                      product.isSoldWithPaper == '1'
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade600,
+                            ),
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              child: Text(
+                                'isForcedSale'.tr,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            'productRotationDate'.tr,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge!
-                                .copyWith(
-                                    fontSize: 17.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.customGreyColor6
-                                        : AppColors.customGreyColor),
-                          ),
-                          SizedBox(width: 10.w),
-                          const Icon(
-                            Icons.calendar_today,
-                            color: AppColors.primaryColor,
-                          ),
-                        ],
-                      ),
-                      CustomCheckBox(
-                        title: 'isForcedSale',
-                        value:
-                            product.isSoldWithPaper == 1 ? true.obs : false.obs,
-                        onChanged: (value) {
-                          // product.isSoldWithPaper = value! ? 1 : 0;
-                        },
-                      ),
+                      _pdDivider(context),
+                      _pdSectionTitle(context, 'productDetailsSectionMedia'),
                       product.viewImages != null &&
                               product.viewImages!.isNotEmpty
                           ? ProductImagesSlider(
@@ -383,7 +449,49 @@ class ProductDetailsScreen extends GetView<StockController> {
                               images: product.image3d!,
                             )
                           : const SizedBox.shrink(),
-                      SizedBox(height: 50.h),
+                      Builder(
+                        builder: (context) {
+                          final rawVideo = product.videoUrl?.toString().trim();
+                          if (rawVideo == null ||
+                              rawVideo.isEmpty ||
+                              rawVideo == 'null') {
+                            return const SizedBox.shrink();
+                          }
+                          final resolved = ShowNetImage.getPhoto(rawVideo);
+                          if (resolved == AssetsManager.noImageNet ||
+                              resolved.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(height: 8.h),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.play_circle_outline,
+                                    size: 22.sp,
+                                    color: AppColors.secondaryColor,
+                                  ),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    'productVideo'.tr,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 8.h),
+                              ProductInlineVideo(videoUrl: resolved),
+                            ],
+                          );
+                        },
+                      ),
+                      SizedBox(height: 32.h),
                     ],
                   ),
                 ),

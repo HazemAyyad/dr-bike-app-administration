@@ -9,6 +9,10 @@ class EndPoints {
   static const String baserUrlForImage =
       "https://dr-bike.duosparktech.com/public/";
 
+  /// صور المتجر القديم (.NET): المسارات النسبية `Images/Items/...` لا تُخزَّن على Laravel.
+  static const String legacyStoreImageBaseUrl =
+      'https://mjsall-001-site1.jtempurl.com/';
+
   static const String register = 'register';
   static const String sendCode = 'send/code';
   static const String forgotPassword = 'forgot-password';
@@ -158,6 +162,7 @@ class EndPoints {
 
   // stock
   static const String getProductsList = 'get/products/list';
+  static const String productSizeOptions = 'get/product/size-options';
   static const String getUnarchivedCloseouts = 'get/unarchived/closeouts';
   static const String getAllCombinations = 'get/all/combinations';
   static const String getProductDetails = 'get/product/details';

@@ -6,6 +6,7 @@ import '../../domain/usecases/get_all_stock_usecase.dart';
 import '../../domain/usecases/get_archived_usecase.dart';
 import '../../domain/usecases/get_categories_usecase.dart';
 import '../../domain/usecases/get_product_details_usecase.dart';
+import '../../domain/usecases/get_product_size_options_usecase.dart';
 import '../../domain/usecases/move_to_archive_usecase.dart';
 import '../../domain/usecases/save_product_full_usecase.dart';
 import '../../domain/usecases/search_products_usecase.dart';
@@ -38,6 +39,9 @@ class StockBinding extends Bindings {
           stockRepository: Get.find<StockImplement>(),
         ),
         saveProductFullUsecase: SaveProductFullUsecase(
+          stockRepository: Get.find<StockImplement>(),
+        ),
+        getProductSizeOptionsUsecase: GetProductSizeOptionsUsecase(
           stockRepository: Get.find<StockImplement>(),
         ),
       ),

@@ -14,6 +14,7 @@ class ProductDetailsModel {
   String? descriptionAbree;
   dynamic videoUrl;
   String? normailPrice;
+  String? wholesalePrice;
   String? stock;
   String? model;
   String? isNewItem;
@@ -37,6 +38,9 @@ class ProductDetailsModel {
   List<String>? normalImages;
   List<String>? viewImages;
   List<String>? image3d;
+  List<ProductMediaItem>? normalImageItems;
+  List<ProductMediaItem>? viewImageItems;
+  List<ProductMediaItem>? image3dItems;
   dynamic purchase;
 
   ProductDetailsModel({
@@ -53,6 +57,7 @@ class ProductDetailsModel {
     this.descriptionAbree,
     this.videoUrl,
     this.normailPrice,
+    this.wholesalePrice,
     this.stock,
     this.model,
     this.isNewItem,
@@ -76,8 +81,28 @@ class ProductDetailsModel {
     this.normalImages,
     this.viewImages,
     this.image3d,
+    this.normalImageItems,
+    this.viewImageItems,
+    this.image3dItems,
     this.purchase,
   });
+
+  static List<ProductMediaItem>? _parseMediaItems(dynamic v) {
+    if (v is! List) {
+      return null;
+    }
+    final out = <ProductMediaItem>[];
+    for (final e in v) {
+      if (e is Map) {
+        final m = Map<String, dynamic>.from(e);
+        out.add(ProductMediaItem(
+          id: asString(m['id']),
+          url: asNullableString(m['url']),
+        ));
+      }
+    }
+    return out.isEmpty ? null : out;
+  }
 
   factory ProductDetailsModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
@@ -93,8 +118,9 @@ class ProductDetailsModel {
       descriptionAr: asNullableString(j['descriptionAr']),
       descriptionEng: asNullableString(j['descriptionEng']),
       descriptionAbree: asNullableString(j['descriptionAbree']),
-      videoUrl: j['videoUrl'],
+      videoUrl: j['videoUrl'] ?? j['video_url'],
       normailPrice: asNullableString(j['normailPrice']),
+      wholesalePrice: asNullableString(j['wholesalePrice']),
       stock: asNullableString(j['stock']),
       model: asNullableString(j['model']),
       isNewItem: asNullableString(j['isNewItem']),
@@ -135,6 +161,9 @@ class ProductDetailsModel {
       image3d: j['product_image3d'] is List
           ? (j['product_image3d'] as List).map((v) => asString(v)).toList()
           : null,
+      normalImageItems: _parseMediaItems(j['product_normalImages_items']),
+      viewImageItems: _parseMediaItems(j['product_viewImages_items']),
+      image3dItems: _parseMediaItems(j['product_image3d_items']),
       purchase: j['purchase'],
     );
   }
@@ -154,6 +183,7 @@ class ProductDetailsModel {
     data['descriptionAbree'] = descriptionAbree;
     data['videoUrl'] = videoUrl;
     data['normailPrice'] = normailPrice;
+    data['wholesalePrice'] = wholesalePrice;
     data['stock'] = stock;
     data['model'] = model;
     data['isNewItem'] = isNewItem;
@@ -195,6 +225,13 @@ class ProductDetailsModel {
 
     return data;
   }
+}
+
+class ProductMediaItem {
+  final String id;
+  final String? url;
+
+  ProductMediaItem({required this.id, this.url});
 }
 
 class ProductSubCategory {
@@ -285,6 +322,8 @@ class Size {
 class ColorSize {
   String? id;
   String? colorAr;
+  String? colorEn;
+  String? colorAbbr;
   String? normailPrice;
   String? wholesalePrice;
   String? discount;
@@ -294,6 +333,8 @@ class ColorSize {
   ColorSize({
     this.id,
     this.colorAr,
+    this.colorEn,
+    this.colorAbbr,
     this.normailPrice,
     this.wholesalePrice,
     this.discount,
@@ -306,6 +347,8 @@ class ColorSize {
     return ColorSize(
       id: asString(j['id'], '0'),
       colorAr: asString(j['colorAr'], '0'),
+      colorEn: asNullableString(j['colorEn']),
+      colorAbbr: asNullableString(j['colorAbbr']),
       normailPrice: asString(j['normailPrice'], '0'),
       wholesalePrice: asString(j['wholesalePrice'], '0'),
       discount: asString(j['discount'], '0'),
@@ -318,6 +361,8 @@ class ColorSize {
     return {
       'id': id,
       'colorAr': colorAr,
+      'colorEn': colorEn,
+      'colorAbbr': colorAbbr,
       'normailPrice': normailPrice,
       'wholesalePrice': wholesalePrice,
       'discount': discount,

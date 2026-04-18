@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/stock/data/models/product_details_model.dart';
 import 'package:doctorbike/features/admin/stock/presentation/controllers/stock_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide FormData;
 
 import '../../../../../../core/connection/network_info.dart';
 import '../../../../../../core/errors/failure.dart';
@@ -55,6 +55,18 @@ class StockImplement implements StockRepository {
         productId: productId,
       );
       return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<List<String>> getProductSizeOptions({String? productId}) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await stockDataSource.getProductSizeOptions(productId: productId);
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }

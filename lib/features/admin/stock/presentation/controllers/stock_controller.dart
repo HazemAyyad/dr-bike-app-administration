@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:doctorbike/core/helpers/sweet_success_dialog.dart';
 import 'package:doctorbike/routes/app_routes.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart' hide FormData;
+import 'package:get/get.dart' hide FormData, MultipartFile;
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../../../../core/helpers/server_validation_messages.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/models/all_stock_products_model.dart';
@@ -13,6 +16,7 @@ import '../../domain/usecases/get_all_stock_usecase.dart';
 import '../../domain/usecases/get_archived_usecase.dart';
 import '../../domain/usecases/get_categories_usecase.dart';
 import '../../domain/usecases/get_product_details_usecase.dart';
+import '../../domain/usecases/get_product_size_options_usecase.dart';
 import '../../domain/usecases/move_to_archive_usecase.dart';
 import '../../domain/usecases/save_product_full_usecase.dart';
 import '../../domain/usecases/search_products_usecase.dart';
@@ -27,6 +31,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final SearchProductsUsecase searchProductsUsecase;
   final AddCombinationUsecase addCombinationUsecase;
   final SaveProductFullUsecase saveProductFullUsecase;
+  final GetProductSizeOptionsUsecase getProductSizeOptionsUsecase;
 
   StockController({
     required this.getAllStockUsecase,
@@ -37,6 +42,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required this.searchProductsUsecase,
     required this.addCombinationUsecase,
     required this.saveProductFullUsecase,
+    required this.getProductSizeOptionsUsecase,
   });
 
   final TextEditingController productNameController = TextEditingController();
@@ -53,7 +59,38 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController selectPurchaseController =
       TextEditingController();
   final TextEditingController purchasePriceController = TextEditingController();
+  final TextEditingController nameEngController = TextEditingController();
+  final TextEditingController nameAbreeController = TextEditingController();
+  final TextEditingController descriptionEngController = TextEditingController();
+  final TextEditingController descriptionAbreeController =
+      TextEditingController();
+  final TextEditingController manufactureYearController = TextEditingController();
+  final TextEditingController modelController = TextEditingController();
+  final TextEditingController rateController = TextEditingController();
+  final TextEditingController minSalePriceController = TextEditingController();
+  final TextEditingController listPriceController = TextEditingController();
+  final TextEditingController rotationDateController = TextEditingController();
+
   final RxBool isForcedSale = false.obs;
+  final RxBool isShowProduct = true.obs;
+  final RxBool isNewItemProduct = true.obs;
+  final RxBool isMoreSalesProduct = false.obs;
+
+  final RxList<String> selectedSubCategoryIds = <String>[].obs;
+
+  final List<XFile> pendingNormalImages = [];
+  final List<XFile> pendingViewImages = [];
+  final List<XFile> pendingThreeDImages = [];
+  XFile? pendingVideo;
+
+  final RxList<ProductMediaItem> existingNormalMedia = <ProductMediaItem>[].obs;
+  final RxList<ProductMediaItem> existingViewMedia = <ProductMediaItem>[].obs;
+  final RxList<ProductMediaItem> existingThreeDMedia = <ProductMediaItem>[].obs;
+  final RxList<String> pendingDeleteNormalIds = <String>[].obs;
+  final RxList<String> pendingDeleteViewIds = <String>[].obs;
+  final RxList<String> pendingDeleteThreeDIds = <String>[].obs;
+  final RxBool pendingDeleteExistingVideo = false.obs;
+  String? existingVideoUrlForEdit;
 
   final TextEditingController closeoutsMinimumSaleController =
       TextEditingController();
@@ -70,6 +107,218 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     currentTab.value = index;
   }
 
+  void _resetEditMediaState() {
+    existingNormalMedia.clear();
+    existingViewMedia.clear();
+    existingThreeDMedia.clear();
+    pendingDeleteNormalIds.clear();
+    pendingDeleteViewIds.clear();
+    pendingDeleteThreeDIds.clear();
+    pendingDeleteExistingVideo.value = false;
+    existingVideoUrlForEdit = null;
+  }
+
+  List<ProductMediaItem> _mediaItemsForEdit(
+    List<ProductMediaItem>? items,
+    List<String>? urls,
+  ) {
+    if (items != null && items.isNotEmpty) {
+      return items
+          .where(
+            (e) =>
+                e.id.isNotEmpty &&
+                (e.url ?? '').isNotEmpty &&
+                e.url != 'no image',
+          )
+          .toList();
+    }
+    return [];
+  }
+
+  void toggleSubCategory(String id) {
+    if (selectedSubCategoryIds.contains(id)) {
+      if (selectedSubCategoryIds.length > 1) {
+        selectedSubCategoryIds.remove(id);
+      }
+    } else {
+      selectedSubCategoryIds.add(id);
+    }
+    update();
+  }
+
+  Future<void> pickNormalImages() async {
+    final files = await ImagePicker().pickMultiImage();
+    if (files.isNotEmpty) {
+      pendingNormalImages.addAll(files);
+      update();
+    }
+  }
+
+  Future<void> pickViewImages() async {
+    final files = await ImagePicker().pickMultiImage();
+    if (files.isNotEmpty) {
+      pendingViewImages.addAll(files);
+      update();
+    }
+  }
+
+  Future<void> pickThreeDImages() async {
+    final files = await ImagePicker().pickMultiImage();
+    if (files.isNotEmpty) {
+      pendingThreeDImages.addAll(files);
+      update();
+    }
+  }
+
+  static const _allowedVideoSuffixes = ['.mp4', '.mov', '.avi', '.webm'];
+
+  Future<void> pickProductVideo() async {
+    final f = await ImagePicker().pickVideo(source: ImageSource.gallery);
+    if (f == null) return;
+    final name = f.name.toLowerCase();
+    final ok = _allowedVideoSuffixes.any((e) => name.endsWith(e));
+    if (!ok) {
+      Get.snackbar(
+        'error'.tr,
+        'videoFormatInvalid'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+      return;
+    }
+    pendingVideo = f;
+    if (existingVideoUrlForEdit != null && existingVideoUrlForEdit!.isNotEmpty) {
+      pendingDeleteExistingVideo.value = true;
+    }
+    update();
+  }
+
+  void clearPendingMedia() {
+    pendingNormalImages.clear();
+    pendingViewImages.clear();
+    pendingThreeDImages.clear();
+    pendingVideo = null;
+    update();
+  }
+
+  void removePendingNormalAt(int index) {
+    if (index >= 0 && index < pendingNormalImages.length) {
+      pendingNormalImages.removeAt(index);
+    }
+    update();
+  }
+
+  void removePendingViewAt(int index) {
+    if (index >= 0 && index < pendingViewImages.length) {
+      pendingViewImages.removeAt(index);
+    }
+    update();
+  }
+
+  void removePendingThreeDAt(int index) {
+    if (index >= 0 && index < pendingThreeDImages.length) {
+      pendingThreeDImages.removeAt(index);
+    }
+    update();
+  }
+
+  Future<void> confirmRemoveExistingNormal(ProductMediaItem item) async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('deleteMediaConfirmTitle'.tr),
+        content: Text('deleteMediaConfirmMessage'.tr),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('delete'.tr),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    if (ok == true) {
+      existingNormalMedia.removeWhere((e) => e.id == item.id);
+      if (item.id.isNotEmpty) {
+        pendingDeleteNormalIds.add(item.id);
+      }
+      update();
+    }
+  }
+
+  Future<void> confirmRemoveExistingView(ProductMediaItem item) async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('deleteMediaConfirmTitle'.tr),
+        content: Text('deleteMediaConfirmMessage'.tr),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('delete'.tr),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    if (ok == true) {
+      existingViewMedia.removeWhere((e) => e.id == item.id);
+      if (item.id.isNotEmpty) {
+        pendingDeleteViewIds.add(item.id);
+      }
+      update();
+    }
+  }
+
+  Future<void> confirmRemoveExistingThreeD(ProductMediaItem item) async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('deleteMediaConfirmTitle'.tr),
+        content: Text('deleteMediaConfirmMessage'.tr),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('delete'.tr),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    if (ok == true) {
+      existingThreeDMedia.removeWhere((e) => e.id == item.id);
+      if (item.id.isNotEmpty) {
+        pendingDeleteThreeDIds.add(item.id);
+      }
+      update();
+    }
+  }
+
+  Future<void> confirmRemoveExistingVideo() async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('deleteMediaConfirmTitle'.tr),
+        content: Text('deleteVideoConfirmMessage'.tr),
+        actions: [
+          TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('delete'.tr),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+    if (ok == true) {
+      pendingDeleteExistingVideo.value = true;
+      existingVideoUrlForEdit = null;
+      pendingVideo = null;
+      update();
+    }
+  }
+
   late AnimationController animController;
   late Animation<double> opacityAnimation;
   late Animation<double> sizeAnimation;
@@ -78,7 +327,20 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     isAddMenuOpen.value = !isAddMenuOpen.value;
   }
 
-  final items = <SizedModel>[SizedModel()].obs;
+  final items = <SizedModel>[].obs;
+
+  final RxList<String> productSizeOptions = <String>[].obs;
+
+  Future<void> loadProductSizeOptions({String? productId}) async {
+    try {
+      final list =
+          await getProductSizeOptionsUsecase.call(productId: productId);
+      productSizeOptions.assignAll(list);
+    } catch (_) {
+      productSizeOptions.clear();
+    }
+    update();
+  }
 
   void addSized() {
     items.add(SizedModel());
@@ -86,9 +348,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void removeItem(int index) {
-    if (items.length > 1) {
-      items.removeAt(index);
+    if (index < 0 || index >= items.length) {
+      return;
     }
+    items.removeAt(index);
     update();
   }
 
@@ -151,6 +414,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   final RxBool isLoading = false.obs;
 
+  /// حفظ المنتج (إضافة/تعديل) — منفصل عن [isLoading] لقائمة المنتجات حتى لا يبقى زر الحفظ يدور بلا نهاية.
+  final RxBool isSubmittingProduct = false.obs;
+
   final RxBool isProductLoading = false.obs;
 
   final RxBool isLoadingMore = false.obs;
@@ -190,7 +456,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   int page = 1;
 
   // Get all products
-  void getAllProducts({bool isRefresh = false}) async {
+  Future<void> getAllProducts({bool isRefresh = false}) async {
     isRefresh
         ? isLoadingMore(true)
         : allProducts.isEmpty
@@ -381,11 +647,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   /// نموذج فارغ لإضافة منتج من شاشة المخزون.
   void prepareCreateProduct() {
     editingProductId.value = null;
-    saveScopeFull.value = true;
+    saveScopeFull.value = false;
     productNameController.clear();
     productDetailsController.clear();
-    subCategoryController.text =
-        categories.isNotEmpty ? categories.first.id.toString() : '';
+    nameEngController.clear();
+    nameAbreeController.clear();
+    descriptionEngController.clear();
+    descriptionAbreeController.clear();
+    subCategoryController.clear();
+    selectedSubCategoryIds.clear();
     stockController.text = '0';
     minimumStockController.clear();
     wholesalePricesController.clear();
@@ -393,43 +663,81 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     discountPercentageController.clear();
     selectPurchaseController.clear();
     purchasePriceController.clear();
+    manufactureYearController.text = '0';
+    modelController.clear();
+    rateController.text = '4';
+    minSalePriceController.clear();
+    listPriceController.clear();
+    rotationDateController.clear();
+    isShowProduct.value = true;
+    isNewItemProduct.value = true;
+    isMoreSalesProduct.value = false;
+    clearPendingMedia();
+    _resetEditMediaState();
     for (final el in items) {
       el.onClose();
     }
     items.clear();
-    items.add(SizedModel());
     isForcedSale.value = false;
+    loadProductSizeOptions(productId: null);
     update();
   }
 
   void initProductDetails() {
-    editingProductId.value = productDetails.value?.id;
-    productNameController.text = productDetails.value!.nameAr;
-    productDetailsController.text = productDetails.value!.descriptionAr ?? '';
+    final p = productDetails.value!;
+    editingProductId.value = p.id;
+    saveScopeFull.value = false;
+    productNameController.text = p.nameAr;
+    productDetailsController.text = p.descriptionAr ?? '';
+    nameEngController.text = p.nameEng;
+    nameAbreeController.text = p.nameAbree ?? '';
+    descriptionEngController.text = p.descriptionEng ?? '';
+    descriptionAbreeController.text = p.descriptionAbree ?? '';
     subCategoryController.text =
-        productDetails.value!.productSubCategories != null &&
-                productDetails.value!.productSubCategories!.isNotEmpty
-            ? productDetails.value!.productSubCategories!.first.subCategoryId
-                .toString()
+        p.productSubCategories != null && p.productSubCategories!.isNotEmpty
+            ? p.productSubCategories!.first.subCategoryId.toString()
             : '';
-    stockController.text = productDetails.value!.stock?.toString() ?? '0';
-    minimumStockController.text =
-        productDetails.value!.minStock?.toString() ?? '';
-    purchasePriceController.text =
-        productDetails.value!.normailPrice != null &&
-                productDetails.value!.normailPrice!.isNotEmpty
-            ? productDetails.value!.normailPrice.toString()
-            : '';
-    discountPercentageController.text =
-        productDetails.value!.discount?.toString() ?? '0';
-    retailPricesController.text =
-        productDetails.value!.normailPrice?.toString() ?? '';
+    selectedSubCategoryIds.clear();
+    if (p.productSubCategories != null) {
+      for (final s in p.productSubCategories!) {
+        final sid = s.subCategoryId;
+        if (sid != null && sid.isNotEmpty) {
+          selectedSubCategoryIds.add(sid);
+        }
+      }
+    }
+    stockController.text = p.stock?.toString() ?? '0';
+    minimumStockController.text = p.minStock?.toString() ?? '';
+    retailPricesController.text = p.normailPrice?.toString() ?? '';
+    wholesalePricesController.text = p.wholesalePrice?.toString() ?? '';
+    purchasePriceController.clear();
+    discountPercentageController.text = p.discount?.toString() ?? '0';
+    manufactureYearController.text = p.manufactureYear?.toString() ?? '0';
+    modelController.text = p.model ?? '';
+    rateController.text = p.rate?.toString() ?? '4';
+    minSalePriceController.text = p.minSalePrice?.toString() ?? '';
+    listPriceController.text = p.price?.toString() ?? '';
+    rotationDateController.text = _formatRotationForInput(p.rotationDate);
+    isShowProduct.value = _truthyDynamic(p.isShow);
+    isNewItemProduct.value = _truthyDynamic(p.isNewItem);
+    isMoreSalesProduct.value = _truthyDynamic(p.isMoreSales);
+    if (p.projectId != null) {
+      selectPurchaseController.text = p.projectId.toString();
+    }
+    clearPendingMedia();
+    _resetEditMediaState();
+    existingNormalMedia.assignAll(_mediaItemsForEdit(p.normalImageItems, p.normalImages));
+    existingViewMedia.assignAll(_mediaItemsForEdit(p.viewImageItems, p.viewImages));
+    existingThreeDMedia.assignAll(_mediaItemsForEdit(p.image3dItems, p.image3d));
+    final vu = p.videoUrl?.toString();
+    existingVideoUrlForEdit =
+        (vu == null || vu.isEmpty || vu == 'null') ? null : vu;
 
     for (final el in items) {
       el.onClose();
     }
     items.clear();
-    final sizesList = productDetails.value!.sizes;
+    final sizesList = p.sizes;
     if (sizesList != null) {
       for (final sizeJson in sizesList) {
         final sizeModel = SizedModel();
@@ -442,6 +750,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           final colorModel = ColorModel();
           colorModel.dbColorId = colorJson.id;
           colorModel.colorController.text = colorJson.colorAr ?? '';
+          colorModel.colorEnController.text = colorJson.colorEn ?? '';
+          colorModel.colorAbbrController.text = colorJson.colorAbbr ?? '';
           colorModel.priceController.text = colorJson.normailPrice ?? '';
           colorModel.quantityController.text = colorJson.stock ?? '';
           sizeModel.colors.add(colorModel);
@@ -452,15 +762,48 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         items.add(sizeModel);
       }
     }
-    if (items.isEmpty) {
-      items.add(SizedModel());
-    }
-    isForcedSale.value = productDetails.value!.isSoldWithPaper == '1' ||
-        productDetails.value!.isSoldWithPaper == 1;
+    isForcedSale.value =
+        p.isSoldWithPaper == '1' || p.isSoldWithPaper == 1;
+    loadProductSizeOptions(productId: p.id);
     update();
   }
 
-  FormData _buildProductFormData() {
+  bool _truthyDynamic(dynamic v) {
+    if (v == null) {
+      return false;
+    }
+    if (v is bool) {
+      return v;
+    }
+    if (v is int) {
+      return v == 1;
+    }
+    final s = v.toString().trim().toLowerCase();
+    return s == '1' || s == 'true';
+  }
+
+  String _formatRotationForInput(dynamic rotationDate) {
+    if (rotationDate == null) {
+      return '';
+    }
+    if (rotationDate is String) {
+      final s = rotationDate.trim();
+      if (s.length >= 10) {
+        return s.substring(0, 10);
+      }
+      return s;
+    }
+    try {
+      final dt = rotationDate as DateTime;
+      return '${dt.year.toString().padLeft(4, '0')}-'
+          '${dt.month.toString().padLeft(2, '0')}-'
+          '${dt.day.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Future<FormData> _buildProductFormData() async {
     final form = FormData();
 
     void addField(String key, String value) {
@@ -469,10 +812,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
     addField('nameAr', productNameController.text.trim());
     addField('descriptionAr', productDetailsController.text.trim());
-    addField('nameEng', productNameController.text.trim());
-    addField('nameAbree', productNameController.text.trim());
-    addField('descriptionEng', productDetailsController.text.trim());
-    addField('descriptionAbree', productDetailsController.text.trim());
+    addField('nameEng', nameEngController.text.trim());
+    addField('nameAbree', nameAbreeController.text.trim());
+    addField('descriptionEng', descriptionEngController.text.trim());
+    addField('descriptionAbree', descriptionAbreeController.text.trim());
     addField(
       'discount',
       discountPercentageController.text.trim().isEmpty
@@ -486,6 +829,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           : retailPricesController.text.trim(),
     );
     addField(
+      'wholesalePrice',
+      wholesalePricesController.text.trim().isEmpty
+          ? '0'
+          : wholesalePricesController.text.trim(),
+    );
+    addField(
       'min_stock',
       minimumStockController.text.trim().isEmpty
           ? '0'
@@ -493,26 +842,55 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     );
     addField('is_sold_with_paper', isForcedSale.value ? '1' : '0');
     addField('save_scope', saveScopeFull.value ? 'full' : 'local_only');
-    addField('isShow', '1');
-    addField('isNewItem', '1');
-    addField('isMoreSales', '0');
-    addField('rate', '4');
-    addField('manufactureYear', '0');
-    addField('model', '');
-    addField('wholesalePrice', '0');
+    addField('isShow', isShowProduct.value ? '1' : '0');
+    addField('isNewItem', isNewItemProduct.value ? '1' : '0');
+    addField('isMoreSales', isMoreSalesProduct.value ? '1' : '0');
+    addField(
+      'rate',
+      rateController.text.trim().isEmpty ? '4' : rateController.text.trim(),
+    );
+    addField(
+      'manufactureYear',
+      manufactureYearController.text.trim().isEmpty
+          ? '0'
+          : manufactureYearController.text.trim(),
+    );
+    addField('model', modelController.text.trim());
     if (stockController.text.trim().isNotEmpty) {
       addField('stock', stockController.text.trim());
     }
     if (selectPurchaseController.text.trim().isNotEmpty) {
       addField('project_id', selectPurchaseController.text.trim());
     }
+    if (minSalePriceController.text.trim().isNotEmpty) {
+      addField('min_sale_price', minSalePriceController.text.trim());
+    }
+    if (listPriceController.text.trim().isNotEmpty) {
+      addField('price', listPriceController.text.trim());
+    }
+    if (rotationDateController.text.trim().isNotEmpty) {
+      addField('rotation_date', rotationDateController.text.trim());
+    }
     if (editingProductId.value != null) {
       addField('product_id', editingProductId.value!);
+      for (final id in pendingDeleteNormalIds) {
+        addField('delete_normal_image_ids[]', id);
+      }
+      for (final id in pendingDeleteViewIds) {
+        addField('delete_view_image_ids[]', id);
+      }
+      for (final id in pendingDeleteThreeDIds) {
+        addField('delete_three_d_image_ids[]', id);
+      }
+      if (pendingDeleteExistingVideo.value) {
+        addField('delete_video', '1');
+      }
     }
 
-    final subId = subCategoryController.text.trim();
-    if (subId.isNotEmpty) {
-      form.fields.add(MapEntry('sub_categories[]', subId));
+    for (final subId in selectedSubCategoryIds) {
+      if (subId.trim().isNotEmpty) {
+        form.fields.add(MapEntry('sub_categories[]', subId.trim()));
+      }
     }
 
     var sizeIndex = 0;
@@ -533,12 +911,24 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           c.colorController.text.trim(),
         );
         addField(
+          'sizes[$sizeIndex][color_sizes][$j][colorEn]',
+          c.colorEnController.text.trim(),
+        );
+        addField(
+          'sizes[$sizeIndex][color_sizes][$j][colorAbbr]',
+          c.colorAbbrController.text.trim(),
+        );
+        addField(
           'sizes[$sizeIndex][color_sizes][$j][normailPrice]',
-          c.priceController.text.trim().isEmpty ? '0' : c.priceController.text.trim(),
+          c.priceController.text.trim().isEmpty
+              ? '0'
+              : c.priceController.text.trim(),
         );
         addField(
           'sizes[$sizeIndex][color_sizes][$j][stock]',
-          c.quantityController.text.trim().isEmpty ? '0' : c.quantityController.text.trim(),
+          c.quantityController.text.trim().isEmpty
+              ? '0'
+              : c.quantityController.text.trim(),
         );
         final cid = c.dbColorId;
         if (cid != null && cid.isNotEmpty && cid != '0') {
@@ -548,50 +938,108 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       sizeIndex++;
     }
 
+    Future<void> appendFiles(
+      String fieldName,
+      List<XFile> files,
+    ) async {
+      for (final x in files) {
+        final bytes = await x.readAsBytes();
+        form.files.add(
+          MapEntry(
+            fieldName,
+            MultipartFile.fromBytes(bytes, filename: x.name),
+          ),
+        );
+      }
+    }
+
+    await appendFiles('normal_images[]', pendingNormalImages);
+    await appendFiles('view_images[]', pendingViewImages);
+    await appendFiles('three_d_images[]', pendingThreeDImages);
+    if (pendingVideo != null) {
+      final v = pendingVideo!;
+      final bytes = await v.readAsBytes();
+      form.files.add(
+        MapEntry(
+          'video',
+          MultipartFile.fromBytes(bytes, filename: v.name),
+        ),
+      );
+    }
+
     return form;
   }
 
   Future<void> submitProduct() async {
-    isLoading(true);
+    if (productNameController.text.trim().isEmpty) {
+      Get.snackbar('error'.tr, 'productNameRequired'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    if (productDetailsController.text.trim().isEmpty) {
+      Get.snackbar('error'.tr, 'productDetailsRequired'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    isSubmittingProduct(true);
     update();
     try {
-      final form = _buildProductFormData();
+      final wasEdit = editingProductId.value != null;
+      final editedId = editingProductId.value;
+      final form = await _buildProductFormData();
       final result = await saveProductFullUsecase.call(
         formData: form,
         isCreate: editingProductId.value == null,
       );
       final msg = result['message']?.toString() ?? 'success'.tr;
-      if (result['media_warning'] != null ||
-          result['image_warning'] != null) {
-        Get.snackbar(
-          'success'.tr,
-          '$msg\n${result['media_warning'] ?? result['image_warning']}',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 4),
-        );
-      } else {
-        Get.snackbar(
-          'success'.tr,
-          msg,
-          snackPosition: SnackPosition.BOTTOM,
-        );
+      final mediaExtra = result['media_warning'] ?? result['image_warning'];
+      final buf = StringBuffer(msg);
+      if (mediaExtra != null) {
+        buf.writeln();
+        buf.writeln(mediaExtra.toString());
       }
+
       allProducts.clear();
       allClearances.clear();
       allCombinations.clear();
       page = 1;
-      getAllProducts();
-      if (editingProductId.value != null) {
-        await getProductDetails(productId: editingProductId.value!);
-      }
+      await getAllProducts();
+
+      clearPendingMedia();
+      _resetEditMediaState();
+      editingProductId.value = null;
+
+      currentTab.value = 0;
+      update();
+
       Get.back();
+      if (wasEdit && editedId != null) {
+        await getProductDetails(productId: editedId);
+      }
+
+      final createMessage = buf.toString().trim();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showSweetSuccessDialog(
+          title: 'success'.tr,
+          message: wasEdit ? 'productUpdatedSuccess'.tr : createMessage,
+          subtitle: null,
+        );
+      });
     } on ServerFailure catch (e) {
+      final details = formatLaravelValidationErrors(
+        e.data is Map<String, dynamic>
+            ? Map<String, dynamic>.from(e.data as Map)
+            : null,
+      );
+      final text = details.isEmpty ? e.errMessage : '${e.errMessage}\n$details';
       Get.snackbar(
-        'error'.tr,
-        e.errMessage,
+        'validationErrorsTitle'.tr,
+        text,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.red.shade800,
         colorText: Colors.white,
+        duration: const Duration(seconds: 8),
       );
     } catch (e) {
       Get.snackbar(
@@ -600,7 +1048,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
-      isLoading(false);
+      isSubmittingProduct(false);
       update();
     }
   }
@@ -662,6 +1110,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     discountPercentageController.dispose();
     selectPurchaseController.dispose();
     purchasePriceController.dispose();
+    nameEngController.dispose();
+    nameAbreeController.dispose();
+    descriptionEngController.dispose();
+    descriptionAbreeController.dispose();
+    manufactureYearController.dispose();
+    modelController.dispose();
+    rateController.dispose();
+    minSalePriceController.dispose();
+    listPriceController.dispose();
+    rotationDateController.dispose();
     closeoutsMinimumSaleController.dispose();
     super.onClose();
   }
@@ -677,17 +1135,24 @@ class SizedModel {
   }
   void onClose() {
     sizeController.dispose();
+    for (final c in colors) {
+      c.onClose();
+    }
   }
 }
 
 class ColorModel {
   final TextEditingController colorController = TextEditingController();
+  final TextEditingController colorEnController = TextEditingController();
+  final TextEditingController colorAbbrController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   String? dbColorId;
 
   void onClose() {
     colorController.dispose();
+    colorEnController.dispose();
+    colorAbbrController.dispose();
     quantityController.dispose();
     priceController.dispose();
   }
