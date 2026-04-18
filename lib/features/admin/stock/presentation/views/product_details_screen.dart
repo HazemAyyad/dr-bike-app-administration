@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
@@ -52,7 +53,7 @@ Widget _pdSectionCard(
 }) {
   return Card(
     elevation: 0,
-    color: Theme.of(context).colorScheme.surface,
+    color: AdminUiColors.cardBackground(context),
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16.r),
     ),
@@ -124,8 +125,7 @@ Widget _productDetailsCategoryBlock(
               .map(
                 (n) => Chip(
                   label: Text(n),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surfaceContainerHigh,
+                  backgroundColor: AdminUiColors.subtleOverlay(context),
                   side: BorderSide.none,
                 ),
               )
@@ -165,7 +165,7 @@ class ProductDetailsScreen extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AdminUiColors.scaffoldBackground(context),
       appBar: CustomAppBar(
         title: 'productDetails',
         action: false,

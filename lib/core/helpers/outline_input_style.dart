@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'admin_ui_colors.dart';
+
 /// Shared outlined field look (radius 12, visible border, theme-aware).
 class OutlineInputStyle {
   OutlineInputStyle._();
@@ -32,7 +34,7 @@ class OutlineInputStyle {
 
     return (base ?? const InputDecoration()).copyWith(
       filled: true,
-      fillColor: cs.surface,
+      fillColor: AdminUiColors.inputFill(context),
       contentPadding: contentPadding(context),
       labelText: labelText,
       hintText: hintText,

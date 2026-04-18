@@ -10,6 +10,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/outline_input_style.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
@@ -29,13 +30,20 @@ Color editProductSectionTitleColor(BuildContext context) {
   return AppColors.secondaryColor;
 }
 
+Future<void> _pickWithUnfocus(Future<void> Function() pick) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  await pick();
+  await Future<void>.delayed(const Duration(milliseconds: 100));
+  FocusManager.instance.primaryFocus?.unfocus();
+}
+
 class EditProductScreen extends GetView<StockController> {
   const EditProductScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: AdminUiColors.scaffoldBackground(context),
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Obx(
@@ -289,7 +297,8 @@ class EditProductScreen extends GetView<StockController> {
                           }
                           return Card(
                             margin: EdgeInsets.only(bottom: 12.h),
-                            elevation: 1,
+                            elevation: 0,
+                            color: AdminUiColors.cardBackground(context),
                             child: Padding(
                               padding: EdgeInsets.all(12.w),
                               child: Column(
@@ -307,9 +316,8 @@ class EditProductScreen extends GetView<StockController> {
                                           hint: Text('sizeSelectHint'.tr),
                                           decoration: InputDecoration(
                                             filled: true,
-                                            fillColor: Theme.of(context)
-                                                .colorScheme
-                                                .surface,
+                                            fillColor:
+                                                AdminUiColors.inputFill(context),
                                             border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(11.r),
@@ -502,7 +510,7 @@ class EditProductScreen extends GetView<StockController> {
                         uploadHint: 'uploadMediaHere'.tr,
                         existing: c.existingNormalMedia,
                         pending: c.pendingNormalImages,
-                        onPick: c.pickNormalImages,
+                        onPick: () => _pickWithUnfocus(c.pickNormalImages),
                         onRemoveExisting: c.confirmRemoveExistingNormal,
                         onRemovePending: c.removePendingNormalAt,
                       ),
@@ -514,7 +522,7 @@ class EditProductScreen extends GetView<StockController> {
                         uploadHint: 'uploadMediaHere'.tr,
                         existing: c.existingViewMedia,
                         pending: c.pendingViewImages,
-                        onPick: c.pickViewImages,
+                        onPick: () => _pickWithUnfocus(c.pickViewImages),
                         onRemoveExisting: c.confirmRemoveExistingView,
                         onRemovePending: c.removePendingViewAt,
                       ),
@@ -526,7 +534,7 @@ class EditProductScreen extends GetView<StockController> {
                         uploadHint: 'uploadMediaHere'.tr,
                         existing: c.existingThreeDMedia,
                         pending: c.pendingThreeDImages,
-                        onPick: c.pickThreeDImages,
+                        onPick: () => _pickWithUnfocus(c.pickThreeDImages),
                         onRemoveExisting: c.confirmRemoveExistingThreeD,
                         onRemovePending: c.removePendingThreeDAt,
                       ),
@@ -561,9 +569,7 @@ class EditProductScreen extends GetView<StockController> {
                               top: 4,
                               right: 4,
                               child: Material(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh,
+                                color: AdminUiColors.subtleOverlay(context),
                                 shape: const CircleBorder(),
                                 child: IconButton(
                                   tooltip: 'delete'.tr,
@@ -608,7 +614,7 @@ class EditProductScreen extends GetView<StockController> {
                         alignment: AlignmentDirectional.centerStart,
                         child: TextButton.icon(
                           onPressed: () async {
-                            await c.pickProductVideo();
+                            await _pickWithUnfocus(c.pickProductVideo);
                             c.update();
                           },
                           icon: const Icon(Icons.add_circle_outline,
@@ -782,7 +788,7 @@ class EditProductScreen extends GetView<StockController> {
               color: Theme.of(context).dividerColor,
               style: BorderStyle.solid,
             ),
-            color: Theme.of(context).colorScheme.surface,
+            color: AdminUiColors.inputFill(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -819,9 +825,7 @@ class EditProductScreen extends GetView<StockController> {
                           top: -6,
                           right: -6,
                           child: Material(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHigh,
+                            color: AdminUiColors.subtleOverlay(context),
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
@@ -861,9 +865,7 @@ class EditProductScreen extends GetView<StockController> {
                           top: -6,
                           right: -6,
                           child: Material(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHigh,
+                            color: AdminUiColors.subtleOverlay(context),
                             shape: const CircleBorder(),
                             child: InkWell(
                               customBorder: const CircleBorder(),
@@ -885,7 +887,7 @@ class EditProductScreen extends GetView<StockController> {
                     );
                   }),
                   Material(
-                    color: Theme.of(context).colorScheme.primaryContainer,
+                    color: AdminUiColors.mediaAddTileBackground(context),
                     borderRadius: BorderRadius.circular(10.r),
                     child: InkWell(
                       onTap: () async {

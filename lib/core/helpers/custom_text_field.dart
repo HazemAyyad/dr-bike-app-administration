@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get_utils/get_utils.dart';
 
 import '../utils/app_colors.dart';
+import 'admin_ui_colors.dart';
 import 'outline_input_style.dart';
 
 class CustomTextField extends StatefulWidget {
@@ -121,7 +122,7 @@ class _CustomTextFieldState extends State<CustomTextField>
 
     final Color defaultFillColor = widget.fillColor ??
         (Theme.of(context).inputDecorationTheme.fillColor ??
-            Theme.of(context).colorScheme.surface);
+            AdminUiColors.inputFill(context));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
