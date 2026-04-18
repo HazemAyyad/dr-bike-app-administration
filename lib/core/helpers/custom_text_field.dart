@@ -1,9 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get_utils/get_utils.dart';
 
-import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 
 class CustomTextField extends StatefulWidget {
@@ -107,6 +108,21 @@ class _CustomTextFieldState extends State<CustomTextField>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelGap = math.max(8.0, 10.h);
+
+    final Color defaultLabelColor = widget.labelColor ??
+        (isDark
+            ? scheme.onSurface
+            : AppColors.customGreyColor);
+
+    final Color defaultHintColor = widget.hintColor ??
+        (isDark ? scheme.onSurfaceVariant : AppColors.customGreyColor6);
+
+    final Color defaultFillColor = widget.fillColor ??
+        (isDark ? AppColors.whiteColor2 : AppColors.whiteColor2);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -117,12 +133,9 @@ class _CustomTextFieldState extends State<CustomTextField>
                   text: widget.label.tr,
                   style: widget.labelTextstyle ??
                       Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: widget.labelColor ??
-                                (ThemeService.isDark.value
-                                    ? AppColors.customGreyColor6
-                                    : AppColors.customGreyColor),
+                            color: defaultLabelColor,
                             fontSize: 15.sp,
-                            fontWeight: FontWeight.w400,
+                            fontWeight: FontWeight.w500,
                           ),
                   children: widget.isRequired
                       ? [
@@ -140,7 +153,7 @@ class _CustomTextFieldState extends State<CustomTextField>
               ),
         widget.sizedBox == false || widget.label == ''
             ? const SizedBox.shrink()
-            : SizedBox(height: 10.h),
+            : SizedBox(height: labelGap),
         Container(
           decoration: widget.decoration,
           child: TextFormField(
@@ -151,22 +164,21 @@ class _CustomTextFieldState extends State<CustomTextField>
             obscureText: widget.obscureText,
             controller: widget.controller,
             enabled: widget.enabled,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontSize: 15.sp,
+                  color: AppColors.customGreyColor,
+                  fontWeight: FontWeight.w400,
+                ),
             onTap: () {
               _shouldKeepKeyboard = true;
             },
             decoration: InputDecoration(
               filled: true,
-              fillColor: widget.fillColor ??
-                  (ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2),
+              fillColor: defaultFillColor,
               hintText: widget.hintText.tr,
               hintStyle: widget.hintStyle ??
                   Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: widget.hintColor ??
-                            (ThemeService.isDark.value
-                                ? AppColors.customGreyColor2
-                                : AppColors.customGreyColor6),
+                        color: defaultHintColor,
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w400,
                       ),

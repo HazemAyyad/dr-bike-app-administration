@@ -13,12 +13,20 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
-import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/models/product_details_model.dart' show ProductMediaItem;
 import '../controllers/stock_controller.dart';
 import '../widgets/product_inline_video.dart';
+
+/// عناوين الأقسام: على الخلفية الداكنة لا يُستخدم [AppColors.secondaryColor] لأنه شبه أسود ويختفي.
+Color editProductSectionTitleColor(BuildContext context) {
+  final t = Theme.of(context);
+  if (t.brightness == Brightness.dark) {
+    return t.colorScheme.primary;
+  }
+  return AppColors.secondaryColor;
+}
 
 class EditProductScreen extends GetView<StockController> {
   const EditProductScreen({Key? key}) : super(key: key);
@@ -50,7 +58,7 @@ class EditProductScreen extends GetView<StockController> {
                 'sectionProductNames'.tr,
                 style: Theme.of(context).textTheme.titleSmall!.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.secondaryColor,
+                      color: editProductSectionTitleColor(context),
                     ),
               ),
               SizedBox(height: 8.h),
@@ -76,7 +84,7 @@ class EditProductScreen extends GetView<StockController> {
                 'sectionDescriptions'.tr,
                 style: Theme.of(context).textTheme.titleSmall!.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.secondaryColor,
+                      color: editProductSectionTitleColor(context),
                     ),
               ),
               SizedBox(height: 8.h),
@@ -102,6 +110,7 @@ class EditProductScreen extends GetView<StockController> {
                 'subCategoryMulti'.tr,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       fontWeight: FontWeight.w600,
+                      color: editProductSectionTitleColor(context),
                     ),
               ),
               SizedBox(height: 8.h),
@@ -144,9 +153,7 @@ class EditProductScreen extends GetView<StockController> {
                     decoratorProps: DropDownDecoratorProps(
                       decoration: InputDecoration(
                         filled: true,
-                        fillColor: ThemeService.isDark.value
-                            ? AppColors.customGreyColor
-                            : AppColors.whiteColor2,
+                        fillColor: AppColors.whiteColor2,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(11.r),
                           borderSide: BorderSide.none,
@@ -173,7 +180,7 @@ class EditProductScreen extends GetView<StockController> {
                 'sectionPricingStock'.tr,
                 style: Theme.of(context).textTheme.titleSmall!.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.secondaryColor,
+                      color: editProductSectionTitleColor(context),
                     ),
               ),
               SizedBox(height: 8.h),
@@ -222,7 +229,8 @@ class EditProductScreen extends GetView<StockController> {
                 'extraLaravelFields'.tr,
                 style: Theme.of(context).textTheme.titleSmall!.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppColors.secondaryColor.withValues(alpha: 0.9),
+                      color: editProductSectionTitleColor(context)
+                          .withValues(alpha: 0.95),
                     ),
               ),
               SizedBox(height: 8.h),
@@ -344,7 +352,7 @@ class EditProductScreen extends GetView<StockController> {
                 'sectionSizeColor'.tr,
                 style: Theme.of(context).textTheme.titleSmall!.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.secondaryColor,
+                      color: editProductSectionTitleColor(context),
                     ),
               ),
               SizedBox(height: 8.h),
@@ -411,9 +419,7 @@ class EditProductScreen extends GetView<StockController> {
                                           hint: Text('sizeSelectHint'.tr),
                                           decoration: InputDecoration(
                                             filled: true,
-                                            fillColor: ThemeService.isDark.value
-                                                ? AppColors.customGreyColor
-                                                : AppColors.whiteColor2,
+                                            fillColor: AppColors.whiteColor2,
                                             border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(11.r),
@@ -576,7 +582,7 @@ class EditProductScreen extends GetView<StockController> {
                         'productMediaSection'.tr,
                         style: Theme.of(context).textTheme.titleSmall!.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppColors.secondaryColor,
+                              color: editProductSectionTitleColor(context),
                             ),
                       ),
                       SizedBox(height: 8.h),
@@ -592,6 +598,7 @@ class EditProductScreen extends GetView<StockController> {
                           'existingMediaHeading'.tr,
                           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                                 fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                         ),
                         SizedBox(height: 8.h),
@@ -636,6 +643,7 @@ class EditProductScreen extends GetView<StockController> {
                         'productVideo'.tr,
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                               fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                       ),
                       SizedBox(height: 6.h),
@@ -771,23 +779,34 @@ class EditProductScreen extends GetView<StockController> {
   }
 
   Widget _rotationDateField(BuildContext context) {
-    final fill = ThemeService.isDark.value
-        ? AppColors.customGreyColor
-        : AppColors.whiteColor2;
     return TextField(
       controller: controller.rotationDateController,
       readOnly: true,
+      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            fontSize: 15.sp,
+            color: AppColors.customGreyColor,
+            fontWeight: FontWeight.w400,
+          ),
       decoration: InputDecoration(
         filled: true,
-        fillColor: fill,
+        fillColor: AppColors.whiteColor2,
         labelText: 'rotationDateField'.tr,
+        labelStyle: TextStyle(
+          color: editProductSectionTitleColor(context),
+          fontWeight: FontWeight.w500,
+        ),
         hintText: 'rotationDateHint'.tr,
+        hintStyle: TextStyle(color: AppColors.customGreyColor6),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(11.r),
           borderSide: BorderSide.none,
         ),
         contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-        suffixIcon: Icon(Icons.calendar_month_outlined, size: 22.sp),
+        suffixIcon: Icon(
+          Icons.calendar_month_outlined,
+          size: 22.sp,
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
       onTap: () async {
         final now = DateTime.now();
@@ -857,6 +876,7 @@ class EditProductScreen extends GetView<StockController> {
           title,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
         ),
         SizedBox(height: 6.h),
@@ -967,7 +987,10 @@ class EditProductScreen extends GetView<StockController> {
                     );
                   }),
                   Material(
-                    color: AppColors.secondaryColor.withValues(alpha: 0.12),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(10.r),
                     child: InkWell(
                       onTap: () async {
@@ -981,7 +1004,7 @@ class EditProductScreen extends GetView<StockController> {
                         child: Icon(
                           Icons.add_photo_alternate_outlined,
                           size: 32.sp,
-                          color: AppColors.secondaryColor,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
