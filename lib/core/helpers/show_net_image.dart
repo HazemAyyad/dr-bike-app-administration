@@ -56,6 +56,18 @@ class ShowNetImage {
     return ProductImageSource.unknown;
   }
 
+  /// مثل [getPhoto] لكن يعيد الـ thumbnail لصور `Images/Items/` (للقوائم فقط).
+  static String getThumbnailPhoto(String? path) {
+    if (path == null || path.isEmpty) return getPhoto(path);
+    final normalized = path.replaceAll('\\', '/');
+    if (normalized.toLowerCase().startsWith('images/items/')) {
+      final thumbPath = normalized.replaceFirst('Images/Items/', 'Images/Items/thumb/');
+      final base = EndPoints.baserUrlForImage;
+      return base.endsWith('/') ? '$base$thumbPath' : '$base/$thumbPath';
+    }
+    return getPhoto(path);
+  }
+
   static String getPhoto(String? photoUrl) {
     if (photoUrl == null ||
         photoUrl == 'null' ||

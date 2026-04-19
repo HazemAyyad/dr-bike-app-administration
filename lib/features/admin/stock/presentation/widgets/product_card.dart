@@ -121,7 +121,7 @@ class BuildProductCard extends GetView<StockController> {
           children: [
             // صورة المنتج (ShowNetImage: relative path + legacy STORE_DOMAIN host rewrite)
             () {
-              final resolved = ShowNetImage.getPhoto(product.image);
+              final resolved = ShowNetImage.getThumbnailPhoto(product.image);
               final missing = resolved == AssetsManager.noImageNet ||
                   product.image == 'no image';
               if (missing) {
