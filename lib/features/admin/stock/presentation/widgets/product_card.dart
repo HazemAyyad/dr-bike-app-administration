@@ -122,6 +122,7 @@ class BuildProductCard extends GetView<StockController> {
             // صورة المنتج (ShowNetImage: relative path + legacy STORE_DOMAIN host rewrite)
             () {
               final resolved = ShowNetImage.getThumbnailPhoto(product.image);
+              final original = ShowNetImage.getPhoto(product.image);
               final missing = resolved == AssetsManager.noImageNet ||
                   product.image == 'no image';
               if (missing) {
@@ -165,10 +166,16 @@ class BuildProductCard extends GetView<StockController> {
                           child: CircularProgressIndicator(),
                         ),
                       ),
-                      errorWidget: (context, url, error) => Image.asset(
-                        AssetsManager.stockImage,
+                      errorWidget: (context, url, error) => CachedNetworkImage(
+                        imageUrl: original,
                         height: 65.h,
                         width: 90.w,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) => Image.asset(
+                          AssetsManager.stockImage,
+                          height: 65.h,
+                          width: 90.w,
+                        ),
                       ),
                     ),
                   );

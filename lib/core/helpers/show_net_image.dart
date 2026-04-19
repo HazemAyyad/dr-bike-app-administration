@@ -56,15 +56,32 @@ class ShowNetImage {
     return ProductImageSource.unknown;
   }
 
-  /// مثل [getPhoto] لكن يعيد الـ thumbnail لصور `Images/Items/` (للقوائم فقط).
+  /// مثل [getPhoto] لكن يعيد الـ thumbnail للقوائم/الكروت فقط.
+  /// - `Images/Items/...`              → `Images/Items/thumb/...`     (أرشيف)
+  /// - `/storage/product-uploads/...`  → `.../thumb/filename`         (رفع محلي)
+  /// إذا لم يوجد الـ thumbnail يظهر خطأ في الـ widget ويُعرض الأصل كـ fallback.
   static String getThumbnailPhoto(String? path) {
     if (path == null || path.isEmpty) return getPhoto(path);
     final normalized = path.replaceAll('\\', '/');
-    if (normalized.toLowerCase().startsWith('images/items/')) {
+    final normLower = normalized.toLowerCase();
+
+    // Archive images: Images/Items/...
+    if (normLower.startsWith('images/items/')) {
       final thumbPath = normalized.replaceFirst('Images/Items/', 'Images/Items/thumb/');
       final base = EndPoints.baserUrlForImage;
       return base.endsWith('/') ? '$base$thumbPath' : '$base/$thumbPath';
     }
+
+    // Local storage uploads: /storage/product-uploads/... or storage/product-uploads/...
+    if (normLower.contains('storage/product-uploads/')) {
+      final lastSlash = normalized.lastIndexOf('/');
+      if (lastSlash > 0 && lastSlash < normalized.length - 1) {
+        final dir = normalized.substring(0, lastSlash + 1);
+        final filename = normalized.substring(lastSlash + 1);
+        return getPhoto('${dir}thumb/$filename');
+      }
+    }
+
     return getPhoto(path);
   }
 
