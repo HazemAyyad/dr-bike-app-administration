@@ -1,5 +1,4 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../utils/assets_manger.dart';
 
@@ -87,15 +86,13 @@ class ShowNetImage {
       return AssetsManager.noImageNet;
     }
     final t = photoUrl.trim();
-    // روابط مطلقة: على الويب، روابط mjsall تُفشل بـ CORS — نمرّرها عبر بروكسي Laravel (api/*)
+    // روابط مطلقة: روابط mjsall تُفشل بـ CORS وتفشل على Android — نمرّرها دائماً عبر بروكسي Laravel
     if (t.startsWith('http://') || t.startsWith('https://')) {
-      if (kIsWeb) {
-        final uri = Uri.tryParse(t);
-        if (uri != null && uri.host == 'mjsall-001-site1.jtempurl.com') {
-          var path = uri.path.replaceFirst(RegExp(r'^/'), '');
-          if (path.toLowerCase().startsWith('images/items/')) {
-            return '${EndPoints.baserUrl}legacy-store-image?path=${Uri.encodeComponent(path)}';
-          }
+      final uri = Uri.tryParse(t);
+      if (uri != null && uri.host == 'mjsall-001-site1.jtempurl.com') {
+        var path = uri.path.replaceFirst(RegExp(r'^/'), '');
+        if (path.toLowerCase().startsWith('images/items/')) {
+          return '${EndPoints.baserUrl}legacy-store-image?path=${Uri.encodeComponent(path)}';
         }
       }
       return t;
@@ -105,16 +102,12 @@ class ShowNetImage {
     if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
       return normalized;
     }
-    // مسارات Images/Items/… تخص خادم المتجر .NET وليست ضمن public لارافيل
+    // مسارات Images/Items/… تخص خادم المتجر .NET — نمرّرها دائماً عبر بروكسي Laravel لجميع المنصات
     final normLower = normalized.toLowerCase();
     if (normLower.startsWith('images/items/')) {
       final path =
           normalized.startsWith('/') ? normalized.substring(1) : normalized;
-      if (kIsWeb) {
-        return '${EndPoints.baserUrl}legacy-store-image?path=${Uri.encodeComponent(path)}';
-      }
-      final base = EndPoints.legacyStoreImageBaseUrl;
-      return base.endsWith('/') ? '$base$path' : '$base/$path';
+      return '${EndPoints.baserUrl}legacy-store-image?path=${Uri.encodeComponent(path)}';
     }
     final base = EndPoints.baserUrlForImage;
     final sep = base.endsWith('/') || normalized.startsWith('/') ? '' : '/';
