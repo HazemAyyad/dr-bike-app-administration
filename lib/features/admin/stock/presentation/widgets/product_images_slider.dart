@@ -71,7 +71,7 @@ CarouselOptions _carouselOptionsForCount(int n, {double height = 150}) {
   );
 }
 
-/// شارة صغيرة تبيّن إن الصورة من متجر .NET القديم أو من تخزين Laravel.
+/// شارة صغيرة تبيّن إن الصورة من الأرشيف (Images/Items) أو محلية (storage).
 class _ImageSourceBadge extends StatelessWidget {
   const _ImageSourceBadge({required this.source});
 

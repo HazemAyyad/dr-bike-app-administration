@@ -4,9 +4,9 @@ import '../utils/assets_manger.dart';
 
 /// مصدر الصورة في الواجهة (شارة على الصورة).
 enum ProductImageSource {
-  /// مسار يبدأ بـ `Images/Items/` أو رابط مضيف المتجر .NET القديم
+  /// مسار يبدأ بـ `Images/Items/` — صور الأرشيف المنقولة إلى Laravel public
   legacyDotNetStore,
-  /// مسار يبدأ بـ `storage/product-uploads` أو رابط Laravel
+  /// مسار يبدأ بـ `storage/product-uploads` — صور محلية في Laravel
   laravelStorage,
   unknown,
 }
