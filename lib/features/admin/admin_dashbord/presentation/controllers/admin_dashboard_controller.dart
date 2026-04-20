@@ -85,6 +85,11 @@ class AdminDashboardController extends GetxController
       'title': 'checksandCommitments',
       'route': AppRoutes.CHECKSSCREEN
     },
+    {
+      'id': '19',
+      'title': 'categoryManagement',
+      'route': AppRoutes.CATEGORYMANAGEMENTSCREEN
+    },
   ];
 
   // متغيرات للإحصائيات

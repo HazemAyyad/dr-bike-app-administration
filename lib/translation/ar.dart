@@ -712,6 +712,7 @@ const Map<String, String> ar = {
   "selectVideo": "أختيار فيديو",
   "takeVideo": "تصوير فيديو",
   "selectImage": "أختيار صورة",
+  "changeImage": "تغيير الصورة",
   "takeImage": "تصوير صورة",
   'filesSelected': 'الملفات المحددة',
   "back": "رجوع",
@@ -982,4 +983,19 @@ const Map<String, String> ar = {
   'projects': 'المشاريع',
   'returns': 'مردودات',
   'reportType': 'نوع التقرير',
+
+  // Category Management
+  'categoryManagement': 'إدارة التصنيفات',
+  'addCategory': 'إضافة فئة رئيسية',
+  'editCategory': 'تعديل الفئة الرئيسية',
+  'addSubCategory': 'إضافة فئة فرعية',
+  'editSubCategory': 'تعديل الفئة الفرعية',
+  'noSubCategories': 'لا توجد فئات فرعية',
+  'catNameArRequired': 'الاسم العربي مطلوب',
+  'nameAr': 'الاسم عربي',
+  'nameEng': 'الاسم إنجليزي',
+  'nameAbree': 'الاختصار',
+  'inactive': 'مخفي',
+  'sub': 'فرعية',
+  'refresh': 'تحديث',
 };

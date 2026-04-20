@@ -714,6 +714,7 @@ const Map<String, String> en = {
   "selectVideo": "Select Video",
   "takeVideo": "Take Video",
   "selectImage": "Select Image",
+  "changeImage": "Change Image",
   "takeImage": "Take Image",
   'filesSelected': 'Files Selected',
   "back": "Back",
@@ -981,4 +982,19 @@ const Map<String, String> en = {
   'projects': 'Projects',
   'returns': 'Returns',
   'reportType': 'Report Type',
+
+  // Category Management
+  'categoryManagement': 'Category Management',
+  'addCategory': 'Add Main Category',
+  'editCategory': 'Edit Main Category',
+  'addSubCategory': 'Add Subcategory',
+  'editSubCategory': 'Edit Subcategory',
+  'noSubCategories': 'No subcategories',
+  'catNameArRequired': 'Arabic name is required',
+  'nameAr': 'Arabic Name',
+  'nameEng': 'English Name',
+  'nameAbree': 'Abbreviation',
+  'inactive': 'Hidden',
+  'sub': 'sub',
+  'refresh': 'Refresh',
 };

@@ -115,4 +115,7 @@ class AppRoutes {
   // Product Management
   static const PRODUCTMANAGEMENTSCREEN = '/ProductManagementScreen';
   static const ADDPRODUCTMANAGEMENTSCREEN = '/AddProductManagementScreen';
+
+  // Category Management
+  static const CATEGORYMANAGEMENTSCREEN = '/CategoryManagementScreen';
 }

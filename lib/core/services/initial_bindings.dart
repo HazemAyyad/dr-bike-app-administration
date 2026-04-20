@@ -49,6 +49,8 @@ import '../../features/admin/special_tasks/data/repositories/special_tasks_imple
 import '../../features/admin/special_tasks/presentation/controllers/special_tasks_service.dart';
 import '../../features/admin/stock/data/datasources/stock_datasource.dart';
 import '../../features/admin/stock/data/repositories/stock_implement.dart';
+import '../../features/admin/categories/data/datasources/category_datasource.dart';
+import '../../features/admin/categories/data/repositories/category_implement.dart';
 import '../../features/admin/goals_section/data/datasources/goals_datasource.dart';
 import '../../features/admin/goals_section/data/repositories/goals_implement.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
@@ -457,6 +459,19 @@ class InitialBindings implements Bindings {
         ),
       ).getUserData();
     }
+    // categories
+    Get.lazyPut<CategoryDatasource>(
+      () => CategoryDatasource(api: Get.find<DioConsumer>()),
+      fenix: true,
+    );
+    Get.lazyPut<CategoryImplement>(
+      () => CategoryImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        categoryDatasource: Get.find<CategoryDatasource>(),
+      ),
+      fenix: true,
+    );
+
     // Product Management
     Get.lazyPut<ProductManagementDatasource>(
       () => ProductManagementDatasource(api: Get.find<DioConsumer>()),

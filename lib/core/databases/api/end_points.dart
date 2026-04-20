@@ -318,6 +318,16 @@ class EndPoints {
   static const String createProductDevelopment = 'create/product/development';
   static const String updateProductDevelopment =
       'update/product/development/step';
+
+  // category management (admin CRUD)
+  static const String getAllCategoriesManagement = 'admin/categories';
+  static const String storeCategoryAdmin = 'admin/category/store';
+  static const String updateCategoryAdmin = 'admin/category/update';
+  static const String toggleCategoryStatusAdmin = 'admin/category/toggle-status';
+  static const String getSubCategoriesByCategory = 'admin/subcategories/by-category';
+  static const String storeSubCategoryAdmin = 'admin/subcategory/store';
+  static const String updateSubCategoryAdmin = 'admin/subcategory/update';
+  static const String toggleSubCategoryStatusAdmin = 'admin/subcategory/toggle-status';
 }
 
 class ApiKey {

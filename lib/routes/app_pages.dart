@@ -92,6 +92,8 @@ import '../features/admin/stock/presentation/views/add_combination_screen.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
 import '../features/admin/stock/presentation/views/product_details_screen.dart';
+import '../features/admin/categories/presentation/binding/category_management_binding.dart';
+import '../features/admin/categories/presentation/views/category_management_screen.dart';
 import '../features/admin/goals_section/presentation/binding/target_section_binding.dart';
 import '../features/admin/goals_section/presentation/views/goals_section_screen.dart';
 import '../features/admin/goals_section/presentation/views/add_new_goals_screen.dart';
@@ -664,6 +666,14 @@ class AppPages {
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
+    ),
+
+    // Category Management
+    GetPage(
+      name: AppRoutes.CATEGORYMANAGEMENTSCREEN,
+      page: () => const CategoryManagementScreen(),
+      binding: CategoryManagementBinding(),
+      transition: _transitionFadeIn,
     ),
 
     // Counters
