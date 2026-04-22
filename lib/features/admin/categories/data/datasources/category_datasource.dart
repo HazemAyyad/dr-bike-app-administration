@@ -35,6 +35,7 @@ class CategoryDatasource {
     required String nameAr,
     required String nameEng,
     required String nameAbree,
+    int sortOrder = 0,
     XFile? image,
   }) async {
     try {
@@ -46,6 +47,7 @@ class CategoryDatasource {
         'nameAr': nameAr,
         if (nameEng.isNotEmpty) 'nameEng': nameEng,
         if (nameAbree.isNotEmpty) 'nameAbree': nameAbree,
+        'sortOrder': sortOrder,
       };
       if (image != null) {
         final bytes = await image.readAsBytes();
@@ -102,6 +104,7 @@ class CategoryDatasource {
     required String nameEng,
     required String nameAbree,
     required int mainCategoryId,
+    int sortOrder = 0,
     XFile? image,
   }) async {
     try {
@@ -114,6 +117,7 @@ class CategoryDatasource {
         if (nameEng.isNotEmpty) 'nameEng': nameEng,
         if (nameAbree.isNotEmpty) 'nameAbree': nameAbree,
         'mainCategoryId': mainCategoryId,
+        'sortOrder': sortOrder,
       };
       if (image != null) {
         final bytes = await image.readAsBytes();

@@ -373,6 +373,104 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  /// Add a new color entry under an existing or new size block.
+  void addSizeColorEntry({
+    required String size,
+    required String colorAr,
+    required String colorEn,
+    required String colorAbbr,
+    required String qty,
+    required String price,
+    String wholesalePrice = '',
+    String discount = '',
+  }) {
+    SizedModel? existingSized;
+    for (final s in items) {
+      if (s.sizeController.text.trim() == size.trim()) {
+        existingSized = s;
+        break;
+      }
+    }
+    final c = ColorModel();
+    c.colorController.text = colorAr;
+    c.colorEnController.text = colorEn;
+    c.colorAbbrController.text = colorAbbr;
+    c.quantityController.text = qty;
+    c.priceController.text = price;
+    c.wholesalePriceController.text = wholesalePrice;
+    c.discountController.text = discount;
+
+    if (existingSized != null) {
+      existingSized.colors.add(c);
+    } else {
+      final newSized = SizedModel();
+      newSized.sizeController.text = size;
+      newSized.colors.clear();
+      newSized.colors.add(c);
+      items.add(newSized);
+    }
+    update();
+  }
+
+  /// Update an existing color entry (by size/color index).
+  void updateSizeColorEntry({
+    required int sizeIdx,
+    required int colorIdx,
+    required String size,
+    required String colorAr,
+    required String colorEn,
+    required String colorAbbr,
+    required String qty,
+    required String price,
+    String wholesalePrice = '',
+    String discount = '',
+  }) {
+    if (sizeIdx < 0 || sizeIdx >= items.length) return;
+    final sz = items[sizeIdx];
+    sz.sizeController.text = size;
+    if (colorIdx < 0 || colorIdx >= sz.colors.length) return;
+    final c = sz.colors[colorIdx];
+    c.colorController.text = colorAr;
+    c.colorEnController.text = colorEn;
+    c.colorAbbrController.text = colorAbbr;
+    c.quantityController.text = qty;
+    c.priceController.text = price;
+    c.wholesalePriceController.text = wholesalePrice;
+    c.discountController.text = discount;
+    update();
+  }
+
+  /// Remove a color entry; removes its parent size block if it was the last color.
+  void removeSizeColorEntry(int sizeIdx, int colorIdx) {
+    if (sizeIdx < 0 || sizeIdx >= items.length) return;
+    final sz = items[sizeIdx];
+    if (colorIdx < 0 || colorIdx >= sz.colors.length) return;
+    sz.colors[colorIdx].onClose();
+    sz.colors.removeAt(colorIdx);
+    if (sz.colors.isEmpty) {
+      sz.onClose();
+      items.removeAt(sizeIdx);
+    }
+    update();
+  }
+
+  /// Flat list of size+color entries for table display.
+  List<SizeColorEntry> get flatSizeColorEntries {
+    final result = <SizeColorEntry>[];
+    for (var i = 0; i < items.length; i++) {
+      final sz = items[i];
+      for (var j = 0; j < sz.colors.length; j++) {
+        result.add(SizeColorEntry(
+          sizeIdx: i,
+          colorIdx: j,
+          size: sz.sizeController.text,
+          color: sz.colors[j],
+        ));
+      }
+    }
+    return result;
+  }
+
   final newComposition = <NewCompositionModel>[NewCompositionModel()].obs;
 
   void addComposition() {
@@ -810,6 +908,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           colorModel.colorEnController.text = colorJson.colorEn ?? '';
           colorModel.colorAbbrController.text = colorJson.colorAbbr ?? '';
           colorModel.priceController.text = colorJson.normailPrice ?? '';
+          colorModel.wholesalePriceController.text =
+              colorJson.wholesalePrice ?? '';
+          colorModel.discountController.text = colorJson.discount ?? '';
           colorModel.quantityController.text = colorJson.stock ?? '';
           sizeModel.colors.add(colorModel);
         }
@@ -981,6 +1082,18 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
               ? '0'
               : c.priceController.text.trim(),
         );
+        if (c.wholesalePriceController.text.trim().isNotEmpty) {
+          addField(
+            'sizes[$sizeIndex][color_sizes][$j][wholesalePrice]',
+            c.wholesalePriceController.text.trim(),
+          );
+        }
+        if (c.discountController.text.trim().isNotEmpty) {
+          addField(
+            'sizes[$sizeIndex][color_sizes][$j][discount]',
+            c.discountController.text.trim(),
+          );
+        }
         addField(
           'sizes[$sizeIndex][color_sizes][$j][stock]',
           c.quantityController.text.trim().isEmpty
@@ -1231,6 +1344,9 @@ class ColorModel {
   final TextEditingController colorAbbrController = TextEditingController();
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  final TextEditingController wholesalePriceController =
+      TextEditingController();
+  final TextEditingController discountController = TextEditingController();
   String? dbColorId;
 
   void onClose() {
@@ -1239,6 +1355,8 @@ class ColorModel {
     colorAbbrController.dispose();
     quantityController.dispose();
     priceController.dispose();
+    wholesalePriceController.dispose();
+    discountController.dispose();
   }
 }
 
@@ -1269,6 +1387,21 @@ class NewCompositionModel {
     quantityController.dispose();
     priceController.dispose();
   }
+}
+
+/// Simple value class used by [StockController.flatSizeColorEntries].
+class SizeColorEntry {
+  final int sizeIdx;
+  final int colorIdx;
+  final String size;
+  final ColorModel color;
+
+  const SizeColorEntry({
+    required this.sizeIdx,
+    required this.colorIdx,
+    required this.size,
+    required this.color,
+  });
 }
 
 

@@ -33,6 +33,7 @@ class _AddEditSubCategoryDialogState extends State<AddEditSubCategoryDialog> {
   late final TextEditingController _nameArCtrl;
   late final TextEditingController _nameEngCtrl;
   late final TextEditingController _nameAbreeCtrl;
+  late final TextEditingController _sortOrderCtrl;
   XFile? _selectedImage;
 
   bool get isEdit => widget.subCategory != null;
@@ -46,6 +47,8 @@ class _AddEditSubCategoryDialogState extends State<AddEditSubCategoryDialog> {
         TextEditingController(text: widget.subCategory?.nameEng ?? '');
     _nameAbreeCtrl =
         TextEditingController(text: widget.subCategory?.nameAbree ?? '');
+    _sortOrderCtrl = TextEditingController(
+        text: (widget.subCategory?.sortOrder ?? 0).toString());
   }
 
   @override
@@ -53,6 +56,7 @@ class _AddEditSubCategoryDialogState extends State<AddEditSubCategoryDialog> {
     _nameArCtrl.dispose();
     _nameEngCtrl.dispose();
     _nameAbreeCtrl.dispose();
+    _sortOrderCtrl.dispose();
     super.dispose();
   }
 
@@ -139,6 +143,15 @@ class _AddEditSubCategoryDialogState extends State<AddEditSubCategoryDialog> {
                 label: 'nameAbree'.tr,
                 isDark: isDark,
               ),
+              SizedBox(height: 12.h),
+              // sortOrder
+              _buildField(
+                context: context,
+                ctrl: _sortOrderCtrl,
+                label: 'sortOrder'.tr,
+                isDark: isDark,
+                keyboardType: TextInputType.number,
+              ),
               SizedBox(height: 20.h),
               // Buttons
               Row(
@@ -166,6 +179,9 @@ class _AddEditSubCategoryDialogState extends State<AddEditSubCategoryDialog> {
                                     nameEng: _nameEngCtrl.text,
                                     nameAbree: _nameAbreeCtrl.text,
                                     mainCategoryId: widget.mainCategoryId,
+                                    sortOrder: int.tryParse(
+                                            _sortOrderCtrl.text.trim()) ??
+                                        0,
                                     image: _selectedImage,
                                   ),
                         );
@@ -187,6 +203,7 @@ class _AddEditSubCategoryDialogState extends State<AddEditSubCategoryDialog> {
     required String label,
     required bool isDark,
     bool isRequired = false,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,6 +231,7 @@ class _AddEditSubCategoryDialogState extends State<AddEditSubCategoryDialog> {
         SizedBox(height: 4.h),
         TextField(
           controller: ctrl,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             filled: true,
             fillColor: isDark

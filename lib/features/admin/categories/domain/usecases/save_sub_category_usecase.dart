@@ -23,6 +23,7 @@ class SaveSubCategoryUsecase {
     required String nameEng,
     required String nameAbree,
     required int mainCategoryId,
+    int sortOrder = 0,
     XFile? image,
   }) =>
       categoryRepository.saveSubCategory(
@@ -31,6 +32,7 @@ class SaveSubCategoryUsecase {
         nameEng: nameEng,
         nameAbree: nameAbree,
         mainCategoryId: mainCategoryId,
+        sortOrder: sortOrder,
         image: image,
       );
 }

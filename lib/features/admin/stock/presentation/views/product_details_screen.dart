@@ -390,67 +390,8 @@ class ProductDetailsScreen extends GetView<StockController> {
                       ),
                       SizedBox(height: 24.h),
                       _pdSectionTitle(context, 'productDetailsSectionSizes'),
-                      ...(product.sizes ?? []).map(
-                        (e) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CustomTextAndDis(
-                              noSized: true,
-                              title: 'size',
-                              discription: e.size.toString(),
-                            ),
-                            ...(e.colorSizes ?? []).map(
-                              (cs) => Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: CustomTextAndDis(
-                                            noSized: true,
-                                            title: 'color',
-                                            discription: cs.colorAr.toString(),
-                                          ),
-                                        ),
-                                        CustomTextAndDis(
-                                          noSized: true,
-                                          discriptionColor: const Color.fromARGB(
-                                              255, 95, 77, 255),
-                                          title: 'stock',
-                                          discription: cs.stock.toString(),
-                                        ),
-                                        SizedBox(width: 5.w),
-                                        CustomTextAndDis(
-                                          noSized: true,
-                                          discriptionColor: Colors.green,
-                                          title: 'price',
-                                          discription:
-                                              cs.normailPrice.toString(),
-                                        ),
-                                      ],
-                                    ),
-                                    if ((cs.colorEn ?? '').isNotEmpty ||
-                                        (cs.colorAbbr ?? '').isNotEmpty)
-                                      Padding(
-                                        padding: EdgeInsets.only(top: 4.h),
-                                        child: Text(
-                                          '${'colorEnglish'.tr}: ${cs.colorEn ?? '—'}  |  ${'colorHebrew'.tr}: ${cs.colorAbbr ?? '—'}',
-                                          style: Theme.of(context)
-                                              .textTheme.bodySmall,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _SizeColorDetailsTable(product: product),
+                      SizedBox(height: 8.h),
                       _pdDivider(context),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -604,4 +545,91 @@ class ProductDetailsScreen extends GetView<StockController> {
       ),
     );
   }
+}
+
+// ── Sizes & Colors read-only table ───────────────────────────────────────────
+
+class _SizeColorDetailsTable extends StatelessWidget {
+  const _SizeColorDetailsTable({required this.product});
+
+  final ProductDetailsModel product;
+
+  @override
+  Widget build(BuildContext context) {
+    // Flatten sizes into flat rows. Avoid explicit 'Size' type to prevent
+    // conflict with dart:ui.Size — let Dart infer from product.sizes.
+    final rows = <_SizeColorRow>[];
+    for (final sz in product.sizes ?? []) {
+      final sizeName = sz.size ?? '';
+      for (final cs in sz.colorSizes ?? []) {
+        rows.add(_SizeColorRow(size: sizeName, color: cs));
+      }
+    }
+
+    if (rows.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.h),
+        child: Text(
+          'noData'.tr,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+        ),
+      );
+    }
+
+    final headerStyle = Theme.of(context).textTheme.labelSmall!.copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: 10.sp,
+        );
+    final cellStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
+          fontSize: 11.sp,
+        );
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingRowHeight: 36.h,
+        dataRowMinHeight: 36.h,
+        dataRowMaxHeight: 48.h,
+        columnSpacing: 14.w,
+        horizontalMargin: 8.w,
+        headingRowColor: WidgetStateProperty.all(
+          AdminUiColors.subtleOverlay(context),
+        ),
+        columns: [
+          DataColumn(label: Text('size'.tr, style: headerStyle)),
+          DataColumn(label: Text('color'.tr, style: headerStyle)),
+          DataColumn(label: Text('colorEnglish'.tr, style: headerStyle)),
+          DataColumn(label: Text('colorHebrew'.tr, style: headerStyle)),
+          DataColumn(label: Text('quantity'.tr, style: headerStyle)),
+          DataColumn(label: Text('price'.tr, style: headerStyle)),
+          DataColumn(label: Text('wholesalePriceField'.tr, style: headerStyle)),
+          DataColumn(label: Text('discountPercentage'.tr, style: headerStyle)),
+        ],
+        rows: rows.map<DataRow>((r) {
+          final cs = r.color;
+          return DataRow(cells: [
+            DataCell(Text(r.size, style: cellStyle)),
+            DataCell(Text(cs.colorAr ?? '', style: cellStyle)),
+            DataCell(Text(cs.colorEn ?? '', style: cellStyle)),
+            DataCell(Text(cs.colorAbbr ?? '', style: cellStyle)),
+            DataCell(Text(cs.stock ?? '', style: cellStyle)),
+            DataCell(Text(cs.normailPrice ?? '', style: cellStyle)),
+            DataCell(Text(cs.wholesalePrice ?? '', style: cellStyle)),
+            DataCell(Text(
+              (cs.discount ?? '0') == '0' ? '' : '${cs.discount}%',
+              style: cellStyle,
+            )),
+          ]);
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _SizeColorRow {
+  final String size;
+  final ColorSize color;
+  const _SizeColorRow({required this.size, required this.color});
 }

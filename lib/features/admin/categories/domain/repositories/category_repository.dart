@@ -11,6 +11,7 @@ abstract class CategoryRepository {
     required String nameAr,
     required String nameEng,
     required String nameAbree,
+    int sortOrder = 0,
     XFile? image,
   });
 
@@ -24,6 +25,7 @@ abstract class CategoryRepository {
     required String nameEng,
     required String nameAbree,
     required int mainCategoryId,
+    int sortOrder = 0,
     XFile? image,
   });
 

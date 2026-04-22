@@ -121,6 +121,7 @@ class CategoryManagementController extends GetxController {
     required String nameAr,
     required String nameEng,
     required String nameAbree,
+    int sortOrder = 0,
     XFile? image,
   }) async {
     if (nameAr.trim().isEmpty) {
@@ -136,6 +137,7 @@ class CategoryManagementController extends GetxController {
         nameAr: nameAr.trim(),
         nameEng: nameEng.trim(),
         nameAbree: nameAbree.trim(),
+        sortOrder: sortOrder,
         image: image,
       );
       if (result['status'] == 'success') {
@@ -190,6 +192,7 @@ class CategoryManagementController extends GetxController {
     required String nameEng,
     required String nameAbree,
     required int mainCategoryId,
+    int sortOrder = 0,
     XFile? image,
   }) async {
     if (nameAr.trim().isEmpty) {
@@ -206,6 +209,7 @@ class CategoryManagementController extends GetxController {
         nameEng: nameEng.trim(),
         nameAbree: nameAbree.trim(),
         mainCategoryId: mainCategoryId,
+        sortOrder: sortOrder,
         image: image,
       );
       if (result['status'] == 'success') {

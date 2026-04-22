@@ -780,6 +780,13 @@ const Map<String, String> en = {
   'uploadMediaHere': 'Upload images here (or use +)',
   'saveScopeLockedHint': 'Saved in the app only — save scope cannot be changed.',
   'addSizeColorSection': 'Add sizes & colors',
+  'addSizeColor': 'Add Size / Color',
+  'editSizeColor': 'Edit Size / Color',
+  'sizeRequired': 'Size is required',
+  'colorArRequired': 'Color name (Arabic) is required',
+  'quantityRequired': 'Quantity is required',
+  'priceRequired': 'Price is required',
+  'actions': 'Actions',
   'sizeSelectHint': 'Select size',
   'pickVideo': 'Pick video',
   'colorEnglish': 'Color (EN)',
@@ -985,6 +992,7 @@ const Map<String, String> en = {
 
   // Category Management
   'categoryManagement': 'Category Management',
+  'sortOrder': 'Sort Order',
   'addCategory': 'Add Main Category',
   'editCategory': 'Edit Main Category',
   'addSubCategory': 'Add Subcategory',

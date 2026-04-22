@@ -778,6 +778,13 @@ const Map<String, String> ar = {
   'uploadMediaHere': 'ارفع الصور هنا (أو استخدم +)',
   'saveScopeLockedHint': 'يُحفظ في التطبيق فقط — لا يمكن تغيير نطاق الحفظ.',
   'addSizeColorSection': 'إضافة أحجام وألوان',
+  'addSizeColor': 'إضافة مقاس / لون',
+  'editSizeColor': 'تعديل مقاس / لون',
+  'sizeRequired': 'الحجم مطلوب',
+  'colorArRequired': 'اسم اللون (عربي) مطلوب',
+  'quantityRequired': 'الكمية مطلوبة',
+  'priceRequired': 'السعر مطلوب',
+  'actions': 'إجراءات',
   'sizeSelectHint': 'اختر الحجم',
   'pickVideo': 'اختيار فيديو',
   'colorEnglish': 'اللون إنجليزي',
@@ -986,6 +993,7 @@ const Map<String, String> ar = {
 
   // Category Management
   'categoryManagement': 'إدارة التصنيفات',
+  'sortOrder': 'ترتيب العرض',
   'addCategory': 'إضافة فئة رئيسية',
   'editCategory': 'تعديل الفئة الرئيسية',
   'addSubCategory': 'إضافة فئة فرعية',

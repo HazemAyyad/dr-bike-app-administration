@@ -20,6 +20,7 @@ import '../controllers/stock_controller.dart';
 import '../widgets/category_selector_section.dart';
 import '../widgets/product_inline_video.dart';
 import '../widgets/product_language_tabs_edit.dart';
+import '../widgets/size_color_entry_dialog.dart';
 
 /// عناوين الأقسام: على الخلفية الداكنة لا يُستخدم [AppColors.secondaryColor] لأنه شبه أسود ويختفي.
 Color editProductSectionTitleColor(BuildContext context) {
@@ -249,229 +250,7 @@ class EditProductScreen extends GetView<StockController> {
                     ),
               ),
               SizedBox(height: 8.h),
-              GetBuilder<StockController>(
-                builder: (c) {
-                  if (c.items.isEmpty) {
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 8.h),
-                      child: OutlinedButton.icon(
-                        onPressed: c.addSized,
-                        icon: Icon(Icons.add, size: 22.sp),
-                        label: Text('addSizeColorSection'.tr),
-                      ),
-                    );
-                  }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            tooltip: 'addSizeBlock'.tr,
-                            onPressed: c.addSized,
-                            icon: Icon(
-                              Icons.add_circle_outline,
-                              size: 28.sp,
-                              color: AppColors.secondaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: EdgeInsets.only(bottom: 6.h),
-                        child: Text(
-                          'colorsAndQtySubtitle'.tr,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).hintColor,
-                              ),
-                        ),
-                      ),
-                      ...c.items.map(
-                        (i) {
-                          final blockIndex = c.items.indexOf(i);
-                          final opts = List<String>.from(c.productSizeOptions);
-                          final cur = i.sizeController.text.trim();
-                          if (cur.isNotEmpty && !opts.contains(cur)) {
-                            opts.insert(0, cur);
-                          }
-                          return Card(
-                            margin: EdgeInsets.only(bottom: 12.h),
-                            elevation: 0,
-                            color: AdminUiColors.cardBackground(context),
-                            child: Padding(
-                              padding: EdgeInsets.all(12.w),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Expanded(
-                                        child: DropdownButtonFormField<String>(
-                                          key: ValueKey<String>(
-                                            'size_${blockIndex}_$cur',
-                                          ),
-                                          isExpanded: true,
-                                          hint: Text('sizeSelectHint'.tr),
-                                          decoration: InputDecoration(
-                                            filled: true,
-                                            fillColor:
-                                                AdminUiColors.inputFill(context),
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(11.r),
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                              horizontal: 14.w,
-                                              vertical: 12.h,
-                                            ),
-                                            labelText: 'size'.tr,
-                                          ),
-                                          initialValue: cur.isEmpty
-                                              ? null
-                                              : (opts.contains(cur)
-                                                  ? cur
-                                                  : null),
-                                          items: opts
-                                              .map(
-                                                (s) => DropdownMenuItem<String>(
-                                                  value: s,
-                                                  child: Text(s),
-                                                ),
-                                              )
-                                              .toList(),
-                                          onChanged: (v) {
-                                            i.sizeController.text = v ?? '';
-                                            c.update();
-                                          },
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () {
-                                          c.removeItem(blockIndex);
-                                        },
-                                        icon: Icon(
-                                          Icons.delete_outline,
-                                          size: 26.sp,
-                                          color: AppColors.redColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 8.h),
-                                  Text(
-                                    'colorAndQuantityHeading'.tr,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                  SizedBox(height: 6.h),
-                                  ...i.colors.map(
-                                    (col) {
-                                      return Column(
-                                        children: [
-                                          SizedBox(height: 6.h),
-                                          Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
-                                            children: [
-                                              Expanded(
-                                                child: CustomTextField(
-                                                  label: 'color',
-                                                  hintText: 'color',
-                                                  controller:
-                                                      col.colorController,
-                                                ),
-                                              ),
-                                              SizedBox(width: 8.w),
-                                              Expanded(
-                                                child: CustomTextField(
-                                                  label: 'colorEnglish',
-                                                  hintText: 'colorEnglish',
-                                                  controller:
-                                                      col.colorEnController,
-                                                ),
-                                              ),
-                                              if (i.colors.length > 1)
-                                                IconButton(
-                                                  onPressed: () {
-                                                    c.removeColorFromSize(
-                                                      blockIndex,
-                                                      i.colors.indexOf(col),
-                                                    );
-                                                  },
-                                                  icon: Icon(
-                                                    Icons.delete_outline,
-                                                    size: 24.sp,
-                                                    color: AppColors.redColor,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 6.h),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: CustomTextField(
-                                                  label: 'colorHebrew',
-                                                  hintText: 'colorHebrew',
-                                                  controller:
-                                                      col.colorAbbrController,
-                                                ),
-                                              ),
-                                              SizedBox(width: 8.w),
-                                              Expanded(
-                                                child: CustomTextField(
-                                                  label: 'quantity',
-                                                  hintText: 'quantity',
-                                                  controller:
-                                                      col.quantityController,
-                                                ),
-                                              ),
-                                              SizedBox(width: 8.w),
-                                              Expanded(
-                                                child: CustomTextField(
-                                                  label: 'price',
-                                                  hintText: 'price',
-                                                  controller:
-                                                      col.priceController,
-                                                ),
-                                              ),
-                                              IconButton(
-                                                onPressed: () {
-                                                  c.addColorToSize(
-                                                    blockIndex,
-                                                  );
-                                                },
-                                                icon: Icon(
-                                                  Icons.add_circle_outline,
-                                                  size: 32.sp,
-                                                  color: AppColors
-                                                      .secondaryColor,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
-              ),
+              _SizeColorSection(controller: controller),
               SizedBox(height: 8.h),
               GetBuilder<StockController>(
                 builder: (c) => Obx(
@@ -914,4 +693,102 @@ class EditProductScreen extends GetView<StockController> {
       ],
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Size & Color — modal + table
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _SizeColorSection extends StatelessWidget {
+  const _SizeColorSection({required this.controller});
+
+  final StockController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<StockController>(
+      builder: (c) {
+        final rows = c.flatSizeColorEntries;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── add button ──────────────────────────────────────────────
+            OutlinedButton.icon(
+              onPressed: () => SizeColorEntryDialog.show(c),
+              icon: Icon(Icons.add, size: 20.sp),
+              label: Text('addSizeColor'.tr),
+            ),
+            if (rows.isNotEmpty) ...[
+              SizedBox(height: 12.h),
+              // ── horizontal scrollable table ─────────────────────────
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowHeight: 36.h,
+                  dataRowMinHeight: 40.h,
+                  dataRowMaxHeight: 52.h,
+                  columnSpacing: 14.w,
+                  horizontalMargin: 8.w,
+                  columns: [
+                    DataColumn(label: Text('size'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('color'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('colorEnglish'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('colorHebrew'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('quantity'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('price'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('wholesalePriceField'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('discountPercentage'.tr, style: _headerStyle(context))),
+                    DataColumn(label: Text('actions'.tr, style: _headerStyle(context))),
+                  ],
+                  rows: rows.map<DataRow>((entry) {
+                    final col = entry.color;
+                    return DataRow(cells: [
+                      DataCell(Text(entry.size, style: _cellStyle(context))),
+                      DataCell(Text(col.colorController.text, style: _cellStyle(context))),
+                      DataCell(Text(col.colorEnController.text, style: _cellStyle(context))),
+                      DataCell(Text(col.colorAbbrController.text, style: _cellStyle(context))),
+                      DataCell(Text(col.quantityController.text, style: _cellStyle(context))),
+                      DataCell(Text(col.priceController.text, style: _cellStyle(context))),
+                      DataCell(Text(col.wholesalePriceController.text, style: _cellStyle(context))),
+                      DataCell(Text(col.discountController.text, style: _cellStyle(context))),
+                      DataCell(Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () => SizeColorEntryDialog.show(
+                              c,
+                              sizeIdx: entry.sizeIdx,
+                              colorIdx: entry.colorIdx,
+                            ),
+                            child: Icon(Icons.edit_outlined,
+                                size: 18.sp, color: AppColors.primaryColor),
+                          ),
+                          SizedBox(width: 10.w),
+                          InkWell(
+                            onTap: () => c.removeSizeColorEntry(
+                                entry.sizeIdx, entry.colorIdx),
+                            child: Icon(Icons.delete_outline,
+                                size: 18.sp, color: AppColors.redColor),
+                          ),
+                        ],
+                      )),
+                    ]);
+                  }).toList(),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  TextStyle _headerStyle(BuildContext context) =>
+      Theme.of(context).textTheme.labelSmall!.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 10.sp,
+          );
+
+  TextStyle _cellStyle(BuildContext context) =>
+      Theme.of(context).textTheme.bodySmall!.copyWith(fontSize: 11.sp);
 }

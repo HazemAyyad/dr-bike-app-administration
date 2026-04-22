@@ -30,6 +30,7 @@ class CategoryImplement implements CategoryRepository {
     required String nameAr,
     required String nameEng,
     required String nameAbree,
+    int sortOrder = 0,
     XFile? image,
   }) async {
     if (!await networkInfo.isConnected) throw NoConnectionFailure();
@@ -39,6 +40,7 @@ class CategoryImplement implements CategoryRepository {
         nameAr: nameAr,
         nameEng: nameEng,
         nameAbree: nameAbree,
+        sortOrder: sortOrder,
         image: image,
       );
     } on ServerException catch (e) {
@@ -73,6 +75,7 @@ class CategoryImplement implements CategoryRepository {
     required String nameEng,
     required String nameAbree,
     required int mainCategoryId,
+    int sortOrder = 0,
     XFile? image,
   }) async {
     if (!await networkInfo.isConnected) throw NoConnectionFailure();
@@ -83,6 +86,7 @@ class CategoryImplement implements CategoryRepository {
         nameEng: nameEng,
         nameAbree: nameAbree,
         mainCategoryId: mainCategoryId,
+        sortOrder: sortOrder,
         image: image,
       );
     } on ServerException catch (e) {

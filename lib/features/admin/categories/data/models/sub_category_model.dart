@@ -6,6 +6,7 @@ class SubCategoryModel {
   final String nameEng;
   final String nameAbree;
   final bool isShow;
+  final int sortOrder;
   final int mainCategoryId;
   final String imageUrl;
 
@@ -15,6 +16,7 @@ class SubCategoryModel {
     required this.nameEng,
     required this.nameAbree,
     required this.isShow,
+    this.sortOrder = 0,
     required this.mainCategoryId,
     this.imageUrl = '',
   });
@@ -26,6 +28,7 @@ class SubCategoryModel {
       nameEng: asString(json['nameEng']),
       nameAbree: asString(json['nameAbree']),
       isShow: asBool(json['isShow'], true),
+      sortOrder: asInt(json['sortOrder']),
       mainCategoryId: asInt(json['mainCategoryId']),
       imageUrl: asString(json['imageUrl']),
     );
@@ -37,6 +40,7 @@ class SubCategoryModel {
     String? nameEng,
     String? nameAbree,
     bool? isShow,
+    int? sortOrder,
     int? mainCategoryId,
     String? imageUrl,
   }) {
@@ -46,6 +50,7 @@ class SubCategoryModel {
       nameEng: nameEng ?? this.nameEng,
       nameAbree: nameAbree ?? this.nameAbree,
       isShow: isShow ?? this.isShow,
+      sortOrder: sortOrder ?? this.sortOrder,
       mainCategoryId: mainCategoryId ?? this.mainCategoryId,
       imageUrl: imageUrl ?? this.imageUrl,
     );
