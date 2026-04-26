@@ -578,51 +578,75 @@ class _SizeColorDetailsTable extends StatelessWidget {
       );
     }
 
+    final dividerColor = Theme.of(context).dividerColor;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     final headerStyle = Theme.of(context).textTheme.labelSmall!.copyWith(
           fontWeight: FontWeight.w700,
           fontSize: 10.sp,
+          color: onSurface,
         );
     final cellStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
           fontSize: 11.sp,
+          color: onSurface,
         );
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingRowHeight: 36.h,
-        dataRowMinHeight: 36.h,
-        dataRowMaxHeight: 48.h,
-        columnSpacing: 14.w,
-        horizontalMargin: 8.w,
-        headingRowColor: WidgetStateProperty.all(
-          AdminUiColors.subtleOverlay(context),
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: AdminUiColors.cardBackground(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+        side: BorderSide(
+          color: dividerColor.withValues(alpha: 0.5),
+          width: 1,
         ),
-        columns: [
-          DataColumn(label: Text('size'.tr, style: headerStyle)),
-          DataColumn(label: Text('color'.tr, style: headerStyle)),
-          DataColumn(label: Text('colorEnglish'.tr, style: headerStyle)),
-          DataColumn(label: Text('colorHebrew'.tr, style: headerStyle)),
-          DataColumn(label: Text('quantity'.tr, style: headerStyle)),
-          DataColumn(label: Text('price'.tr, style: headerStyle)),
-          DataColumn(label: Text('wholesalePriceField'.tr, style: headerStyle)),
-          DataColumn(label: Text('discountPercentage'.tr, style: headerStyle)),
-        ],
-        rows: rows.map<DataRow>((r) {
-          final cs = r.color;
-          return DataRow(cells: [
-            DataCell(Text(r.size, style: cellStyle)),
-            DataCell(Text(cs.colorAr ?? '', style: cellStyle)),
-            DataCell(Text(cs.colorEn ?? '', style: cellStyle)),
-            DataCell(Text(cs.colorAbbr ?? '', style: cellStyle)),
-            DataCell(Text(cs.stock ?? '', style: cellStyle)),
-            DataCell(Text(cs.normailPrice ?? '', style: cellStyle)),
-            DataCell(Text(cs.wholesalePrice ?? '', style: cellStyle)),
-            DataCell(Text(
-              (cs.discount ?? '0') == '0' ? '' : '${cs.discount}%',
-              style: cellStyle,
-            )),
-          ]);
-        }).toList(),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          headingRowHeight: 38.h,
+          dataRowMinHeight: 42.h,
+          dataRowMaxHeight: 54.h,
+          columnSpacing: 16.w,
+          horizontalMargin: 12.w,
+          headingRowColor: WidgetStateProperty.all(
+            AdminUiColors.subtleOverlay(context),
+          ),
+          border: TableBorder(
+            horizontalInside: BorderSide(
+              color: dividerColor.withValues(alpha: 0.4),
+              width: 0.5,
+            ),
+          ),
+          columns: [
+            DataColumn(label: Text('size'.tr, style: headerStyle)),
+            DataColumn(label: Text('color'.tr, style: headerStyle)),
+            DataColumn(label: Text('colorEnglish'.tr, style: headerStyle)),
+            DataColumn(label: Text('colorHebrew'.tr, style: headerStyle)),
+            DataColumn(label: Text('quantity'.tr, style: headerStyle)),
+            DataColumn(label: Text('price'.tr, style: headerStyle)),
+            DataColumn(label: Text('wholesalePriceField'.tr, style: headerStyle)),
+            DataColumn(label: Text('discountPercentage'.tr, style: headerStyle)),
+          ],
+          rows: rows.map<DataRow>((r) {
+            final cs = r.color;
+            return DataRow(cells: [
+              DataCell(Text(r.size, style: cellStyle)),
+              DataCell(Text(cs.colorAr ?? '', style: cellStyle)),
+              DataCell(Text(cs.colorEn ?? '', style: cellStyle)),
+              DataCell(Text(cs.colorAbbr ?? '', style: cellStyle)),
+              DataCell(Text(cs.stock ?? '', style: cellStyle)),
+              DataCell(Text(cs.normailPrice ?? '', style: cellStyle)),
+              DataCell(Text(cs.wholesalePrice ?? '', style: cellStyle)),
+              DataCell(Text(
+                (cs.discount ?? '0') == '0' ? '' : '${cs.discount}%',
+                style: cellStyle,
+              )),
+            ]);
+          }).toList(),
+        ),
       ),
     );
   }

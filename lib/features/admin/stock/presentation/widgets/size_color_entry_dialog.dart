@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
+import '../../../../../core/helpers/custom_dropdown_field.dart';
+import '../../../../../core/helpers/custom_text_field.dart';
 import '../controllers/stock_controller.dart';
 
 /// Modal for adding or editing a single size+color entry.
@@ -168,8 +170,20 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       opts.insert(0, _selectedSize!);
     }
 
+    // Resolve current value safely for the dropdown.
+    final String? dropdownValue =
+        (_selectedSize?.isNotEmpty ?? false) && opts.contains(_selectedSize)
+            ? _selectedSize
+            : null;
+
     return Dialog(
+      // Match the Add Product card background so the modal feels part of the
+      // same design system (white in light, surface in dark).
+      backgroundColor: AdminUiColors.cardBackground(context),
       insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+      ),
       child: Container(
         constraints: BoxConstraints(maxWidth: 500.w),
         padding: EdgeInsets.all(20.w),
@@ -178,95 +192,108 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── title ──────────────────────────────────────────────────
+              // ── title ─────────────────────────────────────────────────
               Text(
                 isEdit ? 'editSizeColor'.tr : 'addSizeColor'.tr,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
               ),
               SizedBox(height: 16.h),
 
-              // ── size dropdown ───────────────────────────────────────────
-              _label(context, 'size'.tr, required: true),
-              SizedBox(height: 4.h),
-              DropdownButtonFormField<String>(
-                value: (_selectedSize?.isNotEmpty ?? false) &&
-                        opts.contains(_selectedSize)
-                    ? _selectedSize
-                    : null,
-                hint: Text('sizeSelectHint'.tr),
-                isExpanded: true,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: AdminUiColors.inputFill(context),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12.w, vertical: 10.h),
-                  isDense: true,
-                ),
-                items: opts
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                    .toList(),
+              // ── size dropdown — same CustomDropdownField used in the form
+              CustomDropdownField(
+                label: 'size',
+                hint: 'sizeSelectHint',
+                items: opts,
+                value: dropdownValue,
                 onChanged: (v) => setState(() => _selectedSize = v),
+                isRequired: true,
               ),
               SizedBox(height: 12.h),
 
-              // ── color Ar ───────────────────────────────────────────────
-              _field(context, _colorArCtrl, 'color'.tr, required: true),
-              SizedBox(height: 10.h),
+              // ── color Ar ──────────────────────────────────────────────
+              CustomTextField(
+                label: 'color',
+                hintText: 'color',
+                controller: _colorArCtrl,
+                isRequired: true,
+              ),
+              SizedBox(height: 12.h),
 
-              // ── color En ───────────────────────────────────────────────
-              _field(context, _colorEnCtrl, 'colorEnglish'.tr),
-              SizedBox(height: 10.h),
+              // ── color En ──────────────────────────────────────────────
+              CustomTextField(
+                label: 'colorEnglish',
+                hintText: 'colorEnglish',
+                controller: _colorEnCtrl,
+              ),
+              SizedBox(height: 12.h),
 
-              // ── color Abbr (Hebrew) ────────────────────────────────────
-              _field(context, _colorAbbrCtrl, 'colorHebrew'.tr),
-              SizedBox(height: 10.h),
+              // ── color Abbr (Hebrew) ───────────────────────────────────
+              CustomTextField(
+                label: 'colorHebrew',
+                hintText: 'colorHebrew',
+                controller: _colorAbbrCtrl,
+              ),
+              SizedBox(height: 12.h),
 
-              // ── qty + price ────────────────────────────────────────────
+              // ── qty + price ───────────────────────────────────────────
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _field(context, _qtyCtrl, 'quantity'.tr,
-                        required: true,
-                        keyboardType: TextInputType.number),
+                    child: CustomTextField(
+                      label: 'quantity',
+                      hintText: 'quantity',
+                      controller: _qtyCtrl,
+                      keyboardType: TextInputType.number,
+                      isRequired: true,
+                    ),
                   ),
                   SizedBox(width: 10.w),
                   Expanded(
-                    child: _field(context, _priceCtrl, 'price'.tr,
-                        required: true,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true)),
+                    child: CustomTextField(
+                      label: 'price',
+                      hintText: 'price',
+                      controller: _priceCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      isRequired: true,
+                    ),
                   ),
                 ],
               ),
-              SizedBox(height: 10.h),
+              SizedBox(height: 12.h),
 
               // ── wholesale + discount ──────────────────────────────────
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: _field(
-                        context, _wholesaleCtrl, 'wholesalePriceField'.tr,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true)),
+                    child: CustomTextField(
+                      label: 'wholesalePriceField',
+                      hintText: 'wholesalePriceField',
+                      controller: _wholesaleCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                    ),
                   ),
                   SizedBox(width: 10.w),
                   Expanded(
-                    child: _field(
-                        context, _discountCtrl, 'discountPercentage'.tr,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true)),
+                    child: CustomTextField(
+                      label: 'discountPercentage',
+                      hintText: 'discountPercentage',
+                      controller: _discountCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                    ),
                   ),
                 ],
               ),
-              SizedBox(height: 20.h),
+              SizedBox(height: 24.h),
 
-              // ── buttons ────────────────────────────────────────────────
+              // ── buttons ───────────────────────────────────────────────
               Row(
                 children: [
                   Expanded(
@@ -288,62 +315,6 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _label(BuildContext context, String text, {bool required = false}) {
-    return RichText(
-      text: TextSpan(
-        text: text,
-        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-            ),
-        children: required
-            ? [
-                TextSpan(
-                  text: ' *',
-                  style: TextStyle(
-                      color: Colors.red, fontSize: 11.sp),
-                )
-              ]
-            : [],
-      ),
-    );
-  }
-
-  Widget _field(
-    BuildContext context,
-    TextEditingController ctrl,
-    String label, {
-    bool required = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label(context, label, required: required),
-        SizedBox(height: 4.h),
-        TextField(
-          controller: ctrl,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: AdminUiColors.inputFill(context),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.r),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-            isDense: true,
-          ),
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium!
-              .copyWith(fontSize: 12.sp),
-        ),
-      ],
     );
   }
 }

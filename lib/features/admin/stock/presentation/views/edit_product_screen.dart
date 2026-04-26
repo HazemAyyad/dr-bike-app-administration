@@ -721,59 +721,81 @@ class _SizeColorSection extends StatelessWidget {
             if (rows.isNotEmpty) ...[
               SizedBox(height: 12.h),
               // ── horizontal scrollable table ─────────────────────────
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowHeight: 36.h,
-                  dataRowMinHeight: 40.h,
-                  dataRowMaxHeight: 52.h,
-                  columnSpacing: 14.w,
-                  horizontalMargin: 8.w,
-                  columns: [
-                    DataColumn(label: Text('size'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('color'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('colorEnglish'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('colorHebrew'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('quantity'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('price'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('wholesalePriceField'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('discountPercentage'.tr, style: _headerStyle(context))),
-                    DataColumn(label: Text('actions'.tr, style: _headerStyle(context))),
-                  ],
-                  rows: rows.map<DataRow>((entry) {
-                    final col = entry.color;
-                    return DataRow(cells: [
-                      DataCell(Text(entry.size, style: _cellStyle(context))),
-                      DataCell(Text(col.colorController.text, style: _cellStyle(context))),
-                      DataCell(Text(col.colorEnController.text, style: _cellStyle(context))),
-                      DataCell(Text(col.colorAbbrController.text, style: _cellStyle(context))),
-                      DataCell(Text(col.quantityController.text, style: _cellStyle(context))),
-                      DataCell(Text(col.priceController.text, style: _cellStyle(context))),
-                      DataCell(Text(col.wholesalePriceController.text, style: _cellStyle(context))),
-                      DataCell(Text(col.discountController.text, style: _cellStyle(context))),
-                      DataCell(Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          InkWell(
-                            onTap: () => SizeColorEntryDialog.show(
-                              c,
-                              sizeIdx: entry.sizeIdx,
-                              colorIdx: entry.colorIdx,
+              Card(
+                margin: EdgeInsets.zero,
+                elevation: 0,
+                color: AdminUiColors.cardBackground(context),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                  side: BorderSide(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    headingRowHeight: 38.h,
+                    dataRowMinHeight: 42.h,
+                    dataRowMaxHeight: 54.h,
+                    columnSpacing: 16.w,
+                    horizontalMargin: 12.w,
+                    headingRowColor: WidgetStateProperty.all(
+                      AdminUiColors.subtleOverlay(context),
+                    ),
+                    border: TableBorder(
+                      horizontalInside: BorderSide(
+                        color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+                        width: 0.5,
+                      ),
+                    ),
+                    columns: [
+                      DataColumn(label: Text('size'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('color'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('colorEnglish'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('colorHebrew'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('quantity'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('price'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('wholesalePriceField'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('discountPercentage'.tr, style: _headerStyle(context))),
+                      DataColumn(label: Text('actions'.tr, style: _headerStyle(context))),
+                    ],
+                    rows: rows.map<DataRow>((entry) {
+                      final col = entry.color;
+                      return DataRow(cells: [
+                        DataCell(Text(entry.size, style: _cellStyle(context))),
+                        DataCell(Text(col.colorController.text, style: _cellStyle(context))),
+                        DataCell(Text(col.colorEnController.text, style: _cellStyle(context))),
+                        DataCell(Text(col.colorAbbrController.text, style: _cellStyle(context))),
+                        DataCell(Text(col.quantityController.text, style: _cellStyle(context))),
+                        DataCell(Text(col.priceController.text, style: _cellStyle(context))),
+                        DataCell(Text(col.wholesalePriceController.text, style: _cellStyle(context))),
+                        DataCell(Text(col.discountController.text, style: _cellStyle(context))),
+                        DataCell(Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () => SizeColorEntryDialog.show(
+                                c,
+                                sizeIdx: entry.sizeIdx,
+                                colorIdx: entry.colorIdx,
+                              ),
+                              child: Icon(Icons.edit_outlined,
+                                  size: 18.sp, color: AppColors.primaryColor),
                             ),
-                            child: Icon(Icons.edit_outlined,
-                                size: 18.sp, color: AppColors.primaryColor),
-                          ),
-                          SizedBox(width: 10.w),
-                          InkWell(
-                            onTap: () => c.removeSizeColorEntry(
-                                entry.sizeIdx, entry.colorIdx),
-                            child: Icon(Icons.delete_outline,
-                                size: 18.sp, color: AppColors.redColor),
-                          ),
-                        ],
-                      )),
-                    ]);
-                  }).toList(),
+                            SizedBox(width: 10.w),
+                            InkWell(
+                              onTap: () => c.removeSizeColorEntry(
+                                  entry.sizeIdx, entry.colorIdx),
+                              child: Icon(Icons.delete_outline,
+                                  size: 18.sp, color: AppColors.redColor),
+                            ),
+                          ],
+                        )),
+                      ]);
+                    }).toList(),
+                  ),
                 ),
               ),
             ],
@@ -787,8 +809,12 @@ class _SizeColorSection extends StatelessWidget {
       Theme.of(context).textTheme.labelSmall!.copyWith(
             fontWeight: FontWeight.w700,
             fontSize: 10.sp,
+            color: Theme.of(context).colorScheme.onSurface,
           );
 
   TextStyle _cellStyle(BuildContext context) =>
-      Theme.of(context).textTheme.bodySmall!.copyWith(fontSize: 11.sp);
+      Theme.of(context).textTheme.bodySmall!.copyWith(
+            fontSize: 11.sp,
+            color: Theme.of(context).colorScheme.onSurface,
+          );
 }
