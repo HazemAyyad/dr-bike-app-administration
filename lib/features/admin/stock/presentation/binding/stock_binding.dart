@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../data/datasources/stock_datasource.dart';
 import '../../data/repositories/stock_implement.dart';
 import '../../domain/usecases/add_combination_usecase.dart';
 import '../../domain/usecases/get_all_stock_usecase.dart';
@@ -11,11 +12,17 @@ import '../../domain/usecases/get_product_size_options_usecase.dart';
 import '../../domain/usecases/move_to_archive_usecase.dart';
 import '../../domain/usecases/save_product_full_usecase.dart';
 import '../../domain/usecases/search_products_usecase.dart';
+import '../../domain/stock_tags_interactor.dart';
 import '../controllers/stock_controller.dart';
 
 class StockBinding extends Bindings {
   @override
   void dependencies() {
+    if (!Get.isRegistered<StockTagsInteractor>()) {
+      Get.lazyPut<StockTagsInteractor>(
+        () => StockTagsInteractor(Get.find<StockDatasource>()),
+      );
+    }
     Get.lazyPut(
       () => StockController(
         getAllStockUsecase: GetAllStockUsecase(
@@ -48,6 +55,7 @@ class StockBinding extends Bindings {
         getProductSizeOptionsUsecase: GetProductSizeOptionsUsecase(
           stockRepository: Get.find<StockImplement>(),
         ),
+        stockTagsInteractor: Get.find<StockTagsInteractor>(),
       ),
     );
   }

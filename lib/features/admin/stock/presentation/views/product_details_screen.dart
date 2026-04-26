@@ -18,6 +18,7 @@ import '../widgets/purchase_price_widget.dart';
 import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/product_details_model.dart';
+import '../widgets/product_tag_chip.dart';
 
 Widget _pdKV(
   BuildContext context,
@@ -207,6 +208,56 @@ class ProductDetailsScreen extends GetView<StockController> {
                         titleKey: 'sectionProductContent',
                         child: ProductLanguageDetailsTabs(product: product),
                       ),
+                      if ((product.productCode ?? '').isNotEmpty ||
+                          (product.productTags != null &&
+                              product.productTags!.isNotEmpty)) ...[
+                        SizedBox(height: 24.h),
+                        _pdSectionCard(
+                          context,
+                          titleKey: 'productCodeAndTags',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if ((product.productCode ?? '').isNotEmpty)
+                                _pdKV(
+                                  context,
+                                  'productCode',
+                                  product.productCode!,
+                                ),
+                              if (product.productTags != null &&
+                                  product.productTags!.isNotEmpty) ...[
+                                if ((product.productCode ?? '').isNotEmpty)
+                                  SizedBox(height: 12.h),
+                                Text(
+                                  'sectionProductTags'.tr,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
+                                      ),
+                                ),
+                                SizedBox(height: 8.h),
+                                Wrap(
+                                  spacing: 8.w,
+                                  runSpacing: 8.h,
+                                  children: product.productTags!
+                                      .map(
+                                        (t) => ProductTagChip(
+                                          name: t.name,
+                                          colorHex: t.color,
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                       SizedBox(height: 24.h),
                       _pdSectionCard(
                         context,

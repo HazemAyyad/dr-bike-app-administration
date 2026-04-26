@@ -11,6 +11,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/all_stock_products_model.dart';
+import 'product_tag_chip.dart';
 import '../controllers/stock_controller.dart';
 
 class BuildProductCard extends GetView<StockController> {
@@ -201,6 +202,41 @@ class BuildProductCard extends GetView<StockController> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (product.productCode.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    Text(
+                      product.productCode,
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                            color: ThemeService.isDark.value
+                                ? AppColors.whiteColor.withValues(alpha: 0.85)
+                                : AppColors.secondaryColor.withValues(alpha: 0.85),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 10.sp,
+                            letterSpacing: 0.5,
+                          ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (product.tags.isNotEmpty) ...[
+                    SizedBox(height: 4.h),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 3,
+                      runSpacing: 3,
+                      children: product.tags
+                          .take(3)
+                          .map(
+                            (t) => ProductTagChip(
+                              name: t.name,
+                              colorHex: t.color,
+                              dense: true,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
                   SizedBox(height: 5.h),
                   if (controller.currentTab.value == 2)
                     Text(

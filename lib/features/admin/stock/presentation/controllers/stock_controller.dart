@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:doctorbike/core/helpers/sweet_success_dialog.dart';
 import 'package:doctorbike/routes/app_routes.dart';
@@ -11,6 +13,8 @@ import '../../../../../core/utils/assets_manger.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
+import '../../data/models/product_tag_model.dart';
+import '../../domain/stock_tags_interactor.dart';
 import '../../domain/usecases/add_combination_usecase.dart';
 import '../../domain/usecases/get_all_stock_usecase.dart';
 import '../../domain/usecases/get_archived_usecase.dart';
@@ -34,6 +38,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final AddCombinationUsecase addCombinationUsecase;
   final SaveProductFullUsecase saveProductFullUsecase;
   final GetProductSizeOptionsUsecase getProductSizeOptionsUsecase;
+  final StockTagsInteractor stockTagsInteractor;
 
   StockController({
     required this.getAllStockUsecase,
@@ -46,6 +51,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required this.addCombinationUsecase,
     required this.saveProductFullUsecase,
     required this.getProductSizeOptionsUsecase,
+    required this.stockTagsInteractor,
   });
 
   final TextEditingController productNameController = TextEditingController();
@@ -105,12 +111,139 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final scrollController = ScrollController();
   final showScrollToTopButton = false.obs;
 
-  final tabs = ['products', 'clearance', 'productComposition'].obs;
+  final tabs = ['products', 'clearance', 'productComposition', 'productTagsTab'].obs;
 
   final currentTab = 0.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
+    if (index == 3) {
+      unawaited(ensureTagsLoaded());
+      if (selectedTagFilterId.value != null) {
+        unawaited(selectTagFilter(selectedTagFilterId.value));
+      }
+    }
+    update();
+  }
+
+  final RxList<ProductTagModel> catalogTags = <ProductTagModel>[].obs;
+  final RxList<String> selectedTagIds = <String>[].obs;
+  final RxList<AllStockProductsModel> tagFilterProducts =
+      <AllStockProductsModel>[].obs;
+  final RxnString selectedTagFilterId = RxnString();
+  final RxBool tagProductsLoadingMore = false.obs;
+  int tagProductsPage = 1;
+  int tagProductsLastPage = 1;
+
+  Future<void> refreshCatalogTags() async {
+    try {
+      final list =
+          await stockTagsInteractor.loadTags(includeInactive: true);
+      catalogTags.assignAll(list);
+      update();
+    } catch (_) {}
+  }
+
+  Future<void> ensureTagsLoaded() async {
+    if (catalogTags.isEmpty) {
+      await refreshCatalogTags();
+    }
+  }
+
+  Future<void> selectTagFilter(String? filterTagId) async {
+    selectedTagFilterId.value = filterTagId;
+    tagFilterProducts.clear();
+    tagProductsPage = 1;
+    tagProductsLastPage = 1;
+    if (filterTagId == null || filterTagId.isEmpty) {
+      update();
+      return;
+    }
+    isLoading(true);
+    update();
+    try {
+      final res = await stockTagsInteractor.loadProductsByTag(
+        tagId: filterTagId,
+        page: 1,
+      );
+      tagFilterProducts.assignAll(res.products);
+      tagProductsPage = res.currentPage;
+      tagProductsLastPage = res.lastPage;
+    } catch (_) {
+      tagFilterProducts.clear();
+    } finally {
+      isLoading(false);
+      update();
+    }
+  }
+
+  Future<void> loadMoreTagFilterProducts() async {
+    final tid = selectedTagFilterId.value;
+    if (tid == null || tid.isEmpty || tagProductsLoadingMore.value) {
+      return;
+    }
+    if (tagProductsPage >= tagProductsLastPage) {
+      return;
+    }
+    tagProductsLoadingMore.value = true;
+    update();
+    try {
+      final next = tagProductsPage + 1;
+      final res = await stockTagsInteractor.loadProductsByTag(
+        tagId: tid,
+        page: next,
+      );
+      for (final p in res.products) {
+        if (!tagFilterProducts.any((x) => x.productId == p.productId)) {
+          tagFilterProducts.add(p);
+        }
+      }
+      tagProductsPage = res.currentPage;
+      tagProductsLastPage = res.lastPage;
+    } catch (_) {
+    } finally {
+      tagProductsLoadingMore.value = false;
+      update();
+    }
+  }
+
+  void toggleProductTagSelection(String id) {
+    if (selectedTagIds.contains(id)) {
+      selectedTagIds.remove(id);
+    } else {
+      selectedTagIds.add(id);
+    }
+    update();
+  }
+
+  Future<void> createCatalogTag({
+    required String name,
+    required String color,
+  }) async {
+    final tag = await stockTagsInteractor.createTag(name: name, color: color);
+    catalogTags.add(tag);
+    selectedTagIds.add(tag.id);
+    update();
+  }
+
+  Future<void> deactivateCatalogTag(String id) async {
+    await stockTagsInteractor.deactivateTag(id);
+    await refreshCatalogTags();
+    selectedTagIds.remove(id);
+    if (selectedTagFilterId.value == id) {
+      await selectTagFilter(null);
+    }
+    update();
+  }
+
+  Future<void> updateCatalogTag({
+    required String id,
+    String? name,
+    String? color,
+  }) async {
+    await stockTagsInteractor.updateTag(id: id, name: name, color: color);
+    await refreshCatalogTags();
+    update();
   }
 
   void _resetEditMediaState() {
@@ -542,6 +675,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void _onScroll() {
+    if (!scrollController.hasClients) {
+      return;
+    }
+    if (currentTab.value == 3) {
+      if (scrollController.position.pixels >=
+          scrollController.position.maxScrollExtent - 120) {
+        unawaited(loadMoreTagFilterProducts());
+      }
+      return;
+    }
     if (scrollController.position.pixels >=
         scrollController.position.maxScrollExtent - 1) {
       StockServices().page++;
@@ -817,17 +960,26 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     isMoreSalesProduct.value = false;
     clearPendingMedia();
     _resetEditMediaState();
+    selectedTagIds.clear();
     for (final el in items) {
       el.onClose();
     }
     items.clear();
     isForcedSale.value = false;
     loadProductSizeOptions(productId: null);
+    unawaited(ensureTagsLoaded());
     update();
   }
 
   void initProductDetails() {
     final p = productDetails.value!;
+    selectedTagIds.clear();
+    final pts = p.productTags;
+    if (pts != null) {
+      for (final t in pts) {
+        selectedTagIds.add(t.id);
+      }
+    }
     editingProductId.value = p.id;
     saveScopeFull.value = false;
     productNameController.text = p.nameAr;
@@ -923,6 +1075,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     isForcedSale.value =
         p.isSoldWithPaper == '1' || p.isSoldWithPaper == 1;
     loadProductSizeOptions(productId: p.id);
+    unawaited(ensureTagsLoaded());
     update();
   }
 
@@ -1048,6 +1201,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     for (final subId in selectedSubCategoryIds) {
       if (subId.trim().isNotEmpty) {
         form.fields.add(MapEntry('sub_categories[]', subId.trim()));
+      }
+    }
+
+    for (final tid in selectedTagIds) {
+      if (tid.trim().isNotEmpty) {
+        form.fields.add(MapEntry('tag_ids[]', tid.trim()));
       }
     }
 

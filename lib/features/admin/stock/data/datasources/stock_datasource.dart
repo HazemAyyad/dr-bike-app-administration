@@ -13,6 +13,8 @@ import '../../../sales/data/models/product_model.dart';
 import '../../presentation/controllers/stock_controller.dart';
 import '../models/all_stock_products_model.dart';
 import '../models/product_details_model.dart';
+import '../models/product_tag_model.dart';
+import '../models/products_by_tag_result.dart';
 
 class StockDatasource {
   final ApiConsumer api;
@@ -296,6 +298,157 @@ class StockDatasource {
           errorMessage: data is Map ? (data['message']?.toString() ?? 'Unknown error') : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? Map<String, dynamic>.from(data) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<ProductTagModel>> getProductTags({
+    bool includeInactive = false,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.productTagsList,
+        queryParameters: {
+          if (includeInactive) 'include_inactive': '1',
+        },
+      );
+      return mapListFromResponseKey(
+        response.data,
+        'tags',
+        (Map<String, dynamic> m) => ProductTagModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<ProductsByTagResult> getProductsByTag({
+    required String tagId,
+    required int page,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.productsByTag,
+        queryParameters: {'tag_id': tagId, 'page': page},
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: 'Invalid response',
+            status: 500,
+            data: {},
+          ),
+        );
+      }
+      final map = Map<String, dynamic>.from(raw);
+      ProductTagModel? tag;
+      final tagMap = map['tag'];
+      if (tagMap is Map) {
+        tag = ProductTagModel.fromJson(Map<String, dynamic>.from(tagMap));
+      }
+      final products = mapListFromResponseKey(
+        map,
+        'products',
+        (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
+      );
+      final p = map['pagination'];
+      final pg = p is Map ? Map<String, dynamic>.from(p) : <String, dynamic>{};
+      return ProductsByTagResult(
+        tag: tag,
+        products: products,
+        currentPage: asInt(pg['current_page'], 1),
+        lastPage: asInt(pg['last_page'], 1),
+        total: asInt(pg['total'], products.length),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<ProductTagModel> createProductTag({
+    required String name,
+    required String color,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productTagsCreate,
+        data: {'name': name, 'color': color},
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      final tagMap = asMap((raw)['tag']);
+      return ProductTagModel.fromJson(tagMap);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<void> updateProductTag({
+    required String id,
+    String? name,
+    String? color,
+  }) async {
+    try {
+      final data = <String, dynamic>{'tag_id': id};
+      if (name != null) {
+        data['name'] = name;
+      }
+      if (color != null) {
+        data['color'] = color;
+      }
+      await api.post(EndPoints.productTagsUpdate, data: data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<void> deactivateProductTag({required String id}) async {
+    try {
+      await api.post(
+        EndPoints.productTagsDeactivate,
+        data: {'tag_id': id},
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
         ),
       );
     }

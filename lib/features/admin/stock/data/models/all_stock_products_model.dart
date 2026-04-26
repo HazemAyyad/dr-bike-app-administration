@@ -1,5 +1,7 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
+import 'product_tag_model.dart';
+
 class AllStockProductsModel {
   final int closeoutId;
   final String closeoutStatus;
@@ -9,6 +11,8 @@ class AllStockProductsModel {
   final String productMinSalePrice;
   final String image;
   final String numberOfUsedProducts;
+  final String productCode;
+  final List<ProductTagModel> tags;
 
   AllStockProductsModel({
     required this.closeoutId,
@@ -19,9 +23,18 @@ class AllStockProductsModel {
     required this.productMinSalePrice,
     required this.image,
     required this.numberOfUsedProducts,
+    this.productCode = '',
+    this.tags = const [],
   });
 
   factory AllStockProductsModel.fromJson(Map<String, dynamic> json) {
+    final tagsRaw = json['tags'];
+    final tags = tagsRaw is List
+        ? tagsRaw
+            .whereType<Map>()
+            .map((e) => ProductTagModel.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <ProductTagModel>[];
     return AllStockProductsModel(
       closeoutId: asInt(json['closeout_id']),
       closeoutStatus: asString(json['closeout_status'], 'unarchived'),
@@ -31,6 +44,8 @@ class AllStockProductsModel {
       productMinSalePrice: asString(json['product_min_sale_price'], '0'),
       image: asString(json['product_image']),
       numberOfUsedProducts: asString(json['number_of_used_products'], '0'),
+      productCode: asString(json['product_code']),
+      tags: tags,
     );
   }
 
@@ -44,6 +59,8 @@ class AllStockProductsModel {
       'product_min_sale_price': productMinSalePrice,
       'product_image': image,
       'number_of_used_products': numberOfUsedProducts,
+      'product_code': productCode,
+      'tags': tags.map((e) => e.toJson()).toList(),
     };
   }
 }

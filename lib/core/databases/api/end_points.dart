@@ -172,6 +172,13 @@ class EndPoints {
   static const String getCategories = 'get/all/subcategories';
   static const String getProjects = 'get/all/projects';
   static const String searchProducts = 'search/products/by/name';
+  static const String productTagsList = 'product/tags';
+  static const String productTagsCreate = 'product/tags';
+  static const String productTagsUpdate = 'product/tags/update';
+  static const String productTagsDeactivate = 'product/tags/deactivate';
+  static const String productTagsAttach = 'product/tags/attach';
+  static const String productTagsDetach = 'product/tags/detach';
+  static const String productsByTag = 'products/by/tag';
   static const String addCombination = 'add/combination';
   /// نفس حقول صفحة اختبار Laravel: multipart + save_scope
   static const String createProductFull = 'create/product';

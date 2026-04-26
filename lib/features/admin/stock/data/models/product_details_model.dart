@@ -1,7 +1,11 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
+import 'product_tag_model.dart';
+
 class ProductDetailsModel {
   String id;
+  String? productCode;
+  List<ProductTagModel>? productTags;
   String nameAr;
   DateTime createdAt;
   DateTime updatedAt;
@@ -45,6 +49,8 @@ class ProductDetailsModel {
 
   ProductDetailsModel({
     required this.id,
+    this.productCode,
+    this.productTags,
     required this.nameAr,
     required this.createdAt,
     required this.updatedAt,
@@ -106,8 +112,18 @@ class ProductDetailsModel {
 
   factory ProductDetailsModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
+    List<ProductTagModel>? pTags;
+    final pt = j['product_tags'];
+    if (pt is List) {
+      pTags = pt
+          .whereType<Map>()
+          .map((e) => ProductTagModel.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    }
     return ProductDetailsModel(
       id: asString(j['id']),
+      productCode: asNullableString(j['product_code']),
+      productTags: pTags,
       nameAr: asString(j['nameAr']),
       createdAt: parseApiDateTime(j['created_at']),
       updatedAt: parseApiDateTime(j['updated_at']),
@@ -171,6 +187,10 @@ class ProductDetailsModel {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
     data['id'] = id;
+    data['product_code'] = productCode;
+    if (productTags != null) {
+      data['product_tags'] = productTags!.map((e) => e.toJson()).toList();
+    }
     data['nameAr'] = nameAr;
     data['created_at'] = createdAt.toIso8601String();
     data['updated_at'] = updatedAt.toIso8601String();

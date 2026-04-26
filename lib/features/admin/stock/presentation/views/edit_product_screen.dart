@@ -18,6 +18,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/product_details_model.dart' show ProductMediaItem;
 import '../controllers/stock_controller.dart';
 import '../widgets/category_selector_section.dart';
+import '../widgets/product_tags_edit_section.dart';
 import '../widgets/product_inline_video.dart';
 import '../widgets/product_language_tabs_edit.dart';
 import '../widgets/size_color_entry_dialog.dart';
@@ -63,11 +64,39 @@ class EditProductScreen extends GetView<StockController> {
             children: [
               EditProductSectionCard(
                 titleKey: 'sectionProductContent',
-                child: ProductLanguageTabsEdit(controller: controller),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Obx(() {
+                      if (controller.editingProductId.value == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final c = controller.productDetails.value?.productCode;
+                      if (c == null || c.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 10.h),
+                        child: Text(
+                          '${'productCode'.tr}: $c',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                      );
+                    }),
+                    ProductLanguageTabsEdit(controller: controller),
+                  ],
+                ),
               ),
               EditProductSectionCard(
                 titleKey: 'sectionCategories',
                 child: CategorySelectorSection(controller: controller),
+              ),
+              EditProductSectionCard(
+                titleKey: 'sectionProductTags',
+                child: const ProductTagsEditSection(),
               ),
               EditProductSectionCard(
                 titleKey: 'sectionPricingStock',

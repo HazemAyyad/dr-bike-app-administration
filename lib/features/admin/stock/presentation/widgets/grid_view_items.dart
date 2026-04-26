@@ -5,12 +5,19 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../controllers/stock_controller.dart';
 import 'product_card.dart';
+import 'stock_tags_tab.dart';
 
 class GridViewItems extends GetView<StockController> {
   const GridViewItems({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      if (controller.currentTab.value == 3) {
+        return const SliverToBoxAdapter(
+          child: StockTagsTab(),
+        );
+      }
+
       if (controller.isLoading.value) {
         return const SliverFillRemaining(
           child: Center(child: CircularProgressIndicator()),
@@ -61,7 +68,6 @@ class GridViewItems extends GetView<StockController> {
                 );
               }),
             ),
-            // SizedBox(height: 20.h),
             if (controller.isLoadingMore.value)
               const Center(child: CircularProgressIndicator()),
             SizedBox(height: 50.h),
