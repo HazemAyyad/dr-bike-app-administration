@@ -173,8 +173,24 @@ class ProductDetailsScreen extends GetView<StockController> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_note_sharp),
-            onPressed: () {
-              controller.initProductDetails();
+            onPressed: () async {
+              if (controller.productDetails.value == null) {
+                Get.snackbar(
+                  'error'.tr,
+                  'productDetailsMissing'.tr,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                return;
+              }
+              final ok = await controller.initProductDetails();
+              if (!ok) {
+                Get.snackbar(
+                  'error'.tr,
+                  'productDetailsLoadFailed'.tr,
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                return;
+              }
               Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
             },
           ),

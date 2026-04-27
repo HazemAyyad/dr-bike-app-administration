@@ -276,9 +276,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   void toggleSubCategory(String id) {
     if (selectedSubCategoryIds.contains(id)) {
-      if (selectedSubCategoryIds.length > 1) {
-        selectedSubCategoryIds.remove(id);
-      }
+      selectedSubCategoryIds.remove(id);
     } else {
       selectedSubCategoryIds.add(id);
     }
@@ -802,10 +800,17 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   List<ProductModel> projects = [];
 
-  /// Subcategories belonging to [selectedMainCategoryId], for the subcategory dropdown.
+  /// Subcategories for the multi-select: filtered by main when set; otherwise
+  /// only already-selected subs (e.g. edit with multiple mains) so chips stay visible.
   List<ProductModel> getFilteredSubCategories() {
     final mid = selectedMainCategoryId.value;
     if (mid == null || mid.isEmpty) {
+      if (selectedSubCategoryIds.isNotEmpty) {
+        final selectedSet = selectedSubCategoryIds.toSet();
+        return allSubCategories
+            .where((s) => selectedSet.contains(s.id))
+            .toList();
+      }
       return <ProductModel>[];
     }
     return allSubCategories
@@ -835,7 +840,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  void getCategories() async {
+  Future<void> getCategories() async {
     mainCategories.assignAll(await getMainCategoriesUsecase.call());
     allSubCategories.assignAll(await getCategoriesUsecase.call(isProject: false));
     projects.assignAll(await getCategoriesUsecase.call(isProject: true));
@@ -971,8 +976,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  void initProductDetails() {
-    final p = productDetails.value!;
+  Future<bool> initProductDetails() async {
+    final p = productDetails.value;
+    if (p == null) {
+      return false;
+    }
+    if (mainCategories.isEmpty || allSubCategories.isEmpty) {
+      await getCategories();
+    }
+
     selectedTagIds.clear();
     final pts = p.productTags;
     if (pts != null) {
@@ -1001,15 +1013,23 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           selectedSubCategoryIds.add(sid);
         }
       }
-      final firstMain = p.productSubCategories!.first.mainCategoryId;
-      if (firstMain != null && firstMain.isNotEmpty) {
-        selectedMainCategoryId.value = firstMain;
-      } else if (selectedSubCategoryIds.isNotEmpty) {
+      final mainsFromPayload = <String>{};
+      for (final s in p.productSubCategories!) {
+        final m = s.mainCategoryId;
+        if (m != null && m.isNotEmpty) {
+          mainsFromPayload.add(m);
+        }
+      }
+      if (mainsFromPayload.length == 1) {
+        selectedMainCategoryId.value = mainsFromPayload.first;
+      } else if (mainsFromPayload.isEmpty && selectedSubCategoryIds.isNotEmpty) {
         try {
           final sub = allSubCategories.firstWhere(
             (x) => selectedSubCategoryIds.contains(x.id),
           );
-          selectedMainCategoryId.value = sub.mainCategoryId;
+          if (sub.mainCategoryId != null && sub.mainCategoryId!.isNotEmpty) {
+            selectedMainCategoryId.value = sub.mainCategoryId;
+          }
         } catch (_) {}
       }
     }
@@ -1077,6 +1097,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     loadProductSizeOptions(productId: p.id);
     unawaited(ensureTagsLoaded());
     update();
+    return true;
   }
 
   bool _truthyDynamic(dynamic v) {
@@ -1310,25 +1331,36 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    if (selectedSubCategoryIds.isNotEmpty) {
-      var mid = selectedMainCategoryId.value;
-      if (mid == null || mid.isEmpty) {
-        try {
-          final sub = allSubCategories.firstWhere(
-            (x) => selectedSubCategoryIds.contains(x.id),
-          );
-          if (sub.mainCategoryId != null && sub.mainCategoryId!.isNotEmpty) {
-            selectedMainCategoryId.value = sub.mainCategoryId;
-            mid = sub.mainCategoryId;
-          }
-        } catch (_) {}
-      }
-      if (mid == null || mid.isEmpty) {
-        Get.snackbar('error'.tr, 'selectMainCategoryFirst'.tr,
+    if (selectedSubCategoryIds.isEmpty) {
+      Get.snackbar('error'.tr, 'atLeastOneSubcategoryRequired'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    final knownIds = allSubCategories.map((s) => s.id).toSet();
+    for (final id in selectedSubCategoryIds) {
+      if (!knownIds.contains(id)) {
+        Get.snackbar('error'.tr, 'invalidCategoryCombination'.tr,
             snackPosition: SnackPosition.BOTTOM);
         return;
       }
-      final allowed = getFilteredSubCategories().map((e) => e.id).toSet();
+    }
+    var mid = selectedMainCategoryId.value;
+    if ((mid == null || mid.isEmpty) && selectedSubCategoryIds.isNotEmpty) {
+      try {
+        final sub = allSubCategories.firstWhere(
+          (x) => selectedSubCategoryIds.contains(x.id),
+        );
+        if (sub.mainCategoryId != null && sub.mainCategoryId!.isNotEmpty) {
+          selectedMainCategoryId.value = sub.mainCategoryId;
+          mid = sub.mainCategoryId;
+        }
+      } catch (_) {}
+    }
+    if (mid != null && mid.isNotEmpty) {
+      final allowed = allSubCategories
+          .where((s) => s.mainCategoryId == mid)
+          .map((s) => s.id)
+          .toSet();
       for (final id in selectedSubCategoryIds) {
         if (!allowed.contains(id)) {
           Get.snackbar('error'.tr, 'invalidCategoryCombination'.tr,
@@ -1372,6 +1404,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       Get.back();
       if (wasEdit && editedId != null) {
         await getProductDetails(productId: editedId);
+        await getCategories();
       }
 
       final createMessage = buf.toString().trim();

@@ -23,40 +23,42 @@ class StockBinding extends Bindings {
         () => StockTagsInteractor(Get.find<StockDatasource>()),
       );
     }
-    Get.lazyPut(
-      () => StockController(
-        getAllStockUsecase: GetAllStockUsecase(
-          stockRepository: Get.find<StockImplement>(),
+    if (!Get.isRegistered<StockController>()) {
+      Get.lazyPut<StockController>(
+        () => StockController(
+          getAllStockUsecase: GetAllStockUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          getProductDetailsUsecase: GetProductDetailsUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          moveToArchiveUsecase: MoveToArchiveUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          getArchivedUsecase: GetArchivedUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          getCategoriesUsecase: GetCategoriesUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          getMainCategoriesUsecase: GetMainCategoriesUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          searchProductsUsecase: SearchProductsUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          addCombinationUsecase: AddCombinationUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          saveProductFullUsecase: SaveProductFullUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          getProductSizeOptionsUsecase: GetProductSizeOptionsUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+          stockTagsInteractor: Get.find<StockTagsInteractor>(),
         ),
-        getProductDetailsUsecase: GetProductDetailsUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        moveToArchiveUsecase: MoveToArchiveUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        getArchivedUsecase: GetArchivedUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        getCategoriesUsecase: GetCategoriesUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        getMainCategoriesUsecase: GetMainCategoriesUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        searchProductsUsecase: SearchProductsUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        addCombinationUsecase: AddCombinationUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        saveProductFullUsecase: SaveProductFullUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        getProductSizeOptionsUsecase: GetProductSizeOptionsUsecase(
-          stockRepository: Get.find<StockImplement>(),
-        ),
-        stockTagsInteractor: Get.find<StockTagsInteractor>(),
-      ),
-    );
+      );
+    }
   }
 }

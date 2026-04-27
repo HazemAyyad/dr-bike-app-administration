@@ -65,7 +65,7 @@ class CategorySelectorSection extends StatelessWidget {
                   '${mainId ?? 'none'}_${ids.join(',')}',
                 ),
                 selectedItems: selected,
-                enabled: hasMain && filtered.isNotEmpty,
+                enabled: filtered.isNotEmpty,
                 items: (filter, loadProps) async => filtered,
                 itemAsString: (c) => c.nameAr,
                 compareFn: (a, b) => a.id == b.id,
@@ -90,9 +90,9 @@ class CategorySelectorSection extends StatelessWidget {
                   decoration: OutlineInputStyle.merge(
                     context,
                     labelText: 'subCategoryMulti'.tr,
-                    hintText: hasMain
-                        ? 'selectSubCategoryHint'.tr
-                        : 'selectMainCategoryFirst'.tr,
+                    hintText: !hasMain && filtered.isEmpty
+                        ? 'selectMainCategoryFirst'.tr
+                        : 'selectSubCategoryHint'.tr,
                   ),
                 ),
                 onChanged: (list) {
