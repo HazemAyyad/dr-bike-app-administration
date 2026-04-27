@@ -42,7 +42,7 @@ class EmployeeDashbordDatasource {
   // get employee data
   Future<DashbordEmployeeDetailsModel> getEmployeeData() async {
     try {
-      final response = await api.post(EndPoints.employeeHomeData);
+      final response = await api.get(EndPoints.employeeHomeData);
       final raw = response.data;
       if (raw is! Map) {
         debugParseLog(
