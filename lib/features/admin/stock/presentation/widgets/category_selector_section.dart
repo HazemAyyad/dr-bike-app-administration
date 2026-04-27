@@ -7,6 +7,19 @@ import 'package:get/get.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../controllers/stock_controller.dart';
 
+String? _mainCategoryDropdownValue(String? mainId, List<ProductModel> mains) {
+  if (mainId == null || mainId.isEmpty) {
+    return null;
+  }
+  final needle = mainId.trim();
+  for (final m in mains) {
+    if (m.id.trim() == needle) {
+      return m.id;
+    }
+  }
+  return null;
+}
+
 /// Main category dropdown + dependent multi-select subcategories.
 class CategorySelectorSection extends StatelessWidget {
   const CategorySelectorSection({Key? key, required this.controller})
@@ -29,12 +42,11 @@ class CategorySelectorSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DropdownButtonFormField<String>(
-              key: ValueKey<String?>(mainId),
-              initialValue: mainId != null &&
-                      mainId.isNotEmpty &&
-                      controller.mainCategories.any((m) => m.id == mainId)
-                  ? mainId
-                  : null,
+              key: ValueKey<String?>('main_${mainId ?? 'none'}'),
+              initialValue: _mainCategoryDropdownValue(
+                mainId,
+                controller.mainCategories,
+              ),
               isExpanded: true,
               decoration: OutlineInputStyle.merge(
                 context,

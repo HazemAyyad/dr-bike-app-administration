@@ -83,11 +83,25 @@ Widget _productDetailsCategoryBlock(
   ProductDetailsModel product,
 ) {
   final subs = product.productSubCategories;
-  var mainName = '';
+  final cid = product.categoryId?.trim();
+  List<ProductSubCategory>? effectiveSubs = subs;
+  if (cid != null &&
+      cid.isNotEmpty &&
+      subs != null &&
+      subs.isNotEmpty) {
+    effectiveSubs = subs
+        .where((s) => (s.mainCategoryId?.trim() ?? '') == cid)
+        .toList();
+  }
+  var mainName = (product.categoryName ?? '').trim();
+  if (mainName.isEmpty &&
+      effectiveSubs != null &&
+      effectiveSubs.isNotEmpty) {
+    mainName = (effectiveSubs.first.mainCategoryName ?? '').trim();
+  }
   final subNames = <String>[];
-  if (subs != null && subs.isNotEmpty) {
-    mainName = subs.first.mainCategoryName ?? '';
-    for (final s in subs) {
+  if (effectiveSubs != null && effectiveSubs.isNotEmpty) {
+    for (final s in effectiveSubs) {
       final n = s.subCategoryName ?? '';
       if (n.isNotEmpty) {
         subNames.add(n);

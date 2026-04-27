@@ -87,7 +87,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   final RxList<String> selectedSubCategoryIds = <String>[].obs;
 
-  /// Main category for dependent subcategory picker (UI); API still uses `sub_categories[]` only.
+  /// Main category from API `category_id` (required on save); subcategories are optional.
   final Rxn<String> selectedMainCategoryId = Rxn<String>();
 
   final List<XFile> pendingNormalImages = [];
@@ -819,16 +819,37 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void setMainCategory(String? id) {
-    selectedMainCategoryId.value = id;
-    syncSelectedSubCategoriesWithMainCategory();
+    final nextTrim = id?.trim();
+    final prev = selectedMainCategoryId.value?.trim();
+    final prevNonEmpty = prev != null && prev.isNotEmpty;
+    final nextIsEmpty = nextTrim == null || nextTrim.isEmpty;
+    selectedMainCategoryId.value = nextIsEmpty ? null : nextTrim;
+    if (nextIsEmpty) {
+      selectedSubCategoryIds.clear();
+    } else if (prevNonEmpty && prev != nextTrim) {
+      // Switched main category: remove old sub selections (they belonged to the previous main).
+      selectedSubCategoryIds.clear();
+    } else {
+      syncSelectedSubCategoriesWithMainCategory();
+    }
+    _syncSubCategoryControllerText();
     update();
   }
 
-  /// Drops selected subcategories that are not under the current main category.
-  /// If main is unknown, keeps existing sub selections (legacy / incomplete API data).
+  void _syncSubCategoryControllerText() {
+    if (selectedSubCategoryIds.isEmpty) {
+      subCategoryController.clear();
+    } else {
+      subCategoryController.text = selectedSubCategoryIds.first;
+    }
+  }
+
+  /// Drops subcategories that do not belong to the current main category.
+  /// If main is cleared, clears all sub selections.
   void syncSelectedSubCategoriesWithMainCategory() {
     final mid = selectedMainCategoryId.value;
     if (mid == null || mid.isEmpty) {
+      selectedSubCategoryIds.clear();
       update();
       return;
     }
@@ -1000,39 +1021,33 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     nameAbreeController.text = p.nameAbree ?? '';
     descriptionEngController.text = p.descriptionEng ?? '';
     descriptionAbreeController.text = p.descriptionAbree ?? '';
-    subCategoryController.text =
-        p.productSubCategories != null && p.productSubCategories!.isNotEmpty
-            ? p.productSubCategories!.first.subCategoryId.toString()
-            : '';
     selectedSubCategoryIds.clear();
-    selectedMainCategoryId.value = null;
-    if (p.productSubCategories != null) {
+    final flatSubs = p.subCategoryIds;
+    if (flatSubs != null && flatSubs.isNotEmpty) {
+      for (final sid in flatSubs) {
+        if (sid.isNotEmpty) {
+          selectedSubCategoryIds.add(sid);
+        }
+      }
+    } else if (p.productSubCategories != null) {
       for (final s in p.productSubCategories!) {
         final sid = s.subCategoryId;
         if (sid != null && sid.isNotEmpty) {
           selectedSubCategoryIds.add(sid);
         }
       }
-      final mainsFromPayload = <String>{};
-      for (final s in p.productSubCategories!) {
-        final m = s.mainCategoryId;
-        if (m != null && m.isNotEmpty) {
-          mainsFromPayload.add(m);
-        }
-      }
-      if (mainsFromPayload.length == 1) {
-        selectedMainCategoryId.value = mainsFromPayload.first;
-      } else if (mainsFromPayload.isEmpty && selectedSubCategoryIds.isNotEmpty) {
-        try {
-          final sub = allSubCategories.firstWhere(
-            (x) => selectedSubCategoryIds.contains(x.id),
-          );
-          if (sub.mainCategoryId != null && sub.mainCategoryId!.isNotEmpty) {
-            selectedMainCategoryId.value = sub.mainCategoryId;
-          }
-        } catch (_) {}
-      }
     }
+
+    selectedMainCategoryId.value = null;
+    final cid = p.categoryId;
+    if (cid != null && cid.isNotEmpty) {
+      selectedMainCategoryId.value = cid;
+    }
+    if (selectedMainCategoryId.value != null &&
+        selectedMainCategoryId.value!.isNotEmpty) {
+      syncSelectedSubCategoriesWithMainCategory();
+    }
+    _syncSubCategoryControllerText();
     stockController.text = p.stock?.toString() ?? '0';
     minimumStockController.text = p.minStock?.toString() ?? '';
     retailPricesController.text = p.normailPrice?.toString() ?? '';
@@ -1203,6 +1218,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (rotationDateController.text.trim().isNotEmpty) {
       addField('rotation_date', rotationDateController.text.trim());
     }
+    final mainCat = selectedMainCategoryId.value?.trim();
+    if (mainCat != null && mainCat.isNotEmpty) {
+      addField('category_id', mainCat);
+    }
     if (editingProductId.value != null) {
       addField('product_id', editingProductId.value!);
       for (final id in pendingDeleteNormalIds) {
@@ -1331,32 +1350,21 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    if (selectedSubCategoryIds.isEmpty) {
-      Get.snackbar('error'.tr, 'atLeastOneSubcategoryRequired'.tr,
+    final mid = selectedMainCategoryId.value?.trim();
+    if (mid == null || mid.isEmpty) {
+      Get.snackbar('error'.tr, 'mainCategoryRequired'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    final knownIds = allSubCategories.map((s) => s.id).toSet();
-    for (final id in selectedSubCategoryIds) {
-      if (!knownIds.contains(id)) {
-        Get.snackbar('error'.tr, 'invalidCategoryCombination'.tr,
-            snackPosition: SnackPosition.BOTTOM);
-        return;
-      }
-    }
-    var mid = selectedMainCategoryId.value;
-    if ((mid == null || mid.isEmpty) && selectedSubCategoryIds.isNotEmpty) {
-      try {
-        final sub = allSubCategories.firstWhere(
-          (x) => selectedSubCategoryIds.contains(x.id),
-        );
-        if (sub.mainCategoryId != null && sub.mainCategoryId!.isNotEmpty) {
-          selectedMainCategoryId.value = sub.mainCategoryId;
-          mid = sub.mainCategoryId;
+    if (selectedSubCategoryIds.isNotEmpty) {
+      final knownIds = allSubCategories.map((s) => s.id).toSet();
+      for (final id in selectedSubCategoryIds) {
+        if (!knownIds.contains(id)) {
+          Get.snackbar('error'.tr, 'invalidCategoryCombination'.tr,
+              snackPosition: SnackPosition.BOTTOM);
+          return;
         }
-      } catch (_) {}
-    }
-    if (mid != null && mid.isNotEmpty) {
+      }
       final allowed = allSubCategories
           .where((s) => s.mainCategoryId == mid)
           .map((s) => s.id)

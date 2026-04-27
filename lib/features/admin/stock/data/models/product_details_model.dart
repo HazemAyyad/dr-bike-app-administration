@@ -35,6 +35,12 @@ class ProductDetailsModel {
   dynamic minSalePrice;
   dynamic isSoldWithPaper;
   dynamic projectId;
+  /// Main category id from `products.category_id` (API).
+  String? categoryId;
+  /// Resolved main category label from API `category_name` (preferred over inferring from subs).
+  String? categoryName;
+  /// Flat list from API `sub_categories` when present.
+  List<String>? subCategoryIds;
   List<ProductSubCategory>? productSubCategories;
   List<PurchasePrice>? purchasePrices;
   List<Size>? sizes;
@@ -80,6 +86,9 @@ class ProductDetailsModel {
     this.minSalePrice,
     this.isSoldWithPaper,
     this.projectId,
+    this.categoryId,
+    this.categoryName,
+    this.subCategoryIds,
     this.productSubCategories,
     this.purchasePrices,
     this.sizes,
@@ -105,6 +114,23 @@ class ProductDetailsModel {
           id: asString(m['id']),
           url: asNullableString(m['url']),
         ));
+      }
+    }
+    return out.isEmpty ? null : out;
+  }
+
+  static List<String>? _parseSubCategoryIdList(dynamic v) {
+    if (v is! List) {
+      return null;
+    }
+    final out = <String>[];
+    for (final e in v) {
+      if (e == null) {
+        continue;
+      }
+      final s = e.toString().trim();
+      if (s.isNotEmpty) {
+        out.add(s);
       }
     }
     return out.isEmpty ? null : out;
@@ -153,6 +179,9 @@ class ProductDetailsModel {
       minSalePrice: j['min_sale_price'],
       isSoldWithPaper: j['is_sold_with_paper'],
       projectId: j['project_id'],
+      categoryId: asNullableString(j['category_id']),
+      categoryName: asNullableString(j['category_name']),
+      subCategoryIds: _parseSubCategoryIdList(j['sub_categories']),
       productSubCategories: j['product_subCategories'] == null
           ? null
           : mapList(
@@ -220,6 +249,11 @@ class ProductDetailsModel {
     data['min_sale_price'] = minSalePrice;
     data['is_sold_with_paper'] = isSoldWithPaper;
     data['project_id'] = projectId;
+    data['category_id'] = categoryId;
+    data['category_name'] = categoryName;
+    if (subCategoryIds != null) {
+      data['sub_categories'] = subCategoryIds;
+    }
 
     if (productSubCategories != null) {
       data['product_subCategories'] =
