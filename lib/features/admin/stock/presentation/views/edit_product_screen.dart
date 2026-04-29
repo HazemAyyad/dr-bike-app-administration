@@ -107,11 +107,14 @@ class EditProductScreen extends GetView<StockController> {
                       children: [
                         Flexible(
                           child: CustomTextField(
-                            enabled:
-                                controller.editingProductId.value == null,
+                            enabled: true,
                             label: 'stock',
                             hintText: 'stock',
                             controller: controller.stockController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: false,
+                              signed: false,
+                            ),
                           ),
                         ),
                         SizedBox(width: 10.w),
@@ -120,6 +123,10 @@ class EditProductScreen extends GetView<StockController> {
                             label: 'minimumStock',
                             hintText: 'minimumStock',
                             controller: controller.minimumStockController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: false,
+                            ),
                           ),
                         ),
                       ],
@@ -132,6 +139,10 @@ class EditProductScreen extends GetView<StockController> {
                             label: 'wholesalePriceField',
                             hintText: 'wholesalePriceField',
                             controller: controller.wholesalePricesController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: false,
+                            ),
                           ),
                         ),
                         SizedBox(width: 10.w),
@@ -140,6 +151,10 @@ class EditProductScreen extends GetView<StockController> {
                             label: 'retailPrice',
                             hintText: 'retailPrice',
                             controller: controller.retailPricesController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: false,
+                            ),
                           ),
                         ),
                       ],
@@ -189,6 +204,10 @@ class EditProductScreen extends GetView<StockController> {
                             hintText: 'discountPercentage',
                             controller:
                                 controller.discountPercentageController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: false,
+                            ),
                           ),
                         ),
                         SizedBox(width: 10.w),
@@ -197,6 +216,10 @@ class EditProductScreen extends GetView<StockController> {
                             label: 'manufactureYear',
                             hintText: 'manufactureYear',
                             controller: controller.manufactureYearController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: false,
+                              signed: false,
+                            ),
                           ),
                         ),
                       ],
@@ -217,6 +240,10 @@ class EditProductScreen extends GetView<StockController> {
                             label: 'rateLabel',
                             hintText: 'rateLabel',
                             controller: controller.rateController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: false,
+                            ),
                           ),
                         ),
                       ],
