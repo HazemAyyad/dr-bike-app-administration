@@ -6,6 +6,8 @@ import 'package:doctorbike/features/admin/employee_section/data/models/financial
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_dues_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/overtime_and_loan_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_generation_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/employee_attendance_history_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/qr_history_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/working_times_model.dart';
 
 import '../../../../../core/connection/network_info.dart';
@@ -229,6 +231,40 @@ class EmployeeImplement implements EmployeeRepository {
         final result = await employeeDatasource.qrGeneration();
 
         return result;
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<QrHistoryResult> qrHistory({int page = 1, int perPage = 20}) async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await employeeDatasource.qrHistory(page: page, perPage: perPage);
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<EmployeeAttendanceHistoryResult> getEmployeeAttendanceHistory({
+    required String employeeId,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await employeeDatasource.getEmployeeAttendanceHistory(
+          employeeId: employeeId,
+          fromDate: fromDate,
+          toDate: toDate,
+        );
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }

@@ -15,6 +15,7 @@ class BoxLog {
   final String? fromBoxId;
   final String? toBoxId;
   final String description;
+  final String? note;
   final double value;
   final String? boxId;
   final DateTime createdAt;
@@ -30,6 +31,7 @@ class BoxLog {
     this.fromBoxId,
     this.toBoxId,
     required this.description,
+    this.note,
     required this.value,
     this.boxId,
     required this.createdAt,

@@ -61,6 +61,18 @@ class FollowUpController extends GetxController {
     update();
   }
 
+  int get initialCount => initialFollowupsFilterList.length;
+  int get informCount => informFollowupsFilterList.length;
+  int get finishAgreementCount => finishAndAgreementFollowupsFilterList.length;
+  int get archivedCount => archivedFollowupsFilterList.length;
+
+  int get activeFilteredCount {
+    if (currentTab.value == 0) return initialCount;
+    if (currentTab.value == 1) return informCount;
+    if (currentTab.value == 2) return finishAgreementCount;
+    return archivedCount;
+  }
+
   final List<Map<int, String>> timeLineSteps = [
     {1: 'initialFollowUp'},
     {2: 'notify_customer'},

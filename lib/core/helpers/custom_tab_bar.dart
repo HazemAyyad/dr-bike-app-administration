@@ -12,12 +12,14 @@ class AppTabs extends StatelessWidget {
     required this.currentTab,
     required this.changeTab,
     this.width,
+    this.translateLabels = true,
   }) : super(key: key);
 
   final List<String> tabs;
   final RxInt currentTab;
   final Function(int index) changeTab;
   final double? width;
+  final bool translateLabels;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,7 @@ class AppTabs extends StatelessWidget {
                   index: tabs.indexOf(e),
                   currentTab: currentTab,
                   onTap: () => changeTab(tabs.indexOf(e)),
+                  translateLabel: translateLabels,
                 ),
               ),
             ],
@@ -61,6 +64,7 @@ class CustomTabBar extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.fontSize,
+    this.translateLabel = true,
     Key? key,
   }) : super(key: key);
   final int index;
@@ -68,6 +72,7 @@ class CustomTabBar extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final double? fontSize;
+  final bool translateLabel;
   @override
   Widget build(BuildContext context) {
     return Obx(
@@ -101,7 +106,7 @@ class CustomTabBar extends StatelessWidget {
               ],
             ),
             child: Text(
-              label.tr,
+              translateLabel ? label.tr : label,
               style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                     fontSize: fontSize ?? 17.sp,
                     fontWeight: FontWeight.w400,

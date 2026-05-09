@@ -6,17 +6,21 @@ import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
+import '../../../../admin/employee_section/data/models/employee_attendance_history_model.dart';
 import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks_controller.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../../domain/usecases/change_task_completed_uasecase.dart';
 import '../../domain/usecases/get_employee_data_usecase.dart';
+import '../../domain/usecases/get_my_attendance_history_usecase.dart';
 import '../../domain/usecases/request_over_time_loan_usecase.dart';
 
 class EmployeeDashbordController extends GetxController
@@ -25,13 +29,46 @@ class EmployeeDashbordController extends GetxController
   final GetEmployeeDataUsecase getEmployeeDataUsecase;
   final ChangeTaskCompletedUasecase changeTaskCompletedUasecase;
   final GetDebtsReportsUsecase getDebtsReports;
+  final GetMyAttendanceHistoryUsecase getMyAttendanceHistoryUsecase;
 
   EmployeeDashbordController({
     required this.requestOverTimeLoanUsecase,
     required this.getEmployeeDataUsecase,
     required this.changeTaskCompletedUasecase,
     required this.getDebtsReports,
+    required this.getMyAttendanceHistoryUsecase,
   });
+
+  final RxBool todayAttendanceLoading = false.obs;
+  final Rxn<EmployeeAttendanceDay> todayAttendance = Rxn();
+
+  Future<void> refreshTodayAttendance() async {
+    try {
+      todayAttendanceLoading.value = true;
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month, now.day);
+      final res = await getMyAttendanceHistoryUsecase.call(
+        fromDate: start,
+        toDate: start,
+      );
+      final key = DateFormat('yyyy-MM-dd').format(start);
+      EmployeeAttendanceDay? match;
+      for (final d in res.days) {
+        if (d.date == key) {
+          match = d;
+          break;
+        }
+      }
+      todayAttendance.value = match;
+    } on Failure {
+      todayAttendance.value = null;
+    } catch (_) {
+      todayAttendance.value = null;
+    } finally {
+      todayAttendanceLoading.value = false;
+    }
+  }
+
   bool isStartWork = false;
   final box = GetStorage();
   Timer? timer;
@@ -332,6 +369,7 @@ class EmployeeDashbordController extends GetxController
     }
     tasksDataFilter.assignAll(filterByRange(tasksData));
     update();
+    refreshTodayAttendance();
   }
 
   // download report

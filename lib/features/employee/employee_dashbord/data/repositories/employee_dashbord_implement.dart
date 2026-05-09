@@ -5,6 +5,7 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/employee_dashbord_repository.dart';
 import '../datasources/employee_dashbord_datasource.dart';
+import '../../../../admin/employee_section/data/models/employee_attendance_history_model.dart';
 import '../models/dashbord_employee_details_model.dart';
 
 class EmployeeDashbordImplement implements EmployeeDashbordRepository {
@@ -53,6 +54,24 @@ class EmployeeDashbordImplement implements EmployeeDashbordRepository {
     try {
       final result = await employeeDashbordDatasource.getEmployeeData();
       return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<EmployeeAttendanceHistoryResult> getMyAttendanceHistory({
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await employeeDashbordDatasource.getMyAttendanceHistory(
+        fromDate: fromDate,
+        toDate: toDate,
+      );
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }

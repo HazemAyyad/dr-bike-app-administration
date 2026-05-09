@@ -124,7 +124,7 @@ class BoxesImplement implements BoxesRepository {
   // add box balance
   @override
   Future<Either<Failure, String>> addBoxBalance(
-      {required String boxId, required String total}) async {
+      {required String boxId, required String total, required String note}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -132,6 +132,7 @@ class BoxesImplement implements BoxesRepository {
       final result = await boxesDatasource.addBoxBalance(
         boxId: boxId,
         total: total,
+        note: note,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

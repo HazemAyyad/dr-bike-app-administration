@@ -41,6 +41,9 @@ class AppRoutes {
   static const POINTSTABLE = '/PointsTable';
   static const ACTIVITYLOGSCREEN = '/ActivityLogScreen';
   static const FULLSCREENQRSCANNER = '/FullScreenQRScanner';
+  static const QRHISTORYSCREEN = '/QrHistoryScreen';
+  static const EMPLOYEEATTENDANCEHISTORY = '/EmployeeAttendanceHistory';
+  static const MYATTENDANCEHISTORY = '/MyAttendanceHistory';
 
   // Boxes Screen
   static const BOXESSCREEN = '/BoxesScreen';

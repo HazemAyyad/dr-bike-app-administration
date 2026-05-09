@@ -8,6 +8,8 @@ import '../../data/models/financial_dues_model.dart';
 import '../../data/models/logs_model.dart';
 import '../../data/models/overtime_and_loan_model.dart';
 import '../../data/models/qr_generation_model.dart';
+import '../../data/models/employee_attendance_history_model.dart';
+import '../../data/models/qr_history_model.dart';
 import '../../data/models/working_times_model.dart';
 import '../entities/employee_entity.dart';
 
@@ -22,6 +24,13 @@ abstract class EmployeeRepository {
       {required String employeeId});
 
   Future<QrGenerationModel> qrGeneration();
+  Future<QrHistoryResult> qrHistory({int page = 1, int perPage = 20});
+
+  Future<EmployeeAttendanceHistoryResult> getEmployeeAttendanceHistory({
+    required String employeeId,
+    DateTime? fromDate,
+    DateTime? toDate,
+  });
 
   Future<EmployeeDetailsModel> getEmployeeDetails({required String employeeId});
 

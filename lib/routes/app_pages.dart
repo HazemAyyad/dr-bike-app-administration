@@ -6,8 +6,12 @@ import 'package:doctorbike/features/App_entr/on_boarding/widgets/login_or_sign_u
 import 'package:doctorbike/features/admin/stock/presentation/binding/stock_binding.dart';
 import 'package:doctorbike/features/admin/stock/presentation/views/stock_screen.dart';
 import 'package:doctorbike/features/auth/presentation/login/views/login_screen.dart';
+import 'package:doctorbike/features/employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
+import 'package:doctorbike/features/employee/employee_dashbord/domain/usecases/get_my_attendance_history_usecase.dart';
 import 'package:doctorbike/features/employee/employee_dashbord/presentation/binding/employee_dashbord_binding.dart';
+import 'package:doctorbike/features/employee/employee_dashbord/presentation/controllers/my_attendance_history_controller.dart';
 import 'package:doctorbike/features/employee/employee_dashbord/presentation/views/employee_dashbord_screen.dart';
+import 'package:doctorbike/features/employee/employee_dashbord/presentation/views/my_attendance_history_screen.dart';
 import 'package:doctorbike/features/home/views/home_page_screen.dart';
 
 import '../features/App_entr/no_internet/view/no_internet_screen.dart';
@@ -49,7 +53,12 @@ import '../features/admin/employee_section/presentation/views/activity_log_scree
 import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
 import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
+import '../features/admin/employee_section/data/repositorie_imp/employee_implement.dart';
+import '../features/admin/employee_section/domain/usecases/get_employee_attendance_history_usecase.dart';
+import '../features/admin/employee_section/presentation/controllers/attendance_history_controller.dart';
+import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
+import '../features/admin/employee_section/presentation/views/qr_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/working_bonuses_screen.dart';
 import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
@@ -320,6 +329,43 @@ class AppPages {
       page: () => const FullScreenQRScanner(),
       binding: QrCodeBinding(),
       transition: _transitionCircularReveal,
+    ),
+    GetPage(
+      name: AppRoutes.QRHISTORYSCREEN,
+      page: () => const QrHistoryScreen(),
+      binding: EmployeeSectionBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEEATTENDANCEHISTORY,
+      page: () => const EmployeeAttendanceHistoryScreen(),
+      binding: BindingsBuilder(() {
+        final args = Get.arguments as Map<String, dynamic>? ?? {};
+        Get.lazyPut(
+          () => AttendanceHistoryController(
+            employeeId: args['employeeId'] as String? ?? '',
+            employeeName: args['employeeName'] as String? ?? '',
+            getHistory: GetEmployeeAttendanceHistoryUsecase(
+              employeeRepository: Get.find<EmployeeImplement>(),
+            ),
+          ),
+        );
+      }),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.MYATTENDANCEHISTORY,
+      page: () => const MyAttendanceHistoryScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(
+          () => MyAttendanceHistoryController(
+            getMyAttendanceHistoryUsecase: GetMyAttendanceHistoryUsecase(
+              employeeDashbordRepository: Get.find<EmployeeDashbordImplement>(),
+            ),
+          ),
+        );
+      }),
+      transition: _transitionFadeIn,
     ),
 
     // قسم ادارة المشاريع

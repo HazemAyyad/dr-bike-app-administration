@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../routes/app_routes.dart';
 import '../../../domain/entities/working_times_entity.dart';
 
 class WorkHoursList extends StatelessWidget {
@@ -118,6 +119,23 @@ class WorkHoursList extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        IconButton(
+          padding: EdgeInsets.zero,
+          constraints: BoxConstraints(minWidth: 36.w, minHeight: 48.h),
+          onPressed: () => Get.toNamed(
+            AppRoutes.EMPLOYEEATTENDANCEHISTORY,
+            arguments: {
+              'employeeId': employee.id.toString(),
+              'employeeName': employee.employeeName,
+            },
+          ),
+          icon: Icon(
+            Icons.history,
+            color: AppColors.primaryColor,
+            size: 22.sp,
+          ),
+          tooltip: 'employeeAttendanceHistory'.tr,
         ),
         Container(
           width: 60.w,

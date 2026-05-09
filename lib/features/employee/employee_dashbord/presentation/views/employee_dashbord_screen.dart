@@ -12,6 +12,7 @@ import '../controllers/employee_dashbord_controller.dart';
 import '../widgets/employee_dashbord_tasks.dart';
 import '../widgets/employee_floating_action_button.dart';
 import '../widgets/employee_home_statistics_card.dart';
+import '../widgets/employee_today_attendance_card.dart';
 
 class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
   const EmployeeDashbordScreen({Key? key}) : super(key: key);
@@ -37,6 +38,8 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
             SizedBox(height: 10.h),
             // بطاقات الإحصائيات
             const EmployeeHomeStatisticsCard(),
+            SizedBox(height: 12.h),
+            const EmployeeTodayAttendanceCard(),
             SizedBox(height: 15.h),
             // أزرار الوظائف
             Obx(

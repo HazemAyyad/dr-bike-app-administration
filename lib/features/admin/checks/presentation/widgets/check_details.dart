@@ -287,7 +287,7 @@ class CheckDetails extends GetView<ChecksController> {
               titleColor: AppColors.primaryColor,
               title: 'total',
               discription:
-                  "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency}",
+                  "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency == 'شيكل' ? '₪' : check.currency}",
             ),
           ],
         ),

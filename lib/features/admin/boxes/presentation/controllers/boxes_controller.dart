@@ -80,6 +80,7 @@ class BoxesController extends GetxController {
   // اضافة رصيد
   final TextEditingController addBalanceValueController =
       TextEditingController();
+  final TextEditingController addBalanceNoteController = TextEditingController();
 
   // نقل رصيد
   final TextEditingController transferToBoxIdController =
@@ -241,6 +242,7 @@ class BoxesController extends GetxController {
       final result = await addBoxBalanceUsecase.call(
         boxId: boxId,
         total: addBalanceValueController.text,
+        note: addBalanceNoteController.text.trim(),
       );
 
       result.fold(
@@ -257,6 +259,7 @@ class BoxesController extends GetxController {
           Get.back();
           getAllBoxes();
           addBalanceValueController.clear();
+          addBalanceNoteController.clear();
           Future.delayed(
             const Duration(milliseconds: 1000),
             () {
@@ -552,6 +555,7 @@ class BoxesController extends GetxController {
     editStartBalanceController.dispose();
     appearController.dispose();
     addBalanceValueController.dispose();
+    addBalanceNoteController.dispose();
     transferToBoxIdController.dispose();
     transferTotalController.dispose();
     currencyController.dispose();

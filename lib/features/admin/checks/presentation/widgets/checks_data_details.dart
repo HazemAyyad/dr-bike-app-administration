@@ -43,14 +43,7 @@ class ChecksDataDetails extends StatelessWidget {
                       show: true,
                       title: 'numberOfChecks',
                       imageicon: AssetsManager.cashIcon,
-                      value: controller.currentTab.value == 0
-                          ? controller.inComingChecksList.value?.checksCount ??
-                              '0'
-                          : controller.currentTab.value == 1
-                              ? controller.cashedToPerson.value?.checksCount ??
-                                  '0'
-                              : controller.archiveData.value?.checksCount ??
-                                  '0',
+                      value: controller.activeFilteredCount,
                       subtitle: '',
                     ),
                   ),
@@ -79,14 +72,7 @@ class ChecksDataDetails extends StatelessWidget {
                         imageicon: AssetsManager.cashIcon,
                         value: NumberFormat('#,###').format(
                           double.parse(
-                            controller.currentTab.value == 0
-                                ? controller
-                                    .inComingChecksList.value!.checksTotalShekel
-                                : controller.currentTab.value == 1
-                                    ? controller
-                                        .cashedToPerson.value!.checksTotalShekel
-                                    : controller
-                                        .archiveData.value!.checksTotalShekel,
+                            controller.activeFilteredTotalShekel,
                           ),
                         ),
                         subtitle: '',
@@ -99,14 +85,7 @@ class ChecksDataDetails extends StatelessWidget {
                         imageicon: AssetsManager.cashIcon,
                         value: NumberFormat('#,###').format(
                           double.parse(
-                            controller.currentTab.value == 0
-                                ? controller
-                                    .inComingChecksList.value!.checksTotalDollar
-                                : controller.currentTab.value == 1
-                                    ? controller
-                                        .cashedToPerson.value!.checksTotalDollar
-                                    : controller
-                                        .archiveData.value!.checksTotalDollar,
+                            controller.activeFilteredTotalDollar,
                           ),
                         ),
                         subtitle: '',
@@ -119,14 +98,7 @@ class ChecksDataDetails extends StatelessWidget {
                         imageicon: AssetsManager.cashIcon,
                         value: NumberFormat('#,###').format(
                           double.parse(
-                            controller.currentTab.value == 0
-                                ? controller
-                                    .inComingChecksList.value!.checksTotalDinar
-                                : controller.currentTab.value == 1
-                                    ? controller
-                                        .cashedToPerson.value!.checksTotalDinar
-                                    : controller
-                                        .archiveData.value!.checksTotalDinar,
+                            controller.activeFilteredTotalDinar,
                           ),
                         ),
                         subtitle: '',
@@ -161,14 +133,7 @@ class ChecksDataDetails extends StatelessWidget {
                             imageicon: AssetsManager.cashIcon,
                             value: NumberFormat('#,###').format(
                               double.parse(
-                                controller.currentTab.value == 0
-                                    ? controller.inComingChecksList.value!
-                                        .checksTotalDollar
-                                    : controller.currentTab.value == 1
-                                        ? controller.cashedToPerson.value!
-                                            .checksTotalDollar
-                                        : controller.archiveData.value!
-                                            .checksTotalDollar,
+                                controller.activeFilteredTotalDollar,
                               ),
                             ),
                             subtitle: '',
@@ -179,14 +144,7 @@ class ChecksDataDetails extends StatelessWidget {
                             imageicon: AssetsManager.cashIcon,
                             value: NumberFormat('#,###').format(
                               double.parse(
-                                controller.currentTab.value == 0
-                                    ? controller.inComingChecksList.value!
-                                        .checksTotalDinar
-                                    : controller.currentTab.value == 1
-                                        ? controller.cashedToPerson.value!
-                                            .checksTotalDinar
-                                        : controller.archiveData.value!
-                                            .checksTotalDinar,
+                                controller.activeFilteredTotalDinar,
                               ),
                             ),
                             subtitle: '',
@@ -197,14 +155,7 @@ class ChecksDataDetails extends StatelessWidget {
                             imageicon: AssetsManager.cashIcon,
                             value: NumberFormat('#,###').format(
                               double.parse(
-                                controller.currentTab.value == 0
-                                    ? controller.inComingChecksList.value!
-                                        .checksTotalShekel
-                                    : controller.currentTab.value == 1
-                                        ? controller.cashedToPerson.value!
-                                            .checksTotalShekel
-                                        : controller.archiveData.value!
-                                            .checksTotalShekel,
+                                controller.activeFilteredTotalShekel,
                               ),
                             ),
                             subtitle: '',

@@ -98,6 +98,47 @@ class ChecksController extends GetxController
     update();
   }
 
+  int _countChecksInMap(Map<String, List<CheckModel>> source) {
+    var n = 0;
+    for (final list in source.values) {
+      n += list.length;
+    }
+    return n;
+  }
+
+  int get notActedCount => _countChecksInMap(filteredInComingTasks);
+  int get actedCount => _countChecksInMap(filteredCashedToPersonTasks);
+  int get archiveCount => _countChecksInMap(filteredArchiveTasks);
+
+  Map<String, List<CheckModel>> get _activeFilteredMap {
+    if (currentTab.value == 0) return filteredInComingTasks;
+    if (currentTab.value == 1) return filteredCashedToPersonTasks;
+    return filteredArchiveTasks;
+  }
+
+  List<CheckModel> get activeFilteredChecks =>
+      _activeFilteredMap.values.expand((e) => e).toList(growable: false);
+
+  double _sumCurrency(String currencyKey) {
+    double sum = 0.0;
+    for (final c in activeFilteredChecks) {
+      final cur = c.currency.trim().toLowerCase();
+      final matches = currencyKey == 'shekel'
+          ? (cur.contains('شيكل') || cur.contains('shekel') || cur.contains('ils') || cur.contains('nis') || cur.contains('₪'))
+          : currencyKey == 'dollar'
+              ? (cur.contains('دولار') || cur.contains('dollar') || cur.contains('usd') || cur.contains(r'$'))
+              : (cur.contains('دينار') || cur.contains('dinar') || cur.contains('jd'));
+      if (!matches) continue;
+      sum += double.tryParse(c.total.toString()) ?? 0.0;
+    }
+    return sum;
+  }
+
+  String get activeFilteredCount => activeFilteredChecks.length.toString();
+  String get activeFilteredTotalShekel => _sumCurrency('shekel').toString();
+  String get activeFilteredTotalDollar => _sumCurrency('dollar').toString();
+  String get activeFilteredTotalDinar => _sumCurrency('dinar').toString();
+
   RxBool selectedCustomersSellers = false.obs;
 
   bool isInComing = false;

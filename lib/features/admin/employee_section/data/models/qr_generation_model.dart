@@ -8,9 +8,11 @@ class QrGenerationModel extends QrGenerationEntity {
   const QrGenerationModel({
     required String codeText,
     required String qrImageUrl,
+    DateTime? createdAt,
   }) : super(
           codeText: codeText,
           qrImageUrl: qrImageUrl,
+          createdAt: createdAt,
         );
 
   factory QrGenerationModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +20,9 @@ class QrGenerationModel extends QrGenerationEntity {
     return QrGenerationModel(
       codeText: asString(j[ApiKey.code_text]),
       qrImageUrl: ShowNetImage.getPhoto(asNullableString(j[ApiKey.qr_image_url])),
+      createdAt: j[ApiKey.created_at] == null
+          ? null
+          : parseApiDateTime(j[ApiKey.created_at]),
     );
   }
 
@@ -25,6 +30,7 @@ class QrGenerationModel extends QrGenerationEntity {
     return {
       ApiKey.code_text: codeText,
       ApiKey.qr_image_url: qrImageUrl,
+      if (createdAt != null) ApiKey.created_at: createdAt!.toUtc().toIso8601String(),
     };
   }
 }

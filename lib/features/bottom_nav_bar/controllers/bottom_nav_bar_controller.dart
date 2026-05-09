@@ -21,6 +21,7 @@ import '../../common_feature/presentation/user_profile/views/profile_screen.dart
 import '../../employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
 import '../../employee/employee_dashbord/domain/usecases/change_task_completed_uasecase.dart';
 import '../../employee/employee_dashbord/domain/usecases/get_employee_data_usecase.dart';
+import '../../employee/employee_dashbord/domain/usecases/get_my_attendance_history_usecase.dart';
 import '../../employee/employee_dashbord/domain/usecases/request_over_time_loan_usecase.dart';
 import '../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../../employee/employee_dashbord/presentation/views/employee_dashbord_screen.dart';
@@ -92,6 +93,10 @@ class BottomNavBarController extends GetxController {
                 getDebtsReports: GetDebtsReportsUsecase(
                   debtsRepository: Get.find<DebtsImplement>(),
                 ),
+                getMyAttendanceHistoryUsecase: GetMyAttendanceHistoryUsecase(
+                  employeeDashbordRepository:
+                      Get.find<EmployeeDashbordImplement>(),
+                ),
               ),
             );
           }
@@ -130,6 +135,10 @@ class BottomNavBarController extends GetxController {
                 ),
                 getDebtsReports: GetDebtsReportsUsecase(
                   debtsRepository: Get.find<DebtsImplement>(),
+                ),
+                getMyAttendanceHistoryUsecase: GetMyAttendanceHistoryUsecase(
+                  employeeDashbordRepository:
+                      Get.find<EmployeeDashbordImplement>(),
                 ),
               ),
             );

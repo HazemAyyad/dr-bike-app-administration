@@ -17,17 +17,17 @@ class EmployeeList extends GetView<EmployeeSectionController> {
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
-    return InkWell(
-      onTap: () {
-        controller.getEmployeeDetails(employee.id.toString());
-        Get.toNamed(
-          AppRoutes.EMPLOYEEDETAILSSCREEN,
-          arguments: employee.points,
-        );
-      },
-      child: Row(
-        children: [
-          Expanded(
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: () {
+              controller.getEmployeeDetails(employee.id.toString());
+              Get.toNamed(
+                AppRoutes.EMPLOYEEDETAILSSCREEN,
+                arguments: employee.points,
+              );
+            },
             child: Row(
               children: [
                 Flexible(
@@ -117,7 +117,8 @@ class EmployeeList extends GetView<EmployeeSectionController> {
               ],
             ),
           ),
-          Container(
+        ),
+        Container(
             width: 60.w,
             height: 75.h,
             padding: EdgeInsets.symmetric(horizontal: 5.w),
@@ -141,7 +142,6 @@ class EmployeeList extends GetView<EmployeeSectionController> {
             ),
           ),
         ],
-      ),
     );
   }
 }

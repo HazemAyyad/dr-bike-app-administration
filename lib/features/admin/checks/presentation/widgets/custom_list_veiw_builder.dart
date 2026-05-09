@@ -5,9 +5,51 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
 import 'on_long_press.dart';
 import 'view_checks_widget.dart';
+
+String _currencyLabelForTotals(String rawCurrency) {
+  final c = rawCurrency.trim().toLowerCase();
+  if (c.contains('شيكل') || c.contains('shekel') || c.contains('nis') || c.contains('ils') || c.contains('₪')) {
+    return '₪';
+  }
+  if (c.contains('دينار') || c.contains('dinar') || c.contains('jd')) {
+    return 'دينار';
+  }
+  if (c.contains('دولار') || c.contains('dollar') || c.contains('usd') || c.contains('\$')) {
+    return 'دولار';
+  }
+  return rawCurrency.trim();
+}
+
+String _formatTotalsByCurrency(Iterable<CheckModel> checks) {
+  final sums = <String, double>{};
+  for (final check in checks) {
+    final label = _currencyLabelForTotals(check.currency);
+    final total = double.tryParse(check.total.toString()) ?? 0.0;
+    sums[label] = (sums[label] ?? 0.0) + total;
+  }
+
+  // Preferred order: ₪ then دينار then دولار then others.
+  final order = <String>['₪', 'دينار', 'دولار'];
+  final parts = <String>[];
+
+  for (final k in order) {
+    final v = sums[k] ?? 0.0;
+    if (v != 0.0) {
+      parts.add('${NumberFormat('#,###').format(v)} $k');
+    }
+    sums.remove(k);
+  }
+  for (final entry in sums.entries) {
+    if (entry.value != 0.0) {
+      parts.add('${NumberFormat('#,###').format(entry.value)} ${entry.key}');
+    }
+  }
+  return parts.isEmpty ? '0' : parts.join('  ');
+}
 
 class CustomListVeiwBuilder extends GetView<ChecksController> {
   const CustomListVeiwBuilder({Key? key}) : super(key: key);
@@ -91,11 +133,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                             .reversed
                         : controller.filteredArchiveTasks[month];
 
-            final monthTotal = controller.currentTab.value == 0
-                ? controller.totalInComing[month]
-                : controller.currentTab.value == 1
-                    ? controller.totalCashedToPerson[month]
-                    : controller.totalArchive[month] ?? 0.0;
+            final totalsText = _formatTotalsByCurrency(checks ?? const <CheckModel>[]);
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -120,8 +158,7 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 15.w),
                         child: Text(
-                          NumberFormat('#,###')
-                              .format(double.parse(monthTotal.toString())),
+                          totalsText,
                           style: Theme.of(context)
                               .textTheme
                               .headlineMedium!

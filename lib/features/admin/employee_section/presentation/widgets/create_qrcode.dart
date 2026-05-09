@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/employee_section_controller.dart';
+import '../../../../../routes/app_routes.dart';
 
 class CreateQrcode extends GetView<EmployeeSectionController> {
   const CreateQrcode({Key? key}) : super(key: key);
@@ -24,43 +26,88 @@ class CreateQrcode extends GetView<EmployeeSectionController> {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(height: 20.h),
-          Text(
-            'addBarCode'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
-                  color: Get.isDarkMode
-                      ? AppColors.primaryColor
-                      : AppColors.secondaryColor,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.w),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () => Get.toNamed(AppRoutes.QRHISTORYSCREEN),
+                  icon: Icon(
+                    Icons.history,
+                    size: 26.sp,
+                    color: AppColors.primaryColor,
+                  ),
                 ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'addBarCode'.tr,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w800,
+                            color: Get.isDarkMode
+                                ? AppColors.primaryColor
+                                : AppColors.secondaryColor,
+                          ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 48.w), // keep title centered
+              ],
+            ),
           ),
           Padding(
             padding: EdgeInsets.symmetric(vertical: 10.h),
             child: Obx(
-              () => controller.isDialogLoading.value
-                  ? SizedBox(
-                      height: 200.h,
-                      child: const Center(child: CircularProgressIndicator()),
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(5.r),
-                      child: Center(
-                        child: RepaintBoundary(
-                          key: controller.qrKey,
-                          child: QrImageView(
-                            data:
-                                controller.employeeService.qrGeneration.value !=
-                                        null
-                                    ? controller.employeeService.qrGeneration
-                                        .value!.codeText
-                                    : '446fasfasga4846',
-                            version: QrVersions.auto,
-                            size: 200.sp,
-                            backgroundColor: Colors.white,
+              () {
+                if (controller.isDialogLoading.value) {
+                  return SizedBox(
+                    height: 200.h,
+                    child: const Center(child: CircularProgressIndicator()),
+                  );
+                }
+                final gen = controller.employeeService.qrGeneration.value;
+                final createdAt = gen?.createdAt;
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(5.r),
+                  child: Center(
+                    child: RepaintBoundary(
+                      key: controller.qrKey,
+                      child: ColoredBox(
+                        color: Colors.white,
+                        child: Padding(
+                          padding: EdgeInsets.all(8.w),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              QrImageView(
+                                data: gen?.codeText ?? '446fasfasga4846',
+                                version: QrVersions.auto,
+                                size: 200.sp,
+                                backgroundColor: Colors.white,
+                              ),
+                              if (createdAt != null) ...[
+                                SizedBox(height: 10.h),
+                                Text(
+                                  '${'qrCreatedAt'.tr}: ${DateFormat('yyyy-MM-dd HH:mm').format(createdAt.toLocal())}',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ),
                     ),
+                  ),
+                );
+              },
             ),
           ),
           IconButton(

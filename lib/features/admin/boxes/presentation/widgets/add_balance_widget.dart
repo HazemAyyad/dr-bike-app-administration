@@ -50,16 +50,33 @@ class AddBalanceWidget extends GetView<BoxesController> {
             SizedBox(height: 10.h),
             Form(
               key: controller.formKey,
-              child: CustomTextField(
-                label: 'value'.tr,
-                labelTextstyle:
-                    Theme.of(context).textTheme.bodyMedium!.copyWith(
-                          color: AppColors.primaryColor,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                hintText: 'totalExample',
-                controller: controller.addBalanceValueController,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CustomTextField(
+                    label: 'value'.tr,
+                    labelTextstyle:
+                        Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: AppColors.primaryColor,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                    hintText: 'totalExample',
+                    controller: controller.addBalanceValueController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: false,
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  CustomTextField(
+                    label: 'note'.tr,
+                    hintText: 'noteHint'.tr,
+                    controller: controller.addBalanceNoteController,
+                    minLines: 3,
+                    maxLines: 5,
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 20.h),

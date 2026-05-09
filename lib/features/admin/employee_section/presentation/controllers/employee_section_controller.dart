@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
@@ -31,6 +32,7 @@ import '../../domain/usecases/get_logs_usecase.dart';
 import '../../domain/usecases/overtime_and_loan_usecase.dart';
 import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
 import '../../domain/usecases/qr_generation_usecase.dart';
+import '../../domain/usecases/qr_history_usecase.dart';
 import '../../domain/usecases/reject_order_usecase.dart';
 import '../../domain/usecases/working_times_usecase.dart';
 import 'employee_service.dart';
@@ -44,6 +46,7 @@ class EmployeeSectionController extends GetxController
   final FinancialDetailsUsecase financialDetailsUsecase;
   final EmployeeDetailsUsecase employeeDetailsUsecase;
   final QrGenerationUsecase qrGenerationUsecase;
+  final QrHistoryUsecase qrHistoryUsecase;
   final OvertimeAndLoanUsecase overtimeAndLoanUsecase;
   final RejectOrderUsecase rejectOrderUsecase;
   final ApproveEmployeeOrderUsecase approveEmployeeOrderUsecase;
@@ -60,6 +63,7 @@ class EmployeeSectionController extends GetxController
     required this.financialDetailsUsecase,
     required this.employeeDetailsUsecase,
     required this.qrGenerationUsecase,
+    required this.qrHistoryUsecase,
     required this.overtimeAndLoanUsecase,
     required this.rejectOrderUsecase,
     required this.approveEmployeeOrderUsecase,
@@ -331,6 +335,9 @@ class EmployeeSectionController extends GetxController
 
   RxBool isDialogLoading = false.obs;
 
+  /// تحميل شاشة سجل QR (منفصل عن [isDialogLoading] حتى لا يتعارض مع المودال)
+  RxBool isQrHistoryLoading = false.obs;
+
   // Get Financial Details
   Rxn<FinancialDetailsModel> financialDetailsList =
       Rxn<FinancialDetailsModel>();
@@ -392,15 +399,35 @@ class EmployeeSectionController extends GetxController
   // generate QR code
   void generateQrCode(bool isrefresh) async {
     isDialogLoading(true);
-    if (employeeService.qrGeneration.value == null) {
-      final result = await qrGenerationUsecase.call();
-      employeeService.qrGeneration.value = result;
-    }
-    if (isrefresh) {
+    if (isrefresh || employeeService.qrGeneration.value == null) {
       final result = await qrGenerationUsecase.call();
       employeeService.qrGeneration.value = result;
     }
     isDialogLoading(false);
+  }
+
+  Future<void> loadQrHistory({int page = 1, int perPage = 20}) async {
+    try {
+      isQrHistoryLoading(true);
+      final result = await qrHistoryUsecase.call(page: page, perPage: perPage);
+      employeeService.qrHistory.assignAll(result.items);
+    } on Failure catch (e) {
+      employeeService.qrHistory.clear();
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      employeeService.qrHistory.clear();
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isQrHistoryLoading(false);
+    }
   }
 
   final RxList<EmployeeEntity> filteredEmployees = <EmployeeEntity>[].obs;

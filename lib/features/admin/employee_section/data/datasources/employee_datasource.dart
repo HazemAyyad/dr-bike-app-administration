@@ -17,6 +17,8 @@ import '../models/financial_dues_model.dart';
 import '../models/logs_model.dart';
 import '../models/overtime_and_loan_model.dart';
 import '../models/qr_generation_model.dart';
+import '../models/employee_attendance_history_model.dart';
+import '../models/qr_history_model.dart';
 import '../models/working_times_model.dart';
 
 class EmployeeDatasource {
@@ -323,7 +325,11 @@ class EmployeeDatasource {
   // generate QR code
   Future<QrGenerationModel> qrGeneration() async {
     try {
-      final response = await api.get(EndPoints.qrGeneration);
+      // Add a cache-busting query param so we always fetch a fresh QR
+      final response = await api.get(
+        EndPoints.qrGeneration,
+        queryParameters: {'t': DateTime.now().millisecondsSinceEpoch},
+      );
       final raw = response.data;
       final employee = QrGenerationModel.fromJson(asMap(raw));
       return employee;
@@ -334,6 +340,77 @@ class EmployeeDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeeAttendanceHistoryResult> getEmployeeAttendanceHistory({
+    required String employeeId,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    try {
+      String? fmt(DateTime d) =>
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      final response = await api.get(
+        EndPoints.employeeAttendanceHistory,
+        queryParameters: {
+          'employee_id': employeeId,
+          if (fromDate != null) 'from_date': fmt(fromDate),
+          if (toDate != null) 'to_date': fmt(toDate),
+        },
+      );
+      final raw = response.data;
+      try {
+        return EmployeeAttendanceHistoryResult.fromJson(asMap(raw));
+      } on FormatException catch (e) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: e.message,
+            status: 400,
+            data: asMap(raw),
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<QrHistoryResult> qrHistory({int page = 1, int perPage = 20}) async {
+    try {
+      final response = await api.get(
+        EndPoints.qrHistory,
+        queryParameters: {
+          'page': page,
+          'per_page': perPage,
+        },
+      );
+      final raw = response.data;
+      return QrHistoryResult.fromJson(asMap(raw));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    } catch (e) {
+      throw ServerException(
+        ErrorModel(
+          errorMessage: e.toString(),
+          status: 500,
+          data: {},
         ),
       );
     }

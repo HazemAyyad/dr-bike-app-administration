@@ -54,13 +54,13 @@ class MovementsWidget extends StatelessWidget {
                       )
                     : const SizedBox.shrink(),
                 Text(
-                  box.description,
+                  (box.note ?? '').trim().isNotEmpty ? box.note!.trim() : '—',
                   style: textStyle.copyWith(
                     fontSize: 10.sp,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w600,
                     color: ThemeService.isDark.value
                         ? AppColors.customGreyColor3
-                        : Colors.black.withValues(alpha: 0.5),
+                        : Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
               ],

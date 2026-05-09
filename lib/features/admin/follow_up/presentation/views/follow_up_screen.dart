@@ -30,9 +30,15 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
           // tab bar
           SliverToBoxAdapter(
             child: AppTabs(
-              tabs: controller.tabs,
+              tabs: [
+                '${'initialFollowUp'.tr} (${controller.initialCount})',
+                '${'notify_customer'.tr} (${controller.informCount})',
+                '${'completion_and_agreement'.tr} (${controller.finishAgreementCount})',
+                '${'archive'.tr} (${controller.archivedCount})',
+              ],
               currentTab: controller.currentTab,
               changeTab: controller.changeTab,
+              translateLabels: false,
             ),
           ),
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
@@ -51,6 +57,23 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
                       : AppColors.customGreyColor7,
                 ),
                 onChanged: (value) => controller.searchBar(value),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: GetBuilder<FollowUpController>(
+                builder: (c) => Text(
+                  '${'total'.tr}: ${c.activeFilteredCount}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: ThemeService.isDark.value
+                            ? Colors.white
+                            : AppColors.secondaryColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
               ),
             ),
           ),

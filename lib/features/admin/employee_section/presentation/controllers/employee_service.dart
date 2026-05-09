@@ -5,6 +5,7 @@ import '../../data/models/financial_dues_model.dart';
 import '../../data/models/logs_model.dart';
 import '../../data/models/overtime_and_loan_model.dart';
 import '../../data/models/qr_generation_model.dart';
+import '../../data/models/qr_history_model.dart';
 import '../../domain/entities/employee_entity.dart';
 import '../../domain/entities/working_times_entity.dart';
 
@@ -23,6 +24,8 @@ class EmployeeService {
   final RxList<OvertimeAndLoanModel> loanList = <OvertimeAndLoanModel>[].obs;
 
   Rxn<QrGenerationModel> qrGeneration = Rxn<QrGenerationModel>();
+
+  final RxList<QrHistoryItem> qrHistory = <QrHistoryItem>[].obs;
 
   Rxn<EmployeeDetailsModel> employeeDetails = Rxn<EmployeeDetailsModel>();
 

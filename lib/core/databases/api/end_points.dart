@@ -27,6 +27,8 @@ class EndPoints {
 
   // employee Dashboard
   static const String employeeHomeData = 'employee/home/data';
+  static const String employeeMyAttendanceHistory =
+      'employee/my/attendance/history';
   static const String changeEmployeeTaskToCompleted =
       'change/employee/task/to/completed';
   static const String changeSubEmployeeTaskToCompleted =
@@ -63,6 +65,8 @@ class EndPoints {
       'show/employee/financial/details';
   static const String employeePermissions = 'employee/permissions';
   static const String qrGeneration = 'qr-generation';
+  static const String qrHistory = 'qr-history';
+  static const String employeeAttendanceHistory = 'employee/attendance/history';
   static const String editEmployee = 'edit/employee';
   static const String qrScan = 'qr-scan';
   static const String overtimeOrders = 'employee/overtime/orders';

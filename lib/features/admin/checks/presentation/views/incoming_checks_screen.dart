@@ -40,9 +40,14 @@ class IncomingChecksScreen extends GetView<ChecksController> {
                   SliverToBoxAdapter(child: SizedBox(height: 20.h)),
                   SliverToBoxAdapter(
                     child: AppTabs(
-                      tabs: controller.tabs,
+                      tabs: [
+                        '${'didNotActOnIt'.tr} (${controller.notActedCount})',
+                        '${'actedOnIt'.tr} (${controller.actedCount})',
+                        '${'archive'.tr} (${controller.archiveCount})',
+                      ],
                       currentTab: controller.currentTab,
                       changeTab: controller.changeTab,
+                      translateLabels: false,
                     ),
                   ),
                   SliverToBoxAdapter(child: SizedBox(height: 10.h)),

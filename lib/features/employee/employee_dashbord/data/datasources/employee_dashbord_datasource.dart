@@ -5,6 +5,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../../../../admin/employee_section/data/models/employee_attendance_history_model.dart';
 import '../models/dashbord_employee_details_model.dart';
 
 class EmployeeDashbordDatasource {
@@ -61,6 +62,45 @@ class EmployeeDashbordDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeeAttendanceHistoryResult> getMyAttendanceHistory({
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    try {
+      String fmt(DateTime d) =>
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      final response = await api.get(
+        EndPoints.employeeMyAttendanceHistory,
+        queryParameters: {
+          if (fromDate != null) 'from_date': fmt(fromDate),
+          if (toDate != null) 'to_date': fmt(toDate),
+        },
+      );
+      final raw = response.data;
+      try {
+        return EmployeeAttendanceHistoryResult.fromJson(asMap(raw));
+      } on FormatException catch (e) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: e.message,
+            status: 400,
+            data: asMap(raw),
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }

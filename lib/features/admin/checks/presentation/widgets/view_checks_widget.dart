@@ -10,6 +10,14 @@ import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
 import 'check_details.dart';
 
+String _currencyDisplay(String rawCurrency) {
+  final c = rawCurrency.trim().toLowerCase();
+  if (c.contains('شيكل') || c.contains('shekel') || c.contains('nis') || c.contains('ils') || c.contains('₪')) {
+    return '₪';
+  }
+  return rawCurrency;
+}
+
 class ViewChecksWidget extends GetView<ChecksController> {
   final CheckModel check;
   final bool? shadowed;
@@ -71,6 +79,7 @@ class ViewChecksWidget extends GetView<ChecksController> {
         ),
         child: Row(
           children: [
+            SizedBox(width: 6.w),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 5.w),
@@ -78,7 +87,7 @@ class ViewChecksWidget extends GetView<ChecksController> {
                   children: [
                     Container(
                       width: 65.w,
-                      height: 65.h,
+                      height: 56.h,
                       decoration: BoxDecoration(
                         color: ThemeService.isDark.value
                             ? AppColors.customGreyColor
@@ -97,7 +106,7 @@ class ViewChecksWidget extends GetView<ChecksController> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 1),
                           child: Text(
-                            "${NumberFormat('#,###').format(double.parse(check.total))} ${check.currency}",
+                            "${NumberFormat('#,###').format(double.parse(check.total))} ${_currencyDisplay(check.currency)}",
                             textAlign: TextAlign.center,
                             style: Theme.of(context)
                                 .textTheme
@@ -204,7 +213,7 @@ class ViewChecksWidget extends GetView<ChecksController> {
             currentTab != 2
                 ? Container(
                     width: 60.w,
-                    height: 75.h,
+                    height: 56.h,
                     decoration: BoxDecoration(
                       color: check.dueDate.difference(DateTime.now()).inDays > 5
                           ? AppColors.customGreen1
@@ -221,47 +230,57 @@ class ViewChecksWidget extends GetView<ChecksController> {
                               bottomLeft: Radius.circular(4.r),
                             ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          (DateTime(check.dueDate.year, check.dueDate.month,
-                                      check.dueDate.day)
-                                  .difference(DateTime(DateTime.now().year,
-                                      DateTime.now().month, DateTime.now().day))
-                                  .inDays)
-                              .toString(),
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 17.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                        ),
-                        Text(
-                          check.dueDate.difference(DateTime.now()).inDays >
-                                      10 ||
-                                  check.dueDate
-                                          .difference(DateTime.now())
-                                          .inDays <
-                                      -10
-                              ? 'days'.tr
-                              : 'dayss'.tr,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white,
-                                  ),
-                        ),
-                      ],
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            (DateTime(
+                                      check.dueDate.year,
+                                      check.dueDate.month,
+                                      check.dueDate.day,
+                                    )
+                                    .difference(
+                                      DateTime(
+                                        DateTime.now().year,
+                                        DateTime.now().month,
+                                        DateTime.now().day,
+                                      ),
+                                    )
+                                    .inDays)
+                                .toString(),
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 17.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            check.dueDate.difference(DateTime.now()).inDays > 10 ||
+                                    check.dueDate.difference(DateTime.now()).inDays < -10
+                                ? 'days'.tr
+                                : 'dayss'.tr,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : Container(
                     width: 60.w,
-                    height: 75.h,
+                    height: 56.h,
                     decoration: BoxDecoration(
                       color: check.status == 'cashed' ||
                               check.status == 'cashed_to_box'
@@ -279,36 +298,43 @@ class ViewChecksWidget extends GetView<ChecksController> {
                               bottomLeft: Radius.circular(4.r),
                             ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          'check'.tr,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white,
-                                  ),
-                        ),
-                        SizedBox(height: 5.h),
-                        Text(
-                          check.status == 'cashed' ||
-                                  check.status == 'cashed_to_box'
-                              ? 'cashed'.tr
-                              : check.status == 'cancelled'
-                                  ? 'rejectedd'.tr
-                                  : 'reference'.tr,
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                        ),
-                      ],
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'check'.tr,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white,
+                                ),
+                          ),
+                          SizedBox(height: 5.h),
+                          Text(
+                            check.status == 'cashed' ||
+                                    check.status == 'cashed_to_box'
+                                ? 'cashed'.tr
+                                : check.status == 'cancelled'
+                                    ? 'rejectedd'.tr
+                                    : 'reference'.tr,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
           ],

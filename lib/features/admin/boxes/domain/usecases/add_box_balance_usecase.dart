@@ -10,7 +10,8 @@ class AddBoxBalanceUsecase {
   Future<Either<Failure, String>> call({
     required String boxId,
     required String total,
+    required String note,
   }) {
-    return boxesRepository.addBoxBalance(boxId: boxId, total: total);
+    return boxesRepository.addBoxBalance(boxId: boxId, total: total, note: note);
   }
 }
