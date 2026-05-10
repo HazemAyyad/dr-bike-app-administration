@@ -17,6 +17,7 @@ import '../models/financial_dues_model.dart';
 import '../models/logs_model.dart';
 import '../models/overtime_and_loan_model.dart';
 import '../models/qr_generation_model.dart';
+import '../models/attendance_report_model.dart';
 import '../models/employee_attendance_history_model.dart';
 import '../models/qr_history_model.dart';
 import '../models/working_times_model.dart';
@@ -376,6 +377,46 @@ class EmployeeDatasource {
           ),
         );
       }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<AttendanceReportResult> getAttendanceReport({
+    required String reportType,
+    required int month,
+    required int year,
+    int? day,
+    int? week,
+    List<int> employeeIds = const [],
+  }) async {
+    try {
+      final parts = <String>[
+        'report_type=${Uri.encodeQueryComponent(reportType)}',
+        'month=$month',
+        'year=$year',
+      ];
+      if (day != null) {
+        parts.add('day=$day');
+      }
+      if (week != null) {
+        parts.add('week=$week');
+      }
+      for (final id in employeeIds) {
+        parts.add('employee_ids[]=$id');
+      }
+
+      final path =
+          '${EndPoints.employeeAttendanceReports}?${parts.join('&')}';
+      final response = await api.get(path);
+      return AttendanceReportResult.fromApiJson(asMap(response.data));
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

@@ -16,6 +16,7 @@ import '../widgets/employee_sections_list/employee_list.dart';
 import '../widgets/employee_sections_list/employee_section.dart';
 import '../widgets/employee_sections_list/financial_dues_list.dart';
 import '../widgets/employee_sections_list/loans_list.dart';
+import '../widgets/attendance_report_filter_dialog.dart';
 import '../widgets/employee_sections_list/work_hours_list.dart';
 
 class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
@@ -82,6 +83,37 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
               currentTab: controller.currentTab,
               changeTab: controller.changeTab,
             ),
+          ),
+          Obx(
+            () {
+              if (controller.currentTab.value != 1) {
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
+              }
+              return SliverToBoxAdapter(
+                child: Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 24.w, vertical: 6.h),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ThemeService.isDark.value
+                            ? AppColors.primaryColor
+                            : AppColors.secondaryColor,
+                      ),
+                      onPressed: () => showAttendanceReportFilterDialog(
+                        context,
+                        employees: controller
+                            .employeeService.workingTimesList
+                            .toList(),
+                      ),
+                      icon: const Icon(Icons.assessment_outlined),
+                      label: Text('attendanceReportAction'.tr),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
           Obx(
             () => controller.currentTab.value == 0

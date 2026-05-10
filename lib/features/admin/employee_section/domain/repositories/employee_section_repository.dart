@@ -8,6 +8,7 @@ import '../../data/models/financial_dues_model.dart';
 import '../../data/models/logs_model.dart';
 import '../../data/models/overtime_and_loan_model.dart';
 import '../../data/models/qr_generation_model.dart';
+import '../../data/models/attendance_report_model.dart';
 import '../../data/models/employee_attendance_history_model.dart';
 import '../../data/models/qr_history_model.dart';
 import '../../data/models/working_times_model.dart';
@@ -30,6 +31,15 @@ abstract class EmployeeRepository {
     required String employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+  });
+
+  Future<AttendanceReportResult> getAttendanceReport({
+    required String reportType,
+    required int month,
+    required int year,
+    int? day,
+    int? week,
+    List<int>? employeeIds,
   });
 
   Future<EmployeeDetailsModel> getEmployeeDetails({required String employeeId});

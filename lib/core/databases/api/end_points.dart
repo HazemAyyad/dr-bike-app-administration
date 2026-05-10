@@ -67,6 +67,7 @@ class EndPoints {
   static const String qrGeneration = 'qr-generation';
   static const String qrHistory = 'qr-history';
   static const String employeeAttendanceHistory = 'employee/attendance/history';
+  static const String employeeAttendanceReports = 'employee-attendance/reports';
   static const String editEmployee = 'edit/employee';
   static const String qrScan = 'qr-scan';
   static const String overtimeOrders = 'employee/overtime/orders';

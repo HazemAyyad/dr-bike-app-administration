@@ -44,6 +44,7 @@ class AppRoutes {
   static const QRHISTORYSCREEN = '/QrHistoryScreen';
   static const EMPLOYEEATTENDANCEHISTORY = '/EmployeeAttendanceHistory';
   static const MYATTENDANCEHISTORY = '/MyAttendanceHistory';
+  static const ATTENDANCEREPORTSCREEN = '/AttendanceReportScreen';
 
   // Boxes Screen
   static const BOXESSCREEN = '/BoxesScreen';

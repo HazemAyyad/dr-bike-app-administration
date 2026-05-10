@@ -54,8 +54,11 @@ import '../features/admin/employee_section/presentation/views/add_new_employee_s
 import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
 import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
 import '../features/admin/employee_section/data/repositorie_imp/employee_implement.dart';
+import '../features/admin/employee_section/domain/usecases/get_attendance_report_usecase.dart';
 import '../features/admin/employee_section/domain/usecases/get_employee_attendance_history_usecase.dart';
 import '../features/admin/employee_section/presentation/controllers/attendance_history_controller.dart';
+import '../features/admin/employee_section/presentation/controllers/attendance_report_controller.dart';
+import '../features/admin/employee_section/presentation/views/attendance_report_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
 import '../features/admin/employee_section/presentation/views/qr_history_screen.dart';
@@ -361,6 +364,20 @@ class AppPages {
           () => MyAttendanceHistoryController(
             getMyAttendanceHistoryUsecase: GetMyAttendanceHistoryUsecase(
               employeeDashbordRepository: Get.find<EmployeeDashbordImplement>(),
+            ),
+          ),
+        );
+      }),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.ATTENDANCEREPORTSCREEN,
+      page: () => const AttendanceReportScreen(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(
+          () => AttendanceReportController(
+            getReport: GetAttendanceReportUsecase(
+              employeeRepository: Get.find<EmployeeImplement>(),
             ),
           ),
         );

@@ -6,6 +6,7 @@ import 'package:doctorbike/features/admin/employee_section/data/models/financial
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_dues_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/overtime_and_loan_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_generation_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/attendance_report_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_attendance_history_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_history_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/working_times_model.dart';
@@ -269,6 +270,35 @@ class EmployeeImplement implements EmployeeRepository {
         );
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<AttendanceReportResult> getAttendanceReport({
+    required String reportType,
+    required int month,
+    required int year,
+    int? day,
+    int? week,
+    List<int>? employeeIds,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await employeeDatasource.getAttendanceReport(
+          reportType: reportType,
+          month: month,
+          year: year,
+          day: day,
+          week: week,
+          employeeIds: employeeIds ?? const [],
+        );
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      } on FormatException catch (e) {
+        throw ServerFailure(e.message, {});
       }
     } else {
       throw ServerFailure('No internet connection', {});
