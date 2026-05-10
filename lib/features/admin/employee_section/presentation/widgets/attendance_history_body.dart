@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_attendance_history_model.dart';
 import '../controllers/attendance_history_controller.dart';
 
@@ -30,13 +32,29 @@ class AttendanceHistoryBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final primaryText =
+        isDark ? Colors.white : const Color(0xFF222222);
+    final secondaryText =
+        isDark ? Colors.white70 : const Color(0xFF616161);
     return ListView(
+      // خلفية خفيفة في اللايت، بدون ألوان بنفسجية
+      // نترك الخلفية الداكنة كما هي من الثيم
+      // (ListView لا يقبل backgroundColor مباشرة، لذا نستخدم بطاقة/الصفحات البيضاء فقط)
       padding: EdgeInsets.all(16.w),
       children: [
         if (headerExtra != null) headerExtra!,
         if (monthlySummary != null) ...[
           Card(
             margin: EdgeInsets.only(bottom: 12.h),
+            color: isDark ? AppColors.customGreyColor4 : Colors.white,
+            elevation: isDark ? 0 : 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              side: BorderSide(
+                color: isDark ? Colors.white12 : Colors.grey.shade200,
+              ),
+            ),
             child: Padding(
               padding: EdgeInsets.all(12.w),
               child: Column(
@@ -95,7 +113,10 @@ class AttendanceHistoryBody extends StatelessWidget {
             employee.startWorkTime!.isNotEmpty) ...[
           Text(
             '${'scheduledStart'.tr}: ${employee.startWorkTime}',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: primaryText),
           ),
           SizedBox(height: 4.h),
         ],
@@ -103,13 +124,19 @@ class AttendanceHistoryBody extends StatelessWidget {
             employee.numberOfWorkHours!.isNotEmpty) ...[
           Text(
             '${'expectedDailyHours'.tr}: ${employee.numberOfWorkHours}',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: secondaryText),
           ),
           SizedBox(height: 4.h),
         ],
         Text(
           '${'weeklyDaysOffTitle'.tr}: ${_weeklyDaysOffLabel(employee.weeklyDaysOff)}',
-          style: Theme.of(context).textTheme.bodySmall,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: secondaryText),
         ),
         if (employee.numberOfWorkHours != null &&
             employee.numberOfWorkHours!.isNotEmpty)
@@ -130,6 +157,9 @@ class AttendanceHistoryDayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final primaryText = isDark ? Colors.white : const Color(0xFF1F1F1F);
+    final secondaryText = isDark ? Colors.white70 : const Color(0xFF616161);
     final dateStr = day.date;
     final df = DateFormat('yyyy-MM-dd');
     DateTime? date;
@@ -147,11 +177,28 @@ class AttendanceHistoryDayCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.only(bottom: 12.h),
+      color: isDark ? AppColors.customGreyColor4 : Colors.white,
+      elevation: isDark ? 0 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.r),
+        side: BorderSide(
+          color: isDark ? Colors.white12 : Colors.grey.shade200,
+        ),
+      ),
       child: ExpansionTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: primaryText,
+          ),
+        ),
         subtitle: Text(
           '${AttendanceHistoryController.formatMinutes(day.workedMinutes)} · ${'awayMinutesLabel'.tr}: ${AttendanceHistoryController.formatMinutes(day.awayMinutes)}',
-          style: Theme.of(context).textTheme.bodySmall,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: secondaryText),
         ),
         children: [
           Padding(
@@ -174,7 +221,10 @@ class AttendanceHistoryDayCard extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                        ?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: primaryText,
+                        ),
                   ),
                   SizedBox(height: 6.h),
                   if (day.workedHours != null)
@@ -249,7 +299,10 @@ class AttendanceHistoryDayCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                      ?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: primaryText,
+                      ),
                 ),
                 SizedBox(height: 6.h),
                 ...day.segments.map((s) {
@@ -263,7 +316,10 @@ class AttendanceHistoryDayCard extends StatelessWidget {
                       open
                           ? '${'attendanceCheckIn'.tr}: ${cin != null ? DateFormat('HH:mm').format(cin.toLocal()) : '—'} → ${'stillInside'.tr}'
                           : '${'attendanceCheckIn'.tr}: ${cin != null ? DateFormat('HH:mm').format(cin.toLocal()) : '—'} → ${'attendanceCheckOut'.tr}: ${cout != null ? DateFormat('HH:mm').format(cout.toLocal()) : '—'} (${wm != null ? AttendanceHistoryController.formatMinutes(wm) : '—'})',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: secondaryText),
                     ),
                   );
                 }),
@@ -273,7 +329,10 @@ class AttendanceHistoryDayCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                      ?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: primaryText,
+                      ),
                 ),
                 SizedBox(height: 6.h),
                 ...day.scans.map((row) {
@@ -284,7 +343,10 @@ class AttendanceHistoryDayCard extends StatelessWidget {
                       : 'scanDirectionOut'.tr;
                   return Text(
                     '${DateFormat('yyyy-MM-dd HH:mm').format(at.toLocal())} — $dirLabel',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: secondaryText),
                   );
                 }),
               ],
@@ -298,6 +360,9 @@ class AttendanceHistoryDayCard extends StatelessWidget {
 
 Widget _attendanceHistoryRow(
     BuildContext context, String label, String value) {
+  final isDark = ThemeService.isDark.value;
+  final primaryText = isDark ? Colors.white : const Color(0xFF1F1F1F);
+  final secondaryText = isDark ? Colors.white70 : const Color(0xFF616161);
   return Padding(
     padding: EdgeInsets.only(bottom: 6.h),
     child: Row(
@@ -310,12 +375,18 @@ Widget _attendanceHistoryRow(
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(color: Colors.grey),
+                ?.copyWith(color: secondaryText),
           ),
         ),
         Expanded(
           flex: 3,
-          child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
+          child: Text(
+            value,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: primaryText),
+          ),
         ),
       ],
     ),

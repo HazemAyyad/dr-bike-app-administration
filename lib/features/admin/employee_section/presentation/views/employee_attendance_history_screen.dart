@@ -13,11 +13,16 @@ class EmployeeAttendanceHistoryScreen
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final pageBg =
+        isDark ? AppColors.darkColor : const Color(0xFFF5F5F5);
     return Scaffold(
-      backgroundColor: ThemeService.isDark.value
-          ? AppColors.darkColor
-          : AppColors.whiteColor,
+      backgroundColor: pageBg,
       appBar: AppBar(
+        backgroundColor: pageBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(
           controller.employeeName.isNotEmpty
               ? controller.employeeName
@@ -79,13 +84,16 @@ class _MonthYearPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.08),
+        color: isDark ? Colors.white10 : Colors.white,
         border: Border(
           bottom: BorderSide(
-              color: AppColors.primaryColor.withValues(alpha: 0.15), width: 1),
+            color: isDark ? Colors.white12 : Colors.grey.shade200,
+            width: 1,
+          ),
         ),
       ),
       child: Obx(() {
@@ -102,7 +110,7 @@ class _MonthYearPicker extends StatelessWidget {
                 onTap: () => _pickYear(context),
               ),
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 8.w),
             // ── الشهر ──
             Expanded(
               flex: 2,
@@ -112,13 +120,16 @@ class _MonthYearPicker extends StatelessWidget {
                 onTap: () => _pickMonth(context, year),
               ),
             ),
-            SizedBox(width: 10.w),
+            SizedBox(width: 8.w),
             // ── زر التحديث ──
-            IconButton(
+            SizedBox(
+              width: 42.w,
+              child: IconButton(
               onPressed: controller.load,
               icon: const Icon(Icons.refresh),
               color: AppColors.primaryColor,
               tooltip: 'refresh'.tr,
+            ),
             ),
           ],
         );
@@ -198,6 +209,7 @@ class _PickerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8.r),
@@ -205,9 +217,9 @@ class _PickerButton extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
         decoration: BoxDecoration(
           border: Border.all(
-              color: AppColors.primaryColor.withValues(alpha: 0.4), width: 1),
+              color: isDark ? Colors.white12 : Colors.grey.shade300, width: 1),
           borderRadius: BorderRadius.circular(8.r),
-          color: AppColors.primaryColor.withValues(alpha: 0.05),
+          color: isDark ? Colors.white10 : Colors.grey.shade50,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -216,10 +228,12 @@ class _PickerButton extends StatelessWidget {
             SizedBox(width: 6.w),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primaryColor,
+                color: isDark ? Colors.white : const Color(0xFF222222),
               ),
             ),
             SizedBox(width: 4.w),

@@ -31,14 +31,30 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final pageBg = isDark ? AppColors.darkColor : const Color(0xFFF5F5F5);
     final iconClr = ThemeService.isDark.value
         ? AppColors.primaryColor
         : AppColors.secondaryColor;
+    final headingTextStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: isDark ? Colors.white : const Color(0xFF222222),
+        );
+    final dataTextStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: isDark ? Colors.white70 : const Color(0xFF2A2A2A),
+        );
+    final headerPrimary =
+        isDark ? Colors.white : const Color(0xFF1F1F1F);
+    final headerSecondary =
+        isDark ? Colors.white70 : const Color(0xFF616161);
 
     return Scaffold(
+      backgroundColor: pageBg,
       appBar: CustomAppBar(
         title: 'attendanceReportTitle',
         action: false,
+        backgroundColor: pageBg,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             tooltip: 'attendanceReportFilterFromScreen'.tr,
@@ -142,37 +158,50 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                        ?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: headerPrimary,
+                        ),
                   ),
                   SizedBox(height: 4.h),
                   Text(
                     '${'periodLabel'.tr}: ${r.periodFrom} → ${r.periodTo}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: headerSecondary),
                   ),
                   if (r.reportType == 'daily' && r.day != null)
                     Text(
                       '${'dayLabel'.tr}: ${r.day}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: headerSecondary),
                     ),
                   if (r.reportType == 'weekly' && r.week != null)
                     Text(
                       '${'weekOfMonthLabel'.tr}: ${r.week}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: headerSecondary),
                     ),
                   SizedBox(height: 8.h),
                   Text(
                     'earnedSalaryAttendanceHint'.tr,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
+                          color: headerSecondary,
                           height: 1.35,
                         ),
                   ),
                 ],
               ),
             ),
-            Divider(height: 1, color: ThemeService.isDark.value
-                ? Colors.white24
-                : Colors.grey.shade300),
+            Divider(
+              height: 1,
+              color: isDark ? Colors.white24 : Colors.grey.shade300,
+            ),
             Expanded(
               child: r.employees.isEmpty
                   ? Center(child: Text('reportEmptyState'.tr))
@@ -180,63 +209,88 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
                       builder: (context, _) {
                         return SingleChildScrollView(
                           padding: EdgeInsets.only(bottom: 24.h),
-                          scrollDirection: Axis.horizontal,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth:
-                                  MediaQuery.sizeOf(context).width - 8.w,
-                            ),
-                            child: DataTable(
-                              headingRowColor:
-                                  WidgetStateProperty.resolveWith((_) =>
-                                      ThemeService.isDark.value
-                                          ? Colors.white10
-                                          : Colors.grey.shade50),
-                              columnSpacing: 16.w,
-                              horizontalMargin: 12.w,
-                              columns: [
-                                DataColumn(
-                                    label:
-                                        Text('employeeNameReportCol'.tr)),
-                                DataColumn(
-                                    label:
-                                        Text('weeklyDaysOffTitle'.tr)),
-                                DataColumn(
-                                  label: Text('hourWorkPriceReportCol'.tr),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth:
+                                    MediaQuery.sizeOf(context).width - 8.w,
+                              ),
+                              child: Card(
+                                margin: EdgeInsets.symmetric(
+                                  horizontal: 12.w,
+                                  vertical: 10.h,
                                 ),
-                                DataColumn(
-                                  label:
-                                      Text('overtimeHourPriceEffectiveCol'.tr),
+                                elevation: isDark ? 0 : 1,
+                                color: isDark ? AppColors.customGreyColor4 : Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  side: BorderSide(
+                                    color: isDark
+                                        ? Colors.white12
+                                        : Colors.grey.shade200,
+                                  ),
                                 ),
-                                DataColumn(
-                                    label: Text(
-                                        'requiredWorkingDaysCol'.tr)),
-                                DataColumn(
-                                    label:
-                                        Text('requiredHoursLabel'.tr)),
-                                DataColumn(
-                                    label: Text('workedHoursLabel'.tr)),
-                                DataColumn(
-                                    label:
-                                        Text('normalHoursLabel'.tr)),
-                                DataColumn(
-                                    label:
-                                        Text('overtimeHoursLabel'.tr)),
-                                DataColumn(label: Text('normalSalaryReportCol'.tr)),
-                                DataColumn(
-                                    label: Text(
-                                        'overtimeSalaryReportCol'.tr)),
-                                DataColumn(
-                                    label:
-                                        Text('salaryForWorkedHoursCol'.tr),
+                                child: DataTable(
+                                  headingTextStyle: headingTextStyle,
+                                  dataTextStyle: dataTextStyle,
+                                  headingRowColor:
+                                      WidgetStateProperty.resolveWith(
+                                    (_) => isDark
+                                        ? Colors.white10
+                                        : Colors.grey.shade50,
+                                  ),
+                                  dividerThickness: 0.8,
+                                  columnSpacing: 16.w,
+                                  horizontalMargin: 12.w,
+                                  columns: [
+                                    DataColumn(
+                                        label:
+                                            Text('employeeNameReportCol'.tr)),
+                                    DataColumn(
+                                        label:
+                                            Text('weeklyDaysOffTitle'.tr)),
+                                    DataColumn(
+                                      label: Text('hourWorkPriceReportCol'.tr),
+                                    ),
+                                    DataColumn(
+                                      label: Text(
+                                          'overtimeHourPriceEffectiveCol'.tr),
+                                    ),
+                                    DataColumn(
+                                        label: Text(
+                                            'requiredWorkingDaysCol'.tr)),
+                                    DataColumn(
+                                        label:
+                                            Text('requiredHoursLabel'.tr)),
+                                    DataColumn(
+                                        label: Text('workedHoursLabel'.tr)),
+                                    DataColumn(
+                                        label:
+                                            Text('normalHoursLabel'.tr)),
+                                    DataColumn(
+                                        label:
+                                            Text('overtimeHoursLabel'.tr)),
+                                    DataColumn(
+                                      label:
+                                          Text('normalSalaryReportCol'.tr),
+                                    ),
+                                    DataColumn(
+                                        label: Text(
+                                            'overtimeSalaryReportCol'.tr)),
+                                    DataColumn(
+                                      label: Text(
+                                          'salaryForWorkedHoursCol'.tr),
+                                    ),
+                                    DataColumn(
+                                      label: Text('employeeDebtsReportCol'.tr),
+                                    ),
+                                  ],
+                                  rows: r.employees
+                                      .map((e) => _row(context, e))
+                                      .toList(),
                                 ),
-                                DataColumn(
-                                  label: Text('employeeDebtsReportCol'.tr),
-                                ),
-                              ],
-                              rows: r.employees
-                                  .map((e) => _row(context, e))
-                                  .toList(),
+                              ),
                             ),
                           ),
                         );

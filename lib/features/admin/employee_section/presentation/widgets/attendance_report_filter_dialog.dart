@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/attendance_report_model.dart';
@@ -187,10 +188,26 @@ class _AttendanceReportFilterDialogContentState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = ThemeService.isDark.value;
     final inplace = widget.onApplyInPlace != null;
+    final chipLabelStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: isDark ? Colors.white : const Color(0xFF222222),
+      fontWeight: FontWeight.w600,
+    );
 
     return AlertDialog(
-      title: Text('attendanceReportFiltersTitle'.tr),
+      backgroundColor:
+          isDark ? AppColors.customGreyColor4 : Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      actionsPadding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+      title: Text(
+        'attendanceReportFiltersTitle'.tr,
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: isDark ? Colors.white : const Color(0xFF1F1F1F),
+        ),
+      ),
       contentPadding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 0),
       content: SizedBox(
         width: double.maxFinite,
@@ -212,6 +229,7 @@ class _AttendanceReportFilterDialogContentState
                     selectedColor:
                         AppColors.primaryColor.withValues(alpha: 0.2),
                     checkmarkColor: AppColors.primaryColor,
+                    labelStyle: chipLabelStyle,
                     onSelected: (_) => setState(() {
                       _reportType = t;
                       if (t == 'weekly') {
@@ -364,20 +382,63 @@ class _AttendanceReportFilterDialogContentState
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('cancel'.tr),
-        ),
-        TextButton(onPressed: _reset, child: Text('resetFiltersButton'.tr)),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primaryColor,
-          ),
-          onPressed: _apply,
-          child: Text(
-            inplace
-                ? 'attendanceReportApplyFiltersButton'.tr
-                : 'generateReportButton'.tr,
+        SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+                ),
+                onPressed: _apply,
+                child: Text(
+                  inplace
+                      ? 'attendanceReportApplyFiltersButton'.tr
+                      : 'generateReportButton'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor:
+                            isDark ? Colors.white70 : const Color(0xFF6B6B6B),
+                        side: BorderSide(
+                          color: isDark ? Colors.white12 : Colors.grey.shade300,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 10.w, vertical: 10.h),
+                      ),
+                      child: Text('cancel'.tr),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _reset,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor:
+                            isDark ? Colors.white70 : const Color(0xFF6B6B6B),
+                        side: BorderSide(
+                          color: isDark ? Colors.white12 : Colors.grey.shade300,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 10.w, vertical: 10.h),
+                      ),
+                      child: Text('resetFiltersButton'.tr),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],

@@ -11,6 +11,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     Key? key,
     required this.title,
     this.actions,
+    this.backgroundColor,
+    this.surfaceTintColor,
     this.fromDateController,
     this.toDateController,
     this.employeeNameController,
@@ -31,11 +33,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool? action;
   final List<Widget>? actions;
   final bool dsibalBack;
+  final Color? backgroundColor;
+  final Color? surfaceTintColor;
   @override
   Widget build(BuildContext context) {
     return AppBar(
       automaticallyImplyLeading: false,
       scrolledUnderElevation: 0,
+      backgroundColor: backgroundColor,
+      surfaceTintColor: surfaceTintColor,
       title: Text(
         title.tr,
         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
