@@ -98,7 +98,8 @@ class EmployeeDatasource {
           ...employeeImgList,
           ...documentsImageList,
           'permissions[]': permissions,
-          if (weeklyDaysOff.isNotEmpty) ApiKey.weekly_days_off: weeklyDaysOff,
+          if (weeklyDaysOff.isNotEmpty)
+            '${ApiKey.weekly_days_off}[]': weeklyDaysOff,
         },
         isFormData: true,
       );

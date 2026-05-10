@@ -411,20 +411,18 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 ),
               ),
               SizedBox(height: 8.h),
-              Obx(
-                () => Wrap(
-                  spacing: 8.w,
-                  runSpacing: 8.h,
-                  children: [
-                    _WeeklyDayChip(controller: controller, keyName: 'saturday'),
-                    _WeeklyDayChip(controller: controller, keyName: 'sunday'),
-                    _WeeklyDayChip(controller: controller, keyName: 'monday'),
-                    _WeeklyDayChip(controller: controller, keyName: 'tuesday'),
-                    _WeeklyDayChip(controller: controller, keyName: 'wednesday'),
-                    _WeeklyDayChip(controller: controller, keyName: 'thursday'),
-                    _WeeklyDayChip(controller: controller, keyName: 'friday'),
-                  ],
-                ),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  _WeeklyDayChip(controller: controller, keyName: 'saturday'),
+                  _WeeklyDayChip(controller: controller, keyName: 'sunday'),
+                  _WeeklyDayChip(controller: controller, keyName: 'monday'),
+                  _WeeklyDayChip(controller: controller, keyName: 'tuesday'),
+                  _WeeklyDayChip(controller: controller, keyName: 'wednesday'),
+                  _WeeklyDayChip(controller: controller, keyName: 'thursday'),
+                  _WeeklyDayChip(controller: controller, keyName: 'friday'),
+                ],
               ),
               SizedBox(height: 15.h),
               Row(
@@ -518,11 +516,13 @@ class _WeeklyDayChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelKey = 'day_$keyName';
-    final selected = controller.weeklyDaysOff[keyName]!.value;
-    return FilterChip(
-      label: Text(labelKey.tr),
-      selected: selected,
-      onSelected: (v) => controller.weeklyDaysOff[keyName]!.value = v,
-    );
+    return Obx(() {
+      final selected = controller.weeklyDaysOff[keyName]!.value;
+      return FilterChip(
+        label: Text(labelKey.tr),
+        selected: selected,
+        onSelected: (v) => controller.weeklyDaysOff[keyName]!.value = v,
+      );
+    });
   }
 }

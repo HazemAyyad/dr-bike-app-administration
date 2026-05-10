@@ -317,7 +317,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                         title: 'weeklyDaysOffTitle',
                         discription: controller.employeeService.employeeDetails
                                 .value!.weeklyDaysOff.isEmpty
-                            ? '—'
+                            ? 'day_friday'.tr
                             : controller.employeeService.employeeDetails.value!
                                 .weeklyDaysOff
                                 .map((d) => ('day_${d.toLowerCase()}').tr)

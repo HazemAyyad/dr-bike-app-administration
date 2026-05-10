@@ -62,10 +62,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
       endWorkTime: asString(details[ApiKey.end_work_time]),
       employeeImg: _imageUrlList(details[ApiKey.employee_img]),
       documentImg: _imageUrlList(details[ApiKey.document_img]),
-      weeklyDaysOff: mapList(
-        details[ApiKey.weekly_days_off],
-        (m) => asString(m),
-      ).map((e) => e.toLowerCase()).toList(),
+      weeklyDaysOff: asStringList(details[ApiKey.weekly_days_off]),
       permissions: mapList(
         j[ApiKey.permissions],
         (Map<String, dynamic> m) => PermissionModel.fromJson(m),

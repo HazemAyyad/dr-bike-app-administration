@@ -66,6 +66,11 @@ class AddEmployeeController extends GetxController {
           weeklyDaysOff[key]!.value = true;
         }
       }
+
+      // Old employees fallback: default Friday off if none configured
+      if (existing.isEmpty) {
+        weeklyDaysOff['friday']!.value = true;
+      }
     } else {
       // Default weekly day off: Friday (week starts Saturday)
       weeklyDaysOff['friday']!.value = true;

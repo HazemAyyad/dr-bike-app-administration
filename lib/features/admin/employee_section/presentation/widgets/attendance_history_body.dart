@@ -6,6 +6,13 @@ import 'package:intl/intl.dart';
 import '../../data/models/employee_attendance_history_model.dart';
 import '../controllers/attendance_history_controller.dart';
 
+List<String> _effectiveWeeklyDaysOff(List<String> stored) =>
+    stored.isEmpty ? <String>['friday'] : stored;
+
+String _weeklyDaysOffLabel(List<String> stored) => _effectiveWeeklyDaysOff(stored)
+    .map((d) => 'day_${d.toLowerCase()}'.tr)
+    .join(', ');
+
 /// Shared list body for admin and employee attendance history screens.
 class AttendanceHistoryBody extends StatelessWidget {
   const AttendanceHistoryBody({
@@ -43,17 +50,11 @@ class AttendanceHistoryBody extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   SizedBox(height: 6.h),
-                  if (monthlySummary!.weeklyDaysOff != null) ...[
-                    _attendanceHistoryRow(
-                      context,
-                      'weeklyDaysOffTitle'.tr,
-                      (monthlySummary!.weeklyDaysOff!.isEmpty)
-                          ? '—'
-                          : monthlySummary!.weeklyDaysOff!
-                              .map((d) => ('day_${d.toLowerCase()}').tr)
-                              .join(', '),
-                    ),
-                  ],
+                  _attendanceHistoryRow(
+                    context,
+                    'weeklyDaysOffTitle'.tr,
+                    _weeklyDaysOffLabel(monthlySummary!.weeklyDaysOff),
+                  ),
                   if (monthlySummary!.monthlyWorkingDaysCount != null)
                     _attendanceHistoryRow(
                       context,
@@ -104,8 +105,17 @@ class AttendanceHistoryBody extends StatelessWidget {
             '${'expectedDailyHours'.tr}: ${employee.numberOfWorkHours}',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 4.h),
         ],
+        Text(
+          '${'weeklyDaysOffTitle'.tr}: ${_weeklyDaysOffLabel(employee.weeklyDaysOff)}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        if (employee.numberOfWorkHours != null &&
+            employee.numberOfWorkHours!.isNotEmpty)
+          SizedBox(height: 16.h)
+        else
+          SizedBox(height: 12.h),
         ...days.map((d) => AttendanceHistoryDayCard(day: d)),
       ],
     );

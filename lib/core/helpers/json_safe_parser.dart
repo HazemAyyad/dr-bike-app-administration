@@ -42,6 +42,21 @@ bool asBool(dynamic value, [bool fallback = false]) {
   return fallback;
 }
 
+/// Laravel JSON arrays of strings (e.g. weekly_days_off: ["friday"]).
+/// Use this instead of [mapList], which expects a list of objects/maps.
+List<String> asStringList(dynamic value) {
+  if (value is! List) return <String>[];
+  final seen = <String>{};
+  final out = <String>[];
+  for (final e in value) {
+    final s = asString(e).trim().toLowerCase();
+    if (s.isEmpty || seen.contains(s)) continue;
+    seen.add(s);
+    out.add(s);
+  }
+  return dartList(out);
+}
+
 Map<String, dynamic> asMap(dynamic value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) return Map<String, dynamic>.from(value);
