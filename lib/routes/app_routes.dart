@@ -122,4 +122,7 @@ class AppRoutes {
 
   // Category Management
   static const CATEGORYMANAGEMENTSCREEN = '/CategoryManagementScreen';
+
+  // Employee Points & Rewards
+  static const EMPLOYEEREWARDRULESSCREEN = '/EmployeeRewardRulesScreen';
 }

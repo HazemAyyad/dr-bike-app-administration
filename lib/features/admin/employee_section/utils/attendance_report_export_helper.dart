@@ -72,6 +72,9 @@ class AttendanceReportExportHelper {
       'normalSalaryReportCol'.tr,
       'overtimeSalaryReportCol'.tr,
       'salaryForWorkedHoursCol'.tr,
+      'pointsSummaryReportCol'.tr,
+      'rewardAmountReportCol'.tr,
+      'finalSalaryReportCol'.tr,
       'employeeDebtsReportCol'.tr,
     ];
 
@@ -90,6 +93,9 @@ class AttendanceReportExportHelper {
             e.normalSalary,
             e.overtimeSalary,
             e.totalSalary,
+            '${e.pointsSummary.earnedPoints}/${e.pointsSummary.deductedPoints}/${e.pointsSummary.netPoints}',
+            e.rewardAmount,
+            e.finalSalary,
             e.employeeDebts,
           ],
         )
@@ -160,6 +166,9 @@ class AttendanceReportExportHelper {
       'normalSalaryReportCol'.tr,
       'overtimeSalaryReportCol'.tr,
       'salaryForWorkedHoursCol'.tr,
+      'pointsSummaryReportCol'.tr,
+      'rewardAmountReportCol'.tr,
+      'finalSalaryReportCol'.tr,
       'employeeDebtsReportCol'.tr,
     ];
 
@@ -180,6 +189,9 @@ class AttendanceReportExportHelper {
         e.normalSalary,
         e.overtimeSalary,
         e.totalSalary,
+        '${e.pointsSummary.earnedPoints}/${e.pointsSummary.deductedPoints}/${e.pointsSummary.netPoints}',
+        e.rewardAmount,
+        e.finalSalary,
         e.employeeDebts,
       ];
       sb.writeln(row.map(_csvEsc).join(';'));

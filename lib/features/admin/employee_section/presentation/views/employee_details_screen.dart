@@ -13,6 +13,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../employee_tasks/presentation/views/task_details_screen.dart';
 import '../controllers/employee_section_controller.dart';
+import '../widgets/employee_points_tab.dart';
 
 class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
   const EmployeeDetailsScreen({Key? key}) : super(key: key);
@@ -21,9 +22,36 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     final String points = Get.arguments;
-    return Scaffold(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
       appBar: CustomAppBar(
         title: 'employeeDetails',
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(46.h),
+          child: Container(
+            color: ThemeService.isDark.value
+                ? AppColors.darkColor
+                : Colors.white,
+            child: TabBar(
+              labelColor: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+              unselectedLabelColor: AppColors.customGreyColor5,
+              indicatorColor: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+              labelStyle: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
+              ),
+              tabs: [
+                Tab(text: 'employeeDetails'.tr),
+                Tab(text: 'pointsAndRewardsTab'.tr),
+              ],
+            ),
+          ),
+        ),
         actions: [
           TextButton.icon(
             icon: Icon(
@@ -55,7 +83,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
       body: Obx(
         () {
           if (controller.employeeService.employeeDetails.value == null) {
-            Center(
+            return Center(
               child: Text(
                 'noData'.tr,
                 style: theme.copyWith(
@@ -64,13 +92,18 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
               ),
             );
           }
-          return controller.isDialogLoading.value
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: 24.w),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+          if (controller.isDialogLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final employeeId =
+              controller.employeeService.employeeDetails.value!.id;
+          return TabBarView(
+            children: [
+              SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       SizedBox(height: 10.h, width: double.infinity),
                       SupTextAndDiscr(
                         title: 'employeeName',
@@ -465,8 +498,12 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                       SizedBox(height: 30.h),
                     ],
                   ),
-                );
+              ),
+              EmployeePointsTab(employeeId: employeeId),
+            ],
+          );
         },
+      ),
       ),
     );
   }

@@ -81,6 +81,21 @@ class EndPoints {
   static const String employeeFinancialDataReport =
       'get/employee/financial/data/report';
 
+  // employee points & rewards
+  static const String employeePointsCategories =
+      'employees/points/categories';
+  static String employeePointsAdd(int employeeId) =>
+      'employees/$employeeId/points/add';
+  static String employeePointsDeduct(int employeeId) =>
+      'employees/$employeeId/points/deduct';
+  static String employeePointsLogs(int employeeId) =>
+      'employees/$employeeId/points/logs';
+  static String employeePointsMonthlySummary(int employeeId) =>
+      'employees/$employeeId/points/monthly-summary';
+
+  static const String employeeRewardRules = 'employee-reward-rules';
+  static String employeeRewardRule(int id) => 'employee-reward-rules/$id';
+
   // tasks section
   static const String createEmployeeTask = 'create/employee/task';
   static const String editEmployeeTask = 'edit/employee/task';

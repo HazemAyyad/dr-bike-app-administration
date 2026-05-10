@@ -21,6 +21,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.label,
     this.action = true,
     this.dsibalBack = false,
+    this.bottom,
   }) : super(key: key);
 
   final String title;
@@ -35,6 +36,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool dsibalBack;
   final Color? backgroundColor;
   final Color? surfaceTintColor;
+  final PreferredSizeWidget? bottom;
   @override
   Widget build(BuildContext context) {
     return AppBar(
@@ -42,6 +44,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       scrolledUnderElevation: 0,
       backgroundColor: backgroundColor,
       surfaceTintColor: surfaceTintColor,
+      bottom: bottom,
       title: Text(
         title.tr,
         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -107,5 +110,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(
+        kToolbarHeight + (bottom?.preferredSize.height ?? 0),
+      );
 }

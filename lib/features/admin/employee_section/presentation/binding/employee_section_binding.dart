@@ -17,8 +17,11 @@ import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
 import '../../domain/usecases/qr_generation_usecase.dart';
 import '../../domain/usecases/qr_history_usecase.dart';
 import '../../domain/usecases/reject_order_usecase.dart';
+import '../../domain/usecases/employee_points_usecases.dart';
 import '../../domain/usecases/working_times_usecase.dart';
 import '../controllers/add_employee_controller.dart';
+import '../controllers/employee_points_controller.dart';
+import '../controllers/employee_reward_rules_controller.dart';
 import '../controllers/employee_section_controller.dart';
 import '../controllers/employee_service.dart';
 
@@ -82,6 +85,42 @@ class EmployeeSectionBinding extends Bindings {
         ),
         employeeService: Get.find<EmployeeService>(),
       ),
+    );
+
+    Get.lazyPut<EmployeePointsController>(
+      () => EmployeePointsController(
+        mutateUsecase: MutateEmployeePointsUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        logsUsecase: GetEmployeePointsLogsUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        summaryUsecase: GetEmployeePointsMonthlySummaryUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        categoriesUsecase: GetEmployeePointsCategoriesUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+      ),
+      fenix: true,
+    );
+
+    Get.lazyPut<EmployeeRewardRulesController>(
+      () => EmployeeRewardRulesController(
+        fetchRulesUsecase: GetEmployeeRewardRulesUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        createRuleUsecase: CreateEmployeeRewardRuleUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        updateRuleUsecase: UpdateEmployeeRewardRuleUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        deleteRuleUsecase: DeleteEmployeeRewardRuleUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+      ),
+      fenix: true,
     );
   }
 }

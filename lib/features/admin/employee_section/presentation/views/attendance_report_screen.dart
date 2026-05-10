@@ -109,7 +109,7 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return Center(
+          return const Center(
             child: CircularProgressIndicator(color: AppColors.primaryColor),
           );
         }
@@ -283,6 +283,15 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
                                           'salaryForWorkedHoursCol'.tr),
                                     ),
                                     DataColumn(
+                                      label: Text('pointsSummaryReportCol'.tr),
+                                    ),
+                                    DataColumn(
+                                      label: Text('rewardAmountReportCol'.tr),
+                                    ),
+                                    DataColumn(
+                                      label: Text('finalSalaryReportCol'.tr),
+                                    ),
+                                    DataColumn(
                                       label: Text('employeeDebtsReportCol'.tr),
                                     ),
                                   ],
@@ -304,6 +313,12 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
   }
 
   DataRow _row(BuildContext context, AttendanceReportEmployeeRow e) {
+    final ps = e.pointsSummary;
+    final pointsCellText =
+        '${ps.earnedPoints}/${ps.deductedPoints}/${ps.netPoints}';
+    final rewardColor = ps.rewardAmountDouble > 0
+        ? const Color(0xFF16A34A)
+        : Theme.of(context).textTheme.bodyMedium?.color;
     return DataRow(
       cells: [
         DataCell(SizedBox(
@@ -333,6 +348,21 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
           style:
               Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600),
+        )),
+        DataCell(Text(pointsCellText)),
+        DataCell(Text(
+          e.rewardAmount,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: rewardColor,
+              ),
+        )),
+        DataCell(Text(
+          e.finalSalary,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF111827),
+              ),
         )),
         DataCell(Text(e.employeeDebts)),
       ],

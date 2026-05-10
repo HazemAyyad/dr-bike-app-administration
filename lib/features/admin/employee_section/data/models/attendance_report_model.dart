@@ -20,6 +20,48 @@ class AttendanceReportArgs {
   final List<int> employeeIds;
 }
 
+/// Points summary embedded in an attendance/salary report row.
+class AttendanceReportPointsSummary {
+  const AttendanceReportPointsSummary({
+    required this.earnedPoints,
+    required this.deductedPoints,
+    required this.netPoints,
+    required this.rewardAmount,
+    this.matchedRuleId,
+  });
+
+  final int earnedPoints;
+  final int deductedPoints;
+  final int netPoints;
+  final String rewardAmount; // formatted "0.00"
+  final int? matchedRuleId;
+
+  double get rewardAmountDouble =>
+      double.tryParse(rewardAmount.toString()) ?? 0.0;
+
+  factory AttendanceReportPointsSummary.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return AttendanceReportPointsSummary(
+      earnedPoints: asInt(j['earned_points']),
+      deductedPoints: asInt(j['deducted_points']),
+      netPoints: asInt(j['net_points']),
+      rewardAmount: asString(j['reward_amount'], '0.00'),
+      matchedRuleId: j['matched_rule_id'] == null
+          ? null
+          : asInt(j['matched_rule_id']),
+    );
+  }
+
+  static AttendanceReportPointsSummary empty() =>
+      const AttendanceReportPointsSummary(
+        earnedPoints: 0,
+        deductedPoints: 0,
+        netPoints: 0,
+        rewardAmount: '0.00',
+        matchedRuleId: null,
+      );
+}
+
 /// Row returned by `/employee-attendance/reports`.
 class AttendanceReportEmployeeRow {
   const AttendanceReportEmployeeRow({
@@ -37,6 +79,9 @@ class AttendanceReportEmployeeRow {
     required this.overtimeSalary,
     required this.totalSalary,
     required this.employeeDebts,
+    required this.pointsSummary,
+    required this.rewardAmount,
+    required this.finalSalary,
   });
 
   final int employeeId;
@@ -53,9 +98,35 @@ class AttendanceReportEmployeeRow {
   final String overtimeSalary;
   final String totalSalary;
   final String employeeDebts;
+  final AttendanceReportPointsSummary pointsSummary;
+  final String rewardAmount;
+  final String finalSalary;
 
   factory AttendanceReportEmployeeRow.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
+
+    final pointsRaw = j['points_summary'];
+    final pointsMap = pointsRaw is Map
+        ? Map<String, dynamic>.from(pointsRaw)
+        : <String, dynamic>{};
+
+    final pointsSummary = pointsMap.isNotEmpty
+        ? AttendanceReportPointsSummary.fromJson(pointsMap)
+        : AttendanceReportPointsSummary.empty();
+
+    final reward = asString(
+      j['reward_amount'] ?? pointsMap['reward_amount'],
+      '0.00',
+    );
+
+    final totalSalary = asString(j['total_salary'], '0.00');
+    final fallbackFinal = (double.tryParse(totalSalary) ?? 0.0) +
+        (double.tryParse(reward) ?? 0.0);
+    final finalSalary = asString(
+      j['final_salary'],
+      fallbackFinal.toStringAsFixed(2),
+    );
+
     return AttendanceReportEmployeeRow(
       employeeId: asInt(j['employee_id']),
       employeeName: asString(j['employee_name']),
@@ -70,8 +141,11 @@ class AttendanceReportEmployeeRow {
       overtimeHours: asString(j['overtime_hours']),
       normalSalary: asString(j['normal_salary']),
       overtimeSalary: asString(j['overtime_salary']),
-      totalSalary: asString(j['total_salary']),
+      totalSalary: totalSalary,
       employeeDebts: asString(j['employee_debts'], '0.00'),
+      pointsSummary: pointsSummary,
+      rewardAmount: reward,
+      finalSalary: finalSalary,
     );
   }
 }

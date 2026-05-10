@@ -8,6 +8,8 @@ import 'package:doctorbike/features/admin/employee_section/data/models/overtime_
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_generation_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/attendance_report_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_attendance_history_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/employee_points_log_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/employee_reward_rule_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_history_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/working_times_model.dart';
 
@@ -395,6 +397,224 @@ class EmployeeImplement implements EmployeeRepository {
       }
     } else {
       throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  // ========================================================================
+  // Employee Points & Rewards
+  // ========================================================================
+
+  @override
+  Future<Either<Failure, EmployeePointsLogModel>> mutateEmployeePoints({
+    required int employeeId,
+    required bool isAdd,
+    required int points,
+    required String category,
+    String? reason,
+    String? notes,
+    String? pointsDate,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.mutateEmployeePoints(
+        employeeId: employeeId,
+        isAdd: isAdd,
+        points: points,
+        category: category,
+        reason: reason,
+        notes: notes,
+        pointsDate: pointsDate,
+      );
+      if (result['status'] == 'success') {
+        final logRaw = result['log'];
+        if (logRaw is Map) {
+          return Right(
+            EmployeePointsLogModel.fromJson(
+              Map<String, dynamic>.from(logRaw),
+            ),
+          );
+        }
+        return Left(
+          ValidationFailure(result['message'] ?? 'Unknown error', result),
+        );
+      }
+      return Left(
+        ValidationFailure(result['message'] ?? 'Unknown error', result),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<EmployeePointsLogsPage> getEmployeePointsLogs({
+    required int employeeId,
+    int? month,
+    int? year,
+    String? category,
+    String? operationType,
+    int perPage = 50,
+    int page = 1,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw ServerFailure('No internet connection', {});
+    }
+    try {
+      return await employeeDatasource.getEmployeePointsLogs(
+        employeeId: employeeId,
+        month: month,
+        year: year,
+        category: category,
+        operationType: operationType,
+        perPage: perPage,
+        page: page,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<EmployeePointsMonthlySummaryModel> getEmployeePointsMonthlySummary({
+    required int employeeId,
+    int? month,
+    int? year,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw ServerFailure('No internet connection', {});
+    }
+    try {
+      return await employeeDatasource.getEmployeePointsMonthlySummary(
+        employeeId: employeeId,
+        month: month,
+        year: year,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<EmployeePointsCategoriesModel> getEmployeePointsCategories() async {
+    if (!await networkInfo.isConnected) {
+      throw ServerFailure('No internet connection', {});
+    }
+    try {
+      return await employeeDatasource.getEmployeePointsCategories();
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<List<EmployeeRewardRuleModel>> getEmployeeRewardRules({
+    bool? isActive,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw ServerFailure('No internet connection', {});
+    }
+    try {
+      return await employeeDatasource.getEmployeeRewardRules(
+        isActive: isActive,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Either<Failure, EmployeeRewardRuleModel>> createEmployeeRewardRule({
+    required int minPoints,
+    int? maxPoints,
+    required double rewardAmount,
+    required bool isActive,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.createEmployeeRewardRule(
+        minPoints: minPoints,
+        maxPoints: maxPoints,
+        rewardAmount: rewardAmount,
+        isActive: isActive,
+      );
+      if (result['status'] == 'success') {
+        final ruleRaw = result['rule'];
+        if (ruleRaw is Map) {
+          return Right(
+            EmployeeRewardRuleModel.fromJson(
+              Map<String, dynamic>.from(ruleRaw),
+            ),
+          );
+        }
+      }
+      return Left(
+        ValidationFailure(result['message'] ?? 'Unknown error', result),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, EmployeeRewardRuleModel>> updateEmployeeRewardRule({
+    required int id,
+    int? minPoints,
+    int? maxPoints,
+    bool clearMaxPoints = false,
+    double? rewardAmount,
+    bool? isActive,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.updateEmployeeRewardRule(
+        id: id,
+        minPoints: minPoints,
+        maxPoints: maxPoints,
+        clearMaxPoints: clearMaxPoints,
+        rewardAmount: rewardAmount,
+        isActive: isActive,
+      );
+      if (result['status'] == 'success') {
+        final ruleRaw = result['rule'];
+        if (ruleRaw is Map) {
+          return Right(
+            EmployeeRewardRuleModel.fromJson(
+              Map<String, dynamic>.from(ruleRaw),
+            ),
+          );
+        }
+      }
+      return Left(
+        ValidationFailure(result['message'] ?? 'Unknown error', result),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> deleteEmployeeRewardRule({
+    required int id,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.deleteEmployeeRewardRule(id: id);
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? '');
+      }
+      return Left(
+        ValidationFailure(result['message'] ?? 'Unknown error', result),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 

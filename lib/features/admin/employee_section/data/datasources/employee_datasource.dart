@@ -19,6 +19,8 @@ import '../models/overtime_and_loan_model.dart';
 import '../models/qr_generation_model.dart';
 import '../models/attendance_report_model.dart';
 import '../models/employee_attendance_history_model.dart';
+import '../models/employee_points_log_model.dart';
+import '../models/employee_reward_rule_model.dart';
 import '../models/qr_history_model.dart';
 import '../models/working_times_model.dart';
 
@@ -579,6 +581,256 @@ class EmployeeDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  // ========================================================================
+  // Employee Points & Rewards APIs
+  // ========================================================================
+
+  /// Persist a new positive/negative points log row for the given employee.
+  Future<Map<String, dynamic>> mutateEmployeePoints({
+    required int employeeId,
+    required bool isAdd,
+    required int points,
+    required String category,
+    String? reason,
+    String? notes,
+    String? pointsDate,
+  }) async {
+    try {
+      final response = await api.post(
+        isAdd
+            ? EndPoints.employeePointsAdd(employeeId)
+            : EndPoints.employeePointsDeduct(employeeId),
+        data: {
+          'points': points,
+          'category': category,
+          if (reason != null && reason.isNotEmpty) 'reason': reason,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+          if (pointsDate != null && pointsDate.isNotEmpty)
+            'points_date': pointsDate,
+        },
+      );
+      final data = response.data;
+      return data is Map<String, dynamic>
+          ? data
+          : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeePointsLogsPage> getEmployeePointsLogs({
+    required int employeeId,
+    int? month,
+    int? year,
+    String? category,
+    String? operationType,
+    int perPage = 50,
+    int page = 1,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.employeePointsLogs(employeeId),
+        queryParameters: {
+          if (month != null) 'month': month,
+          if (year != null) 'year': year,
+          if (category != null && category.isNotEmpty) 'category': category,
+          if (operationType != null && operationType.isNotEmpty)
+            'operation_type': operationType,
+          'per_page': perPage,
+          'page': page,
+        },
+      );
+      final raw = response.data;
+      return EmployeePointsLogsPage.fromJson(asMap(raw));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeePointsMonthlySummaryModel> getEmployeePointsMonthlySummary({
+    required int employeeId,
+    int? month,
+    int? year,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.employeePointsMonthlySummary(employeeId),
+        queryParameters: {
+          if (month != null) 'month': month,
+          if (year != null) 'year': year,
+        },
+      );
+      return EmployeePointsMonthlySummaryModel.fromJson(asMap(response.data));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeePointsCategoriesModel> getEmployeePointsCategories() async {
+    try {
+      final response = await api.get(EndPoints.employeePointsCategories);
+      return EmployeePointsCategoriesModel.fromJson(asMap(response.data));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<EmployeeRewardRuleModel>> getEmployeeRewardRules({
+    bool? isActive,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.employeeRewardRules,
+        queryParameters: {
+          if (isActive != null) 'is_active': isActive ? 1 : 0,
+        },
+      );
+      return mapListFromResponseKey(
+        response.data,
+        'rules',
+        (Map<String, dynamic> m) => EmployeeRewardRuleModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getEmployeeRewardRules',
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> createEmployeeRewardRule({
+    required int minPoints,
+    int? maxPoints,
+    required double rewardAmount,
+    required bool isActive,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.employeeRewardRules,
+        data: {
+          'min_points': minPoints,
+          if (maxPoints != null) 'max_points': maxPoints,
+          'reward_amount': rewardAmount,
+          'is_active': isActive ? 1 : 0,
+        },
+      );
+      final data = response.data;
+      return data is Map<String, dynamic>
+          ? data
+          : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> updateEmployeeRewardRule({
+    required int id,
+    int? minPoints,
+    int? maxPoints,
+    bool clearMaxPoints = false,
+    double? rewardAmount,
+    bool? isActive,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (minPoints != null) body['min_points'] = minPoints;
+      if (clearMaxPoints) {
+        body['max_points'] = null;
+      } else if (maxPoints != null) {
+        body['max_points'] = maxPoints;
+      }
+      if (rewardAmount != null) body['reward_amount'] = rewardAmount;
+      if (isActive != null) body['is_active'] = isActive ? 1 : 0;
+
+      final response = await api.put(
+        EndPoints.employeeRewardRule(id),
+        data: body,
+      );
+      final data = response.data;
+      return data is Map<String, dynamic>
+          ? data
+          : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteEmployeeRewardRule({
+    required int id,
+  }) async {
+    try {
+      final response = await api.delete(EndPoints.employeeRewardRule(id));
+      final data = response.data;
+      return data is Map<String, dynamic>
+          ? data
+          : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }

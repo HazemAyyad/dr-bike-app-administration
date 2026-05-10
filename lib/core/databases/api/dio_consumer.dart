@@ -207,4 +207,54 @@ class DioConsumer extends ApiConsumer {
       rethrow;
     }
   }
+
+  //!PUT
+  @override
+  Future<Response> put(
+    String path, {
+    dynamic data,
+    Options? options,
+    Map<String, dynamic>? queryParameters,
+    bool isFormData = false,
+  }) async {
+    try {
+      final response = await dio.put(
+        path,
+        options: options,
+        data: isFormData && data is Map<String, dynamic>
+            ? FormData.fromMap(data)
+            : data,
+        queryParameters: queryParameters,
+      );
+      return response;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+
+      String errorMessage;
+      int statusCode = e.response?.statusCode ?? 500;
+
+      if (statusCode == 429 ||
+          (data is Map && data['message'] == "Too Many Attempts.")) {
+        errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة بعد قليل.";
+      } else {
+        final dynamic rawMsg = (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message;
+        errorMessage = apiErrorMessageFromPayload(
+          rawMsg,
+          fallback: 'حدث خطأ غير معروف',
+        );
+      }
+
+      throw ServerException(
+        ErrorModel(
+          errorMessage: errorMessage,
+          status: (data is Map && data['status'] != null)
+              ? data['status']
+              : statusCode,
+          data: (data is Map && data['data'] != null) ? data['data'] : {},
+        ),
+      );
+    }
+  }
 }
