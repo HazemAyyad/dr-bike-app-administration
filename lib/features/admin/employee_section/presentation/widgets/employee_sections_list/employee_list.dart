@@ -14,6 +14,27 @@ class EmployeeList extends GetView<EmployeeSectionController> {
   const EmployeeList({Key? key, required this.employee}) : super(key: key);
 
   final EmployeeEntity employee;
+
+  String _getStatusText() {
+    if (!employee.hasAttendedToday) {
+      return 'معطل لحد الان';
+    } else if (employee.isWorkingNow) {
+      return 'شغال حاليا';
+    } else {
+      return 'غادر العمل';
+    }
+  }
+
+  Color _getStatusColor() {
+    if (!employee.hasAttendedToday) {
+      return Colors.grey;
+    } else if (employee.isWorkingNow) {
+      return Colors.green;
+    } else {
+      return Colors.blueGrey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
@@ -33,24 +54,29 @@ class EmployeeList extends GetView<EmployeeSectionController> {
                 Flexible(
                   child: Padding(
                     padding: const EdgeInsets.all(5),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(5.r),
-                      child: GestureDetector(
-                        onTap: () {
-                          showGeneralDialog(
-                            context: context,
-                            barrierDismissible: true,
-                            barrierLabel: 'Dismiss',
-                            barrierColor: Colors.black.withAlpha(128),
-                            transitionDuration:
-                                const Duration(milliseconds: 300),
-                            pageBuilder: (context, anim1, anim2) {
-                              return FullScreenZoomImage(
-                                imageUrl: employee.employeeImg,
-                              );
-                            },
-                          );
-                        },
+                    child: GestureDetector(
+                      onTap: () {
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierLabel: 'Dismiss',
+                          barrierColor: Colors.black.withAlpha(128),
+                          transitionDuration:
+                              const Duration(milliseconds: 300),
+                          pageBuilder: (context, anim1, anim2) {
+                            return FullScreenZoomImage(
+                              imageUrl: employee.employeeImg,
+                            );
+                          },
+                        );
+                      },
+                      child: Container(
+                        height: 80.h,
+                        width: 80.w,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                        ),
+                        clipBehavior: Clip.antiAlias,
                         child: CachedNetworkImage(
                           cacheManager: CacheManager(
                             Config(
@@ -59,26 +85,12 @@ class EmployeeList extends GetView<EmployeeSectionController> {
                               maxNrOfCacheObjects: 100,
                             ),
                           ),
-                          imageBuilder: (context, imageProvider) => Container(
-                            height: 65.h,
-                            width: 65.w,
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: imageProvider,
-                                fit: BoxFit.cover,
-                                filterQuality: FilterQuality.medium,
-                              ),
-                            ),
-                          ),
                           imageUrl: employee.employeeImg,
+                          fit: BoxFit.cover,
                           fadeInDuration: const Duration(milliseconds: 200),
                           fadeOutDuration: const Duration(milliseconds: 200),
-                          placeholder: (context, url) => SizedBox(
-                            height: 65.h,
-                            width: 65.w,
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(),
                           ),
                           errorWidget: (context, url, error) =>
                               const Icon(Icons.error),
@@ -92,17 +104,24 @@ class EmployeeList extends GetView<EmployeeSectionController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        employee.employeeName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textStyle.copyWith(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.customGreyColor5,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              employee.employeeName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textStyle.copyWith(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.customGreyColor5,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 8.5.h),
+
+                      SizedBox(height: 4.h),
                       Text(
                         '${'hourlyRate'.tr} : ${employee.hourWorkPrice} ${'currency'.tr}',
                         style: textStyle.copyWith(
@@ -119,18 +138,20 @@ class EmployeeList extends GetView<EmployeeSectionController> {
           ),
         ),
         Container(
-            width: 60.w,
-            height: 75.h,
-            padding: EdgeInsets.symmetric(horizontal: 5.w),
-            decoration: BoxDecoration(
-              color: AppColors.customGreen1,
-              borderRadius: BorderRadiusDirectional.only(
-                topEnd: Radius.circular(4.r),
-                bottomEnd: Radius.circular(4.r),
-              ),
+          width: 70.w,
+          height: 85.h,
+          padding: EdgeInsets.symmetric(horizontal: 5.w),
+          decoration: BoxDecoration(
+          color: AppColors.customGreen1,
+            borderRadius: BorderRadiusDirectional.only(
+              topEnd: Radius.circular(4.r),
+              bottomEnd: Radius.circular(4.r),
             ),
-            child: Center(
-              child: Text(
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
                 '${employee.points} ${'point'.tr}',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
@@ -139,9 +160,10 @@ class EmployeeList extends GetView<EmployeeSectionController> {
                       color: Colors.white,
                     ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
+      ],
     );
   }
 }

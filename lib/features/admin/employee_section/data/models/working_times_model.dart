@@ -12,6 +12,9 @@ class WorkingTimesModel extends WorkingTimesEntity {
     required String endWorkTime,
     required String numberOfWorkHours,
     required String employeeImg,
+    required bool hasAttendedToday,
+    required bool isWorkingNow,
+    required bool isCameOnTime,
   }) : super(
           id: id,
           employeeName: employeeName,
@@ -19,6 +22,9 @@ class WorkingTimesModel extends WorkingTimesEntity {
           endWorkTime: endWorkTime,
           numberOfWorkHours: numberOfWorkHours,
           employeeImg: employeeImg,
+          hasAttendedToday: hasAttendedToday,
+          isWorkingNow: isWorkingNow,
+          isCameOnTime: isCameOnTime,
         );
 
   factory WorkingTimesModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +36,9 @@ class WorkingTimesModel extends WorkingTimesEntity {
       endWorkTime: asString(j[ApiKey.end_work_time], '0'),
       numberOfWorkHours: asString(j[ApiKey.number_of_work_hours], '0'),
       employeeImg: ShowNetImage.getPhoto(asNullableString(j[ApiKey.employee_img])),
+      hasAttendedToday: asBool(j['has_attended_today']),
+      isWorkingNow: asBool(j['is_working_now']),
+      isCameOnTime: asBool(j['is_came_on_time']),
     );
   }
 
@@ -41,6 +50,9 @@ class WorkingTimesModel extends WorkingTimesEntity {
       ApiKey.end_work_time: endWorkTime,
       ApiKey.number_of_work_hours: numberOfWorkHours,
       ApiKey.employee_img: employeeImg,
+      'has_attended_today': hasAttendedToday,
+      'is_working_now': isWorkingNow,
+      'is_came_on_time': isCameOnTime,
     };
   }
 }

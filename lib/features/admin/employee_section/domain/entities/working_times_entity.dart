@@ -5,6 +5,9 @@ class WorkingTimesEntity {
   final String endWorkTime;
   final String numberOfWorkHours;
   final String employeeImg;
+  final bool hasAttendedToday;
+  final bool isWorkingNow;
+  final bool isCameOnTime;
 
   const WorkingTimesEntity({
     required this.id,
@@ -13,5 +16,8 @@ class WorkingTimesEntity {
     required this.endWorkTime,
     required this.numberOfWorkHours,
     required this.employeeImg,
+    required this.hasAttendedToday,
+    required this.isWorkingNow,
+    required this.isCameOnTime,
   });
 }
