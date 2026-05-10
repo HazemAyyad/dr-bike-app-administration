@@ -148,7 +148,8 @@ class _AttendanceReportFilterDialogContentState
       day: _reportType == 'daily' ? _day : null,
       week: _reportType == 'weekly' ? _week : null,
       allEmployees: _allEmployees,
-      employeeIds: _allEmployees ? const [] : _selectedIds.toList()..sort(),
+      employeeIds:
+          _allEmployees ? const <int>[] : (_selectedIds.toList()..sort()),
     );
 
     if (widget.onApplyInPlace != null) {
