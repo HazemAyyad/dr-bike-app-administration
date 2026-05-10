@@ -96,6 +96,15 @@ class EndPoints {
   static const String employeeRewardRules = 'employee-reward-rules';
   static String employeeRewardRule(int id) => 'employee-reward-rules/$id';
 
+  // point categories CRUD
+  static const String employeePointCategories = 'employee-point-categories';
+  static String employeePointCategory(int id) =>
+      'employee-point-categories/$id';
+
+  // global points (admin)
+  static const String globalEmployeePoints = 'employee-points/employees';
+  static const String globalPointsReport = 'employee-points/reports';
+
   // tasks section
   static const String createEmployeeTask = 'create/employee/task';
   static const String editEmployeeTask = 'edit/employee/task';

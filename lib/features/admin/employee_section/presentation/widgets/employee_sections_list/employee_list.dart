@@ -15,26 +15,6 @@ class EmployeeList extends GetView<EmployeeSectionController> {
 
   final EmployeeEntity employee;
 
-  String _getStatusText() {
-    if (!employee.hasAttendedToday) {
-      return 'معطل لحد الان';
-    } else if (employee.isWorkingNow) {
-      return 'شغال حاليا';
-    } else {
-      return 'غادر العمل';
-    }
-  }
-
-  Color _getStatusColor() {
-    if (!employee.hasAttendedToday) {
-      return Colors.grey;
-    } else if (employee.isWorkingNow) {
-      return Colors.green;
-    } else {
-      return Colors.blueGrey;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
@@ -137,33 +117,107 @@ class EmployeeList extends GetView<EmployeeSectionController> {
             ),
           ),
         ),
-        Container(
-          width: 70.w,
-          height: 85.h,
-          padding: EdgeInsets.symmetric(horizontal: 5.w),
-          decoration: BoxDecoration(
-          color: AppColors.customGreen1,
-            borderRadius: BorderRadiusDirectional.only(
-              topEnd: Radius.circular(4.r),
-              bottomEnd: Radius.circular(4.r),
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '${employee.points} ${'point'.tr}',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-              ),
-            ],
-          ),
-        ),
+        _PointsBadge(employee: employee),
       ],
     );
   }
+}
+
+/// Renders the live monthly net points + reward status colour for an
+/// employee. Falls back to grey when the backend did not include a
+/// `points_summary` (older API), or red/grey for negative/zero values.
+class _PointsBadge extends StatelessWidget {
+  const _PointsBadge({required this.employee});
+
+  final EmployeeEntity employee;
+
+  Color _resolveColor() {
+    final color = _parseHex(employee.pointsSummary?.rewardStatusColor);
+    if (color != null) return color;
+    final net = employee.pointsSummary?.netPoints;
+    if (net == null) return AppColors.customGreen1;
+    if (net < 0) return const Color(0xFFDC2626);
+    if (net == 0) return const Color(0xFF9CA3AF);
+    return AppColors.customGreen1;
+  }
+
+  String _label() {
+    final net = employee.pointsSummary?.netPoints;
+    if (net == null) return '${employee.points} ${'point'.tr}';
+    return '$net ${'employeePointsBadgeUnit'.tr}';
+  }
+
+  String? _tooltip() {
+    final s = employee.pointsSummary;
+    if (s == null) return null;
+    return [
+      '${'totalNet'.tr}: ${s.netPoints}',
+      '${'totalReward'.tr}: ${s.rewardAmount} ${'currency'.tr}',
+      if (s.rewardStatusLabel != null && s.rewardStatusLabel!.isNotEmpty)
+        '${'rewardStatus'.tr}: ${s.rewardStatusLabel}',
+    ].join('\n');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _resolveColor();
+    final tooltip = _tooltip();
+
+    final badge = Container(
+      width: 78.w,
+      height: 85.h,
+      padding: EdgeInsets.symmetric(horizontal: 5.w),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadiusDirectional.only(
+          topEnd: Radius.circular(4.r),
+          bottomEnd: Radius.circular(4.r),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            _label(),
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+          ),
+          if (employee.pointsSummary?.rewardStatusLabel != null &&
+              employee.pointsSummary!.rewardStatusLabel!.isNotEmpty) ...[
+            SizedBox(height: 2.h),
+            Text(
+              employee.pointsSummary!.rewardStatusLabel!,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.92),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (tooltip == null) return badge;
+    return Tooltip(message: tooltip, child: badge);
+  }
+}
+
+Color? _parseHex(String? input) {
+  if (input == null) return null;
+  var s = input.trim();
+  if (s.isEmpty) return null;
+  if (s.startsWith('#')) s = s.substring(1);
+  if (s.length == 6) s = 'FF$s';
+  if (s.length != 8) return null;
+  final value = int.tryParse(s, radix: 16);
+  if (value == null) return null;
+  return Color(value);
 }

@@ -59,12 +59,15 @@ import '../features/admin/employee_section/domain/usecases/get_employee_attendan
 import '../features/admin/employee_section/presentation/controllers/attendance_history_controller.dart';
 import '../features/admin/employee_section/presentation/controllers/attendance_report_controller.dart';
 import '../features/admin/employee_section/presentation/views/attendance_report_screen.dart';
+import '../features/admin/employee_section/presentation/views/employee_point_categories_screen.dart';
+import '../features/admin/employee_section/presentation/views/employee_points_report_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_reward_rules_screen.dart';
+import '../features/admin/employee_section/presentation/views/global_employee_points_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
 import '../features/admin/employee_section/presentation/views/qr_history_screen.dart';
-import '../features/admin/employee_section/presentation/views/working_bonuses_screen.dart';
+import '../features/admin/employee_section/presentation/views/points_rewards_guide_screen.dart';
 import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
 import '../features/admin/employee_tasks/presentation/views/task_details_screen.dart';
@@ -320,7 +323,8 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.POINTSTABLE,
-      page: () => const PointsTable(),
+      page: () => const PointsRewardsGuideScreen(),
+      binding: EmployeeSectionBinding(),
       transition: _transitionUpToDown,
     ),
     GetPage(
@@ -389,6 +393,24 @@ class AppPages {
     GetPage(
       name: AppRoutes.EMPLOYEEREWARDRULESSCREEN,
       page: () => const EmployeeRewardRulesScreen(),
+      binding: EmployeeSectionBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEEPOINTCATEGORIESSCREEN,
+      page: () => const EmployeePointCategoriesScreen(),
+      binding: EmployeeSectionBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.GLOBALEMPLOYEEPOINTSSCREEN,
+      page: () => const GlobalEmployeePointsScreen(),
+      binding: EmployeeSectionBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEEPOINTSREPORTSCREEN,
+      page: () => const EmployeePointsReportScreen(),
       binding: EmployeeSectionBinding(),
       transition: _transitionFadeIn,
     ),

@@ -7,6 +7,8 @@ class EmployeeRewardRuleModel {
     this.maxPoints,
     required this.rewardAmount,
     required this.isActive,
+    this.statusLabel,
+    this.statusColor,
     this.createdAt,
     this.updatedAt,
   });
@@ -16,6 +18,8 @@ class EmployeeRewardRuleModel {
   final int? maxPoints;
   final String rewardAmount;
   final bool isActive;
+  final String? statusLabel;
+  final String? statusColor;
   final String? createdAt;
   final String? updatedAt;
 
@@ -30,6 +34,8 @@ class EmployeeRewardRuleModel {
       maxPoints: j['max_points'] == null ? null : asInt(j['max_points']),
       rewardAmount: asString(j['reward_amount'], '0.00'),
       isActive: asBool(j['is_active'], true),
+      statusLabel: asNullableString(j['status_label']),
+      statusColor: asNullableString(j['status_color']),
       createdAt: asNullableString(j['created_at']),
       updatedAt: asNullableString(j['updated_at']),
     );
@@ -41,6 +47,8 @@ class EmployeeRewardRuleModel {
     int? maxPoints,
     String? rewardAmount,
     bool? isActive,
+    String? statusLabel,
+    String? statusColor,
   }) {
     return EmployeeRewardRuleModel(
       id: id ?? this.id,
@@ -48,6 +56,8 @@ class EmployeeRewardRuleModel {
       maxPoints: maxPoints ?? this.maxPoints,
       rewardAmount: rewardAmount ?? this.rewardAmount,
       isActive: isActive ?? this.isActive,
+      statusLabel: statusLabel ?? this.statusLabel,
+      statusColor: statusColor ?? this.statusColor,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

@@ -95,6 +95,16 @@ class AdminDashboardController extends GetxController
       'title': 'generalSettings',
       'route': AppRoutes.GENERALSETTINGSSCREEN
     },
+    {
+      'id': '21',
+      'title': 'globalEmployeePointsTitle',
+      'route': AppRoutes.GLOBALEMPLOYEEPOINTSSCREEN
+    },
+    {
+      'id': '22',
+      'title': 'pointsReportTitle',
+      'route': AppRoutes.EMPLOYEEPOINTSREPORTSCREEN
+    },
   ];
 
   // متغيرات للإحصائيات

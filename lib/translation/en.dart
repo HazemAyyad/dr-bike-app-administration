@@ -1211,4 +1211,108 @@ const Map<String, String> en = {
   'rewardRulesSetting': 'Reward Rules',
   'rewardRulesSettingDesc':
       'Define monetary rewards based on monthly net points',
+  'pointCategoriesSetting': 'Point Categories',
+  'pointCategoriesSettingDesc':
+      'Define the value (add/deduct) for every behavior',
+
+  // Reward rule status / color (admin)
+  'rewardRuleStatusLabel': 'Status label',
+  'rewardRuleStatusColor': 'Status color',
+  'rewardRuleStatusLabelHint': 'e.g. Good, Excellent, Top',
+
+  // Point Categories Settings screen
+  'pointCategoriesTitle': 'Point Categories',
+  'pointCategoriesEmpty': 'No categories yet. Add one to get started.',
+  'addPointCategory': 'Add Category',
+  'editPointCategory': 'Edit Category',
+  'pointCategoryNameAr': 'Arabic name',
+  'pointCategoryNameEn': 'English name',
+  'pointCategoryCode': 'Code',
+  'pointCategoryCodeHint': 'e.g. prayer, lateness',
+  'pointCategoryOperationType': 'Operation type',
+  'pointCategoryOpAdd': 'Add',
+  'pointCategoryOpDeduct': 'Deduct',
+  'pointCategoryDefaultPoints': 'Default points',
+  'pointCategorySortOrder': 'Sort order',
+  'pointCategoryActive': 'Active',
+  'pointCategoryInactive': 'Inactive',
+  'pointCategoryCreated': 'Category created',
+  'pointCategoryUpdated': 'Category updated',
+  'pointCategoryDeleted': 'Category deleted',
+  'pointCategoryDeleteConfirm': 'Delete this category?',
+  'pointCategoryNameRequired': 'Arabic name is required',
+  'pointCategoryCodeRequired': 'Code is required',
+  'pointCategoryPointsRequired': 'Default points are required',
+  'pointCategoryFilterAll': 'All categories',
+  'pointCategoryFilterAdd': 'Add only',
+  'pointCategoryFilterDeduct': 'Deduct only',
+  'positiveCategoriesGroup': 'Positive categories',
+  'negativeCategoriesGroup': 'Negative categories',
+
+  // Global Employee Points screen
+  'globalEmployeePointsTitle': 'Employees Points',
+  'globalEmployeePointsEmpty': 'No employees to display.',
+  'searchEmployee': 'Search employee',
+  'totalNet': 'Net points',
+  'totalReward': 'Reward',
+  'rewardStatus': 'Reward status',
+  'noRewardStatus': 'No status',
+  'viewEmployee': 'Open employee',
+  'viewLogs': 'View logs',
+
+  // Points Reports screen
+  'pointsReportTitle': 'Points Report',
+  'pointsReportEmpty': 'No data for the selected period.',
+  'pointsReportTotals': 'Totals',
+  'pointsReportIncludeLogs': 'Include logs per employee',
+  'pointsReportEmployee': 'Employee',
+  'pointsReportNoLogs': 'No movements in this period',
+  'expandLogs': 'Show details',
+  'collapseLogs': 'Hide details',
+
+  // Add/Deduct dialog category dropdown extras
+  'pointsCategoryAutoFill': 'Value is fixed by the category and cannot be edited',
+  'pointsCategoryOverride': 'Override points (optional)',
+  'pointsCategoryConfigurableHeader': 'Configured categories',
+
+  // Employees list points badge
+  'employeeNoPoints': 'No points',
+  'employeePointsBadgeUnit': 'pts',
+
+  // Period
+  'month': 'Month',
+  'year': 'Year',
+  'pickMonth': 'Pick month',
+  'pickYear': 'Pick year',
+  'thisYear': 'Current',
+  'month_january': 'January',
+  'month_february': 'February',
+  'month_march': 'March',
+  'month_april': 'April',
+  'month_may': 'May',
+  'month_june': 'June',
+  'month_july': 'July',
+  'month_august': 'August',
+  'month_september': 'September',
+  'month_october': 'October',
+  'month_november': 'November',
+  'month_december': 'December',
+
+  // Attendance report — split points columns
+  'earnedPointsCol': 'Earned',
+  'deductedPointsCol': 'Deducted',
+  'netPointsCol': 'Net',
+
+  // Points & Rewards Guide (admin)
+  'pointsGuideTitle': 'Points & Rewards Guide',
+  'pointsGuideEmpty': 'No data to display yet',
+  'pointsGuidePositive': 'Add categories',
+  'pointsGuideNegative': 'Deduct categories',
+  'pointsGuideRewards': 'Reward Rules',
+  'pointsGuideRewardsEmpty': 'No active reward rules yet',
+  'pointsGuideCategoriesEmpty': 'No active categories',
+  'pointsGuideRange': 'Range',
+  'pointsGuideReward': 'Reward',
+  'pointsGuideOpenEnded': 'and above',
+  'pointsGuideRefresh': 'Refresh',
 };

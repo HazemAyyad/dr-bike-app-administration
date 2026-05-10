@@ -283,7 +283,13 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
                                           'salaryForWorkedHoursCol'.tr),
                                     ),
                                     DataColumn(
-                                      label: Text('pointsSummaryReportCol'.tr),
+                                      label: Text('earnedPointsCol'.tr),
+                                    ),
+                                    DataColumn(
+                                      label: Text('deductedPointsCol'.tr),
+                                    ),
+                                    DataColumn(
+                                      label: Text('netPointsCol'.tr),
                                     ),
                                     DataColumn(
                                       label: Text('rewardAmountReportCol'.tr),
@@ -314,8 +320,17 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
 
   DataRow _row(BuildContext context, AttendanceReportEmployeeRow e) {
     final ps = e.pointsSummary;
-    final pointsCellText =
-        '${ps.earnedPoints}/${ps.deductedPoints}/${ps.netPoints}';
+    final earnedColor = ps.earnedPoints > 0
+        ? const Color(0xFF16A34A)
+        : Theme.of(context).textTheme.bodyMedium?.color;
+    final deductedColor = ps.deductedPoints > 0
+        ? const Color(0xFFDC2626)
+        : Theme.of(context).textTheme.bodyMedium?.color;
+    final netColor = ps.netPoints > 0
+        ? const Color(0xFF16A34A)
+        : ps.netPoints < 0
+            ? const Color(0xFFDC2626)
+            : Theme.of(context).textTheme.bodyMedium?.color;
     final rewardColor = ps.rewardAmountDouble > 0
         ? const Color(0xFF16A34A)
         : Theme.of(context).textTheme.bodyMedium?.color;
@@ -349,7 +364,27 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
               Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600),
         )),
-        DataCell(Text(pointsCellText)),
+        DataCell(Text(
+          ps.earnedPoints.toString(),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: earnedColor,
+              ),
+        )),
+        DataCell(Text(
+          ps.deductedPoints.toString(),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: deductedColor,
+              ),
+        )),
+        DataCell(Text(
+          ps.netPoints.toString(),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: netColor,
+              ),
+        )),
         DataCell(Text(
           e.rewardAmount,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(

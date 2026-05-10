@@ -63,13 +63,20 @@ class EmployeeTodayAttendanceCard extends GetView<EmployeeDashbordController> {
                       'todayAttendanceTitle'.tr,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
+                            color: ThemeService.isDark.value
+                                ? AppColors.customGreyColor6
+                                : AppColors.secondaryColor,
                           ),
                     ),
                     SizedBox(height: 4.h),
                     if (day == null)
                       Text(
                         'noAttendanceToday'.tr,
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor5
+                                  : AppColors.customGreyColor4,
+                            ),
                       )
                     else ...[
                       Text(
@@ -77,6 +84,9 @@ class EmployeeTodayAttendanceCard extends GetView<EmployeeDashbordController> {
                             day.workedMinutes),
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor6
+                                  : AppColors.secondaryColor,
                             ),
                       ),
                       if (day.currentlyIn)

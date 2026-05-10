@@ -32,6 +32,24 @@ class AppThemes {
         fontWeight: FontWeight.w500,
         color: Colors.black,
       ),
+      titleSmall: TextStyle(
+        fontFamily: 'Almarai',
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w600,
+        color: Colors.black,
+      ),
+      bodySmall: TextStyle(
+        fontFamily: 'Almarai',
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w400,
+        color: AppColors.customGreyColor4,
+      ),
+      labelSmall: TextStyle(
+        fontFamily: 'Almarai',
+        fontSize: 11.sp,
+        fontWeight: FontWeight.w400,
+        color: AppColors.customGreyColor4,
+      ),
       bodyLarge: TextStyle(
         fontSize: 16.sp,
         fontFamily: 'Almarai',
@@ -81,6 +99,24 @@ class AppThemes {
         fontSize: 18.sp,
         fontWeight: FontWeight.w500,
         color: Colors.white,
+      ),
+      titleSmall: TextStyle(
+        fontFamily: 'Almarai',
+        fontSize: 16.sp,
+        fontWeight: FontWeight.w600,
+        color: Colors.white,
+      ),
+      bodySmall: TextStyle(
+        fontFamily: 'Almarai',
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w400,
+        color: AppColors.customGreyColor5,
+      ),
+      labelSmall: TextStyle(
+        fontFamily: 'Almarai',
+        fontSize: 11.sp,
+        fontWeight: FontWeight.w400,
+        color: AppColors.customGreyColor5,
       ),
       bodyLarge: TextStyle(
         fontFamily: 'Almarai',

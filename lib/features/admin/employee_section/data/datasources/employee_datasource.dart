@@ -591,11 +591,16 @@ class EmployeeDatasource {
   // ========================================================================
 
   /// Persist a new positive/negative points log row for the given employee.
+  ///
+  /// When [categoryId] is provided the backend resolves the operation type
+  /// and default points from the configured point category, so [points] +
+  /// [category] become optional overrides.
   Future<Map<String, dynamic>> mutateEmployeePoints({
     required int employeeId,
     required bool isAdd,
-    required int points,
-    required String category,
+    int? points,
+    String? category,
+    int? categoryId,
     String? reason,
     String? notes,
     String? pointsDate,
@@ -606,8 +611,9 @@ class EmployeeDatasource {
             ? EndPoints.employeePointsAdd(employeeId)
             : EndPoints.employeePointsDeduct(employeeId),
         data: {
-          'points': points,
-          'category': category,
+          if (points != null) 'points': points,
+          if (category != null && category.isNotEmpty) 'category': category,
+          if (categoryId != null) 'category_id': categoryId,
           if (reason != null && reason.isNotEmpty) 'reason': reason,
           if (notes != null && notes.isNotEmpty) 'notes': notes,
           if (pointsDate != null && pointsDate.isNotEmpty)
@@ -746,6 +752,8 @@ class EmployeeDatasource {
     int? maxPoints,
     required double rewardAmount,
     required bool isActive,
+    String? statusLabel,
+    String? statusColor,
   }) async {
     try {
       final response = await api.post(
@@ -754,6 +762,10 @@ class EmployeeDatasource {
           'min_points': minPoints,
           if (maxPoints != null) 'max_points': maxPoints,
           'reward_amount': rewardAmount,
+          if (statusLabel != null && statusLabel.isNotEmpty)
+            'status_label': statusLabel,
+          if (statusColor != null && statusColor.isNotEmpty)
+            'status_color': statusColor,
           'is_active': isActive ? 1 : 0,
         },
       );
@@ -780,6 +792,9 @@ class EmployeeDatasource {
     int? maxPoints,
     bool clearMaxPoints = false,
     double? rewardAmount,
+    String? statusLabel,
+    String? statusColor,
+    bool clearStatusFields = false,
     bool? isActive,
   }) async {
     try {
@@ -791,6 +806,13 @@ class EmployeeDatasource {
         body['max_points'] = maxPoints;
       }
       if (rewardAmount != null) body['reward_amount'] = rewardAmount;
+      if (clearStatusFields) {
+        body['status_label'] = null;
+        body['status_color'] = null;
+      } else {
+        if (statusLabel != null) body['status_label'] = statusLabel;
+        if (statusColor != null) body['status_color'] = statusColor;
+      }
       if (isActive != null) body['is_active'] = isActive ? 1 : 0;
 
       final response = await api.put(
@@ -823,6 +845,217 @@ class EmployeeDatasource {
       return data is Map<String, dynamic>
           ? data
           : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  // ========================================================================
+  // Configurable point categories CRUD (admin defines behaviors)
+  // ========================================================================
+
+  Future<List<EmployeePointCategoryModel>> getEmployeePointCategories({
+    String? operationType,
+    bool? isActive,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.employeePointCategories,
+        queryParameters: {
+          if (operationType != null && operationType.isNotEmpty)
+            'operation_type': operationType,
+          if (isActive != null) 'is_active': isActive ? 1 : 0,
+        },
+      );
+      return mapListFromResponseKey(
+        response.data,
+        'categories',
+        (Map<String, dynamic> m) => EmployeePointCategoryModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getEmployeePointCategories',
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> createEmployeePointCategory({
+    required String nameAr,
+    String? nameEn,
+    required String code,
+    required String operationType,
+    required int defaultPoints,
+    bool isActive = true,
+    int sortOrder = 0,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.employeePointCategories,
+        data: {
+          'name_ar': nameAr,
+          if (nameEn != null && nameEn.isNotEmpty) 'name_en': nameEn,
+          'code': code,
+          'operation_type': operationType,
+          'default_points': defaultPoints,
+          'is_active': isActive ? 1 : 0,
+          'sort_order': sortOrder,
+        },
+      );
+      final data = response.data;
+      return data is Map<String, dynamic>
+          ? data
+          : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> updateEmployeePointCategory({
+    required int id,
+    String? nameAr,
+    String? nameEn,
+    String? code,
+    String? operationType,
+    int? defaultPoints,
+    bool? isActive,
+    int? sortOrder,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (nameAr != null) body['name_ar'] = nameAr;
+      if (nameEn != null) body['name_en'] = nameEn;
+      if (code != null) body['code'] = code;
+      if (operationType != null) body['operation_type'] = operationType;
+      if (defaultPoints != null) body['default_points'] = defaultPoints;
+      if (isActive != null) body['is_active'] = isActive ? 1 : 0;
+      if (sortOrder != null) body['sort_order'] = sortOrder;
+
+      final response = await api.put(
+        EndPoints.employeePointCategory(id),
+        data: body,
+      );
+      final data = response.data;
+      return data is Map<String, dynamic>
+          ? data
+          : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteEmployeePointCategory({
+    required int id,
+  }) async {
+    try {
+      final response = await api.delete(EndPoints.employeePointCategory(id));
+      final data = response.data;
+      return data is Map<String, dynamic>
+          ? data
+          : Map<String, dynamic>.from(data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  // ========================================================================
+  // Global points: list + report
+  // ========================================================================
+
+  Future<List<EmployeePointsRowModel>> getGlobalEmployeesPoints({
+    int? month,
+    int? year,
+    String? search,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.globalEmployeePoints,
+        queryParameters: {
+          if (month != null) 'month': month,
+          if (year != null) 'year': year,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+      );
+      return mapListFromResponseKey(
+        response.data,
+        'employees',
+        (Map<String, dynamic> m) => EmployeePointsRowModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getGlobalEmployeesPoints',
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage:
+              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeePointsReportModel> getGlobalPointsReport({
+    int? month,
+    int? year,
+    List<int>? employeeIds,
+    String? operationType,
+    int? categoryId,
+    bool includeLogs = false,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.globalPointsReport,
+        queryParameters: {
+          if (month != null) 'month': month,
+          if (year != null) 'year': year,
+          if (employeeIds != null && employeeIds.isNotEmpty)
+            'employee_ids[]': employeeIds,
+          if (operationType != null && operationType.isNotEmpty)
+            'operation_type': operationType,
+          if (categoryId != null) 'category_id': categoryId,
+          'include_logs': includeLogs ? 1 : 0,
+        },
+      );
+      return EmployeePointsReportModel.fromJson(asMap(response.data));
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

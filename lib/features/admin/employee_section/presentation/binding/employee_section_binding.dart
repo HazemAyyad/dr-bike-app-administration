@@ -20,10 +20,13 @@ import '../../domain/usecases/reject_order_usecase.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
 import '../../domain/usecases/working_times_usecase.dart';
 import '../controllers/add_employee_controller.dart';
+import '../controllers/employee_point_categories_controller.dart';
 import '../controllers/employee_points_controller.dart';
+import '../controllers/employee_points_report_controller.dart';
 import '../controllers/employee_reward_rules_controller.dart';
 import '../controllers/employee_section_controller.dart';
 import '../controllers/employee_service.dart';
+import '../controllers/global_employee_points_controller.dart';
 
 class EmployeeSectionBinding extends Bindings {
   @override
@@ -117,6 +120,54 @@ class EmployeeSectionBinding extends Bindings {
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         deleteRuleUsecase: DeleteEmployeeRewardRuleUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+      ),
+      fenix: true,
+    );
+
+    Get.lazyPut<EmployeePointCategoriesController>(
+      () => EmployeePointCategoriesController(
+        fetchUsecase: GetEmployeePointCategoriesUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        createUsecase: CreateEmployeePointCategoryUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        updateUsecase: UpdateEmployeePointCategoryUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        deleteUsecase: DeleteEmployeePointCategoryUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+      ),
+      fenix: true,
+    );
+
+    Get.lazyPut<GlobalEmployeePointsController>(
+      () => GlobalEmployeePointsController(
+        fetchGlobalUsecase: GetGlobalEmployeesPointsUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        fetchCategoriesUsecase: GetEmployeePointCategoriesUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        mutateUsecase: MutateEmployeePointsUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        summaryUsecase: GetEmployeePointsMonthlySummaryUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+      ),
+      fenix: true,
+    );
+
+    Get.lazyPut<EmployeePointsReportController>(
+      () => EmployeePointsReportController(
+        fetchReportUsecase: GetGlobalPointsReportUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        fetchCategoriesUsecase: GetEmployeePointCategoriesUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
       ),

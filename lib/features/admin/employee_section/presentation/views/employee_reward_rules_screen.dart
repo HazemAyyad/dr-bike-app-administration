@@ -228,6 +228,39 @@ class _RewardRuleCard extends StatelessWidget {
                         isDark ? Colors.white70 : const Color(0xFF374151),
                   ),
                 ),
+                if ((rule.statusLabel != null &&
+                        rule.statusLabel!.isNotEmpty) ||
+                    (rule.statusColor != null &&
+                        rule.statusColor!.isNotEmpty)) ...[
+                  SizedBox(height: 6.h),
+                  Row(
+                    children: [
+                      Container(
+                        width: 14.w,
+                        height: 14.w,
+                        decoration: BoxDecoration(
+                          color: _parseHex(rule.statusColor) ??
+                              const Color(0xFF9CA3AF),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Flexible(
+                        child: Text(
+                          rule.statusLabel ?? '',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                            color: _parseHex(rule.statusColor) ??
+                                (isDark
+                                    ? Colors.white
+                                    : const Color(0xFF111827)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 SizedBox(height: 6.h),
                 Wrap(
                   spacing: 8.w,
@@ -289,7 +322,18 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
   late final TextEditingController _minCtrl;
   late final TextEditingController _maxCtrl;
   late final TextEditingController _amountCtrl;
+  late final TextEditingController _statusLabelCtrl;
+  late String _statusColor;
   bool _isActive = true;
+
+  static const List<String> _palette = [
+    '#9CA3AF',
+    '#F59E0B',
+    '#2563EB',
+    '#16A34A',
+    '#DC2626',
+    '#7C3AED',
+  ];
 
   @override
   void initState() {
@@ -298,6 +342,11 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
     _minCtrl = TextEditingController(text: r?.minPoints.toString() ?? '');
     _maxCtrl = TextEditingController(text: r?.maxPoints?.toString() ?? '');
     _amountCtrl = TextEditingController(text: r?.rewardAmount ?? '');
+    _statusLabelCtrl = TextEditingController(text: r?.statusLabel ?? '');
+    _statusColor =
+        (r?.statusColor != null && r!.statusColor!.isNotEmpty)
+            ? r.statusColor!
+            : _palette.first;
     _isActive = r?.isActive ?? true;
   }
 
@@ -306,6 +355,7 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
     _minCtrl.dispose();
     _maxCtrl.dispose();
     _amountCtrl.dispose();
+    _statusLabelCtrl.dispose();
     super.dispose();
   }
 
@@ -393,6 +443,57 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
                     return null;
                   },
                 ),
+                SizedBox(height: 12.h),
+                TextFormField(
+                  controller: _statusLabelCtrl,
+                  decoration: _decoration(
+                    'rewardRuleStatusLabel'.tr,
+                    hint: 'rewardRuleStatusLabelHint'.tr,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'rewardRuleStatusColor'.tr,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: _palette.map((hex) {
+                    final isSelected = _statusColor.toLowerCase() ==
+                        hex.toLowerCase();
+                    return InkWell(
+                      onTap: () => setState(() => _statusColor = hex),
+                      borderRadius: BorderRadius.circular(20.r),
+                      child: Container(
+                        width: 32.w,
+                        height: 32.w,
+                        decoration: BoxDecoration(
+                          color: _parseHex(hex) ?? Colors.grey,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.black
+                                : Colors.transparent,
+                            width: 2,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check,
+                                color: Colors.white, size: 18)
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
                 SizedBox(height: 6.h),
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
@@ -454,6 +555,7 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
     final maxText = _maxCtrl.text.trim();
     final maxVal = maxText.isEmpty ? null : int.parse(maxText);
     final amount = double.parse(_amountCtrl.text.trim());
+    final statusLabel = _statusLabelCtrl.text.trim();
 
     final isUpdate = widget.existingRule != null;
     bool ok;
@@ -464,6 +566,8 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
         maxPoints: maxVal,
         clearMaxPoints: maxText.isEmpty,
         rewardAmount: amount,
+        statusLabel: statusLabel,
+        statusColor: _statusColor,
         isActive: _isActive,
       );
     } else {
@@ -472,6 +576,8 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
         maxPoints: maxVal,
         rewardAmount: amount,
         isActive: _isActive,
+        statusLabel: statusLabel.isEmpty ? null : statusLabel,
+        statusColor: _statusColor,
       );
     }
     if (ok && mounted) Navigator.of(context).pop(true);
@@ -486,4 +592,18 @@ class _RewardRuleEditorDialogState extends State<_RewardRuleEditorDialog> {
       contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
     );
   }
+}
+
+/// Parse a `#RRGGBB` (or `#AARRGGBB`) string into a [Color]. Returns null if
+/// the input is empty/null or not a valid hex value.
+Color? _parseHex(String? input) {
+  if (input == null) return null;
+  var s = input.trim();
+  if (s.isEmpty) return null;
+  if (s.startsWith('#')) s = s.substring(1);
+  if (s.length == 6) s = 'FF$s';
+  if (s.length != 8) return null;
+  final value = int.tryParse(s, radix: 16);
+  if (value == null) return null;
+  return Color(value);
 }

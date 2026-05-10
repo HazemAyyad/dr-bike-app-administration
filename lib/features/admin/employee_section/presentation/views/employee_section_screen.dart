@@ -29,6 +29,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
         title: 'employeeSection',
         actions: [
           IconButton(
+            tooltip: 'pointsGuideTitle'.tr,
             icon: Icon(
               Icons.redeem,
               color: ThemeService.isDark.value

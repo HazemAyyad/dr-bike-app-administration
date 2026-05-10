@@ -13,8 +13,9 @@ class MutateEmployeePointsUsecase {
   Future<Either<Failure, EmployeePointsLogModel>> call({
     required int employeeId,
     required bool isAdd,
-    required int points,
-    required String category,
+    int? points,
+    String? category,
+    int? categoryId,
     String? reason,
     String? notes,
     String? pointsDate,
@@ -24,6 +25,7 @@ class MutateEmployeePointsUsecase {
       isAdd: isAdd,
       points: points,
       category: category,
+      categoryId: categoryId,
       reason: reason,
       notes: notes,
       pointsDate: pointsDate,
@@ -105,12 +107,16 @@ class CreateEmployeeRewardRuleUsecase {
     int? maxPoints,
     required double rewardAmount,
     required bool isActive,
+    String? statusLabel,
+    String? statusColor,
   }) {
     return employeeRepository.createEmployeeRewardRule(
       minPoints: minPoints,
       maxPoints: maxPoints,
       rewardAmount: rewardAmount,
       isActive: isActive,
+      statusLabel: statusLabel,
+      statusColor: statusColor,
     );
   }
 }
@@ -126,6 +132,9 @@ class UpdateEmployeeRewardRuleUsecase {
     int? maxPoints,
     bool clearMaxPoints = false,
     double? rewardAmount,
+    String? statusLabel,
+    String? statusColor,
+    bool clearStatusFields = false,
     bool? isActive,
   }) {
     return employeeRepository.updateEmployeeRewardRule(
@@ -134,6 +143,9 @@ class UpdateEmployeeRewardRuleUsecase {
       maxPoints: maxPoints,
       clearMaxPoints: clearMaxPoints,
       rewardAmount: rewardAmount,
+      statusLabel: statusLabel,
+      statusColor: statusColor,
+      clearStatusFields: clearStatusFields,
       isActive: isActive,
     );
   }
@@ -146,5 +158,135 @@ class DeleteEmployeeRewardRuleUsecase {
 
   Future<Either<Failure, String>> call({required int id}) {
     return employeeRepository.deleteEmployeeRewardRule(id: id);
+  }
+}
+
+// =============================================================================
+// Point Categories
+// =============================================================================
+
+class GetEmployeePointCategoriesUsecase {
+  final EmployeeRepository employeeRepository;
+
+  GetEmployeePointCategoriesUsecase({required this.employeeRepository});
+
+  Future<List<EmployeePointCategoryModel>> call({
+    String? operationType,
+    bool? isActive,
+  }) {
+    return employeeRepository.getEmployeePointCategories(
+      operationType: operationType,
+      isActive: isActive,
+    );
+  }
+}
+
+class CreateEmployeePointCategoryUsecase {
+  final EmployeeRepository employeeRepository;
+
+  CreateEmployeePointCategoryUsecase({required this.employeeRepository});
+
+  Future<Either<Failure, EmployeePointCategoryModel>> call({
+    required String nameAr,
+    String? nameEn,
+    required String code,
+    required String operationType,
+    required int defaultPoints,
+    bool isActive = true,
+    int sortOrder = 0,
+  }) {
+    return employeeRepository.createEmployeePointCategory(
+      nameAr: nameAr,
+      nameEn: nameEn,
+      code: code,
+      operationType: operationType,
+      defaultPoints: defaultPoints,
+      isActive: isActive,
+      sortOrder: sortOrder,
+    );
+  }
+}
+
+class UpdateEmployeePointCategoryUsecase {
+  final EmployeeRepository employeeRepository;
+
+  UpdateEmployeePointCategoryUsecase({required this.employeeRepository});
+
+  Future<Either<Failure, EmployeePointCategoryModel>> call({
+    required int id,
+    String? nameAr,
+    String? nameEn,
+    String? code,
+    String? operationType,
+    int? defaultPoints,
+    bool? isActive,
+    int? sortOrder,
+  }) {
+    return employeeRepository.updateEmployeePointCategory(
+      id: id,
+      nameAr: nameAr,
+      nameEn: nameEn,
+      code: code,
+      operationType: operationType,
+      defaultPoints: defaultPoints,
+      isActive: isActive,
+      sortOrder: sortOrder,
+    );
+  }
+}
+
+class DeleteEmployeePointCategoryUsecase {
+  final EmployeeRepository employeeRepository;
+
+  DeleteEmployeePointCategoryUsecase({required this.employeeRepository});
+
+  Future<Either<Failure, String>> call({required int id}) {
+    return employeeRepository.deleteEmployeePointCategory(id: id);
+  }
+}
+
+// =============================================================================
+// Global Points (admin)
+// =============================================================================
+
+class GetGlobalEmployeesPointsUsecase {
+  final EmployeeRepository employeeRepository;
+
+  GetGlobalEmployeesPointsUsecase({required this.employeeRepository});
+
+  Future<List<EmployeePointsRowModel>> call({
+    int? month,
+    int? year,
+    String? search,
+  }) {
+    return employeeRepository.getGlobalEmployeesPoints(
+      month: month,
+      year: year,
+      search: search,
+    );
+  }
+}
+
+class GetGlobalPointsReportUsecase {
+  final EmployeeRepository employeeRepository;
+
+  GetGlobalPointsReportUsecase({required this.employeeRepository});
+
+  Future<EmployeePointsReportModel> call({
+    int? month,
+    int? year,
+    List<int>? employeeIds,
+    String? operationType,
+    int? categoryId,
+    bool includeLogs = false,
+  }) {
+    return employeeRepository.getGlobalPointsReport(
+      month: month,
+      year: year,
+      employeeIds: employeeIds,
+      operationType: operationType,
+      categoryId: categoryId,
+      includeLogs: includeLogs,
+    );
   }
 }

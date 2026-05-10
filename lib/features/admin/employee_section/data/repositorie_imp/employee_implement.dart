@@ -408,8 +408,9 @@ class EmployeeImplement implements EmployeeRepository {
   Future<Either<Failure, EmployeePointsLogModel>> mutateEmployeePoints({
     required int employeeId,
     required bool isAdd,
-    required int points,
-    required String category,
+    int? points,
+    String? category,
+    int? categoryId,
     String? reason,
     String? notes,
     String? pointsDate,
@@ -423,6 +424,7 @@ class EmployeeImplement implements EmployeeRepository {
         isAdd: isAdd,
         points: points,
         category: category,
+        categoryId: categoryId,
         reason: reason,
         notes: notes,
         pointsDate: pointsDate,
@@ -530,6 +532,8 @@ class EmployeeImplement implements EmployeeRepository {
     int? maxPoints,
     required double rewardAmount,
     required bool isActive,
+    String? statusLabel,
+    String? statusColor,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -540,6 +544,8 @@ class EmployeeImplement implements EmployeeRepository {
         maxPoints: maxPoints,
         rewardAmount: rewardAmount,
         isActive: isActive,
+        statusLabel: statusLabel,
+        statusColor: statusColor,
       );
       if (result['status'] == 'success') {
         final ruleRaw = result['rule'];
@@ -566,6 +572,9 @@ class EmployeeImplement implements EmployeeRepository {
     int? maxPoints,
     bool clearMaxPoints = false,
     double? rewardAmount,
+    String? statusLabel,
+    String? statusColor,
+    bool clearStatusFields = false,
     bool? isActive,
   }) async {
     if (!await networkInfo.isConnected) {
@@ -578,6 +587,9 @@ class EmployeeImplement implements EmployeeRepository {
         maxPoints: maxPoints,
         clearMaxPoints: clearMaxPoints,
         rewardAmount: rewardAmount,
+        statusLabel: statusLabel,
+        statusColor: statusColor,
+        clearStatusFields: clearStatusFields,
         isActive: isActive,
       );
       if (result['status'] == 'success') {
@@ -615,6 +627,186 @@ class EmployeeImplement implements EmployeeRepository {
       );
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  // ========================================================================
+  // Point Categories (configurable behaviors with default values)
+  // ========================================================================
+
+  @override
+  Future<List<EmployeePointCategoryModel>> getEmployeePointCategories({
+    String? operationType,
+    bool? isActive,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw ServerFailure('No internet connection', {});
+    }
+    try {
+      return await employeeDatasource.getEmployeePointCategories(
+        operationType: operationType,
+        isActive: isActive,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Either<Failure, EmployeePointCategoryModel>>
+      createEmployeePointCategory({
+    required String nameAr,
+    String? nameEn,
+    required String code,
+    required String operationType,
+    required int defaultPoints,
+    bool isActive = true,
+    int sortOrder = 0,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.createEmployeePointCategory(
+        nameAr: nameAr,
+        nameEn: nameEn,
+        code: code,
+        operationType: operationType,
+        defaultPoints: defaultPoints,
+        isActive: isActive,
+        sortOrder: sortOrder,
+      );
+      if (result['status'] == 'success') {
+        final catRaw = result['category'];
+        if (catRaw is Map) {
+          return Right(
+            EmployeePointCategoryModel.fromJson(
+              Map<String, dynamic>.from(catRaw),
+            ),
+          );
+        }
+      }
+      return Left(
+        ValidationFailure(result['message'] ?? 'Unknown error', result),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, EmployeePointCategoryModel>>
+      updateEmployeePointCategory({
+    required int id,
+    String? nameAr,
+    String? nameEn,
+    String? code,
+    String? operationType,
+    int? defaultPoints,
+    bool? isActive,
+    int? sortOrder,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.updateEmployeePointCategory(
+        id: id,
+        nameAr: nameAr,
+        nameEn: nameEn,
+        code: code,
+        operationType: operationType,
+        defaultPoints: defaultPoints,
+        isActive: isActive,
+        sortOrder: sortOrder,
+      );
+      if (result['status'] == 'success') {
+        final catRaw = result['category'];
+        if (catRaw is Map) {
+          return Right(
+            EmployeePointCategoryModel.fromJson(
+              Map<String, dynamic>.from(catRaw),
+            ),
+          );
+        }
+      }
+      return Left(
+        ValidationFailure(result['message'] ?? 'Unknown error', result),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> deleteEmployeePointCategory({
+    required int id,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.deleteEmployeePointCategory(
+        id: id,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? '');
+      }
+      return Left(
+        ValidationFailure(result['message'] ?? 'Unknown error', result),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  // ========================================================================
+  // Global points list + reports
+  // ========================================================================
+
+  @override
+  Future<List<EmployeePointsRowModel>> getGlobalEmployeesPoints({
+    int? month,
+    int? year,
+    String? search,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw ServerFailure('No internet connection', {});
+    }
+    try {
+      return await employeeDatasource.getGlobalEmployeesPoints(
+        month: month,
+        year: year,
+        search: search,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<EmployeePointsReportModel> getGlobalPointsReport({
+    int? month,
+    int? year,
+    List<int>? employeeIds,
+    String? operationType,
+    int? categoryId,
+    bool includeLogs = false,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw ServerFailure('No internet connection', {});
+    }
+    try {
+      return await employeeDatasource.getGlobalPointsReport(
+        month: month,
+        year: year,
+        employeeIds: employeeIds,
+        operationType: operationType,
+        categoryId: categoryId,
+        includeLogs: includeLogs,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 

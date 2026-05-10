@@ -99,8 +99,9 @@ abstract class EmployeeRepository {
   Future<Either<Failure, EmployeePointsLogModel>> mutateEmployeePoints({
     required int employeeId,
     required bool isAdd,
-    required int points,
-    required String category,
+    int? points,
+    String? category,
+    int? categoryId,
     String? reason,
     String? notes,
     String? pointsDate,
@@ -131,6 +132,8 @@ abstract class EmployeeRepository {
     int? maxPoints,
     required double rewardAmount,
     required bool isActive,
+    String? statusLabel,
+    String? statusColor,
   });
 
   Future<Either<Failure, EmployeeRewardRuleModel>> updateEmployeeRewardRule({
@@ -139,8 +142,60 @@ abstract class EmployeeRepository {
     int? maxPoints,
     bool clearMaxPoints,
     double? rewardAmount,
+    String? statusLabel,
+    String? statusColor,
+    bool clearStatusFields,
     bool? isActive,
   });
 
   Future<Either<Failure, String>> deleteEmployeeRewardRule({required int id});
+
+  // Point categories (configurable behaviors with default values)
+  Future<List<EmployeePointCategoryModel>> getEmployeePointCategories({
+    String? operationType,
+    bool? isActive,
+  });
+
+  Future<Either<Failure, EmployeePointCategoryModel>>
+      createEmployeePointCategory({
+    required String nameAr,
+    String? nameEn,
+    required String code,
+    required String operationType,
+    required int defaultPoints,
+    bool isActive,
+    int sortOrder,
+  });
+
+  Future<Either<Failure, EmployeePointCategoryModel>>
+      updateEmployeePointCategory({
+    required int id,
+    String? nameAr,
+    String? nameEn,
+    String? code,
+    String? operationType,
+    int? defaultPoints,
+    bool? isActive,
+    int? sortOrder,
+  });
+
+  Future<Either<Failure, String>> deleteEmployeePointCategory({
+    required int id,
+  });
+
+  // Global points (admin)
+  Future<List<EmployeePointsRowModel>> getGlobalEmployeesPoints({
+    int? month,
+    int? year,
+    String? search,
+  });
+
+  Future<EmployeePointsReportModel> getGlobalPointsReport({
+    int? month,
+    int? year,
+    List<int>? employeeIds,
+    String? operationType,
+    int? categoryId,
+    bool includeLogs,
+  });
 }

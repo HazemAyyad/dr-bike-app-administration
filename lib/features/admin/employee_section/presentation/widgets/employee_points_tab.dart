@@ -817,7 +817,10 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
   final TextEditingController _pointsCtrl = TextEditingController();
   final TextEditingController _reasonCtrl = TextEditingController();
   final TextEditingController _notesCtrl = TextEditingController();
-  String? _selectedCategory;
+
+  /// Legacy free-text category code (used when no configurable category is selected).
+  String? _selectedLegacyCategory;
+  EmployeePointCategoryModel? _selectedConfigurableCategory;
   DateTime? _selectedDate;
 
   @override
@@ -875,15 +878,73 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
                 ),
                 SizedBox(height: 14.h),
                 Obx(() {
-                  final cats = widget.isAdd
-                      ? widget.controller.categories.value?.positive ?? const []
-                      : widget.controller.categories.value?.negative ?? const [];
+                  final all = widget.controller.categories.value;
+                  final configurable = (all?.configurable ?? const [])
+                      .where((c) =>
+                          c.isActive &&
+                          (widget.isAdd ? c.isAdd : c.isDeduct))
+                      .toList();
+                  final legacy = widget.isAdd
+                      ? (all?.positive ?? const <String>[])
+                      : (all?.negative ?? const <String>[]);
+
+                  // Prefer configurable categories. If admin hasn't defined any,
+                  // gracefully fall back to the legacy free-text dropdown.
+                  if (configurable.isNotEmpty) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        DropdownButtonFormField<int>(
+                          initialValue: _selectedConfigurableCategory?.id,
+                          isExpanded: true,
+                          decoration: _decoration(
+                            'pointsCategory'.tr,
+                            hint: 'pointsCategoryHint'.tr,
+                          ),
+                          items: configurable
+                              .map(
+                                (c) => DropdownMenuItem<int>(
+                                  value: c.id,
+                                  child: Text(_categoryDisplayName(c)),
+                                ),
+                              )
+                              .toList(),
+                          validator: (v) => v == null
+                              ? 'pointsCategoryRequired'.tr
+                              : null,
+                          onChanged: (id) {
+                            final cat = configurable
+                                .firstWhere((c) => c.id == id);
+                            setState(() {
+                              _selectedConfigurableCategory = cat;
+                              _pointsCtrl.text = cat.defaultPoints.toString();
+                            });
+                          },
+                        ),
+                        if (_selectedConfigurableCategory != null)
+                          Padding(
+                            padding: EdgeInsets.only(top: 6.h),
+                            child: Text(
+                              '${widget.isAdd ? '+' : '-'} '
+                              '${_selectedConfigurableCategory!.defaultPoints} '
+                              '· ${'pointsCategoryAutoFill'.tr}',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: const Color(0xFF6B7280),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  }
+
+                  // Legacy fallback (older installs without configured categories)
                   return DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
+                    initialValue: _selectedLegacyCategory,
                     isExpanded: true,
                     decoration: _decoration('pointsCategory'.tr,
                         hint: 'pointsCategoryHint'.tr),
-                    items: cats
+                    items: legacy
                         .map((c) => DropdownMenuItem<String>(
                               value: c,
                               child: Text(_categoryLabel(c)),
@@ -892,15 +953,36 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
                     validator: (v) => (v == null || v.isEmpty)
                         ? 'pointsCategoryRequired'.tr
                         : null,
-                    onChanged: (v) => setState(() => _selectedCategory = v),
+                    onChanged: (v) =>
+                        setState(() => _selectedLegacyCategory = v),
                   );
                 }),
                 SizedBox(height: 12.h),
                 TextFormField(
                   controller: _pointsCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: _decoration('pointsValue'.tr),
+                  readOnly: _selectedConfigurableCategory != null,
+                  enabled: _selectedConfigurableCategory == null,
+                  decoration: _decoration(
+                    'pointsValue'.tr,
+                  ).copyWith(
+                    suffixIcon: _selectedConfigurableCategory != null
+                        ? Icon(
+                            Icons.lock_outline_rounded,
+                            size: 18.sp,
+                            color: const Color(0xFF9CA3AF),
+                          )
+                        : null,
+                    helperText: _selectedConfigurableCategory != null
+                        ? 'pointsCategoryAutoFill'.tr
+                        : null,
+                    helperStyle: TextStyle(
+                      fontSize: 10.sp,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
                   validator: (v) {
+                    if (_selectedConfigurableCategory != null) return null;
                     if (v == null || v.isEmpty) {
                       return 'pointsValueRequired'.tr;
                     }
@@ -995,14 +1077,33 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final ok = await widget.controller.mutatePoints(
-      isAdd: widget.isAdd,
-      points: int.parse(_pointsCtrl.text.trim()),
-      category: _selectedCategory!,
-      reason: _reasonCtrl.text.trim(),
-      notes: _notesCtrl.text.trim(),
-      pointsDate: _selectedDate,
-    );
+
+    final overrideText = _pointsCtrl.text.trim();
+    final overridePoints =
+        overrideText.isEmpty ? null : int.tryParse(overrideText);
+
+    bool ok;
+    if (_selectedConfigurableCategory != null) {
+      // Category drives the points value; admin cannot override here.
+      ok = await widget.controller.mutatePoints(
+        isAdd: widget.isAdd,
+        categoryId: _selectedConfigurableCategory!.id,
+        category: _selectedConfigurableCategory!.code,
+        points: null,
+        reason: _reasonCtrl.text.trim(),
+        notes: _notesCtrl.text.trim(),
+        pointsDate: _selectedDate,
+      );
+    } else {
+      ok = await widget.controller.mutatePoints(
+        isAdd: widget.isAdd,
+        points: overridePoints,
+        category: _selectedLegacyCategory,
+        reason: _reasonCtrl.text.trim(),
+        notes: _notesCtrl.text.trim(),
+        pointsDate: _selectedDate,
+      );
+    }
     if (ok && mounted) {
       Navigator.of(context).pop(true);
     }
@@ -1026,4 +1127,16 @@ String _categoryLabel(String key) {
     return key.replaceAll('_', ' ');
   }
   return translated;
+}
+
+/// Resolve display name for a configurable category, preferring the Arabic
+/// name with a localized fallback if missing.
+String _categoryDisplayName(EmployeePointCategoryModel cat) {
+  final isArabic = Get.locale?.languageCode == 'ar';
+  if (isArabic) {
+    if (cat.nameAr.isNotEmpty) return cat.nameAr;
+    return cat.nameEn ?? cat.code;
+  }
+  if (cat.nameEn != null && cat.nameEn!.isNotEmpty) return cat.nameEn!;
+  return cat.nameAr.isNotEmpty ? cat.nameAr : cat.code;
 }

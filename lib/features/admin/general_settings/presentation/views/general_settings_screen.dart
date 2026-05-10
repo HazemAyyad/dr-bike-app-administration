@@ -17,6 +17,13 @@ class GeneralSettingsScreen extends StatelessWidget {
 
     final items = <_SettingsItem>[
       _SettingsItem(
+        icon: Icons.tune_rounded,
+        iconColor: const Color(0xFF2563EB),
+        titleKey: 'pointCategoriesSetting',
+        descriptionKey: 'pointCategoriesSettingDesc',
+        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTCATEGORIESSCREEN),
+      ),
+      _SettingsItem(
         icon: Icons.emoji_events_outlined,
         iconColor: const Color(0xFFB45309),
         titleKey: 'rewardRulesSetting',

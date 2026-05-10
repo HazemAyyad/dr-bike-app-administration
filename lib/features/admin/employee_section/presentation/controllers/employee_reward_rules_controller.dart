@@ -50,6 +50,8 @@ class EmployeeRewardRulesController extends GetxController {
     int? maxPoints,
     required double rewardAmount,
     required bool isActive,
+    String? statusLabel,
+    String? statusColor,
   }) async {
     isMutating.value = true;
     try {
@@ -58,6 +60,8 @@ class EmployeeRewardRulesController extends GetxController {
         maxPoints: maxPoints,
         rewardAmount: rewardAmount,
         isActive: isActive,
+        statusLabel: statusLabel,
+        statusColor: statusColor,
       );
       return result.fold(
         (failure) {
@@ -88,6 +92,9 @@ class EmployeeRewardRulesController extends GetxController {
     int? maxPoints,
     bool clearMaxPoints = false,
     double? rewardAmount,
+    String? statusLabel,
+    String? statusColor,
+    bool clearStatusFields = false,
     bool? isActive,
   }) async {
     isMutating.value = true;
@@ -98,6 +105,9 @@ class EmployeeRewardRulesController extends GetxController {
         maxPoints: maxPoints,
         clearMaxPoints: clearMaxPoints,
         rewardAmount: rewardAmount,
+        statusLabel: statusLabel,
+        statusColor: statusColor,
+        clearStatusFields: clearStatusFields,
         isActive: isActive,
       );
       return result.fold(

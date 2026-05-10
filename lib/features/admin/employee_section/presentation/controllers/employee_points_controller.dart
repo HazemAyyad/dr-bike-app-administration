@@ -134,10 +134,15 @@ class EmployeePointsController extends GetxController {
   }
 
   /// Returns true when the points were saved successfully.
+  ///
+  /// When [categoryId] is provided the backend resolves operation type and
+  /// default points from the configured category, so [points] / [category]
+  /// become optional overrides.
   Future<bool> mutatePoints({
     required bool isAdd,
-    required int points,
-    required String category,
+    int? points,
+    String? category,
+    int? categoryId,
     String? reason,
     String? notes,
     DateTime? pointsDate,
@@ -155,6 +160,7 @@ class EmployeePointsController extends GetxController {
         isAdd: isAdd,
         points: points,
         category: category,
+        categoryId: categoryId,
         reason: reason,
         notes: notes,
         pointsDate: formattedDate,

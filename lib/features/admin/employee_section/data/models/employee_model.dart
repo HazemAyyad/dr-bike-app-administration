@@ -14,6 +14,7 @@ class EmployeeModel extends EmployeeEntity {
     required bool hasAttendedToday,
     required bool isWorkingNow,
     required bool isCameOnTime,
+    EmployeePointsSummaryEntity? pointsSummary,
   }) : super(
           id: id,
           employeeName: name,
@@ -23,10 +24,26 @@ class EmployeeModel extends EmployeeEntity {
           hasAttendedToday: hasAttendedToday,
           isWorkingNow: isWorkingNow,
           isCameOnTime: isCameOnTime,
+          pointsSummary: pointsSummary,
         );
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
+    EmployeePointsSummaryEntity? summary;
+    final ps = j['points_summary'];
+    if (ps is Map) {
+      final m = Map<String, dynamic>.from(ps);
+      summary = EmployeePointsSummaryEntity(
+        earnedPoints: asInt(m['earned_points']),
+        deductedPoints: asInt(m['deducted_points']),
+        netPoints: asInt(m['net_points']),
+        rewardAmount: asString(m['reward_amount'], '0.00'),
+        rewardRuleId:
+            m['reward_rule_id'] == null ? null : asInt(m['reward_rule_id']),
+        rewardStatusLabel: asNullableString(m['reward_status_label']),
+        rewardStatusColor: asNullableString(m['reward_status_color']),
+      );
+    }
     return EmployeeModel(
       id: asInt(j[ApiKey.id]),
       name: asString(j[ApiKey.employee_name], 'unknown'),
@@ -36,6 +53,7 @@ class EmployeeModel extends EmployeeEntity {
       hasAttendedToday: asBool(j['has_attended_today']),
       isWorkingNow: asBool(j['is_working_now']),
       isCameOnTime: asBool(j['is_came_on_time']),
+      pointsSummary: summary,
     );
   }
 
