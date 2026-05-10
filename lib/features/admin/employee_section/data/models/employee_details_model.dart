@@ -25,6 +25,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
     required String endWorkTime,
     required List<String> employeeImg,
     required List<String> documentImg,
+    required List<String> weeklyDaysOff,
     required List<PermissionEntity> permissions,
     required List<RewardPunishmentEntity> rewardPunishment,
   }) : super(
@@ -40,6 +41,7 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
           endWorkTime: endWorkTime,
           employeeImg: employeeImg,
           documentImg: documentImg,
+          weeklyDaysOff: weeklyDaysOff,
           permissions: permissions,
           rewardPunishment: rewardPunishment,
         );
@@ -60,6 +62,10 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
       endWorkTime: asString(details[ApiKey.end_work_time]),
       employeeImg: _imageUrlList(details[ApiKey.employee_img]),
       documentImg: _imageUrlList(details[ApiKey.document_img]),
+      weeklyDaysOff: mapList(
+        details[ApiKey.weekly_days_off],
+        (m) => asString(m),
+      ).map((e) => e.toLowerCase()).toList(),
       permissions: mapList(
         j[ApiKey.permissions],
         (Map<String, dynamic> m) => PermissionModel.fromJson(m),

@@ -25,6 +25,7 @@ class AddEmployeeUsecase {
     required List<File> documentImg,
     required List<File> employeeImg,
     required List<String> permissions,
+    required List<String> weeklyDaysOff,
   }) {
     return employeeRepository.creatEmployee(
       employeeId: employeeId,
@@ -41,6 +42,7 @@ class AddEmployeeUsecase {
       documentImg: documentImg,
       employeeImg: employeeImg,
       permissions: permissions,
+      weeklyDaysOff: weeklyDaysOff,
     );
   }
 }

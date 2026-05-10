@@ -11,6 +11,7 @@ class EmployeeDetailsEntity {
   final String endWorkTime;
   final List<String> employeeImg;
   final List<String> documentImg;
+  final List<String> weeklyDaysOff;
   final List<PermissionEntity> permissions;
   final List<RewardPunishmentEntity> rewardPunishment;
 
@@ -27,6 +28,7 @@ class EmployeeDetailsEntity {
     required this.endWorkTime,
     required this.employeeImg,
     required this.documentImg,
+    required this.weeklyDaysOff,
     required this.permissions,
     required this.rewardPunishment,
   });

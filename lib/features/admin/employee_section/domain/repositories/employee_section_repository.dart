@@ -49,6 +49,7 @@ abstract class EmployeeRepository {
     required List<File> documentImg,
     required List<File> employeeImg,
     required List<String> permissions,
+    required List<String> weeklyDaysOff,
   });
 
   Future<Either<Failure, String>> addPointsToEmployee({

@@ -57,6 +57,18 @@ class AddEmployeeController extends GetxController {
           (permission) => permission.permissionId == int.parse(element['id']),
         );
       }
+
+      // Weekly days off (new)
+      final existing = employeeService.employeeDetails.value!.weeklyDaysOff;
+      for (final d in existing) {
+        final key = d.toLowerCase();
+        if (weeklyDaysOff.containsKey(key)) {
+          weeklyDaysOff[key]!.value = true;
+        }
+      }
+    } else {
+      // Default weekly day off: Friday (week starts Saturday)
+      weeklyDaysOff['friday']!.value = true;
     }
   }
 
@@ -129,6 +141,22 @@ class AddEmployeeController extends GetxController {
 
   final Rx<TimeOfDay> selectedTime = TimeOfDay.now().obs;
 
+  // Weekly days off selection
+  final Map<String, RxBool> weeklyDaysOff = {
+    'saturday': false.obs,
+    'sunday': false.obs,
+    'monday': false.obs,
+    'tuesday': false.obs,
+    'wednesday': false.obs,
+    'thursday': false.obs,
+    'friday': false.obs,
+  };
+
+  List<String> get selectedWeeklyDaysOff => weeklyDaysOff.entries
+      .where((e) => e.value.value)
+      .map((e) => e.key)
+      .toList();
+
   RxBool isLoading = false.obs;
 
   // add new employee
@@ -162,6 +190,7 @@ class AddEmployeeController extends GetxController {
               .where((e) => e['permission'].value)
               .map<String>((e) => e['id'])
               .toList(),
+          weeklyDaysOff: selectedWeeklyDaysOff,
         );
         result.fold(
           (failure) {

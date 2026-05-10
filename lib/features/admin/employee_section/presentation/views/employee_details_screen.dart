@@ -313,6 +313,17 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                             "${'from'.tr} ${formatTimeTo12Hour(controller.employeeService.employeeDetails.value!.startWorkTime)} ${'to'.tr} ${formatTimeTo12Hour(controller.employeeService.employeeDetails.value!.endWorkTime)}",
                       ),
                       SizedBox(height: 10.h),
+                      SupTextAndDiscr(
+                        title: 'weeklyDaysOffTitle',
+                        discription: controller.employeeService.employeeDetails
+                                .value!.weeklyDaysOff.isEmpty
+                            ? '—'
+                            : controller.employeeService.employeeDetails.value!
+                                .weeklyDaysOff
+                                .map((d) => ('day_${d.toLowerCase()}').tr)
+                                .join(', '),
+                      ),
+                      SizedBox(height: 10.h),
                       Row(
                         // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,

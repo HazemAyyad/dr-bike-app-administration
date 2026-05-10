@@ -42,6 +42,7 @@ class EmployeeImplement implements EmployeeRepository {
     required List<File> documentImg,
     required List<File> employeeImg,
     required List<String> permissions,
+    required List<String> weeklyDaysOff,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -62,6 +63,7 @@ class EmployeeImplement implements EmployeeRepository {
         documentImg: documentImg,
         employeeImg: employeeImg,
         permissions: permissions,
+        weeklyDaysOff: weeklyDaysOff,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

@@ -391,6 +391,7 @@ class ApiKey {
   static const String financial_details = 'financial_details';
   static const String employee_details = 'employee_details';
   static const String overtime_work_price = 'overtime_work_price';
+  static const String weekly_days_off = 'weekly_days_off';
   static const String document_img = 'document_img';
   static const String permissions = 'permissions';
   static const String permission_id = 'permission_id';

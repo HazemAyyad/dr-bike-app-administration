@@ -184,6 +184,8 @@ class EmployeeAttendanceMonthlySummary {
   final String? rangeNormalSalary;
   final String? rangeOvertimeSalary;
   final String? rangeTotalSalary;
+  final List<String>? weeklyDaysOff;
+  final int? monthlyWorkingDaysCount;
 
   const EmployeeAttendanceMonthlySummary({
     required this.month,
@@ -209,6 +211,8 @@ class EmployeeAttendanceMonthlySummary {
     required this.rangeNormalSalary,
     required this.rangeOvertimeSalary,
     required this.rangeTotalSalary,
+    required this.weeklyDaysOff,
+    required this.monthlyWorkingDaysCount,
   });
 
   factory EmployeeAttendanceMonthlySummary.fromJson(Map<String, dynamic> json) {
@@ -245,6 +249,12 @@ class EmployeeAttendanceMonthlySummary {
       rangeNormalSalary: asNullableString(j['range_normal_salary']),
       rangeOvertimeSalary: asNullableString(j['range_overtime_salary']),
       rangeTotalSalary: asNullableString(j['range_total_salary']),
+      weeklyDaysOff: mapList(j['weekly_days_off'], (m) => asString(m))
+          .map((e) => e.toLowerCase())
+          .toList(),
+      monthlyWorkingDaysCount: j['monthly_working_days_count'] == null
+          ? null
+          : asInt(j['monthly_working_days_count']),
     );
   }
 }

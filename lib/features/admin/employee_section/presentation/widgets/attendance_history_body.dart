@@ -43,6 +43,23 @@ class AttendanceHistoryBody extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                   SizedBox(height: 6.h),
+                  if (monthlySummary!.weeklyDaysOff != null) ...[
+                    _attendanceHistoryRow(
+                      context,
+                      'weeklyDaysOffTitle'.tr,
+                      (monthlySummary!.weeklyDaysOff!.isEmpty)
+                          ? '—'
+                          : monthlySummary!.weeklyDaysOff!
+                              .map((d) => ('day_${d.toLowerCase()}').tr)
+                              .join(', '),
+                    ),
+                  ],
+                  if (monthlySummary!.monthlyWorkingDaysCount != null)
+                    _attendanceHistoryRow(
+                      context,
+                      'monthlyWorkingDaysLabel'.tr,
+                      monthlySummary!.monthlyWorkingDaysCount.toString(),
+                    ),
                   _attendanceHistoryRow(
                     context,
                     'rangeLabel'.tr,

@@ -396,6 +396,37 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                 allowedType: MediaType.image,
               ),
               SizedBox(height: 10.h),
+              // Weekly days off (new)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  'weeklyDaysOffTitle'.tr,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor6
+                            : AppColors.customGreyColor,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Obx(
+                () => Wrap(
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: [
+                    _WeeklyDayChip(controller: controller, keyName: 'saturday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'sunday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'monday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'tuesday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'wednesday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'thursday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'friday'),
+                  ],
+                ),
+              ),
+              SizedBox(height: 15.h),
               Row(
                 children: [
                   Text(
@@ -471,6 +502,27 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _WeeklyDayChip extends StatelessWidget {
+  const _WeeklyDayChip({
+    required this.controller,
+    required this.keyName,
+  });
+
+  final AddEmployeeController controller;
+  final String keyName; // "monday".."sunday"
+
+  @override
+  Widget build(BuildContext context) {
+    final labelKey = 'day_$keyName';
+    final selected = controller.weeklyDaysOff[keyName]!.value;
+    return FilterChip(
+      label: Text(labelKey.tr),
+      selected: selected,
+      onSelected: (v) => controller.weeklyDaysOff[keyName]!.value = v,
     );
   }
 }

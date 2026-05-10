@@ -42,6 +42,7 @@ class EmployeeDatasource {
     required List<File> documentImg,
     required List<File> employeeImg,
     required List<String> permissions,
+    required List<String> weeklyDaysOff,
   }) async {
     try {
       Map<String, dynamic> documentsImageList = {};
@@ -97,6 +98,7 @@ class EmployeeDatasource {
           ...employeeImgList,
           ...documentsImageList,
           'permissions[]': permissions,
+          if (weeklyDaysOff.isNotEmpty) ApiKey.weekly_days_off: weeklyDaysOff,
         },
         isFormData: true,
       );
