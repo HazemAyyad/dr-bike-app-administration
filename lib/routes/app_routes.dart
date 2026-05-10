@@ -125,4 +125,7 @@ class AppRoutes {
 
   // Employee Points & Rewards
   static const EMPLOYEEREWARDRULESSCREEN = '/EmployeeRewardRulesScreen';
+
+  // General Settings (admin)
+  static const GENERALSETTINGSSCREEN = '/GeneralSettingsScreen';
 }

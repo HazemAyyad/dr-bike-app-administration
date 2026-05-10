@@ -1205,4 +1205,9 @@ const Map<String, String> ar = {
   'pointsSummaryReportCol': 'النقاط (مكتسب/مخصوم/صافي)',
   'rewardAmountReportCol': 'المكافأة',
   'finalSalaryReportCol': 'الراتب النهائي',
+
+  // General Settings (admin)
+  'generalSettings': 'الإعدادات العامة',
+  'rewardRulesSetting': 'قوانين المكافآت',
+  'rewardRulesSettingDesc': 'تحديد المكافآت المالية بناءً على صافي النقاط الشهري',
 };

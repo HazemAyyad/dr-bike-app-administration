@@ -90,6 +90,11 @@ class AdminDashboardController extends GetxController
       'title': 'categoryManagement',
       'route': AppRoutes.CATEGORYMANAGEMENTSCREEN
     },
+    {
+      'id': '20',
+      'title': 'generalSettings',
+      'route': AppRoutes.GENERALSETTINGSSCREEN
+    },
   ];
 
   // متغيرات للإحصائيات

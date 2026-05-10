@@ -1205,4 +1205,10 @@ const Map<String, String> en = {
   'pointsSummaryReportCol': 'Points (E/D/Net)',
   'rewardAmountReportCol': 'Reward',
   'finalSalaryReportCol': 'Final salary',
+
+  // General Settings (admin)
+  'generalSettings': 'General Settings',
+  'rewardRulesSetting': 'Reward Rules',
+  'rewardRulesSettingDesc':
+      'Define monetary rewards based on monthly net points',
 };

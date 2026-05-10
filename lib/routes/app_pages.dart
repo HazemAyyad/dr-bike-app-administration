@@ -60,6 +60,7 @@ import '../features/admin/employee_section/presentation/controllers/attendance_h
 import '../features/admin/employee_section/presentation/controllers/attendance_report_controller.dart';
 import '../features/admin/employee_section/presentation/views/attendance_report_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_reward_rules_screen.dart';
+import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
 import '../features/admin/employee_section/presentation/views/qr_history_screen.dart';
@@ -389,6 +390,11 @@ class AppPages {
       name: AppRoutes.EMPLOYEEREWARDRULESSCREEN,
       page: () => const EmployeeRewardRulesScreen(),
       binding: EmployeeSectionBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.GENERALSETTINGSSCREEN,
+      page: () => const GeneralSettingsScreen(),
       transition: _transitionFadeIn,
     ),
 
