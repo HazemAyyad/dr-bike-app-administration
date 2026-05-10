@@ -60,10 +60,23 @@ class QrCodeController extends GetxController {
             Get.back();
           },
         );
+
+        final extra = <String>[];
+        if (success.workedHours != null) {
+          extra.add('${'workedHoursLabel'.tr}: ${success.workedHours}');
+        }
+        if (success.overtimeHours != null) {
+          extra.add('${'overtimeHoursLabel'.tr}: ${success.overtimeHours}');
+        }
+        if (success.totalSalary != null) {
+          extra.add('${'totalSalaryLabel'.tr}: ${success.totalSalary}');
+        }
+        final msg = extra.isEmpty ? success.message : '${success.message}\n${extra.join('\n')}';
+
         Helpers.showCustomDialogSuccess(
           context: Get.context!,
           title: 'success'.tr,
-          message: success,
+          message: msg,
         );
       },
     );

@@ -35,6 +35,16 @@ const Map<String, String> ar = {
   'hoursShort': 'س',
   'noLabel': 'لا',
 
+  // Attendance overtime/salary (new)
+  'contractOvertimeTitle': 'الأوفر تايم والراتب (حسب العقد)',
+  'workedHoursLabel': 'ساعات العمل',
+  'requiredHoursLabel': 'الساعات المطلوبة',
+  'normalHoursLabel': 'الساعات العادية',
+  'overtimeHoursLabel': 'ساعات الأوفر تايم',
+  'totalSalaryLabel': 'إجمالي الراتب',
+  'monthlySummaryTitle': 'ملخص الشهر',
+  'rangeLabel': 'الفترة',
+
   'success': 'نجح',
   'error': 'خطأ',
   'warning': 'تحذير',

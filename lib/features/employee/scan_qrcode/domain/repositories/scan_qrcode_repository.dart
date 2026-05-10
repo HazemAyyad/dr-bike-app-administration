@@ -1,7 +1,8 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../data/models/qr_scan_result.dart';
 
 abstract class ScanQrCodeRepository {
-  Future<Either<Failure, String>> qrScan({required String qrData});
+  Future<Either<Failure, QrScanResult>> qrScan({required String qrData});
 }

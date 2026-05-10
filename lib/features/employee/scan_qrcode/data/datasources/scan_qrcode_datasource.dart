@@ -6,6 +6,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
+import '../models/qr_scan_result.dart';
 
 class ScanQrCodeDatasource {
   final ApiConsumer api;
@@ -13,13 +14,13 @@ class ScanQrCodeDatasource {
   ScanQrCodeDatasource({required this.api});
 
   // scan QR code
-  Future<Map<String, dynamic>> qrScan({required String qrData}) async {
+  Future<QrScanResult> qrScan({required String qrData}) async {
     try {
       final response =
           await api.post(EndPoints.qrScan, data: {'qr_data': qrData});
       final data = response.data;
       // print('Response data: $response');
-      return data;
+      return QrScanResult.fromJson(Map<String, dynamic>.from(data));
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

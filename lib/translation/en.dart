@@ -35,6 +35,16 @@ const Map<String, String> en = {
   'hoursShort': 'h',
   'noLabel': 'No',
 
+  // Attendance overtime/salary (new)
+  'contractOvertimeTitle': 'Overtime & salary (contract)',
+  'workedHoursLabel': 'Worked hours',
+  'requiredHoursLabel': 'Required hours',
+  'normalHoursLabel': 'Normal hours',
+  'overtimeHoursLabel': 'Overtime hours',
+  'totalSalaryLabel': 'Total salary',
+  'monthlySummaryTitle': 'Monthly summary',
+  'rangeLabel': 'Range',
+
   'success': 'Success',
   'error': 'Error',
   'warning': 'Warning',

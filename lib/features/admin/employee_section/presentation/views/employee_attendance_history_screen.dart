@@ -57,7 +57,11 @@ class EmployeeAttendanceHistoryScreen
                 );
               }
               final head = data.employee;
-              return AttendanceHistoryBody(employee: head, days: data.days);
+              return AttendanceHistoryBody(
+                employee: head,
+                monthlySummary: data.monthlySummary,
+                days: data.days,
+              );
             }),
           ),
         ],

@@ -36,6 +36,7 @@ class MyAttendanceHistoryScreen extends GetView<MyAttendanceHistoryController> {
         }
         return AttendanceHistoryBody(
           employee: data.employee,
+          monthlySummary: data.monthlySummary,
           days: data.days,
           headerExtra: Padding(
             padding: EdgeInsets.only(bottom: 12.h),

@@ -12,11 +12,13 @@ class AttendanceHistoryBody extends StatelessWidget {
     Key? key,
     required this.employee,
     required this.days,
+    this.monthlySummary,
     this.headerExtra,
   }) : super(key: key);
 
   final EmployeeAttendanceHead employee;
   final List<EmployeeAttendanceDay> days;
+  final EmployeeAttendanceMonthlySummary? monthlySummary;
   final Widget? headerExtra;
 
   @override
@@ -25,6 +27,52 @@ class AttendanceHistoryBody extends StatelessWidget {
       padding: EdgeInsets.all(16.w),
       children: [
         if (headerExtra != null) headerExtra!,
+        if (monthlySummary != null) ...[
+          Card(
+            margin: EdgeInsets.only(bottom: 12.h),
+            child: Padding(
+              padding: EdgeInsets.all(12.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'monthlySummaryTitle'.tr,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 6.h),
+                  _attendanceHistoryRow(
+                    context,
+                    'rangeLabel'.tr,
+                    '${monthlySummary!.rangeFrom ?? '—'} → ${monthlySummary!.rangeTo ?? '—'}',
+                  ),
+                  _attendanceHistoryRow(
+                    context,
+                    'workedHoursLabel'.tr,
+                    monthlySummary!.rangeWorkedHours ?? '—',
+                  ),
+                  _attendanceHistoryRow(
+                    context,
+                    'requiredHoursLabel'.tr,
+                    monthlySummary!.rangeRequiredHours ?? '—',
+                  ),
+                  _attendanceHistoryRow(
+                    context,
+                    'overtimeHoursLabel'.tr,
+                    monthlySummary!.rangeOvertimeHours ?? '—',
+                  ),
+                  _attendanceHistoryRow(
+                    context,
+                    'totalSalaryLabel'.tr,
+                    monthlySummary!.rangeTotalSalary ?? '—',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         if (employee.startWorkTime != null &&
             employee.startWorkTime!.isNotEmpty) ...[
           Text(
@@ -89,6 +137,51 @@ class AttendanceHistoryDayCard extends StatelessWidget {
                   'workedTodayLabel'.tr,
                   AttendanceHistoryController.formatMinutes(day.workedMinutes),
                 ),
+                if (day.workedHours != null ||
+                    day.requiredHours != null ||
+                    day.normalHours != null ||
+                    day.overtimeHours != null) ...[
+                  SizedBox(height: 6.h),
+                  Text(
+                    'contractOvertimeTitle'.tr,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(height: 6.h),
+                  if (day.workedHours != null)
+                    _attendanceHistoryRow(
+                      context,
+                      'workedHoursLabel'.tr,
+                      day.workedHours!,
+                    ),
+                  if (day.requiredHours != null)
+                    _attendanceHistoryRow(
+                      context,
+                      'requiredHoursLabel'.tr,
+                      day.requiredHours!,
+                    ),
+                  if (day.normalHours != null)
+                    _attendanceHistoryRow(
+                      context,
+                      'normalHoursLabel'.tr,
+                      day.normalHours!,
+                    ),
+                  if (day.overtimeHours != null)
+                    _attendanceHistoryRow(
+                      context,
+                      'overtimeHoursLabel'.tr,
+                      day.overtimeHours!,
+                    ),
+                  if (day.totalSalary != null) ...[
+                    _attendanceHistoryRow(
+                      context,
+                      'totalSalaryLabel'.tr,
+                      day.totalSalary!,
+                    ),
+                  ],
+                ],
                 _attendanceHistoryRow(
                   context,
                   'awayMinutesLabel'.tr,
