@@ -1301,6 +1301,14 @@ const Map<String, String> ar = {
   'deductedPointsCol': 'مخصوم',
   'netPointsCol': 'صافي',
 
+  // Employee actions sheet (long-press)
+  'employeeActionsHint': 'اختر إجراءً للموظف',
+  'deleteEmployeeAction': 'حذف الموظف',
+  'deleteEmployeeConfirmTitle': 'تأكيد الحذف',
+  'deleteEmployeeConfirmBody':
+      'هل تريد حذف الموظف @name؟ سيتم إخفاؤه من القوائم مع الاحتفاظ بسجلاته (الحضور، النقاط، الرواتب…).',
+  'employeeDeletedSuccess': 'تم حذف الموظف بنجاح',
+
   // Points & Rewards Guide (admin)
   'pointsGuideTitle': 'دليل النقاط والمكافآت',
   'pointsGuideEmpty': 'لا توجد بيانات لعرضها بعد',

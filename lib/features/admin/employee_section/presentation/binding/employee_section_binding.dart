@@ -8,6 +8,7 @@ import '../../data/repositorie_imp/employee_implement.dart';
 import '../../domain/usecases/add_points_usecase.dart';
 import '../../domain/usecases/approve_employee_order_usecase.dart';
 import '../../domain/usecases/cancel_log_usecase.dart';
+import '../../domain/usecases/delete_employee_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
@@ -71,6 +72,9 @@ class EmployeeSectionBinding extends Bindings {
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         cancelLogUsecase: CancelLogUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        deleteEmployeeUsecase: DeleteEmployeeUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         getReportByType: GetReportByTypeUsecase(

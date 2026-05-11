@@ -24,6 +24,7 @@ import '../../domain/entities/employee_entity.dart';
 import '../../domain/entities/working_times_entity.dart';
 import '../../domain/usecases/approve_employee_order_usecase.dart';
 import '../../domain/usecases/cancel_log_usecase.dart';
+import '../../domain/usecases/delete_employee_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
@@ -52,6 +53,7 @@ class EmployeeSectionController extends GetxController
   final ApproveEmployeeOrderUsecase approveEmployeeOrderUsecase;
   final GetLogsUsecase getLogsUsecase;
   final CancelLogUsecase cancelLogUsecase;
+  final DeleteEmployeeUsecase deleteEmployeeUsecase;
   final EmployeeService employeeService;
   final GetReportByTypeUsecase getReportByType;
 
@@ -69,6 +71,7 @@ class EmployeeSectionController extends GetxController
     required this.approveEmployeeOrderUsecase,
     required this.getLogsUsecase,
     required this.cancelLogUsecase,
+    required this.deleteEmployeeUsecase,
     required this.employeeService,
     required this.getReportByType,
   });
@@ -309,6 +312,51 @@ class EmployeeSectionController extends GetxController
     employeeService.employeeList.assignAll(result);
     filteredEmployees.assignAll(employeeService.employeeList);
     isLoading(false);
+  }
+
+  final RxBool isDeletingEmployee = false.obs;
+
+  /// Soft-deletes an employee on the backend and removes them from the
+  /// local cached lists so the UI reflects the change immediately.
+  Future<bool> deleteEmployee(String employeeId) async {
+    isDeletingEmployee.value = true;
+    try {
+      final result = await deleteEmployeeUsecase.call(employeeId: employeeId);
+      return result.fold(
+        (failure) {
+          Get.snackbar(
+            'error'.tr,
+            failure.errMessage,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return false;
+        },
+        (message) {
+          final int? id = int.tryParse(employeeId);
+          if (id != null) {
+            employeeService.employeeList
+                .removeWhere((e) => e.id == id);
+            employeeService.workingTimesList
+                .removeWhere((e) => e.id == id);
+            employeeService.financialDuesList
+                .removeWhere((e) => e.id == id);
+            filteredEmployees.removeWhere((e) => e.id == id);
+            filteredWorkingTimes.removeWhere((e) => e.id == id);
+            filteredFinancialDues.removeWhere((e) => e.id == id);
+          }
+          Get.snackbar(
+            'success'.tr,
+            message.isNotEmpty ? message : 'employeeDeletedSuccess'.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: const Color(0xFFE8F5E9),
+            colorText: const Color(0xFF1B5E20),
+          );
+          return true;
+        },
+      );
+    } finally {
+      isDeletingEmployee.value = false;
+    }
   }
 
   //Get Working Times

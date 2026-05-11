@@ -1303,6 +1303,14 @@ const Map<String, String> en = {
   'deductedPointsCol': 'Deducted',
   'netPointsCol': 'Net',
 
+  // Employee actions sheet (long-press)
+  'employeeActionsHint': 'Choose an action for this employee',
+  'deleteEmployeeAction': 'Delete employee',
+  'deleteEmployeeConfirmTitle': 'Confirm deletion',
+  'deleteEmployeeConfirmBody':
+      'Delete employee @name? They will be hidden from lists but all their records (attendance, points, salaries) are kept.',
+  'employeeDeletedSuccess': 'Employee deleted successfully',
+
   // Points & Rewards Guide (admin)
   'pointsGuideTitle': 'Points & Rewards Guide',
   'pointsGuideEmpty': 'No data to display yet',

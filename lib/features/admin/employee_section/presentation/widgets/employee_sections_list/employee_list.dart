@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../domain/entities/employee_entity.dart';
@@ -15,41 +16,104 @@ class EmployeeList extends GetView<EmployeeSectionController> {
 
   final EmployeeEntity employee;
 
+  void _openDetails() {
+    controller.getEmployeeDetails(employee.id.toString());
+    Get.toNamed(
+      AppRoutes.EMPLOYEEDETAILSSCREEN,
+      arguments: employee.points,
+    );
+  }
+
+  void _openImageViewer(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withAlpha(128),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return FullScreenZoomImage(imageUrl: employee.employeeImg);
+      },
+    );
+  }
+
+  Future<void> _showActionsSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _EmployeeActionsSheet(
+        employee: employee,
+        onView: () {
+          Navigator.of(ctx).pop();
+          _openDetails();
+        },
+        onDelete: () async {
+          Navigator.of(ctx).pop();
+          final confirmed = await _confirmDelete(context);
+          if (confirmed) {
+            await controller.deleteEmployee(employee.id.toString());
+          }
+        },
+      ),
+    );
+  }
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final isDark = ThemeService.isDark.value;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        backgroundColor: isDark ? AppColors.customGreyColor : Colors.white,
+        title: Text(
+          'deleteEmployeeConfirmTitle'.tr,
+          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'deleteEmployeeConfirmBody'
+              .trParams({'name': employee.employeeName}),
+          style: TextStyle(fontSize: 13.sp),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('cancel'.tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('delete'.tr),
+          ),
+        ],
+      ),
+    );
+    return result == true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
-    return Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            onTap: () {
-              controller.getEmployeeDetails(employee.id.toString());
-              Get.toNamed(
-                AppRoutes.EMPLOYEEDETAILSSCREEN,
-                arguments: employee.points,
-              );
-            },
+    return InkWell(
+      onTap: _openDetails,
+      onLongPress: () => _showActionsSheet(context),
+      child: Row(
+        children: [
+          Expanded(
             child: Row(
               children: [
                 Flexible(
                   child: Padding(
                     padding: const EdgeInsets.all(5),
                     child: GestureDetector(
-                      onTap: () {
-                        showGeneralDialog(
-                          context: context,
-                          barrierDismissible: true,
-                          barrierLabel: 'Dismiss',
-                          barrierColor: Colors.black.withAlpha(128),
-                          transitionDuration:
-                              const Duration(milliseconds: 300),
-                          pageBuilder: (context, anim1, anim2) {
-                            return FullScreenZoomImage(
-                              imageUrl: employee.employeeImg,
-                            );
-                          },
-                        );
-                      },
+                      onTap: () => _openImageViewer(context),
                       child: Container(
                         height: 80.h,
                         width: 80.w,
@@ -100,7 +164,6 @@ class EmployeeList extends GetView<EmployeeSectionController> {
                           ),
                         ],
                       ),
-
                       SizedBox(height: 4.h),
                       Text(
                         '${'hourlyRate'.tr} : ${employee.hourWorkPrice} ${'currency'.tr}',
@@ -116,9 +179,161 @@ class EmployeeList extends GetView<EmployeeSectionController> {
               ],
             ),
           ),
+          _PointsBadge(employee: employee),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeeActionsSheet extends StatelessWidget {
+  const _EmployeeActionsSheet({
+    required this.employee,
+    required this.onView,
+    required this.onDelete,
+  });
+
+  final EmployeeEntity employee;
+  final VoidCallback onView;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final sheetColor =
+        isDark ? AppColors.customGreyColor : Colors.white;
+    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
+    final subColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: BoxDecoration(
+          color: sheetColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
-        _PointsBadge(employee: employee),
-      ],
+        padding: EdgeInsets.symmetric(vertical: 14.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 42.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : const Color(0xFFD1D5DB),
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+            SizedBox(height: 14.h),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18.w),
+              child: Row(
+                children: [
+                  ClipOval(
+                    child: SizedBox(
+                      width: 46.w,
+                      height: 46.w,
+                      child: CachedNetworkImage(
+                        imageUrl: employee.employeeImg,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) =>
+                            const Icon(Icons.person),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          employee.employeeName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w800,
+                            color: titleColor,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          'employeeActionsHint'.tr,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: subColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Divider(
+              height: 1.h,
+              color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+            ),
+            _ActionTile(
+              icon: Icons.person_outline_rounded,
+              label: 'viewEmployee'.tr,
+              color: isDark
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+              onTap: onView,
+            ),
+            _ActionTile(
+              icon: Icons.delete_outline_rounded,
+              label: 'deleteEmployeeAction'.tr,
+              color: const Color(0xFFDC2626),
+              onTap: onDelete,
+            ),
+            SizedBox(height: 4.h),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        padding: EdgeInsets.all(8.w),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(9.r),
+        ),
+        child: Icon(icon, color: color, size: 20.sp),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13.sp,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: color.withValues(alpha: 0.6),
+      ),
     );
   }
 }

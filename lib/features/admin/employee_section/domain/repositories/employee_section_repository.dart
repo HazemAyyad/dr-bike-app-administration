@@ -76,6 +76,10 @@ abstract class EmployeeRepository {
     required String salary,
   });
 
+  Future<Either<Failure, String>> deleteEmployee({
+    required String employeeId,
+  });
+
   Future<List<OvertimeAndLoanModel>> getOvertimeAndLoan({
     required bool isOvertime,
   });

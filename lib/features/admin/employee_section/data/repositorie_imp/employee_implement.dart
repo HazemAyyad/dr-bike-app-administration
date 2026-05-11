@@ -142,6 +142,32 @@ class EmployeeImplement implements EmployeeRepository {
     }
   }
 
+  // soft delete an employee
+  @override
+  Future<Either<Failure, String>> deleteEmployee({
+    required String employeeId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.deleteEmployee(
+        employeeId: employeeId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message'] ?? '');
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
   // get all employees
   @override
   Future<List<EmployeeModel>> getEmployees() async {

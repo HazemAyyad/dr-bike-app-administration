@@ -184,6 +184,32 @@ class EmployeeDatasource {
     }
   }
 
+  // soft delete an employee
+  Future<Map<String, dynamic>> deleteEmployee({
+    required String employeeId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.deleteEmployee,
+        data: {
+          'employee_id': employeeId,
+        },
+        isFormData: true,
+      );
+      final data = response.data;
+      return data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   // get all employees
   Future<List<EmployeeModel>> getEmployees() async {
     try {
