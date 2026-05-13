@@ -165,12 +165,17 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       if (Get.isSnackbarOpen) {
         Get.closeCurrentSnackbar();
       }
+      if (method == 'authenticateKeyguard') {
+        _showMessage('سيتم فتح شاشة قفل الجهاز، أكمل التحقق ثم ارجع للتطبيق');
+      }
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
       debugPrint('Biometric native test: starting $method');
       final result = await NativeBiometricService.instance.authenticate(
         method: method,
-        timeout: const Duration(seconds: 90),
+        timeout: method == 'authenticateKeyguard'
+            ? const Duration(seconds: 120)
+            : const Duration(seconds: 90),
       );
       debugPrint(
         'Biometric native test: success=${result.success} '

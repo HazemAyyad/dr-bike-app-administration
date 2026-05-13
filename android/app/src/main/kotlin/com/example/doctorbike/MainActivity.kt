@@ -4,7 +4,10 @@ import android.app.KeyguardManager
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.util.Log
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.lifecycle.Lifecycle
@@ -20,8 +23,52 @@ class MainActivity : FlutterFragmentActivity() {
     private val weak = BiometricManager.Authenticators.BIOMETRIC_WEAK
     private val deviceCredential = BiometricManager.Authenticators.DEVICE_CREDENTIAL
     private val strongOrCredential = strong or deviceCredential
-    private val keyguardRequestCode = 9001
+    private lateinit var keyguardLauncher: ActivityResultLauncher<Intent>
     private var pendingKeyguardResult: MethodChannel.Result? = null
+    private var keyguardLaunchStartedAt: Long = 0L
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        keyguardLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { activityResult ->
+            Log.d(
+                "DrBikeBiometric",
+                "Keyguard ActivityResult resultCode=${activityResult.resultCode}"
+            )
+            if (activityResult.resultCode == Activity.RESULT_OK) {
+                completeKeyguard(true, 0, "تم التحقق بنجاح")
+            } else {
+                completeKeyguard(false, activityResult.resultCode, "تم إلغاء عملية التحقق")
+            }
+        }
+        Log.d("DrBikeBiometric", "Keyguard ActivityResultLauncher initialized")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val pendingForMs = if (keyguardLaunchStartedAt > 0L) {
+            System.currentTimeMillis() - keyguardLaunchStartedAt
+        } else {
+            0L
+        }
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        Log.d(
+            "DrBikeBiometric",
+            "onResume lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
+                "pendingKeyguard=${pendingKeyguardResult != null} pendingForMs=$pendingForMs " +
+                "isKeyguardLocked=${keyguardManager.isKeyguardLocked}"
+        )
+    }
+
+    override fun onPause() {
+        Log.d(
+            "DrBikeBiometric",
+            "onPause lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
+                "pendingKeyguard=${pendingKeyguardResult != null}"
+        )
+        super.onPause()
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -238,7 +285,10 @@ class MainActivity : FlutterFragmentActivity() {
                     return@postDelayed
                 }
                 try {
-                    startActivityForResult(intent, keyguardRequestCode)
+                    Log.d("DrBikeBiometric", "Before keyguardLauncher.launch")
+                    keyguardLaunchStartedAt = System.currentTimeMillis()
+                    keyguardLauncher.launch(intent)
+                    Log.d("DrBikeBiometric", "After keyguardLauncher.launch")
                 } catch (e: Exception) {
                     Log.d("DrBikeBiometric", "Keyguard launch exception message=${e.message}")
                     completeKeyguard(
@@ -251,22 +301,10 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 
-    @Deprecated("Deprecated in Android API, kept for KeyguardManager compatibility")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == keyguardRequestCode) {
-            Log.d("DrBikeBiometric", "Keyguard resultCode=$resultCode")
-            if (resultCode == Activity.RESULT_OK) {
-                completeKeyguard(true, 0, "تم التحقق بنجاح")
-            } else {
-                completeKeyguard(false, resultCode, "تم إلغاء عملية التحقق")
-            }
-        }
-    }
-
     private fun completeKeyguard(success: Boolean, code: Any, message: String) {
         val result = pendingKeyguardResult
         pendingKeyguardResult = null
+        keyguardLaunchStartedAt = 0L
         result?.success(
             mapOf(
                 "success" to success,

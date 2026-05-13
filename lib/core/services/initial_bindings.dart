@@ -80,6 +80,17 @@ List<int> employeePermissions = [];
 String userName = '';
 
 class InitialBindings implements Bindings {
+  bool _hasBinding<T>() => Get.isRegistered<T>() || Get.isPrepared<T>();
+
+  void _lazyPutIfAbsent<T extends Object>(
+    T Function() builder, {
+    bool fenix = true,
+  }) {
+    if (!_hasBinding<T>()) {
+      Get.lazyPut<T>(builder, fenix: fenix);
+    }
+  }
+
   @override
   void dependencies() async {
     NetworkInfo networkInfo = NetworkInfo();
@@ -141,6 +152,28 @@ class InitialBindings implements Bindings {
     );
     Get.lazyPut<DebtsDataService>(() => DebtsDataService(), fenix: true);
 
+    // These repositories are needed immediately by the bottom navigation home.
+    // Register them before long async startup work, because GetX does not wait
+    // for async Bindings.dependencies() to finish before routing.
+    _lazyPutIfAbsent<EmployeeDatasource>(
+      () => EmployeeDatasource(api: Get.find<DioConsumer>()),
+    );
+    _lazyPutIfAbsent<EmployeeImplement>(
+      () => EmployeeImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        employeeDatasource: Get.find<EmployeeDatasource>(),
+      ),
+    );
+    _lazyPutIfAbsent<CountrersDatasource>(
+      () => CountrersDatasource(api: Get.find<DioConsumer>()),
+    );
+    _lazyPutIfAbsent<CountrersImplement>(
+      () => CountrersImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        countrersDataSource: Get.find<CountrersDatasource>(),
+      ),
+    );
+
     // firebase: على الويب لا يوجد في [firebase_options] إعداد Web، فيرمي ويُبقى التطبيق بدون Firebase.
     if (kIsWeb) {
       startApp.value = true;
@@ -185,16 +218,14 @@ class InitialBindings implements Bindings {
     // print('User Token: $userToken');
 
     // قسم الموظين
-    Get.lazyPut<EmployeeDatasource>(
+    _lazyPutIfAbsent<EmployeeDatasource>(
       () => EmployeeDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
     );
-    Get.lazyPut<EmployeeImplement>(
+    _lazyPutIfAbsent<EmployeeImplement>(
       () => EmployeeImplement(
         networkInfo: Get.find<NetworkInfo>(),
         employeeDatasource: Get.find<EmployeeDatasource>(),
       ),
-      fenix: true,
     );
     Get.lazyPut<EmployeeService>(() => EmployeeService(), fenix: true);
 
@@ -358,16 +389,14 @@ class InitialBindings implements Bindings {
     );
 
     // counters
-    Get.lazyPut<CountrersDatasource>(
+    _lazyPutIfAbsent<CountrersDatasource>(
       () => CountrersDatasource(api: Get.find<DioConsumer>()),
-      fenix: true,
     );
-    Get.lazyPut<CountrersImplement>(
+    _lazyPutIfAbsent<CountrersImplement>(
       () => CountrersImplement(
         networkInfo: Get.find<NetworkInfo>(),
         countrersDataSource: Get.find<CountrersDatasource>(),
       ),
-      fenix: true,
     );
 
     // payment
