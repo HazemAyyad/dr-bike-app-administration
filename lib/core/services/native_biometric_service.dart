@@ -9,12 +9,14 @@ class NativeBiometricResult {
     required this.available,
     this.code,
     this.message,
+    this.mode,
   });
 
   final bool success;
   final bool available;
   final int? code;
   final String? message;
+  final String? mode;
 
   factory NativeBiometricResult.fromMap(Map<dynamic, dynamic> map) {
     return NativeBiometricResult(
@@ -22,6 +24,7 @@ class NativeBiometricResult {
       available: map['available'] == true,
       code: map['code'] is int ? map['code'] as int : int.tryParse('${map['code']}'),
       message: map['message']?.toString(),
+      mode: map['mode']?.toString(),
     );
   }
 }
@@ -51,7 +54,10 @@ class NativeBiometricService {
     );
   }
 
-  Future<NativeBiometricResult> authenticate() async {
+  Future<NativeBiometricResult> authenticate({
+    String method = 'authenticate',
+    Duration timeout = const Duration(seconds: 45),
+  }) async {
     if (kIsWeb) {
       return const NativeBiometricResult(
         success: false,
@@ -61,10 +67,12 @@ class NativeBiometricService {
     }
 
     try {
-      final response = await _channel.invokeMethod<dynamic>('authenticate').timeout(
-        const Duration(seconds: 45),
+      debugPrint('Native biometric call: method=$method');
+      final response = await _channel.invokeMethod<dynamic>(method).timeout(
+        timeout,
         onTimeout: () {
-          throw TimeoutException('native_biometric_timeout');
+          debugPrint('Native biometric timeout: method=$method');
+          throw TimeoutException('native_biometric_timeout_$method');
         },
       );
       if (response is Map) return NativeBiometricResult.fromMap(response);
@@ -74,10 +82,11 @@ class NativeBiometricService {
         message: 'تعذر قراءة نتيجة التحقق بالبصمة',
       );
     } on TimeoutException {
-      return const NativeBiometricResult(
+      return NativeBiometricResult(
         success: false,
         available: true,
         message: 'انتهت مهلة التحقق، حاول مرة أخرى',
+        mode: method,
       );
     } on MissingPluginException {
       rethrow;

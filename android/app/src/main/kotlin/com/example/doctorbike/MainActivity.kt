@@ -11,10 +11,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : FlutterFragmentActivity() {
     private val channelName = "dr_bike/biometric"
-    private val authenticators =
-        BiometricManager.Authenticators.BIOMETRIC_STRONG or
-            BiometricManager.Authenticators.BIOMETRIC_WEAK or
-            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+    private val strong = BiometricManager.Authenticators.BIOMETRIC_STRONG
+    private val weak = BiometricManager.Authenticators.BIOMETRIC_WEAK
+    private val deviceCredential = BiometricManager.Authenticators.DEVICE_CREDENTIAL
+    private val strongOrCredential = strong or deviceCredential
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -22,14 +22,18 @@ class MainActivity : FlutterFragmentActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "isAvailable" -> result.success(checkAvailability())
-                    "authenticate" -> authenticate(result)
+                    "authenticate" -> authenticate(result, strong, "strong")
+                    "authenticateStrong" -> authenticate(result, strong, "strong")
+                    "authenticateWeak" -> authenticate(result, weak, "weak")
+                    "authenticateDeviceCredential" -> authenticate(result, deviceCredential, "deviceCredential")
+                    "authenticateStrongOrCredential" -> authenticate(result, strongOrCredential, "strongOrCredential")
                     else -> result.notImplemented()
                 }
             }
     }
 
     private fun checkAvailability(): Map<String, Any> {
-        val code = BiometricManager.from(this).canAuthenticate(authenticators)
+        val code = BiometricManager.from(this).canAuthenticate(strong)
         return mapOf(
             "available" to (code == BiometricManager.BIOMETRIC_SUCCESS),
             "code" to code,
@@ -37,15 +41,17 @@ class MainActivity : FlutterFragmentActivity() {
         )
     }
 
-    private fun authenticate(result: MethodChannel.Result) {
-        val availability = checkAvailability()
-        if (availability["available"] != true) {
+    private fun authenticate(result: MethodChannel.Result, authenticators: Int, mode: String) {
+        logAvailability(mode, authenticators)
+        val availabilityCode = BiometricManager.from(this).canAuthenticate(authenticators)
+        if (availabilityCode != BiometricManager.BIOMETRIC_SUCCESS) {
             result.success(
                 mapOf(
                     "success" to false,
                     "available" to false,
-                    "code" to availability["code"],
-                    "message" to availability["message"],
+                    "code" to availabilityCode,
+                    "message" to messageForCode(availabilityCode),
+                    "mode" to mode,
                 )
             )
             return
@@ -59,7 +65,7 @@ class MainActivity : FlutterFragmentActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(authResult: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(authResult)
-                    Log.d("DrBikeBiometric", "Native authentication succeeded")
+                    Log.d("DrBikeBiometric", "Native authentication succeeded mode=$mode")
                     if (completed.compareAndSet(false, true)) {
                         result.success(
                             mapOf(
@@ -67,6 +73,7 @@ class MainActivity : FlutterFragmentActivity() {
                                 "available" to true,
                                 "code" to 0,
                                 "message" to "تم التحقق بنجاح",
+                                "mode" to mode,
                             )
                         )
                     }
@@ -74,7 +81,7 @@ class MainActivity : FlutterFragmentActivity() {
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    Log.d("DrBikeBiometric", "Native authentication error: code=$errorCode message=$errString")
+                    Log.d("DrBikeBiometric", "Native authentication error mode=$mode code=$errorCode message=$errString")
                     if (completed.compareAndSet(false, true)) {
                         result.success(
                             mapOf(
@@ -82,6 +89,7 @@ class MainActivity : FlutterFragmentActivity() {
                                 "available" to true,
                                 "code" to errorCode,
                                 "message" to errString.toString(),
+                                "mode" to mode,
                             )
                         )
                     }
@@ -89,19 +97,46 @@ class MainActivity : FlutterFragmentActivity() {
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    Log.d("DrBikeBiometric", "Native authentication failed; allowing retry")
+                    Log.d("DrBikeBiometric", "Native authentication failed mode=$mode; allowing retry")
                 }
             },
         )
 
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        val promptBuilder = BiometricPrompt.PromptInfo.Builder()
             .setTitle("تأكيد الهوية")
-            .setSubtitle("استخدم البصمة أو قفل الجهاز لتسجيل الدخول")
+            .setSubtitle(subtitleForMode(mode))
             .setAllowedAuthenticators(authenticators)
-            .build()
 
-        Log.d("DrBikeBiometric", "Showing native biometric prompt")
+        if (authenticators and deviceCredential == 0) {
+            promptBuilder.setNegativeButtonText("إلغاء")
+        }
+
+        val promptInfo = promptBuilder.build()
+
+        Log.d("DrBikeBiometric", "Showing native biometric prompt mode=$mode authenticators=$authenticators")
         prompt.authenticate(promptInfo)
+    }
+
+    private fun logAvailability(mode: String, authenticators: Int) {
+        val code = BiometricManager.from(this).canAuthenticate(authenticators)
+        Log.d(
+            "DrBikeBiometric",
+            "canAuthenticate mode=$mode authenticators=$authenticators code=$code message=${messageForCode(code)}"
+        )
+        Log.d("DrBikeBiometric", "canAuthenticate strong code=${BiometricManager.from(this).canAuthenticate(strong)}")
+        Log.d("DrBikeBiometric", "canAuthenticate weak code=${BiometricManager.from(this).canAuthenticate(weak)}")
+        Log.d("DrBikeBiometric", "canAuthenticate credential code=${BiometricManager.from(this).canAuthenticate(deviceCredential)}")
+        Log.d("DrBikeBiometric", "canAuthenticate strongOrCredential code=${BiometricManager.from(this).canAuthenticate(strongOrCredential)}")
+    }
+
+    private fun subtitleForMode(mode: String): String {
+        return when (mode) {
+            "strong" -> "استخدم بصمة قوية لتسجيل الدخول"
+            "weak" -> "استخدم البصمة أو الوجه لتسجيل الدخول"
+            "deviceCredential" -> "استخدم قفل الجهاز لتسجيل الدخول"
+            "strongOrCredential" -> "استخدم البصمة أو قفل الجهاز لتسجيل الدخول"
+            else -> "استخدم البصمة أو قفل الجهاز لتسجيل الدخول"
+        }
     }
 
     private fun messageForCode(code: Int): String {

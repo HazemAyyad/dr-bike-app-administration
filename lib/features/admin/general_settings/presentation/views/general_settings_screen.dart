@@ -157,7 +157,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
-  Future<void> _testBiometricPrompt() async {
+  Future<void> _testBiometricPrompt(String method, String label) async {
     if (_biometricBusy) return;
 
     setState(() => _biometricBusy = true);
@@ -167,16 +167,20 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       }
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
-      debugPrint('Biometric native test: starting native authenticate');
-      final result = await NativeBiometricService.instance.authenticate();
+      debugPrint('Biometric native test: starting $method');
+      final result = await NativeBiometricService.instance.authenticate(
+        method: method,
+        timeout: const Duration(seconds: 90),
+      );
       debugPrint(
         'Biometric native test: success=${result.success} '
-        'available=${result.available} code=${result.code} message=${result.message}',
+        'available=${result.available} code=${result.code} '
+        'mode=${result.mode} message=${result.message}',
       );
       _showMessage(
         result.success
-            ? 'اختبار البصمة نجح'
-            : result.message ?? 'تم إلغاء اختبار البصمة',
+            ? '$label نجح'
+            : result.message ?? '$label لم ينجح',
         isError: !result.success,
       );
     } catch (e) {
@@ -212,7 +216,7 @@ class _BiometricSettingsCard extends StatelessWidget {
   final bool enabled;
   final bool busy;
   final ValueChanged<bool> onChanged;
-  final VoidCallback onTestPressed;
+  final void Function(String method, String label) onTestPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -288,25 +292,76 @@ class _BiometricSettingsCard extends StatelessWidget {
           ),
           if (!kIsWeb) ...[
             SizedBox(height: 12.h),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: busy ? null : onTestPressed,
-                icon: const Icon(Icons.bug_report_outlined),
-                label: const Text('اختبار نافذة البصمة'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF374151),
-                  side: const BorderSide(color: Color(0xFFD1D5DB)),
-                  backgroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 10.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.r),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [
+                _BiometricTestButton(
+                  label: 'اختبار بصمة قوية',
+                  busy: busy,
+                  onPressed: () => onTestPressed(
+                    'authenticateStrong',
+                    'اختبار بصمة قوية',
                   ),
                 ),
-              ),
+                _BiometricTestButton(
+                  label: 'اختبار بصمة ضعيفة',
+                  busy: busy,
+                  onPressed: () => onTestPressed(
+                    'authenticateWeak',
+                    'اختبار بصمة ضعيفة',
+                  ),
+                ),
+                _BiometricTestButton(
+                  label: 'اختبار قفل الجهاز',
+                  busy: busy,
+                  onPressed: () => onTestPressed(
+                    'authenticateDeviceCredential',
+                    'اختبار قفل الجهاز',
+                  ),
+                ),
+                _BiometricTestButton(
+                  label: 'اختبار بصمة أو قفل الجهاز',
+                  busy: busy,
+                  onPressed: () => onTestPressed(
+                    'authenticateStrongOrCredential',
+                    'اختبار بصمة أو قفل الجهاز',
+                  ),
+                ),
+              ],
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _BiometricTestButton extends StatelessWidget {
+  const _BiometricTestButton({
+    required this.label,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: busy ? null : onPressed,
+      icon: const Icon(Icons.bug_report_outlined),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF374151),
+        side: const BorderSide(color: Color(0xFFD1D5DB)),
+        backgroundColor: Colors.white,
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.r),
+        ),
       ),
     );
   }
