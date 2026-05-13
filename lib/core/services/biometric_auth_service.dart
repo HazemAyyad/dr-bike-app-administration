@@ -186,10 +186,6 @@ class BiometricAuthService {
         }
       }
 
-      debugPrint('Biometric auth: stopping previous authentication before start.');
-      await _stopPreviousAuthentication();
-      debugPrint('Biometric auth: previous authentication stop requested.');
-      await Future<void>.delayed(const Duration(milliseconds: 500));
       final available = await getAvailableBiometrics();
       final forceBiometricOnly =
           !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
@@ -210,7 +206,7 @@ class BiometricAuthService {
         ],
         biometricOnly: forceBiometricOnly,
         sensitiveTransaction: false,
-        persistAcrossBackgrounding: false,
+        persistAcrossBackgrounding: true,
       ).timeout(
         const Duration(seconds: 45),
         onTimeout: () async {

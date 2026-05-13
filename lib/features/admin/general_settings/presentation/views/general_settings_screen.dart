@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
@@ -69,6 +70,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               enabled: _biometricEnabled,
               busy: _biometricBusy,
               onChanged: _toggleBiometricLogin,
+              onTestPressed: _testBiometricPrompt,
             );
           }
           return _SettingsCard(item: items[i - 1]);
@@ -120,7 +122,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       if (Get.isSnackbarOpen) {
         Get.closeCurrentSnackbar();
       }
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
 
       final authResult = await service.authenticate(
         checkReadinessFirst: false,
@@ -155,6 +157,38 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _testBiometricPrompt() async {
+    if (_biometricBusy) return;
+
+    setState(() => _biometricBusy = true);
+    try {
+      if (Get.isSnackbarOpen) {
+        Get.closeCurrentSnackbar();
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      debugPrint('Biometric raw test: starting LocalAuthentication().authenticate');
+      final success = await LocalAuthentication().authenticate(
+        localizedReason: 'اختبار البصمة',
+        biometricOnly: false,
+        sensitiveTransaction: false,
+      );
+      debugPrint('Biometric raw test: success=$success');
+      _showMessage(
+        success ? 'اختبار البصمة نجح' : 'تم إلغاء اختبار البصمة',
+        isError: !success,
+      );
+    } catch (e) {
+      debugPrint('Biometric raw test error: $e');
+      _showMessage(
+        'فشل اختبار نافذة البصمة',
+        isError: true,
+      );
+    } finally {
+      if (mounted) setState(() => _biometricBusy = false);
+    }
+  }
+
   void _showMessage(String message, {bool isError = false}) {
     Get.snackbar(
       isError ? 'تنبيه' : 'تم',
@@ -171,11 +205,13 @@ class _BiometricSettingsCard extends StatelessWidget {
     required this.enabled,
     required this.busy,
     required this.onChanged,
+    required this.onTestPressed,
   });
 
   final bool enabled;
   final bool busy;
   final ValueChanged<bool> onChanged;
+  final VoidCallback onTestPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -192,59 +228,83 @@ class _BiometricSettingsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14.r),
         border: Border.all(color: borderColor),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 44.w,
-            height: 44.w,
-            decoration: BoxDecoration(
-              color: const Color(0xFF059669).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Icon(
-              Icons.fingerprint,
-              color: const Color(0xFF059669),
-              size: 22.sp,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 44.w,
+                height: 44.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  Icons.fingerprint,
+                  color: const Color(0xFF059669),
+                  size: 22.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'تفعيل الدخول بالبصمة',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w700,
+                        color: titleColor,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      kIsWeb
+                          ? 'الدخول بالبصمة غير متاح على الويب'
+                          : 'استخدم بصمة الإصبع أو الوجه لتسجيل الدخول على هذا الجهاز',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: descColor,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+              busy
+                  ? SizedBox(
+                      width: 24.w,
+                      height: 24.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Switch(
+                      value: enabled && !kIsWeb,
+                      onChanged: disabled ? null : onChanged,
+                    ),
+            ],
           ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'تفعيل الدخول بالبصمة',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: titleColor,
+          if (!kIsWeb) ...[
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: busy ? null : onTestPressed,
+                icon: const Icon(Icons.bug_report_outlined),
+                label: const Text('اختبار نافذة البصمة'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF374151),
+                  side: const BorderSide(color: Color(0xFFD1D5DB)),
+                  backgroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
                   ),
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  kIsWeb
-                      ? 'الدخول بالبصمة غير متاح على الويب'
-                      : 'استخدم بصمة الإصبع أو الوجه لتسجيل الدخول على هذا الجهاز',
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    color: descColor,
-                    height: 1.4,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          SizedBox(width: 8.w),
-          busy
-              ? SizedBox(
-                  width: 24.w,
-                  height: 24.w,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Switch(
-                  value: enabled && !kIsWeb,
-                  onChanged: disabled ? null : onChanged,
-                ),
+          ],
         ],
       ),
     );
