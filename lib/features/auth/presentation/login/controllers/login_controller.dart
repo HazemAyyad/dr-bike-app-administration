@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/api_error_message.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
-import '../../../../../core/services/final_classes.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../routes/app_routes.dart';
@@ -60,8 +59,9 @@ class LoginController extends GetxController {
     final hasSavedData = await service.hasSavedLoginData();
     final supported = await service.isDeviceSupported();
     final canCheck = await service.canCheckBiometrics();
+    final available = await service.getAvailableBiometrics();
     canShowBiometricLogin.value =
-        enabled && hasSavedData && supported && canCheck;
+        enabled && hasSavedData && supported && canCheck && available.isNotEmpty;
   }
 
   void sendOtp(BuildContext context) async {
@@ -82,7 +82,7 @@ class LoginController extends GetxController {
           );
         },
         (success) async {
-          await _handleSuccessfulNormalLogin(context);
+          await _handleSuccessfulNormalLogin();
         },
       );
     } catch (e, st) {
@@ -112,7 +112,7 @@ class LoginController extends GetxController {
         canShowBiometricLogin.value = false;
         _showMessage(
           title: 'تنبيه',
-          message: 'يرجى تسجيل الدخول بالطريقة العادية أولاً لتفعيل الدخول بالبصمة',
+          message: 'انتهت صلاحية بيانات الدخول بالبصمة، يرجى تسجيل الدخول مرة أخرى',
           isError: true,
         );
         return;
@@ -122,48 +122,16 @@ class LoginController extends GetxController {
       if (!authResult.success) {
         _showMessage(
           title: 'تنبيه',
-          message: authResult.message ?? 'تعذر تشغيل الدخول بالبصمة حالياً',
+          message: authResult.message ?? 'تم إلغاء عملية التحقق',
           isError: true,
         );
         return;
       }
 
-      if (!savedData.hasCredentials && savedData.hasToken) {
-        await UserData.saveToken(savedData.token!);
-        if (savedData.userDataJson != null &&
-            savedData.userDataJson!.isNotEmpty) {
-          await FinalClasses.secureStorage.write(
-            key: 'userData',
-            value: savedData.userDataJson,
-          );
-        }
-        await _restoreSavedUserGlobals();
-        Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
-        return;
-      }
-
-      final result = await login.call(
-        email: savedData.email,
-        password: savedData.password,
-        fcmToken: _currentFcmToken(),
-      );
-
-      await result.fold<Future<void>>(
-        (failure) async {
-          _showMessage(
-            title: 'خطأ',
-            message: userFacingMessageFromFailure(failure),
-            isError: true,
-          );
-        },
-        (success) async {
-          await _saveCurrentLoginForBiometrics(
-            email: savedData.email,
-            password: savedData.password,
-          );
-          Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
-        },
-      );
+      await UserData.saveToken(savedData.token!);
+      await UserData.saveUserJson(savedData.userDataJson!);
+      await _restoreSavedUserGlobals();
+      Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
     } catch (e, st) {
       debugPrint('biometric login error: $e\n$st');
       _showMessage(
@@ -176,110 +144,21 @@ class LoginController extends GetxController {
     }
   }
 
-  Future<void> _handleSuccessfulNormalLogin(BuildContext context) async {
+  Future<void> _handleSuccessfulNormalLogin() async {
     if (isRemember.value) {
       await UserData.saveIsRememberUser(isRemember.value);
     }
 
-    final service = BiometricAuthService.instance;
-    final email = emailController.text.trim();
-    final password = passwordController.text;
-
-    if (!kIsWeb && await service.isBiometricLoginEnabled()) {
-      await _saveCurrentLoginForBiometrics(email: email, password: password);
-      Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
-      return;
-    }
-
-    if (!kIsWeb && await service.isDeviceSupported()) {
-      final shouldEnable = await _showEnableBiometricDialog();
-      if (shouldEnable == true) {
-        final enabled = await _enableBiometricLogin(email, password);
-        if (enabled) {
-          _showMessage(
-            title: 'تم',
-            message: 'تم تفعيل الدخول بالبصمة بنجاح',
-          );
-        }
+    if (!kIsWeb &&
+        await BiometricAuthService.instance.isBiometricLoginEnabled()) {
+      final savedData = await BiometricAuthService.instance.getSavedLoginData();
+      if (savedData != null) {
+        await BiometricAuthService.instance
+            .saveCurrentSessionForBiometricLogin();
       }
     }
 
     Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
-  }
-
-  Future<bool> _enableBiometricLogin(String email, String password) async {
-    final service = BiometricAuthService.instance;
-
-    if (!await service.isDeviceSupported()) {
-      _showMessage(
-        title: 'تنبيه',
-        message: 'جهازك لا يدعم البصمة أو التعرف على الوجه',
-        isError: true,
-      );
-      return false;
-    }
-
-    final canCheck = await service.canCheckBiometrics();
-    final available = await service.getAvailableBiometrics();
-    if (!canCheck || available.isEmpty) {
-      _showMessage(
-        title: 'تنبيه',
-        message: 'يرجى تفعيل البصمة أو الوجه من إعدادات الجهاز أولاً',
-        isError: true,
-      );
-      return false;
-    }
-
-    final authResult = await service.authenticate();
-    if (!authResult.success) {
-      _showMessage(
-        title: 'تنبيه',
-        message: authResult.message ?? 'تم إلغاء المصادقة بالبصمة',
-        isError: true,
-      );
-      return false;
-    }
-
-    await _saveCurrentLoginForBiometrics(email: email, password: password);
-    await service.setBiometricLoginEnabled(true);
-    await refreshBiometricLoginState();
-    return true;
-  }
-
-  Future<void> _saveCurrentLoginForBiometrics({
-    required String email,
-    required String password,
-  }) async {
-    final token = await UserData.getUserToken();
-    final userDataJson = kIsWeb
-        ? FinalClasses.getStorage.read('userData')?.toString()
-        : await FinalClasses.secureStorage.read(key: 'userData');
-
-    await BiometricAuthService.instance.saveLoginData(
-      email: email.trim(),
-      password: password,
-      token: token.isEmpty ? null : token,
-      userDataJson: userDataJson,
-    );
-  }
-
-  Future<bool?> _showEnableBiometricDialog() {
-    return Get.dialog<bool>(
-      AlertDialog(
-        title: const Text('هل تريد تفعيل الدخول بالبصمة لهذا الجهاز؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: const Text('لاحقاً'),
-          ),
-          ElevatedButton(
-            onPressed: () => Get.back(result: true),
-            child: const Text('تفعيل'),
-          ),
-        ],
-      ),
-      barrierDismissible: false,
-    );
   }
 
   String _currentFcmToken() {

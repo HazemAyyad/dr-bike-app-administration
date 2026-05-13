@@ -49,6 +49,10 @@ class UserData {
   /// حفظ بيانات المستخدم كاملة
   static Future<void> saveUser(UserModel response) async {
     final jsonString = jsonEncode(response.toJson());
+    await saveUserJson(jsonString);
+  }
+
+  static Future<void> saveUserJson(String jsonString) async {
     if (kIsWeb) {
       await FinalClasses.getStorage.write('userData', jsonString);
     } else {

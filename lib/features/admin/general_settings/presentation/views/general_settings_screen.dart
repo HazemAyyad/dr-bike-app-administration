@@ -5,10 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
-import '../../../../../core/services/final_classes.dart';
-import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/services/user_data.dart';
-import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 
 class GeneralSettingsScreen extends StatefulWidget {
@@ -38,8 +35,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ThemeService.isDark.value;
-    final pageBg = isDark ? AppColors.darkColor : const Color(0xFFF5F6F8);
+    final pageBg = const Color(0xFFF5F5F5);
 
     final items = <_SettingsItem>[
       _SettingsItem(
@@ -70,13 +66,12 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         itemBuilder: (_, i) {
           if (i == 0) {
             return _BiometricSettingsCard(
-              isDark: isDark,
               enabled: _biometricEnabled,
               busy: _biometricBusy,
               onChanged: _toggleBiometricLogin,
             );
           }
-          return _SettingsCard(item: items[i - 1], isDark: isDark);
+          return _SettingsCard(item: items[i - 1]);
         },
         separatorBuilder: (_, __) => SizedBox(height: 10.h),
         itemCount: items.length + 1,
@@ -99,33 +94,22 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         return;
       }
 
-      if (kIsWeb) {
-        _showMessage('الدخول بالبصمة غير متاح على الويب', isError: true);
-        return;
-      }
-
       final token = await UserData.getUserToken();
-      if (token.isEmpty) {
+      final userDataJson = await service.readCurrentUserData();
+      if (token.isEmpty || userDataJson == null || userDataJson.isEmpty) {
         _showMessage(
-          'يرجى تسجيل الدخول بالطريقة العادية أولاً لتفعيل الدخول بالبصمة',
+          'يرجى تسجيل الدخول مرة أخرى لتفعيل الدخول بالبصمة',
           isError: true,
         );
         return;
       }
 
-      if (!await service.isDeviceSupported()) {
+      final readiness = await service.checkReadiness(
+        requireCurrentSession: true,
+      );
+      if (!readiness.ready) {
         _showMessage(
-          'جهازك لا يدعم البصمة أو التعرف على الوجه',
-          isError: true,
-        );
-        return;
-      }
-
-      final canCheck = await service.canCheckBiometrics();
-      final available = await service.getAvailableBiometrics();
-      if (!canCheck || available.isEmpty) {
-        _showMessage(
-          'يرجى تفعيل البصمة أو الوجه من إعدادات الجهاز أولاً',
+          readiness.message ?? 'تم إلغاء عملية التحقق',
           isError: true,
         );
         return;
@@ -140,18 +124,20 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         return;
       }
 
-      final userDataJson = await FinalClasses.secureStorage.read(
-        key: 'userData',
-      );
       await service.saveLoginData(
-        email: '',
-        password: '',
         token: token,
         userDataJson: userDataJson,
       );
       await service.setBiometricLoginEnabled(true);
       if (mounted) setState(() => _biometricEnabled = true);
       _showMessage('تم تفعيل الدخول بالبصمة بنجاح');
+    } catch (e) {
+      debugPrint('Biometric settings toggle error: $e');
+      if (mounted) setState(() => _biometricEnabled = false);
+      _showMessage(
+        'تعذر تفعيل الدخول بالبصمة، حاول مرة أخرى',
+        isError: true,
+      );
     } finally {
       if (mounted) setState(() => _biometricBusy = false);
     }
@@ -170,23 +156,21 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
 
 class _BiometricSettingsCard extends StatelessWidget {
   const _BiometricSettingsCard({
-    required this.isDark,
     required this.enabled,
     required this.busy,
     required this.onChanged,
   });
 
-  final bool isDark;
   final bool enabled;
   final bool busy;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = isDark ? AppColors.customGreyColor : Colors.white;
-    final borderColor = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
-    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
-    final descColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
+    const cardColor = Colors.white;
+    const borderColor = Color(0xFFE5E7EB);
+    const titleColor = Color(0xFF111827);
+    const descColor = Color(0xFF6B7280);
     final disabled = kIsWeb || busy;
 
     return Container(
@@ -272,18 +256,17 @@ class _SettingsItem {
 }
 
 class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.item, required this.isDark});
+  const _SettingsCard({required this.item});
 
   final _SettingsItem item;
-  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = isDark ? AppColors.customGreyColor : Colors.white;
-    final borderColor = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
-    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
-    final descColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
-    final chevronColor = isDark ? Colors.white54 : const Color(0xFF9CA3AF);
+    const cardColor = Colors.white;
+    const borderColor = Color(0xFFE5E7EB);
+    const titleColor = Color(0xFF111827);
+    const descColor = Color(0xFF6B7280);
+    const chevronColor = Color(0xFF9CA3AF);
 
     return Material(
       color: cardColor,

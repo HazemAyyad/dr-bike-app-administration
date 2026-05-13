@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/services/initial_bindings.dart';
+import 'package:doctorbike/core/services/biometric_prompt_service.dart';
 import 'package:doctorbike/features/admin/debts/data/repositories/debts_implement.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -32,6 +33,14 @@ import '../../home/views/home_page_screen.dart';
 class BottomNavBarController extends GetxController {
   // متغير لتتبع الصفحة الحالية
   var currentIndex = 0.obs;
+
+  @override
+  void onReady() {
+    super.onReady();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      BiometricPromptService.instance.showPostLoginPromptIfNeeded();
+    });
+  }
 
   // دالة لتغيير الصفحة الحالية
   void changePage(int index) {

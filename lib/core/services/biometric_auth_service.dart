@@ -1,39 +1,32 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
 
 import 'final_classes.dart';
 
 class BiometricLoginData {
   const BiometricLoginData({
-    required this.email,
-    required this.password,
     this.token,
     this.userDataJson,
   });
 
-  final String email;
-  final String password;
   final String? token;
   final String? userDataJson;
 
-  bool get hasCredentials => email.isNotEmpty && password.isNotEmpty;
   bool get hasToken => token != null && token!.isNotEmpty;
-  bool get hasLoginData => hasCredentials || hasToken;
+  bool get hasUserData => userDataJson != null && userDataJson!.isNotEmpty;
+  bool get hasLoginData => hasToken && hasUserData;
 
   Map<String, dynamic> toJson() => {
-        'email': email,
-        'password': password,
         if (token != null) 'token': token,
         if (userDataJson != null) 'userDataJson': userDataJson,
       };
 
   factory BiometricLoginData.fromJson(Map<String, dynamic> json) {
     return BiometricLoginData(
-      email: json['email']?.toString() ?? '',
-      password: json['password']?.toString() ?? '',
       token: json['token']?.toString(),
       userDataJson: json['userDataJson']?.toString(),
     );
@@ -52,12 +45,23 @@ class BiometricAuthResult {
   final bool cancelled;
 }
 
+class BiometricReadinessResult {
+  const BiometricReadinessResult({
+    required this.ready,
+    this.message,
+  });
+
+  final bool ready;
+  final String? message;
+}
+
 class BiometricAuthService {
   BiometricAuthService._();
 
   static final BiometricAuthService instance = BiometricAuthService._();
 
   final LocalAuthentication _auth = LocalAuthentication();
+  bool _authInProgress = false;
 
   static const _enabledKey = 'biometric_login_enabled';
   static const _loginDataKey = 'biometric_login_data';
@@ -66,7 +70,10 @@ class BiometricAuthService {
     if (kIsWeb) return false;
     try {
       return _auth.isDeviceSupported();
-    } on PlatformException {
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Biometric isDeviceSupported PlatformException: code=${e.code} message=${e.message}',
+      );
       return false;
     }
   }
@@ -75,7 +82,10 @@ class BiometricAuthService {
     if (kIsWeb) return false;
     try {
       return _auth.canCheckBiometrics;
-    } on PlatformException {
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Biometric canCheckBiometrics PlatformException: code=${e.code} message=${e.message}',
+      );
       return false;
     }
   }
@@ -84,49 +94,113 @@ class BiometricAuthService {
     if (kIsWeb) return const [];
     try {
       return _auth.getAvailableBiometrics();
-    } on PlatformException {
+    } on PlatformException catch (e) {
+      debugPrint(
+        'Biometric getAvailableBiometrics PlatformException: code=${e.code} message=${e.message}',
+      );
       return const [];
     }
   }
 
-  Future<BiometricAuthResult> authenticate() async {
+  Future<BiometricReadinessResult> checkReadiness({
+    bool requireCurrentSession = false,
+  }) async {
+    final token = await readCurrentToken();
+    final userDataJson = await readCurrentUserData();
+
+    debugPrint(
+      'Biometric readiness: web=$kIsWeb tokenExists=${token.isNotEmpty} '
+      'userDataExists=${userDataJson != null && userDataJson.isNotEmpty}',
+    );
+
     if (kIsWeb) {
-      return const BiometricAuthResult(
-        success: false,
+      return const BiometricReadinessResult(
+        ready: false,
         message: 'الدخول بالبصمة غير متاح على الويب',
       );
     }
 
-    final isSupported = await isDeviceSupported();
-    if (!isSupported) {
-      return const BiometricAuthResult(
-        success: false,
+    if (requireCurrentSession &&
+        (token.isEmpty || userDataJson == null || userDataJson.isEmpty)) {
+      return const BiometricReadinessResult(
+        ready: false,
+        message: 'يرجى تسجيل الدخول مرة أخرى لتفعيل الدخول بالبصمة',
+      );
+    }
+
+    final supported = await isDeviceSupported();
+    final canCheck = await canCheckBiometrics();
+    final available = await getAvailableBiometrics();
+
+    debugPrint(
+      'Biometric readiness: isDeviceSupported=$supported '
+      'canCheckBiometrics=$canCheck availableBiometrics=$available',
+    );
+
+    if (!supported) {
+      return const BiometricReadinessResult(
+        ready: false,
         message: 'جهازك لا يدعم البصمة أو التعرف على الوجه',
       );
     }
 
-    final canCheck = await canCheckBiometrics();
-    final available = await getAvailableBiometrics();
-    if (!canCheck || available.isEmpty) {
-      return const BiometricAuthResult(
-        success: false,
-        message: 'يرجى تفعيل البصمة أو الوجه من إعدادات الجهاز أولاً',
+    if (!canCheck && available.isEmpty) {
+      return const BiometricReadinessResult(
+        ready: false,
+        message: 'يرجى تفعيل البصمة أو الوجه أو قفل الشاشة من إعدادات الجهاز أولاً',
       );
     }
 
+    return const BiometricReadinessResult(ready: true);
+  }
+
+  Future<BiometricAuthResult> authenticate() async {
+    if (_authInProgress) {
+      debugPrint('Biometric auth: previous authentication is still active.');
+      return const BiometricAuthResult(
+        success: false,
+        cancelled: true,
+        message: 'نافذة التحقق بالبصمة مفتوحة بالفعل',
+      );
+    }
+
+    final readiness = await checkReadiness();
+    if (!readiness.ready) {
+      return BiometricAuthResult(
+        success: false,
+        message: readiness.message,
+      );
+    }
+
+    _authInProgress = true;
     try {
       final success = await _auth.authenticate(
         localizedReason: 'يرجى تأكيد هويتك باستخدام البصمة أو الوجه',
-        biometricOnly: true,
-        persistAcrossBackgrounding: true,
+        authMessages: const [
+          AndroidAuthMessages(
+            signInTitle: 'تأكيد الهوية',
+            signInHint: 'استخدم البصمة أو الوجه للمتابعة',
+            cancelButton: 'إلغاء',
+          ),
+        ],
+        biometricOnly: false,
+        sensitiveTransaction: false,
+        persistAcrossBackgrounding: false,
       );
 
       return BiometricAuthResult(
         success: success,
         cancelled: !success,
-        message: success ? null : 'تم إلغاء المصادقة بالبصمة',
+        message: success ? null : 'تم إلغاء عملية التحقق',
       );
     } on LocalAuthException catch (e) {
+      debugPrint(
+        'Biometric auth LocalAuthException: code=${e.code.name} '
+        'message=${e.description}',
+      );
+      if (e.code == LocalAuthExceptionCode.authInProgress) {
+        await _stopPreviousAuthentication();
+      }
       return BiometricAuthResult(
         success: false,
         cancelled: e.code == LocalAuthExceptionCode.userCanceled ||
@@ -136,16 +210,23 @@ class BiometricAuthService {
         message: _messageForLocalAuthException(e),
       );
     } on PlatformException catch (e) {
-      return BiometricAuthResult(
-        success: false,
-        cancelled: true,
-        message: e.message ?? 'تم إلغاء المصادقة بالبصمة',
+      debugPrint(
+        'Biometric auth PlatformException: code=${e.code} message=${e.message}',
       );
-    } catch (_) {
       return const BiometricAuthResult(
         success: false,
-        message: 'تعذر تشغيل الدخول بالبصمة حالياً',
+        cancelled: true,
+        message: 'تعذر فتح نافذة البصمة، حاول مرة أخرى',
       );
+    } catch (e) {
+      debugPrint('Biometric auth unexpected error: $e');
+      return const BiometricAuthResult(
+        success: false,
+        cancelled: true,
+        message: 'تعذر فتح نافذة البصمة، حاول مرة أخرى',
+      );
+    } finally {
+      _authInProgress = false;
     }
   }
 
@@ -165,21 +246,26 @@ class BiometricAuthService {
   }
 
   Future<void> saveLoginData({
-    required String email,
-    required String password,
     String? token,
     String? userDataJson,
   }) async {
     if (kIsWeb) return;
     final data = BiometricLoginData(
-      email: email,
-      password: password,
       token: token,
       userDataJson: userDataJson,
     );
     await FinalClasses.secureStorage.write(
       key: _loginDataKey,
       value: jsonEncode(data.toJson()),
+    );
+  }
+
+  Future<void> saveCurrentSessionForBiometricLogin() async {
+    final token = await readCurrentToken();
+    final userDataJson = await readCurrentUserData();
+    await saveLoginData(
+      token: token.isEmpty ? null : token,
+      userDataJson: userDataJson,
     );
   }
 
@@ -196,11 +282,21 @@ class BiometricAuthService {
     try {
       final jsonData = jsonDecode(jsonString);
       if (jsonData is! Map) return null;
-      final data = BiometricLoginData.fromJson(
-        Map<String, dynamic>.from(jsonData),
-      );
+      final map = Map<String, dynamic>.from(jsonData);
+      final oldPassword = map['password']?.toString() ?? '';
+      if (oldPassword.isNotEmpty) {
+        debugPrint(
+          'Biometric login: old password-based data found and cleared.',
+        );
+        await setBiometricLoginEnabled(false);
+        await clearLoginData();
+        return null;
+      }
+
+      final data = BiometricLoginData.fromJson(map);
       return data.hasLoginData ? data : null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Biometric login: failed to parse saved data: $e');
       return null;
     }
   }
@@ -208,6 +304,24 @@ class BiometricAuthService {
   Future<bool> hasSavedLoginData() async {
     final data = await getSavedLoginData();
     return data != null && data.hasLoginData;
+  }
+
+  Future<String> readCurrentToken() async {
+    if (kIsWeb) return '';
+    return await FinalClasses.secureStorage.read(key: 'token') ?? '';
+  }
+
+  Future<String?> readCurrentUserData() async {
+    if (kIsWeb) return null;
+    return FinalClasses.secureStorage.read(key: 'userData');
+  }
+
+  Future<void> _stopPreviousAuthentication() async {
+    try {
+      await _auth.stopAuthentication();
+    } catch (e) {
+      debugPrint('Biometric stopAuthentication ignored: $e');
+    }
   }
 
   String _messageForLocalAuthException(LocalAuthException e) {
@@ -226,11 +340,20 @@ class BiometricAuthService {
       case LocalAuthExceptionCode.systemCanceled:
       case LocalAuthExceptionCode.timeout:
       case LocalAuthExceptionCode.userRequestedFallback:
-        return 'تم إلغاء المصادقة بالبصمة';
+        return 'تم إلغاء عملية التحقق';
+      case LocalAuthExceptionCode.authInProgress:
+        return 'يوجد تحقق بالبصمة قيد التشغيل بالفعل';
+      case LocalAuthExceptionCode.deviceError:
+      case LocalAuthExceptionCode.unknownError:
+        final message = e.description;
+        if (message != null && message.trim().isNotEmpty) {
+          return 'تعذر تشغيل البصمة: $message';
+        }
+        return 'تعذر فتح نافذة البصمة، حاول مرة أخرى';
       default:
         final message = e.description;
         if (message != null && message.trim().isNotEmpty) return message;
-        return 'تعذر تشغيل الدخول بالبصمة حالياً';
+        return 'تعذر فتح نافذة البصمة، حاول مرة أخرى';
     }
   }
 }
