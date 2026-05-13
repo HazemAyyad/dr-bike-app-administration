@@ -115,7 +115,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         return;
       }
 
-      final authResult = await service.authenticate();
+      final authResult = await service.authenticate(checkReadinessFirst: false);
       if (!authResult.success) {
         _showMessage(
           authResult.message ?? 'تم إلغاء المصادقة بالبصمة',

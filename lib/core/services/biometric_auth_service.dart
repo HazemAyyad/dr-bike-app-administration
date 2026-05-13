@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
@@ -154,26 +155,32 @@ class BiometricAuthService {
     return const BiometricReadinessResult(ready: true);
   }
 
-  Future<BiometricAuthResult> authenticate() async {
+  Future<BiometricAuthResult> authenticate({bool checkReadinessFirst = true}) async {
     if (_authInProgress) {
       debugPrint('Biometric auth: previous authentication is still active.');
-      return const BiometricAuthResult(
-        success: false,
-        cancelled: true,
-        message: 'نافذة التحقق بالبصمة مفتوحة بالفعل',
-      );
+      await _stopPreviousAuthentication();
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      _authInProgress = false;
     }
 
-    final readiness = await checkReadiness();
-    if (!readiness.ready) {
-      return BiometricAuthResult(
-        success: false,
-        message: readiness.message,
-      );
+    if (checkReadinessFirst) {
+      final readiness = await checkReadiness();
+      if (!readiness.ready) {
+        return BiometricAuthResult(
+          success: false,
+          message: readiness.message,
+        );
+      }
     }
 
     _authInProgress = true;
     try {
+      debugPrint('Biometric auth: stopping previous authentication before start.');
+      await _stopPreviousAuthentication();
+      debugPrint('Biometric auth: previous authentication stop requested.');
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      debugPrint('Biometric auth: starting local_auth authenticate.');
+
       final success = await _auth.authenticate(
         localizedReason: 'يرجى تأكيد هويتك باستخدام البصمة أو الوجه',
         authMessages: const [
@@ -183,15 +190,31 @@ class BiometricAuthService {
             cancelButton: 'إلغاء',
           ),
         ],
-        biometricOnly: false,
+        biometricOnly: true,
         sensitiveTransaction: false,
         persistAcrossBackgrounding: false,
+      ).timeout(
+        const Duration(seconds: 25),
+        onTimeout: () async {
+          debugPrint('Biometric auth: timeout after 25 seconds.');
+          await _stopPreviousAuthentication();
+          throw TimeoutException('biometric_timeout');
+        },
       );
 
+      debugPrint('Biometric auth: authenticate returned success=$success.');
       return BiometricAuthResult(
         success: success,
         cancelled: !success,
         message: success ? null : 'تم إلغاء عملية التحقق',
+      );
+    } on TimeoutException catch (e) {
+      debugPrint('Biometric auth TimeoutException: ${e.message}');
+      await _stopPreviousAuthentication();
+      return const BiometricAuthResult(
+        success: false,
+        cancelled: true,
+        message: 'انتهت مهلة التحقق بالبصمة، حاول مرة أخرى',
       );
     } on LocalAuthException catch (e) {
       debugPrint(
