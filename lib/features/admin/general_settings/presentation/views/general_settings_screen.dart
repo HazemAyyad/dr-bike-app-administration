@@ -2,10 +2,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:local_auth/local_auth.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
+import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/user_data.dart';
 import '../../../../../routes/app_routes.dart';
 
@@ -167,16 +167,17 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       }
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
-      debugPrint('Biometric raw test: starting LocalAuthentication().authenticate');
-      final success = await LocalAuthentication().authenticate(
-        localizedReason: 'اختبار البصمة',
-        biometricOnly: false,
-        sensitiveTransaction: false,
+      debugPrint('Biometric native test: starting native authenticate');
+      final result = await NativeBiometricService.instance.authenticate();
+      debugPrint(
+        'Biometric native test: success=${result.success} '
+        'available=${result.available} code=${result.code} message=${result.message}',
       );
-      debugPrint('Biometric raw test: success=$success');
       _showMessage(
-        success ? 'اختبار البصمة نجح' : 'تم إلغاء اختبار البصمة',
-        isError: !success,
+        result.success
+            ? 'اختبار البصمة نجح'
+            : result.message ?? 'تم إلغاء اختبار البصمة',
+        isError: !result.success,
       );
     } catch (e) {
       debugPrint('Biometric raw test error: $e');

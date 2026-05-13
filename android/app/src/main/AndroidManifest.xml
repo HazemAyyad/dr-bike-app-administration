@@ -23,7 +23,7 @@
             android:name="io.flutter.embedding.android.ImpellerEnabled"
             android:value="true" />
         <activity
-            android:name=".MainActivity"
+            android:name="com.nofal.doctorbike.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""

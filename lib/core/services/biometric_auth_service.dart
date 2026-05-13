@@ -10,6 +10,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:local_auth_android/local_auth_android.dart';
 
 import 'final_classes.dart';
+import 'native_biometric_service.dart';
 
 class BiometricLoginData {
   const BiometricLoginData({
@@ -132,6 +133,27 @@ class BiometricAuthService {
       );
     }
 
+    if (_isAndroid) {
+      try {
+        final nativeAvailability =
+            await NativeBiometricService.instance.isAvailable();
+        debugPrint(
+          'Native biometric availability: available=${nativeAvailability.available} '
+          'code=${nativeAvailability.code} message=${nativeAvailability.message}',
+        );
+        if (!nativeAvailability.available) {
+          return BiometricReadinessResult(
+            ready: false,
+            message: nativeAvailability.message ??
+                'يرجى تفعيل البصمة أو قفل الشاشة من إعدادات الجهاز أولاً',
+          );
+        }
+        return const BiometricReadinessResult(ready: true);
+      } on MissingPluginException catch (e) {
+        debugPrint('Native biometric availability missing plugin: $e');
+      }
+    }
+
     final supported = await isDeviceSupported();
     final canCheck = await canCheckBiometrics();
     final available = await getAvailableBiometrics();
@@ -186,6 +208,36 @@ class BiometricAuthService {
         }
       }
 
+      if (_isAndroid) {
+        try {
+          debugPrint('Biometric auth: starting native Android authenticate.');
+          final nativeResult =
+              await NativeBiometricService.instance.authenticate();
+          debugPrint(
+            'Biometric auth: native returned success=${nativeResult.success} '
+            'available=${nativeResult.available} code=${nativeResult.code} '
+            'message=${nativeResult.message}',
+          );
+          return BiometricAuthResult(
+            success: nativeResult.success,
+            cancelled: !nativeResult.success,
+            message: nativeResult.success
+                ? null
+                : nativeResult.message ?? 'تم إلغاء عملية التحقق',
+          );
+        } on MissingPluginException catch (e) {
+          debugPrint('Biometric auth: native channel missing, fallback to local_auth: $e');
+        }
+      }
+
+      return await _authenticateWithLocalAuth();
+    } finally {
+      _authInProgress = false;
+    }
+  }
+
+  Future<BiometricAuthResult> _authenticateWithLocalAuth() async {
+    try {
       final available = await getAvailableBiometrics();
       final forceBiometricOnly =
           !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
@@ -263,8 +315,6 @@ class BiometricAuthService {
         cancelled: true,
         message: 'تعذر فتح نافذة البصمة، حاول مرة أخرى',
       );
-    } finally {
-      _authInProgress = false;
     }
   }
 
@@ -353,6 +403,9 @@ class BiometricAuthService {
     if (kIsWeb) return null;
     return FinalClasses.secureStorage.read(key: 'userData');
   }
+
+  bool get _isAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
   void _logUiDiagnostics({
     required String source,
