@@ -175,6 +175,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       debugPrint(
         'Biometric native test: success=${result.success} '
         'available=${result.available} code=${result.code} '
+        'codeText=${result.codeText} '
         'mode=${result.mode} message=${result.message}',
       );
       _showMessage(
@@ -326,6 +327,14 @@ class _BiometricSettingsCard extends StatelessWidget {
                   onPressed: () => onTestPressed(
                     'authenticateStrongOrCredential',
                     'اختبار بصمة أو قفل الجهاز',
+                  ),
+                ),
+                _BiometricTestButton(
+                  label: 'اختبار Keyguard قفل الجهاز',
+                  busy: busy,
+                  onPressed: () => onTestPressed(
+                    'authenticateKeyguard',
+                    'اختبار Keyguard قفل الجهاز',
                   ),
                 ),
               ],

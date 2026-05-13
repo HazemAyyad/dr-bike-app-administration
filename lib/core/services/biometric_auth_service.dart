@@ -210,14 +210,41 @@ class BiometricAuthService {
 
       if (_isAndroid) {
         try {
-          debugPrint('Biometric auth: starting native Android authenticate.');
-          final nativeResult =
-              await NativeBiometricService.instance.authenticate();
+          debugPrint(
+            'Biometric auth: starting native Android strongOrCredential authenticate.',
+          );
+          final nativeResult = await NativeBiometricService.instance.authenticate(
+            method: 'authenticateStrongOrCredential',
+          );
           debugPrint(
             'Biometric auth: native returned success=${nativeResult.success} '
             'available=${nativeResult.available} code=${nativeResult.code} '
+            'codeText=${nativeResult.codeText} mode=${nativeResult.mode} '
             'message=${nativeResult.message}',
           );
+          if (!nativeResult.success && nativeResult.code == -1001) {
+            debugPrint(
+              'Biometric auth: native prompt timed out; trying Keyguard fallback.',
+            );
+            final keyguardResult =
+                await NativeBiometricService.instance.authenticate(
+              method: 'authenticateKeyguard',
+              timeout: const Duration(seconds: 90),
+            );
+            debugPrint(
+              'Biometric auth: keyguard returned success=${keyguardResult.success} '
+              'available=${keyguardResult.available} code=${keyguardResult.code} '
+              'codeText=${keyguardResult.codeText} mode=${keyguardResult.mode} '
+              'message=${keyguardResult.message}',
+            );
+            return BiometricAuthResult(
+              success: keyguardResult.success,
+              cancelled: !keyguardResult.success,
+              message: keyguardResult.success
+                  ? null
+                  : keyguardResult.message ?? 'تم إلغاء عملية التحقق',
+            );
+          }
           return BiometricAuthResult(
             success: nativeResult.success,
             cancelled: !nativeResult.success,

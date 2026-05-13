@@ -8,6 +8,7 @@ class NativeBiometricResult {
     required this.success,
     required this.available,
     this.code,
+    this.codeText,
     this.message,
     this.mode,
   });
@@ -15,14 +16,17 @@ class NativeBiometricResult {
   final bool success;
   final bool available;
   final int? code;
+  final String? codeText;
   final String? message;
   final String? mode;
 
   factory NativeBiometricResult.fromMap(Map<dynamic, dynamic> map) {
+    final rawCode = map['code'];
     return NativeBiometricResult(
       success: map['success'] == true,
       available: map['available'] == true,
-      code: map['code'] is int ? map['code'] as int : int.tryParse('${map['code']}'),
+      code: rawCode is int ? rawCode : int.tryParse('$rawCode'),
+      codeText: rawCode?.toString(),
       message: map['message']?.toString(),
       mode: map['mode']?.toString(),
     );
@@ -85,6 +89,8 @@ class NativeBiometricService {
       return NativeBiometricResult(
         success: false,
         available: true,
+        code: -1001,
+        codeText: 'timeout',
         message: 'انتهت مهلة التحقق، حاول مرة أخرى',
         mode: method,
       );
