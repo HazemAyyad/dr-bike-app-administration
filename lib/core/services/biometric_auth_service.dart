@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:local_auth_android/local_auth_android.dart';
 
 import 'final_classes.dart';
 
@@ -179,24 +179,25 @@ class BiometricAuthService {
       await _stopPreviousAuthentication();
       debugPrint('Biometric auth: previous authentication stop requested.');
       await Future<void>.delayed(const Duration(milliseconds: 250));
+      final available = await getAvailableBiometrics();
+      final forceBiometricOnly =
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+      debugPrint(
+        'Biometric auth: platform=${kIsWeb ? 'web' : defaultTargetPlatform.name} '
+        'androidSdk=unknown availableBiometrics=$available '
+        'forceBiometricOnly=$forceBiometricOnly',
+      );
       debugPrint('Biometric auth: starting local_auth authenticate.');
 
       final success = await _auth.authenticate(
-        localizedReason: 'يرجى تأكيد هويتك باستخدام البصمة أو الوجه',
-        authMessages: const [
-          AndroidAuthMessages(
-            signInTitle: 'تأكيد الهوية',
-            signInHint: 'استخدم البصمة أو الوجه للمتابعة',
-            cancelButton: 'إلغاء',
-          ),
-        ],
-        biometricOnly: true,
+        localizedReason: 'يرجى تأكيد هويتك لتسجيل الدخول',
+        biometricOnly: forceBiometricOnly,
         sensitiveTransaction: false,
         persistAcrossBackgrounding: false,
       ).timeout(
-        const Duration(seconds: 25),
+        const Duration(seconds: 45),
         onTimeout: () async {
-          debugPrint('Biometric auth: timeout after 25 seconds.');
+          debugPrint('Biometric auth: timeout after 45 seconds.');
           await _stopPreviousAuthentication();
           throw TimeoutException('biometric_timeout');
         },
@@ -214,7 +215,8 @@ class BiometricAuthService {
       return const BiometricAuthResult(
         success: false,
         cancelled: true,
-        message: 'انتهت مهلة التحقق بالبصمة، حاول مرة أخرى',
+        message:
+            'لم تظهر نافذة البصمة أو انتهت المهلة، جرّب فتح قفل الجهاز ثم حاول مرة أخرى',
       );
     } on LocalAuthException catch (e) {
       debugPrint(

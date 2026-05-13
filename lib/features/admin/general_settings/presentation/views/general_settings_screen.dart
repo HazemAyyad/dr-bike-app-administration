@@ -97,6 +97,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       final token = await UserData.getUserToken();
       final userDataJson = await service.readCurrentUserData();
       if (token.isEmpty || userDataJson == null || userDataJson.isEmpty) {
+        if (mounted) setState(() => _biometricEnabled = false);
         _showMessage(
           'يرجى تسجيل الدخول مرة أخرى لتفعيل الدخول بالبصمة',
           isError: true,
@@ -108,6 +109,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         requireCurrentSession: true,
       );
       if (!readiness.ready) {
+        if (mounted) setState(() => _biometricEnabled = false);
         _showMessage(
           readiness.message ?? 'تم إلغاء عملية التحقق',
           isError: true,
@@ -117,6 +119,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
 
       final authResult = await service.authenticate(checkReadinessFirst: false);
       if (!authResult.success) {
+        if (mounted) setState(() => _biometricEnabled = false);
         _showMessage(
           authResult.message ?? 'تم إلغاء المصادقة بالبصمة',
           isError: true,
