@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,18 +24,19 @@ class MainActivity : FlutterFragmentActivity() {
     private val weak = BiometricManager.Authenticators.BIOMETRIC_WEAK
     private val deviceCredential = BiometricManager.Authenticators.DEVICE_CREDENTIAL
     private val strongOrCredential = strong or deviceCredential
-    private lateinit var keyguardLauncher: ActivityResultLauncher<Intent>
+    private lateinit var keyguardDirectLauncher: ActivityResultLauncher<Intent>
+    private lateinit var biometricProxyLauncher: ActivityResultLauncher<Intent>
     private var pendingKeyguardResult: MethodChannel.Result? = null
     private var keyguardLaunchStartedAt: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        keyguardLauncher = registerForActivityResult(
+        keyguardDirectLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
         ) { activityResult ->
             Log.d(
                 "DrBikeBiometric",
-                "Keyguard ActivityResult resultCode=${activityResult.resultCode}"
+                "Direct Keyguard ActivityResult resultCode=${activityResult.resultCode}"
             )
             if (activityResult.resultCode == Activity.RESULT_OK) {
                 completeKeyguard(true, 0, "تم التحقق بنجاح")
@@ -42,7 +44,20 @@ class MainActivity : FlutterFragmentActivity() {
                 completeKeyguard(false, activityResult.resultCode, "تم إلغاء عملية التحقق")
             }
         }
-        Log.d("DrBikeBiometric", "Keyguard ActivityResultLauncher initialized")
+        biometricProxyLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { activityResult ->
+            Log.d(
+                "DrBikeBiometric",
+                "ProxyActivity ActivityResult resultCode=${activityResult.resultCode}"
+            )
+            if (activityResult.resultCode == Activity.RESULT_OK) {
+                completeKeyguard(true, 0, "تم التحقق بنجاح")
+            } else {
+                completeKeyguard(false, activityResult.resultCode, "تم إلغاء عملية التحقق")
+            }
+        }
+        Log.d("DrBikeBiometric", "Keyguard direct and proxy ActivityResultLaunchers initialized")
     }
 
     override fun onResume() {
@@ -82,6 +97,8 @@ class MainActivity : FlutterFragmentActivity() {
                     "authenticateDeviceCredential" -> authenticate(result, deviceCredential, "deviceCredential")
                     "authenticateStrongOrCredential" -> authenticate(result, strongOrCredential, "strongOrCredential")
                     "authenticateKeyguard" -> authenticateKeyguard(result)
+                    "authenticateKeyguardDirect" -> authenticateKeyguardDirect(result)
+                    "openSecuritySettings" -> openSecuritySettings(result)
                     else -> result.notImplemented()
                 }
             }
@@ -220,6 +237,73 @@ class MainActivity : FlutterFragmentActivity() {
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         Log.d(
             "DrBikeBiometric",
+            "Proxy keyguard start lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
+                "isFinishing=$isFinishing isDestroyed=$isDestroyed isDeviceSecure=${keyguardManager.isDeviceSecure}"
+        )
+
+        if (!keyguardManager.isDeviceSecure) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "available" to false,
+                    "code" to "device_not_secure",
+                    "message" to "يرجى تفعيل قفل الشاشة من إعدادات الجهاز",
+                    "mode" to "keyguardProxy",
+                )
+            )
+            return
+        }
+
+        if (pendingKeyguardResult != null) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "available" to true,
+                    "code" to "keyguard_in_progress",
+                    "message" to "عملية التحقق قيد التنفيذ",
+                    "mode" to "keyguardProxy",
+                )
+            )
+            return
+        }
+
+        pendingKeyguardResult = result
+        runOnUiThread {
+            window.decorView.postDelayed({
+                Log.d(
+                    "DrBikeBiometric",
+                    "Proxy keyguard post lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
+                        "isFinishing=$isFinishing isDestroyed=$isDestroyed"
+                )
+                if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) || isFinishing || isDestroyed) {
+                    completeKeyguard(
+                        success = false,
+                        code = "activity_not_resumed",
+                        message = "الشاشة غير جاهزة لفتح نافذة البصمة، حاول مرة أخرى"
+                    )
+                    return@postDelayed
+                }
+                try {
+                    Log.d("DrBikeBiometric", "Before proxyActivityLauncher.launch")
+                    keyguardLaunchStartedAt = System.currentTimeMillis()
+                    biometricProxyLauncher.launch(Intent(this, BiometricProxyActivity::class.java))
+                    Log.d("DrBikeBiometric", "After proxyActivityLauncher.launch")
+                } catch (e: Exception) {
+                    Log.d("DrBikeBiometric", "Proxy launch exception message=${e.message}")
+                    completeKeyguard(
+                        success = false,
+                        code = "proxy_launch_exception",
+                        message = e.message ?: "تعذر فتح شاشة قفل الجهاز"
+                    )
+                }
+            }, 500)
+        }
+    }
+
+    private fun authenticateKeyguardDirect(result: MethodChannel.Result) {
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        Log.d(
+            "DrBikeBiometric",
             "Keyguard start lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
                 "isFinishing=$isFinishing isDestroyed=$isDestroyed isDeviceSecure=${keyguardManager.isDeviceSecure}"
         )
@@ -285,10 +369,10 @@ class MainActivity : FlutterFragmentActivity() {
                     return@postDelayed
                 }
                 try {
-                    Log.d("DrBikeBiometric", "Before keyguardLauncher.launch")
+                    Log.d("DrBikeBiometric", "Before keyguardDirectLauncher.launch")
                     keyguardLaunchStartedAt = System.currentTimeMillis()
-                    keyguardLauncher.launch(intent)
-                    Log.d("DrBikeBiometric", "After keyguardLauncher.launch")
+                    keyguardDirectLauncher.launch(intent)
+                    Log.d("DrBikeBiometric", "After keyguardDirectLauncher.launch")
                 } catch (e: Exception) {
                     Log.d("DrBikeBiometric", "Keyguard launch exception message=${e.message}")
                     completeKeyguard(
@@ -298,6 +382,33 @@ class MainActivity : FlutterFragmentActivity() {
                     )
                 }
             }, 500)
+        }
+    }
+
+    private fun openSecuritySettings(result: MethodChannel.Result) {
+        try {
+            Log.d("DrBikeBiometric", "Opening Android security settings")
+            startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
+            result.success(
+                mapOf(
+                    "success" to true,
+                    "available" to true,
+                    "code" to 0,
+                    "message" to "تم فتح إعدادات الأمان",
+                    "mode" to "securitySettings",
+                )
+            )
+        } catch (e: Exception) {
+            Log.d("DrBikeBiometric", "Open security settings exception message=${e.message}")
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "available" to false,
+                    "code" to "security_settings_exception",
+                    "message" to (e.message ?: "تعذر فتح إعدادات الأمان"),
+                    "mode" to "securitySettings",
+                )
+            )
         }
     }
 

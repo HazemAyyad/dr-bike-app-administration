@@ -165,7 +165,19 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       if (Get.isSnackbarOpen) {
         Get.closeCurrentSnackbar();
       }
-      if (method == 'authenticateKeyguard') {
+      if (method == 'openSecuritySettings') {
+        final result =
+            await NativeBiometricService.instance.openSecuritySettings();
+        _showMessage(
+          result.success
+              ? 'تم فتح إعدادات الأمان'
+              : result.message ?? 'تعذر فتح إعدادات الأمان',
+          isError: !result.success,
+        );
+        return;
+      }
+      if (method == 'authenticateKeyguard' ||
+          method == 'authenticateKeyguardDirect') {
         _showMessage('سيتم فتح شاشة قفل الجهاز، أكمل التحقق ثم ارجع للتطبيق');
       }
       await Future<void>.delayed(const Duration(milliseconds: 300));
@@ -173,8 +185,9 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       debugPrint('Biometric native test: starting $method');
       final result = await NativeBiometricService.instance.authenticate(
         method: method,
-        timeout: method == 'authenticateKeyguard'
-            ? const Duration(seconds: 120)
+        timeout: method == 'authenticateKeyguard' ||
+                method == 'authenticateKeyguardDirect'
+            ? const Duration(seconds: 180)
             : const Duration(seconds: 90),
       );
       debugPrint(
@@ -335,11 +348,27 @@ class _BiometricSettingsCard extends StatelessWidget {
                   ),
                 ),
                 _BiometricTestButton(
-                  label: 'اختبار Keyguard قفل الجهاز',
+                  label: 'اختبار Keyguard مباشر',
+                  busy: busy,
+                  onPressed: () => onTestPressed(
+                    'authenticateKeyguardDirect',
+                    'اختبار Keyguard مباشر',
+                  ),
+                ),
+                _BiometricTestButton(
+                  label: 'اختبار Keyguard عبر ProxyActivity',
                   busy: busy,
                   onPressed: () => onTestPressed(
                     'authenticateKeyguard',
-                    'اختبار Keyguard قفل الجهاز',
+                    'اختبار Keyguard عبر ProxyActivity',
+                  ),
+                ),
+                _BiometricTestButton(
+                  label: 'فتح إعدادات الأمان',
+                  busy: busy,
+                  onPressed: () => onTestPressed(
+                    'openSecuritySettings',
+                    'فتح إعدادات الأمان',
                   ),
                 ),
               ],

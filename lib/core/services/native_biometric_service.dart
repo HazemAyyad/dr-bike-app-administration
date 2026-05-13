@@ -86,18 +86,51 @@ class NativeBiometricService {
         message: 'تعذر قراءة نتيجة التحقق بالبصمة',
       );
     } on TimeoutException {
+      final isKeyguard = method == 'authenticateKeyguard' ||
+          method == 'authenticateKeyguardDirect';
       return NativeBiometricResult(
         success: false,
         available: true,
         code: -1001,
         codeText: 'timeout',
-        message: 'انتهت مهلة التحقق، حاول مرة أخرى',
+        message: isKeyguard
+            ? 'تعذر فتح نافذة التحقق على هذا الجهاز. يرجى التأكد من تفعيل قفل الشاشة والبصمة من إعدادات الجهاز، ثم حاول مرة أخرى.'
+            : 'انتهت مهلة التحقق، حاول مرة أخرى',
         mode: method,
       );
     } on MissingPluginException {
       rethrow;
     } catch (e) {
       debugPrint('Native biometric error: $e');
+      return NativeBiometricResult(
+        success: false,
+        available: false,
+        message: e.toString(),
+      );
+    }
+  }
+
+  Future<NativeBiometricResult> openSecuritySettings() async {
+    if (kIsWeb) {
+      return const NativeBiometricResult(
+        success: false,
+        available: false,
+        message: 'إعدادات الأمان غير متاحة على الويب',
+      );
+    }
+
+    try {
+      debugPrint('Native biometric call: openSecuritySettings');
+      final response =
+          await _channel.invokeMethod<dynamic>('openSecuritySettings');
+      if (response is Map) return NativeBiometricResult.fromMap(response);
+      return const NativeBiometricResult(
+        success: false,
+        available: false,
+        message: 'تعذر فتح إعدادات الأمان',
+      );
+    } catch (e) {
+      debugPrint('Native open security settings error: $e');
       return NativeBiometricResult(
         success: false,
         available: false,

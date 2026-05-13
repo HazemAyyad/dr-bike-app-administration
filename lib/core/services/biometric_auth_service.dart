@@ -229,7 +229,7 @@ class BiometricAuthService {
             final keyguardResult =
                 await NativeBiometricService.instance.authenticate(
               method: 'authenticateKeyguard',
-              timeout: const Duration(seconds: 120),
+              timeout: const Duration(seconds: 180),
             );
             debugPrint(
               'Biometric auth: keyguard returned success=${keyguardResult.success} '
