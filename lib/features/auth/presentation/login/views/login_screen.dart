@@ -60,6 +60,67 @@ class LoginScreen extends GetView<LoginController> {
                       ),
                   height: 48.h,
                 ),
+                Obx(
+                  () {
+                    if (!controller.canShowBiometricLogin.value) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Padding(
+                      padding: EdgeInsets.only(top: 16.h),
+                      child: Column(
+                        children: [
+                          InkWell(
+                            borderRadius: BorderRadius.circular(999),
+                            onTap: controller.isBiometricLoading.value
+                                ? null
+                                : () => controller.biometricLogin(context),
+                            child: Container(
+                              width: 58.w,
+                              height: 58.w,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: ThemeService.isDark.value
+                                    ? AppColors.customGreyColor
+                                    : AppColors.secondaryColor
+                                        .withValues(alpha: 0.08),
+                                border: Border.all(
+                                  color: AppColors.secondaryColor
+                                      .withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: controller.isBiometricLoading.value
+                                  ? Padding(
+                                      padding: EdgeInsets.all(16.w),
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.fingerprint,
+                                      color: ThemeService.isDark.value
+                                          ? Colors.white
+                                          : AppColors.secondaryColor,
+                                      size: 32.sp,
+                                    ),
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'الدخول بالبصمة',
+                            style: TextStyle(
+                              color: ThemeService.isDark.value
+                                  ? Colors.white
+                                  : AppColors.secondaryColor,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 SizedBox(height: 15.h),
                 // const DontHaveAccount(),
                 SizedBox(height: 30.h),

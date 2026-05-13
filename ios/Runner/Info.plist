@@ -32,6 +32,8 @@
 	<string>نحتاج صلاحية لحفظ الصور في المعرض.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>نحتاج صلاحية للوصول إلى الصور لحفظها.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>يستخدم التطبيق Face ID لتسجيل الدخول بشكل آمن</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

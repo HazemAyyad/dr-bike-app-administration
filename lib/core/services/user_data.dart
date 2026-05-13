@@ -83,7 +83,8 @@ class UserData {
       await FinalClasses.getStorage.remove('token');
       await FinalClasses.getStorage.remove('userData');
     } else {
-      await FinalClasses.secureStorage.deleteAll();
+      await FinalClasses.secureStorage.delete(key: 'token');
+      await FinalClasses.secureStorage.delete(key: 'userData');
     }
     saveIsRememberUser(false);
     userToken = '';
