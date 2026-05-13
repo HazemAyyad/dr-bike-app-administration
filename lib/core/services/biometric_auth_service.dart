@@ -4,7 +4,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:get/get.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
 
 import 'final_classes.dart';
 
@@ -155,30 +158,38 @@ class BiometricAuthService {
     return const BiometricReadinessResult(ready: true);
   }
 
-  Future<BiometricAuthResult> authenticate({bool checkReadinessFirst = true}) async {
+  Future<BiometricAuthResult> authenticate({
+    bool checkReadinessFirst = true,
+    BuildContext? context,
+    String source = 'unknown',
+  }) async {
     if (_authInProgress) {
       debugPrint('Biometric auth: previous authentication is still active.');
-      await _stopPreviousAuthentication();
-      await Future<void>.delayed(const Duration(milliseconds: 250));
-      _authInProgress = false;
-    }
-
-    if (checkReadinessFirst) {
-      final readiness = await checkReadiness();
-      if (!readiness.ready) {
-        return BiometricAuthResult(
-          success: false,
-          message: readiness.message,
-        );
-      }
+      return const BiometricAuthResult(
+        success: false,
+        cancelled: true,
+        message: 'عملية التحقق قيد التنفيذ',
+      );
     }
 
     _authInProgress = true;
     try {
+      _logUiDiagnostics(context: context, source: source);
+
+      if (checkReadinessFirst) {
+        final readiness = await checkReadiness();
+        if (!readiness.ready) {
+          return BiometricAuthResult(
+            success: false,
+            message: readiness.message,
+          );
+        }
+      }
+
       debugPrint('Biometric auth: stopping previous authentication before start.');
       await _stopPreviousAuthentication();
       debugPrint('Biometric auth: previous authentication stop requested.');
-      await Future<void>.delayed(const Duration(milliseconds: 250));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       final available = await getAvailableBiometrics();
       final forceBiometricOnly =
           !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
@@ -191,6 +202,12 @@ class BiometricAuthService {
 
       final success = await _auth.authenticate(
         localizedReason: 'يرجى تأكيد هويتك لتسجيل الدخول',
+        authMessages: const [
+          AndroidAuthMessages(
+            signInTitle: 'تأكيد الهوية',
+            cancelButton: 'إلغاء',
+          ),
+        ],
         biometricOnly: forceBiometricOnly,
         sensitiveTransaction: false,
         persistAcrossBackgrounding: false,
@@ -339,6 +356,21 @@ class BiometricAuthService {
   Future<String?> readCurrentUserData() async {
     if (kIsWeb) return null;
     return FinalClasses.secureStorage.read(key: 'userData');
+  }
+
+  void _logUiDiagnostics({
+    required String source,
+    BuildContext? context,
+  }) {
+    final lifecycleState = WidgetsBinding.instance.lifecycleState;
+    debugPrint(
+      'Biometric auth UI diagnostics: source=$source '
+      'lifecycle=$lifecycleState '
+      'resumed=${lifecycleState == AppLifecycleState.resumed} '
+      'contextMounted=${context?.mounted} currentRoute=${Get.currentRoute} '
+      'dialogOpen=${Get.isDialogOpen} snackbarOpen=${Get.isSnackbarOpen} '
+      'bottomSheetOpen=${Get.isBottomSheetOpen}',
+    );
   }
 
   Future<void> _stopPreviousAuthentication() async {

@@ -45,7 +45,15 @@ class BiometricPromptService {
 
     _promptBusy = true;
     try {
-      final authResult = await service.authenticate(checkReadinessFirst: false);
+      if (Get.isSnackbarOpen) {
+        Get.closeCurrentSnackbar();
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final authResult = await service.authenticate(
+        checkReadinessFirst: false,
+        source: 'post_login_prompt',
+      );
       if (!authResult.success) {
         _showMessage(
           authResult.message ?? 'تم إلغاء عملية التحقق',

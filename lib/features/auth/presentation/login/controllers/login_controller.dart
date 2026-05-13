@@ -118,7 +118,10 @@ class LoginController extends GetxController {
         return;
       }
 
-      final authResult = await service.authenticate();
+      final authResult = await service.authenticate(
+        context: context,
+        source: 'login_biometric_button',
+      );
       if (!authResult.success) {
         _showMessage(
           title: 'تنبيه',

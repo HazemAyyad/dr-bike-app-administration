@@ -117,7 +117,16 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         return;
       }
 
-      final authResult = await service.authenticate(checkReadinessFirst: false);
+      if (Get.isSnackbarOpen) {
+        Get.closeCurrentSnackbar();
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final authResult = await service.authenticate(
+        checkReadinessFirst: false,
+        context: context,
+        source: 'general_settings_toggle',
+      );
       if (!authResult.success) {
         if (mounted) setState(() => _biometricEnabled = false);
         _showMessage(
