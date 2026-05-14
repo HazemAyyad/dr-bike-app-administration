@@ -1347,4 +1347,15 @@ const Map<String, String> ar = {
   'pointsGuideReward': 'المكافأة',
   'pointsGuideOpenEnded': 'وأكثر',
   'pointsGuideRefresh': 'تحديث',
+
+  // Admin notification center
+  'notificationCenterTitle': 'الإشعارات',
+  'markAllRead': 'تعليم الكل كمقروء',
+  'notifFilterAll': 'الكل',
+  'notifFilterUnread': 'غير مقروء',
+  'notifFilterLogin': 'دخول موظف',
+  'notifFilterTaskDone': 'مهمة مكتملة',
+  'notifFilterLogoutPending': 'خروج بمهام معلقة',
+  'notifFilterChecks': 'شيكات تستحق قريباً',
+  'notificationEmpty': 'لا توجد إشعارات بعد.',
 };

@@ -1,9 +1,18 @@
+import 'dart:convert';
 import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../utils/app_colors.dart';
+import 'admin_notification_api_service.dart';
+import 'admin_notification_router.dart';
+import 'initial_bindings.dart';
+import 'user_data.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -20,6 +29,7 @@ class NotificationFirebaseService {
   String finalToken = '';
 
   bool _isFlutterLocalNotificationsPluginRegistered = false;
+
   Future<void> intNotification() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
@@ -33,23 +43,50 @@ class NotificationFirebaseService {
       sound: true,
     );
     if (Platform.isAndroid) {
-      String? token = await firebaseMessaging.getToken();
+      final String? token = await firebaseMessaging.getToken();
       if (token != null) {
-        // print("FCM Token: $token");
         finalToken = token;
         await GetStorage().write('fcmToken', token);
       }
     } else if (Platform.isIOS) {
-      String? token = await firebaseMessaging.getAPNSToken();
+      final String? token = await firebaseMessaging.getAPNSToken();
       if (token != null) {
-        // print("APNS Token: $token");
         finalToken = token;
         await GetStorage().write('fcmToken', token);
       }
     }
+
+    firebaseMessaging.onTokenRefresh.listen((String newToken) async {
+      finalToken = newToken;
+      await GetStorage().write('fcmToken', newToken);
+      await _registerAdminDeviceTokenIfPossible(newToken);
+    });
+
     await setupFlutterNotifications();
 
     await _setupMessageHandler();
+  }
+
+  Future<void> _registerAdminDeviceTokenIfPossible(String token) async {
+    if (kIsWeb) {
+      return;
+    }
+    if (userType != 'admin') {
+      return;
+    }
+    final saved = await UserData.getUserToken();
+    if (saved.isEmpty) {
+      return;
+    }
+    try {
+      await AdminNotificationApiService().registerDeviceToken(
+        fcmToken: token,
+        platform: Platform.isAndroid ? 'android' : 'ios',
+        deviceName: Platform.operatingSystem,
+      );
+    } catch (e, st) {
+      debugPrint('FCM token refresh register failed: $e\n$st');
+    }
   }
 
   Future<void> setupFlutterNotifications() async {
@@ -58,10 +95,9 @@ class NotificationFirebaseService {
     }
 
     const channel = AndroidNotificationChannel(
-      'high_importance_channel', // id
-      'High Importance Notifications', // title
-      description:
-          'This channel is used for important notifications.', // description
+      'high_importance_channel',
+      'High Importance Notifications',
+      description: 'This channel is used for important notifications.',
       importance: Importance.high,
       enableVibration: true,
     );
@@ -71,9 +107,8 @@ class NotificationFirebaseService {
         ?.createNotificationChannel(channel);
 
     const initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher'); //ic_launcher
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // ios Setup
     final initializationSettingsDarwin = const DarwinInitializationSettings();
 
     final initializationSettings = InitializationSettings(
@@ -82,17 +117,10 @@ class NotificationFirebaseService {
     );
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (response) async {
-        // يتم استدعاء هذه الدالة عند الضغط على الإشعار
-        final payload = response.payload; // String
-        if (payload != null) {
-          // print("تم الضغط على الإشعار، البيانات:");
-
-          // Get.to(() => NotificationScreen());
-          // إذا أردت تحويلها من String إلى خريطة (Map) لقراءتها:
-          // import 'dart:convert';
-          // final dataMap = jsonDecode(payload) as Map<String, dynamic>;
-          // print("Data as Map: $dataMap");
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        final map = AdminNotificationRouter.parsePayload(response.payload);
+        if (map.isNotEmpty) {
+          AdminNotificationRouter.handlePayload(map);
         }
       },
     );
@@ -101,82 +129,95 @@ class NotificationFirebaseService {
   }
 
   Future<void> showNotification(RemoteMessage message) async {
-    // تأكد من تهيئة الإشعارات
     await setupFlutterNotifications();
 
-    // محتوى الإشعار
-    RemoteNotification? notification = message.notification;
-    AndroidNotification? android = notification?.android;
+    final RemoteNotification? notification = message.notification;
 
-    if (notification != null && android != null) {
-      final androidDetails = AndroidNotificationDetails(
-        'high_importance_channel', // channelId
-        'High Importance Notifications', // channelName
-        channelDescription: 'Used for important notifications',
-        importance: Importance.high,
-        priority: Priority.high,
+    final String title = notification?.title ??
+        message.data['title']?.toString() ??
+        'DoctorBike';
+    final String body =
+        notification?.body ?? message.data['body']?.toString() ?? '';
 
-        // الأيقونة الصغيرة (small icon)
-        icon: '@mipmap/ic_launcher',
+    if (title.isEmpty && body.isEmpty && message.data.isEmpty) {
+      return;
+    }
 
-        // أيقونة كبيرة (large icon)
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    final androidDetails = AndroidNotificationDetails(
+      'high_importance_channel',
+      'High Importance Notifications',
+      channelDescription: 'Used for important notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      color: AppColors.primaryColor,
+      styleInformation: BigTextStyleInformation(
+        body,
+        htmlFormatBigText: true,
+        contentTitle: title,
+        htmlFormatContentTitle: true,
+        htmlFormatSummaryText: true,
+        htmlFormatContent: true,
+        htmlFormatTitle: true,
+      ),
+    );
 
-        color: AppColors.primaryColor,
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
 
-        // أسلوب عرض النص: BigTextStyle
-        styleInformation: BigTextStyleInformation(
-          notification.body ?? '',
-          htmlFormatBigText: true,
-          contentTitle: notification.title ?? '',
-          htmlFormatContentTitle: true,
-          // summaryText: 'تجربة إشعار متقدم',
-          htmlFormatSummaryText: true,
-          htmlFormatContent: true,
-          htmlFormatTitle: true,
-        ),
-      );
+    final String payload = jsonEncode(message.data);
 
-      // إعدادات iOS (Darwin)
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
+    final NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
 
-      // إصدار الإشعار
-      await _flutterLocalNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        NotificationDetails(
-          android: androidDetails,
-          iOS: iosDetails,
-        ),
-        payload: message.data.toString(),
-      );
+    await _flutterLocalNotificationsPlugin.show(
+      message.hashCode,
+      title.isEmpty ? 'DoctorBike' : title,
+      body,
+      details,
+      payload: payload,
+    );
+  }
+
+  void _refreshAdminBadge() {
+    if (userType != 'admin') {
+      return;
+    }
+    if (Get.isRegistered<AdminNotificationBadgeController>()) {
+      Get.find<AdminNotificationBadgeController>().refresh();
     }
   }
 
   Future<void> _setupMessageHandler() async {
-    FirebaseMessaging.onMessage.listen((messages) async {
-      // final notificationsController = Get.put(NotificationsController());
-      // await notificationsController.getNotifications();
-      showNotification(messages);
+    FirebaseMessaging.onMessage.listen((RemoteMessage messages) async {
+      await showNotification(messages);
+      _refreshAdminBadge();
     });
 
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
 
-    final initialMessage = await firebaseMessaging.getInitialMessage();
+    final RemoteMessage? initialMessage =
+        await firebaseMessaging.getInitialMessage();
 
     if (initialMessage != null) {
-      _handleBackgroundMessage(initialMessage);
+      Future<void>.delayed(const Duration(milliseconds: 800), () {
+        _handleOpenedMessage(initialMessage);
+      });
     }
   }
 
-  void _handleBackgroundMessage(RemoteMessage message) {
-    if (message.data['type'] == 'test') {
-      showNotification(message);
+  void _handleOpenedMessage(RemoteMessage message) {
+    if (message.data.isEmpty) {
+      return;
     }
+    AdminNotificationRouter.handlePayload(
+      Map<String, dynamic>.from(message.data),
+    );
   }
 }

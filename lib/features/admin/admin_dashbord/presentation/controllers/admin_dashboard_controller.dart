@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../../../employee_section/data/models/logs_model.dart';
 import '../../../employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
@@ -219,6 +221,12 @@ class AdminDashboardController extends GetxController
 
   @override
   void onInit() async {
+    if (userType == 'admin') {
+      if (!Get.isRegistered<AdminNotificationBadgeController>()) {
+        Get.put(AdminNotificationBadgeController(), permanent: true);
+      }
+      Get.find<AdminNotificationBadgeController>().refresh();
+    }
     getMainDashboardData();
     super.onInit();
     animController = AnimationController(

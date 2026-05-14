@@ -8,6 +8,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../controllers/admin_dashboard_controller.dart';
 import '../widgets/actions_buttons.dart';
 import '../widgets/admin_statistics_cards.dart';
@@ -28,6 +29,66 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
               ),
         ),
         actions: [
+          if (userType == 'admin')
+            Obx(() {
+              final c = Get.isRegistered<AdminNotificationBadgeController>()
+                  ? Get.find<AdminNotificationBadgeController>()
+                  : null;
+              final n = c?.unreadCount.value ?? 0;
+              return Padding(
+                padding: EdgeInsets.only(right: 4.w),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ClipOval(
+                      child: Container(
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.whiteColor2,
+                        child: IconButton(
+                          highlightColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                          icon: Icon(
+                            Icons.notifications_none_rounded,
+                            color: AppColors.primaryColor,
+                            size: 25.sp,
+                          ),
+                          onPressed: () async {
+                            await Get.toNamed(AppRoutes.NOTIFICATIONCENTER);
+                            c?.refresh();
+                          },
+                        ),
+                      ),
+                    ),
+                    if (n > 0)
+                      Positioned(
+                        right: 4,
+                        top: 4,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          constraints: const BoxConstraints(minWidth: 18),
+                          child: Text(
+                            n > 99 ? '99+' : '$n',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            }),
           ClipOval(
             child: Container(
               color: ThemeService.isDark.value

@@ -43,6 +43,16 @@ class EndPoints {
   static const String adminLogs = 'all/logs';
   static const String adminHomeData = 'admin/home/page/data';
 
+  static const String adminNotifications = 'admin/notifications';
+  static const String adminNotificationsUnreadCount =
+      'admin/notifications/unread-count';
+  static String adminNotificationMarkRead(int id) =>
+      'admin/notifications/$id/read';
+  static const String adminNotificationsMarkAllRead =
+      'admin/notifications/mark-all-read';
+  static String adminNotificationDelete(int id) => 'admin/notifications/$id';
+  static const String adminDeviceToken = 'admin/device-token';
+
   // debts section
   static const String totalDebtsWeOwe = 'total/debts/we/owe';
   static const String totalDebtsOwedToUs = 'total/debts/owed/to/us';

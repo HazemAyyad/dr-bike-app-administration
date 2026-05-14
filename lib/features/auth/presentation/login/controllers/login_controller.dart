@@ -1,14 +1,17 @@
 import 'package:doctorbike/core/services/user_data.dart';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/api_error_message.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/admin_notification_api_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../../../domain/usecases/login_usecase.dart';
 
 class LoginController extends GetxController {
@@ -134,6 +137,7 @@ class LoginController extends GetxController {
       await UserData.saveToken(savedData.token!);
       await UserData.saveUserJson(savedData.userDataJson!);
       await _restoreSavedUserGlobals();
+      await _registerAdminPushAfterLogin();
       Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
     } catch (e, st) {
       debugPrint('biometric login error: $e\n$st');
@@ -161,7 +165,35 @@ class LoginController extends GetxController {
       }
     }
 
+    await _registerAdminPushAfterLogin();
+
     Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+  }
+
+  Future<void> _registerAdminPushAfterLogin() async {
+    if (kIsWeb) {
+      return;
+    }
+    if (userType != 'admin') {
+      return;
+    }
+    final String t = NotificationFirebaseService.instance.finalToken;
+    if (t.isEmpty) {
+      return;
+    }
+    if (!Get.isRegistered<AdminNotificationBadgeController>()) {
+      Get.put(AdminNotificationBadgeController(), permanent: true);
+    }
+    try {
+      await AdminNotificationApiService().registerDeviceToken(
+        fcmToken: t,
+        platform: Platform.isAndroid ? 'android' : 'ios',
+        deviceName: Platform.operatingSystem,
+      );
+    } catch (e) {
+      debugPrint('register admin device token failed: $e');
+    }
+    await Get.find<AdminNotificationBadgeController>().refresh();
   }
 
   String _currentFcmToken() {

@@ -1350,4 +1350,15 @@ const Map<String, String> en = {
   'pointsGuideReward': 'Reward',
   'pointsGuideOpenEnded': 'and above',
   'pointsGuideRefresh': 'Refresh',
+
+  // Admin notification center
+  'notificationCenterTitle': 'Notifications',
+  'markAllRead': 'Mark all read',
+  'notifFilterAll': 'All',
+  'notifFilterUnread': 'Unread',
+  'notifFilterLogin': 'Employee login',
+  'notifFilterTaskDone': 'Task completed',
+  'notifFilterLogoutPending': 'Logout pending tasks',
+  'notifFilterChecks': 'Checks due soon',
+  'notificationEmpty': 'No notifications yet.',
 };

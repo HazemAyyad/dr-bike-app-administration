@@ -66,6 +66,7 @@ import '../../features/employee/my_orders/data/datasources/my_orders_datasource.
 import '../../features/employee/my_orders/data/repositories/common_repo_impl.dart';
 import '../../features/employee/scan_qrcode/data/datasources/scan_qrcode_datasource.dart';
 import '../../features/employee/scan_qrcode/data/repositories/scan_qrcode_implement.dart';
+import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../../firebase_options.dart';
 import '../connection/network_info.dart';
 import '../databases/api/dio_consumer.dart';
@@ -211,6 +212,12 @@ class InitialBindings implements Bindings {
       employeePermissions.addAll(permissionIds);
       userType = userdata.user.type;
       userName = userdata.user.name;
+      if (userdata.user.type == 'admin') {
+        if (!Get.isRegistered<AdminNotificationBadgeController>()) {
+          Get.put(AdminNotificationBadgeController(), permanent: true);
+        }
+        Get.find<AdminNotificationBadgeController>().refresh();
+      }
       // print('0000000000000000000000000${userdata.employeePermissions}');
       // print('User Type: $userType');
       // print('User Type: $employeePermissions');

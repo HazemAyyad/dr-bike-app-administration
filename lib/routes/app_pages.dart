@@ -29,6 +29,8 @@ import '../features/admin/follow_up/presentation/views/follow_up_screen.dart';
 import '../features/admin/follow_up/presentation/views/add_new_follow_up.dart';
 import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_binding.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_activti_log_screen.dart';
+import '../features/admin/notifications/presentation/bindings/admin_notification_center_binding.dart';
+import '../features/admin/notifications/presentation/views/admin_notification_center_screen.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
@@ -246,6 +248,12 @@ class AppPages {
       page: () => const AdminActivtiLogScreen(),
       binding: AdminDashboardBinding(),
       transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.NOTIFICATIONCENTER,
+      page: () => const AdminNotificationCenterScreen(),
+      binding: AdminNotificationCenterBinding(),
+      transition: _transitionFadeIn,
     ),
 
     // Employee Dashboard
