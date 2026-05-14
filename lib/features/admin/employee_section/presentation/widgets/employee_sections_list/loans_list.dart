@@ -42,24 +42,28 @@ class LoansList extends GetView<EmployeeSectionController> {
                 Flexible(
                   child: Padding(
                     padding: const EdgeInsets.all(5),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(5.r),
-                      child: GestureDetector(
-                        onTap: () {
-                          showGeneralDialog(
-                            context: context,
-                            barrierDismissible: true,
-                            barrierLabel: 'Dismiss',
-                            barrierColor: Colors.black.withAlpha(128),
-                            transitionDuration:
-                                const Duration(milliseconds: 300),
-                            pageBuilder: (context, anim1, anim2) {
-                              return FullScreenZoomImage(
-                                imageUrl: employee.employeeImg,
-                              );
-                            },
-                          );
-                        },
+                    child: GestureDetector(
+                      onTap: () {
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierLabel: 'Dismiss',
+                          barrierColor: Colors.black.withAlpha(128),
+                          transitionDuration:
+                              const Duration(milliseconds: 300),
+                          pageBuilder: (context, anim1, anim2) {
+                            return FullScreenZoomImage(
+                              imageUrl: employee.employeeImg,
+                            );
+                          },
+                        );
+                      },
+                      child: Container(
+                        height: 80.h,
+                        width: 80.w,
+                        decoration:
+                            const BoxDecoration(shape: BoxShape.circle),
+                        clipBehavior: Clip.antiAlias,
                         child: CachedNetworkImage(
                           cacheManager: CacheManager(
                             Config(
@@ -68,26 +72,12 @@ class LoansList extends GetView<EmployeeSectionController> {
                               maxNrOfCacheObjects: 100,
                             ),
                           ),
-                          imageBuilder: (context, imageProvider) => Container(
-                            height: 65.h,
-                            width: 65.w,
-                            decoration: BoxDecoration(
-                              image: DecorationImage(
-                                image: imageProvider,
-                                fit: BoxFit.cover,
-                                filterQuality: FilterQuality.medium,
-                              ),
-                            ),
-                          ),
                           imageUrl: employee.employeeImg,
+                          fit: BoxFit.cover,
                           fadeInDuration: const Duration(milliseconds: 200),
                           fadeOutDuration: const Duration(milliseconds: 200),
-                          placeholder: (context, url) => SizedBox(
-                            height: 65.h,
-                            width: 65.w,
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(),
                           ),
                           errorWidget: (context, url, error) =>
                               const Icon(Icons.error),
@@ -141,7 +131,7 @@ class LoansList extends GetView<EmployeeSectionController> {
           ),
           Container(
             width: 60.w,
-            height: 75.h,
+            height: 90.h,
             decoration: BoxDecoration(
               color: employee.orderStatus == 'approved'
                   ? AppColors.customGreen1
