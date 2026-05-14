@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/financial_dues_model.dart';
 import '../../controllers/employee_section_controller.dart';
+import '../employee_advances_bottom_sheet.dart';
 import '../employee_financial_details.dart';
 
 class FinancialDuesList extends GetView<EmployeeSectionController> {
@@ -14,26 +15,37 @@ class FinancialDuesList extends GetView<EmployeeSectionController> {
 
   final FinancialDuesModel employee;
 
+  void _openFinancialDetails(BuildContext context) {
+    controller.openFinancialDetails(employee.id.toString());
+    Get.dialog(
+      Obx(
+        () => controller.financialDetailsList.value != null
+            ? controller.isDialogLoading.value
+                ? const Center(child: CircularProgressIndicator())
+                : EmployeeFinancialDetails(controller: controller)
+            : const Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  void _openAdvances(BuildContext context) {
+    showEmployeeAdvancesBottomSheet(
+      context,
+      controller: controller,
+      employeeId: employee.id,
+      employeeName: employee.employeeName,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
 
-    return InkWell(
-      onTap: () {
-        controller.openFinancialDetails(employee.id.toString());
-        Get.dialog(
-          Obx(
-            () => controller.financialDetailsList.value != null
-                ? controller.isDialogLoading.value
-                    ? const Center(child: CircularProgressIndicator())
-                    : EmployeeFinancialDetails(controller: controller)
-                : const Center(child: CircularProgressIndicator()),
-          ),
-        );
-      },
-      child: Row(
-        children: [
-          Expanded(
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: () => _openFinancialDetails(context),
             child: Row(
               children: [
                 Padding(
@@ -110,47 +122,48 @@ class FinancialDuesList extends GetView<EmployeeSectionController> {
                           color: Colors.grey.withValues(alpha: 0.7),
                         ),
                       ),
-                      // Row(
-                      //   children: [
-                      //     Expanded(
-                      //       child:
-                      //     ),
-                      //     SizedBox(width: 10.w),
-                      //     Expanded(
-                      //       child:
-                      //     ),
-                      //   ],
-                      // ),
                     ],
+                  ),
+                ),
+                Container(
+                  width: 60.w,
+                  height: 75.h,
+                  padding: EdgeInsets.symmetric(horizontal: 1.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.customGreen1,
+                    borderRadius: BorderRadiusDirectional.only(
+                      topEnd: Radius.circular(4.r),
+                      bottomEnd: Radius.circular(4.r),
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${(double.parse(employee.salary) - double.parse(employee.debts)).toString()} ${'currency'.tr}',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            width: 60.w,
-            height: 75.h,
-            padding: EdgeInsets.symmetric(horizontal: 1.w),
-            decoration: BoxDecoration(
-              color: AppColors.customGreen1,
-              borderRadius: BorderRadiusDirectional.only(
-                topEnd: Radius.circular(4.r),
-                bottomEnd: Radius.circular(4.r),
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '${(double.parse(employee.salary) - double.parse(employee.debts)).toString()} ${'currency'.tr}',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+        ),
+        Material(
+          color: Colors.transparent,
+          child: IconButton(
+            tooltip: 'advances'.tr,
+            onPressed: () => _openAdvances(context),
+            icon: Icon(
+              Icons.account_balance_wallet_outlined,
+              color: AppColors.primaryColor,
+              size: 26.sp,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

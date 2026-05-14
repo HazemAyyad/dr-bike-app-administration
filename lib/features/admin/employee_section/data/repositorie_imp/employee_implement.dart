@@ -220,12 +220,13 @@ class EmployeeImplement implements EmployeeRepository {
   // get financial details
   @override
   Future<FinancialDetailsModel> getfinancialDetails(
-      {required String employeeId, String? month}) async {
+      {required String employeeId, String? month, String? date}) async {
     if (await networkInfo.isConnected) {
       try {
         final result = await employeeDatasource.getfinancialDetails(
           employeeId: employeeId,
           month: month,
+          date: date,
         );
 
         return result;

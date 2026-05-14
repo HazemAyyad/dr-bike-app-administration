@@ -94,6 +94,7 @@ class EmployeeSectionController extends GetxController
 
   List<DateTime>? dateTimeList;
   final Rx<DateTime> selectedFinancialMonth = DateTime.now().obs;
+  final Rx<DateTime> selectedFinancialDate = DateTime.now().obs;
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -399,16 +400,27 @@ class EmployeeSectionController extends GetxController
     return '${date.year}-${date.month.toString().padLeft(2, '0')}';
   }
 
+  String formatDateKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  void _syncFinancialPeriodContext() {
+    final d = selectedFinancialDate.value;
+    selectedFinancialMonth.value = DateTime(d.year, d.month, 1);
+    dateTimeList = [
+      DateTime(d.year, d.month, 1),
+      DateTime(d.year, d.month + 1, 0),
+    ];
+  }
+
   String formatMonthLabel(DateTime date) {
     return '${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   void openFinancialDetails(String employeeId) {
-    selectedFinancialMonth.value = DateTime.now();
-    dateTimeList = [
-      DateTime(DateTime.now().year, DateTime.now().month, 1),
-      DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
-    ];
+    final now = DateTime.now();
+    selectedFinancialDate.value = DateTime(now.year, now.month, now.day);
+    _syncFinancialPeriodContext();
     financialDetailsList.value = null;
     getFinancialDetails(employeeId);
   }
@@ -419,43 +431,36 @@ class EmployeeSectionController extends GetxController
         : isDialogLoading(true);
     final result = await financialDetailsUsecase.call(
       employeeId: employeeId,
-      month: formatMonthKey(selectedFinancialMonth.value),
+      month: formatMonthKey(selectedFinancialDate.value),
+      date: formatDateKey(selectedFinancialDate.value),
     );
     financialDetailsList.value = result;
     isDialogLoading(false);
   }
 
-  void changeFinancialMonth(int deltaMonths) {
-    final current = selectedFinancialMonth.value;
-    final next = DateTime(current.year, current.month + deltaMonths, 1);
-    setFinancialMonth(next);
-  }
-
-  void setFinancialMonth(DateTime month) {
-    selectedFinancialMonth.value = DateTime(month.year, month.month, 1);
-    dateTimeList = [
-      DateTime(month.year, month.month, 1),
-      DateTime(month.year, month.month + 1, 0),
-    ];
+  void setFinancialDate(DateTime date) {
+    selectedFinancialDate.value =
+        DateTime(date.year, date.month, date.day);
+    _syncFinancialPeriodContext();
     final employeeId = financialDetailsList.value?.employeeId;
     if (employeeId != null) {
       getFinancialDetails(employeeId.toString());
     }
   }
 
-  void setCurrentFinancialMonth() {
-    setFinancialMonth(DateTime.now());
+  void shiftFinancialDay(int deltaDays) {
+    setFinancialDate(
+      selectedFinancialDate.value.add(Duration(days: deltaDays)),
+    );
   }
 
-  Future<void> loadEmployeeAdvances() async {
-    final employee = financialDetailsList.value;
-    if (employee == null) return;
+  Future<void> loadEmployeeAdvancesFor(int employeeId, String monthKey) async {
     isAdvancesLoading(true);
     advancesError.value = '';
     try {
       employeeAdvances.value = await employeeAdvancesUsecase.call(
-        employeeId: employee.employeeId,
-        month: formatMonthKey(selectedFinancialMonth.value),
+        employeeId: employeeId,
+        month: monthKey,
       );
     } catch (e) {
       employeeAdvances.value = null;

@@ -29,6 +29,8 @@ class FinancialDetailsModel extends FinancialDetailsEntity {
     required String additions,
     required String advances,
     required String finalNetEntitlement,
+    String view = 'month',
+    String? selectedDate,
   }) : super(
           employeeId: employeeId,
           employeeName: employeeName,
@@ -54,6 +56,8 @@ class FinancialDetailsModel extends FinancialDetailsEntity {
           additions: additions,
           advances: advances,
           finalNetEntitlement: finalNetEntitlement,
+          view: view,
+          selectedDate: selectedDate,
         );
 
   factory FinancialDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -84,6 +88,8 @@ class FinancialDetailsModel extends FinancialDetailsEntity {
       advances: asString(j['advances'], '0.00'),
       finalNetEntitlement:
           asString(j['final_net_entitlement'] ?? j[ApiKey.total], '0'),
+      view: asString(j['view'], 'month'),
+      selectedDate: asNullableString(j['selected_date']),
     );
   }
 
@@ -113,6 +119,8 @@ class FinancialDetailsModel extends FinancialDetailsEntity {
       'additions': additions,
       'advances': advances,
       'final_net_entitlement': finalNetEntitlement,
+      'view': view,
+      'selected_date': selectedDate,
     };
   }
 }

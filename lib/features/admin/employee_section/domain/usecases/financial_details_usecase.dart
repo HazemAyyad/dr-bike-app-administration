@@ -9,10 +9,12 @@ class FinancialDetailsUsecase {
   Future<FinancialDetailsModel> call({
     required String employeeId,
     String? month,
+    String? date,
   }) {
     return employeeRepository.getfinancialDetails(
       employeeId: employeeId,
       month: month,
+      date: date,
     );
   }
 }

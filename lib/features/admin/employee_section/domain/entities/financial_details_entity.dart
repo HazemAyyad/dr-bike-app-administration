@@ -23,6 +23,9 @@ class FinancialDetailsEntity {
   final String additions;
   final String advances;
   final String finalNetEntitlement;
+  /// API: `month` for calendar context, `view` is `day` or `month`.
+  final String view;
+  final String? selectedDate;
 
   const FinancialDetailsEntity({
     required this.employeeId,
@@ -49,5 +52,7 @@ class FinancialDetailsEntity {
     required this.additions,
     required this.advances,
     required this.finalNetEntitlement,
+    this.view = 'month',
+    this.selectedDate,
   });
 }

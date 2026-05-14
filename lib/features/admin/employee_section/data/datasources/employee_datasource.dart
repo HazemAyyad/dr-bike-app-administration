@@ -313,12 +313,14 @@ class EmployeeDatasource {
   Future<FinancialDetailsModel> getfinancialDetails({
     required String employeeId,
     String? month,
+    String? date,
   }) async {
     try {
       final response =
           await api.post(EndPoints.employeeFinancialDetails, data: {
         'employee_id': employeeId,
         if (month != null && month.isNotEmpty) 'month': month,
+        if (date != null && date.isNotEmpty) 'date': date,
       });
       final employee = FinancialDetailsModel.fromJson(
         asMap(response.data[ApiKey.financial_details]),

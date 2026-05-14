@@ -25,7 +25,7 @@ abstract class EmployeeRepository {
   Future<List<FinancialDuesModel>> getFinancialDues();
 
   Future<FinancialDetailsModel> getfinancialDetails(
-      {required String employeeId, String? month});
+      {required String employeeId, String? month, String? date});
 
   Future<EmployeeAdvancesResult> getEmployeeAdvances({
     required int employeeId,
