@@ -20,7 +20,7 @@ class FinancialDuesList extends GetView<EmployeeSectionController> {
 
     return InkWell(
       onTap: () {
-        controller.getFinancialDetails(employee.id.toString());
+        controller.openFinancialDetails(employee.id.toString());
         Get.dialog(
           Obx(
             () => controller.financialDetailsList.value != null

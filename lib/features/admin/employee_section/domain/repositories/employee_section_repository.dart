@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_details_model.dart';
+import '../../data/models/employee_advances_model.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../data/models/employee_details_model.dart';
 import '../../data/models/financial_dues_model.dart';
@@ -24,7 +25,12 @@ abstract class EmployeeRepository {
   Future<List<FinancialDuesModel>> getFinancialDues();
 
   Future<FinancialDetailsModel> getfinancialDetails(
-      {required String employeeId});
+      {required String employeeId, String? month});
+
+  Future<EmployeeAdvancesResult> getEmployeeAdvances({
+    required int employeeId,
+    required String month,
+  });
 
   Future<QrGenerationModel> qrGeneration();
   Future<QrHistoryResult> qrHistory({int page = 1, int perPage = 20});
@@ -129,7 +135,8 @@ abstract class EmployeeRepository {
 
   Future<EmployeePointsCategoriesModel> getEmployeePointsCategories();
 
-  Future<List<EmployeeRewardRuleModel>> getEmployeeRewardRules({bool? isActive});
+  Future<List<EmployeeRewardRuleModel>> getEmployeeRewardRules(
+      {bool? isActive});
 
   Future<Either<Failure, EmployeeRewardRuleModel>> createEmployeeRewardRule({
     required int minPoints,

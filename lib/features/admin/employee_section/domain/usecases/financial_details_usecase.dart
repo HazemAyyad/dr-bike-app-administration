@@ -6,7 +6,13 @@ class FinancialDetailsUsecase {
 
   FinancialDetailsUsecase({required this.employeeRepository});
 
-  Future<FinancialDetailsModel> call({required String employeeId}) {
-    return employeeRepository.getfinancialDetails(employeeId: employeeId);
+  Future<FinancialDetailsModel> call({
+    required String employeeId,
+    String? month,
+  }) {
+    return employeeRepository.getfinancialDetails(
+      employeeId: employeeId,
+      month: month,
+    );
   }
 }

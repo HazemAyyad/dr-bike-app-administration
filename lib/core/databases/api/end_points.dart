@@ -4,8 +4,7 @@ class EndPoints {
   /// ثابت: لا تربطه بـ [startApp] لأن أول قراءة لـ Firebase قد تجعل baseUrl فارغاً
   /// فيتجه Dio إلى نفس أصل الويب (localhost) ويبدو اللوجين عالقاً.
   /// يطابق مسار Laravel على الاستضافة: /public/api/...
-  static const String baserUrl =
-      "https://dr-bike.duosparktech.com/public/api/";
+  static const String baserUrl = "https://dr-bike.duosparktech.com/public/api/";
   static const String baserUrlForImage =
       "https://dr-bike.duosparktech.com/public/";
 
@@ -63,6 +62,8 @@ class EndPoints {
   static const String financialDues = 'financial/dues';
   static const String employeeFinancialDetails =
       'show/employee/financial/details';
+  static String employeeAdvances(int employeeId) =>
+      'employees/$employeeId/advances';
   static const String employeePermissions = 'employee/permissions';
   static const String qrGeneration = 'qr-generation';
   static const String qrHistory = 'qr-history';
@@ -83,8 +84,7 @@ class EndPoints {
       'get/employee/financial/data/report';
 
   // employee points & rewards
-  static const String employeePointsCategories =
-      'employees/points/categories';
+  static const String employeePointsCategories = 'employees/points/categories';
   static String employeePointsAdd(int employeeId) =>
       'employees/$employeeId/points/add';
   static String employeePointsDeduct(int employeeId) =>
@@ -210,6 +210,7 @@ class EndPoints {
   static const String productTagsDetach = 'product/tags/detach';
   static const String productsByTag = 'products/by/tag';
   static const String addCombination = 'add/combination';
+
   /// نفس حقول صفحة اختبار Laravel: multipart + save_scope
   static const String createProductFull = 'create/product';
   static const String updateProductFull = 'update/product/full';
@@ -360,11 +361,14 @@ class EndPoints {
   static const String getAllCategoriesManagement = 'admin/categories';
   static const String storeCategoryAdmin = 'admin/category/store';
   static const String updateCategoryAdmin = 'admin/category/update';
-  static const String toggleCategoryStatusAdmin = 'admin/category/toggle-status';
-  static const String getSubCategoriesByCategory = 'admin/subcategories/by-category';
+  static const String toggleCategoryStatusAdmin =
+      'admin/category/toggle-status';
+  static const String getSubCategoriesByCategory =
+      'admin/subcategories/by-category';
   static const String storeSubCategoryAdmin = 'admin/subcategory/store';
   static const String updateSubCategoryAdmin = 'admin/subcategory/update';
-  static const String toggleSubCategoryStatusAdmin = 'admin/subcategory/toggle-status';
+  static const String toggleSubCategoryStatusAdmin =
+      'admin/subcategory/toggle-status';
 }
 
 class ApiKey {

@@ -66,7 +66,8 @@ const Map<String, String> ar = {
   'pickEmployeesHint': 'اختر موظفاً واحداً أو أكثر',
   'periodLabel': 'الفترة',
   'reportEmptyState': 'لا توجد صفوف في هذا التقرير',
-  'attendanceReportSelectEmployeeWarning': 'فعّل «جميع الموظفين» أو اختر موظفاً واحداً على الأقل',
+  'attendanceReportSelectEmployeeWarning':
+      'فعّل «جميع الموظفين» أو اختر موظفاً واحداً على الأقل',
   'attendanceReportInvalidDay': 'يوم غير صالح لهذا الشهر',
   'weekOfMonthLabel': 'رقم الأسبوع داخل الشهر',
   'weekOfMonthHint':
@@ -460,6 +461,20 @@ const Map<String, String> ar = {
   'debtValue': 'قيمة السلفة',
   'financialDetails': 'التفاصيل المالية',
   'selectMonth': 'اختر الشهر',
+  'selectedMonth': 'الشهر المحدد',
+  'previousMonth': 'الشهر السابق',
+  'nextMonth': 'الشهر التالي',
+  'currentMonth': 'الشهر الحالي',
+  'baseSalary': 'الراتب الأساسي',
+  'attendanceDays': 'أيام الحضور',
+  'absentDays': 'أيام الغياب',
+  'lateDays': 'أيام التأخير',
+  'deductions': 'الخصومات',
+  'bonuses': 'المكافآت',
+  'advances': 'السلف',
+  'totalAdvances': 'إجمالي السلف',
+  'noAdvancesForMonth': 'لا توجد سلف لهذا الشهر',
+  'finalNetEntitlement': 'صافي الاستحقاق النهائي',
   'requestDetails': 'تفاصيل الطلب',
   'orderDate': 'تاريخ الطلب',
   'acceptOrder': 'قبول الطلب',
@@ -826,7 +841,8 @@ const Map<String, String> ar = {
   'tagName': 'اسم الوسم',
   'tagColor': 'لون الوسم (hex)',
   'deactivateTag': 'إلغاء التفعيل',
-  'deactivateTagConfirm': 'إلغاء تفعيل هذا الوسم؟ سيُخفى من الاختيار؛ الروابط الحالية تبقى حتى تزيلها.',
+  'deactivateTagConfirm':
+      'إلغاء تفعيل هذا الوسم؟ سيُخفى من الاختيار؛ الروابط الحالية تبقى حتى تزيلها.',
   'noTagsYet': 'لا توجد وسوم بعد. أنشئ وسمًا بالزر أدناه.',
   'sectionProductTags': 'وسوم المنتج',
   'filterByTag': 'تصفية حسب الوسم',
@@ -864,7 +880,8 @@ const Map<String, String> ar = {
   'addSizeBlock': 'إضافة مقاس',
   'removeLastSizeBlock': 'حذف آخر مقاس',
   'validationErrorsTitle': 'أخطاء التحقق',
-  'videoFormatInvalid': 'نوع الفيديو غير مدعوم. استخدم mp4 أو mov أو avi أو webm',
+  'videoFormatInvalid':
+      'نوع الفيديو غير مدعوم. استخدم mp4 أو mov أو avi أو webm',
   'videoFormatsHint': 'الفيديو: mp4، mov، avi، webm (حد أقصى حسب السيرفر)',
   'productNameRequired': 'اسم المنتج بالعربية مطلوب',
   'productDetailsSectionInfo': 'بيانات المنتج',
@@ -872,7 +889,8 @@ const Map<String, String> ar = {
   'productDetailsSectionSizes': 'الأحجام والألوان',
   'productDetailsSectionMedia': 'الصور والفيديو',
   'productDetailsRequired': 'وصف المنتج بالعربية مطلوب',
-  'storeSyncLocalOnly': 'تم الحفظ محلياً في التطبيق فقط (لم تُزامَن مع المتجر الخارجي).',
+  'storeSyncLocalOnly':
+      'تم الحفظ محلياً في التطبيق فقط (لم تُزامَن مع المتجر الخارجي).',
   'storeSyncSkipped': 'تم تخطّي مزامنة إضافية مع المتجر لهذه العملية.',
   'productMediaSection': 'الوسائط (اختياري)',
   'normalImages': 'صور عادية',
@@ -884,8 +902,10 @@ const Map<String, String> ar = {
   'clearPendingMedia': 'مسح الملفات المعلّقة',
   'productUpdatedSuccess': 'تم تعديل المنتج بنجاح',
   'deleteMediaConfirmTitle': 'تأكيد الحذف',
-  'deleteMediaConfirmMessage': 'هل تريد حذف هذه الصورة؟ سيتم تطبيق الحذف عند حفظ المنتج.',
-  'deleteVideoConfirmMessage': 'هل تريد حذف فيديو المنتج؟ سيتم تطبيق الحذف عند حفظ المنتج.',
+  'deleteMediaConfirmMessage':
+      'هل تريد حذف هذه الصورة؟ سيتم تطبيق الحذف عند حفظ المنتج.',
+  'deleteVideoConfirmMessage':
+      'هل تريد حذف فيديو المنتج؟ سيتم تطبيق الحذف عند حفظ المنتج.',
   'existingMediaHeading': 'الوسائط الحالية (مسح أو إضافة)',
   'existingVideoHeading': 'فيديو محفوظ',
   'uploadMediaHere': 'ارفع الصور هنا (أو استخدم +)',
@@ -921,7 +941,8 @@ const Map<String, String> ar = {
   'selectMainCategoryFirst': 'اختر الفئة الرئيسية أولاً',
   'selectSubCategoryHint': 'اختياري — اختر الفئات الفرعية',
   'mainCategoryHint': 'اختر الفئة الرئيسية',
-  'invalidCategoryCombination': 'يجب أن تنتمي الفئات الفرعية للفئة الرئيسية المختارة.',
+  'invalidCategoryCombination':
+      'يجب أن تنتمي الفئات الفرعية للفئة الرئيسية المختارة.',
   'imageBadgeLegacyStore': 'من الأرشيف',
   'imageBadgeLaravel': 'محلية',
   'minimumStock': 'الحد الادني للمخزون',
@@ -1209,7 +1230,8 @@ const Map<String, String> ar = {
   // General Settings (admin)
   'generalSettings': 'الإعدادات العامة',
   'rewardRulesSetting': 'قوانين المكافآت',
-  'rewardRulesSettingDesc': 'تحديد المكافآت المالية بناءً على صافي النقاط الشهري',
+  'rewardRulesSettingDesc':
+      'تحديد المكافآت المالية بناءً على صافي النقاط الشهري',
   'pointCategoriesSetting': 'إعدادات تصنيفات النقاط',
   'pointCategoriesSettingDesc': 'تحديد قيمة كل سلوك (إضافة/خصم) بالنقاط',
 

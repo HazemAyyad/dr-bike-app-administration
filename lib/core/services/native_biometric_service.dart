@@ -71,9 +71,13 @@ class NativeBiometricService {
     }
 
     try {
+      final isKeyguard = method == 'authenticateKeyguard' ||
+          method == 'authenticateKeyguardDirect';
+      final effectiveTimeout =
+          isKeyguard ? const Duration(seconds: 180) : timeout;
       debugPrint('Native biometric call: method=$method');
       final response = await _channel.invokeMethod<dynamic>(method).timeout(
-        timeout,
+        effectiveTimeout,
         onTimeout: () {
           debugPrint('Native biometric timeout: method=$method');
           throw TimeoutException('native_biometric_timeout_$method');

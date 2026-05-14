@@ -18,6 +18,7 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/models/financial_details_model.dart';
+import '../../data/models/employee_advances_model.dart';
 import '../../data/models/financial_dues_model.dart';
 import '../../data/models/overtime_and_loan_model.dart';
 import '../../domain/entities/employee_entity.dart';
@@ -26,6 +27,7 @@ import '../../domain/usecases/approve_employee_order_usecase.dart';
 import '../../domain/usecases/cancel_log_usecase.dart';
 import '../../domain/usecases/delete_employee_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
+import '../../domain/usecases/employee_advances_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
 import '../../domain/usecases/get_all_employee.dart';
@@ -45,6 +47,7 @@ class EmployeeSectionController extends GetxController
   final WorkingTimesUsecase workingTimesUsecase;
   final FinancialDuesUsecase financialDuesUsecase;
   final FinancialDetailsUsecase financialDetailsUsecase;
+  final EmployeeAdvancesUsecase employeeAdvancesUsecase;
   final EmployeeDetailsUsecase employeeDetailsUsecase;
   final QrGenerationUsecase qrGenerationUsecase;
   final QrHistoryUsecase qrHistoryUsecase;
@@ -63,6 +66,7 @@ class EmployeeSectionController extends GetxController
     required this.workingTimesUsecase,
     required this.financialDuesUsecase,
     required this.financialDetailsUsecase,
+    required this.employeeAdvancesUsecase,
     required this.employeeDetailsUsecase,
     required this.qrGenerationUsecase,
     required this.qrHistoryUsecase,
@@ -89,6 +93,7 @@ class EmployeeSectionController extends GetxController
   final RxBool isLoading = false.obs;
 
   List<DateTime>? dateTimeList;
+  final Rx<DateTime> selectedFinancialMonth = DateTime.now().obs;
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -334,12 +339,9 @@ class EmployeeSectionController extends GetxController
         (message) {
           final int? id = int.tryParse(employeeId);
           if (id != null) {
-            employeeService.employeeList
-                .removeWhere((e) => e.id == id);
-            employeeService.workingTimesList
-                .removeWhere((e) => e.id == id);
-            employeeService.financialDuesList
-                .removeWhere((e) => e.id == id);
+            employeeService.employeeList.removeWhere((e) => e.id == id);
+            employeeService.workingTimesList.removeWhere((e) => e.id == id);
+            employeeService.financialDuesList.removeWhere((e) => e.id == id);
             filteredEmployees.removeWhere((e) => e.id == id);
             filteredWorkingTimes.removeWhere((e) => e.id == id);
             filteredFinancialDues.removeWhere((e) => e.id == id);
@@ -382,6 +384,8 @@ class EmployeeSectionController extends GetxController
   }
 
   RxBool isDialogLoading = false.obs;
+  RxBool isAdvancesLoading = false.obs;
+  RxString advancesError = ''.obs;
 
   /// تحميل شاشة سجل QR (منفصل عن [isDialogLoading] حتى لا يتعارض مع المودال)
   RxBool isQrHistoryLoading = false.obs;
@@ -389,14 +393,76 @@ class EmployeeSectionController extends GetxController
   // Get Financial Details
   Rxn<FinancialDetailsModel> financialDetailsList =
       Rxn<FinancialDetailsModel>();
+  Rxn<EmployeeAdvancesResult> employeeAdvances = Rxn<EmployeeAdvancesResult>();
+
+  String formatMonthKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}';
+  }
+
+  String formatMonthLabel(DateTime date) {
+    return '${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  void openFinancialDetails(String employeeId) {
+    selectedFinancialMonth.value = DateTime.now();
+    dateTimeList = [
+      DateTime(DateTime.now().year, DateTime.now().month, 1),
+      DateTime(DateTime.now().year, DateTime.now().month + 1, 0),
+    ];
+    financialDetailsList.value = null;
+    getFinancialDetails(employeeId);
+  }
 
   void getFinancialDetails(String employeeId) async {
     employeeId == financialDetailsList.value?.employeeId.toString()
         ? isDialogLoading(false)
         : isDialogLoading(true);
-    final result = await financialDetailsUsecase.call(employeeId: employeeId);
+    final result = await financialDetailsUsecase.call(
+      employeeId: employeeId,
+      month: formatMonthKey(selectedFinancialMonth.value),
+    );
     financialDetailsList.value = result;
     isDialogLoading(false);
+  }
+
+  void changeFinancialMonth(int deltaMonths) {
+    final current = selectedFinancialMonth.value;
+    final next = DateTime(current.year, current.month + deltaMonths, 1);
+    setFinancialMonth(next);
+  }
+
+  void setFinancialMonth(DateTime month) {
+    selectedFinancialMonth.value = DateTime(month.year, month.month, 1);
+    dateTimeList = [
+      DateTime(month.year, month.month, 1),
+      DateTime(month.year, month.month + 1, 0),
+    ];
+    final employeeId = financialDetailsList.value?.employeeId;
+    if (employeeId != null) {
+      getFinancialDetails(employeeId.toString());
+    }
+  }
+
+  void setCurrentFinancialMonth() {
+    setFinancialMonth(DateTime.now());
+  }
+
+  Future<void> loadEmployeeAdvances() async {
+    final employee = financialDetailsList.value;
+    if (employee == null) return;
+    isAdvancesLoading(true);
+    advancesError.value = '';
+    try {
+      employeeAdvances.value = await employeeAdvancesUsecase.call(
+        employeeId: employee.employeeId,
+        month: formatMonthKey(selectedFinancialMonth.value),
+      );
+    } catch (e) {
+      employeeAdvances.value = null;
+      advancesError.value = e.toString();
+    } finally {
+      isAdvancesLoading(false);
+    }
   }
 
   // Get Employee Details

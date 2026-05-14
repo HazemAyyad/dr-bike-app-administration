@@ -450,6 +450,20 @@ const Map<String, String> en = {
 
   'financialDetails': 'Financial Details',
   'selectMonth': 'Select Month',
+  'selectedMonth': 'Selected Month',
+  'previousMonth': 'Previous Month',
+  'nextMonth': 'Next Month',
+  'currentMonth': 'Current Month',
+  'baseSalary': 'Base Salary',
+  'attendanceDays': 'Attendance Days',
+  'absentDays': 'Absent Days',
+  'lateDays': 'Late Days',
+  'deductions': 'Deductions',
+  'bonuses': 'Bonuses',
+  'advances': 'Advances',
+  'totalAdvances': 'Total Advances',
+  'noAdvancesForMonth': 'No advances for this month',
+  'finalNetEntitlement': 'Final Net Entitlement',
   'requestDetails': 'Request Details',
   'orderDate': 'Order Date',
   'acceptOrder': 'Accept Order',
@@ -829,7 +843,8 @@ const Map<String, String> en = {
   'tagName': 'Tag name',
   'tagColor': 'Tag color (hex)',
   'deactivateTag': 'Deactivate',
-  'deactivateTagConfirm': 'Deactivate this tag? It will be hidden from pickers; existing product links stay until you remove them.',
+  'deactivateTagConfirm':
+      'Deactivate this tag? It will be hidden from pickers; existing product links stay until you remove them.',
   'noTagsYet': 'No tags yet. Create one with the button below.',
   'sectionProductTags': 'Product tags',
   'filterByTag': 'Filter by tag',
@@ -845,7 +860,8 @@ const Map<String, String> en = {
   'sectionProductNames': 'Product names',
   'sectionDescriptions': 'Descriptions',
   'sectionPricingStock': 'Pricing & stock',
-  'extraLaravelFields': 'Extra fields (min sale price, list price, rotation date)',
+  'extraLaravelFields':
+      'Extra fields (min sale price, list price, rotation date)',
   'nameEnglish': 'English name',
   'nameHebrew': 'Hebrew name',
   'descriptionEnglish': 'English description',
@@ -862,7 +878,8 @@ const Map<String, String> en = {
   'productNewBadge': 'New item',
   'productBestSeller': 'Best seller',
   'sectionSizeColor': 'Size & colors',
-  'colorsAndQtySubtitle': 'Per size: multiple colors; each color has quantity and price',
+  'colorsAndQtySubtitle':
+      'Per size: multiple colors; each color has quantity and price',
   'colorAndQuantityHeading': 'Color & quantity',
   'addSizeBlock': 'Add size block',
   'removeLastSizeBlock': 'Remove last size',
@@ -875,7 +892,8 @@ const Map<String, String> en = {
   'productDetailsSectionSizes': 'Sizes & colors',
   'productDetailsSectionMedia': 'Images & video',
   'productDetailsRequired': 'Arabic description is required',
-  'storeSyncLocalOnly': 'Saved in the app only (not synced to the external store).',
+  'storeSyncLocalOnly':
+      'Saved in the app only (not synced to the external store).',
   'storeSyncSkipped': 'Store sync was skipped for this operation.',
   'productMediaSection': 'Media (optional)',
   'normalImages': 'Normal images',
@@ -887,12 +905,15 @@ const Map<String, String> en = {
   'clearPendingMedia': 'Clear pending files',
   'productUpdatedSuccess': 'Product updated successfully',
   'deleteMediaConfirmTitle': 'Confirm deletion',
-  'deleteMediaConfirmMessage': 'Remove this image? The change applies when you save the product.',
-  'deleteVideoConfirmMessage': 'Remove the product video? The change applies when you save the product.',
+  'deleteMediaConfirmMessage':
+      'Remove this image? The change applies when you save the product.',
+  'deleteVideoConfirmMessage':
+      'Remove the product video? The change applies when you save the product.',
   'existingMediaHeading': 'Current media (remove or add)',
   'existingVideoHeading': 'Saved video',
   'uploadMediaHere': 'Upload images here (or use +)',
-  'saveScopeLockedHint': 'Saved in the app only — save scope cannot be changed.',
+  'saveScopeLockedHint':
+      'Saved in the app only — save scope cannot be changed.',
   'addSizeColorSection': 'Add sizes & colors',
   'addSizeColor': 'Add Size / Color',
   'editSizeColor': 'Edit Size / Color',
@@ -924,7 +945,8 @@ const Map<String, String> en = {
   'selectMainCategoryFirst': 'Select main category first',
   'selectSubCategoryHint': 'Optional — select subcategories',
   'mainCategoryHint': 'Select main category',
-  'invalidCategoryCombination': 'Subcategories must belong to the selected main category.',
+  'invalidCategoryCombination':
+      'Subcategories must belong to the selected main category.',
   'imageBadgeLegacyStore': 'Archive',
   'imageBadgeLaravel': 'Local',
   'minimumStock': 'Minimum Stock',
@@ -1271,7 +1293,8 @@ const Map<String, String> en = {
   'collapseLogs': 'Hide details',
 
   // Add/Deduct dialog category dropdown extras
-  'pointsCategoryAutoFill': 'Value is fixed by the category and cannot be edited',
+  'pointsCategoryAutoFill':
+      'Value is fixed by the category and cannot be edited',
   'pointsCategoryOverride': 'Override points (optional)',
   'pointsCategoryConfigurableHeader': 'Configured categories',
 

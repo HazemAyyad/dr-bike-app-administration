@@ -11,6 +11,7 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/employee_details_model.dart';
+import '../models/employee_advances_model.dart';
 import '../models/employee_model.dart';
 import '../models/financial_details_model.dart';
 import '../models/financial_dues_model.dart';
@@ -202,7 +203,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -309,11 +312,13 @@ class EmployeeDatasource {
   // get Financial Details
   Future<FinancialDetailsModel> getfinancialDetails({
     required String employeeId,
+    String? month,
   }) async {
     try {
       final response =
           await api.post(EndPoints.employeeFinancialDetails, data: {
         'employee_id': employeeId,
+        if (month != null && month.isNotEmpty) 'month': month,
       });
       final employee = FinancialDetailsModel.fromJson(
         asMap(response.data[ApiKey.financial_details]),
@@ -326,6 +331,30 @@ class EmployeeDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeeAdvancesResult> getEmployeeAdvances({
+    required int employeeId,
+    required String month,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.employeeAdvances(employeeId),
+        queryParameters: {'month': month},
+      );
+      return EmployeeAdvancesResult.fromJson(asMap(response.data));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }
@@ -409,7 +438,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -441,15 +472,16 @@ class EmployeeDatasource {
         parts.add('employee_ids[]=$id');
       }
 
-      final path =
-          '${EndPoints.employeeAttendanceReports}?${parts.join('&')}';
+      final path = '${EndPoints.employeeAttendanceReports}?${parts.join('&')}';
       final response = await api.get(path);
       return AttendanceReportResult.fromApiJson(asMap(response.data));
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -472,7 +504,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -654,8 +688,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -691,8 +726,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -718,8 +754,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -735,8 +772,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -764,8 +802,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -803,8 +842,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -853,8 +893,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -875,8 +916,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -911,8 +953,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -950,8 +993,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -991,8 +1035,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -1013,8 +1058,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -1050,8 +1096,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
@@ -1086,8 +1133,9 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage:
-              data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),

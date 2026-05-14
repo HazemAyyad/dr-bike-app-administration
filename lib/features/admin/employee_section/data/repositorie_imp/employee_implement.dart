@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_details_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/employee_advances_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_details_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_dues_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/overtime_and_loan_model.dart';
@@ -219,14 +220,34 @@ class EmployeeImplement implements EmployeeRepository {
   // get financial details
   @override
   Future<FinancialDetailsModel> getfinancialDetails(
-      {required String employeeId}) async {
+      {required String employeeId, String? month}) async {
     if (await networkInfo.isConnected) {
       try {
         final result = await employeeDatasource.getfinancialDetails(
           employeeId: employeeId,
+          month: month,
         );
 
         return result;
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<EmployeeAdvancesResult> getEmployeeAdvances({
+    required int employeeId,
+    required String month,
+  }) async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await employeeDatasource.getEmployeeAdvances(
+          employeeId: employeeId,
+          month: month,
+        );
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
       }

@@ -41,7 +41,11 @@ class MainActivity : FlutterFragmentActivity() {
             if (activityResult.resultCode == Activity.RESULT_OK) {
                 completeKeyguard(true, 0, "تم التحقق بنجاح")
             } else {
-                completeKeyguard(false, activityResult.resultCode, "تم إلغاء عملية التحقق")
+                completeKeyguard(
+                    false,
+                    "user_cancelled_or_not_completed",
+                    "تم إلغاء التحقق أو لم يتم إكمال قفل الجهاز"
+                )
             }
         }
         biometricProxyLauncher = registerForActivityResult(
@@ -54,7 +58,11 @@ class MainActivity : FlutterFragmentActivity() {
             if (activityResult.resultCode == Activity.RESULT_OK) {
                 completeKeyguard(true, 0, "تم التحقق بنجاح")
             } else {
-                completeKeyguard(false, activityResult.resultCode, "تم إلغاء عملية التحقق")
+                completeKeyguard(
+                    false,
+                    "user_cancelled_or_not_completed",
+                    "تم إلغاء التحقق أو لم يتم إكمال قفل الجهاز"
+                )
             }
         }
         Log.d("DrBikeBiometric", "Keyguard direct and proxy ActivityResultLaunchers initialized")

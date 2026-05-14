@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -178,7 +178,9 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       }
       if (method == 'authenticateKeyguard' ||
           method == 'authenticateKeyguardDirect') {
-        _showMessage('سيتم فتح شاشة قفل الجهاز، أكمل التحقق ثم ارجع للتطبيق');
+        _showMessage(
+          'سيتم فتح شاشة قفل الجهاز. أكمل التحقق بالبصمة أو رمز القفل ثم ارجع للتطبيق.',
+        );
       }
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
@@ -315,52 +317,54 @@ class _BiometricSettingsCard extends StatelessWidget {
               spacing: 8.w,
               runSpacing: 8.h,
               children: [
-                _BiometricTestButton(
-                  label: 'اختبار بصمة قوية',
-                  busy: busy,
-                  onPressed: () => onTestPressed(
-                    'authenticateStrong',
-                    'اختبار بصمة قوية',
+                if (kDebugMode) ...[
+                  _BiometricTestButton(
+                    label: 'اختبار بصمة قوية',
+                    busy: busy,
+                    onPressed: () => onTestPressed(
+                      'authenticateStrong',
+                      'اختبار بصمة قوية',
+                    ),
                   ),
-                ),
-                _BiometricTestButton(
-                  label: 'اختبار بصمة ضعيفة',
-                  busy: busy,
-                  onPressed: () => onTestPressed(
-                    'authenticateWeak',
-                    'اختبار بصمة ضعيفة',
+                  _BiometricTestButton(
+                    label: 'اختبار بصمة ضعيفة',
+                    busy: busy,
+                    onPressed: () => onTestPressed(
+                      'authenticateWeak',
+                      'اختبار بصمة ضعيفة',
+                    ),
                   ),
-                ),
-                _BiometricTestButton(
-                  label: 'اختبار قفل الجهاز',
-                  busy: busy,
-                  onPressed: () => onTestPressed(
-                    'authenticateDeviceCredential',
-                    'اختبار قفل الجهاز',
+                  _BiometricTestButton(
+                    label: 'اختبار قفل الجهاز القديم',
+                    busy: busy,
+                    onPressed: () => onTestPressed(
+                      'authenticateDeviceCredential',
+                      'اختبار قفل الجهاز القديم',
+                    ),
                   ),
-                ),
-                _BiometricTestButton(
-                  label: 'اختبار بصمة أو قفل الجهاز',
-                  busy: busy,
-                  onPressed: () => onTestPressed(
-                    'authenticateStrongOrCredential',
-                    'اختبار بصمة أو قفل الجهاز',
+                  _BiometricTestButton(
+                    label: 'اختبار بصمة أو قفل الجهاز',
+                    busy: busy,
+                    onPressed: () => onTestPressed(
+                      'authenticateStrongOrCredential',
+                      'اختبار بصمة أو قفل الجهاز',
+                    ),
                   ),
-                ),
-                _BiometricTestButton(
-                  label: 'اختبار Keyguard مباشر',
-                  busy: busy,
-                  onPressed: () => onTestPressed(
-                    'authenticateKeyguardDirect',
-                    'اختبار Keyguard مباشر',
+                  _BiometricTestButton(
+                    label: 'اختبار Keyguard مباشر',
+                    busy: busy,
+                    onPressed: () => onTestPressed(
+                      'authenticateKeyguardDirect',
+                      'اختبار Keyguard مباشر',
+                    ),
                   ),
-                ),
+                ],
                 _BiometricTestButton(
-                  label: 'اختبار Keyguard عبر ProxyActivity',
+                  label: 'اختبار قفل الجهاز عبر النظام',
                   busy: busy,
                   onPressed: () => onTestPressed(
                     'authenticateKeyguard',
-                    'اختبار Keyguard عبر ProxyActivity',
+                    'اختبار قفل الجهاز عبر النظام',
                   ),
                 ),
                 _BiometricTestButton(

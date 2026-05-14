@@ -60,7 +60,7 @@
         <activity
             android:name="com.nofal.doctorbike.BiometricProxyActivity"
             android:exported="false"
-            android:theme="@style/Theme.DrBike.Transparent" />
+            android:theme="@style/Theme.DrBike.BiometricProxy" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

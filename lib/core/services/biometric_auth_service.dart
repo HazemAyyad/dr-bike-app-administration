@@ -211,49 +211,33 @@ class BiometricAuthService {
       if (_isAndroid) {
         try {
           debugPrint(
-            'Biometric auth: starting native Android strongOrCredential authenticate.',
+            'Biometric auth: starting Android Keyguard Proxy authenticate.',
           );
-          final nativeResult = await NativeBiometricService.instance.authenticate(
-            method: 'authenticateStrongOrCredential',
+          final keyguardResult =
+              await NativeBiometricService.instance.authenticate(
+            method: 'authenticateKeyguard',
+            timeout: const Duration(seconds: 180),
           );
           debugPrint(
-            'Biometric auth: native returned success=${nativeResult.success} '
-            'available=${nativeResult.available} code=${nativeResult.code} '
-            'codeText=${nativeResult.codeText} mode=${nativeResult.mode} '
-            'message=${nativeResult.message}',
+            'Biometric auth: keyguard returned success=${keyguardResult.success} '
+            'available=${keyguardResult.available} code=${keyguardResult.code} '
+            'codeText=${keyguardResult.codeText} mode=${keyguardResult.mode} '
+            'message=${keyguardResult.message}',
           );
-          if (!nativeResult.success && nativeResult.code == -1001) {
-            debugPrint(
-              'Biometric auth: native prompt timed out; trying Keyguard fallback.',
-            );
-            final keyguardResult =
-                await NativeBiometricService.instance.authenticate(
-              method: 'authenticateKeyguard',
-              timeout: const Duration(seconds: 180),
-            );
-            debugPrint(
-              'Biometric auth: keyguard returned success=${keyguardResult.success} '
-              'available=${keyguardResult.available} code=${keyguardResult.code} '
-              'codeText=${keyguardResult.codeText} mode=${keyguardResult.mode} '
-              'message=${keyguardResult.message}',
-            );
-            return BiometricAuthResult(
-              success: keyguardResult.success,
-              cancelled: !keyguardResult.success,
-              message: keyguardResult.success
-                  ? null
-                  : keyguardResult.message ?? 'تم إلغاء عملية التحقق',
-            );
-          }
           return BiometricAuthResult(
-            success: nativeResult.success,
-            cancelled: !nativeResult.success,
-            message: nativeResult.success
+            success: keyguardResult.success,
+            cancelled: !keyguardResult.success,
+            message: keyguardResult.success
                 ? null
-                : nativeResult.message ?? 'تم إلغاء عملية التحقق',
+                : keyguardResult.message ?? 'تم إلغاء عملية التحقق',
           );
         } on MissingPluginException catch (e) {
-          debugPrint('Biometric auth: native channel missing, fallback to local_auth: $e');
+          debugPrint('Biometric auth: native channel missing on Android: $e');
+          return const BiometricAuthResult(
+            success: false,
+            cancelled: true,
+            message: 'تعذر فتح نافذة التحقق على هذا الجهاز',
+          );
         }
       }
 
