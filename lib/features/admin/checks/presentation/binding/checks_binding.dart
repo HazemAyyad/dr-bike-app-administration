@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/boxes/data/repositories/boxes_implement.dart';
 import 'package:doctorbike/features/admin/boxes/domain/usecases/get_shown_box_usecase.dart';
 import 'package:doctorbike/features/admin/checks/domain/usecases/chash_to_box_usecase.dart';
@@ -17,6 +18,9 @@ import '../controllers/checks_controller.dart';
 class ChecksBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureChecks();
+    AppDependencyRegistry.ensureBoxes();
+
     Get.lazyPut(
       () => ChecksController(
         addChecksUsecase: AddChecksUsecase(

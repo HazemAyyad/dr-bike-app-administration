@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/goals_section/data/repositories/goals_implement.dart';
 import 'package:doctorbike/features/admin/goals_section/domain/usecases/get_goals_usecase.dart';
 import 'package:get/get.dart';
@@ -17,6 +18,12 @@ import '../controllers/target_section_controller.dart';
 class TargetSectionBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureGoals();
+    AppDependencyRegistry.ensureEmployeeSection();
+    AppDependencyRegistry.ensureChecks();
+    AppDependencyRegistry.ensureBoxes();
+    AppDependencyRegistry.ensureSales();
+
     Get.lazyPut(
       () => TargetSectionController(
         getGoalsUsecase: GetGoalsUsecase(

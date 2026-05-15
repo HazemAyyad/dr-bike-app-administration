@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/repositories/general_data_list_implement.dart';
 import 'package:doctorbike/features/admin/general_data_list/domain/usecases/add_person_usecase.dart';
 import 'package:doctorbike/features/admin/general_data_list/domain/usecases/get_customers_usecase.dart';
@@ -11,6 +12,8 @@ import '../controllers/general_data_list_controller.dart';
 class GeneralDataListBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureGeneralDataList();
+
     Get.lazyPut(
       () => GeneralDataListController(
         getCustomersUseCase: GetCustomersUseCase(

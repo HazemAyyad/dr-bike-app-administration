@@ -1,12 +1,10 @@
 import 'package:doctorbike/core/services/user_data.dart';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/api_error_message.dart';
 import '../../../../../core/helpers/helpers.dart';
-import '../../../../../core/services/admin_notification_api_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
@@ -171,29 +169,17 @@ class LoginController extends GetxController {
   }
 
   Future<void> _registerAdminPushAfterLogin() async {
-    if (kIsWeb) {
-      return;
-    }
-    if (userType != 'admin') {
-      return;
-    }
-    final String t = NotificationFirebaseService.instance.finalToken;
-    if (t.isEmpty) {
-      return;
+    if (!kIsWeb) {
+      await NotificationFirebaseService.instance.ensureInitialized();
     }
     if (!Get.isRegistered<AdminNotificationBadgeController>()) {
       Get.put(AdminNotificationBadgeController(), permanent: true);
     }
-    try {
-      await AdminNotificationApiService().registerDeviceToken(
-        fcmToken: t,
-        platform: Platform.isAndroid ? 'android' : 'ios',
-        deviceName: Platform.operatingSystem,
-      );
-    } catch (e) {
-      debugPrint('register admin device token failed: $e');
+    await NotificationFirebaseService.instance
+        .registerAdminDeviceTokenIfReady(source: 'login');
+    if (Get.isRegistered<AdminNotificationBadgeController>()) {
+      await Get.find<AdminNotificationBadgeController>().refresh();
     }
-    await Get.find<AdminNotificationBadgeController>().refresh();
   }
 
   String _currentFcmToken() {

@@ -419,7 +419,10 @@ class DebtsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    getTotalDebtsOwedToUs();
+    getTotalDebtsWeOwe();
     getDebtsWeOwe();
+    getDebtsOwedToUs();
     getShowBoxes();
     getAllCustomersAndSellers();
   }

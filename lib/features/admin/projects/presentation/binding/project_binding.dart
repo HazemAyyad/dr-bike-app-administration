@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:get/get.dart';
 
 import '../../../checks/data/repositories/checks_implement.dart';
@@ -15,6 +16,8 @@ import '../controllers/project_controller.dart';
 class ProjectBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureProjects();
+
     Get.lazyPut(
       () => ProjectController(
         getProjectsUsecase: GetProjectsUsecase(

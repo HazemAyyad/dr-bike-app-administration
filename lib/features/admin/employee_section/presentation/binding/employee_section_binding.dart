@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/counters/data/repositories/countrers_implement.dart';
 import 'package:doctorbike/features/admin/employee_section/domain/usecases/add_employee_usecase.dart';
 import 'package:doctorbike/features/admin/employee_section/domain/usecases/get_all_employee.dart';
@@ -33,6 +34,9 @@ import '../controllers/global_employee_points_controller.dart';
 class EmployeeSectionBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureEmployeeSection();
+    AppDependencyRegistry.ensureCounters();
+
     Get.lazyPut(
       () => EmployeeSectionController(
         paySalaryEmployee: PaySalaryToEmployeeUsecase(

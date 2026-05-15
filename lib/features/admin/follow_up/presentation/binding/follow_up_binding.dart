@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/get_all_products_usecase.dart';
 import 'package:get/get.dart';
@@ -14,6 +15,10 @@ import '../controllers/follow_up_controller.dart';
 class FollowUpBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureFollowUp();
+    AppDependencyRegistry.ensureChecks();
+    AppDependencyRegistry.ensureSales();
+
     Get.lazyPut(
       () => FollowUpController(
         getFollowupUsecase: GetFollowupUsecase(

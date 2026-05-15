@@ -1,13 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
+import '../databases/api/end_points.dart';
 import '../utils/app_colors.dart';
 import 'admin_notification_api_service.dart';
 import 'admin_notification_router.dart';
@@ -29,37 +32,29 @@ class NotificationFirebaseService {
   String finalToken = '';
 
   bool _isFlutterLocalNotificationsPluginRegistered = false;
+  bool _notificationsInitialized = false;
+
+  /// Idempotent setup: permissions, token, local notifications, handlers.
+  Future<void> ensureInitialized() async {
+    if (_notificationsInitialized) {
+      return;
+    }
+    await intNotification();
+    _notificationsInitialized = true;
+  }
 
   Future<void> intNotification() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    await firebaseMessaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
-    if (Platform.isAndroid) {
-      final String? token = await firebaseMessaging.getToken();
-      if (token != null) {
-        finalToken = token;
-        await GetStorage().write('fcmToken', token);
-      }
-    } else if (Platform.isIOS) {
-      final String? token = await firebaseMessaging.getAPNSToken();
-      if (token != null) {
-        finalToken = token;
-        await GetStorage().write('fcmToken', token);
-      }
-    }
+    await _requestNotificationPermissions();
+
+    await _refreshFcmToken();
 
     firebaseMessaging.onTokenRefresh.listen((String newToken) async {
+      debugPrint('[FCM] Token refreshed: $newToken');
       finalToken = newToken;
       await GetStorage().write('fcmToken', newToken);
-      await _registerAdminDeviceTokenIfPossible(newToken);
+      await registerAdminDeviceTokenIfReady(source: 'token_refresh');
     });
 
     await setupFlutterNotifications();
@@ -67,25 +62,126 @@ class NotificationFirebaseService {
     await _setupMessageHandler();
   }
 
-  Future<void> _registerAdminDeviceTokenIfPossible(String token) async {
+  Future<void> _requestNotificationPermissions() async {
     if (kIsWeb) {
       return;
     }
-    if (userType != 'admin') {
-      return;
+
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.status;
+      debugPrint('[FCM] Android POST_NOTIFICATIONS status: $status');
+      if (!status.isGranted) {
+        final result = await Permission.notification.request();
+        debugPrint('[FCM] Android POST_NOTIFICATIONS request: $result');
+      }
     }
-    final saved = await UserData.getUserToken();
-    if (saved.isEmpty) {
+
+    if (Platform.isIOS) {
+      final settings = await firebaseMessaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      debugPrint(
+        '[FCM] iOS notification permission: ${settings.authorizationStatus}',
+      );
+      await firebaseMessaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    }
+  }
+
+  Future<void> _refreshFcmToken() async {
+    if (kIsWeb) {
+      debugPrint('[FCM] Web platform — skipping device token');
       return;
     }
     try {
-      await AdminNotificationApiService().registerDeviceToken(
-        fcmToken: token,
+      if (Platform.isIOS) {
+        // FCM on iOS needs APNS registration before getToken() succeeds.
+        var apns = await firebaseMessaging.getAPNSToken();
+        if (apns == null) {
+          for (var i = 0; i < 5 && apns == null; i++) {
+            await Future<void>.delayed(const Duration(milliseconds: 400));
+            apns = await firebaseMessaging.getAPNSToken();
+          }
+        }
+        debugPrint(
+          '[FCM] APNS token: ${apns == null || apns.isEmpty ? "pending" : "ok"}',
+        );
+      }
+
+      final String? token = await firebaseMessaging.getToken();
+      finalToken = token ?? '';
+      debugPrint(
+        '[FCM] FCM token: ${finalToken.isEmpty ? "null/empty" : finalToken}',
+      );
+      if (finalToken.isNotEmpty) {
+        await GetStorage().write('fcmToken', finalToken);
+      }
+    } catch (e, st) {
+      debugPrint('[FCM] Failed to get token: $e\n$st');
+    }
+  }
+
+  /// Register admin device token when Firebase + auth + admin role are ready.
+  Future<void> registerAdminDeviceTokenIfReady({required String source}) async {
+    if (kIsWeb) {
+      debugPrint('[FCM] Skip admin device-token ($source): web');
+      return;
+    }
+
+    await ensureInitialized();
+
+    if (userType != 'admin') {
+      debugPrint('[FCM] Skip admin device-token ($source): userType=$userType');
+      return;
+    }
+
+    final authToken = await UserData.getUserToken();
+    if (authToken.isEmpty) {
+      debugPrint(
+        '[FCM] Skip admin device-token ($source): auth token missing',
+      );
+      return;
+    }
+
+    if (finalToken.isEmpty) {
+      await _refreshFcmToken();
+    }
+    if (finalToken.isEmpty) {
+      debugPrint('[FCM] Skip admin device-token ($source): FCM token empty');
+      return;
+    }
+
+    final url = '${EndPoints.baserUrl}${EndPoints.adminDeviceToken}';
+    debugPrint('[FCM] POST $url (source=$source)');
+    debugPrint('[FCM] fcm_token=$finalToken');
+
+    try {
+      final response = await AdminNotificationApiService().registerDeviceToken(
+        fcmToken: finalToken,
         platform: Platform.isAndroid ? 'android' : 'ios',
         deviceName: Platform.operatingSystem,
       );
+      debugPrint('[FCM] admin/device-token success (source=$source)');
+      if (response != null) {
+        debugPrint('[FCM] response: $response');
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        '[FCM] admin/device-token DioException status=${e.response?.statusCode}',
+      );
+      debugPrint('[FCM] response body: ${e.response?.data}');
+      debugPrint('[FCM] message: ${e.message}');
     } catch (e, st) {
-      debugPrint('FCM token refresh register failed: $e\n$st');
+      debugPrint('[FCM] admin/device-token failed: $e\n$st');
     }
   }
 
@@ -109,9 +205,9 @@ class NotificationFirebaseService {
     const initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    final initializationSettingsDarwin = const DarwinInitializationSettings();
+    const initializationSettingsDarwin = DarwinInitializationSettings();
 
-    final initializationSettings = InitializationSettings(
+    const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
     );
@@ -171,16 +267,14 @@ class NotificationFirebaseService {
 
     final String payload = jsonEncode(message.data);
 
-    final NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
     await _flutterLocalNotificationsPlugin.show(
       message.hashCode,
       title.isEmpty ? 'DoctorBike' : title,
       body,
-      details,
+      NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
       payload: payload,
     );
   }

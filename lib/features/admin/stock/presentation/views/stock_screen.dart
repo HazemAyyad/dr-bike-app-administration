@@ -35,9 +35,9 @@ class StockScreen extends GetView<StockController> {
           CustomScrollView(
             controller: controller.scrollController,
             slivers: [
-              SliverAppBar(
-                automaticallyImplyLeading: false,
-                flexibleSpace: Center(
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
                   child: AppTabs(
                     tabs: controller.tabs,
                     currentTab: controller.currentTab,
@@ -52,7 +52,7 @@ class StockScreen extends GetView<StockController> {
                   }
                   return Padding(
                     padding:
-                        EdgeInsets.symmetric(horizontal: 50.w, vertical: 16.h),
+                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
                     child: const SearchWidget(isCloseouts: false),
                   );
                 }),

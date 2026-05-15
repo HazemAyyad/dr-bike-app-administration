@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/add_profit_sale.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sales_usecase.dart';
 import 'package:get/get.dart';
@@ -13,6 +14,8 @@ import '../controllers/sales_service.dart';
 class SalesBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureSales();
+
     Get.lazyPut(
       () => SalesController(
         salesService: SalesService(),

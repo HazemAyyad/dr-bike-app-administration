@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:get/get.dart';
 
 import '../../data/datasources/stock_datasource.dart';
@@ -18,6 +19,8 @@ import '../controllers/stock_controller.dart';
 class StockBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureStock();
+
     if (!Get.isRegistered<StockTagsInteractor>()) {
       Get.lazyPut<StockTagsInteractor>(
         () => StockTagsInteractor(Get.find<StockDatasource>()),

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:get/get.dart' hide Response;
 
 import '../databases/api/dio_consumer.dart';
@@ -61,12 +62,13 @@ class AdminNotificationApiService {
     await _api.delete(EndPoints.adminNotificationDelete(id));
   }
 
-  Future<void> registerDeviceToken({
+  /// Returns response body map on success for logging.
+  Future<Map<String, dynamic>?> registerDeviceToken({
     required String fcmToken,
     required String platform,
     String? deviceName,
   }) async {
-    await _api.post(
+    final Response res = await _api.post(
       EndPoints.adminDeviceToken,
       data: {
         'fcm_token': fcmToken,
@@ -75,6 +77,12 @@ class AdminNotificationApiService {
           'device_name': deviceName,
       },
     );
+    final data = res.data;
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+    debugPrint('[FCM] admin/device-token status=${res.statusCode}');
+    return null;
   }
 
   Future<void> deleteDeviceToken(String fcmToken) async {

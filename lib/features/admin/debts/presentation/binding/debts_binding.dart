@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/checks/data/repositories/checks_implement.dart';
 import 'package:doctorbike/features/admin/checks/domain/usecases/all_customers_sellers_usecase.dart';
 import 'package:doctorbike/features/admin/debts/data/repositories/debts_implement.dart';
@@ -18,43 +19,41 @@ import '../controllers/debts_data_service.dart';
 class DebtsBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut(
-      () => DebtsController(
-        totalDebtsOwedToUs: TotalDebtsOwedToUsUsecase(
-          debtsRepository: Get.find<DebtsImplement>(),
+    AppDependencyRegistry.ensureDebtsModule();
+
+    if (!Get.isRegistered<DebtsController>()) {
+      Get.lazyPut(
+        () => DebtsController(
+          totalDebtsOwedToUs: TotalDebtsOwedToUsUsecase(
+            debtsRepository: Get.find<DebtsImplement>(),
+          ),
+          totalDebtsWeOwe: TotalDebtsWeOweUsecase(
+            debtsRepository: Get.find<DebtsImplement>(),
+          ),
+          debtsOwedToUs: DebtsOwedToUsUsecase(
+            debtsRepository: Get.find<DebtsImplement>(),
+          ),
+          debtsWeOwe: DebtsWeOweUsecase(
+            debtsRepository: Get.find<DebtsImplement>(),
+          ),
+          userTransactionsData: UserTransactionsUsecase(
+            debtsRepository: Get.find<DebtsImplement>(),
+          ),
+          dataService: Get.find<DebtsDataService>(),
+          addDebtUsecase: AddDebtUsecase(
+            debtsRepository: Get.find<DebtsImplement>(),
+          ),
+          allCustomersSellersUsecase: AllCustomersSellersUsecase(
+            checksRepository: Get.find<ChecksImplement>(),
+          ),
+          getDebtsReports: GetDebtsReportsUsecase(
+            debtsRepository: Get.find<DebtsImplement>(),
+          ),
+          getShownBoxUsecase: GetShownBoxUsecase(
+            boxesRepository: Get.find<BoxesImplement>(),
+          ),
         ),
-        totalDebtsWeOwe: TotalDebtsWeOweUsecase(
-          debtsRepository: Get.find<DebtsImplement>(),
-        ),
-        debtsOwedToUs: DebtsOwedToUsUsecase(
-          debtsRepository: Get.find<DebtsImplement>(),
-        ),
-        debtsWeOwe: DebtsWeOweUsecase(
-          debtsRepository: Get.find<DebtsImplement>(),
-        ),
-        userTransactionsData: UserTransactionsUsecase(
-          debtsRepository: Get.find<DebtsImplement>(),
-        ),
-        dataService: Get.find<DebtsDataService>(),
-        addDebtUsecase: AddDebtUsecase(
-          debtsRepository: Get.find<DebtsImplement>(),
-        ),
-        allCustomersSellersUsecase: AllCustomersSellersUsecase(
-          checksRepository: Get.find<ChecksImplement>(),
-        ),
-        getDebtsReports: GetDebtsReportsUsecase(
-          debtsRepository: Get.find<DebtsImplement>(),
-        ),
-        getShownBoxUsecase: GetShownBoxUsecase(
-          boxesRepository: Get.find<BoxesImplement>(),
-        ),
-      ),
-    );
-    Future.delayed(Duration.zero, () {
-      Get.find<DebtsController>().getTotalDebtsOwedToUs();
-      Get.find<DebtsController>().getTotalDebtsWeOwe();
-      Get.find<DebtsController>().getDebtsWeOwe();
-      Get.find<DebtsController>().getDebtsOwedToUs();
-    });
+      );
+    }
   }
 }
