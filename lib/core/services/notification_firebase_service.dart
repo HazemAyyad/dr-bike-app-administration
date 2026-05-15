@@ -4,12 +4,14 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
+import '../../firebase_options.dart';
 import '../databases/api/end_points.dart';
 import '../utils/app_colors.dart';
 import 'admin_notification_api_service.dart';
@@ -17,9 +19,13 @@ import 'admin_notification_router.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
-/// Must match Laravel [FirebaseService::ADMIN_CHANNEL_ID] and AndroidManifest metadata.
+/// Must match Laravel [FirebaseService::ADMIN_CHANNEL_ID] and AndroidManifest.
+/// google-services.json project_id should match [DefaultFirebaseOptions] projectId.
 const String kDrBikeAdminNotificationChannelId = 'dr_bike_admin_notifications';
 const String kDrBikeAdminNotificationChannelName = 'Dr Bike Notifications';
+
+/// google-services.json (android/app) — compare with [DefaultFirebaseOptions.android.projectId].
+const String kGoogleServicesProjectIdHint = 'drbike-7fa3a';
 
 class NotificationFirebaseService {
   NotificationFirebaseService._();
@@ -31,8 +37,10 @@ class NotificationFirebaseService {
 
   bool _isFlutterLocalNotificationsPluginRegistered = false;
   bool _notificationsInitialized = false;
+  bool _notificationsDenied = false;
 
-  /// Idempotent setup: permissions, channel, token, local notifications, handlers.
+  bool get notificationsDenied => _notificationsDenied;
+
   Future<void> ensureInitialized() async {
     if (_notificationsInitialized) {
       return;
@@ -42,8 +50,10 @@ class NotificationFirebaseService {
   }
 
   Future<void> intNotification() async {
+    _logFirebaseProjectDiagnostics();
     await _requestNotificationPermissions();
     await setupFlutterNotifications();
+    await _logAndroidChannelDiagnostics();
     await _refreshFcmToken();
 
     firebaseMessaging.onTokenRefresh.listen((String newToken) async {
@@ -54,7 +64,40 @@ class NotificationFirebaseService {
     });
 
     await _setupMessageHandler();
-    debugPrint('[FCM] Notification service ready (channel=$kDrBikeAdminNotificationChannelId)');
+    debugPrint(
+      '[FCM] Notification service ready (channel=$kDrBikeAdminNotificationChannelId)',
+    );
+  }
+
+  void _logFirebaseProjectDiagnostics() {
+    if (kIsWeb) {
+      return;
+    }
+    try {
+      final options = DefaultFirebaseOptions.currentPlatform;
+      debugPrint(
+        '[FCM] Flutter DefaultFirebaseOptions.projectId=${options.projectId}',
+      );
+      debugPrint(
+        '[FCM] Flutter messagingSenderId=${options.messagingSenderId}',
+      );
+      debugPrint(
+        '[FCM] android/app/google-services.json project_id (expected): $kGoogleServicesProjectIdHint',
+      );
+      if (options.projectId != kGoogleServicesProjectIdHint) {
+        debugPrint(
+          '[FCM] *** PROJECT MISMATCH WARNING *** '
+          'DefaultFirebaseOptions.projectId (${options.projectId}) != '
+          'google-services.json ($kGoogleServicesProjectIdHint). '
+          'FCM tokens will not receive pushes from Laravel if service account uses a different project.',
+        );
+      }
+      debugPrint(
+        '[FCM] Laravel FIREBASE_CREDENTIALS project_id must match Flutter projectId above.',
+      );
+    } catch (e) {
+      debugPrint('[FCM] Firebase project diagnostics error: $e');
+    }
   }
 
   Future<void> _requestNotificationPermissions() async {
@@ -63,20 +106,45 @@ class NotificationFirebaseService {
     }
 
     if (Platform.isAndroid) {
-      final status = await Permission.notification.status;
-      debugPrint('[FCM] Android POST_NOTIFICATIONS status: $status');
-      if (!status.isGranted) {
-        final result = await Permission.notification.request();
-        debugPrint('[FCM] Android POST_NOTIFICATIONS request: $result');
+      final permissionStatus = await Permission.notification.status;
+      debugPrint('[FCM] Permission.notification.status=$permissionStatus');
+
+      if (!permissionStatus.isGranted) {
+        final requestResult = await Permission.notification.request();
+        debugPrint('[FCM] Permission.notification.request()=$requestResult');
       }
+
+      final afterStatus = await Permission.notification.status;
+      debugPrint('[FCM] Permission.notification.status (after)=$afterStatus');
+
       final fcmSettings = await firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
         sound: true,
       );
       debugPrint(
-        '[FCM] Firebase requestPermission (Android): ${fcmSettings.authorizationStatus}',
+        '[FCM] FirebaseMessaging.requestPermission authorizationStatus=${fcmSettings.authorizationStatus}',
       );
+
+      final notificationSettings =
+          await firebaseMessaging.getNotificationSettings();
+      debugPrint(
+        '[FCM] FirebaseMessaging.getNotificationSettings() '
+        'authorizationStatus=${notificationSettings.authorizationStatus} '
+        'alert=${notificationSettings.alert} '
+        'badge=${notificationSettings.badge} '
+        'sound=${notificationSettings.sound}',
+      );
+
+      _notificationsDenied = afterStatus.isDenied || afterStatus.isPermanentlyDenied;
+      if (_notificationsDenied) {
+        debugPrint(
+          '[FCM] Notifications are denied. Enable them from app settings.',
+        );
+        if (afterStatus.isPermanentlyDenied) {
+          debugPrint('[FCM] Permission permanently denied — call openAppSettings()');
+        }
+      }
     }
 
     if (Platform.isIOS) {
@@ -90,13 +158,60 @@ class NotificationFirebaseService {
         sound: true,
       );
       debugPrint(
-        '[FCM] iOS notification permission: ${settings.authorizationStatus}',
+        '[FCM] iOS requestPermission: ${settings.authorizationStatus}',
       );
+      final notificationSettings =
+          await firebaseMessaging.getNotificationSettings();
+      debugPrint(
+        '[FCM] iOS getNotificationSettings: ${notificationSettings.authorizationStatus}',
+      );
+      _notificationsDenied =
+          settings.authorizationStatus == AuthorizationStatus.denied;
+      if (_notificationsDenied) {
+        debugPrint(
+          '[FCM] Notifications are denied. Enable them from app settings.',
+        );
+      }
       await firebaseMessaging.setForegroundNotificationPresentationOptions(
         alert: true,
         badge: true,
         sound: true,
       );
+    }
+  }
+
+  /// Opens system app settings (Android 13+ notification toggle).
+  Future<void> openNotificationSettings() async {
+    debugPrint('[FCM] Opening app settings for notification permission');
+    await openAppSettings();
+  }
+
+  Future<void> _logAndroidChannelDiagnostics() async {
+    if (kIsWeb || !Platform.isAndroid) {
+      return;
+    }
+    final androidPlugin = _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    try {
+      final channels = await androidPlugin?.getNotificationChannels();
+      if (channels == null || channels.isEmpty) {
+        debugPrint('[FCM] No Android notification channels reported yet');
+        return;
+      }
+      for (final ch in channels) {
+        debugPrint(
+          '[FCM] Android channel id=${ch.id} name=${ch.name} '
+          'importance=${ch.importance} playSound=${ch.playSound}',
+        );
+        if (ch.id == kDrBikeAdminNotificationChannelId) {
+          debugPrint(
+            '[FCM] Target channel OK: importance=${ch.importance} (max=${Importance.max})',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[FCM] Channel diagnostics error: $e');
     }
   }
 
@@ -202,7 +317,10 @@ class NotificationFirebaseService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     await androidPlugin?.createNotificationChannel(channel);
-    debugPrint('[FCM] Android notification channel created: $kDrBikeAdminNotificationChannelId');
+    debugPrint(
+      '[FCM] Android notification channel created: $kDrBikeAdminNotificationChannelId '
+      'name=$kDrBikeAdminNotificationChannelName importance=max',
+    );
 
     const initializationSettingsAndroid =
         AndroidInitializationSettings('ic_notification');
@@ -224,7 +342,60 @@ class NotificationFirebaseService {
     _isFlutterLocalNotificationsPluginRegistered = true;
   }
 
-  /// Foreground only — background/killed use FCM notification payload from backend.
+  /// Debug: local notification without Firebase (channel/permission/icon test).
+  Future<void> showLocalTestNotification() async {
+    if (_notificationsDenied) {
+      debugPrint(
+        '[FCM] Local test skipped — notifications denied. Enable from app settings.',
+      );
+      Get.snackbar(
+        'Notifications',
+        'Notifications are denied. Enable them from app settings.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 5),
+        mainButton: TextButton(
+          onPressed: openNotificationSettings,
+          child: const Text('Settings'),
+        ),
+      );
+      return;
+    }
+
+    await setupFlutterNotifications();
+
+    const androidDetails = AndroidNotificationDetails(
+      kDrBikeAdminNotificationChannelId,
+      kDrBikeAdminNotificationChannelName,
+      channelDescription: 'DoctorBike admin alerts',
+      icon: 'ic_notification',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      visibility: NotificationVisibility.public,
+      color: AppColors.primaryColor,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    await _flutterLocalNotificationsPlugin.show(
+      999001,
+      'DoctorBike Local Test',
+      'Local notification channel test',
+      const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      ),
+      payload: jsonEncode({'type': 'admin_manual', 'source': 'local_test'}),
+    );
+    debugPrint('[FCM] showLocalTestNotification() displayed');
+    await _logAndroidChannelDiagnostics();
+  }
+
   Future<void> showForegroundNotification(RemoteMessage message) async {
     await setupFlutterNotifications();
 
@@ -300,7 +471,8 @@ class NotificationFirebaseService {
   Future<void> _setupMessageHandler() async {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint(
-        '[FCM] foreground message title=${message.notification?.title}',
+        '[FCM] foreground message title=${message.notification?.title} '
+        'data=${message.data}',
       );
       await showForegroundNotification(message);
       _refreshAdminBadge();
