@@ -37,55 +37,63 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
               final n = c?.unreadCount.value ?? 0;
               return Padding(
                 padding: EdgeInsets.only(right: 4.w),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    ClipOval(
-                      child: Container(
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor
-                            : AppColors.whiteColor2,
-                        child: IconButton(
-                          highlightColor: Colors.transparent,
-                          focusColor: Colors.transparent,
-                          icon: Icon(
-                            Icons.notifications_none_rounded,
-                            color: AppColors.primaryColor,
-                            size: 25.sp,
-                          ),
-                          onPressed: () async {
-                            await Get.toNamed(AppRoutes.NOTIFICATIONCENTER);
-                            c?.refresh();
-                          },
-                        ),
-                      ),
-                    ),
-                    if (n > 0)
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 1,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          constraints: const BoxConstraints(minWidth: 18),
-                          child: Text(
-                            n > 99 ? '99+' : '$n',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w700,
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      ClipOval(
+                        child: Material(
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor
+                              : AppColors.whiteColor2,
+                          child: InkWell(
+                            onTap: () async {
+                              await Get.toNamed(AppRoutes.NOTIFICATIONCENTER);
+                              c?.refresh();
+                            },
+                            customBorder: const CircleBorder(),
+                            child: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Icon(
+                                Icons.notifications_none_rounded,
+                                color: AppColors.primaryColor,
+                                size: 25.sp,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                  ],
+                      if (n > 0)
+                        Positioned(
+                          right: 2,
+                          top: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(minWidth: 18),
+                            child: Text(
+                              n > 99 ? '99+' : '$n',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               );
             }),

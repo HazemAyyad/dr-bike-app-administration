@@ -6,6 +6,7 @@ import '../../../../../core/services/initial_bindings.dart';
 class AdminNotificationBadgeController extends GetxController {
   final unreadCount = 0.obs;
 
+  @override
   Future<void> refresh() async {
     if (userType != 'admin') {
       unreadCount.value = 0;
