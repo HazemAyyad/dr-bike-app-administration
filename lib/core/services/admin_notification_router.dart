@@ -16,6 +16,10 @@ class AdminNotificationRouter {
     }
 
     final String type = raw['type']?.toString() ?? '';
+    if (type.isEmpty) {
+      _openNotificationCenter();
+      return;
+    }
 
     try {
       switch (type) {

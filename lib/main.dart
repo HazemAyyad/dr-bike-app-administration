@@ -1,8 +1,11 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'core/services/fcm_background_handler.dart';
 import 'core/services/languague_service.dart';
 import 'core/services/theme_service.dart';
 import 'core/services/translations_service.dart';
@@ -14,6 +17,9 @@ import 'core/utils/screen_util_new.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
   await GetStorage.init();
 
   final binding = WidgetsFlutterBinding.ensureInitialized();

@@ -17,11 +17,9 @@ import 'admin_notification_router.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await NotificationFirebaseService.instance.setupFlutterNotifications();
-  await NotificationFirebaseService.instance.showNotification(message);
-}
+/// Must match Laravel [FirebaseService::ADMIN_CHANNEL_ID] and AndroidManifest metadata.
+const String kDrBikeAdminNotificationChannelId = 'dr_bike_admin_notifications';
+const String kDrBikeAdminNotificationChannelName = 'Dr Bike Notifications';
 
 class NotificationFirebaseService {
   NotificationFirebaseService._();
@@ -34,7 +32,7 @@ class NotificationFirebaseService {
   bool _isFlutterLocalNotificationsPluginRegistered = false;
   bool _notificationsInitialized = false;
 
-  /// Idempotent setup: permissions, token, local notifications, handlers.
+  /// Idempotent setup: permissions, channel, token, local notifications, handlers.
   Future<void> ensureInitialized() async {
     if (_notificationsInitialized) {
       return;
@@ -44,10 +42,8 @@ class NotificationFirebaseService {
   }
 
   Future<void> intNotification() async {
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
     await _requestNotificationPermissions();
-
+    await setupFlutterNotifications();
     await _refreshFcmToken();
 
     firebaseMessaging.onTokenRefresh.listen((String newToken) async {
@@ -57,9 +53,8 @@ class NotificationFirebaseService {
       await registerAdminDeviceTokenIfReady(source: 'token_refresh');
     });
 
-    await setupFlutterNotifications();
-
     await _setupMessageHandler();
+    debugPrint('[FCM] Notification service ready (channel=$kDrBikeAdminNotificationChannelId)');
   }
 
   Future<void> _requestNotificationPermissions() async {
@@ -74,6 +69,14 @@ class NotificationFirebaseService {
         final result = await Permission.notification.request();
         debugPrint('[FCM] Android POST_NOTIFICATIONS request: $result');
       }
+      final fcmSettings = await firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      debugPrint(
+        '[FCM] Firebase requestPermission (Android): ${fcmSettings.authorizationStatus}',
+      );
     }
 
     if (Platform.isIOS) {
@@ -104,7 +107,6 @@ class NotificationFirebaseService {
     }
     try {
       if (Platform.isIOS) {
-        // FCM on iOS needs APNS registration before getToken() succeeds.
         var apns = await firebaseMessaging.getAPNSToken();
         if (apns == null) {
           for (var i = 0; i < 5 && apns == null; i++) {
@@ -130,7 +132,6 @@ class NotificationFirebaseService {
     }
   }
 
-  /// Register admin device token when Firebase + auth + admin role are ready.
   Future<void> registerAdminDeviceTokenIfReady({required String source}) async {
     if (kIsWeb) {
       debugPrint('[FCM] Skip admin device-token ($source): web');
@@ -162,7 +163,6 @@ class NotificationFirebaseService {
 
     final url = '${EndPoints.baserUrl}${EndPoints.adminDeviceToken}';
     debugPrint('[FCM] POST $url (source=$source)');
-    debugPrint('[FCM] fcm_token=$finalToken');
 
     try {
       final response = await AdminNotificationApiService().registerDeviceToken(
@@ -179,7 +179,6 @@ class NotificationFirebaseService {
         '[FCM] admin/device-token DioException status=${e.response?.statusCode}',
       );
       debugPrint('[FCM] response body: ${e.response?.data}');
-      debugPrint('[FCM] message: ${e.message}');
     } catch (e, st) {
       debugPrint('[FCM] admin/device-token failed: $e\n$st');
     }
@@ -191,19 +190,22 @@ class NotificationFirebaseService {
     }
 
     const channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
-      importance: Importance.high,
+      kDrBikeAdminNotificationChannelId,
+      kDrBikeAdminNotificationChannelName,
+      description: 'DoctorBike admin alerts',
+      importance: Importance.max,
+      playSound: true,
       enableVibration: true,
+      showBadge: true,
     );
-    await _flutterLocalNotificationsPlugin
+    final androidPlugin = _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+            AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.createNotificationChannel(channel);
+    debugPrint('[FCM] Android notification channel created: $kDrBikeAdminNotificationChannelId');
 
     const initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_notification');
 
     const initializationSettingsDarwin = DarwinInitializationSettings();
 
@@ -215,47 +217,42 @@ class NotificationFirebaseService {
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         final map = AdminNotificationRouter.parsePayload(response.payload);
-        if (map.isNotEmpty) {
-          AdminNotificationRouter.handlePayload(map);
-        }
+        AdminNotificationRouter.handlePayload(map);
       },
     );
 
     _isFlutterLocalNotificationsPluginRegistered = true;
   }
 
-  Future<void> showNotification(RemoteMessage message) async {
+  /// Foreground only — background/killed use FCM notification payload from backend.
+  Future<void> showForegroundNotification(RemoteMessage message) async {
     await setupFlutterNotifications();
 
     final RemoteNotification? notification = message.notification;
-
     final String title = notification?.title ??
         message.data['title']?.toString() ??
         'DoctorBike';
     final String body =
         notification?.body ?? message.data['body']?.toString() ?? '';
 
-    if (title.isEmpty && body.isEmpty && message.data.isEmpty) {
+    if (title.isEmpty && body.isEmpty) {
       return;
     }
 
     final androidDetails = AndroidNotificationDetails(
-      'high_importance_channel',
-      'High Importance Notifications',
-      channelDescription: 'Used for important notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      kDrBikeAdminNotificationChannelId,
+      kDrBikeAdminNotificationChannelName,
+      channelDescription: 'DoctorBike admin alerts',
+      icon: 'ic_notification',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      visibility: NotificationVisibility.public,
       color: AppColors.primaryColor,
       styleInformation: BigTextStyleInformation(
         body,
-        htmlFormatBigText: true,
         contentTitle: title,
-        htmlFormatContentTitle: true,
-        htmlFormatSummaryText: true,
-        htmlFormatContent: true,
-        htmlFormatTitle: true,
       ),
     );
 
@@ -265,10 +262,10 @@ class NotificationFirebaseService {
       presentSound: true,
     );
 
-    final String payload = jsonEncode(message.data);
+    final payload = jsonEncode(_payloadFromMessage(message));
 
     await _flutterLocalNotificationsPlugin.show(
-      message.hashCode,
+      message.hashCode.abs() % 0x7FFFFFFF,
       title.isEmpty ? 'DoctorBike' : title,
       body,
       NotificationDetails(
@@ -277,6 +274,18 @@ class NotificationFirebaseService {
       ),
       payload: payload,
     );
+  }
+
+  static Map<String, dynamic> _payloadFromMessage(RemoteMessage message) {
+    if (message.data.isNotEmpty) {
+      return Map<String, dynamic>.from(message.data);
+    }
+    return {
+      if (message.notification?.title != null)
+        'title': message.notification!.title!,
+      if (message.notification?.body != null)
+        'body': message.notification!.body!,
+    };
   }
 
   void _refreshAdminBadge() {
@@ -289,8 +298,11 @@ class NotificationFirebaseService {
   }
 
   Future<void> _setupMessageHandler() async {
-    FirebaseMessaging.onMessage.listen((RemoteMessage messages) async {
-      await showNotification(messages);
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      debugPrint(
+        '[FCM] foreground message title=${message.notification?.title}',
+      );
+      await showForegroundNotification(message);
       _refreshAdminBadge();
     });
 
@@ -307,11 +319,8 @@ class NotificationFirebaseService {
   }
 
   void _handleOpenedMessage(RemoteMessage message) {
-    if (message.data.isEmpty) {
-      return;
-    }
-    AdminNotificationRouter.handlePayload(
-      Map<String, dynamic>.from(message.data),
-    );
+    debugPrint('[FCM] notification opened app');
+    final data = _payloadFromMessage(message);
+    AdminNotificationRouter.handlePayload(data);
   }
 }
