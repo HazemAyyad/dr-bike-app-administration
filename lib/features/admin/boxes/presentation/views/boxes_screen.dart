@@ -10,6 +10,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/boxes_controller.dart';
 import '../widgets/view_boxes.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class BoxesScreen extends GetView<BoxesController> {
   const BoxesScreen({Key? key}) : super(key: key);
@@ -24,8 +25,11 @@ class BoxesScreen extends GetView<BoxesController> {
         onPressedFilter: () => controller.filterLists(),
         action: false,
       ),
-      body: CustomScrollView(
-        slivers: [
+      body: AppPullToRefresh(
+        onRefresh: controller.pullToRefresh,
+        child: CustomScrollView(
+          physics: kRefreshableScrollPhysics,
+          slivers: [
           SliverToBoxAdapter(
             child: AppTabs(
               tabs: controller.tabs,
@@ -55,6 +59,7 @@ class BoxesScreen extends GetView<BoxesController> {
           SliverToBoxAdapter(child: SizedBox(height: 10.h)),
           const VeiwBoxes(),
         ],
+        ),
       ),
       floatingActionButton: AddFloatingActionButton(
         onPressed: () {

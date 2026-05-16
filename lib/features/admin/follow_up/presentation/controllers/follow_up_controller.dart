@@ -106,17 +106,19 @@ class FollowUpController extends GetxController {
 
   final RxBool isLoading = false.obs;
 
+  Future<void> pullToRefresh() => getAllFollowUps(showLoading: true);
+
   // get all Follow ups
-  void getAllFollowUps() async {
-    FollowUpServices().initialFollowups.isEmpty ? isLoading(true) : null;
+  Future<void> getAllFollowUps({bool showLoading = false}) async {
+    if (showLoading || FollowUpServices().initialFollowups.isEmpty) {
+      isLoading(true);
+    }
     update();
     FollowUpServices()
         .initialFollowups
         .assignAll(await getFollowupUsecase.call(page: 0));
     initialFollowupsFilterList.assignAll(FollowUpServices().initialFollowups);
 
-    isLoading(false);
-    update();
     FollowUpServices()
         .informFollowups
         .assignAll(await getFollowupUsecase.call(page: 1));

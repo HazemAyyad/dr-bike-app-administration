@@ -62,12 +62,18 @@ class SalesImplement implements SalesRepository {
 
   // get instant sales
   @override
-  Future<List<InstantSalesModel>> getInstantSales() async {
+  Future<List<InstantSalesModel>> getInstantSales({
+    String? search,
+    String sortDirection = 'desc',
+  }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result = await salesDatasource.getInstantSales();
+      final result = await salesDatasource.getInstantSales(
+        search: search,
+        sortDirection: sortDirection,
+      );
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
@@ -98,7 +104,13 @@ class SalesImplement implements SalesRepository {
       required String note,
       required String type,
       required String projectId,
-      required RxList<ItemModel> otherProducts}) async {
+      required RxList<ItemModel> otherProducts,
+      required String buyerType,
+      String? buyerId,
+      String? buyerName,
+      String? paymentBoxId,
+      String? paymentBoxName,
+      String? paymentBoxValue}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -113,6 +125,12 @@ class SalesImplement implements SalesRepository {
         type: type,
         projectId: projectId,
         otherProducts: otherProducts,
+        buyerType: buyerType,
+        buyerId: buyerId,
+        buyerName: buyerName,
+        paymentBoxId: paymentBoxId,
+        paymentBoxName: paymentBoxName,
+        paymentBoxValue: paymentBoxValue,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -123,6 +141,58 @@ class SalesImplement implements SalesRepository {
           result,
         ),
       );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> cancelInstantSale(
+      {required String instantSaleId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result =
+          await salesDatasource.cancelInstantSale(instantSaleId: instantSaleId);
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(ValidationFailure(
+        result['message'] ?? 'Unknown error',
+        result,
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> editInstantSale({
+    required String instantSaleId,
+    required String cost,
+    required String quantity,
+    required String totalCost,
+    String? notes,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await salesDatasource.editInstantSale(
+        instantSaleId: instantSaleId,
+        cost: cost,
+        quantity: quantity,
+        totalCost: totalCost,
+        notes: notes,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(ValidationFailure(
+        result['message'] ?? 'Unknown error',
+        result,
+      ));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }

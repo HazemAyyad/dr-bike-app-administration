@@ -18,6 +18,7 @@ import '../widgets/employee_sections_list/financial_dues_list.dart';
 import '../widgets/employee_sections_list/loans_list.dart';
 import '../widgets/attendance_report_filter_dialog.dart';
 import '../widgets/employee_sections_list/work_hours_list.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
   const EmployeeSectionScreen({Key? key}) : super(key: key);
@@ -76,8 +77,11 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
           ),
         ],
       ),
-      body: CustomScrollView(
-        slivers: [
+      body: AppPullToRefresh(
+        onRefresh: controller.pullToRefresh,
+        child: CustomScrollView(
+          physics: kRefreshableScrollPhysics,
+          slivers: [
           SliverToBoxAdapter(
             child: AppTabs(
               tabs: controller.tabs,
@@ -331,6 +335,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
             child: SizedBox(height: 80.h),
           ),
         ],
+        ),
       ),
       floatingActionButton: CustomFloatingActionButton(
         isAddMenuOpen: controller.isAddMenuOpen,

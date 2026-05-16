@@ -56,6 +56,38 @@ class InstantSaleCard extends GetView<SalesController> {
                           label: instantSale.product,
                           value: '${instantSale.cost} ${'currency'.tr}',
                         ),
+                        if (instantSale.isCancelled)
+                          Padding(
+                            padding: EdgeInsets.only(top: 2.h),
+                            child: Text(
+                              'cancelled'.tr,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    fontSize: 11.sp,
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
+                        if (instantSale.displayBuyerLine.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 2.h),
+                            child: Text(
+                              instantSale.displayBuyerLine,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    fontSize: 11.sp,
+                                    color: AppColors.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
                         ...instantSale.subProducts.take(2).map(
                               (entry) => InfoRow(
                                 label: entry.productName,

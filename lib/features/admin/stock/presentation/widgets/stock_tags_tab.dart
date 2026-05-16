@@ -114,7 +114,7 @@ class StockTagsTab extends GetView<StockController> {
                   crossAxisCount: 3,
                   crossAxisSpacing: 10.w,
                   mainAxisSpacing: 10.h,
-                  childAspectRatio: 0.7,
+                  childAspectRatio: 0.73,
                 ),
                 itemCount: controller.tagFilterProducts.length,
                 itemBuilder: (context, index) {

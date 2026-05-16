@@ -89,8 +89,14 @@ class BoxesController extends GetxController {
 
   // get shown boxes
 
-  void getAllBoxes() async {
-    BoxesServes().shownBoxes.isEmpty ? isLoading(true) : isLoading(false);
+  Future<void> pullToRefresh() => getAllBoxes(showLoading: true);
+
+  Future<void> getAllBoxes({bool showLoading = false}) async {
+    if (showLoading || BoxesServes().shownBoxes.isEmpty) {
+      isLoading(true);
+    } else {
+      isLoading(false);
+    }
     final shownBoxesList = await getShownBoxUsecase.call(screen: 0);
     BoxesServes().shownBoxes.assignAll(shownBoxesList);
     filteredShownBoxes.assignAll(BoxesServes().shownBoxes);

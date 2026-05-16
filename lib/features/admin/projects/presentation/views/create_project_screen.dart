@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../../payment_method/presentation/views/payment_screen.dart';
 import '../controllers/project_controller.dart';
 import '../widgets/creat_project_widgets/first_step.dart';
@@ -52,7 +53,7 @@ class CreateProjectScreen extends GetView<ProjectController> {
                           backgroundColor: Colors.white,
                           isScrollControlled: true,
                         ).then((value) {
-                          if (value == true) {
+                          if (PaymentController.isSuccessResult(value)) {
                             // ignore: use_build_context_synchronously
                             controller.addNewProject(context);
                           }

@@ -236,6 +236,8 @@ class EndPoints {
   static const String allProfitSales = 'all/profit/sales';
 
   static const String createInstantSale = 'create/instant/sale';
+  static const String editInstantSale = 'edit/instant/sale';
+  static const String cancelInstantSale = 'cancel/instant/sale';
   static const String allInstantSales = 'all/instant/sales';
 
   // general data list

@@ -69,9 +69,22 @@ class SalesDatasource {
   }
 
   // get instant sales
-  Future<List<InstantSalesModel>> getInstantSales() async {
+  Future<List<InstantSalesModel>> getInstantSales({
+    String? search,
+    String sortDirection = 'desc',
+  }) async {
     try {
-      final response = await api.get(EndPoints.allInstantSales);
+      final query = <String, dynamic>{
+        'sort_direction': sortDirection,
+      };
+      final trimmed = search?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        query['search'] = trimmed;
+      }
+      final response = await api.get(
+        EndPoints.allInstantSales,
+        queryParameters: query,
+      );
       return mapListFromResponseKey(
         response.data,
         'instant_sales',
@@ -138,6 +151,12 @@ class SalesDatasource {
     required String type,
     required String projectId,
     required RxList<ItemModel> otherProducts,
+    required String buyerType,
+    String? buyerId,
+    String? buyerName,
+    String? paymentBoxId,
+    String? paymentBoxName,
+    String? paymentBoxValue,
   }) async {
     try {
       // final otherProductsMap = <String, dynamic>{};
@@ -172,8 +191,17 @@ class SalesDatasource {
           'total_cost': totalCost,
           'notes': note,
           'type': type,
-          'project_id': projectId,
-          // ...otherProductsMap,
+          if (projectId.isNotEmpty) 'project_id': projectId,
+          'buyer_type': buyerType,
+          if (buyerId != null && buyerId.isNotEmpty) 'buyer_id': buyerId,
+          if (buyerName != null && buyerName.isNotEmpty)
+            'buyer_name': buyerName,
+          if (paymentBoxId != null && paymentBoxId.isNotEmpty)
+            'payment_box_id': paymentBoxId,
+          if (paymentBoxName != null && paymentBoxName.isNotEmpty)
+            'payment_box_name': paymentBoxName,
+          if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
+            'payment_box_value': paymentBoxValue,
           'other_products': otherProductsList,
         },
         isFormData: true,
@@ -186,6 +214,56 @@ class SalesDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> cancelInstantSale({required String instantSaleId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.cancelInstantSale,
+        data: {'instant_sale_id': instantSaleId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> editInstantSale({
+    required String instantSaleId,
+    required String cost,
+    required String quantity,
+    required String totalCost,
+    String? notes,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.editInstantSale,
+        data: {
+          'instant_sale_id': instantSaleId,
+          'cost': cost,
+          'quantity': quantity,
+          'total_cost': totalCost,
+          if (notes != null) 'notes': notes,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
         ),
       );
     }

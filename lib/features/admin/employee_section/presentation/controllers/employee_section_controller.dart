@@ -596,6 +596,20 @@ class EmployeeSectionController extends GetxController
     Get.back();
   }
 
+  Future<void> pullToRefresh() async {
+    isLoading(true);
+    update();
+    final result = await getAllEmployeeUsecase.call();
+    employeeService.employeeList.assignAll(result);
+    filteredEmployees.assignAll(employeeService.employeeList);
+    getWorkingTimes();
+    getFinancialDues();
+    getOvertimeAndLoan();
+    getLogs();
+    isLoading(false);
+    update();
+  }
+
   @override
   void onInit() {
     super.onInit();

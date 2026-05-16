@@ -325,6 +325,18 @@ const Map<String, String> ar = {
   'stockFilter': 'فلترة',
   'buyerTypeSale': 'نوع البيع',
   'buyerName': 'الاسم',
+  'saleTo': 'البيع إلى',
+  'buyerCustomer': 'زبون',
+  'buyerTrader': 'تاجر',
+  'buyerUnspecified': 'بدون تحديد',
+  'selectCustomer': 'اختر زبون',
+  'selectTrader': 'اختر تاجر',
+  'searchInvoicesHint': 'بحث: منتج، زبون، تاجر، رقم فاتورة...',
+  'sortNewestFirst': 'الأحدث أولاً',
+  'sortOldestFirst': 'الأقدم أولاً',
+  'must_select_customer_or_seller': 'يجب اختيار زبون أو بائع',
+  'must_enter_box_value': 'يجب إدخال قيمة المبلغ النقدي',
+  'must_select_box': 'يجب اختيار الصندوق',
   'from': 'من',
   'to': 'إلى',
   'subtotal': 'المجموع الفرعي',
@@ -685,8 +697,8 @@ const Map<String, String> ar = {
   'work': 'العمل',
   'workExample': 'مثال: مهندس',
   'workTitleExample': 'مثال: مدرس',
-  'customer': 'تاجر',
-  'seller': 'زبون',
+  'customer': 'زبون',
+  'seller': 'تاجر',
 
   // قسم الديون
   'gave': 'أعطيت',
@@ -1365,4 +1377,11 @@ const Map<String, String> ar = {
   'notifFilterLogoutPending': 'خروج بمهام معلقة',
   'notifFilterChecks': 'شيكات تستحق قريباً',
   'notificationEmpty': 'لا توجد إشعارات بعد.',
+
+  'cancelInstantSale': 'إلغاء البيع',
+  'confirmCancelInstantSale':
+      'سيتم إلغاء البيع واسترجاع الكمية للمخزون وعكس مبلغ الصندوق. هل تريد المتابعة؟',
+  'editInstantSale': 'تعديل البيع',
+  'instantSaleAlreadyCancelled': 'هذا البيع ملغى مسبقاً',
+  'operationCompletedSuccessfully': 'تمت العملية بنجاح',
 };

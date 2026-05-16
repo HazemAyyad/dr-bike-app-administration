@@ -16,6 +16,7 @@ class AddPaymentUsecase {
     required String boxId,
     required String boxValue,
     required List<PaymentModel> checks,
+    String? boxLogNote,
   }) {
     return paymentRepository.addPayment(
       type: type,
@@ -24,6 +25,7 @@ class AddPaymentUsecase {
       boxId: boxId,
       boxValue: boxValue,
       checks: checks,
+      boxLogNote: boxLogNote,
     );
   }
 }

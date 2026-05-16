@@ -15,7 +15,10 @@ abstract class SalesRepository {
   });
   Future<List<ProfitSale>> getProfitSales();
 
-  Future<List<InstantSalesModel>> getInstantSales();
+  Future<List<InstantSalesModel>> getInstantSales({
+    String? search,
+    String sortDirection = 'desc',
+  });
 
   Future<List<ProductModel>> getAllProducts({required String endPoint});
 
@@ -29,6 +32,22 @@ abstract class SalesRepository {
     required String type,
     required String projectId,
     required RxList<ItemModel> otherProducts,
+    required String buyerType,
+    String? buyerId,
+    String? buyerName,
+    String? paymentBoxId,
+    String? paymentBoxName,
+    String? paymentBoxValue,
+  });
+
+  Future<Either<Failure, String>> cancelInstantSale({required String instantSaleId});
+
+  Future<Either<Failure, String>> editInstantSale({
+    required String instantSaleId,
+    required String cost,
+    required String quantity,
+    required String totalCost,
+    String? notes,
   });
 
   Future<InvoiceModel> getInvoice({required String invoiceId});

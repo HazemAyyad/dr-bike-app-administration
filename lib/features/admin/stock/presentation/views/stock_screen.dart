@@ -11,6 +11,7 @@ import '../widgets/archive_dialog.dart';
 import '../widgets/stock_search_bar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../widgets/grid_view_items.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class StockScreen extends GetView<StockController> {
   const StockScreen({Key? key}) : super(key: key);
@@ -32,9 +33,12 @@ class StockScreen extends GetView<StockController> {
       ),
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: controller.scrollController,
-            slivers: [
+          AppPullToRefresh(
+            onRefresh: controller.pullToRefresh,
+            child: CustomScrollView(
+              controller: controller.scrollController,
+              physics: kRefreshableScrollPhysics,
+              slivers: [
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
@@ -59,6 +63,7 @@ class StockScreen extends GetView<StockController> {
               ),
               const GridViewItems(),
             ],
+            ),
           ),
           Positioned(
             bottom: 50.h,

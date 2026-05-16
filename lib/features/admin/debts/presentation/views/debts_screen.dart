@@ -10,6 +10,7 @@ import '../widgets/app_bar.dart';
 import '../widgets/build_debts_credits.dart';
 import '../widgets/gave_and_took_button.dart';
 import '../widgets/show_debts_widget.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class DebtsScreen extends GetView<DebtsController> {
   const DebtsScreen({Key? key}) : super(key: key);
@@ -21,8 +22,11 @@ class DebtsScreen extends GetView<DebtsController> {
       appBar: appBar('debts', true, context, controller, '', null),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: CustomScrollView(
-          slivers: [
+        child: AppPullToRefresh(
+          onRefresh: controller.pullToRefresh,
+          child: CustomScrollView(
+            physics: kRefreshableScrollPhysics,
+            slivers: [
             SliverToBoxAdapter(
               child: Column(
                 children: [
@@ -103,6 +107,7 @@ class DebtsScreen extends GetView<DebtsController> {
             ),
             const ShowDebtsWidget(),
           ],
+          ),
         ),
       ),
       bottomNavigationBar: const GaveAndTookButton(),

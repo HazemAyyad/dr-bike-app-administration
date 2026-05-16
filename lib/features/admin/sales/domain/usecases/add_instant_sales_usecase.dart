@@ -19,6 +19,12 @@ class AddInstantSalesUsecase {
     required String type,
     required String projectId,
     required RxList<ItemModel> otherProducts,
+    required String buyerType,
+    String? buyerId,
+    String? buyerName,
+    String? paymentBoxId,
+    String? paymentBoxName,
+    String? paymentBoxValue,
   }) async {
     return await salesRepository.addInstantSales(
       productId: productId,
@@ -30,6 +36,12 @@ class AddInstantSalesUsecase {
       type: type,
       projectId: projectId,
       otherProducts: otherProducts,
+      buyerType: buyerType,
+      buyerId: buyerId,
+      buyerName: buyerName,
+      paymentBoxId: paymentBoxId,
+      paymentBoxName: paymentBoxName,
+      paymentBoxValue: paymentBoxValue,
     );
   }
 }

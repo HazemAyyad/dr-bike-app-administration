@@ -17,6 +17,9 @@ class InvoiceModel {
   final String? phone;
   final String? address;
   final String? paymentMethod;
+  final String? paymentBoxName;
+  final String? paymentBoxValue;
+  final String? status;
   final String? saleStatus;
   final String? notes;
   final String subtotal;
@@ -48,6 +51,9 @@ class InvoiceModel {
     this.phone,
     this.address,
     this.paymentMethod,
+    this.paymentBoxName,
+    this.paymentBoxValue,
+    this.status,
     this.saleStatus,
     this.notes,
     required this.subtotal,
@@ -139,6 +145,9 @@ class InvoiceModel {
       phone: buyerPhone ?? legacyPhone,
       address: buyerAddress ?? legacyAddress,
       paymentMethod: asNullableString(json['payment_method']),
+      paymentBoxName: asNullableString(json['payment_box_name']),
+      paymentBoxValue: asNullableString(json['payment_box_value']?.toString()),
+      status: asNullableString(json['status']),
       saleStatus: asNullableString(json['sale_status']),
       notes: asNullableString(json['notes']),
       subtotal: asString(json['subtotal'], asString(json['total_cost'], '0')),
@@ -164,6 +173,29 @@ class InvoiceModel {
                   : projectName)
           ?.trim() ??
       '-';
+
+  String get displayPaymentBox {
+    final name = paymentBoxName?.trim();
+    if (name == null || name.isEmpty) {
+      return '-';
+    }
+    final value = paymentBoxValue?.trim();
+    if (value != null && value.isNotEmpty) {
+      return '$name ($value)';
+    }
+    return name;
+  }
+
+  String get displaySaleStatus {
+    final raw = (status ?? saleStatus ?? '').trim().toLowerCase();
+    if (raw == 'cancelled') {
+      return 'ملغى';
+    }
+    if (raw == 'active' || raw == 'normal') {
+      return 'فعال';
+    }
+    return saleStatus?.trim().isNotEmpty == true ? saleStatus!.trim() : '-';
+  }
 
   String get displayBuyerTypeLabel {
     if (buyerTypeLabelAr.trim().isNotEmpty &&

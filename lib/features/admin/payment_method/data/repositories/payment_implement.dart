@@ -22,6 +22,7 @@ class PaymentImplement implements PaymentRepository {
     required String boxId,
     required String boxValue,
     required List<PaymentModel> checks,
+    String? boxLogNote,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -34,6 +35,7 @@ class PaymentImplement implements PaymentRepository {
         boxId: boxId,
         boxValue: boxValue,
         checks: checks,
+        boxLogNote: boxLogNote,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../../payment_method/presentation/views/payment_screen.dart';
 import '../../data/models/check_model.dart';
 import '../controllers/checks_controller.dart';
@@ -227,7 +228,8 @@ class IfCancelCheck extends GetView<ChecksController> {
                                       backgroundColor: Colors.white,
                                       isScrollControlled: true,
                                     ).then((value) {
-                                      if (value == true) {
+                                      if (PaymentController.isSuccessResult(
+                                          value)) {
                                         // ignore: use_build_context_synchronously
                                         controller.cashedToPersonOrCashed(
                                           checkId: check.id.toString(),

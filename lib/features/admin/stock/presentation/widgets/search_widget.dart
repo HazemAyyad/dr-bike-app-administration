@@ -120,7 +120,7 @@ class SearchWidget extends GetView<StockController> {
                           crossAxisCount: 3,
                           crossAxisSpacing: 10.w,
                           mainAxisSpacing: 10.h,
-                          childAspectRatio: 0.75,
+                          childAspectRatio: 0.73,
                         ),
                       ),
                     );

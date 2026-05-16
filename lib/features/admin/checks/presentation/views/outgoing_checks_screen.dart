@@ -12,6 +12,7 @@ import '../controllers/checks_controller.dart';
 import '../widgets/checks_data_details.dart';
 import '../widgets/custom_actions_appbar.dart';
 import '../widgets/custom_list_veiw_builder.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class OutgoingChecksScreen extends GetView<ChecksController> {
   const OutgoingChecksScreen({Key? key}) : super(key: key);
@@ -31,8 +32,11 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              return CustomScrollView(
-                slivers: [
+              return AppPullToRefresh(
+                onRefresh: controller.pullToRefresh,
+                child: CustomScrollView(
+                  physics: kRefreshableScrollPhysics,
+                  slivers: [
                   SliverToBoxAdapter(child: SizedBox(height: 10.h)),
                   const SliverToBoxAdapter(
                     child: ChecksDataDetails(isOutGoing: true),
@@ -74,6 +78,7 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                   const CustomListVeiwBuilder(),
                   SliverToBoxAdapter(child: SizedBox(height: 80.h)),
                 ],
+                ),
               );
             },
           ),

@@ -10,10 +10,12 @@ import 'package:get/get.dart';
 import '../../../../../../core/utils/app_colors.dart';
 
 import '../../../../../core/helpers/custom_floating_action_button.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../controllers/sales_controller.dart';
 import 'bill_details_screen.dart';
 import '../widgets/profit_sale_card.dart';
+import '../widgets/sales_invoices_toolbar.dart';
 
 class SalesScreen extends GetView<SalesController> {
   const SalesScreen({Key? key}) : super(key: key);
@@ -32,8 +34,11 @@ class SalesScreen extends GetView<SalesController> {
       ),
       body: Stack(
         children: [
-          CustomScrollView(
-            slivers: [
+          AppPullToRefresh(
+            onRefresh: controller.refreshSales,
+            child: CustomScrollView(
+              physics: kRefreshableScrollPhysics,
+              slivers: [
               SliverToBoxAdapter(
                 child: Center(
                   child: AppTabs(
@@ -43,10 +48,18 @@ class SalesScreen extends GetView<SalesController> {
                   ),
                 ),
               ),
+              Obx(
+                () => controller.currentTab.value == 0
+                    ? const SliverToBoxAdapter(
+                        child: SalesInvoicesToolbar(),
+                      )
+                    : const SliverToBoxAdapter(child: SizedBox.shrink()),
+              ),
               SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: 24.w),
                 sliver: Obx(
                   () {
+                    final _ = controller.salesListRevision.value;
                     if (controller.isLoading.value) {
                       return const SliverFillRemaining(
                         hasScrollBody: true,
@@ -68,13 +81,13 @@ class SalesScreen extends GetView<SalesController> {
                       delegate: controller.currentTab.value == 0
                           ? SliverChildBuilderDelegate(
                               (context, index) {
-                                final month = controller
-                                    .salesService.filterInstantSalesTasks.keys
-                                    .toList()[index];
-
-                                final sales = controller.salesService
-                                    .filterInstantSalesTasks[month]!.reversed
-                                    .toList();
+                                final groups =
+                                    controller.orderedInstantSalesGroups;
+                                if (index >= groups.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                final month = groups[index].key;
+                                final sales = groups[index].value;
                                 return Column(
                                   children: [
                                     Row(
@@ -103,10 +116,18 @@ class SalesScreen extends GetView<SalesController> {
                                       (instantSales) => GestureDetector(
                                         onTap: () {
                                           controller.getInvoice(
-                                              invoiceId:
-                                                  instantSales.id.toString());
+                                            invoiceId:
+                                                instantSales.id.toString(),
+                                          );
                                           Get.to(
-                                              () => const BillDetailsScreen());
+                                            () => const BillDetailsScreen(),
+                                          );
+                                        },
+                                        onLongPress: () {
+                                          controller.showInstantSaleActionsSheet(
+                                            context,
+                                            instantSales,
+                                          );
                                         },
                                         child: InstantSaleCard(
                                           instantSale: instantSales,
@@ -116,8 +137,8 @@ class SalesScreen extends GetView<SalesController> {
                                   ],
                                 );
                               },
-                              childCount: controller
-                                  .salesService.filterInstantSalesTasks.length,
+                              childCount:
+                                  controller.orderedInstantSalesGroups.length,
                             )
                           : SliverChildBuilderDelegate(
                               (context, index) {
@@ -169,6 +190,7 @@ class SalesScreen extends GetView<SalesController> {
               ),
               SliverToBoxAdapter(child: SizedBox(height: 50.h)),
             ],
+            ),
           ),
           Obx(
             () {

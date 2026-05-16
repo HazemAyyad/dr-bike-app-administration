@@ -73,6 +73,9 @@ class EmployeeTasksController extends GetxController {
   Map<String, List<EmployeeTaskModel>> canceledTasksFilter = {};
 
   // get employee tasks
+  Future<void> pullToRefresh() =>
+      getEmployeeTasks(scrollToTodayb: true);
+
   Future<void> getEmployeeTasks({bool scrollToTodayb = true}) async {
     isLoading(true);
     update();

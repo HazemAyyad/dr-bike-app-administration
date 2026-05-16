@@ -124,6 +124,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (selectedTagFilterId.value != null) {
         unawaited(selectTagFilter(selectedTagFilterId.value));
       }
+    } else {
+      final needsLoad = (index == 0 && allProducts.isEmpty) ||
+          (index == 1 && allClearances.isEmpty) ||
+          (index == 2 && allCombinations.isEmpty);
+      if (needsLoad) {
+        page = 1;
+        unawaited(getAllProducts());
+      }
     }
     update();
   }
@@ -723,66 +731,109 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     await getAllProducts();
   }
 
-  // Get all products
-  Future<void> getAllProducts({bool isRefresh = false}) async {
-    isRefresh
-        ? isLoadingMore(true)
-        : allProducts.isEmpty
-            ? isLoading(true)
-            : isLoading(false);
+  Future<void> pullToRefresh() async {
+    page = 1;
+    if (currentTab.value == 3) {
+      await ensureTagsLoaded();
+      if (selectedTagFilterId.value != null) {
+        await selectTagFilter(selectedTagFilterId.value);
+      }
+      return;
+    }
+    if (currentTab.value == 0) {
+      allProducts.clear();
+    } else if (currentTab.value == 1) {
+      allClearances.clear();
+    } else if (currentTab.value == 2) {
+      allCombinations.clear();
+    }
+    await getAllProducts();
+  }
 
-    // 1- المنتجات العادية
-    final filters = productListFilters.value.hasActiveFilters
+  void _mergeStockItems(
+    RxList<AllStockProductsModel> target,
+    List<AllStockProductsModel> incoming,
+  ) {
+    for (final product in incoming) {
+      if (!target.any((p) => p.productId == product.productId)) {
+        target.add(product);
+      }
+    }
+  }
+
+  Future<List<AllStockProductsModel>> _fetchStockForCurrentTab() {
+    final tab = currentTab.value;
+    final filters = tab == 0 && productListFilters.value.hasActiveFilters
         ? productListFilters.value
         : null;
-    final result = await getAllStockUsecase.call(
+    if (tab == 1) {
+      return getAllStockUsecase.call(
+        page: page,
+        ifCombinations: false,
+        ifCloseouts: true,
+      );
+    }
+    if (tab == 2) {
+      return getAllStockUsecase.call(
+        page: page,
+        ifCombinations: true,
+        ifCloseouts: false,
+      );
+    }
+    return getAllStockUsecase.call(
       page: page,
       ifCombinations: false,
       ifCloseouts: false,
       filters: filters,
     );
-    for (var product in result) {
-      if (!allProducts.any((p) => p.productId == product.productId)) {
-        allProducts.add(product);
-        // filteredProducts.add(product);
-      }
-      // else {
-      // filteredProducts.value = StockServices().allProducts;
-      // }
-    }
-    final getClearances = await getAllStockUsecase.call(
-      page: page,
-      ifCombinations: false,
-      ifCloseouts: true,
-    );
-    for (var product in getClearances) {
-      if (!allClearances.any((p) => p.productId == product.productId)) {
-        allClearances.add(product);
-        // filteredClearances.add(product);
-      }
-      // else {
-      // filteredClearances.value = StockServices().allClearances;
-      // }
+  }
+
+  // Get stock list for the active tab only (avoids 3× API calls and rate limits).
+  Future<void> getAllProducts({bool isRefresh = false}) async {
+    final tab = currentTab.value;
+    if (tab == 3) {
+      isLoading(false);
+      isLoadingMore(false);
+      return;
     }
 
-    // 3- الكومبينيشن
-    final getCombinations = await getAllStockUsecase.call(
-      page: page,
-      ifCombinations: true,
-      ifCloseouts: false,
-    );
-    for (var product in getCombinations) {
-      if (!allCombinations.any((p) => p.productId == product.productId)) {
-        allCombinations.add(product);
-        // filteredCombinations.add(product);
+    final listEmpty = tab == 0
+        ? allProducts.isEmpty
+        : tab == 1
+            ? allClearances.isEmpty
+            : allCombinations.isEmpty;
+
+    try {
+      if (isRefresh) {
+        isLoadingMore(true);
+      } else if (listEmpty) {
+        isLoading(true);
       }
-      // else {
-      // filteredCombinations.value = StockServices().allCombinations;
-      // }
+
+      final result = await _fetchStockForCurrentTab();
+      if (tab == 0) {
+        _mergeStockItems(allProducts, result);
+      } else if (tab == 1) {
+        _mergeStockItems(allClearances, result);
+      } else {
+        _mergeStockItems(allCombinations, result);
+      }
+      page++;
+    } on ServerFailure {
+      // Snackbar already shown in StockImplement.
+    } on NoConnectionFailure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoadingMore(false);
+      isLoading(false);
+      update();
     }
-    page++;
-    isLoadingMore(false);
-    isLoading(false);
   }
 
   Rxn<ProductDetailsModel> productDetails = Rxn<ProductDetailsModel>();
@@ -1427,13 +1478,13 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       allClearances.clear();
       allCombinations.clear();
       page = 1;
+      currentTab.value = 0;
       await getAllProducts();
 
       clearPendingMedia();
       _resetEditMediaState();
       editingProductId.value = null;
 
-      currentTab.value = 0;
       update();
 
       Get.back();

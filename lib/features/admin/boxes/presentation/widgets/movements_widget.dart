@@ -12,6 +12,32 @@ class MovementsWidget extends StatelessWidget {
 
   final BoxLog box;
 
+  String get _headline {
+    final description = box.description.trim();
+    if (description.isNotEmpty) {
+      return description;
+    }
+    if (box.type == 'transfer') {
+      return 'transferBalance'.tr;
+    }
+    if (box.type == 'add') {
+      return 'addBalance'.tr;
+    }
+    return 'withdrawBalance'.tr;
+  }
+
+  String? get _subline {
+    final note = (box.note ?? '').trim();
+    final description = box.description.trim();
+    if (note.isEmpty) {
+      return null;
+    }
+    if (note == description) {
+      return null;
+    }
+    return note;
+  }
+
   @override
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
@@ -27,17 +53,15 @@ class MovementsWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  box.type! == 'transfer'
-                      ? 'transferBalance'.tr
-                      : box.type! == 'add'
-                          ? 'addBalance'.tr
-                          : 'withdrawBalance'.tr,
+                  _headline,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: textStyle.copyWith(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w400,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
                     color: ThemeService.isDark.value
                         ? AppColors.customGreyColor3
-                        : Colors.black.withValues(alpha: 0.5),
+                        : Colors.black.withValues(alpha: 0.85),
                   ),
                 ),
                 // SizedBox(height: 2.h),
@@ -53,16 +77,19 @@ class MovementsWidget extends StatelessWidget {
                         ),
                       )
                     : const SizedBox.shrink(),
-                Text(
-                  (box.note ?? '').trim().isNotEmpty ? box.note!.trim() : '—',
-                  style: textStyle.copyWith(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
-                    color: ThemeService.isDark.value
-                        ? AppColors.customGreyColor3
-                        : Colors.black.withValues(alpha: 0.6),
+                if (_subline != null)
+                  Text(
+                    _subline!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: textStyle.copyWith(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w500,
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor3
+                          : Colors.black.withValues(alpha: 0.6),
+                    ),
                   ),
-                ),
               ],
             ),
           ),

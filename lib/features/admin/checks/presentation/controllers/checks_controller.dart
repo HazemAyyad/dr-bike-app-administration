@@ -953,6 +953,17 @@ class ChecksController extends GetxController
     update();
   }
 
+  Future<void> pullToRefresh() async {
+    isLoading.value = true;
+    update();
+    await getGeneralChecksData();
+    await getNotCashed(isStopLoding: false);
+    await getCashedToPerson(isStopLoding: false);
+    await getArchive(isStopLoding: false);
+    isLoading.value = false;
+    update();
+  }
+
   @override
   void onInit() {
     super.onInit();

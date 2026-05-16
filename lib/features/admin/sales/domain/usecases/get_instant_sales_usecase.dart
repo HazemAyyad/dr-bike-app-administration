@@ -7,7 +7,13 @@ class GetInstantSalesUsecase {
 
   GetInstantSalesUsecase({required this.salesRepository});
 
-  Future<List<InstantSalesModel>> call() async {
-    return await salesRepository.getInstantSales();
+  Future<List<InstantSalesModel>> call({
+    String? search,
+    String sortDirection = 'desc',
+  }) async {
+    return await salesRepository.getInstantSales(
+      search: search,
+      sortDirection: sortDirection,
+    );
   }
 }

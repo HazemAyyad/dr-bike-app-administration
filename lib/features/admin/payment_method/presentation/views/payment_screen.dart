@@ -12,8 +12,10 @@ import '../../../../../core/helpers/select_time.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import '../../../checks/data/models/check_model.dart';
 import '../../../checks/data/repositories/checks_implement.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../data/repositories/payment_implement.dart';
@@ -26,10 +28,16 @@ class PaymentScreen extends GetView<PaymentController> {
     this.type,
     this.isSeller,
     this.id,
+    this.forInstantSale = false,
+    this.initialCashValue,
+    this.instantSaleBoxLogNote,
   }) : super(key: key);
   final String? type;
   final bool? isSeller;
   final String? id;
+  final bool forInstantSale;
+  final String? initialCashValue;
+  final String? instantSaleBoxLogNote;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +54,11 @@ class PaymentScreen extends GetView<PaymentController> {
       ),
     );
     controller.selectedCustomersSellers.value = isSeller ?? false;
+    controller.forInstantSale = forInstantSale;
+    controller.instantSaleBoxLogNote = instantSaleBoxLogNote;
+    if (initialCashValue != null && initialCashValue!.trim().isNotEmpty) {
+      controller.cashValueController.text = initialCashValue!.trim();
+    }
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -68,7 +81,7 @@ class PaymentScreen extends GetView<PaymentController> {
                         value: RxBool(
                             !controller.selectedCustomersSellers.value == true),
                         onChanged: (val) {
-                          controller.selectedCustomersSellers.value = false;
+                          controller.setPartnerTab(isCustomer: false);
                         },
                       ),
                     ),
@@ -79,7 +92,7 @@ class PaymentScreen extends GetView<PaymentController> {
                             !controller.selectedCustomersSellers.value ==
                                 false),
                         onChanged: (val) {
-                          controller.selectedCustomersSellers.value = true;
+                          controller.setPartnerTab(isCustomer: true);
                         },
                       ),
                     )
@@ -95,29 +108,29 @@ class PaymentScreen extends GetView<PaymentController> {
                 children: [
                   Flexible(
                     child: CustomDropdownFieldWithSearch(
-                      tital: 'customerName'.tr,
-                      hint: 'customerNameExample',
+                      tital: controller.partnerDropdownTitle,
+                      hint: controller.partnerDropdownHint,
                       items: controller.selectedCustomersSellers.value == false
                           ? controller.allCustomersList
                           : controller.allSellersList,
-                      value: id == null || id!.isEmpty
-                          ? null
-                          : (!controller.selectedCustomersSellers.value
-                              ? controller.allCustomersList.firstWhereOrNull(
-                                  (e) => e.id == int.tryParse(id!),
-                                )
-                              : controller.allSellersList.firstWhereOrNull(
-                                  (e) => e.id == int.tryParse(id!),
-                                )),
+                      value: controller.selectedPartner.value ??
+                          (id == null || id!.isEmpty
+                              ? null
+                              : (!controller.selectedCustomersSellers.value
+                                  ? controller.allCustomersList
+                                      .firstWhereOrNull(
+                                      (e) => e.id == int.tryParse(id!),
+                                    )
+                                  : controller.allSellersList.firstWhereOrNull(
+                                      (e) => e.id == int.tryParse(id!),
+                                    ))),
                       onChanged: (value) {
-                        if (value != null) {
-                          controller.partnerIdController.text =
-                              value.id.toString();
-                        }
+                        controller.onPartnerSelected(
+                          value is SellerModel ? value : null,
+                        );
                       },
                       itemAsString: (item) => item.name,
                       compareFn: (a, b) => a.id == b.id,
-                      // validator: (value) => null,
                     ),
                   ),
                   IconButton(
@@ -142,19 +155,29 @@ class PaymentScreen extends GetView<PaymentController> {
             Row(
               children: [
                 Flexible(
-                  child: CustomDropdownFieldWithSearch(
-                    tital: 'boxName'.tr,
-                    hint: 'boxNameExample',
-                    items: controller.shownBoxes,
-                    onChanged: (value) {
-                      if (value != null) {
-                        controller.boxIdController.text =
-                            value.boxId.toString();
-                      }
-                    },
-                    itemAsString: (item) => item.boxName,
-                    compareFn: (a, b) => a.boxId == b.boxId,
-                    validator: (value) => null,
+                  child: Obx(
+                    () => CustomDropdownFieldWithSearch(
+                      tital: 'boxName'.tr,
+                      hint: 'boxNameExample',
+                      isRequired: forInstantSale,
+                      items: controller.shownBoxes,
+                      value: controller.selectedBox.value,
+                      onChanged: (value) {
+                        controller.onBoxSelected(
+                          value is ShownBoxesModel ? value : null,
+                        );
+                      },
+                      itemAsString: (item) => item.boxName,
+                      compareFn: (a, b) => a.boxId == b.boxId,
+                      validator: forInstantSale
+                          ? (value) {
+                              if (value == null) {
+                                return 'must_select_box'.tr;
+                              }
+                              return null;
+                            }
+                          : (value) => null,
+                    ),
                   ),
                 ),
                 SizedBox(width: 10.w),
@@ -348,9 +371,6 @@ class PaymentScreen extends GetView<PaymentController> {
               isLoading: controller.isLoading,
               text: type == 'payment' ? 'payment'.tr : 'receiptt'.tr,
               onPressed: () {
-                if (controller.partnerIdController.text.isEmpty) {
-                  return;
-                }
                 controller.addPayment(context: context, type: type!);
               },
             )

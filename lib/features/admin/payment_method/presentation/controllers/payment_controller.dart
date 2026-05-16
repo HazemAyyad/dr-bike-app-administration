@@ -11,6 +11,11 @@ import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/add_payment_usecase.dart';
 
 class PaymentController extends GetxController {
+  static bool isSuccessResult(dynamic value) {
+    return value == true ||
+        (value is Map && value['success'] == true);
+  }
+
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final GetShownBoxUsecase getShownBoxUsecase;
   final AddPaymentUsecase addPaymentUsecase;
@@ -34,6 +39,10 @@ class PaymentController extends GetxController {
 
   final RxBool selectedCustomersSellers = false.obs;
 
+  /// When true (instant sale flow), pop immediately with buyer payload and skip payment success dialog.
+  bool forInstantSale = false;
+  String? instantSaleBoxLogNote;
+
   final List<String> paymentMethods = [
     'check',
     'deb',
@@ -51,6 +60,32 @@ class PaymentController extends GetxController {
 
   final RxList<SellerModel> allCustomersList = <SellerModel>[].obs;
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
+  final Rxn<SellerModel> selectedPartner = Rxn<SellerModel>();
+
+  /// false = تاجر (customers list), true = زبون (sellers list).
+  void setPartnerTab({required bool isCustomer}) {
+    if (selectedCustomersSellers.value == isCustomer) return;
+    selectedCustomersSellers.value = isCustomer;
+    selectedPartner.value = null;
+    partnerIdController.clear();
+  }
+
+  void onPartnerSelected(SellerModel? partner) {
+    selectedPartner.value = partner;
+    if (partner != null) {
+      partnerIdController.text = partner.id.toString();
+    } else {
+      partnerIdController.clear();
+    }
+  }
+
+  String get partnerDropdownTitle =>
+      selectedCustomersSellers.value ? 'customerName' : 'sellerName';
+
+  String get partnerDropdownHint => selectedCustomersSellers.value
+      ? 'customerNameExample'
+      : 'sellerName1';
+
   void getAllCustomersAndSellers() async {
     final resultCustomers = await allCustomersSellersUsecase.call(
         endPoint: EndPoints.all_customers);
@@ -62,12 +97,20 @@ class PaymentController extends GetxController {
 
   // get shown boxes
   final RxList<ShownBoxesModel> shownBoxes = <ShownBoxesModel>[].obs;
+  final Rxn<ShownBoxesModel> selectedBox = Rxn<ShownBoxesModel>();
 
   void showBoxes() async {
-    // shownBoxes.isEmpty ? isLoading(true) : isLoading(true);
     final boxes = await getShownBoxUsecase.call(screen: 0);
-    shownBoxes.value = boxes;
-    // isLoading(false);
+    shownBoxes.assignAll(boxes);
+  }
+
+  void onBoxSelected(ShownBoxesModel? box) {
+    selectedBox.value = box;
+    if (box != null) {
+      boxIdController.text = box.boxId.toString();
+    } else {
+      boxIdController.clear();
+    }
   }
 
   final List<PaymentModel> payments = <PaymentModel>[].obs;
@@ -84,81 +127,175 @@ class PaymentController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final RxBool isPayment = true.obs;
-  void addPayment({required BuildContext context, required String type}) async {
-    isLoading(true);
 
-    final result = await addPaymentUsecase.call(
-      customerId:
-          !selectedCustomersSellers.value ? partnerIdController.text : '',
-      sellerId: selectedCustomersSellers.value ? partnerIdController.text : '',
-      type: type,
-      boxId: boxIdController.text,
-      boxValue: cashValueController.text,
-      checks: payments,
-    );
-    result.fold(
-      (failure) {
-        String errorMessages = '';
-        bool data = false;
-        final errors = failure.data?['errors'] as Map<String, dynamic>?;
-        if (errors != null) {
-          errors.forEach((key, value) {
-            if (key.startsWith('permissions')) {
-              if (!data) {
-                errorMessages += "Permissions: ${value.first}\n";
-                data = true;
+  /// Maps payment-step partner selection to instant-sale buyer fields.
+  /// Seller tab → customers table (trader). Customer tab → sellers table (name snapshot).
+  Map<String, dynamic> buildInstantSaleBuyerPayload() {
+    final id = partnerIdController.text.trim();
+    final fromSellersList = selectedCustomersSellers.value;
+
+    String? name;
+    if (id.isNotEmpty) {
+      if (fromSellersList) {
+        name = allSellersList
+            .firstWhereOrNull((e) => e.id.toString() == id)
+            ?.name;
+      } else {
+        name = allCustomersList
+            .firstWhereOrNull((e) => e.id.toString() == id)
+            ?.name;
+      }
+    }
+
+    final boxId = boxIdController.text.trim();
+    String? boxName;
+    if (boxId.isNotEmpty) {
+      boxName = shownBoxes
+          .firstWhereOrNull((e) => e.boxId.toString() == boxId)
+          ?.boxName;
+    }
+
+    final cashRaw = cashValueController.text
+        .replaceAll(',', '')
+        .replaceAll('،', '')
+        .trim();
+
+    return {
+      'success': true,
+      'buyer_type': fromSellersList ? 'customer' : 'trader',
+      'buyer_id': fromSellersList ? null : id,
+      'buyer_name': name ?? '',
+      if (boxId.isNotEmpty) 'payment_box_id': boxId,
+      if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
+      if (cashRaw.isNotEmpty) 'payment_box_value': cashRaw,
+    };
+  }
+
+  void addPayment({required BuildContext context, required String type}) async {
+    if (partnerIdController.text.trim().isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'must_select_customer_or_seller'.tr,
+      );
+      return;
+    }
+
+    if (forInstantSale && boxIdController.text.trim().isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'must_select_box'.tr,
+      );
+      return;
+    }
+
+    if (boxIdController.text.trim().isNotEmpty &&
+        cashValueController.text.trim().isEmpty) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'must_enter_box_value'.tr,
+      );
+      return;
+    }
+
+    isLoading(true);
+    try {
+      final sanitizedCash = cashValueController.text
+          .replaceAll(',', '')
+          .replaceAll('،', '')
+          .trim();
+
+      final result = await addPaymentUsecase.call(
+        customerId:
+            !selectedCustomersSellers.value ? partnerIdController.text : '',
+        sellerId:
+            selectedCustomersSellers.value ? partnerIdController.text : '',
+        type: type,
+        boxId: boxIdController.text,
+        boxValue: sanitizedCash,
+        checks: payments,
+        boxLogNote: forInstantSale ? instantSaleBoxLogNote : null,
+      );
+      await result.fold(
+        (failure) async {
+          String errorMessages = '';
+          bool data = false;
+          final errors = failure.data?['errors'] as Map<String, dynamic>?;
+          if (errors != null) {
+            errors.forEach((key, value) {
+              if (key.startsWith('permissions')) {
+                if (!data) {
+                  errorMessages += "Permissions: ${value.first}\n";
+                  data = true;
+                }
+              } else {
+                for (var msg in value) {
+                  errorMessages += "- $key: $msg\n";
+                }
               }
-            } else {
-              for (var msg in value) {
-                errorMessages += "- $key: $msg\n";
-              }
-            }
+            });
+          } else {
+            errorMessages = failure.data?['message']?.toString() ??
+                failure.errMessage;
+          }
+          if (errorMessages.trim().isEmpty) {
+            errorMessages = 'something_wrong'.tr;
+          }
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: errorMessages,
+          );
+        },
+        (success) async {
+          final instantSaleBuyer = buildInstantSaleBuyerPayload();
+
+          if (forInstantSale) {
+            Get.back(result: instantSaleBuyer);
+            _clearPaymentForm();
+            return;
+          }
+
+          _clearPaymentForm();
+          Get.back(result: instantSaleBuyer);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final ctx = Get.context;
+            if (ctx == null) return;
+            Helpers.showCustomDialogSuccess(
+              context: ctx,
+              title: 'success'.tr,
+              message: success,
+            );
           });
-        } else {
-          errorMessages = failure.data?['message'] ?? failure.errMessage;
-        }
-        Helpers.showCustomDialogError(
-          context: context,
-          title: failure.errMessage,
-          message: errorMessages,
-        );
-      },
-      (success) {
-        // totalBillController.clear();
-        partnerIdController.clear();
-        boxIdController.clear();
-        // paymentMethodController.clear();
-        cashValueController.clear();
-        checkNumberController.clear();
-        currencyController.clear();
-        bankNameController.clear();
-        payments.map((e) {
-          e.paymentMethod.clear();
-          e.checkValue.clear();
-          e.dueDate.clear();
-          e.currency.clear();
-          e.checkNumber.clear();
-          e.bankName.clear();
-          e.selectedFile.value = null;
-          e.debtValue.clear();
-        });
-        payments.clear();
-        Future.delayed(
-          const Duration(milliseconds: 500),
-          () {
-            Get.back();
-            // ignore: use_build_context_synchronously
-            Navigator.pop(context, true);
-          },
-        );
-        Helpers.showCustomDialogSuccess(
-          context: context,
-          title: 'success'.tr,
-          message: success,
-        );
-      },
-    );
-    isLoading(false);
+        },
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  void _clearPaymentForm() {
+    partnerIdController.clear();
+    selectedPartner.value = null;
+    boxIdController.clear();
+    selectedBox.value = null;
+    cashValueController.clear();
+    checkNumberController.clear();
+    currencyController.clear();
+    bankNameController.clear();
+    for (final e in payments) {
+      e.paymentMethod.clear();
+      e.checkValue.clear();
+      e.dueDate.clear();
+      e.currency.clear();
+      e.checkNumber.clear();
+      e.bankName.clear();
+      e.selectedFile.value = null;
+      e.debtValue.clear();
+    }
+    payments.clear();
   }
 
   @override

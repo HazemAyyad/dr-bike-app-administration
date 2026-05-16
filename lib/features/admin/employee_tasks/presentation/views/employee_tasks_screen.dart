@@ -12,6 +12,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/employee_tasks_list.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
   const EmployeeTasksScreen({Key? key}) : super(key: key);
@@ -30,9 +31,12 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
         },
         action: false,
       ),
-      body: CustomScrollView(
-        controller: controller.scrollController,
-        slivers: [
+      body: AppPullToRefresh(
+        onRefresh: controller.pullToRefresh,
+        child: CustomScrollView(
+          controller: controller.scrollController,
+          physics: kRefreshableScrollPhysics,
+          slivers: [
           SliverToBoxAdapter(
             child: AppTabs(
               tabs: controller.tabs,
@@ -84,6 +88,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
           const EmployeeTasks(),
           SliverToBoxAdapter(child: SizedBox(height: 80.h)),
         ],
+        ),
       ),
       floatingActionButton: AddFloatingActionButton(
         onPressed: () {

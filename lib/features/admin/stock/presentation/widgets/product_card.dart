@@ -111,7 +111,7 @@ class BuildProductCard extends GetView<StockController> {
         }
       },
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
         decoration: BoxDecoration(
           color: ThemeService.isDark.value
               ? AppColors.customGreyColor
@@ -131,7 +131,7 @@ class BuildProductCard extends GetView<StockController> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Center(child: _buildProductImage()),
-            SizedBox(height: 4.h),
+            SizedBox(height: 2.h),
             Text(
               product.name,
               style: nameStyle,
@@ -140,7 +140,7 @@ class BuildProductCard extends GetView<StockController> {
               overflow: TextOverflow.ellipsis,
             ),
             if (product.productCode.isNotEmpty) ...[
-              SizedBox(height: 3.h),
+              SizedBox(height: 2.h),
               Text(
                 product.productCode,
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
@@ -157,10 +157,10 @@ class BuildProductCard extends GetView<StockController> {
               ),
             ],
             if (product.tags.isNotEmpty) ...[
-              SizedBox(height: 3.h),
+              SizedBox(height: 2.h),
               ProductTagsOverflow(tags: product.tags, dense: true),
             ],
-            const Spacer(),
+            SizedBox(height: 2.h),
             _buildStockLine(context),
           ],
         ),
@@ -213,7 +213,7 @@ class BuildProductCard extends GetView<StockController> {
     if (missing) {
       return Image.asset(
         AssetsManager.stockImage,
-        height: 50.h,
+        height: 44.h,
         width: double.infinity,
         fit: BoxFit.contain,
       );
@@ -231,23 +231,23 @@ class BuildProductCard extends GetView<StockController> {
             maxNrOfCacheObjects: 100,
           ),
         ),
-        height: 50.h,
+        height: 44.h,
         width: double.infinity,
         fit: BoxFit.cover,
         imageUrl: resolved,
         filterQuality: FilterQuality.low,
         placeholder: (context, url) => SizedBox(
-          height: 50.h,
+          height: 44.h,
           child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         errorWidget: (context, url, error) => CachedNetworkImage(
           imageUrl: original,
-          height: 50.h,
+          height: 44.h,
           width: double.infinity,
           fit: BoxFit.cover,
           errorWidget: (context, url, error) => Image.asset(
             AssetsManager.stockImage,
-            height: 50.h,
+            height: 44.h,
             fit: BoxFit.contain,
           ),
         ),

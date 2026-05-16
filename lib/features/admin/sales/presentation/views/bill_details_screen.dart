@@ -33,9 +33,7 @@ class BillDetailsScreen extends GetView<SalesController> {
           final invoice = controller.invoiceModel!;
           final fmt = NumberFormat('#,###.##');
 
-          return Directionality(
-            textDirection: TextDirection.rtl,
-            child: CustomScrollView(
+          return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: _InvoiceHeaderCard(
@@ -46,7 +44,8 @@ class BillDetailsScreen extends GetView<SalesController> {
                     phone: _dash(invoice.buyerPhone ?? invoice.phone),
                     address: _dash(invoice.buyerAddress ?? invoice.address),
                     paymentMethod: _dash(invoice.paymentMethod),
-                    saleStatus: _dash(invoice.saleStatus),
+                    paymentBoxName: invoice.displayPaymentBox,
+                    saleStatus: invoice.displaySaleStatus,
                     notes: _dash(invoice.notes),
                   ),
                 ),
@@ -113,9 +112,8 @@ class BillDetailsScreen extends GetView<SalesController> {
                         fmt.format(double.tryParse(invoice.totalCost) ?? 0),
                   ),
                 ),
-                SliverToBoxAdapter(child: SizedBox(height: 24.h)),
-              ],
-            ),
+              SliverToBoxAdapter(child: SizedBox(height: 24.h)),
+            ],
           );
         },
       ),
@@ -132,6 +130,7 @@ class _InvoiceHeaderCard extends StatelessWidget {
     required this.phone,
     required this.address,
     required this.paymentMethod,
+    required this.paymentBoxName,
     required this.saleStatus,
     required this.notes,
   });
@@ -143,6 +142,7 @@ class _InvoiceHeaderCard extends StatelessWidget {
   final String phone;
   final String address;
   final String paymentMethod;
+  final String paymentBoxName;
   final String saleStatus;
   final String notes;
 
@@ -180,6 +180,8 @@ class _InvoiceHeaderCard extends StatelessWidget {
           _metaRow(context, 'address'.tr, address),
           Divider(height: 16.h),
           _metaRow(context, 'paymentMethod'.tr, paymentMethod),
+          if (paymentBoxName != '-')
+            _metaRow(context, 'boxName'.tr, paymentBoxName, highlight: true),
           _metaRow(context, 'status'.tr, saleStatus),
           if (notes != '-') _metaRow(context, 'notes'.tr, notes),
         ],

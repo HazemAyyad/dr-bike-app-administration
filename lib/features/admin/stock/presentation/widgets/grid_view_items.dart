@@ -49,8 +49,8 @@ class GridViewItems extends GetView<StockController> {
                         : controller.allCombinations;
 
                 final aspectRatio = controller.currentTab.value == 0
-                    ? 0.52
-                    : 0.72;
+                    ? 0.73
+                    : 0.68;
 
                 return GridView.builder(
                   shrinkWrap: true,

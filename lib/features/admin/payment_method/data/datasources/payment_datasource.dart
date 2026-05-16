@@ -22,6 +22,7 @@ class PaymentDatasource {
     required String boxId,
     required String boxValue,
     required List<PaymentModel> checks,
+    String? boxLogNote,
   }) async {
     try {
       final checksMap = <String, dynamic>{};
@@ -31,12 +32,16 @@ class PaymentDatasource {
         if (sellerId.isNotEmpty) 'seller_id': sellerId,
         if (boxId.isNotEmpty) 'box_id': boxId,
         if (boxValue.isNotEmpty) 'box_value': boxValue,
+        if (boxLogNote != null && boxLogNote.trim().isNotEmpty)
+          'box_log_note': boxLogNote.trim(),
       });
 
       for (int i = 0; i < checks.length; i++) {
         if (checks[i].checkValue.text.isNotEmpty) {
           checksMap['checks[$i][check_value]'] = checks[i].checkValue.text;
-          checksMap['checks[$i][due_date]'] = checks[i].dueDate.text;
+          if (checks[i].dueDate.text.trim().isNotEmpty) {
+            checksMap['checks[$i][due_date]'] = checks[i].dueDate.text.trim();
+          }
           checksMap['checks[$i][check_currency]'] = checks[i].currency.text;
           checksMap['checks[$i][check_id]'] = checks[i].checkNumber.text;
           checksMap['checks[$i][bank_name]'] = checks[i].bankName.text;
@@ -51,7 +56,12 @@ class PaymentDatasource {
         }
         if (checks[i].debtValue.text.isNotEmpty) {
           checksMap['debts[$i][total]'] = checks[i].debtValue.text;
-          checksMap['debts[$i][due_date]'] = checks[i].dueDate.text;
+          if (checks[i].dueDate.text.trim().isNotEmpty) {
+            checksMap['debts[$i][due_date]'] = checks[i].dueDate.text.trim();
+          }
+          if (boxId.isNotEmpty) {
+            checksMap['debts[$i][box_id]'] = boxId;
+          }
         }
       }
       final response = await api.post(
@@ -62,11 +72,14 @@ class PaymentDatasource {
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
+      final message = data is Map
+          ? (data['message']?.toString() ?? 'Unknown error')
+          : (data?.toString() ?? e.message ?? 'Unknown error');
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage: message,
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }

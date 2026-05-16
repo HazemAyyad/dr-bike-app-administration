@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:get/get.dart';
 
+import '../../features/admin/checks/presentation/binding/checks_binding.dart';
+import '../../features/admin/checks/presentation/controllers/checks_controller.dart';
 import '../../routes/app_routes.dart';
 import 'app_dependency_registry.dart';
 import 'initial_bindings.dart';
@@ -71,17 +73,26 @@ class AdminNotificationRouter {
   static bool _openChecks(Map<String, dynamic> raw) {
     try {
       AppDependencyRegistry.ensureChecks();
+      if (!Get.isRegistered<ChecksController>()) {
+        ChecksBinding().dependencies();
+      }
+      final c = Get.find<ChecksController>();
       final rt = raw['related_type']?.toString() ?? '';
+
       if (rt == 'incoming_check') {
+        c.isInComing = true;
+        c.pullToRefresh();
         Get.toNamed(AppRoutes.INCOMINGCHECKSSCREEN);
       } else if (rt == 'outgoing_check') {
+        c.isInComing = false;
+        c.pullToRefresh();
         Get.toNamed(AppRoutes.OUTGOINGCHECKSSCREEN);
       } else {
         Get.toNamed(AppRoutes.CHECKSSCREEN);
       }
       return true;
-    } catch (e) {
-      debugPrint('[NotificationRouter] checks unavailable: $e');
+    } catch (e, st) {
+      debugPrint('[NotificationRouter] checks unavailable: $e\n$st');
       return false;
     }
   }

@@ -416,15 +416,24 @@ class DebtsController extends GetxController {
     update();
   }
 
-  @override
-  void onInit() {
-    super.onInit();
+  Future<void> pullToRefresh() async {
+    isLoading(true);
+    update();
     getTotalDebtsOwedToUs();
     getTotalDebtsWeOwe();
     getDebtsWeOwe();
     getDebtsOwedToUs();
     getShowBoxes();
     getAllCustomersAndSellers();
+    await Future.delayed(const Duration(milliseconds: 400));
+    isLoading(false);
+    update();
+  }
+
+  @override
+  void onInit() {
+    super.onInit();
+    pullToRefresh();
   }
 
   @override

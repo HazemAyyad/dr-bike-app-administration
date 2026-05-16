@@ -9,6 +9,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/follow_up_controller.dart';
 import '../widgets/follow_up_widget.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class CurrentFollowUpScreen extends GetView<FollowUpController> {
   const CurrentFollowUpScreen({Key? key}) : super(key: key);
@@ -25,8 +26,11 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
         label: 'customerName',
         action: false,
       ),
-      body: CustomScrollView(
-        slivers: [
+      body: AppPullToRefresh(
+        onRefresh: controller.pullToRefresh,
+        child: CustomScrollView(
+          physics: kRefreshableScrollPhysics,
+          slivers: [
           // tab bar
           SliverToBoxAdapter(
             child: AppTabs(
@@ -81,6 +85,7 @@ class CurrentFollowUpScreen extends GetView<FollowUpController> {
           const FollowUpWidget(),
           SliverToBoxAdapter(child: SizedBox(height: 30.h)),
         ],
+        ),
       ),
       floatingActionButton: AddFloatingActionButton(
         onPressed: () {

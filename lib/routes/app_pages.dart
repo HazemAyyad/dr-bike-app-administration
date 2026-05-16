@@ -550,11 +550,13 @@ class AppPages {
     GetPage(
       name: AppRoutes.OUTGOINGCHECKSSCREEN,
       page: () => const OutgoingChecksScreen(),
+      binding: ChecksBinding(),
       transition: _transitionDownToUp,
     ),
     GetPage(
       name: AppRoutes.INCOMINGCHECKSSCREEN,
       page: () => const IncomingChecksScreen(),
+      binding: ChecksBinding(),
       transition: _transitionDownToUp,
     ),
     GetPage(

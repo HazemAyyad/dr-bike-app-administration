@@ -11,5 +11,6 @@ abstract class PaymentRepository {
     required String boxId,
     required String boxValue,
     required List<PaymentModel> checks,
+    String? boxLogNote,
   });
 }
