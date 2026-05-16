@@ -80,7 +80,7 @@ class InvoiceModel {
     );
   }
 
-  String displayTraderName =>
+  String get displayTraderName =>
       (traderName?.trim().isNotEmpty == true
               ? traderName
               : customerName?.trim().isNotEmpty == true

@@ -10,7 +10,7 @@ import 'stock_filter_sheet.dart';
 
 /// Search row with filter action for the products inventory tab.
 class StockSearchBar extends GetView<StockController> {
-  const StockSearchBar({super.key});
+  const StockSearchBar({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

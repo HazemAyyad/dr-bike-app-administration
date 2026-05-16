@@ -8,10 +8,10 @@ import 'product_tag_chip.dart';
 /// Shows first tag + optional +N chip; tap +N opens all tags.
 class ProductTagsOverflow extends StatelessWidget {
   const ProductTagsOverflow({
-    super.key,
+    Key? key,
     required this.tags,
     this.dense = true,
-  });
+  }) : super(key: key);
 
   final List<ProductTagModel> tags;
   final bool dense;

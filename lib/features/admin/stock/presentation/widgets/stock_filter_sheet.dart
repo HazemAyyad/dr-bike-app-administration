@@ -10,7 +10,7 @@ import '../../domain/stock_product_filters.dart';
 import '../controllers/stock_controller.dart';
 
 class StockFilterSheet extends StatefulWidget {
-  const StockFilterSheet({super.key});
+  const StockFilterSheet({Key? key}) : super(key: key);
 
   @override
   State<StockFilterSheet> createState() => _StockFilterSheetState();
