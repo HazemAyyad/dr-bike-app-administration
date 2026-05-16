@@ -8,7 +8,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/archive_dialog.dart';
-import '../widgets/search_widget.dart';
+import '../widgets/stock_search_bar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../widgets/grid_view_items.dart';
 
@@ -53,7 +53,7 @@ class StockScreen extends GetView<StockController> {
                   return Padding(
                     padding:
                         EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                    child: const SearchWidget(isCloseouts: false),
+                    child: const StockSearchBar(),
                   );
                 }),
               ),

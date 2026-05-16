@@ -1,15 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' as getx;
 
-import '../../../routes/app_routes.dart';
 import '../../helpers/api_error_message.dart';
 import '../../errors/error_model.dart';
 import '../../errors/expentions.dart';
 import '../../services/languague_service.dart';
+import '../../services/session_service.dart';
 import '../../services/user_data.dart';
 import 'api_consumer.dart';
 import 'end_points.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 class DioConsumer extends ApiConsumer {
   final Dio dio;
@@ -32,6 +31,21 @@ class DioConsumer extends ApiConsumer {
             options.headers['Authorization'] = 'Bearer $token';
           }
           return handler.next(options);
+        },
+        onResponse: (response, handler) async {
+          final authHeader =
+              response.requestOptions.headers['Authorization']?.toString() ?? '';
+          if (authHeader.isNotEmpty) {
+            await SessionService.handleAuthFailureIfNeeded(
+              response.data,
+              response.statusCode,
+            );
+          }
+          return handler.next(response);
+        },
+        onError: (error, handler) async {
+          await SessionService.handleDioAuthFailure(error);
+          return handler.next(error);
         },
       ),
     );
@@ -81,16 +95,6 @@ class DioConsumer extends ApiConsumer {
         );
       }
 
-      if (data is Map && data['message'] == 'Unauthenticated.') {
-        await DefaultCacheManager().emptyCache();
-        UserData.clearAllUserData();
-        getx.Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
-        getx.Get.snackbar(
-          'error'.tr,
-          'لقد انتهت مهلة الأتصال، برجاء تسجيل الدخول مرة أخرى',
-          snackPosition: getx.SnackPosition.BOTTOM,
-        );
-      }
       throw ServerException(
         ErrorModel(
           errorMessage: errorMessage,
@@ -139,16 +143,6 @@ class DioConsumer extends ApiConsumer {
         errorMessage = apiErrorMessageFromPayload(
           rawMsg,
           fallback: 'حدث خطأ غير معروف',
-        );
-      }
-      if (data is Map && data['message'] == 'Unauthenticated.') {
-        await DefaultCacheManager().emptyCache();
-        UserData.clearAllUserData();
-        getx.Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
-        getx.Get.snackbar(
-          'error'.tr,
-          'لقد انتهت مهلة الأتصال، برجاء تسجيل الدخول مرة أخرى',
-          snackPosition: getx.SnackPosition.BOTTOM,
         );
       }
       throw ServerException(

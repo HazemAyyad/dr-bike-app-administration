@@ -55,7 +55,7 @@ class GridViewItems extends GetView<StockController> {
                     crossAxisCount: 3,
                     crossAxisSpacing: 10.w,
                     mainAxisSpacing: 10.h,
-                    childAspectRatio: 0.7,
+                    childAspectRatio: 0.78,
                   ),
                   itemCount: items.length,
                   itemBuilder: (context, index) {

@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/services/initial_bindings.dart';
+import 'package:doctorbike/core/services/session_service.dart';
 import 'package:doctorbike/core/services/user_data.dart';
 import 'package:get/get.dart';
 
@@ -11,19 +12,46 @@ class SplashController extends GetxController {
   void onInit() async {
     final connected = await networkInfo.isConnected;
     bool isFirstTime = await UserData.getIsFirstTime();
-    bool isRemembered = await UserData.getIsRememberUser();
 
     Future.delayed(
       const Duration(seconds: 3),
       () async {
-        if (supabase) {
-          connected
-              ? !isFirstTime
-                  ? isRemembered
-                      ? Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN)
-                      : Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN)
-                  : Get.offAllNamed(AppRoutes.ONBOARDINGSCREEN)
-              : Get.offAllNamed(AppRoutes.NOINTERNETSCREEN);
+        if (!supabase) return;
+
+        if (!connected) {
+          Get.offAllNamed(AppRoutes.NOINTERNETSCREEN);
+          return;
+        }
+
+        if (isFirstTime) {
+          Get.offAllNamed(AppRoutes.ONBOARDINGSCREEN);
+          return;
+        }
+
+        final token = await UserData.getUserToken();
+        if (token.isEmpty) {
+          Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+          return;
+        }
+
+        final validation = await SessionService.validateAndRefreshSession();
+        if (validation.isValid) {
+          Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+          return;
+        }
+
+        if (validation.isAuthFailure) {
+          await SessionService.clearSessionAndGoToLogin(showMessage: false);
+          return;
+        }
+
+        // توكن محفوظ لكن التحقق فشل (شبكة مثلاً) — ادخل بالبيانات المخزنة
+        final cachedUser = await UserData.getSavedUser();
+        if (cachedUser != null) {
+          await SessionService.restoreGlobalsFromStorage();
+          Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+        } else {
+          Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
         }
       },
     );

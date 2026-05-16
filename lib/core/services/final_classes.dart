@@ -4,5 +4,9 @@ import 'package:get_storage/get_storage.dart';
 class FinalClasses {
   static final GetStorage getStorage = GetStorage();
 
-  static const FlutterSecureStorage secureStorage = FlutterSecureStorage();
+  static const FlutterSecureStorage secureStorage = FlutterSecureStorage(
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
+  );
 }

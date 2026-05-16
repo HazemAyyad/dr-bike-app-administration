@@ -11,7 +11,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/all_stock_products_model.dart';
-import 'product_tag_chip.dart';
+import 'product_tags_overflow.dart';
 import '../controllers/stock_controller.dart';
 
 class BuildProductCard extends GetView<StockController> {
@@ -221,21 +221,7 @@ class BuildProductCard extends GetView<StockController> {
                   ],
                   if (product.tags.isNotEmpty) ...[
                     SizedBox(height: 4.h),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 3,
-                      runSpacing: 3,
-                      children: product.tags
-                          .take(3)
-                          .map(
-                            (t) => ProductTagChip(
-                              name: t.name,
-                              colorHex: t.color,
-                              dense: true,
-                            ),
-                          )
-                          .toList(),
-                    ),
+                    ProductTagsOverflow(tags: product.tags, dense: true),
                   ],
                   SizedBox(height: 5.h),
                   if (controller.currentTab.value == 2)

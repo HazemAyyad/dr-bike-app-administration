@@ -48,6 +48,16 @@ class CommonDatasource {
   Future<UserModel> getUserData() async {
     try {
       final response = await api.post(EndPoints.me);
+      final raw = response.data;
+      if (raw is Map && raw['status'] != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw['message']?.toString() ?? 'فشل تحميل بيانات المستخدم',
+            status: raw['status'] ?? 'error',
+            data: raw,
+          ),
+        );
+      }
       final user = UserModel.fromJson(response.data);
       await UserData.saveUser(user);
       final userdata = await UserData.getSavedUser();

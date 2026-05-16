@@ -6,14 +6,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
-import '../../features/common_feature/data/repositories/common_repo_impl.dart';
-import '../../features/common_feature/domain/usecases/get_user_data_usecase.dart';
-import '../../features/common_feature/domain/usecases/user_profile_usecase.dart';
-import '../../features/common_feature/presentation/personal_details/controllers/personal_details_controller.dart';
 import '../../firebase_options.dart';
-import '../connection/network_info.dart';
 import 'app_dependency_registry.dart';
 import 'notification_firebase_service.dart';
+import 'session_service.dart';
 import 'user_data.dart';
 
 String userType = '';
@@ -27,9 +23,6 @@ class InitialBindings implements Bindings {
   void dependencies() async {
     // Must run synchronously first — GetX does not wait for async bindings.
     AppDependencyRegistry.registerAll();
-
-    final networkInfo = NetworkInfo();
-    final connected = await networkInfo.isConnected;
 
     if (kIsWeb) {
       startApp.value = true;
@@ -59,6 +52,8 @@ class InitialBindings implements Bindings {
         .maybeSingle();
     supabase = response!['status'] == true;
 
+    await SessionService.hydrateToken();
+
     final userdata = await UserData.getSavedUser();
     if (userdata != null) {
       employeePermissions
@@ -77,19 +72,6 @@ class InitialBindings implements Bindings {
       }
     }
 
-    if (UserData.userToken.isNotEmpty) {
-      if (!Get.isRegistered<PersonalDetailsController>()) {
-        Get.put(
-          PersonalDetailsController(
-            userProfileUseCase: UserProfileUseCase(
-              commonRepository: Get.find<CommonImplement>(),
-            ),
-            getUserDataUsecase: GetUserDataUsecase(
-              commonRepository: Get.find<CommonImplement>(),
-            ),
-          ),
-        ).getUserData();
-      }
-    }
+    // تجنب طلب /me قبل انتهاء الـ Splash — يمنع مسح الجلسة أو تعارض التوجيه
   }
 }

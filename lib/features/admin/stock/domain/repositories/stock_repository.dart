@@ -6,6 +6,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
+import '../../domain/stock_product_filters.dart';
 import '../../presentation/controllers/stock_controller.dart';
 
 abstract class StockRepository {
@@ -13,6 +14,8 @@ abstract class StockRepository {
     required int page,
     required bool ifCombinations,
     required bool ifCloseouts,
+    StockProductFilters? filters,
+    int perPage = 15,
   });
 
   Future<ProductDetailsModel> getProductDetails({required String productId});

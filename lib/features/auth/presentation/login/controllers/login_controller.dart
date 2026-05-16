@@ -39,7 +39,12 @@ class LoginController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _loadRememberMePreference();
     refreshBiometricLoginState();
+  }
+
+  Future<void> _loadRememberMePreference() async {
+    isRemember.value = await UserData.getIsRememberUser();
   }
 
   @override
@@ -150,9 +155,7 @@ class LoginController extends GetxController {
   }
 
   Future<void> _handleSuccessfulNormalLogin() async {
-    if (isRemember.value) {
-      await UserData.saveIsRememberUser(isRemember.value);
-    }
+    await UserData.saveIsRememberUser(isRemember.value);
 
     if (!kIsWeb &&
         await BiometricAuthService.instance.isBiometricLoginEnabled()) {

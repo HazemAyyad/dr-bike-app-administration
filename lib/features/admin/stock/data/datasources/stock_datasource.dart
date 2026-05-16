@@ -14,6 +14,7 @@ import '../../presentation/controllers/stock_controller.dart';
 import '../models/all_stock_products_model.dart';
 import '../models/product_details_model.dart';
 import '../models/product_tag_model.dart';
+import '../../domain/stock_product_filters.dart';
 import '../models/products_by_tag_result.dart';
 
 class StockDatasource {
@@ -26,15 +27,24 @@ class StockDatasource {
     required int page,
     required bool ifCombinations,
     required bool ifCloseouts,
+    StockProductFilters? filters,
+    int perPage = 15,
   }) async {
     try {
+      final queryParams = ifCombinations || ifCloseouts
+          ? <String, dynamic>{'page': page}
+          : {
+              ...?filters?.toQueryParams(page: page, perPage: perPage),
+              if (filters == null) 'page': page,
+            };
+
       final response = await api.get(
           ifCombinations
               ? EndPoints.getAllCombinations
               : ifCloseouts
                   ? EndPoints.getUnarchivedCloseouts
                   : EndPoints.getProductsList,
-          queryParameters: {'page': page});
+          queryParameters: queryParams);
       final key = ifCombinations
           ? 'combinations'
           : ifCloseouts

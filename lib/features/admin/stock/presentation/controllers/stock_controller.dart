@@ -14,6 +14,8 @@ import '../../../sales/data/models/product_model.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
 import '../../data/models/product_tag_model.dart';
+import '../../domain/stock_product_filters.dart';
+import '../../domain/stock_product_filters.dart';
 import '../../domain/stock_tags_interactor.dart';
 import '../../domain/usecases/add_combination_usecase.dart';
 import '../../domain/usecases/get_all_stock_usecase.dart';
@@ -690,6 +692,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
+  final Rx<StockProductFilters> productListFilters =
+      StockProductFilters.empty.obs;
+
   final RxList<AllStockProductsModel> allProducts =
       <AllStockProductsModel>[].obs;
 
@@ -700,6 +705,24 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       <AllStockProductsModel>[].obs;
   int page = 1;
 
+  Future<void> applyProductFilters(StockProductFilters filters) async {
+    productListFilters.value = filters;
+    page = 1;
+    allProducts.clear();
+    isLoading(true);
+    update();
+    await getAllProducts();
+  }
+
+  Future<void> clearProductFilters() async {
+    productListFilters.value = StockProductFilters.empty;
+    page = 1;
+    allProducts.clear();
+    isLoading(true);
+    update();
+    await getAllProducts();
+  }
+
   // Get all products
   Future<void> getAllProducts({bool isRefresh = false}) async {
     isRefresh
@@ -709,10 +732,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
             : isLoading(false);
 
     // 1- المنتجات العادية
+    final filters = productListFilters.value.hasActiveFilters
+        ? productListFilters.value
+        : null;
     final result = await getAllStockUsecase.call(
       page: page,
       ifCombinations: false,
       ifCloseouts: false,
+      filters: filters,
     );
     for (var product in result) {
       if (!allProducts.any((p) => p.productId == product.productId)) {

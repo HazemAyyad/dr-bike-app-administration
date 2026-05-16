@@ -8,6 +8,7 @@ import 'initial_bindings.dart';
 
 class UserData {
   static String userToken = '';
+  static const String _tokenBackupKey = 'auth_token_backup';
 
   /// حفظ حالة تذكر المستخدم
   static Future<void> saveIsFirstTime(bool value) async {
@@ -19,14 +20,16 @@ class UserData {
     return FinalClasses.getStorage.read('firstTime') ?? true;
   }
 
-  /// حفظ الـ token
+  /// حفظ الـ token (secure + نسخة احتياطية لضمان البقاء بعد إغلاق التطبيق)
   static Future<void> saveToken(String token) async {
+    UserData.userToken = token;
     if (kIsWeb) {
       await FinalClasses.getStorage.write('token', token);
-    } else {
-      await FinalClasses.secureStorage.write(key: 'token', value: token);
+      return;
     }
-    UserData.userToken = token;
+
+    await FinalClasses.secureStorage.write(key: 'token', value: token);
+    await FinalClasses.getStorage.write(_tokenBackupKey, token);
   }
 
   /// استرجاع الـ token
@@ -35,16 +38,17 @@ class UserData {
       final v = FinalClasses.getStorage.read('token');
       return v == null ? '' : v.toString();
     }
-    return await FinalClasses.secureStorage.read(key: 'token') ?? '';
-  }
 
-  /// استرجاع الـ token
-  // static Future<void> getUserToken() async {
-  //   final savedToken = await secureStorage.read(key: 'token');
-  //   if (savedToken != null) {
-  //     UserData.token = savedToken;
-  //   }
-  // }
+    var token = await FinalClasses.secureStorage.read(key: 'token') ?? '';
+    if (token.isEmpty) {
+      final backup = FinalClasses.getStorage.read(_tokenBackupKey);
+      token = backup == null ? '' : backup.toString();
+      if (token.isNotEmpty) {
+        await FinalClasses.secureStorage.write(key: 'token', value: token);
+      }
+    }
+    return token;
+  }
 
   /// حفظ بيانات المستخدم كاملة
   static Future<void> saveUser(UserModel response) async {
@@ -57,14 +61,27 @@ class UserData {
       await FinalClasses.getStorage.write('userData', jsonString);
     } else {
       await FinalClasses.secureStorage.write(key: 'userData', value: jsonString);
+      await FinalClasses.getStorage.write('userData_backup', jsonString);
     }
   }
 
   /// استرجاع بيانات المستخدم كاملة
   static Future<UserModel?> getSavedUser() async {
-    final String? jsonString = kIsWeb
-        ? FinalClasses.getStorage.read('userData')?.toString()
-        : await FinalClasses.secureStorage.read(key: 'userData');
+    String? jsonString;
+    if (kIsWeb) {
+      jsonString = FinalClasses.getStorage.read('userData')?.toString();
+    } else {
+      jsonString = await FinalClasses.secureStorage.read(key: 'userData');
+      if (jsonString == null || jsonString.isEmpty) {
+        jsonString = FinalClasses.getStorage.read('userData_backup')?.toString();
+        if (jsonString != null && jsonString.isNotEmpty) {
+          await FinalClasses.secureStorage.write(
+            key: 'userData',
+            value: jsonString,
+          );
+        }
+      }
+    }
     if (jsonString == null || jsonString.isEmpty) return null;
 
     final jsonData = jsonDecode(jsonString);
@@ -89,6 +106,8 @@ class UserData {
     } else {
       await FinalClasses.secureStorage.delete(key: 'token');
       await FinalClasses.secureStorage.delete(key: 'userData');
+      await FinalClasses.getStorage.remove(_tokenBackupKey);
+      await FinalClasses.getStorage.remove('userData_backup');
     }
     saveIsRememberUser(false);
     userToken = '';

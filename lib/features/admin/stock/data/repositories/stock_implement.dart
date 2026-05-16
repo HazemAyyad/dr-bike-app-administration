@@ -10,6 +10,7 @@ import '../../../../../../core/errors/failure.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../domain/repositories/stock_repository.dart';
+import '../../domain/stock_product_filters.dart';
 import '../datasources/stock_datasource.dart';
 import '../models/all_stock_products_model.dart';
 
@@ -24,13 +25,20 @@ class StockImplement implements StockRepository {
     required int page,
     required bool ifCombinations,
     required bool ifCloseouts,
+    StockProductFilters? filters,
+    int perPage = 15,
   }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
       final result = await stockDataSource.getAllStock(
-          page: page, ifCombinations: ifCombinations, ifCloseouts: ifCloseouts);
+        page: page,
+        ifCombinations: ifCombinations,
+        ifCloseouts: ifCloseouts,
+        filters: filters,
+        perPage: perPage,
+      );
       return result;
     } on ServerException catch (e) {
       Get.snackbar(
