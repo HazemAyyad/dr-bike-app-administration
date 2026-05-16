@@ -7,6 +7,7 @@ class EmployeeTaskEntity {
   final DateTime endTime;
   final bool isCanceled;
   final String? employeeImg;
+  final String? employeePhoto;
   final String? adminImg;
   final String? audio;
 
@@ -19,6 +20,7 @@ class EmployeeTaskEntity {
     required this.endTime,
     required this.isCanceled,
     this.employeeImg,
+    this.employeePhoto,
     this.adminImg,
     this.audio,
   });

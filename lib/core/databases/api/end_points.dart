@@ -420,6 +420,7 @@ class ApiKey {
   static const String hour_work_price = 'hour_work_price';
   static const String points = 'points';
   static const String employee_img = 'employee_img';
+  static const String employee_photo = 'employee_photo';
   static const String user_name = 'user_name';
   static const String start_work_time = 'start_work_time';
   static const String end_work_time = 'end_work_time';

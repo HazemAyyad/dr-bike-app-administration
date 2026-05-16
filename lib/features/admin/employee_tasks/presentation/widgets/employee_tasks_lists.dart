@@ -129,8 +129,13 @@ class EmployeeTasksLists extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(5.r),
+                  child: Container(
+                    height: 55.h,
+                    width: 55.w,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                    ),
+                    clipBehavior: Clip.antiAlias,
                     child: CachedNetworkImage(
                       cacheManager: CacheManager(
                         Config(
@@ -139,27 +144,15 @@ class EmployeeTasksLists extends StatelessWidget {
                           maxNrOfCacheObjects: 100,
                         ),
                       ),
-                      imageBuilder: (context, imageProvider) => Container(
-                        width: 55.w,
-                        height: 55.h,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: imageProvider,
-                            fit: BoxFit.cover,
-                            filterQuality: FilterQuality.medium,
-                          ),
-                        ),
-                      ),
-                      imageUrl: order.adminImg!,
-                      placeholder: (context, url) => SizedBox(
-                        height: 55.h,
-                        width: 55.w,
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
+                      imageUrl: order.employeePhoto ?? order.adminImg!,
+                      fit: BoxFit.cover,
+                      fadeInDuration: const Duration(milliseconds: 200),
+                      fadeOutDuration: const Duration(milliseconds: 200),
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(),
                       ),
                       errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
+                          const Icon(Icons.person),
                     ),
                   ),
                 ),

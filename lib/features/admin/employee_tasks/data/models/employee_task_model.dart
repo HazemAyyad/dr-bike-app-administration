@@ -14,6 +14,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     required DateTime endTime,
     required bool isCanceled,
     String? employeeImg,
+    String? employeePhoto,
     String? adminImg,
     String? audio,
   }) : super(
@@ -25,6 +26,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
           endTime: endTime,
           isCanceled: isCanceled,
           employeeImg: employeeImg,
+          employeePhoto: employeePhoto,
           adminImg: adminImg,
           audio: audio,
         );
@@ -39,6 +41,9 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       endTime: parseApiDateTime(json[ApiKey.end_time]),
       isCanceled: asBool(json[ApiKey.is_canceled]),
       employeeImg: ShowNetImage.getPhoto(asNullableString(json[ApiKey.employee_img])),
+      employeePhoto: ShowNetImage.getPhoto(
+        asNullableString(json[ApiKey.employee_photo]),
+      ),
       adminImg: ShowNetImage.getPhoto(asNullableString(json[ApiKey.admin_img])),
       audio: ShowNetImage.getPhoto(asNullableString(json[ApiKey.audio])),
     );

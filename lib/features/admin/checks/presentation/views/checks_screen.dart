@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
 import '../controllers/checks_controller.dart';
 import '../widgets/checks_informaiton.dart';
 
@@ -33,14 +32,7 @@ class ChecksScreen extends GetView<ChecksController> {
                   color: AppColors.whiteColor,
                   fontWeight: FontWeight.w700,
                 ),
-            onPressed: () {
-              controller.isInComing = false;
-              // controller.generalData();
-              controller.getNotCashed();
-              controller.getCashedToPerson();
-              controller.getArchive();
-              Get.toNamed(AppRoutes.OUTGOINGCHECKSSCREEN);
-            },
+            onPressed: controller.openOutgoingChecks,
             color: AppColors.primaryColor,
             height: 48.h,
           ),
@@ -53,15 +45,7 @@ class ChecksScreen extends GetView<ChecksController> {
                   color: AppColors.whiteColor,
                   fontWeight: FontWeight.w700,
                 ),
-            onPressed: () {
-              controller.isInComing = true;
-              // controller.generalData();
-              controller.getNotCashed();
-              controller.getCashedToPerson();
-              controller.getArchive();
-
-              Get.toNamed(AppRoutes.INCOMINGCHECKSSCREEN);
-            },
+            onPressed: controller.openIncomingChecks,
             color: AppColors.primaryColor,
             height: 48.h,
           ),

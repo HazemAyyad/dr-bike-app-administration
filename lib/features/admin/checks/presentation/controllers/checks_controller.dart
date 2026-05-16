@@ -106,9 +106,19 @@ class ChecksController extends GetxController
     return n;
   }
 
-  int get notActedCount => _countChecksInMap(filteredInComingTasks);
-  int get actedCount => _countChecksInMap(filteredCashedToPersonTasks);
-  int get archiveCount => _countChecksInMap(filteredArchiveTasks);
+  final notActedTabCount = 0.obs;
+  final actedTabCount = 0.obs;
+  final archiveTabCount = 0.obs;
+
+  int get notActedCount => notActedTabCount.value;
+  int get actedCount => actedTabCount.value;
+  int get archiveCount => archiveTabCount.value;
+
+  void _syncTabCounts() {
+    notActedTabCount.value = _countChecksInMap(filteredInComingTasks);
+    actedTabCount.value = _countChecksInMap(filteredCashedToPersonTasks);
+    archiveTabCount.value = _countChecksInMap(filteredArchiveTasks);
+  }
 
   Map<String, List<CheckModel>> get _activeFilteredMap {
     if (currentTab.value == 0) return filteredInComingTasks;
@@ -585,7 +595,7 @@ class ChecksController extends GetxController
   final Map<String, double> totalInComing = {};
 
   Future<void> getNotCashed({bool isStopLoding = true}) async {
-    isLoading(true);
+    if (isStopLoding) isLoading(true);
 
     filteredInComingTasks.clear();
     inComingTasks.clear();
@@ -638,6 +648,7 @@ class ChecksController extends GetxController
       ..clear()
       ..addAll(sortedMap);
     filteredInComingTasks.assignAll(inComingTasks);
+    _syncTabCounts();
 
     if (isStopLoding) isLoading(false);
     update();
@@ -649,7 +660,7 @@ class ChecksController extends GetxController
   final Map<String, double> totalCashedToPerson = {};
 
   Future<void> getCashedToPerson({bool isStopLoding = true}) async {
-    isLoading(true);
+    if (isStopLoding) isLoading(true);
 
     filteredCashedToPersonTasks.clear();
     cashedToPersonTasks.clear();
@@ -700,8 +711,9 @@ class ChecksController extends GetxController
       ..addAll(sortedMap);
 
     filteredCashedToPersonTasks.assignAll(cashedToPersonTasks);
+    _syncTabCounts();
 
-    isLoading(false);
+    if (isStopLoding) isLoading(false);
     update();
   }
 
@@ -711,7 +723,7 @@ class ChecksController extends GetxController
   final Map<String, double> totalArchive = {};
 
   Future<void> getArchive({bool isStopLoding = true}) async {
-    isLoading(true);
+    if (isStopLoding) isLoading(true);
 
     filteredArchiveTasks.clear();
     archiveTasks.clear();
@@ -738,9 +750,39 @@ class ChecksController extends GetxController
       totalArchive[dateKey] = (totalArchive[dateKey] ?? 0.0) + total;
     }
     filteredArchiveTasks.assignAll(archiveTasks);
-    update();
+    _syncTabCounts();
     if (isStopLoding) isLoading(false);
     update();
+  }
+
+  /// Load all three tabs for current [isInComing] direction (incoming vs outgoing).
+  Future<void> loadAllChecksTabs({bool showLoading = true}) async {
+    if (showLoading) {
+      isLoading(true);
+      update();
+    }
+    await getNotCashed(isStopLoding: false);
+    await getCashedToPerson(isStopLoding: false);
+    await getArchive(isStopLoding: false);
+    if (showLoading) {
+      isLoading(false);
+    }
+    _syncTabCounts();
+    update();
+  }
+
+  void openOutgoingChecks() {
+    isInComing = false;
+    currentTab.value = 0;
+    loadAllChecksTabs();
+    Get.toNamed(AppRoutes.OUTGOINGCHECKSSCREEN);
+  }
+
+  void openIncomingChecks() {
+    isInComing = true;
+    currentTab.value = 0;
+    loadAllChecksTabs();
+    Get.toNamed(AppRoutes.INCOMINGCHECKSSCREEN);
   }
 
   // get general checks data
@@ -901,6 +943,7 @@ class ChecksController extends GetxController
     filteredInComingTasks.assignAll(
       filterChecks(inComingTasks, query, amountFilter.value),
     );
+    _syncTabCounts();
     Get.back();
     update();
   }
@@ -950,18 +993,13 @@ class ChecksController extends GetxController
       filteredArchiveTasks.assignAll(archiveTasks);
     }
 
+    _syncTabCounts();
     update();
   }
 
   Future<void> pullToRefresh() async {
-    isLoading.value = true;
-    update();
     await getGeneralChecksData();
-    await getNotCashed(isStopLoding: false);
-    await getCashedToPerson(isStopLoding: false);
-    await getArchive(isStopLoding: false);
-    isLoading.value = false;
-    update();
+    await loadAllChecksTabs(showLoading: true);
   }
 
   @override

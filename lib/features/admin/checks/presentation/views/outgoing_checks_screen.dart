@@ -43,15 +43,17 @@ class OutgoingChecksScreen extends GetView<ChecksController> {
                   ),
                   SliverToBoxAdapter(child: SizedBox(height: 20.h)),
                   SliverToBoxAdapter(
-                    child: AppTabs(
-                      tabs: [
-                        '${'didNotActOnIt'.tr} (${controller.notActedCount})',
-                        '${'actedOnIt'.tr} (${controller.actedCount})',
-                        '${'archive'.tr} (${controller.archiveCount})',
-                      ],
-                      currentTab: controller.currentTab,
-                      changeTab: controller.changeTab,
-                      translateLabels: false,
+                    child: Obx(
+                      () => AppTabs(
+                        tabs: [
+                          '${'didNotActOnIt'.tr} (${controller.notActedTabCount.value})',
+                          '${'actedOnIt'.tr} (${controller.actedTabCount.value})',
+                          '${'archive'.tr} (${controller.archiveTabCount.value})',
+                        ],
+                        currentTab: controller.currentTab,
+                        changeTab: controller.changeTab,
+                        translateLabels: false,
+                      ),
                     ),
                   ),
                   SliverToBoxAdapter(child: SizedBox(height: 10.h)),
