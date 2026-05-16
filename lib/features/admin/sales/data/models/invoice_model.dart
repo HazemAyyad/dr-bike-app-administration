@@ -25,6 +25,13 @@ class InvoiceModel {
   final String remainingAmount;
   final String? projectName;
 
+  final String buyerType;
+  final String buyerTypeLabelAr;
+  final String buyerName;
+  final String? buyerPhone;
+  final String? buyerAddress;
+  final int? buyerId;
+
   InvoiceModel({
     required this.id,
     required this.product,
@@ -48,9 +55,71 @@ class InvoiceModel {
     required this.paidAmount,
     required this.remainingAmount,
     this.projectName,
+    required this.buyerType,
+    required this.buyerTypeLabelAr,
+    required this.buyerName,
+    this.buyerPhone,
+    this.buyerAddress,
+    this.buyerId,
   });
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
+    final buyerRaw = json['buyer'];
+    final buyer = buyerRaw is Map<String, dynamic>
+        ? buyerRaw
+        : buyerRaw is Map
+            ? Map<String, dynamic>.from(buyerRaw)
+            : null;
+
+    final legacyTrader = asNullableString(json['trader_name']);
+    final legacyCustomer = asNullableString(json['customer_name']);
+    final legacyPhone = asNullableString(json['phone']);
+    final legacyAddress = asNullableString(json['address']);
+    final legacyProject = asNullableString(json['project_name']);
+
+    var buyerType = asString(buyer?['type'], '');
+    var buyerTypeLabelAr = asString(buyer?['type_label_ar'], '');
+    var buyerName = asString(buyer?['name'], '');
+    var buyerPhone = asNullableString(buyer?['phone']);
+    var buyerAddress = asNullableString(buyer?['address']);
+    final buyerIdRaw = buyer?['id'];
+    final buyerId = buyerIdRaw == null
+        ? null
+        : (buyerIdRaw is int ? buyerIdRaw : int.tryParse('$buyerIdRaw'));
+
+    if (buyer == null) {
+      if (legacyTrader != null && legacyTrader.trim().isNotEmpty) {
+        buyerType = 'trader';
+        buyerTypeLabelAr = 'تاجر';
+        buyerName = legacyTrader.trim();
+      } else if (legacyCustomer != null && legacyCustomer.trim().isNotEmpty) {
+        buyerType = 'customer';
+        buyerTypeLabelAr = 'زبون';
+        buyerName = legacyCustomer.trim();
+      } else if (legacyProject != null && legacyProject.trim().isNotEmpty) {
+        buyerType = 'trader';
+        buyerTypeLabelAr = 'تاجر';
+        buyerName = legacyProject.trim();
+      } else {
+        buyerType = 'unknown';
+        buyerTypeLabelAr = 'غير محدد';
+        buyerName = '-';
+      }
+      buyerPhone ??= legacyPhone;
+      buyerAddress ??= legacyAddress;
+    }
+
+    if (buyerName.trim().isEmpty) {
+      buyerName = '-';
+    }
+    if (buyerTypeLabelAr.trim().isEmpty) {
+      buyerTypeLabelAr = buyerType == 'trader'
+          ? 'تاجر'
+          : buyerType == 'customer'
+              ? 'زبون'
+              : 'غير محدد';
+    }
+
     return InvoiceModel(
       id: asInt(json['id']),
       product: asString(json['product']),
@@ -65,10 +134,10 @@ class InvoiceModel {
       ),
       invoiceNumber: asString(json['invoice_number'], asString(json['id'])),
       invoiceDate: asString(json['invoice_date']),
-      traderName: asNullableString(json['trader_name']),
-      customerName: asNullableString(json['customer_name']),
-      phone: asNullableString(json['phone']),
-      address: asNullableString(json['address']),
+      traderName: legacyTrader,
+      customerName: legacyCustomer,
+      phone: buyerPhone ?? legacyPhone,
+      address: buyerAddress ?? legacyAddress,
       paymentMethod: asNullableString(json['payment_method']),
       saleStatus: asNullableString(json['sale_status']),
       notes: asNullableString(json['notes']),
@@ -76,18 +145,40 @@ class InvoiceModel {
       tax: asString(json['tax'], '0'),
       paidAmount: asString(json['paid_amount'], asString(json['total_cost'], '0')),
       remainingAmount: asString(json['remaining_amount'], '0'),
-      projectName: asNullableString(json['project_name']),
+      projectName: legacyProject,
+      buyerType: buyerType.isEmpty ? 'unknown' : buyerType,
+      buyerTypeLabelAr: buyerTypeLabelAr,
+      buyerName: buyerName,
+      buyerPhone: buyerPhone ?? legacyPhone,
+      buyerAddress: buyerAddress ?? legacyAddress,
+      buyerId: buyerId,
     );
   }
 
-  String get displayTraderName =>
-      (traderName?.trim().isNotEmpty == true
+  String get displayTraderName => buyerName.trim().isNotEmpty && buyerName != '-'
+      ? buyerName
+      : (traderName?.trim().isNotEmpty == true
               ? traderName
               : customerName?.trim().isNotEmpty == true
                   ? customerName
                   : projectName)
           ?.trim() ??
       '-';
+
+  String get displayBuyerTypeLabel {
+    if (buyerTypeLabelAr.trim().isNotEmpty &&
+        buyerTypeLabelAr != 'غير محدد') {
+      return buyerTypeLabelAr;
+    }
+    switch (buyerType) {
+      case 'trader':
+        return 'تاجر';
+      case 'customer':
+        return 'زبون';
+      default:
+        return 'غير محدد';
+    }
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -113,6 +204,14 @@ class InvoiceModel {
       'paid_amount': paidAmount,
       'remaining_amount': remainingAmount,
       'project_name': projectName,
+      'buyer': {
+        'type': buyerType,
+        'type_label_ar': buyerTypeLabelAr,
+        'name': buyerName,
+        'phone': buyerPhone,
+        'address': buyerAddress,
+        'id': buyerId,
+      },
     };
   }
 }

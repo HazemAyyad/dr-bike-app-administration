@@ -32,6 +32,15 @@ class BuildProductCard extends GetView<StockController> {
 
   @override
   Widget build(BuildContext context) {
+    final nameStyle = Theme.of(context).textTheme.bodyLarge!.copyWith(
+          color: ThemeService.isDark.value
+              ? AppColors.whiteColor
+              : AppColors.secondaryColor,
+          fontWeight: FontWeight.w700,
+          fontSize: 11.sp,
+          height: 1.2,
+        );
+
     return GestureDetector(
       onTap: isCloseouts
           ? () async {
@@ -102,7 +111,7 @@ class BuildProductCard extends GetView<StockController> {
         }
       },
       child: Container(
-        padding: EdgeInsets.all(5.h),
+        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 6.h),
         decoration: BoxDecoration(
           color: ThemeService.isDark.value
               ? AppColors.customGreyColor
@@ -118,152 +127,129 @@ class BuildProductCard extends GetView<StockController> {
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // صورة المنتج (ShowNetImage: relative path + legacy STORE_DOMAIN host rewrite)
-            () {
-              final resolved = ShowNetImage.getThumbnailPhoto(product.image);
-              final original = ShowNetImage.getPhoto(product.image);
-              final missing = resolved == AssetsManager.noImageNet ||
-                  product.image == 'no image';
-              if (missing) {
-                return Image.asset(
-                  AssetsManager.stockImage,
-                  height: 65.h,
-                  width: 90.w,
-                );
-              }
-              return ClipRRect(
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: CachedNetworkImage(
-                      key: ValueKey(
-                        '${product.productId}_${resolved.hashCode}',
-                      ),
-                      cacheKey: '${product.productId}_$resolved',
-                      cacheManager: CacheManager(
-                        Config(
-                          'imagesCache',
-                          stalePeriod: const Duration(days: 7),
-                          maxNrOfCacheObjects: 100,
-                        ),
-                      ),
-                      imageBuilder: (context, imageProvider) => Container(
-                        height: 65.h,
-                        width: 90.w,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: imageProvider,
-                            fit: BoxFit.cover,
-                            filterQuality: FilterQuality.low,
-                          ),
-                        ),
-                      ),
-                      imageUrl: resolved,
-                      filterQuality: FilterQuality.low,
-                      placeholder: (context, url) => SizedBox(
-                        height: 65.h,
-                        width: 90.w,
-                        child: const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => CachedNetworkImage(
-                        imageUrl: original,
-                        height: 65.h,
-                        width: 90.w,
-                        fit: BoxFit.cover,
-                        errorWidget: (context, url, error) => Image.asset(
-                          AssetsManager.stockImage,
-                          height: 65.h,
-                          width: 90.w,
-                        ),
-                      ),
-                    ),
-                  );
-            }(),
-            // معلومات المنتج
-            Expanded(
-              flex: 2,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Text(
-                      product.name,
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: ThemeService.isDark.value
-                                ? AppColors.whiteColor
-                                : AppColors.secondaryColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12.sp,
-                          ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (product.productCode.isNotEmpty) ...[
-                    SizedBox(height: 4.h),
-                    Text(
-                      product.productCode,
-                      style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                            color: ThemeService.isDark.value
-                                ? AppColors.whiteColor.withValues(alpha: 0.85)
-                                : AppColors.secondaryColor.withValues(alpha: 0.85),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 10.sp,
-                            letterSpacing: 0.5,
-                          ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (product.tags.isNotEmpty) ...[
-                    SizedBox(height: 4.h),
-                    ProductTagsOverflow(tags: product.tags, dense: true),
-                  ],
-                  SizedBox(height: 5.h),
-                  if (controller.currentTab.value == 2)
-                    Text(
-                      '${'numberOfProductsUsed'.tr} : ${product.numberOfUsedProducts}',
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: ThemeService.isDark.value
-                                ? AppColors.whiteColor
-                                : AppColors.secondaryColor,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 8.sp,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  if (controller.currentTab.value == 1)
-                    Text(
-                      '${'minimumSale'.tr} : ${product.productMinSalePrice}',
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: ThemeService.isDark.value
-                                ? AppColors.whiteColor
-                                : AppColors.secondaryColor,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 9.sp,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                  if (controller.currentTab.value != 1)
-                    Text(
-                      '${'stock'.tr} : ${product.stock}',
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: ThemeService.isDark.value
-                                ? AppColors.whiteColor
-                                : AppColors.secondaryColor,
-                            fontWeight: FontWeight.w400,
-                            fontSize: 9.sp,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                ],
-              ),
+            Center(child: _buildProductImage()),
+            SizedBox(height: 4.h),
+            Text(
+              product.name,
+              style: nameStyle,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
+            if (product.productCode.isNotEmpty) ...[
+              SizedBox(height: 3.h),
+              Text(
+                product.productCode,
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: ThemeService.isDark.value
+                          ? AppColors.whiteColor.withValues(alpha: 0.85)
+                          : AppColors.secondaryColor.withValues(alpha: 0.85),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 9.sp,
+                      letterSpacing: 0.3,
+                    ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            if (product.tags.isNotEmpty) ...[
+              SizedBox(height: 3.h),
+              ProductTagsOverflow(tags: product.tags, dense: true),
+            ],
+            const Spacer(),
+            _buildStockLine(context),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStockLine(BuildContext context) {
+    final lineStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
+          color: ThemeService.isDark.value
+              ? AppColors.whiteColor
+              : AppColors.secondaryColor,
+          fontWeight: FontWeight.w500,
+          fontSize: 8.sp,
+        );
+
+    if (controller.currentTab.value == 2) {
+      return Text(
+        '${'numberOfProductsUsed'.tr} : ${product.numberOfUsedProducts}',
+        style: lineStyle,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    if (controller.currentTab.value == 1) {
+      return Text(
+        '${'minimumSale'.tr} : ${product.productMinSalePrice}',
+        style: lineStyle,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    return Text(
+      '${'stock'.tr} : ${product.stock}',
+      style: lineStyle,
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildProductImage() {
+    final resolved = ShowNetImage.getThumbnailPhoto(product.image);
+    final original = ShowNetImage.getPhoto(product.image);
+    final missing =
+        resolved == AssetsManager.noImageNet || product.image == 'no image';
+
+    if (missing) {
+      return Image.asset(
+        AssetsManager.stockImage,
+        height: 50.h,
+        width: double.infinity,
+        fit: BoxFit.contain,
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8.r),
+      child: CachedNetworkImage(
+        key: ValueKey('${product.productId}_${resolved.hashCode}'),
+        cacheKey: '${product.productId}_$resolved',
+        cacheManager: CacheManager(
+          Config(
+            'imagesCache',
+            stalePeriod: const Duration(days: 7),
+            maxNrOfCacheObjects: 100,
+          ),
+        ),
+        height: 50.h,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        imageUrl: resolved,
+        filterQuality: FilterQuality.low,
+        placeholder: (context, url) => SizedBox(
+          height: 50.h,
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (context, url, error) => CachedNetworkImage(
+          imageUrl: original,
+          height: 50.h,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorWidget: (context, url, error) => Image.asset(
+            AssetsManager.stockImage,
+            height: 50.h,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );

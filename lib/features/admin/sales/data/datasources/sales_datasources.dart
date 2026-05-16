@@ -196,6 +196,11 @@ class SalesDatasource {
     try {
       final response = await api.post(EndPoints.getInstantSaleInvoice,
           data: {'instant_sale_id': invoiceId});
+      assert(() {
+        // ignore: avoid_print
+        print('[InvoiceDetails] ${response.data}');
+        return true;
+      }());
       return InvoiceModel.fromJson(response.data['instant_sale_invoice']);
     } on DioException catch (e) {
       final data = e.response?.data;

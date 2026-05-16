@@ -31,6 +31,19 @@ class StockProductFilters {
       sortBy != 'created_at' ||
       sortDirection != 'desc';
 
+  /// Filters applied via the filter sheet (excludes search text).
+  int get activeFilterCount {
+    var n = 0;
+    if (categoryId != null && categoryId!.isNotEmpty) n++;
+    if (subCategoryId != null && subCategoryId!.isNotEmpty) n++;
+    if (tagId != null && tagId!.isNotEmpty) n++;
+    if (dateFrom != null) n++;
+    if (dateTo != null) n++;
+    if (sortBy != 'created_at') n++;
+    if (sortDirection != 'desc') n++;
+    return n;
+  }
+
   StockProductFilters copyWith({
     String? search,
     String? categoryId,

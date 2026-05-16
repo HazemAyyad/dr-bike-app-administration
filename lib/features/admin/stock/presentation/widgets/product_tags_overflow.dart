@@ -67,6 +67,7 @@ class ProductTagsOverflow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
+          fit: FlexFit.loose,
           child: ProductTagChip(
             name: first.name,
             colorHex: first.color,

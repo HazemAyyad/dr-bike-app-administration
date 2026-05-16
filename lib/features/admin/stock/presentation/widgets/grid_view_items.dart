@@ -48,6 +48,10 @@ class GridViewItems extends GetView<StockController> {
                         ? controller.allClearances
                         : controller.allCombinations;
 
+                final aspectRatio = controller.currentTab.value == 0
+                    ? 0.52
+                    : 0.72;
+
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -55,7 +59,7 @@ class GridViewItems extends GetView<StockController> {
                     crossAxisCount: 3,
                     crossAxisSpacing: 10.w,
                     mainAxisSpacing: 10.h,
-                    childAspectRatio: 0.78,
+                    childAspectRatio: aspectRatio,
                   ),
                   itemCount: items.length,
                   itemBuilder: (context, index) {

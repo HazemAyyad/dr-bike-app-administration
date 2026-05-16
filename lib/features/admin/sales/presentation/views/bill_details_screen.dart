@@ -33,81 +33,89 @@ class BillDetailsScreen extends GetView<SalesController> {
           final invoice = controller.invoiceModel!;
           final fmt = NumberFormat('#,###.##');
 
-          return CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: _InvoiceHeaderCard(
-                  traderName: invoice.displayTraderName,
-                  phone: _dash(invoice.phone),
-                  address: _dash(invoice.address),
-                  invoiceNumber: _dash(invoice.invoiceNumber),
-                  invoiceDate: _dash(invoice.invoiceDate),
-                  paymentMethod: _dash(invoice.paymentMethod),
-                  saleStatus: _dash(invoice.saleStatus),
-                  notes: _dash(invoice.notes),
-                ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 12.h)),
-              SliverToBoxAdapter(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 24.w),
-                  height: 32.h,
-                  decoration: BoxDecoration(
-                    color: ThemeService.isDark.value
-                        ? AppColors.secondaryColor
-                        : AppColors.primaryColor,
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      SizedBox.shrink(),
-                      Flexible(child: RowText(title: 'productName')),
-                      Flexible(child: RowText(title: 'quantity')),
-                      Flexible(child: RowText(title: 'price')),
-                      Flexible(child: RowText(title: 'total')),
-                    ],
+          return Directionality(
+            textDirection: TextDirection.rtl,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _InvoiceHeaderCard(
+                    invoiceNumber: _dash(invoice.invoiceNumber),
+                    invoiceDate: _dash(invoice.invoiceDate),
+                    buyerTypeLabel: invoice.displayBuyerTypeLabel,
+                    buyerName: _dash(invoice.buyerName),
+                    phone: _dash(invoice.buyerPhone ?? invoice.phone),
+                    address: _dash(invoice.buyerAddress ?? invoice.address),
+                    paymentMethod: _dash(invoice.paymentMethod),
+                    saleStatus: _dash(invoice.saleStatus),
+                    notes: _dash(invoice.notes),
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index == 0) {
+                SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+                SliverToBoxAdapter(
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: 24.w),
+                    height: 32.h,
+                    decoration: BoxDecoration(
+                      color: ThemeService.isDark.value
+                          ? AppColors.secondaryColor
+                          : AppColors.primaryColor,
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        SizedBox.shrink(),
+                        Flexible(child: RowText(title: 'productName')),
+                        Flexible(child: RowText(title: 'quantity')),
+                        Flexible(child: RowText(title: 'price')),
+                        Flexible(child: RowText(title: 'total')),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index == 0) {
+                        return ProudactDetailsWidget(
+                          image: invoice.productImage,
+                          cost: invoice.cost.toString(),
+                          product: invoice.product.toString(),
+                          quantity: invoice.quantity.toString(),
+                          subtotal: invoice.subtotal,
+                        );
+                      }
+                      final sub = invoice.subProducts[index - 1];
                       return ProudactDetailsWidget(
-                        image: invoice.productImage,
-                        cost: invoice.cost.toString(),
-                        product: invoice.product.toString(),
-                        quantity: invoice.quantity.toString(),
-                        subtotal: invoice.subtotal,
+                        image: sub.productImage,
+                        cost: sub.cost.toString(),
+                        product: sub.productName.toString(),
+                        quantity: sub.quantity.toString(),
+                        subtotal: sub.subtotal,
                       );
-                    }
-                    final sub = invoice.subProducts[index - 1];
-                    return ProudactDetailsWidget(
-                      image: sub.productImage,
-                      cost: sub.cost.toString(),
-                      product: sub.productName.toString(),
-                      quantity: sub.quantity.toString(),
-                      subtotal: sub.subtotal,
-                    );
-                  },
-                  childCount: 1 + invoice.subProducts.length,
+                    },
+                    childCount: 1 + invoice.subProducts.length,
+                  ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: _InvoiceTotalsSection(
-                  subtotal: fmt.format(double.tryParse(invoice.subtotal) ?? 0),
-                  discount: fmt.format(double.tryParse(invoice.discount) ?? 0),
-                  tax: fmt.format(double.tryParse(invoice.tax) ?? 0),
-                  paid: fmt.format(double.tryParse(invoice.paidAmount) ?? 0),
-                  remaining:
-                      fmt.format(double.tryParse(invoice.remainingAmount) ?? 0),
-                  total: fmt.format(double.tryParse(invoice.totalCost) ?? 0),
+                SliverToBoxAdapter(
+                  child: _InvoiceTotalsSection(
+                    subtotal:
+                        fmt.format(double.tryParse(invoice.subtotal) ?? 0),
+                    discount:
+                        fmt.format(double.tryParse(invoice.discount) ?? 0),
+                    tax: fmt.format(double.tryParse(invoice.tax) ?? 0),
+                    paid:
+                        fmt.format(double.tryParse(invoice.paidAmount) ?? 0),
+                    remaining: fmt.format(
+                        double.tryParse(invoice.remainingAmount) ?? 0),
+                    total:
+                        fmt.format(double.tryParse(invoice.totalCost) ?? 0),
+                  ),
                 ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 24.h)),
-            ],
+                SliverToBoxAdapter(child: SizedBox(height: 24.h)),
+              ],
+            ),
           );
         },
       ),
@@ -117,21 +125,23 @@ class BillDetailsScreen extends GetView<SalesController> {
 
 class _InvoiceHeaderCard extends StatelessWidget {
   const _InvoiceHeaderCard({
-    required this.traderName,
-    required this.phone,
-    required this.address,
     required this.invoiceNumber,
     required this.invoiceDate,
+    required this.buyerTypeLabel,
+    required this.buyerName,
+    required this.phone,
+    required this.address,
     required this.paymentMethod,
     required this.saleStatus,
     required this.notes,
   });
 
-  final String traderName;
-  final String phone;
-  final String address;
   final String invoiceNumber;
   final String invoiceDate;
+  final String buyerTypeLabel;
+  final String buyerName;
+  final String phone;
+  final String address;
   final String paymentMethod;
   final String saleStatus;
   final String notes;
@@ -155,20 +165,20 @@ class _InvoiceHeaderCard extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            traderName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+          _metaRow(context, 'billNumber'.tr, invoiceNumber),
+          _metaRow(context, 'date'.tr, invoiceDate),
+          _metaRow(
+            context,
+            'buyerTypeSale'.tr,
+            buyerTypeLabel,
+            highlight: true,
           ),
-          SizedBox(height: 6.h),
+          _metaRow(context, 'buyerName'.tr, buyerName),
           _metaRow(context, 'phoneNumberTitle'.tr, phone),
           _metaRow(context, 'address'.tr, address),
           Divider(height: 16.h),
-          _metaRow(context, 'billNumber'.tr, invoiceNumber),
-          _metaRow(context, 'date'.tr, invoiceDate),
           _metaRow(context, 'paymentMethod'.tr, paymentMethod),
           _metaRow(context, 'status'.tr, saleStatus),
           if (notes != '-') _metaRow(context, 'notes'.tr, notes),
@@ -177,26 +187,35 @@ class _InvoiceHeaderCard extends StatelessWidget {
     );
   }
 
-  Widget _metaRow(BuildContext context, String label, String value) {
+  Widget _metaRow(
+    BuildContext context,
+    String label,
+    String value, {
+    bool highlight = false,
+  }) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 4.h),
+      padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 110.w,
+            width: 120.w,
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.customGreyColor,
+                    fontWeight: FontWeight.w500,
                   ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+              textAlign: TextAlign.start,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight:
+                        highlight ? FontWeight.w700 : FontWeight.w600,
+                    fontSize: highlight ? 13.sp : 12.sp,
                   ),
             ),
           ),
@@ -228,7 +247,7 @@ class _InvoiceTotalsSection extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             height: 1.h,
@@ -239,15 +258,10 @@ class _InvoiceTotalsSection extends StatelessWidget {
           _totalLine(context, 'subtotal'.tr, subtotal),
           _totalLine(context, 'discount'.tr, discount),
           _totalLine(context, 'tax'.tr, tax),
+          _totalLine(context, 'totalBill'.tr, total, bold: true),
+          SizedBox(height: 4.h),
           _totalLine(context, 'paidAmount'.tr, paid),
           _totalLine(context, 'remainingAmount'.tr, remaining),
-          SizedBox(height: 6.h),
-          _totalLine(
-            context,
-            'totalBill'.tr,
-            total,
-            bold: true,
-          ),
         ],
       ),
     );
@@ -261,13 +275,24 @@ class _InvoiceTotalsSection extends StatelessWidget {
   }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 3.h),
-      child: Text(
-        '$label : $value',
-        textAlign: TextAlign.end,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
-              fontSize: bold ? 14.sp : 13.sp,
-            ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                  fontSize: bold ? 14.sp : 13.sp,
+                ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                  fontSize: bold ? 14.sp : 13.sp,
+                ),
+          ),
+        ],
       ),
     );
   }
