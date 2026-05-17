@@ -110,7 +110,8 @@ class SalesImplement implements SalesRepository {
       String? buyerName,
       String? paymentBoxId,
       String? paymentBoxName,
-      String? paymentBoxValue}) async {
+      String? paymentBoxValue,
+      String? offerPackageId}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -131,6 +132,7 @@ class SalesImplement implements SalesRepository {
         paymentBoxId: paymentBoxId,
         paymentBoxName: paymentBoxName,
         paymentBoxValue: paymentBoxValue,
+        offerPackageId: offerPackageId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

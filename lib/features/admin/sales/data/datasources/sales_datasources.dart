@@ -12,6 +12,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../stock/data/models/offer_package_model.dart';
 import '../models/invoice_model.dart';
 import '../models/product_model.dart';
 
@@ -140,6 +141,26 @@ class SalesDatasource {
     }
   }
 
+  Future<List<OfferPackageModel>> getOfferPackagesForSale() async {
+    try {
+      final response = await api.get(EndPoints.offerPackagesForSale);
+      return mapListFromResponseKey(
+        response.data,
+        'packages',
+        (Map<String, dynamic> m) => OfferPackageModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
   // add instant sale
   Future<dynamic> addInstantSales({
     required String productId,
@@ -157,6 +178,7 @@ class SalesDatasource {
     String? paymentBoxId,
     String? paymentBoxName,
     String? paymentBoxValue,
+    String? offerPackageId,
   }) async {
     try {
       // final otherProductsMap = <String, dynamic>{};
@@ -184,7 +206,10 @@ class SalesDatasource {
       final response = await api.post(
         EndPoints.createInstantSale,
         data: {
-          'product_id': productId,
+          if (offerPackageId != null && offerPackageId.isNotEmpty)
+            'offer_package_id': offerPackageId
+          else
+            'product_id': productId,
           'quantity': quantity,
           'cost': cost,
           'discount': discount,
@@ -279,7 +304,21 @@ class SalesDatasource {
         print('[InvoiceDetails] ${response.data}');
         return true;
       }());
-      return InvoiceModel.fromJson(response.data['instant_sale_invoice']);
+      final raw = response.data['instant_sale_invoice'];
+      if (raw == null) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: response.data['message']?.toString() ??
+                'Unknown error',
+            status: 500,
+            data: {},
+          ),
+        );
+      }
+      final Map<String, dynamic> invoiceMap = raw is Map<String, dynamic>
+          ? raw
+          : Map<String, dynamic>.from(raw as Map);
+      return InvoiceModel.fromJson(invoiceMap);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

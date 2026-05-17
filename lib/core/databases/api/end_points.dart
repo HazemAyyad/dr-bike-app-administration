@@ -236,6 +236,12 @@ class EndPoints {
   static const String productsByTag = 'products/by/tag';
   static const String addCombination = 'add/combination';
 
+  static const String offerPackages = 'offer/packages';
+  static const String offerPackagesShow = 'offer/packages/show';
+  static const String offerPackagesUpdate = 'offer/packages/update';
+  static const String offerPackagesDelete = 'offer/packages/delete';
+  static const String offerPackagesForSale = 'offer/packages/for-sale';
+
   /// نفس حقول صفحة اختبار Laravel: multipart + save_scope
   static const String createProductFull = 'create/product';
   static const String updateProductFull = 'update/product/full';
@@ -251,6 +257,7 @@ class EndPoints {
   static const String allProfitSales = 'all/profit/sales';
 
   static const String createInstantSale = 'create/instant/sale';
+  // offer_package_id supported on createInstantSale
   static const String editInstantSale = 'edit/instant/sale';
   static const String cancelInstantSale = 'cancel/instant/sale';
   static const String allInstantSales = 'all/instant/sales';

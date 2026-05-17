@@ -23,6 +23,11 @@ class StockScreen extends GetView<StockController> {
         title: 'stock',
         actions: [
           IconButton(
+            icon: const Icon(Icons.local_offer_outlined),
+            tooltip: 'offerPackages'.tr,
+            onPressed: () => Get.toNamed(AppRoutes.OFFERPACKAGESSCREEN),
+          ),
+          IconButton(
             icon: const Icon(Icons.archive_outlined),
             onPressed: () {
               controller.getArchived();

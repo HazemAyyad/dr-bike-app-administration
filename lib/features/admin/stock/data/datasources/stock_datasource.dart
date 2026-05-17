@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart' hide FormData;
+import 'package:get/get.dart' hide FormData, MultipartFile, Response;
 
 import '../../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../../core/databases/api/end_points.dart';
@@ -15,6 +15,7 @@ import '../models/all_stock_products_model.dart';
 import '../models/product_details_model.dart';
 import '../models/product_tag_model.dart';
 import '../../domain/stock_product_filters.dart';
+import '../models/offer_package_model.dart';
 import '../models/products_by_tag_result.dart';
 
 class StockDatasource {
@@ -434,6 +435,169 @@ class StockDatasource {
         data['color'] = color;
       }
       await api.post(EndPoints.productTagsUpdate, data: data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<OfferPackageModel>> getOfferPackages({required String tab}) async {
+    try {
+      final response = await api.get(
+        EndPoints.offerPackages,
+        queryParameters: {'tab': tab},
+      );
+      return mapListFromResponseKey(
+        response.data,
+        'packages',
+        (Map<String, dynamic> m) => OfferPackageModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<OfferPackageModel>> getOfferPackagesForSale() async {
+    try {
+      final response = await api.get(EndPoints.offerPackagesForSale);
+      return mapListFromResponseKey(
+        response.data,
+        'packages',
+        (Map<String, dynamic> m) => OfferPackageModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<OfferPackageModel> getOfferPackageDetails({required String id}) async {
+    try {
+      final response = await api.get(
+        EndPoints.offerPackagesShow,
+        queryParameters: {'offer_package_id': id},
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      final pkg = asMap((raw)['package']);
+      return OfferPackageModel.fromJson(pkg);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<String> saveOfferPackage({
+    required String name,
+    required double price,
+    required int packageQuantity,
+    required List<Map<String, int>> items,
+    String? offerPackageId,
+    String? imagePath,
+  }) async {
+    try {
+      final isCreate = offerPackageId == null || offerPackageId.isEmpty;
+      final endpoint =
+          isCreate ? EndPoints.offerPackages : EndPoints.offerPackagesUpdate;
+
+      final body = <String, dynamic>{
+        'name': name,
+        'price': price,
+        'package_quantity': packageQuantity,
+        if (!isCreate) 'offer_package_id': offerPackageId,
+      };
+
+      for (var i = 0; i < items.length; i++) {
+        body['items[$i][product_id]'] = items[i]['product_id'];
+        body['items[$i][quantity]'] = items[i]['quantity'];
+      }
+
+      final Response response;
+      if (imagePath != null && imagePath.isNotEmpty) {
+        response = await api.post(
+          endpoint,
+          data: {
+            ...body,
+            'image': await MultipartFile.fromFile(imagePath),
+          },
+          isFormData: true,
+        );
+      } else {
+        response = await api.post(endpoint, data: body);
+      }
+
+      final raw = response.data;
+      if (raw is Map && raw['status'] == 'success') {
+        return raw['message']?.toString() ?? 'success';
+      }
+      final message = raw is Map ? (raw['message'] ?? 'Unknown error') : 'Unknown error';
+      throw ServerException(
+        ErrorModel(
+          errorMessage: message.toString(),
+          status: 500,
+          data: raw is Map ? raw : {},
+        ),
+      );
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<String> deleteOfferPackage({required String id}) async {
+    try {
+      final response = await api.post(
+        EndPoints.offerPackagesDelete,
+        data: {'offer_package_id': id},
+      );
+      final raw = response.data;
+      if (raw is Map && raw['status'] == 'success') {
+        return raw['message']?.toString() ?? 'success';
+      }
+      throw ServerException(
+        ErrorModel(
+          errorMessage: raw is Map ? (raw['message'] ?? 'Unknown error') : 'Unknown error',
+          status: 500,
+          data: raw is Map ? raw : {},
+        ),
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

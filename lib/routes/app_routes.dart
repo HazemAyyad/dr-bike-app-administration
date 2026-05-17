@@ -84,6 +84,8 @@ class AppRoutes {
   static const EDITPRODUCTSCREEN = '/EditProductScreen';
   static const CLOSEOUTSSCREEN = '/CloseoutsScreen';
   static const ADDCOMBINATIONSCREEN = '/AddCombinationScreen';
+  static const OFFERPACKAGESSCREEN = '/OfferPackagesScreen';
+  static const ADDEDITOFFERPACKAGESCREEN = '/AddEditOfferPackageScreen';
 
   // Financial Affairs
   static const FINANCIALAFFAIRSSCREEN = '/FinancialAffairsScreen';
@@ -113,6 +115,8 @@ class AppRoutes {
   // bill
   static const ADDNEWBILLSCREEN = '/AddNewBillScreen';
   static const BILLDETAILSSCREEN = '/BillDetailsScreen';
+  /// تفاصيل فاتورة البيع الفوري (منفصل عن فواتير المشتريات).
+  static const INSTANTSALEBILLDETAILSSCREEN = '/InstantSaleBillDetailsScreen';
   // purchase orders
   static const PURCHASEORDERSSCREEN = '/PurchaseOrdersScreen';
   // return purchases

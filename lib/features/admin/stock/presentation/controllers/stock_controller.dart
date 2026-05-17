@@ -655,6 +655,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.ADDCOMBINATIONSCREEN,
     },
+    {
+      'title': 'offerPackages',
+      'icon': AssetsManager.invoiceIcon,
+      'route': AppRoutes.OFFERPACKAGESSCREEN,
+    },
   ];
 
   final RxBool isLoading = false.obs;

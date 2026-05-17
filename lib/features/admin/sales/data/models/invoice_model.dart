@@ -34,6 +34,9 @@ class InvoiceModel {
   final String? buyerPhone;
   final String? buyerAddress;
   final int? buyerId;
+  final bool isPackageSale;
+  final String? packageName;
+  final String saleType;
 
   InvoiceModel({
     required this.id,
@@ -67,6 +70,9 @@ class InvoiceModel {
     this.buyerPhone,
     this.buyerAddress,
     this.buyerId,
+    this.isPackageSale = false,
+    this.packageName,
+    this.saleType = 'product',
   });
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
@@ -161,8 +167,16 @@ class InvoiceModel {
       buyerPhone: buyerPhone ?? legacyPhone,
       buyerAddress: buyerAddress ?? legacyAddress,
       buyerId: buyerId,
+      isPackageSale: json['is_package_sale'] == true ||
+          json['is_package_sale'] == 1 ||
+          json['sale_type'] == 'package',
+      packageName: asNullableString(json['package_name']),
+      saleType: asString(json['sale_type'], 'product'),
     );
   }
+
+  String get displayProductTitle =>
+      isPackageSale ? (packageName ?? product) : product;
 
   String get displayTraderName => buyerName.trim().isNotEmpty && buyerName != '-'
       ? buyerName
@@ -269,17 +283,18 @@ class SubProductModel {
     final cost = asString(json['cost'], '0');
     final qty = asString(json['quantity'], '0');
     final parsedSubtotal = asString(json['subtotal'], '');
-    final subtotal = parsedSubtotal.isNotEmpty
+    final lineSubtotal = parsedSubtotal.isNotEmpty
         ? parsedSubtotal
-        : (double.tryParse(cost) ?? 0) * (double.tryParse(qty) ?? 0);
+        : ((double.tryParse(cost) ?? 0) * (double.tryParse(qty) ?? 0))
+            .toStringAsFixed(2);
 
     return SubProductModel(
       id: asInt(json['id']),
-      productName: asString(json['product_name']),
-      productImage: asString(json['product_image']),
+      productName: asString(json['product_name'], '-'),
+      productImage: asString(json['product_image'], 'no image'),
       cost: cost,
       quantity: qty,
-      subtotal: subtotal.toString(),
+      subtotal: lineSubtotal,
     );
   }
 

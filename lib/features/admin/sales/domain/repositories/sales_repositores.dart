@@ -38,6 +38,7 @@ abstract class SalesRepository {
     String? paymentBoxId,
     String? paymentBoxName,
     String? paymentBoxValue,
+    String? offerPackageId,
   });
 
   Future<Either<Failure, String>> cancelInstantSale({required String instantSaleId});

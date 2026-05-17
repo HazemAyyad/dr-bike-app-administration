@@ -13,6 +13,9 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../stock/data/models/offer_package_model.dart';
+import '../../../stock/presentation/controllers/offer_packages_controller.dart';
+import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/instant_sales_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/models/ongoing_project_model.dart';
@@ -228,6 +231,9 @@ class SalesController extends GetxController
 
   List<String> tabs = ['spotSale', 'cashProfit'];
 
+  final instantSalesSubTabs = ['instantSaleTabProducts', 'instantSaleTabPackages'];
+  final instantSalesSubTab = 0.obs;
+
   final targets = <Map<String, dynamic>>[].obs;
 
   final isLoading = false.obs;
@@ -236,7 +242,35 @@ class SalesController extends GetxController
     currentTab.value = index;
   }
 
+  void changeInstantSalesSubTab(int index) {
+    instantSalesSubTab.value = index;
+    notifySalesListChanged();
+  }
+
+  /// Instant sales grouped by date, filtered by products vs packages sub-tab.
+  List<MapEntry<String, List<InstantSalesModel>>>
+      get orderedInstantSalesGroupsFiltered {
+    final wantPackages = instantSalesSubTab.value == 1;
+    final filtered = orderedInstantSalesGroups
+        .map(
+          (entry) => MapEntry(
+            entry.key,
+            entry.value
+                .where((sale) => sale.isPackageSale == wantPackages)
+                .toList(),
+          ),
+        )
+        .where((entry) => entry.value.isNotEmpty)
+        .toList();
+    return filtered;
+  }
+
   final items = <ItemModel>[ItemModel()].obs;
+
+  final RxBool isPackageSale = false.obs;
+  final RxnInt selectedPackageId = RxnInt();
+  final RxList<OfferPackageModel> offerPackagesForSale =
+      <OfferPackageModel>[].obs;
 
   /// Filled from payment screen (طريقة القبض) after successful receipt.
   String _paymentBuyerType = 'unknown';
@@ -274,6 +308,8 @@ class SalesController extends GetxController
     totalCostController.clear();
     discountController.clear();
     totalController.clear();
+    isPackageSale.value = false;
+    selectedPackageId.value = null;
     for (final e in items) {
       e.quantityController.clear();
       e.priceController.clear();
@@ -285,6 +321,128 @@ class SalesController extends GetxController
     totalCost.value = 0;
     _clearPaymentBuyer();
     update();
+  }
+
+  Future<void> loadOfferPackagesForSale() async {
+    try {
+      final ds = Get.find<SalesDatasource>();
+      final list = await ds.getOfferPackagesForSale();
+      offerPackagesForSale.assignAll(list);
+      _syncSelectedOfferPackageAfterReload(list);
+    } catch (_) {
+      offerPackagesForSale.clear();
+    }
+  }
+
+  /// تحديث شاشة إدارة الباكيجات إن كانت مفتوحة في الذاكرة.
+  Future<void> refreshOfferPackagesInventoryIfOpen() async {
+    if (Get.isRegistered<OfferPackagesController>()) {
+      await Get.find<OfferPackagesController>().loadPackages();
+    }
+  }
+
+  void _syncSelectedOfferPackageAfterReload(List<OfferPackageModel> list) {
+    final selectedId = selectedPackageId.value;
+    if (selectedId == null) {
+      return;
+    }
+
+    final pkg = list.firstWhereOrNull((p) => p.id == selectedId);
+    if (pkg == null) {
+      selectedPackageId.value = null;
+      items.first.priceController.clear();
+      items.first.quantityController.text = '1';
+    } else {
+      items.first.priceController.text = _formatUnitPrice(pkg.price);
+    }
+    calculateGrandTotal();
+  }
+
+  void setPackageSaleMode(bool value) {
+    isPackageSale.value = value;
+    if (value) {
+      while (items.length > 1) {
+        items.removeLast();
+      }
+      items.first.selectedItem.value = '';
+      loadOfferPackagesForSale();
+    } else {
+      selectedPackageId.value = null;
+    }
+    calculateGrandTotal();
+  }
+
+  OfferPackageModel? get selectedOfferPackage =>
+      offerPackagesForSale
+          .firstWhereOrNull((p) => p.id == selectedPackageId.value);
+
+  void onOfferPackageSelected(OfferPackageModel? pkg) {
+    if (pkg == null) {
+      selectedPackageId.value = null;
+      items.first.priceController.clear();
+      items.first.quantityController.text = '1';
+      calculateGrandTotal();
+      return;
+    }
+    selectedPackageId.value = pkg.id;
+    items.first.priceController.text = _formatUnitPrice(pkg.price);
+    items.first.quantityController.text = '1';
+    calculateGrandTotal();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      formKey.currentState?.validate();
+    });
+  }
+
+  String _formatUnitPrice(double price) {
+    if (price == price.roundToDouble()) {
+      return price.toInt().toString();
+    }
+    return price.toStringAsFixed(2);
+  }
+
+  /// رسالة تحقق واضحة لكمية بيع الباكيج (تُستخدم في نموذج البيع الفوري).
+  String? validatePackageSaleQuantity(String? value) {
+    final pkg = selectedOfferPackage;
+    if (pkg == null) {
+      return 'packageSelectFirst'.tr;
+    }
+
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) {
+      return 'packageSaleQtyRequired'.tr;
+    }
+
+    final qty = int.tryParse(raw);
+    if (qty == null) {
+      return 'packageSaleQtyInvalid'.tr;
+    }
+    if (qty < 1) {
+      return 'packageSaleQtyRequired'.tr;
+    }
+
+    final max = pkg.maxSellableQuantity;
+    if (max < 1) {
+      return 'packageNotAvailableForSale'.tr;
+    }
+    if (qty > max) {
+      return 'packageQtyExceedsAvailable'.trParams({
+        'qty': '$qty',
+        'max': '$max',
+      });
+    }
+    return null;
+  }
+
+  String? packageSaleQuantityHelperText() {
+    final pkg = selectedOfferPackage;
+    if (pkg == null) {
+      return null;
+    }
+    final max = pkg.maxSellableQuantity;
+    if (max < 1) {
+      return 'packageNotAvailableForSale'.tr;
+    }
+    return 'packageSaleMaxAvailable'.trParams({'max': '$max'});
   }
 
   void addItem() {
@@ -305,14 +463,31 @@ class SalesController extends GetxController
   }
 
   final RxInt totalCost = 0.obs;
+  final RxInt packageLineTotal = 0.obs;
+
   void calculateGrandTotal() {
     int total = 0;
-    for (ItemModel item in items) {
-      (total += item.total.value);
+    if (isPackageSale.value && selectedPackageId.value != null) {
+      final pkg = selectedOfferPackage;
+      final unitPrice = pkg?.price ??
+          double.tryParse(items.first.priceController.text.trim()) ??
+          0;
+      final qty =
+          int.tryParse(items.first.quantityController.text.trim()) ?? 0;
+      final lineTotal = (unitPrice * qty).round();
+      packageLineTotal.value = lineTotal;
+      items.first.syncLineTotal(lineTotal);
+      total = lineTotal;
+    } else {
+      packageLineTotal.value = 0;
+      for (final item in items) {
+        total += item.total.value;
+      }
     }
     final discount = int.tryParse(discountController.text.trim()) ?? 0;
 
     totalCost.value = total - discount;
+    totalController.text = totalCost.value.toString();
   }
 
   // متغير للتحكم في قائمة الإضافة
@@ -400,7 +575,9 @@ class SalesController extends GetxController
     isLoading(true);
     try {
       final result = await addInstantSalesUsecase.call(
-        productId: items.first.selectedItem.value,
+        productId: isPackageSale.value
+            ? ''
+            : items.first.selectedItem.value.toString(),
         quantity: items.first.quantityController.text,
         cost: items.first.priceController.text,
         discount:
@@ -411,13 +588,16 @@ class SalesController extends GetxController
         projectId: items.first.selectedCustomersSellers.value
             ? items.first.selectedValue.value!
             : '',
-        otherProducts: items,
+        otherProducts: isPackageSale.value ? RxList<ItemModel>() : items,
         buyerType: _paymentBuyerType,
         buyerId: _paymentBuyerId,
         buyerName: _paymentBuyerName,
         paymentBoxId: _paymentBoxId,
         paymentBoxName: _paymentBoxName,
         paymentBoxValue: _paymentBoxValue,
+        offerPackageId: isPackageSale.value
+            ? selectedPackageId.value?.toString()
+            : null,
       );
       await result.fold(
         (failure) async {
@@ -450,6 +630,7 @@ class SalesController extends GetxController
         },
         (success) async {
           resetInstantSaleForm();
+          await loadOfferPackagesForSale();
           if (Get.currentRoute == AppRoutes.NEWINSTANTSALESCREEN) {
             Get.back();
           }
@@ -478,6 +659,8 @@ class SalesController extends GetxController
     await Future.wait([
       fetchInstantSales(clearCache: true, showLoading: showLoading),
       fetchProfitSales(clearCache: true, showLoading: showLoading),
+      loadOfferPackagesForSale(),
+      refreshOfferPackagesInventoryIfOpen(),
     ]);
     notifySalesListChanged();
   }
@@ -552,21 +735,24 @@ class SalesController extends GetxController
   }
 
   InvoiceModel? invoiceModel;
-  // get invoice
-  void getInvoice({required String invoiceId}) async {
-    if (invoiceModel != null) {
-      invoiceId == invoiceModel!.id.toString()
-          ? isLoading(false)
-          : isLoading(true);
-      update();
-    } else {
-      isLoading(true);
+
+  Future<void> getInvoice({required String invoiceId}) async {
+    isLoading(true);
+    update();
+    try {
+      invoiceModel = await invoiceModelUsecase.call(invoiceId: invoiceId);
+    } catch (_) {
+      invoiceModel = null;
+      rethrow;
+    } finally {
+      isLoading(false);
       update();
     }
-    final invoice = await invoiceModelUsecase.call(invoiceId: invoiceId);
-    invoiceModel = invoice;
-    isLoading(false);
-    update();
+  }
+
+  Future<void> openInstantSaleBillDetails(String invoiceId) async {
+    await getInvoice(invoiceId: invoiceId);
+    await Get.toNamed(AppRoutes.INSTANTSALEBILLDETAILSSCREEN);
   }
 
   // بيانات العرض بعد الفلترة
@@ -679,7 +865,7 @@ class SalesController extends GetxController
 
   /// After cancel/edit: refresh sales list, stock, success toast (auto-closes).
   Future<void> _completeInstantSaleListAction(BuildContext context) async {
-    if (Get.currentRoute == AppRoutes.BILLDETAILSSCREEN) {
+    if (Get.currentRoute == AppRoutes.INSTANTSALEBILLDETAILSSCREEN) {
       Get.back();
     }
     await refreshAllSalesData(showLoading: true);
@@ -701,10 +887,17 @@ class SalesController extends GetxController
       isScrollControlled: true,
       builder: (ctx) => InstantSaleActionsSheet(
         sale: sale,
-        onViewInvoice: () {
+        onViewInvoice: () async {
           Navigator.of(ctx).pop();
-          getInvoice(invoiceId: sale.id.toString());
-          Get.toNamed(AppRoutes.BILLDETAILSSCREEN);
+          try {
+            await openInstantSaleBillDetails(sale.id.toString());
+          } catch (_) {
+            Helpers.showCustomDialogError(
+              context: context,
+              title: 'error'.tr,
+              message: 'failed'.tr,
+            );
+          }
         },
         onEdit: () {
           Navigator.of(ctx).pop();
@@ -847,6 +1040,7 @@ class SalesController extends GetxController
     getProfitSales(loding: false);
     getOngoingProjects();
     getAllProducts();
+    loadOfferPackagesForSale();
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -897,9 +1091,13 @@ class ItemModel {
   }
 
   void _updateTotal() {
-    final price = int.tryParse(priceController.text.trim()) ?? 0;
-    final quantity = int.tryParse(quantityController.text.trim()) ?? 0;
-    total.value = price * quantity;
+    final price = double.tryParse(priceController.text.trim()) ?? 0;
+    final quantity = double.tryParse(quantityController.text.trim()) ?? 0;
+    total.value = (price * quantity).round();
+  }
+
+  void syncLineTotal(int value) {
+    total.value = value;
   }
 
   void onClose() {

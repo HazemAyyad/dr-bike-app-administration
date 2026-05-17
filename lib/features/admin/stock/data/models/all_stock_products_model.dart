@@ -9,6 +9,7 @@ class AllStockProductsModel {
   final String name;
   final String stock;
   final String productMinSalePrice;
+  final double normailPrice;
   final String image;
   final String numberOfUsedProducts;
   final String productCode;
@@ -21,6 +22,7 @@ class AllStockProductsModel {
     required this.name,
     required this.stock,
     required this.productMinSalePrice,
+    this.normailPrice = 0,
     required this.image,
     required this.numberOfUsedProducts,
     this.productCode = '',
@@ -42,6 +44,9 @@ class AllStockProductsModel {
       name: asString(json['product_name'], 'Unknown'),
       stock: asString(json['product_stock'], '0'),
       productMinSalePrice: asString(json['product_min_sale_price'], '0'),
+      normailPrice: asDouble(
+        json['product_normail_price'] ?? json['normail_price'],
+      ),
       image: asString(json['product_image']),
       numberOfUsedProducts: asString(json['number_of_used_products'], '0'),
       productCode: asString(json['product_code']),

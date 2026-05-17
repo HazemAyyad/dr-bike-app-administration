@@ -19,6 +19,10 @@ class InstantSalesModel {
   final String? status;
   final String? paymentBoxName;
   final String? paymentBoxValue;
+  final bool isPackageSale;
+  final int? offerPackageId;
+  final String? packageName;
+  final String saleType;
 
   const InstantSalesModel({
     required this.id,
@@ -39,9 +43,16 @@ class InstantSalesModel {
     this.status,
     this.paymentBoxName,
     this.paymentBoxValue,
+    this.isPackageSale = false,
+    this.offerPackageId,
+    this.packageName,
+    this.saleType = 'product',
   });
 
   bool get isCancelled => status == 'cancelled';
+
+  String get displayTitle =>
+      isPackageSale ? (packageName ?? product) : product;
 
   String get displayBuyerLine {
     final name = buyerName?.trim();
@@ -86,6 +97,14 @@ class InstantSalesModel {
       status: asNullableString(json['status']),
       paymentBoxName: asNullableString(json['payment_box_name']),
       paymentBoxValue: asNullableString(json['payment_box_value']?.toString()),
+      isPackageSale: json['is_package_sale'] == true ||
+          json['is_package_sale'] == 1 ||
+          json['sale_type'] == 'package',
+      offerPackageId: json['offer_package_id'] == null
+          ? null
+          : int.tryParse('${json['offer_package_id']}'),
+      packageName: asNullableString(json['package_name']),
+      saleType: asString(json['sale_type'], 'product'),
     );
   }
 

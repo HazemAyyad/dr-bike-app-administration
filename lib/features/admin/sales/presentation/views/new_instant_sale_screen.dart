@@ -13,8 +13,23 @@ import '../controllers/sales_controller.dart';
 import '../widgets/new_instant_sale/add_new_instant_sale.dart';
 import '../widgets/new_instant_sale/discount_widget.dart';
 
-class NewInstantSaleScreen extends GetView<SalesController> {
+class NewInstantSaleScreen extends StatefulWidget {
   const NewInstantSaleScreen({Key? key}) : super(key: key);
+
+  @override
+  State<NewInstantSaleScreen> createState() => _NewInstantSaleScreenState();
+}
+
+class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
+  SalesController get controller => Get.find<SalesController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.loadOfferPackagesForSale();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +63,36 @@ class NewInstantSaleScreen extends GetView<SalesController> {
                     ),
                 onPressed: () async {
                   if (controller.formKey.currentState!.validate()) {
-                    final hasOutOfStock = controller.items.any((item) {
+                    if (controller.isPackageSale.value) {
+                      if (controller.selectedPackageId.value == null) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'selectOfferPackage'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.red,
+                        );
+                        return;
+                      }
+                      if (controller.selectedOfferPackage != null) {
+                        final qtyError =
+                            controller.validatePackageSaleQuantity(
+                          controller.items.first.quantityController.text,
+                        );
+                        if (qtyError != null) {
+                          Get.snackbar(
+                            'error'.tr,
+                            qtyError,
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 4),
+                          );
+                          return;
+                        }
+                      }
+                    }
+
+                    final hasOutOfStock = !controller.isPackageSale.value &&
+                        controller.items.any((item) {
                       // دور على المنتج اللي ليه نفس الـ id
                       final product = controller.products.firstWhereOrNull(
                         (p) => p.id.toString() == item.selectedItem.toString(),

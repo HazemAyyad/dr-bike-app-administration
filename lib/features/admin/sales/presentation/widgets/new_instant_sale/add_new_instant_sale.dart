@@ -10,12 +10,27 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/product_model.dart';
 import '../../controllers/sales_controller.dart';
 import 'build_item.dart';
+import 'offer_package_sale_widget.dart';
 
 class AddNewInstantSaleWidget extends GetView<SalesController> {
   const AddNewInstantSaleWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const OfferPackageSaleWidget(),
+        SizedBox(height: 8.h),
+        Obx(
+          () => controller.isPackageSale.value
+              ? const SizedBox.shrink()
+              : _buildProductList(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductList(BuildContext context) {
     return Obx(
       () => AnimatedList(
         key: controller.listKey,

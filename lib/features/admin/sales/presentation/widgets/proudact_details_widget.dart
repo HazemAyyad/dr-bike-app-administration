@@ -18,6 +18,7 @@ class ProudactDetailsWidget extends StatelessWidget {
     required this.quantity,
     required this.image,
     this.subtotal,
+    this.dense = false,
   }) : super(key: key);
 
   final String image;
@@ -25,6 +26,7 @@ class ProudactDetailsWidget extends StatelessWidget {
   final String cost;
   final String quantity;
   final String? subtotal;
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +40,9 @@ class ProudactDetailsWidget extends StatelessWidget {
             .toString();
 
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
+      margin: dense
+          ? EdgeInsets.only(bottom: 4.h)
+          : EdgeInsets.symmetric(horizontal: 24.w, vertical: 5.h),
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: ThemeService.isDark.value

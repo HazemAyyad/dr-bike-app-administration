@@ -13,8 +13,14 @@ class InstantSaleCard extends GetView<SalesController> {
       : super(key: key);
 
   final InstantSalesModel instantSale;
+
   @override
   Widget build(BuildContext context) {
+    final isPackage = instantSale.isPackageSale;
+    final accent = ThemeService.isDark.value
+        ? AppColors.primaryColor
+        : AppColors.secondaryColor;
+
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       decoration: BoxDecoration(
@@ -37,25 +43,55 @@ class InstantSaleCard extends GetView<SalesController> {
               padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 5.h),
               child: Row(
                 children: [
-                  // الصورة
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4.r),
                     child: Image.asset(
-                      AssetsManager.salesImage,
+                      isPackage
+                          ? AssetsManager.stockImage
+                          : AssetsManager.salesImage,
                       width: 50.w,
                       fit: BoxFit.cover,
                     ),
                   ),
                   SizedBox(width: 10.w),
-                  // التفاصيل
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (isPackage)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 4.h),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.w,
+                                vertical: 2.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: Text(
+                                'saleTypeOfferPackage'.tr,
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: accent,
+                                ),
+                              ),
+                            ),
+                          ),
                         InfoRow(
-                          label: instantSale.product,
-                          value: '${instantSale.cost} ${'currency'.tr}',
+                          label: instantSale.displayTitle,
+                          value: isPackage
+                              ? '${'packageSaleQuantity'.tr}: ${instantSale.quantity}'
+                              : '${instantSale.cost} ${'currency'.tr}',
                         ),
+                        if (isPackage)
+                          InfoRow(
+                            label: 'unitPackagePrice'.tr,
+                            value:
+                                '${instantSale.cost} ${'currency'.tr}',
+                          ),
                         if (instantSale.isCancelled)
                           Padding(
                             padding: EdgeInsets.only(top: 2.h),
@@ -88,12 +124,34 @@ class InstantSaleCard extends GetView<SalesController> {
                                   ),
                             ),
                           ),
-                        ...instantSale.subProducts.take(2).map(
-                              (entry) => InfoRow(
-                                label: entry.productName,
-                                value: '${entry.cost} ${'currency'.tr}',
-                              ),
+                        if (isPackage && instantSale.subProducts.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 4.h),
+                            child: Text(
+                              instantSale.subProducts
+                                  .map(
+                                    (e) =>
+                                        '${e.productName} (×${e.quantity})',
+                                  )
+                                  .join(' • '),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    fontSize: 11.sp,
+                                    color: AppColors.customGreyColor2,
+                                  ),
                             ),
+                          )
+                        else
+                          ...instantSale.subProducts.take(2).map(
+                                (entry) => InfoRow(
+                                  label: entry.productName,
+                                  value: '${entry.cost} ${'currency'.tr}',
+                                ),
+                              ),
                       ],
                     ),
                   ),
@@ -101,7 +159,6 @@ class InstantSaleCard extends GetView<SalesController> {
               ),
             ),
           ),
-          // الإجمالي
           Container(
             width: 60.w,
             height: 60.h,
@@ -121,7 +178,7 @@ class InstantSaleCard extends GetView<SalesController> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  controller.currentTab.value == 0 ? 'total'.tr : 'price'.tr,
+                  'total'.tr,
                   style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w400,
@@ -160,29 +217,31 @@ class InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            textAlign: TextAlign.center,
-            maxLines: 1,
+            textAlign: TextAlign.start,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: 13.sp,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w600,
                   color: ThemeService.isDark.value
                       ? AppColors.customGreyColor6
                       : AppColors.customGreyColor5,
                 ),
           ),
         ),
-        value == '' ? const SizedBox() : const Spacer(),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w400,
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor6
-                    : AppColors.customGreyColor5,
-              ),
-        ),
+        if (value.isNotEmpty) ...[
+          SizedBox(width: 6.w),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w400,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor6
+                      : AppColors.customGreyColor5,
+                ),
+          ),
+        ],
       ],
     );
   }

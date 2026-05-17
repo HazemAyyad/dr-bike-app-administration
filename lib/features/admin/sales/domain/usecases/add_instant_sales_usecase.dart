@@ -25,6 +25,7 @@ class AddInstantSalesUsecase {
     String? paymentBoxId,
     String? paymentBoxName,
     String? paymentBoxValue,
+    String? offerPackageId,
   }) async {
     return await salesRepository.addInstantSales(
       productId: productId,
@@ -42,6 +43,7 @@ class AddInstantSalesUsecase {
       paymentBoxId: paymentBoxId,
       paymentBoxName: paymentBoxName,
       paymentBoxValue: paymentBoxValue,
+      offerPackageId: offerPackageId,
     );
   }
 }

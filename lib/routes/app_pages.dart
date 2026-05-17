@@ -108,11 +108,16 @@ import '../features/admin/projects/presentation/views/project_screen.dart';
 import '../features/admin/sales/presentation/binding/sales_binding.dart';
 import '../features/admin/sales/presentation/views/new_cash_profit_screen.dart';
 import '../features/admin/sales/presentation/views/new_instant_sale_screen.dart';
+import '../features/admin/sales/presentation/views/bill_details_screen.dart'
+    as instant_sale_bill;
 import '../features/admin/sales/presentation/views/sales_screen.dart';
 import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
 import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
 import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
 import '../features/admin/stock/presentation/views/add_combination_screen.dart';
+import '../features/admin/stock/presentation/views/add_edit_offer_package_screen.dart';
+import '../features/admin/stock/presentation/views/offer_packages_screen.dart';
+import '../features/admin/stock/presentation/binding/offer_packages_binding.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
 import '../features/admin/stock/presentation/views/product_details_screen.dart';
@@ -557,6 +562,12 @@ class AppPages {
           : _transitionRightToLeft,
     ),
     GetPage(
+      name: AppRoutes.INSTANTSALEBILLDETAILSSCREEN,
+      page: () => const instant_sale_bill.BillDetailsScreen(),
+      binding: SalesBinding(),
+      transition: _transitionSize,
+    ),
+    GetPage(
       name: AppRoutes.NEWCASHPROFITSCREEN,
       page: () => const NewCashProfitScreen(),
       transition: Get.locale == const Locale('ar')
@@ -659,6 +670,20 @@ class AppPages {
     GetPage(
       name: AppRoutes.ADDCOMBINATIONSCREEN,
       page: () => const AddCombinationScreen(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.OFFERPACKAGESSCREEN,
+      page: () => const OfferPackagesScreen(),
+      binding: OfferPackagesBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.ADDEDITOFFERPACKAGESCREEN,
+      page: () => const AddEditOfferPackageScreen(),
+      binding: OfferPackagesBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
