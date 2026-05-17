@@ -57,5 +57,7 @@
 	<string>نحتاج صلاحية لاستخدام الكاميرا لالتقاط صورة الموظف والمستندات الخاصة به عند إضافته للتطبيق.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>نحتاج صلاحية لاستخدام الميكروفون لتسجيل الصوت أثناء التقاط الفيديو او تسجيل الصوت.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>نحتاج الوصول لجهات الاتصال لاستيراد اسم ورقم الزبون عند الإضافة.</string>
 </dict>
 </plist>

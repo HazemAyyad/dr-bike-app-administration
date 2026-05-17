@@ -35,6 +35,8 @@ class CustomTextField extends StatefulWidget {
     this.maxLines,
     this.sizedBox,
     this.onChanged,
+    this.focusNode,
+    this.onFieldSubmitted,
   }) : super(key: key);
 
   final String label;
@@ -60,6 +62,8 @@ class CustomTextField extends StatefulWidget {
   final int? maxLines;
   final bool? sizedBox;
   final Function(String)? onChanged;
+  final FocusNode? focusNode;
+  final void Function(String)? onFieldSubmitted;
 
   @override
   State<CustomTextField> createState() => _CustomTextFieldState();
@@ -68,13 +72,15 @@ class CustomTextField extends StatefulWidget {
 class _CustomTextFieldState extends State<CustomTextField>
     with WidgetsBindingObserver {
   late FocusNode _focusNode;
+  late bool _ownsFocusNode;
   bool _wasFocused = false;
   bool _shouldKeepKeyboard = false;
 
   @override
   void initState() {
     super.initState();
-    _focusNode = FocusNode();
+    _ownsFocusNode = widget.focusNode == null;
+    _focusNode = widget.focusNode ?? FocusNode();
     WidgetsBinding.instance.addObserver(this);
 
     _focusNode.addListener(() {
@@ -85,7 +91,9 @@ class _CustomTextFieldState extends State<CustomTextField>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _focusNode.dispose();
+    if (_ownsFocusNode) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -221,6 +229,7 @@ class _CustomTextFieldState extends State<CustomTextField>
                   ),
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction ?? TextInputAction.next,
+            onFieldSubmitted: widget.onFieldSubmitted,
             validator: widget.validator ??
                 (value) {
                   if (value == null || value.isEmpty) {

@@ -34,6 +34,68 @@ class UploadImageButton extends StatefulWidget {
 
   @override
   State<UploadImageButton> createState() => _UploadImageButtonState();
+
+  /// يفتح خيارات التصوير/المعرض (للاستدعاء من Enter في النماذج).
+  static Future<void> pickFileFor(
+    BuildContext context,
+    Rx<XFile?> selectedFile, {
+    bool isVideo = false,
+  }) async {
+    final picker = ImagePicker();
+
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: Text("takeImage".tr),
+                onTap: () => Navigator.pop(ctx, 'camera_image'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.image),
+                title: Text("selectImage".tr),
+                onTap: () => Navigator.pop(ctx, 'gallery_image'),
+              ),
+              if (isVideo)
+                ListTile(
+                  leading: const Icon(Icons.videocam),
+                  title: Text("takeVideo".tr),
+                  onTap: () => Navigator.pop(ctx, 'camera_video'),
+                ),
+              if (isVideo)
+                ListTile(
+                  leading: const Icon(Icons.video_library),
+                  title: Text("selectVideo".tr),
+                  onTap: () => Navigator.pop(ctx, 'gallery_video'),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+
+    XFile? pickedFile;
+
+    if (choice == 'camera_image') {
+      pickedFile = await picker.pickImage(source: ImageSource.camera);
+    } else if (choice == 'gallery_image') {
+      pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    } else if (choice == 'camera_video') {
+      pickedFile = await picker.pickVideo(source: ImageSource.camera);
+    } else if (choice == 'gallery_video') {
+      pickedFile = await picker.pickVideo(source: ImageSource.gallery);
+    }
+
+    if (pickedFile != null) {
+      selectedFile.value = XFile(pickedFile.path);
+    }
+  }
 }
 
 class _UploadImageButtonState extends State<UploadImageButton> {
@@ -72,61 +134,12 @@ class _UploadImageButtonState extends State<UploadImageButton> {
       path.toLowerCase().endsWith('.mkv');
 
   Future<void> pickFile(BuildContext context) async {
-    final picker = ImagePicker();
-
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: Text("takeImage".tr),
-                onTap: () => Navigator.pop(ctx, 'camera_image'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.image),
-                title: Text("selectImage".tr),
-                onTap: () => Navigator.pop(ctx, 'gallery_image'),
-              ),
-              if (widget.isVideo)
-                ListTile(
-                  leading: const Icon(Icons.videocam),
-                  title: Text("takeVideo".tr),
-                  onTap: () => Navigator.pop(ctx, 'camera_video'),
-                ),
-              if (widget.isVideo)
-                ListTile(
-                  leading: const Icon(Icons.video_library),
-                  title: Text("selectVideo".tr),
-                  onTap: () => Navigator.pop(ctx, 'gallery_video'),
-                ),
-            ],
-          ),
-        );
-      },
+    await UploadImageButton.pickFileFor(
+      context,
+      widget.selectedFile,
+      isVideo: widget.isVideo,
     );
-
-    XFile? pickedFile;
-
-    if (choice == 'camera_image') {
-      pickedFile = await picker.pickImage(source: ImageSource.camera);
-    } else if (choice == 'gallery_image') {
-      pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    } else if (choice == 'camera_video') {
-      pickedFile = await picker.pickVideo(source: ImageSource.camera);
-    } else if (choice == 'gallery_video') {
-      pickedFile = await picker.pickVideo(source: ImageSource.gallery);
-    }
-
-    if (pickedFile != null) {
-      widget.selectedFile.value = XFile(pickedFile.path);
-      _checkAndGenerateThumbnail();
-    }
+    _checkAndGenerateThumbnail();
   }
 
   @override

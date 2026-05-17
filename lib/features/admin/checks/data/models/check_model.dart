@@ -246,9 +246,11 @@ class SellerModel extends Seller {
   const SellerModel({
     required int id,
     required String name,
+    String phone = '',
   }) : super(
           id: id,
           name: name,
+          phone: phone,
         );
 
   factory SellerModel.fromJson(Map<String, dynamic> json) {
@@ -256,10 +258,11 @@ class SellerModel extends Seller {
     return SellerModel(
       id: asInt(j['id']),
       name: asString(j['name']),
+      phone: asString(j['phone']),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'id': id, 'name': name};
+    return {'id': id, 'name': name, 'phone': phone};
   }
 }

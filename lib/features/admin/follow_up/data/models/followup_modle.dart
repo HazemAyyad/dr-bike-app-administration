@@ -1,5 +1,5 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
-import 'package:doctorbike/core/helpers/show_net_image.dart';
+import 'package:doctorbike/core/helpers/person_avatar_helper.dart';
 
 class FollowupModel {
   final int id;
@@ -32,10 +32,10 @@ class FollowupModel {
       id: asInt(j['id']),
       customerName: asString(j['customer_name']),
       customerPhone: asString(j['customer_phone']),
-      customerImg: ShowNetImage.getPhoto(asNullableString(j['customer_img'])),
+      customerImg: PersonAvatarHelper.resolve(j['customer_img']),
       sellerName: asString(j['seller_name']),
       sellerPhone: asString(j['seller_phone']),
-      sellerImg: ShowNetImage.getPhoto(asNullableString(j['seller_img'])),
+      sellerImg: PersonAvatarHelper.resolve(j['seller_img']),
       productName: asString(j['product_name']),
       followupStatus: asString(j['followup_status']),
       createdAt: parseApiDateTime(j['created_at']),

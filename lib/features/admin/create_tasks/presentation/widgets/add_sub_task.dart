@@ -2,202 +2,183 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/custom_chechbox.dart';
-import '../../../../../core/helpers/custom_text_field.dart';
-import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
 import 'build_sub_task_image.dart';
+import 'sub_task_form_sheet.dart';
 
 class AddSubTask extends GetView<CreateTaskController> {
   const AddSubTask({Key? key, required this.title}) : super(key: key);
 
   final String title;
 
+  Color _listCardColor(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    return isDark ? AppColors.customGreyColor4 : const Color(0xFFEBECF0);
+  }
+
+  Color _listBorderColor(BuildContext context, {required bool isEditing}) {
+    if (isEditing) return AppColors.primaryColor;
+    final isDark = ThemeService.isDark.value;
+    return isDark ? Colors.white12 : const Color(0xFFD8DCE2);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme.bodyMedium!;
+    final listCardColor = _listCardColor(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // قائمة المهام الفرعية
-        Obx(
-          () => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: controller.subTasks
-                .map(
-                  (task) => Padding(
-                    padding: EdgeInsets.symmetric(vertical: 5.h),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon:
-                              Icon(Icons.close, size: 20.sp, color: Colors.red),
-                          onPressed: () => controller.subTasks.remove(task),
+        Obx(() {
+          if (controller.subTasks.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: controller.subTasks.length,
+            onReorder: controller.reorderSubTasks,
+            itemBuilder: (context, index) {
+              final task = controller.subTasks[index] as Map;
+              final isEditing =
+                  controller.editingSubTaskIndex.value == index;
+              return Container(
+                key: ValueKey(
+                  'sub_${task['subTaskId'] ?? 'n'}_$index',
+                ),
+                margin: EdgeInsets.only(bottom: 8.h),
+                padding: EdgeInsets.all(10.w),
+                decoration: BoxDecoration(
+                  color: listCardColor,
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(
+                    color: _listBorderColor(context, isEditing: isEditing),
+                    width: isEditing ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 8.h),
+                        child: Icon(
+                          Icons.drag_indicator,
+                          color: AppColors.primaryColor,
+                          size: 24.sp,
                         ),
-                        buildSubTaskImage(context, task['subTaskImage']),
-                        SizedBox(width: 10.w),
-                        Flexible(
-                          child: ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            visualDensity: const VisualDensity(
-                                horizontal: -4, vertical: -4),
-                            minLeadingWidth: 0,
-                            minVerticalPadding: 0,
-                            horizontalTitleGap: 0,
-                            title: Text(
-                              task['subTaskName'] ?? '',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    color: AppColors.primaryColor,
-                                    fontSize: 16.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                            subtitle: Text(
-                              task['subTaskdescription'] ?? '',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    color: AppColors.customGreyColor5,
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    buildSubTaskImage(context, task['subTaskImage']),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            task['subTaskName']?.toString() ?? '',
+                            style: theme.copyWith(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryColor,
                             ),
                           ),
+                          if ((task['subTaskdescription']?.toString() ?? '')
+                              .isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(top: 4.h),
+                              child: Text(
+                                task['subTaskdescription'].toString(),
+                                style: theme.copyWith(
+                                  fontSize: 13.sp,
+                                  color: AppColors.customGreyColor5,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            size: 20.sp,
+                            color: AppColors.primaryColor,
+                          ),
+                          onPressed: () => showSubTaskFormSheet(
+                            context,
+                            controller: controller,
+                            title: title,
+                            editIndex: index,
+                          ),
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 20.sp,
+                            color: Colors.red,
+                          ),
+                          onPressed: () {
+                            if (controller.editingSubTaskIndex.value ==
+                                index) {
+                              controller.clearSubTaskForm();
+                            }
+                            controller.subTasks.removeAt(index);
+                          },
                         ),
                       ],
                     ),
-                  ),
-                )
-                .toList(),
+                  ],
+                ),
+              );
+            },
+          );
+        }),
+        SizedBox(height: 8.h),
+        InkWell(
+          onTap: () => showSubTaskFormSheet(
+            context,
+            controller: controller,
+            title: title,
           ),
-        ),
-        Obx(
-          () => controller.subTasks.isNotEmpty
-              ? Container(
-                  width: double.infinity,
-                  height: 1.h,
-                  color: AppColors.primaryColor,
-                )
-              : const SizedBox.shrink(),
-        ),
-        TextButton.icon(
-          onPressed: () => controller.toggleSubtasksList(),
-          icon: Obx(
-            () => AnimatedRotation(
-              turns: controller.isSubtasksListVisible.value
-                  ? -0.125
-                  : 0, // 0.125 = 45 درجة
-              duration: const Duration(milliseconds: 300),
-              child: Icon(
-                Icons.add_rounded,
-                key: ValueKey(controller.isSubtasksListVisible.value),
-                color: AppColors.primaryColor,
-                size: 20.sp,
+          borderRadius: BorderRadius.circular(10.r),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 12.h),
+            decoration: BoxDecoration(
+              color: listCardColor,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(
+                color: _listBorderColor(context, isEditing: false),
               ),
             ),
-          ),
-          label: Text(
-            'addSubTask'.tr,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  color: ThemeService.isDark.value
-                      ? AppColors.primaryColor
-                      : AppColors.secondaryColor,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.add_circle_outline,
+                  color: AppColors.primaryColor,
+                  size: 22.sp,
                 ),
-          ),
-        ),
-        Obx(
-          () => AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.decelerate,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (child, animation) {
-                return SizeTransition(
-                  sizeFactor: animation,
-                  child: child,
-                );
-              },
-              child: controller.isSubtasksListVisible.value
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // اسم المهمة الفرعية
-                        Row(
-                          children: [
-                            Flexible(
-                              child: CustomTextField(
-                                isRequired: true,
-                                label: 'subTaskName',
-                                hintText: 'subTaskNameExample',
-                                controller: controller.subTaskNameController,
-                              ),
-                            ),
-                            SizedBox(width: 15.w),
-                            // وصف المهمة الفرعية
-                            Flexible(
-                              child: CustomTextField(
-                                label: 'subTaskDescription',
-                                hintText: 'subTaskNameExample',
-                                controller:
-                                    controller.subTaskDescriptionController,
-                                validator: (p0) => null,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 15.h),
-                        UploadImageButton(
-                          selectedFile: controller.subTaskFile,
-                          title: 'uploadImage',
-                        ),
-                        SizedBox(height: 10.h),
-                        title == 'createNewEmployeeTask' ||
-                                title == 'editEmployeeTask'
-                            ? CustomCheckBox(
-                                value: controller.requireSubTasImage,
-                                title: 'requireImage',
-                                onChanged: (value) {
-                                  controller.requireSubTasImage.value = value!;
-                                },
-                              )
-                            : const SizedBox.shrink(),
-                        SizedBox(height: 15.h),
-                        // أزرار الإجراءات
-                        Obx(
-                          () => Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              AppButton(
-                                text: 'add',
-                                onPressed: controller.addSubTask,
-                                color: controller.cancelButtonColor.value,
-                              ),
-                              AppButton(
-                                text: 'cancel',
-                                onPressed: () {
-                                  controller.isSubtasksListVisible.value =
-                                      false;
-                                  controller.cancelButtonColor.value =
-                                      Get.isDarkMode
-                                          ? AppColors.darkColor
-                                          : AppColors.whiteColor;
-                                },
-                                color: controller.cancelButtonColor.value,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )
-                  : const SizedBox(key: ValueKey('empty')),
+                SizedBox(width: 8.w),
+                Text(
+                  'addSubTask'.tr,
+                  style: theme.copyWith(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

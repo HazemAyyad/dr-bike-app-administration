@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/helpers/audio_helper.dart';
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
@@ -51,7 +52,7 @@ class SpecialTaskDetailsModel extends SpecialTaskDetailsEntities {
       taskDescription: asString(j['description']),
       notes: asString(j['notes']),
       adminImg: mapAdminImg(j['admin_img']),
-      audio: ShowNetImage.getPhoto(asNullableString(j['audio'])),
+      audio: parseAudioFromApi(asNullableString(j['audio'])) ?? '',
       taskRecurrence: asString(j['task_recurrence']),
       taskRecurrenceTime: mapRecurrenceTimes(j['task_recurrence_time']),
       subTasks: mapList(

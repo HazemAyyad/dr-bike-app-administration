@@ -10,11 +10,17 @@ class MaintenanceDataModel {
   final String createdAt;
   final String status;
   final String mediaFiles;
+  final String? contactPhone;
+  final int? customerId;
+  final int? sellerId;
 
   MaintenanceDataModel({
     required this.id,
     required this.customerName,
     this.sellerName,
+    this.contactPhone,
+    this.customerId,
+    this.sellerId,
     required this.receiptDate,
     required this.receiptTime,
     required this.createdAt,
@@ -33,6 +39,9 @@ class MaintenanceDataModel {
       createdAt: asString(j['created_at']),
       status: asString(j['status']),
       mediaFiles: ShowNetImage.getPhoto(asNullableString(j['media_files'])),
+      contactPhone: asNullableString(j['contact_phone']),
+      customerId: j['customer_id'] == null ? null : asInt(j['customer_id']),
+      sellerId: j['seller_id'] == null ? null : asInt(j['seller_id']),
     );
   }
 

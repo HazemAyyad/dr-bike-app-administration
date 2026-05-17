@@ -12,10 +12,13 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
 import '../../firebase_options.dart';
+import '../databases/api/dio_consumer.dart';
 import '../databases/api/end_points.dart';
 import '../utils/app_colors.dart';
+import '../../features/employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import 'admin_notification_api_service.dart';
 import 'admin_notification_router.dart';
+import 'employee_notification_router.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
@@ -41,6 +44,8 @@ class NotificationFirebaseService {
 
   bool get notificationsDenied => _notificationsDenied;
 
+  bool get isInitialized => _notificationsInitialized;
+
   Future<void> ensureInitialized() async {
     if (_notificationsInitialized) {
       return;
@@ -60,7 +65,7 @@ class NotificationFirebaseService {
       debugPrint('[FCM] Token refreshed: $newToken');
       finalToken = newToken;
       await GetStorage().write('fcmToken', newToken);
-      await registerAdminDeviceTokenIfReady(source: 'token_refresh');
+      await syncFcmTokenToServer(source: 'token_refresh');
     });
 
     await _setupMessageHandler();
@@ -234,7 +239,13 @@ class NotificationFirebaseService {
         );
       }
 
-      final String? token = await firebaseMessaging.getToken();
+      if (Platform.isAndroid && !_notificationsDenied) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+      }
+
+      final String? token = await firebaseMessaging
+          .getToken()
+          .timeout(const Duration(seconds: 8));
       finalToken = token ?? '';
       debugPrint(
         '[FCM] FCM token: ${finalToken.isEmpty ? "null/empty" : finalToken}',
@@ -244,6 +255,95 @@ class NotificationFirebaseService {
       }
     } catch (e, st) {
       debugPrint('[FCM] Failed to get token: $e\n$st');
+    }
+  }
+
+  /// انتظار توكن FCM قبل أول تسجيل دخول (بعد منح الإذن قد يتأخر ثوانٍ).
+  Future<String> resolveTokenForLogin({
+    Duration timeout = const Duration(seconds: 12),
+  }) async {
+    if (kIsWeb) {
+      return 'no_token';
+    }
+
+    await ensureInitialized();
+
+    final cached = GetStorage().read<String>('fcmToken');
+    if (cached != null && cached.isNotEmpty) {
+      finalToken = cached;
+      return cached;
+    }
+
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      await _refreshFcmToken();
+      if (finalToken.isNotEmpty) {
+        return finalToken;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+    }
+
+    debugPrint('[FCM] resolveTokenForLogin: timeout — using no_token');
+    return 'no_token';
+  }
+
+  /// مزامنة التوكن مع السيرفر (موظف أو أدمن) بعد توفره.
+  Future<void> syncFcmTokenToServer({required String source}) async {
+    if (kIsWeb) {
+      return;
+    }
+
+    await ensureInitialized();
+
+    final authToken = await UserData.getUserToken();
+    if (authToken.isEmpty) {
+      debugPrint('[FCM] Skip sync ($source): no auth token');
+      return;
+    }
+
+    if (finalToken.isEmpty) {
+      await _refreshFcmToken();
+    }
+    var token = finalToken;
+    if (token.isEmpty) {
+      token = await resolveTokenForLogin(timeout: const Duration(seconds: 8));
+    }
+    if (token.isEmpty || token == 'no_token') {
+      debugPrint('[FCM] Skip sync ($source): FCM still empty');
+      return;
+    }
+
+    final url = '${EndPoints.baserUrl}${EndPoints.updateFcmToken}';
+    debugPrint('[FCM] POST $url (source=$source)');
+
+    try {
+      if (!Get.isRegistered<DioConsumer>()) {
+        debugPrint('[FCM] Skip sync ($source): DioConsumer not ready');
+        return;
+      }
+      final api = Get.find<DioConsumer>();
+      final response = await api.post(
+        EndPoints.updateFcmToken,
+        data: {
+          'fcm_token': token,
+          'platform': Platform.isAndroid ? 'android' : 'ios',
+          'device_name': Platform.operatingSystem,
+        },
+      );
+      final data = response.data;
+      if (data is Map && data['status'] == 'success') {
+        debugPrint('[FCM] syncFcmTokenToServer OK ($source)');
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        '[FCM] syncFcmTokenToServer DioException status=${e.response?.statusCode}',
+      );
+    } catch (e, st) {
+      debugPrint('[FCM] syncFcmTokenToServer failed: $e\n$st');
+    }
+
+    if (userType == 'admin') {
+      await registerAdminDeviceTokenIfReady(source: source);
     }
   }
 
@@ -335,7 +435,7 @@ class NotificationFirebaseService {
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         final map = AdminNotificationRouter.parsePayload(response.payload);
-        AdminNotificationRouter.handlePayload(map);
+        _routeNotificationPayload(map);
       },
     );
 
@@ -459,12 +559,22 @@ class NotificationFirebaseService {
     };
   }
 
-  void _refreshAdminBadge() {
-    if (userType != 'admin') {
-      return;
-    }
-    if (Get.isRegistered<AdminNotificationBadgeController>()) {
+  void _refreshNotificationBadge() {
+    if (userType == 'admin' &&
+        Get.isRegistered<AdminNotificationBadgeController>()) {
       Get.find<AdminNotificationBadgeController>().refresh();
+    }
+    if (userType == 'employee' &&
+        Get.isRegistered<EmployeeNotificationBadgeController>()) {
+      Get.find<EmployeeNotificationBadgeController>().refresh();
+    }
+  }
+
+  void _routeNotificationPayload(Map<String, dynamic> data) {
+    if (userType == 'employee') {
+      EmployeeNotificationRouter.handlePayload(data);
+    } else {
+      AdminNotificationRouter.handlePayload(data);
     }
   }
 
@@ -475,7 +585,7 @@ class NotificationFirebaseService {
         'data=${message.data}',
       );
       await showForegroundNotification(message);
-      _refreshAdminBadge();
+      _refreshNotificationBadge();
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
@@ -493,6 +603,7 @@ class NotificationFirebaseService {
   void _handleOpenedMessage(RemoteMessage message) {
     debugPrint('[FCM] notification opened app');
     final data = _payloadFromMessage(message);
-    AdminNotificationRouter.handlePayload(data);
+    _routeNotificationPayload(data);
+    _refreshNotificationBadge();
   }
 }

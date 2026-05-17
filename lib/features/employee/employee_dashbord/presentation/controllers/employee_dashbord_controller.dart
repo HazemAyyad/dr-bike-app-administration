@@ -14,6 +14,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
 import '../../../../admin/employee_section/data/models/employee_attendance_history_model.dart';
 import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks_controller.dart';
@@ -501,6 +502,9 @@ class EmployeeDashbordController extends GetxController
   @override
   void onInit() async {
     super.onInit();
+    if (Get.isRegistered<EmployeeNotificationBadgeController>()) {
+      unawaited(Get.find<EmployeeNotificationBadgeController>().refresh());
+    }
     startDate = getStartOfWeek(DateTime.now());
     endDate = startDate.add(const Duration(days: 6));
     _loadStartTime();

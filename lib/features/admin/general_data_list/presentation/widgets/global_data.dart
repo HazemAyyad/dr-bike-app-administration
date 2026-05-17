@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
+import 'package:doctorbike/core/helpers/person_avatar_helper.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
+import 'package:doctorbike/core/widgets/person_avatar_image.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/employee_data_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -227,56 +227,29 @@ class GlobalData extends GetView<GeneralDataListController> {
           ),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(5.r),
-                child: GestureDetector(
-                  onTap: () {
-                    showGeneralDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      barrierLabel: 'Dismiss',
-                      barrierColor: Colors.black.withAlpha(128),
-                      transitionDuration: const Duration(milliseconds: 300),
-                      pageBuilder: (context, anim1, anim2) {
-                        return FullScreenZoomImage(
-                          imageUrl: employee.idImage!,
+              GestureDetector(
+                onTap: PersonAvatarHelper.isPlaceholder(employee.idImage)
+                    ? null
+                    : () {
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierLabel: 'Dismiss',
+                          barrierColor: Colors.black.withAlpha(128),
+                          transitionDuration: const Duration(milliseconds: 300),
+                          pageBuilder: (context, anim1, anim2) {
+                            return FullScreenZoomImage(
+                              imageUrl: employee.idImage!,
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                  child: CachedNetworkImage(
-                    cacheManager: CacheManager(
-                      Config(
-                        'imagesCache',
-                        stalePeriod: const Duration(days: 7),
-                        maxNrOfCacheObjects: 100,
-                      ),
-                    ),
-                    imageBuilder: (context, imageProvider) => Container(
-                      height: 70.h,
-                      width: 70.w,
-                      decoration: BoxDecoration(
-                        image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.fill,
-                          filterQuality: FilterQuality.medium,
-                        ),
-                      ),
-                    ),
-                    imageUrl: employee.idImage!,
-                    filterQuality: FilterQuality.medium,
-                    fadeInDuration: const Duration(milliseconds: 200),
-                    fadeOutDuration: const Duration(milliseconds: 200),
-                    placeholder: (context, url) => SizedBox(
-                      height: 70.h,
-                      width: 70.w,
-                      child: const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) =>
-                        const Icon(Icons.error),
-                  ),
+                child: PersonAvatarImage(
+                  imageUrl: employee.idImage,
+                  height: 70.h,
+                  width: 70.w,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(5.r),
                 ),
               ),
               // SizedBox(width: 20.w),

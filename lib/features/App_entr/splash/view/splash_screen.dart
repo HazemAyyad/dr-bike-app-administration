@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../../core/services/theme_service.dart';
 import '../../../../core/utils/assets_manger.dart';
 import '../controller/splash_controller.dart';
@@ -9,8 +10,6 @@ class SplashScreen extends GetView<SplashController> {
 
   @override
   Widget build(BuildContext context) {
-    controller.onInit();
-
     return Scaffold(
       body: Center(
         child: Image.asset(

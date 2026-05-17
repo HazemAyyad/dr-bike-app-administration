@@ -42,6 +42,27 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               children: [
                 SizedBox(height: 10.h),
+                if (!controller.isEdit.value)
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () =>
+                          controller.importFromContacts(context),
+                      icon: Icon(
+                        Icons.contacts_outlined,
+                        color: AppColors.primaryColor,
+                        size: 22.sp,
+                      ),
+                      label: Text(
+                        'importContacts'.tr,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
                 Row(
                   children: [
                     Flexible(

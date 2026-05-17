@@ -1,6 +1,8 @@
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/helpers/show_net_image.dart';
+import '../../../../../core/utils/assets_manger.dart';
 import '../../domain/entities/task_details_entiny.dart';
 
 class TaskDetailsModel extends TaskDetailsEntity {
@@ -57,7 +59,15 @@ class TaskDetailsModel extends TaskDetailsEntity {
     List<String> mapImgList(dynamic raw) {
       if (raw is! List) return [];
       return raw
-          .map((e) => ShowNetImage.getPhoto(asNullableString(e)))
+          .map((e) => asNullableString(e))
+          .where(
+            (e) =>
+                e != null &&
+                !isNoMediaPlaceholder(e) &&
+                !isAudioMediaPath(e),
+          )
+          .map((e) => ShowNetImage.getPhoto(e))
+          .where((url) => url != AssetsManager.noImageNet)
           .toList();
     }
 
@@ -86,7 +96,7 @@ class TaskDetailsModel extends TaskDetailsEntity {
       parentId: asNullableString(json[ApiKey.parent_id]),
       adminImg: mapImgList(json[ApiKey.admin_img]),
       employeeImg: mapImgList(json[ApiKey.employee_img]),
-      audio: ShowNetImage.getPhoto(asNullableString(json[ApiKey.audio])),
+      audio: parseAudioFromApi(asNullableString(json[ApiKey.audio])),
       subTasks: mapList(
         json[ApiKey.sub_tasks],
         (Map<String, dynamic> m) => SubTaskModel.fromJson(m),
@@ -144,7 +154,15 @@ class SubTaskModel extends SubTaskEntity {
     List<String> mapImgList(dynamic raw) {
       if (raw is! List) return [];
       return raw
-          .map((e) => ShowNetImage.getPhoto(asNullableString(e)))
+          .map((e) => asNullableString(e))
+          .where(
+            (e) =>
+                e != null &&
+                !isNoMediaPlaceholder(e) &&
+                !isAudioMediaPath(e),
+          )
+          .map((e) => ShowNetImage.getPhoto(e))
+          .where((url) => url != AssetsManager.noImageNet)
           .toList();
     }
 

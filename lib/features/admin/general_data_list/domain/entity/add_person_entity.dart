@@ -3,7 +3,10 @@ import 'dart:io';
 class AddPersonEntity {
   final int? id;
   final bool? isEdit;
+  /// customer | seller (جدول الزبون أو التاجر)
   final String personType;
+  /// retail | wholesale (نوع الزبون في الواجهة)
+  final String customerCategory;
   final String name;
   final String address;
   final String phone;
@@ -24,6 +27,7 @@ class AddPersonEntity {
     this.id,
     this.isEdit,
     required this.personType,
+    this.customerCategory = 'retail',
     required this.name,
     required this.phone,
     required this.subPhone,

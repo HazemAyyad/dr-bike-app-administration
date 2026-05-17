@@ -47,62 +47,59 @@ class GeneralDataListDatasource {
     required String sellerId,
   }) async {
     try {
-      Map<String, dynamic> iDImage = {};
-      iDImage['ID_image[]'] = await Future.wait(
-        data.iDImage.map((e) async {
-          if (e.path.startsWith('http')) {
-            return e.path.split('http://doctorbike.mj-sall.com/').last;
-          } else {
+      final formFields = <String, dynamic>{
+        if (customerId.isNotEmpty) 'customer_id': customerId,
+        if (sellerId.isNotEmpty) 'seller_id': sellerId,
+        if (!data.isEdit!) 'person_type': data.personType,
+        'type': data.customerCategory,
+        'name': data.name,
+        'address': data.address,
+        'phone': data.phone,
+        'sub_phone': data.subPhone,
+        'job_title': data.jobTitle,
+        'facebook_username': data.facebookUsername,
+        'facebook_link': data.facebookLink,
+        'instagram_username': data.instagramUsername,
+        'instagram_link': data.instagramLink,
+        'related_people': data.relatedPeople,
+        'relative_phone': data.relativePhone,
+        'relative_job_title': data.relativeJobTitle,
+        'work_address': data.workAddress,
+      };
+
+      if (data.iDImage.isNotEmpty) {
+        formFields['ID_image[]'] = await Future.wait(
+          data.iDImage.map((e) async {
+            if (e.path.startsWith('http')) {
+              return e.path.split('http://doctorbike.mj-sall.com/').last;
+            }
             final compressedImg = await compressImage(XFile(e.path));
-            // لو ملف جديد → Multipart
             return await MultipartFile.fromFile(
               compressedImg.path,
               filename: compressedImg.path.split('/').last,
             );
-          }
-        }),
-      );
+          }),
+        );
+      }
 
-      Map<String, dynamic> licenseImage = {};
-      licenseImage['license_image[]'] = await Future.wait(
-        data.licenseImage.map((e) async {
-          if (e.path.startsWith('http')) {
-            return e.path.split('http://doctorbike.mj-sall.com/').last;
-          } else {
+      if (data.licenseImage.isNotEmpty) {
+        formFields['license_image[]'] = await Future.wait(
+          data.licenseImage.map((e) async {
+            if (e.path.startsWith('http')) {
+              return e.path.split('http://doctorbike.mj-sall.com/').last;
+            }
             final compressedImg = await compressImage(XFile(e.path));
             return await MultipartFile.fromFile(
               compressedImg.path,
-              filename: compressedImg.path
-                  .split('http://doctorbike.mj-sall.com/')
-                  .last,
+              filename: compressedImg.path.split('/').last,
             );
-          }
-        }),
-      );
+          }),
+        );
+      }
 
       final response = await api.post(
         data.isEdit! ? EndPoints.editPerson : EndPoints.createPerson,
-        data: {
-          if (customerId.isNotEmpty) 'customer_id': customerId,
-          if (sellerId.isNotEmpty) 'seller_id': sellerId,
-          if (!data.isEdit!) 'person_type': data.personType,
-          'type': data.personType,
-          'name': data.name,
-          'address': data.address,
-          'phone': data.phone,
-          'sub_phone': data.subPhone,
-          'job_title': data.jobTitle,
-          'facebook_username': data.facebookUsername,
-          'facebook_link': data.facebookLink,
-          'instagram_username': data.instagramUsername,
-          'instagram_link': data.instagramLink,
-          'related_people': data.relatedPeople,
-          'relative_phone': data.relativePhone,
-          'relative_job_title': data.relativeJobTitle,
-          'work_address': data.workAddress,
-          ...iDImage,
-          ...licenseImage,
-        },
+        data: formFields,
         isFormData: true,
       );
       return response.data;

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:get/get.dart';
 
@@ -7,6 +8,7 @@ import '../../features/auth/data/models/user_model.dart';
 import '../../routes/app_routes.dart';
 import '../databases/api/dio_consumer.dart';
 import '../databases/api/end_points.dart';
+import 'biometric_auth_service.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
@@ -126,6 +128,10 @@ class SessionService {
     try {
       await DefaultCacheManager().emptyCache();
       await UserData.clearAllUserData();
+      if (!kIsWeb) {
+        await BiometricAuthService.instance.setBiometricLoginEnabled(false);
+        await BiometricAuthService.instance.clearLoginData();
+      }
       Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
       if (showMessage) {
         Get.snackbar(

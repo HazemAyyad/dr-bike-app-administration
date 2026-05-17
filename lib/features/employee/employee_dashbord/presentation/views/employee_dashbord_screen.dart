@@ -7,6 +7,8 @@ import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
+import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/admin_dashbord/presentation/widgets/actions_buttons.dart';
 import '../controllers/employee_dashbord_controller.dart';
 import '../widgets/employee_dashbord_tasks.dart';
@@ -29,6 +31,78 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                 fontWeight: FontWeight.w700,
               ),
         ),
+        actions: [
+          if (userType == 'employee')
+            Obx(() {
+              final c = Get.isRegistered<EmployeeNotificationBadgeController>()
+                  ? Get.find<EmployeeNotificationBadgeController>()
+                  : null;
+              final n = c?.unreadCount.value ?? 0;
+              return Padding(
+                padding: EdgeInsets.only(right: 4.w),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    alignment: Alignment.center,
+                    children: [
+                      ClipOval(
+                        child: Material(
+                          color: ThemeService.isDark.value
+                              ? AppColors.customGreyColor
+                              : AppColors.whiteColor2,
+                          child: InkWell(
+                            onTap: () async {
+                              await Get.toNamed(
+                                AppRoutes.EMPLOYEENOTIFICATIONCENTER,
+                              );
+                              c?.refresh();
+                            },
+                            customBorder: const CircleBorder(),
+                            child: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Icon(
+                                Icons.notifications_none_rounded,
+                                color: AppColors.primaryColor,
+                                size: 25.sp,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (n > 0)
+                        Positioned(
+                          right: 2,
+                          top: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(minWidth: 18),
+                            child: Text(
+                              n > 99 ? '99+' : '$n',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),

@@ -8,11 +8,36 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/helpers/open_apps.dart';
+import '../../../../../core/helpers/phone_format_helper.dart';
+import '../../data/models/maintenances_model.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/maintenance_controller.dart';
 
 class MaintenanceDataWidget extends GetView<MaintenanceController> {
   const MaintenanceDataWidget({Key? key}) : super(key: key);
+
+  String? _resolvePhone(MaintenanceDataModel item) {
+    final fromApi = item.contactPhone?.trim();
+    if (fromApi != null && fromApi.isNotEmpty) {
+      return PhoneFormatHelper.forDialer(fromApi);
+    }
+    if (item.sellerId != null) {
+      for (final s in controller.allSellersList) {
+        if (s.id == item.sellerId && s.phone.isNotEmpty) {
+          return PhoneFormatHelper.forDialer(s.phone);
+        }
+      }
+    }
+    if (item.customerId != null) {
+      for (final c in controller.allCustomersList) {
+        if (c.id == item.customerId && c.phone.isNotEmpty) {
+          return PhoneFormatHelper.forDialer(c.phone);
+        }
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +140,44 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                     SizedBox(height: 10.h),
                     // عرض العناصر
                     ...assets.map(
-                      (item) => GestureDetector(
+                      (item) {
+                        final displayName =
+                            (item.sellerName != null && item.sellerName!.isNotEmpty)
+                                ? item.sellerName!
+                                : item.customerName;
+
+                        return GestureDetector(
+                        onLongPress: () async {
+                          controller.getAllCustomersAndSellers();
+                          final phone = _resolvePhone(item);
+                          if (phone == null || phone.isEmpty) {
+                            Get.snackbar(
+                              'error'.tr,
+                              'noPhoneNumber'.tr,
+                              snackPosition: SnackPosition.BOTTOM,
+                            );
+                            return;
+                          }
+                          await showModalBottomSheet<void>(
+                            context: context,
+                            builder: (ctx) => SafeArea(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    leading: const Icon(Icons.phone),
+                                    title: Text('callCustomer'.tr),
+                                    subtitle: Text(phone),
+                                    onTap: () async {
+                                      Navigator.pop(ctx);
+                                      await launchDialer(phoneNumber: phone);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                         onTap: () {
                           controller.getMaintenancesDetails(
                             maintenanceId: item.id.toString(),
@@ -194,10 +256,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            item.sellerName!.isNotEmpty &&
-                                                    item.sellerName != null
-                                                ? item.sellerName!
-                                                : item.customerName,
+                                            displayName,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             style: Theme.of(context)
@@ -276,7 +335,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                             ],
                           ),
                         ),
-                      ),
+                      );
+                      },
                     ),
                   ],
                 ),

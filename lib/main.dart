@@ -19,6 +19,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    // FCM يُهيّأ بعد أول إطار (Splash) — تجنّب شاشة بيضاء قبل runApp
   }
   await GetStorage.init();
 

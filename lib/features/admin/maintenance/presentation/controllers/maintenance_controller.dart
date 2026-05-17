@@ -164,9 +164,6 @@ class MaintenanceController extends GetxController {
     MaintenanceServes().maintenancesTasks.value = groupByDate(maintenances);
     maintenancesSearch.assignAll(MaintenanceServes().maintenancesTasks);
 
-    isLoading(false);
-    update();
-
     // ongoingMaintenances
     final ongoingData = await maintenanceUsecase.call(tab: 1);
     final ongoing = (ongoingData['maintenance_details'] as List)

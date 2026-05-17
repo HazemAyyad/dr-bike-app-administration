@@ -35,6 +35,7 @@ class AppRoutes {
   static const DEBTSSCREEN = '/DebtsScreen';
   static const ADMINACTIVTILOGSCREEN = '/AdminActivtiLogScreen';
   static const NOTIFICATIONCENTER = '/AdminNotificationCenter';
+  static const EMPLOYEENOTIFICATIONCENTER = '/EmployeeNotificationCenter';
 
   // EMPLOYEE TASKS SCREEN
   static const EMPLOYEEDETAILSSCREEN = '/EmployeeDetailsScreen';
@@ -132,4 +133,5 @@ class AppRoutes {
 
   // General Settings (admin)
   static const GENERALSETTINGSSCREEN = '/GeneralSettingsScreen';
+  static const BANKSSETTINGSSCREEN = '/BanksSettingsScreen';
 }

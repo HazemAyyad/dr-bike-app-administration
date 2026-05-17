@@ -211,18 +211,17 @@ class IfCancelCheck extends GetView<ChecksController> {
                                   ? Get.bottomSheet(
                                       PaymentScreen(
                                         type: 'payment',
-                                        isSeller: check.seller != null ||
-                                                check.toSeller != null
-                                            ? true
-                                            : false,
-                                        id: check.seller != null
-                                            ? check.seller!.id.toString()
-                                            : check.customer != null
-                                                ? check.customer!.id.toString()
-                                                : check.toSeller != null
-                                                    ? check.toSeller!.id
+                                        isSeller: check.customer != null ||
+                                            check.toCustomer != null,
+                                        id: check.customer != null
+                                            ? check.customer!.id.toString()
+                                            : check.toCustomer != null
+                                                ? check.toCustomer!.id
+                                                    .toString()
+                                                : check.seller != null
+                                                    ? check.seller!.id
                                                         .toString()
-                                                    : check.toCustomer!.id
+                                                    : check.toSeller!.id
                                                         .toString(),
                                       ),
                                       backgroundColor: Colors.white,
@@ -354,7 +353,7 @@ class CashTheCheck extends GetView<ChecksController> {
                     child: CustomDropdownFieldWithSearch(
                       tital: label,
                       hint: hint,
-                      items: controller.selectedCustomersSellers.value == false
+                      items: controller.selectedCustomersSellers.value
                           ? controller.allCustomersList
                           : controller.allSellersList,
                       onChanged: (value) {
@@ -405,10 +404,10 @@ class CashTheCheck extends GetView<ChecksController> {
               if (selectedValue.value != null) {
                 controller.cashedToPersonOrCashed(
                   checkId: check.id.toString(),
-                  customerId: controller.selectedCustomersSellers.value == false
+                  customerId: controller.selectedCustomersSellers.value
                       ? selectedValue.value
                       : null,
-                  sellerId: controller.selectedCustomersSellers.value == true
+                  sellerId: !controller.selectedCustomersSellers.value
                       ? selectedValue.value
                       : null,
                 );

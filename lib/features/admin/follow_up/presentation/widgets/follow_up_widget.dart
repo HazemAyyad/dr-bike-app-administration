@@ -1,11 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/person_avatar_helper.dart';
+import '../../../../../core/widgets/person_avatar_image.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -227,68 +227,43 @@ class FollowUpWidget extends StatelessWidget {
                               // SizedBox(height: 5.h),
                               Row(
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(100.r),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        showGeneralDialog(
-                                          context: context,
-                                          barrierDismissible: true,
-                                          barrierLabel: 'Dismiss',
-                                          barrierColor:
-                                              Colors.black.withAlpha(128),
-                                          transitionDuration:
-                                              const Duration(milliseconds: 300),
-                                          pageBuilder: (context, anim1, anim2) {
-                                            return FullScreenZoomImage(
-                                              imageUrl: followup
-                                                      .customerName.isNotEmpty
-                                                  ? followup.customerImg
-                                                  : followup.sellerImg,
-                                            );
-                                          },
-                                        );
-                                      },
-                                      child: CachedNetworkImage(
-                                        cacheManager: CacheManager(
-                                          Config(
-                                            'imagesCache',
-                                            stalePeriod:
-                                                const Duration(days: 7),
-                                            maxNrOfCacheObjects: 100,
-                                          ),
-                                        ),
-                                        imageBuilder:
-                                            (context, imageProvider) =>
-                                                Container(
+                                  Builder(
+                                    builder: (context) {
+                                      final avatarUrl =
+                                          followup.customerName.isNotEmpty
+                                              ? followup.customerImg
+                                              : followup.sellerImg;
+                                      return GestureDetector(
+                                        onTap: PersonAvatarHelper.isPlaceholder(
+                                                avatarUrl)
+                                            ? null
+                                            : () {
+                                                showGeneralDialog(
+                                                  context: context,
+                                                  barrierDismissible: true,
+                                                  barrierLabel: 'Dismiss',
+                                                  barrierColor: Colors.black
+                                                      .withAlpha(128),
+                                                  transitionDuration:
+                                                      const Duration(
+                                                          milliseconds: 300),
+                                                  pageBuilder:
+                                                      (context, anim1, anim2) {
+                                                    return FullScreenZoomImage(
+                                                      imageUrl: avatarUrl,
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                        child: PersonAvatarImage(
+                                          imageUrl: avatarUrl,
                                           height: 60.h,
                                           width: 60.w,
-                                          decoration: BoxDecoration(
-                                            image: DecorationImage(
-                                              image: imageProvider,
-                                              fit: BoxFit.cover,
-                                              filterQuality:
-                                                  FilterQuality.medium,
-                                            ),
-                                          ),
+                                          fit: BoxFit.cover,
+                                          circular: true,
                                         ),
-                                        imageUrl:
-                                            followup.customerName.isNotEmpty
-                                                ? followup.customerImg
-                                                : followup.sellerImg,
-                                        placeholder: (context, url) =>
-                                            const Center(
-                                          child: CircularProgressIndicator(
-                                              color: AppColors.primaryColor),
-                                        ),
-                                        errorWidget: (context, url, error) =>
-                                            const Icon(
-                                          Icons.error,
-                                          size: 50,
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                    ),
+                                      );
+                                    },
                                   ),
                                   SizedBox(width: 10.w),
                                   Flexible(

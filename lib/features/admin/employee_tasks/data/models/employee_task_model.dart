@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/audio_helper.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
 import '../../domain/entities/employee_task_entity.dart';
@@ -45,7 +46,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
         asNullableString(json[ApiKey.employee_photo]),
       ),
       adminImg: ShowNetImage.getPhoto(asNullableString(json[ApiKey.admin_img])),
-      audio: ShowNetImage.getPhoto(asNullableString(json[ApiKey.audio])),
+      audio: parseAudioFromApi(asNullableString(json[ApiKey.audio])),
     );
   }
 

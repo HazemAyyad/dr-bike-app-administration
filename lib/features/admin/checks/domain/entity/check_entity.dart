@@ -47,9 +47,11 @@ class CheckEntity {
 class Seller {
   final int id;
   final String name;
+  final String phone;
 
   const Seller({
     required this.id,
     required this.name,
+    this.phone = '',
   });
 }

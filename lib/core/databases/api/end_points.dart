@@ -23,6 +23,7 @@ class EndPoints {
   static const String changePassword = 'change/password';
   static const String updateProfile = 'update/profile';
   static const String me = 'me';
+  static const String updateFcmToken = 'update/fcm-token';
 
   // employee Dashboard
   static const String employeeHomeData = 'employee/home/data';
@@ -52,6 +53,20 @@ class EndPoints {
       'admin/notifications/mark-all-read';
   static String adminNotificationDelete(int id) => 'admin/notifications/$id';
   static const String adminDeviceToken = 'admin/device-token';
+
+  static const String employeeNotifications = 'employee/notifications';
+  static const String employeeNotificationsUnreadCount =
+      'employee/notifications/unread-count';
+  static String employeeNotificationMarkRead(int id) =>
+      'employee/notifications/$id/read';
+  static const String employeeNotificationsMarkAllRead =
+      'employee/notifications/mark-all-read';
+  static String employeeNotificationDelete(int id) =>
+      'employee/notifications/$id';
+
+  // banks (checks)
+  static const String banks = 'banks';
+  static const String banksFindOrCreate = 'banks/find-or-create';
 
   // debts section
   static const String totalDebtsWeOwe = 'total/debts/we/owe';

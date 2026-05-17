@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/contacts_picker_helper.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/phone_format_helper.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../data/models/employee_data_model.dart';
 import '../../data/models/person_data_model.dart';
@@ -69,6 +71,15 @@ class GeneralDataListController extends GetxController {
 
   List<String> customerTypeList = ['wholesale', 'retail'];
 
+  String get resolvedCustomerCategory {
+    final value = selectedCustomerType.text.trim();
+    if (value == 'wholesale' || value == 'retail') return value;
+    return 'retail';
+  }
+
+  String get resolvedPersonType =>
+      resolvedCustomerCategory == 'wholesale' ? 'seller' : 'customer';
+
   List<GeneralDataModel> closePeopleList = [];
 
   List<GeneralDataModel> employeeSearch = [];
@@ -113,6 +124,86 @@ class GeneralDataListController extends GetxController {
     update();
   }
 
+  Future<void> importFromContacts(BuildContext context) async {
+    if (isEdit.value) return;
+
+    final picked = await pickContactsFromDevice(context, allowMultiple: true);
+    if (picked == null || picked.isEmpty) return;
+
+    if (picked.length == 1) {
+      customerNameController.text = picked.first.name;
+      phoneNumberController.text =
+          PhoneFormatHelper.forApi(picked.first.phone);
+      if (selectedCustomerType.text.isEmpty) {
+        selectedCustomerType.text = 'retail';
+      }
+      update();
+      return;
+    }
+
+    if (selectedCustomerType.text.isEmpty) {
+      selectedCustomerType.text = 'retail';
+    }
+
+    isLoading(true);
+    update();
+    var successCount = 0;
+    var failCount = 0;
+    final seenPhones = <String>{};
+    for (final contact in picked) {
+      final phone = PhoneFormatHelper.forApi(contact.phone);
+      if (!PhoneFormatHelper.isValidApiPhone(phone) || seenPhones.contains(phone)) {
+        failCount++;
+        continue;
+      }
+      seenPhones.add(phone);
+      final result = await addPersonUseCase.call(
+        data: AddPersonEntity(
+          isEdit: false,
+          name: contact.name,
+          personType: resolvedPersonType,
+          customerCategory: resolvedCustomerCategory,
+          phone: phone,
+          subPhone: '',
+          facebookUsername: '',
+          facebookLink: '',
+          instagramUsername: '',
+          instagramLink: '',
+          relatedPeople: '',
+          iDImage: personalIdImage,
+          licenseImage: licenseImage,
+          address: '',
+          jobTitle: '',
+          workAddress: '',
+          relativePhone: '',
+          relativeJobTitle: '',
+        ),
+        customerId: '',
+        sellerId: '',
+      );
+      result.fold((_) => failCount++, (_) => successCount++);
+    }
+    isLoading(false);
+    update();
+    if (successCount > 0) {
+      Get.snackbar(
+        'success'.tr,
+        'importedContactsCount'.trParams({'count': successCount.toString()}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+    if (failCount > 0) {
+      Get.snackbar(
+        'error'.tr,
+        'importContactsFailed'.trParams({'count': failCount.toString()}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+    if (successCount > 0) {
+      getGeneralData(loding: true);
+    }
+  }
+
   // add person
   void addPerson({
     required BuildContext context,
@@ -125,10 +216,12 @@ class GeneralDataListController extends GetxController {
         data: AddPersonEntity(
           isEdit: isEdit.value,
           name: customerNameController.text,
-          personType:
-              selectedCustomerType.text == 'wholesale' ? 'seller' : 'customer',
-          phone: phoneNumberController.text,
-          subPhone: subPhoneNumberController.text,
+          personType: resolvedPersonType,
+          customerCategory: resolvedCustomerCategory,
+          phone: PhoneFormatHelper.forApi(phoneNumberController.text),
+          subPhone: subPhoneNumberController.text.trim().isEmpty
+              ? ''
+              : PhoneFormatHelper.forApi(subPhoneNumberController.text),
           facebookUsername: facebookNameController.text,
           facebookLink: facebookLinkController.text,
           instagramUsername: instagramNameController.text,
@@ -139,7 +232,9 @@ class GeneralDataListController extends GetxController {
           address: residenceLocationController.text,
           jobTitle: workController.text,
           workAddress: workLocationController.text,
-          relativePhone: closestPersonNumberController.text,
+          relativePhone: closestPersonNumberController.text.trim().isEmpty
+              ? ''
+              : PhoneFormatHelper.forApi(closestPersonNumberController.text),
           relativeJobTitle: closestPersonWorkController.text,
         ),
         customerId: customerId ?? '',
@@ -326,7 +421,11 @@ class GeneralDataListController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if (employeePermissions.contains(40) && !employeePermissions.contains(9)) {
+    final args = Get.arguments;
+    if (args is Map && args['initialTab'] is int) {
+      currentTab.value = args['initialTab'] as int;
+    } else if (employeePermissions.contains(40) &&
+        !employeePermissions.contains(9)) {
       currentTab.value = 2;
     }
     getGeneralData();

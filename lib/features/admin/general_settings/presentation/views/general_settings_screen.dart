@@ -40,6 +40,33 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
 
     final items = <_SettingsItem>[
       _SettingsItem(
+        icon: Icons.people_outline,
+        iconColor: const Color(0xFF059669),
+        titleKey: 'manageCustomers',
+        descriptionKey: 'manageCustomersDesc',
+        onTap: () => Get.toNamed(
+          AppRoutes.GENERALDATALISTSCREEN,
+          arguments: {'initialTab': 1},
+        ),
+      ),
+      _SettingsItem(
+        icon: Icons.storefront_outlined,
+        iconColor: const Color(0xFF7C3AED),
+        titleKey: 'manageMerchants',
+        descriptionKey: 'manageMerchantsDesc',
+        onTap: () => Get.toNamed(
+          AppRoutes.GENERALDATALISTSCREEN,
+          arguments: {'initialTab': 0},
+        ),
+      ),
+      _SettingsItem(
+        icon: Icons.account_balance_outlined,
+        iconColor: const Color(0xFF0D9488),
+        titleKey: 'banksManagement',
+        descriptionKey: 'banksManagementDesc',
+        onTap: () => Get.toNamed(AppRoutes.BANKSSETTINGSSCREEN),
+      ),
+      _SettingsItem(
         icon: Icons.tune_rounded,
         iconColor: const Color(0xFF2563EB),
         titleKey: 'pointCategoriesSetting',

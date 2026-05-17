@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import 'package:doctorbike/core/services/theme_service.dart';
 
+import 'phone_format_helper.dart';
 import '../utils/app_colors.dart';
 
 // class CustomPhoneField extends StatelessWidget {
@@ -237,10 +238,36 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
     _focusNode.addListener(() {
       _shouldKeepKeyboard = _focusNode.hasFocus;
     });
+
+    widget.controller.addListener(_syncFromParentController);
+    _syncFromParentController();
+  }
+
+  void _syncFromParentController() {
+    var text = widget.controller.text.trim();
+    if (text.isEmpty) return;
+
+    // استيراد جهات الاتصال أحياناً يضع الرقم بدون +972 / +970
+    if (!text.startsWith('+')) {
+      final formatted = PhoneFormatHelper.forApi(text);
+      if (formatted.isNotEmpty && formatted != text) {
+        widget.controller.text = formatted;
+        text = formatted;
+      }
+    }
+
+    final country = text.contains('+970') ? countries.first : countries.last;
+    selectedCountry = country;
+    final digits = text.replaceFirst(country.dialCode, '').trim();
+    if (_phoneOnlyController.text != digits) {
+      _phoneOnlyController.text = digits;
+    }
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_syncFromParentController);
     WidgetsBinding.instance.removeObserver(this);
     _focusNode.dispose();
     _phoneOnlyController.dispose();

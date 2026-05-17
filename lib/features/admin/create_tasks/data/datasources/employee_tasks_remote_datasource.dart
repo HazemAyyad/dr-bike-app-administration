@@ -39,54 +39,44 @@ class CreateEmployeeTasksDatasource {
       final subEmployeeTasksMap = <String, dynamic>{};
 
       for (int i = 0; i < subEmployeeTasks.length; i++) {
-        if (subEmployeeTasks[i]['subTaskId'] != null) {
-          subEmployeeTasksMap['sub_employee_tasks[$i][id]'] =
-              subEmployeeTasks[i]['subTaskId'];
-        } else {
-          // الاسم
-          subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
-              subEmployeeTasks[i]['subTaskName'];
-          // الصور
-          final imgList = subEmployeeTasks[i]['subTaskImage'];
-          if (imgList != null) {
-            if (imgList is List) {
-              for (var img in imgList) {
-                if (img.toString().startsWith('http')) {
-                  subEmployeeTasksMap[
-                      'sub_employee_tasks[$i][admin_subtask__img][]'] = img;
-                } else {
-                  final compressedImg = await compressImage(XFile(img));
-                  subEmployeeTasksMap[
-                          'sub_employee_tasks[$i][admin_subtask__img][]'] =
-                      await MultipartFile.fromFile(
-                    compressedImg.path,
-                    filename: compressedImg.path.split('/').last,
-                  );
-                }
-              }
-            } else {
-              // حالة صورة واحدة فقط
-              if (imgList.toString().contains('http')) {
-                subEmployeeTasksMap[
-                    'sub_employee_tasks[$i][admin_subtask__img][]'] = imgList;
-              } else {
-                final compressedImg = await compressImage(XFile(imgList));
-                subEmployeeTasksMap[
-                        'sub_employee_tasks[$i][admin_subtask__img][]'] =
-                    await MultipartFile.fromFile(
-                  compressedImg.path,
-                  filename: compressedImg.path.split('/').last,
-                );
+        final task = subEmployeeTasks[i];
+        final hasId = task['subTaskId'] != null;
+
+        if (hasId) {
+          subEmployeeTasksMap['sub_employee_tasks[$i][id]'] = task['subTaskId'];
+        }
+        subEmployeeTasksMap['sub_employee_tasks[$i][name]'] =
+            task['subTaskName'] ?? '';
+        subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
+            task['subTaskdescription'] ?? '';
+        subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
+            task['imageIsRequired'] == true ? 1 : 0;
+
+        // لا نرسل صور الشبكة عند التعديل — تبقى على السيرفر ما لم يُرفع ملف جديد
+        final imgList = task['subTaskImage'];
+        if (imgList != null) {
+          final localPaths = <String>[];
+          if (imgList is List) {
+            for (final img in imgList) {
+              final s = img.toString();
+              if (s.isNotEmpty && !s.startsWith('http')) {
+                localPaths.add(s);
               }
             }
+          } else {
+            final s = imgList.toString();
+            if (s.isNotEmpty && !s.startsWith('http')) {
+              localPaths.add(s);
+            }
           }
-          // الوصف
-          subEmployeeTasksMap['sub_employee_tasks[$i][description]'] =
-              subEmployeeTasks[i]['subTaskdescription'];
-          // مطلوب صورة أو لا
-          subEmployeeTasksMap[
-                  'sub_employee_tasks[$i][is_forced_to_upload_img]'] =
-              subEmployeeTasks[i]['imageIsRequired'] == true ? 1 : 0;
+          for (final path in localPaths) {
+            final compressedImg = await compressImage(XFile(path));
+            subEmployeeTasksMap['sub_employee_tasks[$i][admin_subtask__img][]'] =
+                await MultipartFile.fromFile(
+              compressedImg.path,
+              filename: compressedImg.path.split('/').last,
+            );
+          }
         }
       }
       final response = await api.post(
@@ -121,13 +111,13 @@ class CreateEmployeeTasksDatasource {
                 }
               }),
             ),
-          if (audio.path.isNotEmpty)
+          if (audio.path.isNotEmpty && await audio.exists())
             'audio': audio.path.startsWith('http')
                 ? audio.path
                 : await MultipartFile.fromFile(
                     audio.path,
                     filename: audio.path.split('/').last,
-                    contentType: MediaType("audio", "x-m4a"),
+                    contentType: MediaType('audio', 'x-m4a'),
                   ),
         },
         isFormData: true,

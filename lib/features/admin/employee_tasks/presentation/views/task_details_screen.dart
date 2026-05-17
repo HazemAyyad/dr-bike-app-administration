@@ -6,6 +6,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/initial_bindings.dart';
@@ -81,6 +82,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   title: 'numberOfPoints'.tr,
                   discription: data.points.toString(),
                 ),
+                if (data.adminImg != null && data.adminImg!.isNotEmpty) ...[
                 SizedBox(height: 10.h),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,6 +167,8 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                     ),
                   ],
                 ),
+                ],
+                if (data.employeeImg != null && data.employeeImg!.isNotEmpty) ...[
                 SizedBox(height: 10.h),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,12 +293,22 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                     ),
                   ],
                 ),
-                SizedBox(height: 10.h),
-                data.audio!.isNotEmpty &&
-                        data.audio != null &&
-                        data.audio!.contains('.aac')
-                    ? AudioPlayerWidget(url: data.audio!)
-                    : const SizedBox.shrink(),
+                ],
+                if (hasPlayableAudio(data.audio)) ...[
+                  SizedBox(height: 10.h),
+                  Text(
+                    'recordAudio'.tr,
+                    style: theme.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor4,
+                    ),
+                  ),
+                  SizedBox(height: 5.h),
+                  AudioPlayerWidget(url: data.audio!),
+                ],
                 // Row(
                 //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 //   children: [

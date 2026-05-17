@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../employee_section/presentation/controllers/employee_service.dart';
@@ -47,43 +48,81 @@ class CreateTaskController extends GetxController {
 
   // المهام الفرعية
   RxList subTasks = [].obs;
-  final isSubtasksListVisible = false.obs;
+  final Rxn<int> editingSubTaskIndex = Rxn<int>();
 
-  // دالة لإضافة مهمة فرعية
-  void addSubTask() {
-    if (subTaskNameController.text.isNotEmpty) {
-      subTasks.addAll([
-        {
-          'subTaskName': subTaskNameController.text,
-          'subTaskdescription': subTaskDescriptionController.text,
-          'subTaskImage': subTaskFile.value?.path,
-          'imageIsRequired': requireSubTasImage.value,
-        }
-      ]);
-      subTaskNameController.clear();
-      subTaskDescriptionController.clear();
-      subTaskFile.value = null;
-      requireSubTasImage.value = false;
-      isSubtasksListVisible.value = false;
-      cancelButtonColor.value =
-          Get.isDarkMode ? AppColors.darkColor : AppColors.whiteColor;
-    }
+  void prepareNewSubTask() {
+    subTaskNameController.clear();
+    subTaskDescriptionController.clear();
+    subTaskFile.value = null;
+    requireSubTasImage.value = false;
+    editingSubTaskIndex.value = null;
   }
 
-  Rx<Color> cancelButtonColor =
-      Get.isDarkMode ? AppColors.darkColor.obs : AppColors.whiteColor.obs;
-
-  // دالة لإظهار/إخفاء قائمة المهام الفرعية
-  void toggleSubtasksList() {
-    isSubtasksListVisible.value = !isSubtasksListVisible.value;
-    if (!isSubtasksListVisible.value) {
-      cancelButtonColor.value =
-          Get.isDarkMode ? AppColors.darkColor : AppColors.whiteColor;
-    } else {
-      Future.delayed(const Duration(milliseconds: 300), () {
-        cancelButtonColor.value = AppColors.primaryColor;
-      });
+  void startEditSubTask(int index) {
+    final task = subTasks[index] as Map;
+    subTaskNameController.text = task['subTaskName']?.toString() ?? '';
+    subTaskDescriptionController.text =
+        task['subTaskdescription']?.toString() ?? '';
+    final img = task['subTaskImage'];
+    String? localPath;
+    if (img is List && img.isNotEmpty) {
+      final first = img.first.toString();
+      if (first.isNotEmpty && !first.startsWith('http')) {
+        localPath = first;
+      }
+    } else if (img is String &&
+        img.isNotEmpty &&
+        !img.startsWith('http')) {
+      localPath = img;
     }
+    subTaskFile.value =
+        localPath != null ? XFile(localPath) : null;
+    requireSubTasImage.value = task['imageIsRequired'] == true;
+    editingSubTaskIndex.value = index;
+  }
+
+  void reorderSubTasks(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) newIndex -= 1;
+    final item = subTasks.removeAt(oldIndex);
+    subTasks.insert(newIndex, item);
+  }
+
+  void clearSubTaskForm() {
+    subTaskNameController.clear();
+    subTaskDescriptionController.clear();
+    subTaskFile.value = null;
+    requireSubTasImage.value = false;
+    editingSubTaskIndex.value = null;
+  }
+
+  // دالة لإضافة أو تحديث مهمة فرعية
+  void addSubTask() {
+    if (subTaskNameController.text.isEmpty) return;
+
+    final data = <String, dynamic>{
+      'subTaskName': subTaskNameController.text,
+      'subTaskdescription': subTaskDescriptionController.text,
+      'imageIsRequired': requireSubTasImage.value,
+    };
+    if (subTaskFile.value != null) {
+      data['subTaskImage'] = subTaskFile.value!.path;
+    }
+
+    final editIndex = editingSubTaskIndex.value;
+    if (editIndex != null && editIndex >= 0 && editIndex < subTasks.length) {
+      final existing = subTasks[editIndex] as Map;
+      if (existing['subTaskId'] != null) {
+        data['subTaskId'] = existing['subTaskId'];
+      }
+      if (!data.containsKey('subTaskImage') &&
+          existing['subTaskImage'] != null) {
+        data['subTaskImage'] = existing['subTaskImage'];
+      }
+      subTasks[editIndex] = data;
+    } else {
+      subTasks.add(data);
+    }
+    clearSubTaskForm();
   }
 
   // متغيرات للتواريخ والأوقات
@@ -173,7 +212,9 @@ class CreateTaskController extends GetxController {
         notShownForEmployee: hideTask.value ? '1' : '0',
         isForcedToUploadImg: requireImage.value ? '1' : '0',
         adminImg: selectedFile,
-        audio: File(recordedPath.value),
+        audio: hasPlayableAudio(recordedPath.value)
+            ? File(recordedPath.value)
+            : File(''),
       );
       result.fold(
         (failure) {
@@ -226,7 +267,9 @@ class CreateTaskController extends GetxController {
         notShownForEmployee: hideTask.value ? '1' : '0',
         forceEmployeeToAddImg: requireImage.value,
         adminImg: selectedFile,
-        audio: File(recordedPath.value),
+        audio: hasPlayableAudio(recordedPath.value)
+            ? File(recordedPath.value)
+            : File(''),
       );
       result.fold(
         (failure) {
@@ -320,9 +363,7 @@ class CreateTaskController extends GetxController {
       });
       startDate.value = data.startTime;
       endDate.value = data.endTime;
-      recordedPath.value = data.audio.isNotEmpty && data.audio.contains('.aac')
-          ? data.audio
-          : '';
+      recordedPath.value = parseAudioFromApi(data.audio) ?? '';
     }
   }
 
@@ -338,7 +379,7 @@ class CreateTaskController extends GetxController {
         'subTaskName': element.name,
         'subTaskdescription': element.description,
         'subTaskImage': element.adminImg,
-        'imageIsRequired': element.isForcedToUploadImg ? '1' : '0',
+        'imageIsRequired': element.isForcedToUploadImg,
       });
     }
     pointsController.text = data.points.toString();
@@ -349,11 +390,7 @@ class CreateTaskController extends GetxController {
     for (var element in data.taskRecurrenceTime) {
       selectedDaysList.add(element);
     }
-    recordedPath.value = data.audio!.isNotEmpty &&
-            data.audio != null &&
-            data.audio!.contains('.aac')
-        ? data.audio!
-        : '';
+    recordedPath.value = parseAudioFromApi(data.audio) ?? '';
     selectedFile.addAll(data.adminImg?.map((e) => File(e)).toList() ?? []);
     requireImage.value = data.isForcedToUploadImg;
   }

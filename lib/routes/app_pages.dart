@@ -31,6 +31,8 @@ import '../features/admin/admin_dashbord/presentation/binding/admin_dashboard_bi
 import '../features/admin/admin_dashbord/presentation/views/admin_activti_log_screen.dart';
 import '../features/admin/notifications/presentation/bindings/admin_notification_center_binding.dart';
 import '../features/admin/notifications/presentation/views/admin_notification_center_screen.dart';
+import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
+import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
@@ -65,6 +67,9 @@ import '../features/admin/employee_section/presentation/views/employee_point_cat
 import '../features/admin/employee_section/presentation/views/employee_points_report_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_reward_rules_screen.dart';
 import '../features/admin/employee_section/presentation/views/global_employee_points_screen.dart';
+import '../core/services/banks_service.dart';
+import '../features/admin/general_settings/presentation/controllers/banks_settings_controller.dart';
+import '../features/admin/general_settings/presentation/views/banks_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
@@ -255,6 +260,12 @@ class AppPages {
       binding: AdminNotificationCenterBinding(),
       transition: _transitionFadeIn,
     ),
+    GetPage(
+      name: AppRoutes.EMPLOYEENOTIFICATIONCENTER,
+      page: () => const EmployeeNotificationCenterScreen(),
+      binding: EmployeeNotificationCenterBinding(),
+      transition: _transitionFadeIn,
+    ),
 
     // Employee Dashboard
     GetPage(
@@ -425,6 +436,19 @@ class AppPages {
     GetPage(
       name: AppRoutes.GENERALSETTINGSSCREEN,
       page: () => const GeneralSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.BANKSSETTINGSSCREEN,
+      page: () => const BanksSettingsScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<BanksSettingsController>()) {
+          Get.lazyPut(() => BanksSettingsController());
+        }
+        if (!Get.isRegistered<BanksService>()) {
+          Get.put(BanksService());
+        }
+      }),
       transition: _transitionFadeIn,
     ),
 

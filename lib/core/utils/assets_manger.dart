@@ -18,6 +18,9 @@ class AssetsManager {
   static const String logoNoNameWhite = "$imagesPath/logo_no_name_white.png";
   static const String logoNoNameDark = "$imagesPath/logo_no_name_dark.png";
 
+  /// صورة بديلة للزبائن/التجار عند عدم وجود صورة هوية.
+  static const String personAvatarPlaceholder = logoNoNameDark;
+
   static const String errorAnimationImage = "$imagesPath/error_animation.gif";
   static const String successAnimation = "$imagesPath/success_animation.gif";
 

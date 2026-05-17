@@ -9,6 +9,7 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
 
 import '../../../../../core/helpers/custom_chechbox.dart';
+import '../../../../../core/helpers/bank_name_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -42,10 +43,13 @@ class NewCheckScreen extends GetView<ChecksController> {
                 label: 'checkValue',
                 hintText: 'totalExample',
                 controller: controller.checkValueController,
+                focusNode: controller.checkValueFocus,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
                 isRequired: true,
                 enabled: !controller.isEdit.value,
+                onFieldSubmitted: (_) =>
+                    controller.bankNameFocus.requestFocus(),
               ),
               SizedBox(height: isNewCheck ? 0 : 16.h),
               isNewCheck
@@ -181,32 +185,40 @@ class NewCheckScreen extends GetView<ChecksController> {
                 isEnabled: !controller.isEdit.value,
               ),
               SizedBox(height: 16.h),
+              BankNameField(
+                controller: controller.bankNameController,
+                focusNode: controller.bankNameFocus,
+                onSubmitted: () => controller.checkNumberFocus.requestFocus(),
+              ),
+              SizedBox(height: 16.h),
               CustomTextField(
                 label: 'checkNumber',
                 hintText: 'checkNumberExample',
                 controller: controller.checkNumberController,
+                focusNode: controller.checkNumberFocus,
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.next,
                 isRequired: true,
-              ),
-              SizedBox(height: 16.h),
-              CustomTextField(
-                label: 'bankName',
-                hintText: 'bankNameExample',
-                controller: controller.bankNameController,
-                textInputAction: TextInputAction.next,
-                isRequired: true,
+                onFieldSubmitted: (_) => controller.notesFocus.requestFocus(),
               ),
               SizedBox(height: 16.h),
               CustomTextField(
                 label: 'notes',
                 hintText: 'notes',
                 controller: controller.notesController,
-                textInputAction: TextInputAction.newline,
+                focusNode: controller.notesFocus,
+                textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.multiline,
                 maxLines: 5,
                 minLines: 5,
                 validator: (p0) => null,
+                onFieldSubmitted: (_) async {
+                  FocusScope.of(context).unfocus();
+                  await UploadImageButton.pickFileFor(
+                    context,
+                    controller.checkFrontImage,
+                  );
+                },
               ),
               SizedBox(height: 20.h),
               if (controller.editCheckBackImage.value == null)

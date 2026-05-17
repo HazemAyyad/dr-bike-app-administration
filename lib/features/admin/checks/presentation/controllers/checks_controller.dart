@@ -11,6 +11,7 @@ import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/check_model.dart';
 import '../../data/models/general_incoming_model.dart';
 import '../../data/models/general_outgoing_data_model.dart';
+import '../../../../../core/services/banks_service.dart';
 import '../../domain/usecases/add_checks_usecase.dart';
 import '../../domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/cashed_to_person_cancel_usecase.dart';
@@ -51,6 +52,11 @@ class ChecksController extends GetxController
   });
 
   final GlobalKey formKey = GlobalKey<FormState>();
+
+  final FocusNode checkValueFocus = FocusNode();
+  final FocusNode checkNumberFocus = FocusNode();
+  final FocusNode bankNameFocus = FocusNode();
+  final FocusNode notesFocus = FocusNode();
 
   final TextEditingController checkValueController = TextEditingController();
 
@@ -190,6 +196,11 @@ class ChecksController extends GetxController
   }) async {
     if ((formKey.currentState as FormState).validate()) {
       isLoading(true);
+      if (!Get.isRegistered<BanksService>()) {
+        Get.put(BanksService());
+      }
+      await Get.find<BanksService>()
+          .findOrCreateByName(bankNameController.text);
       final result = await addChecksUsecase.call(
         isInComing: isInComing,
         customerId: customerId,
@@ -266,6 +277,7 @@ class ChecksController extends GetxController
   final Rx<XFile?> editCheckBackImage = Rx<XFile?>(null);
 
   String? checkId;
+
   void getCeckData({CheckModel? check, required bool isOutgoing}) {
     if (isEdit.value) {
       Get.toNamed(
@@ -295,6 +307,7 @@ class ChecksController extends GetxController
         arguments: {'isNewCheck': isOutgoing},
       );
       selectedValue.value = null;
+      // false = تاجر (seller) هو الافتراضي
       selectedCustomersSellers.value = false;
       checkId = null;
       checkValueController.clear();
@@ -1012,7 +1025,12 @@ class ChecksController extends GetxController
   }
 
   @override
+  @override
   void onClose() {
+    checkValueFocus.dispose();
+    checkNumberFocus.dispose();
+    bankNameFocus.dispose();
+    notesFocus.dispose();
     checkValueController.dispose();
     currencyController.dispose();
     checkNumberController.dispose();

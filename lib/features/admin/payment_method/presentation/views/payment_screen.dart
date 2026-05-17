@@ -110,13 +110,13 @@ class PaymentScreen extends GetView<PaymentController> {
                     child: CustomDropdownFieldWithSearch(
                       tital: controller.partnerDropdownTitle,
                       hint: controller.partnerDropdownHint,
-                      items: controller.selectedCustomersSellers.value == false
+                      items: controller.selectedCustomersSellers.value
                           ? controller.allCustomersList
                           : controller.allSellersList,
                       value: controller.selectedPartner.value ??
                           (id == null || id!.isEmpty
                               ? null
-                              : (!controller.selectedCustomersSellers.value
+                              : (controller.selectedCustomersSellers.value
                                   ? controller.allCustomersList
                                       .firstWhereOrNull(
                                       (e) => e.id == int.tryParse(id!),

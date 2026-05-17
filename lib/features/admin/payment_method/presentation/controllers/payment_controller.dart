@@ -62,7 +62,7 @@ class PaymentController extends GetxController {
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
   final Rxn<SellerModel> selectedPartner = Rxn<SellerModel>();
 
-  /// false = تاجر (customers list), true = زبون (sellers list).
+  /// false = تاجر (sellers), true = زبون (customers).
   void setPartnerTab({required bool isCustomer}) {
     if (selectedCustomersSellers.value == isCustomer) return;
     selectedCustomersSellers.value = isCustomer;
@@ -129,19 +129,18 @@ class PaymentController extends GetxController {
   final RxBool isPayment = true.obs;
 
   /// Maps payment-step partner selection to instant-sale buyer fields.
-  /// Seller tab → customers table (trader). Customer tab → sellers table (name snapshot).
   Map<String, dynamic> buildInstantSaleBuyerPayload() {
     final id = partnerIdController.text.trim();
-    final fromSellersList = selectedCustomersSellers.value;
+    final isCustomer = selectedCustomersSellers.value;
 
     String? name;
     if (id.isNotEmpty) {
-      if (fromSellersList) {
-        name = allSellersList
+      if (isCustomer) {
+        name = allCustomersList
             .firstWhereOrNull((e) => e.id.toString() == id)
             ?.name;
       } else {
-        name = allCustomersList
+        name = allSellersList
             .firstWhereOrNull((e) => e.id.toString() == id)
             ?.name;
       }
@@ -162,8 +161,8 @@ class PaymentController extends GetxController {
 
     return {
       'success': true,
-      'buyer_type': fromSellersList ? 'customer' : 'trader',
-      'buyer_id': fromSellersList ? null : id,
+      'buyer_type': isCustomer ? 'customer' : 'trader',
+      'buyer_id': isCustomer ? id : null,
       'buyer_name': name ?? '',
       if (boxId.isNotEmpty) 'payment_box_id': boxId,
       if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
@@ -209,9 +208,9 @@ class PaymentController extends GetxController {
 
       final result = await addPaymentUsecase.call(
         customerId:
-            !selectedCustomersSellers.value ? partnerIdController.text : '',
-        sellerId:
             selectedCustomersSellers.value ? partnerIdController.text : '',
+        sellerId:
+            !selectedCustomersSellers.value ? partnerIdController.text : '',
         type: type,
         boxId: boxIdController.text,
         boxValue: sanitizedCash,

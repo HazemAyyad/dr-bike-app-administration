@@ -8,8 +8,10 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
+import '../../../../../core/services/session_service.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
+import '../../../../employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../domain/usecases/login_usecase.dart';
 
 class LoginController extends GetxController {
@@ -74,10 +76,12 @@ class LoginController extends GetxController {
     if (!formKey.currentState!.validate()) return;
     isLoading(true);
     try {
+      final fcmToken =
+          await NotificationFirebaseService.instance.resolveTokenForLogin();
       final result = await login.call(
         email: emailController.text,
         password: passwordController.text,
-        fcmToken: _currentFcmToken(),
+        fcmToken: fcmToken,
       );
       await result.fold<Future<void>>(
         (failure) async {
@@ -139,7 +143,25 @@ class LoginController extends GetxController {
 
       await UserData.saveToken(savedData.token!);
       await UserData.saveUserJson(savedData.userDataJson!);
+      await SessionService.hydrateToken();
       await _restoreSavedUserGlobals();
+
+      final validation = await SessionService.validateAndRefreshSession();
+      if (!validation.isValid) {
+        await BiometricAuthService.instance.setBiometricLoginEnabled(false);
+        await BiometricAuthService.instance.clearLoginData();
+        canShowBiometricLogin.value = false;
+        await UserData.clearAllUserData();
+        _showMessage(
+          title: 'تنبيه',
+          message: validation.isAuthFailure
+              ? 'انتهت الجلسة على السيرفر (مثلاً بعد مسح الجلسات). سجّل دخولاً بكلمة المرور.'
+              : 'تعذر التحقق من الجلسة. سجّل دخولاً بكلمة المرور.',
+          isError: true,
+        );
+        return;
+      }
+
       await _registerAdminPushAfterLogin();
       Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
     } catch (e, st) {
@@ -156,6 +178,11 @@ class LoginController extends GetxController {
 
   Future<void> _handleSuccessfulNormalLogin() async {
     await UserData.saveIsRememberUser(isRemember.value);
+
+    final userdata = await UserData.getSavedUser();
+    if (userdata != null) {
+      userType = userdata.user.type;
+    }
 
     if (!kIsWeb &&
         await BiometricAuthService.instance.isBiometricLoginEnabled()) {
@@ -174,23 +201,20 @@ class LoginController extends GetxController {
   Future<void> _registerAdminPushAfterLogin() async {
     if (!kIsWeb) {
       await NotificationFirebaseService.instance.ensureInitialized();
+      await NotificationFirebaseService.instance
+          .syncFcmTokenToServer(source: 'login');
     }
-    if (!Get.isRegistered<AdminNotificationBadgeController>()) {
-      Get.put(AdminNotificationBadgeController(), permanent: true);
-    }
-    await NotificationFirebaseService.instance
-        .registerAdminDeviceTokenIfReady(source: 'login');
-    if (Get.isRegistered<AdminNotificationBadgeController>()) {
+    if (userType == 'admin') {
+      if (!Get.isRegistered<AdminNotificationBadgeController>()) {
+        Get.put(AdminNotificationBadgeController(), permanent: true);
+      }
       await Get.find<AdminNotificationBadgeController>().refresh();
+    } else if (userType == 'employee') {
+      if (!Get.isRegistered<EmployeeNotificationBadgeController>()) {
+        Get.put(EmployeeNotificationBadgeController(), permanent: true);
+      }
+      await Get.find<EmployeeNotificationBadgeController>().refresh();
     }
-  }
-
-  String _currentFcmToken() {
-    return kIsWeb
-        ? 'no_token'
-        : (NotificationFirebaseService.instance.finalToken.isEmpty
-            ? 'no_token'
-            : NotificationFirebaseService.instance.finalToken);
   }
 
   Future<void> _restoreSavedUserGlobals() async {
