@@ -50,6 +50,8 @@ import '../features/admin/counters/presentation/binding/counters_binding.dart';
 import '../features/admin/counters/presentation/views/counters_screen.dart';
 import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
 import '../features/admin/create_tasks/presentation/views/create_task_screen.dart';
+import '../features/admin/create_tasks/presentation/views/task_recurrence_screen.dart';
+import '../features/admin/employee_tasks/presentation/views/employee_task_performance_screen.dart';
 import '../features/admin/debts/presentation/binding/debts_binding.dart';
 import '../features/admin/debts/presentation/views/debts_screen.dart';
 import '../features/admin/employee_section/presentation/binding/employee_section_binding.dart';
@@ -299,6 +301,17 @@ class AppPages {
       name: AppRoutes.TASKDETAILS,
       page: () => const TaskDetailsScreen(),
       binding: EmployeeTasksBinding(),
+      transition: _transitionFade,
+    ),
+    GetPage(
+      name: AppRoutes.TASKRECURRENCE,
+      page: () => const TaskRecurrenceScreen(),
+      binding: CreateTaskBinding(),
+      transition: _transitionFade,
+    ),
+    GetPage(
+      name: AppRoutes.EMPLOYEETASKPERFORMANCE,
+      page: () => const EmployeeTaskPerformanceScreen(),
       transition: _transitionFade,
     ),
 

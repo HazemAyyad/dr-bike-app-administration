@@ -1,5 +1,6 @@
 class EmployeeTaskEntity {
   final int taskId;
+  final int? occurrenceId;
   final String taskName;
   final String employeeId;
   final String employeeName;
@@ -10,9 +11,15 @@ class EmployeeTaskEntity {
   final String? employeePhoto;
   final String? adminImg;
   final String? audio;
+  final String status;
+  final String priority;
+  final int points;
+  final int progress;
+  final bool proofRequired;
 
   EmployeeTaskEntity({
     required this.taskId,
+    this.occurrenceId,
     required this.taskName,
     required this.employeeId,
     required this.employeeName,
@@ -23,5 +30,10 @@ class EmployeeTaskEntity {
     this.employeePhoto,
     this.adminImg,
     this.audio,
+    this.status = 'pending',
+    this.priority = 'medium',
+    this.points = 0,
+    this.progress = 0,
+    this.proofRequired = false,
   });
 }

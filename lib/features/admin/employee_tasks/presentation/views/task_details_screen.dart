@@ -17,6 +17,8 @@ import '../../../../employee/employee_dashbord/presentation/controllers/employee
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/audio_player.dart';
 import '../widgets/mark_task_complete.dart';
+import '../widgets/task_status_badge.dart';
+import '../widgets/task_timeline_section.dart';
 
 class TaskDetailsScreen extends GetView<EmployeeTasksController> {
   const TaskDetailsScreen({Key? key}) : super(key: key);
@@ -70,6 +72,25 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  children: [
+                    TaskStatusBadge(status: data.status),
+                    SizedBox(width: 8.w),
+                    if (data.progress > 0)
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.r),
+                          child: LinearProgressIndicator(
+                            value: data.progress / 100,
+                            minHeight: 8.h,
+                            color: AppColors.operationalPurple,
+                            backgroundColor: AppColors.operationalSurface,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
                 SupTextAndDiscr(
                   title: 'taskName'.tr,
                   discription: data.taskName,
@@ -384,6 +405,8 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                       )
                     : MarkTaskComplete(data: data),
                 SizedBox(height: 15.h),
+                TaskTimelineSection(events: data.timeline),
+                SizedBox(height: 15.h),
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
@@ -424,6 +447,7 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   ),
                 if (userType != 'admin' &&
                     data.status != 'completed' &&
+                    data.status != 'waiting_review' &&
                     data.subTasks.isEmpty) ...[
                   AppButton(
                     isLoading: controller.isLoading,

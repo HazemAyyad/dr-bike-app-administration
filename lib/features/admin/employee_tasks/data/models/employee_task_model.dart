@@ -8,6 +8,7 @@ import '../../domain/entities/employee_task_entity.dart';
 class EmployeeTaskModel extends EmployeeTaskEntity {
   EmployeeTaskModel({
     required int taskId,
+    int? occurrenceId,
     required String taskName,
     required String employeeId,
     required String employeeName,
@@ -18,8 +19,14 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     String? employeePhoto,
     String? adminImg,
     String? audio,
+    String status = 'pending',
+    String priority = 'medium',
+    int points = 0,
+    int progress = 0,
+    bool proofRequired = false,
   }) : super(
           taskId: taskId,
+          occurrenceId: occurrenceId,
           taskName: taskName,
           employeeId: employeeId,
           employeeName: employeeName,
@@ -30,11 +37,17 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
           employeePhoto: employeePhoto,
           adminImg: adminImg,
           audio: audio,
+          status: status,
+          priority: priority,
+          points: points,
+          progress: progress,
+          proofRequired: proofRequired,
         );
 
   factory EmployeeTaskModel.fromJson(Map<String, dynamic> json) {
     return EmployeeTaskModel(
       taskId: asInt(json[ApiKey.task_id]),
+      occurrenceId: json['occurrence_id'] != null ? asInt(json['occurrence_id']) : null,
       taskName: asString(json[ApiKey.task_name], 'Unknown'),
       employeeId: asString(json[ApiKey.employee_id], 'Unknown'),
       employeeName: asString(json[ApiKey.employee_name], 'Unknown'),
@@ -47,6 +60,11 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       ),
       adminImg: ShowNetImage.getPhoto(asNullableString(json[ApiKey.admin_img])),
       audio: parseAudioFromApi(asNullableString(json[ApiKey.audio])),
+      status: asString(json['status'], 'pending'),
+      priority: asString(json['priority'], 'medium'),
+      points: asInt(json['points']),
+      progress: asInt(json['progress']),
+      proofRequired: asBool(json['is_forced_to_upload_img']),
     );
   }
 

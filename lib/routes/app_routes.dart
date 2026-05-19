@@ -21,6 +21,8 @@ class AppRoutes {
   static const EMPLOYEETASKSSCREEN = '/employeetasksscreen';
   static const CREATETASKSCREEN = '/createtaskscreen';
   static const TASKDETAILS = '/taskdetails';
+  static const TASKRECURRENCE = '/taskrecurrence';
+  static const EMPLOYEETASKPERFORMANCE = '/employeetaskperformance';
   static const PRIVATETASKSSCREEN = '/privatetasksscreen';
   static const EMPLOYEESECTIONSCREEN = '/employeesectionscreen';
   static const ADDNEWEMPLOYEESCREEN = '/AddNewEmployeeScreen';

@@ -19,6 +19,10 @@ class TaskDetailsEntity {
   final List<String>? employeeImg;
   final String? audio;
   final List<SubTaskEntity> subTasks;
+  final List<Map<String, dynamic>> timeline;
+  final int progress;
+  final String priority;
+  final String? rejectionNotes;
 
   const TaskDetailsEntity({
     required this.taskId,
@@ -41,6 +45,10 @@ class TaskDetailsEntity {
     this.employeeImg,
     this.audio,
     required this.subTasks,
+    this.timeline = const [],
+    this.progress = 0,
+    this.priority = 'medium',
+    this.rejectionNotes,
   });
 }
 

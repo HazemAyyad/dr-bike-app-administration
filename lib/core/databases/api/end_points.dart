@@ -167,6 +167,14 @@ class EndPoints {
       'employee/edit/employee/task/images';
   static const String editEmployeeSubTaskImages =
       'employee/edit/employee/sub/task/images';
+
+  static const String createEmployeeTaskV2 = 'create/employee/task/v2';
+  static const String employeeTaskStart = 'employee/task/start';
+  static const String employeeTaskSubmit = 'employee/task/submit';
+  static const String employeeTaskApprove = 'employee/task/approve';
+  static const String employeeTaskReject = 'employee/task/reject';
+  static const String employeeTaskTimeline = 'employee/task/timeline';
+  static const String employeeTaskPerformance = 'employee/task/performance';
   // special tasks
   static const String createSpecialTask = 'create/special/task';
   static const String getOngoingSpecialTasks = 'ongoing/special/tasks';

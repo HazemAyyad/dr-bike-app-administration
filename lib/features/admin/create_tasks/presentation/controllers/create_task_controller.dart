@@ -155,6 +155,30 @@ class CreateTaskController extends GetxController {
   // التكرار ايام الاسبوع
   RxString selectedDays = ''.obs;
 
+  RxString priority = 'medium'.obs;
+  RxString durationType = 'forever'.obs;
+  RxInt endAfterCount = 10.obs;
+  RxString recurrenceSummary = ''.obs;
+
+  void toggleDay(String day) {
+    if (selectedDaysList.contains(day)) {
+      selectedDaysList.remove(day);
+    } else {
+      selectedDaysList.add(day);
+    }
+    updateRecurrenceSummary();
+  }
+
+  void updateRecurrenceSummary() {
+    if (selectedDays.value.isEmpty || selectedDays.value == 'noRepeat') {
+      recurrenceSummary.value = 'recurrenceNoRepeat'.tr;
+      return;
+    }
+    final days = selectedDaysList.join(', ');
+    recurrenceSummary.value =
+        '${selectedDays.value.tr}${days.isNotEmpty ? ' · $days' : ''} · ${durationType.value.tr}';
+  }
+
   // متغير لاظهار التكرار
   RxBool isRecurrenceVisible = false.obs;
 
@@ -167,6 +191,7 @@ class CreateTaskController extends GetxController {
     'daily',
     'weekly',
     'monthly',
+    'yearly',
   ];
 
   RxList<String> selectedDaysList = <String>[].obs;

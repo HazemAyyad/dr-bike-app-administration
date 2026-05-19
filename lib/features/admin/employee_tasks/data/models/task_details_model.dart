@@ -27,6 +27,10 @@ class TaskDetailsModel extends TaskDetailsEntity {
     List<String>? employeeImg,
     String? audio,
     required List<SubTaskModel> subTasks,
+    List<Map<String, dynamic>> timeline = const [],
+    int progress = 0,
+    String priority = 'medium',
+    String? rejectionNotes,
   }) : super(
           taskId: taskId,
           taskName: taskName,
@@ -48,6 +52,10 @@ class TaskDetailsModel extends TaskDetailsEntity {
           employeeImg: employeeImg,
           audio: audio,
           subTasks: subTasks,
+          timeline: timeline,
+          progress: progress,
+          priority: priority,
+          rejectionNotes: rejectionNotes,
         );
 
   factory TaskDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -101,6 +109,14 @@ class TaskDetailsModel extends TaskDetailsEntity {
         json[ApiKey.sub_tasks],
         (Map<String, dynamic> m) => SubTaskModel.fromJson(m),
       ),
+      timeline: json['timeline'] is List
+          ? (json['timeline'] as List)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList()
+          : [],
+      progress: asInt(json['progress']),
+      priority: asString(json['priority'], 'medium'),
+      rejectionNotes: asNullableString(json['rejection_notes']),
     );
   }
 
