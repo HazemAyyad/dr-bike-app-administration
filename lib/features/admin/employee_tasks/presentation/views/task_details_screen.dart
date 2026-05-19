@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/audio_helper.dart';
+import '../../../../../core/helpers/task_nav_debug.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/initial_bindings.dart';
@@ -41,6 +42,12 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                     size: 25.sp,
                   ),
                   onPressed: () {
+                    TaskNavDebug.log(
+                      'TaskDetailsScreen.editButton',
+                      AppRoutes.CREATETASKSCREEN,
+                      screen: 'CreateTaskEntryScreen -> CreateEmployeeTaskScreen',
+                      extra: {'title': 'editEmployeeTask', 'isEdit': true},
+                    );
                     Get.toNamed(
                       AppRoutes.CREATETASKSCREEN,
                       arguments: {'title': 'editEmployeeTask', 'isEdit': true},

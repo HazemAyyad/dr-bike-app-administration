@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
+import '../../../../../core/helpers/task_nav_debug.dart';
+import '../../../../../routes/app_routes.dart';
 
 /// Dedicated recurrence configuration screen (v2 lazy recurrence).
 class TaskRecurrenceScreen extends GetView<CreateTaskController> {
@@ -22,6 +24,11 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
 
   @override
   Widget build(BuildContext context) {
+    TaskNavDebug.log(
+      'TaskRecurrenceScreen.build',
+      AppRoutes.TASKRECURRENCE,
+      screen: 'TaskRecurrenceScreen',
+    );
     return Scaffold(
       backgroundColor: AppColors.operationalSurface,
       appBar: CustomAppBar(title: 'recurrenceSettings'.tr),

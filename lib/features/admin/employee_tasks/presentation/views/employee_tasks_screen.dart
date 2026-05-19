@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:doctorbike/routes/app_routes.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/helpers/task_nav_debug.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
@@ -92,6 +93,12 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
       ),
       floatingActionButton: AddFloatingActionButton(
         onPressed: () {
+          TaskNavDebug.log(
+            'EmployeeTasksScreen.FAB',
+            AppRoutes.CREATETASKSCREEN,
+            screen: 'CreateTaskEntryScreen -> CreateEmployeeTaskScreen',
+            extra: {'title': 'createNewEmployeeTask', 'isEdit': false},
+          );
           Get.toNamed(
             AppRoutes.CREATETASKSCREEN,
             arguments: {'title': 'createNewEmployeeTask', 'isEdit': false},

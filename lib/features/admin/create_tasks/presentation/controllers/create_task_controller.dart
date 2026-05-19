@@ -427,6 +427,9 @@ class CreateTaskController extends GetxController {
     if (isEdit) {
       title == 'editSpecialTask' ? updateSpecialTask() : updateEmployeeTask();
     }
+    if (title == 'createNewEmployeeTask' || title == 'editEmployeeTask') {
+      updateRecurrenceSummary();
+    }
   }
 
   @override
