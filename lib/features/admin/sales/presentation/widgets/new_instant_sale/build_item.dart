@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../controllers/sales_controller.dart';
+import '../../utils/sales_amount_format.dart';
 
 class BuildItem extends GetView<SalesController> {
   const BuildItem({
@@ -53,7 +54,7 @@ class BuildItem extends GetView<SalesController> {
               () => CustomTextField(
                 enabled: false,
                 label: 'total',
-                hintText: item.total.value.toString(),
+                hintText: SalesAmountFormat.display(item.total.value),
                 validator: (p0) => null,
               ),
             ),

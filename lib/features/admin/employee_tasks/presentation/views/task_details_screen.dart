@@ -169,130 +169,120 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                 ),
                 ],
                 if (data.employeeImg != null && data.employeeImg!.isNotEmpty) ...[
-                SizedBox(height: 10.h),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'employeeImage'.tr,
-                      style: theme.copyWith(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor6
-                            : AppColors.customGreyColor4,
-                      ),
+                  SizedBox(height: 10.h),
+                  Text(
+                    'employeeImage'.tr,
+                    style: theme.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor4,
                     ),
-                    userType != 'admin' && data.isForcedToUploadImg
-                        ? Column(
-                            children: [
-                              SizedBox(height: 10.h),
-                              MediaUploadButton(
-                                allowedType: MediaType.image,
-                                onFilesChanged: (files) {
-                                  controller.selectedFile = files;
+                  ),
+                  SizedBox(height: 10.h),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ...data.employeeImg!.map(
+                          (e) => Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 5.w),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(5.r),
+                              child: GestureDetector(
+                                onTap: () {
+                                  showGeneralDialog(
+                                    context: context,
+                                    barrierDismissible: true,
+                                    barrierLabel: 'Dismiss',
+                                    barrierColor: Colors.black.withAlpha(128),
+                                    transitionDuration:
+                                        const Duration(milliseconds: 300),
+                                    pageBuilder: (context, anim1, anim2) {
+                                      return FullScreenZoomImage(
+                                        imageUrl: e,
+                                      );
+                                    },
+                                  );
                                 },
-                                title: 'employeeImage'.tr,
-                              ),
-                              userType == 'admin'
-                                  ? const SizedBox.shrink()
-                                  : SizedBox(height: 10.h),
-                              userType == 'admin'
-                                  ? const SizedBox.shrink()
-                                  : AppButton(
-                                      isLoading: controller.isLoading,
-                                      text: 'uploadPersonalIdImage',
-                                      onPressed: () async {
-                                        // final args = Get.arguments
-                                        //     as Map<String, dynamic>?;
-                                        // final EmployeeDashbordController
-                                        // controller1 =
-                                        // args?['EmployeeDashbordController'];
-                                        await controller.uploadTaskImage(
-                                          taskId: data.taskId.toString(),
-                                        );
-                                        // controller1.changeTaskToCompleted(
-                                        //   taskId: data.taskId,
-                                        //   isSubTask: false,
-                                        //   // ignore: use_build_context_synchronously
-                                        //   context: context,
-                                        // );
-                                        Get.back();
-                                      },
-                                    )
-                            ],
-                          )
-                        : const SizedBox(),
-                    SizedBox(height: 10.h),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          ...data.employeeImg!.map(
-                            (e) => Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 5.w),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5.r),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showGeneralDialog(
-                                      context: context,
-                                      barrierDismissible: true,
-                                      barrierLabel: 'Dismiss',
-                                      barrierColor: Colors.black.withAlpha(128),
-                                      transitionDuration:
-                                          const Duration(milliseconds: 300),
-                                      pageBuilder: (context, anim1, anim2) {
-                                        return FullScreenZoomImage(
-                                          imageUrl: e,
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: CachedNetworkImage(
-                                    cacheManager: CacheManager(
-                                      Config(
-                                        'imagesCache',
-                                        stalePeriod: const Duration(days: 7),
-                                        maxNrOfCacheObjects: 100,
-                                      ),
+                                child: CachedNetworkImage(
+                                  cacheManager: CacheManager(
+                                    Config(
+                                      'imagesCache',
+                                      stalePeriod: const Duration(days: 7),
+                                      maxNrOfCacheObjects: 100,
                                     ),
-                                    imageBuilder: (context, imageProvider) =>
-                                        Container(
-                                      height: 200.h,
-                                      width: 200.w,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.fill,
-                                          filterQuality: FilterQuality.medium,
-                                        ),
-                                      ),
-                                    ),
-                                    imageUrl: e,
-                                    fadeInDuration:
-                                        const Duration(milliseconds: 200),
-                                    fadeOutDuration:
-                                        const Duration(milliseconds: 200),
-                                    placeholder: (context, url) => SizedBox(
-                                      height: 200.h,
-                                      width: 200.w,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
                                   ),
+                                  imageBuilder: (context, imageProvider) =>
+                                      Container(
+                                    height: 200.h,
+                                    width: 200.w,
+                                    decoration: BoxDecoration(
+                                      image: DecorationImage(
+                                        image: imageProvider,
+                                        fit: BoxFit.fill,
+                                        filterQuality: FilterQuality.medium,
+                                      ),
+                                    ),
+                                  ),
+                                  imageUrl: e,
+                                  fadeInDuration:
+                                      const Duration(milliseconds: 200),
+                                  fadeOutDuration:
+                                      const Duration(milliseconds: 200),
+                                  placeholder: (context, url) => SizedBox(
+                                    height: 200.h,
+                                    width: 200.w,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
                                 ),
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (userType != 'admin' &&
+                    data.isForcedToUploadImg &&
+                    data.status != 'completed') ...[
+                  SizedBox(height: 10.h),
+                  Text(
+                    'uploadTaskProof'.tr,
+                    style: theme.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor4,
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  MediaUploadButton(
+                    allowedType: MediaType.both,
+                    onFilesChanged: (files) {
+                      controller.selectedFile = files;
+                    },
+                    title: 'employeeImage'.tr,
+                  ),
+                  if (controller.selectedFile.isNotEmpty) ...[
+                    SizedBox(height: 10.h),
+                    AppButton(
+                      isLoading: controller.isLoading,
+                      text: 'uploadPersonalIdImage',
+                      onPressed: () async {
+                        await controller.uploadTaskImage(
+                          taskId: data.taskId.toString(),
+                        );
+                      },
                     ),
                   ],
-                ),
                 ],
                 if (hasPlayableAudio(data.audio)) ...[
                   SizedBox(height: 10.h),
@@ -420,37 +410,55 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   ),
                 ),
                 SizedBox(height: 15.h),
-                // userType == 'admin'
-                // ?
-                if (controller.currentTab.value != 1)
+                if (userType == 'admin' && controller.currentTab.value != 1)
                   AppButton(
                     isLoading: controller.isLoading,
                     text: 'cancelTask',
-                    onPressed: userType == 'admin'
-                        ? () {
-                            controller.cancelEmployeeTask(
-                              taskId: data.taskId.toString(),
-                              cancelWithRepetition: false,
-                              isCompleted: true,
-                            );
-                          }
-                        : () async {
-                            final args = Get.arguments as Map<String, dynamic>?;
-                            final EmployeeDashbordController controller1 =
-                                args?['EmployeeDashbordController'];
-                            await controller.uploadTaskImage(
-                              taskId: data.taskId.toString(),
-                            );
-                            controller1.changeTaskToCompleted(
-                              taskId: data.taskId,
-                              isSubTask: false,
-                              // ignore: use_build_context_synchronously
-                              context: context,
-                            );
-                            Get.back();
-                          },
-                  )
-                // : SizedBox.shrink(),
+                    onPressed: () {
+                      controller.cancelEmployeeTask(
+                        taskId: data.taskId.toString(),
+                        cancelWithRepetition: false,
+                        isCompleted: true,
+                      );
+                    },
+                  ),
+                if (userType != 'admin' &&
+                    data.status != 'completed' &&
+                    data.subTasks.isEmpty) ...[
+                  AppButton(
+                    isLoading: controller.isLoading,
+                    text: 'completeTask',
+                    onPressed: () async {
+                      final args = Get.arguments as Map<String, dynamic>?;
+                      final EmployeeDashbordController? dashboardController =
+                          args?['EmployeeDashbordController'];
+                      if (dashboardController == null) return;
+
+                      if (!controller.canCompleteTask(data)) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'employeeImageRequired'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        return;
+                      }
+
+                      if (controller.selectedFile.isNotEmpty) {
+                        final uploaded = await controller.uploadTaskImage(
+                          taskId: data.taskId.toString(),
+                        );
+                        if (!uploaded) return;
+                      }
+
+                      dashboardController.changeTaskToCompleted(
+                        taskId: data.taskId,
+                        isSubTask: false,
+                        context: context,
+                      );
+                      Get.back();
+                    },
+                  ),
+                ],
               ],
             ),
           );

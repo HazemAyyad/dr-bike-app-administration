@@ -1,12 +1,14 @@
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:doctorbike/core/helpers/media_permissions.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../data/models/employee_task_model.dart';
 import '../../data/models/task_details_model.dart';
+import '../../domain/entities/task_details_entiny.dart';
 import '../../domain/usecases/cancel_employee_task_usecase.dart';
 import '../../domain/usecases/employee_tasks_usecase.dart';
 import '../../domain/usecases/get_task_details_usecase.dart';
@@ -42,6 +44,7 @@ class EmployeeTasksController extends GetxController {
 
   List<File> selectedFile = [];
   List<File> selectedSubFile = [];
+  final Map<int, List<File>> subTaskPendingImages = {};
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -280,26 +283,61 @@ class EmployeeTasksController extends GetxController {
     update();
   }
 
+  bool taskHasEmployeeImage(TaskDetailsModel data) {
+    return data.employeeImg != null && data.employeeImg!.isNotEmpty;
+  }
+
+  bool canCompleteTask(TaskDetailsModel data) {
+    if (!data.isForcedToUploadImg) return true;
+    return taskHasEmployeeImage(data) || selectedFile.isNotEmpty;
+  }
+
+  bool canCompleteSubTask(SubTaskEntity subTask, List<File> pendingFiles) {
+    if (!subTask.isForcedToUploadImg) return true;
+    final hasSaved =
+        subTask.employeeImg != null && subTask.employeeImg!.isNotEmpty;
+    return hasSaved || pendingFiles.isNotEmpty;
+  }
+
   // upload task image
-  Future<void> uploadTaskImage({required String taskId}) async {
-    selectedFile.isNotEmpty
-        ? {
-            isLoading(true),
-            await uploadTaskImageUsecase.call(
-              isSubTask: false,
-              taskId: taskId,
-              image: selectedFile,
-            ),
-            // Get.back(),
-            isLoading(false),
-          }
-        : null;
-    // isTaskDetailsLoading(false);
+  Future<bool> uploadTaskImage({
+    required String taskId,
+    bool isSubTask = false,
+    List<File>? files,
+  }) async {
+    final images = files ?? (isSubTask ? selectedSubFile : selectedFile);
+    if (images.isEmpty) return false;
+
+    isLoading(true);
+    try {
+      final result = await uploadTaskImageUsecase.call(
+        isSubTask: isSubTask,
+        taskId: taskId,
+        image: images,
+      );
+      final status = result is Map ? result['status'] : null;
+      if (status != 'success') return false;
+
+      final mainTaskId = isSubTask
+          ? employeeTaskService.taskDetails.value?.taskId.toString()
+          : taskId;
+      if (mainTaskId != null && mainTaskId.isNotEmpty) {
+        await getTaskDetails(taskId: mainTaskId);
+      }
+      if (isSubTask) {
+        selectedSubFile.clear();
+      } else {
+        selectedFile.clear();
+      }
+      return true;
+    } finally {
+      isLoading(false);
+    }
   }
 
   final ImagePicker picker = ImagePicker();
 
-  Future<void> uploadSubTaskImage({
+  Future<bool> uploadSubTaskImage({
     required String taskId,
     required BuildContext context,
   }) async {
@@ -339,18 +377,26 @@ class EmployeeTasksController extends GetxController {
       builder: (_) => buildSourceOptionsBoth(context),
     );
 
-    if (choice == null) return;
+    if (choice == null) return false;
 
     XFile? pickedFile;
     List<XFile>? pickedFiles;
 
     switch (choice) {
       case 'camera_image':
+        if (!await ensureCameraPermission()) {
+          showMediaPermissionDeniedSnackbar();
+          return false;
+        }
         pickedFile = await picker.pickImage(source: ImageSource.camera);
         if (pickedFile != null) selectedSubFile.add(File(pickedFile.path));
         break;
 
       case 'gallery_image':
+        if (!await ensurePhotosPermission()) {
+          showMediaPermissionDeniedSnackbar();
+          return false;
+        }
         pickedFiles = await picker.pickMultiImage();
         selectedSubFile.addAll(pickedFiles.map((e) => File(e.path)));
         break;
@@ -366,25 +412,17 @@ class EmployeeTasksController extends GetxController {
       //   break;
     }
 
-    if (selectedSubFile.isNotEmpty) {
-      isLoading(true);
-      try {
-        await uploadTaskImageUsecase.call(
-          isSubTask: true,
-          taskId: taskId,
-          image: selectedSubFile, // أو .first حسب الـ API
-        );
-        // Get.back(); // قفل الشاشة بعد الرفع
-      } finally {
-        isLoading(false);
-        selectedSubFile.clear(); // نظف الملفات بعد الرفع
-      }
-    }
+    if (selectedSubFile.isEmpty) return false;
+    return uploadTaskImage(
+      taskId: taskId,
+      isSubTask: true,
+      files: List<File>.from(selectedSubFile),
+    );
   }
 
   final RxBool isTaskDetailsLoading = false.obs;
   // task details
-  void getTaskDetails({required String taskId}) async {
+  Future<void> getTaskDetails({required String taskId}) async {
     taskId == employeeTaskService.taskDetails.value?.taskId.toString()
         ? isTaskDetailsLoading(false)
         : isTaskDetailsLoading(true);

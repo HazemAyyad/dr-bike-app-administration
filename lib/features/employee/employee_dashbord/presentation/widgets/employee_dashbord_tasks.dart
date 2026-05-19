@@ -48,6 +48,22 @@ class EmployeeDashbordTasks extends GetView<EmployeeDashbordController> {
                 value: task.status == 'completed',
                 onChanged: (value) {
                   if (value == true) {
+                    if (task.isForcedToUploadImg) {
+                      Get.snackbar(
+                        'employeeImageRequired'.tr,
+                        'openTaskToUploadImage'.tr,
+                        snackPosition: SnackPosition.BOTTOM,
+                        duration: const Duration(seconds: 3),
+                      );
+                      Get.toNamed(
+                        AppRoutes.TASKDETAILS,
+                        arguments: {
+                          'taskId': task.id.toString(),
+                          'EmployeeDashbordController': controller,
+                        },
+                      );
+                      return;
+                    }
                     Get.dialog(
                       Dialog(
                         backgroundColor: ThemeService.isDark.value

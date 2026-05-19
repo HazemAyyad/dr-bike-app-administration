@@ -5,6 +5,8 @@ class ProductModel {
   final String nameAr;
   final String stock;
   final List<dynamic> projects;
+  final double unitPrice;
+  final String imageUrl;
   /// Parent main category id when this row is a subcategory (from API).
   final String? mainCategoryId;
 
@@ -13,6 +15,8 @@ class ProductModel {
     required this.nameAr,
     required this.stock,
     required this.projects,
+    this.unitPrice = 0,
+    this.imageUrl = '',
     this.mainCategoryId,
   });
 
@@ -37,6 +41,13 @@ class ProductModel {
       nameAr: asString(nameRaw),
       stock: asString(stockRaw),
       projects: _projectsFromJson(j['projects']),
+      unitPrice: asDouble(
+        j['normail_price'] ?? j['normailPrice'] ?? j['price'] ?? 0,
+      ),
+      imageUrl: asString(
+        j['product_image'] ?? j['image'] ?? j['imageUrl'],
+        '',
+      ),
       mainCategoryId: mainCatRaw == null ? null : asString(mainCatRaw),
     );
   }
@@ -53,6 +64,8 @@ class ProductModel {
       'nameAr': nameAr,
       'stock': stock,
       'projects': projects,
+      'normail_price': unitPrice,
+      'product_image': imageUrl,
       if (mainCategoryId != null) 'mainCategoryId': mainCategoryId,
     };
   }

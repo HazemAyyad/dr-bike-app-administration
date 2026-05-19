@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
-import 'package:doctorbike/features/admin/sales/presentation/widgets/instant_sale_card.dart';
+import 'package:doctorbike/features/admin/sales/presentation/widgets/instant_sales_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -94,77 +94,12 @@ class SalesScreen extends GetView<SalesController> {
                         return const SliverFillRemaining(child: ShowNoData());
                       }
                     }
-                    return SliverList(
-                      delegate: controller.currentTab.value == 0
-                          ? SliverChildBuilderDelegate(
-                              (context, index) {
-                                final groups =
-                                    controller.orderedInstantSalesGroupsFiltered;
-                                if (index >= groups.length) {
-                                  return const SizedBox.shrink();
-                                }
-                                final month = groups[index].key;
-                                final sales = groups[index].value;
-                                return Column(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          month.toString(),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineMedium!
-                                              .copyWith(
-                                                color: AppColors.primaryColor,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15.sp,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 5.h),
-                                    Container(
-                                      height: 1.h,
-                                      width: double.infinity,
-                                      color: AppColors.primaryColor,
-                                    ),
-                                    SizedBox(height: 10.h),
-                                    ...sales.map(
-                                      (instantSales) => GestureDetector(
-                                        onTap: () async {
-                                          try {
-                                            await controller
-                                                .openInstantSaleBillDetails(
-                                              instantSales.id.toString(),
-                                            );
-                                          } catch (_) {
-                                            Get.snackbar(
-                                              'error'.tr,
-                                              'failed'.tr,
-                                              snackPosition:
-                                                  SnackPosition.BOTTOM,
-                                              backgroundColor: Colors.red,
-                                            );
-                                          }
-                                        },
-                                        onLongPress: () {
-                                          controller.showInstantSaleActionsSheet(
-                                            context,
-                                            instantSales,
-                                          );
-                                        },
-                                        child: InstantSaleCard(
-                                          instantSale: instantSales,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                              childCount: controller
-                                  .orderedInstantSalesGroupsFiltered.length,
-                            )
-                          : SliverChildBuilderDelegate(
+                    return controller.currentTab.value == 0
+                        ? const SliverToBoxAdapter(
+                            child: InstantSalesTable(),
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate(
                               (context, index) {
                                 final month = controller
                                     .salesService.filterProfitSalesTasks.keys
@@ -208,7 +143,7 @@ class SalesScreen extends GetView<SalesController> {
                               childCount: controller
                                   .salesService.filterProfitSalesTasks.length,
                             ),
-                    );
+                          );
                   },
                 ),
               ),

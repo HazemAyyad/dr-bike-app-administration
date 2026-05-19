@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+import 'package:doctorbike/core/helpers/media_permissions.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 
 import '../services/theme_service.dart';
@@ -81,6 +82,18 @@ class UploadImageButton extends StatefulWidget {
     );
 
     XFile? pickedFile;
+
+    if (choice == 'camera_image' || choice == 'camera_video') {
+      if (!await ensureCameraPermission()) {
+        showMediaPermissionDeniedSnackbar();
+        return;
+      }
+    } else if (choice == 'gallery_image' || choice == 'gallery_video') {
+      if (!await ensurePhotosPermission()) {
+        showMediaPermissionDeniedSnackbar();
+        return;
+      }
+    }
 
     if (choice == 'camera_image') {
       pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -291,9 +304,17 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           builder: (_) => _buildImageOptions(),
         );
         if (choice == 'camera') {
+          if (!await ensureCameraPermission()) {
+            showMediaPermissionDeniedSnackbar();
+            return;
+          }
           final image = await picker.pickImage(source: ImageSource.camera);
           if (image != null) picked.add(image);
         } else if (choice == 'gallery') {
+          if (!await ensurePhotosPermission()) {
+            showMediaPermissionDeniedSnackbar();
+            return;
+          }
           final images = await picker.pickMultiImage();
           picked.addAll(images);
         }
@@ -305,9 +326,17 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           builder: (_) => _buildVideoOptions(),
         );
         if (choice == 'camera') {
+          if (!await ensureCameraPermission()) {
+            showMediaPermissionDeniedSnackbar();
+            return;
+          }
           final video = await picker.pickVideo(source: ImageSource.camera);
           if (video != null) picked.add(video);
         } else if (choice == 'gallery') {
+          if (!await ensurePhotosPermission()) {
+            showMediaPermissionDeniedSnackbar();
+            return;
+          }
           final video = await picker.pickVideo(source: ImageSource.gallery);
           if (video != null) picked.add(video);
         }
@@ -318,6 +347,18 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           context: context,
           builder: (_) => _buildSourceOptionsBoth(),
         );
+
+        if (choice == 'camera_image' || choice == 'camera_video') {
+          if (!await ensureCameraPermission()) {
+            showMediaPermissionDeniedSnackbar();
+            return;
+          }
+        } else if (choice == 'gallery_image' || choice == 'gallery_video') {
+          if (!await ensurePhotosPermission()) {
+            showMediaPermissionDeniedSnackbar();
+            return;
+          }
+        }
 
         if (choice == 'camera_image') {
           final image = await picker.pickImage(source: ImageSource.camera);

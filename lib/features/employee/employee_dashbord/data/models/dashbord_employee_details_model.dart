@@ -91,6 +91,7 @@ class Task {
   final DateTime startTime;
   final DateTime endTime;
   final String status;
+  final bool isForcedToUploadImg;
 
   Task({
     required this.id,
@@ -99,6 +100,7 @@ class Task {
     required this.startTime,
     required this.endTime,
     required this.status,
+    required this.isForcedToUploadImg,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -109,6 +111,7 @@ class Task {
       startTime: parseApiDateTime(json['start_time']),
       endTime: parseApiDateTime(json['end_time']),
       status: asString(json['status']),
+      isForcedToUploadImg: asBool(json['is_forced_to_upload_img']),
     );
   }
 }

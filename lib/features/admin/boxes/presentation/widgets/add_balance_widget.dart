@@ -75,6 +75,7 @@ class AddBalanceWidget extends GetView<BoxesController> {
                     controller: controller.addBalanceNoteController,
                     minLines: 3,
                     maxLines: 5,
+                    validator: (_) => null,
                   ),
                 ],
               ),

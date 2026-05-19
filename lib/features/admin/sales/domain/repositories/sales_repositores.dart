@@ -34,6 +34,7 @@ abstract class SalesRepository {
     required RxList<ItemModel> otherProducts,
     required String buyerType,
     String? buyerId,
+    String? sellerId,
     String? buyerName,
     String? paymentBoxId,
     String? paymentBoxName,

@@ -64,6 +64,7 @@ dependencies:
   rename: ^3.1.0
   gallery_saver_plus: ^3.2.9
   share_plus: ^11.0.0
+  screenshot: ^3.0.0
   flutter_cache_manager: ^3.4.1
   http_parser: ^4.1.2
   image: ^4.7.2

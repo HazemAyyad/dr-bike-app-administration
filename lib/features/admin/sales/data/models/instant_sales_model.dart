@@ -23,6 +23,10 @@ class InstantSalesModel {
   final int? offerPackageId;
   final String? packageName;
   final String saleType;
+  final int? createdBy;
+  final String? createdByName;
+  final int? updatedBy;
+  final String? updatedByName;
 
   const InstantSalesModel({
     required this.id,
@@ -47,12 +51,75 @@ class InstantSalesModel {
     this.offerPackageId,
     this.packageName,
     this.saleType = 'product',
+    this.createdBy,
+    this.createdByName,
+    this.updatedBy,
+    this.updatedByName,
   });
 
   bool get isCancelled => status == 'cancelled';
 
   String get displayTitle =>
       isPackageSale ? (packageName ?? product) : product;
+
+  String get invoiceNumber => '#$id';
+
+  /// Total piece count (package lines sum sub-qty; else main + extras).
+  int get piecesCount {
+    if (isPackageSale && subProducts.isNotEmpty) {
+      return subProducts.fold<int>(
+        0,
+        (sum, p) => sum + (int.tryParse(p.quantity) ?? 0),
+      );
+    }
+    final mainQty = int.tryParse(quantity) ?? 0;
+    if (subProducts.isEmpty) return mainQty;
+    final subTotal = subProducts.fold<int>(
+      0,
+      (sum, p) => sum + (int.tryParse(p.quantity) ?? 0),
+    );
+    return subTotal > 0 ? mainQty + subTotal : mainQty;
+  }
+
+  bool get isCustomerBuyer =>
+      buyerType == 'customer' || buyerType == 'customers';
+
+  bool get isSellerBuyer => buyerType == 'seller' || buyerType == 'sellers';
+
+  String get partnerName {
+    final name = buyerName?.trim();
+    if (name != null && name.isNotEmpty && name != '-') return name;
+    final project = projectName?.trim();
+    if (project != null && project.isNotEmpty) return project;
+    return '—';
+  }
+
+  /// Lines shown in the invoice detail modal.
+  List<InstantSaleLineItem> get lineItems {
+    final lines = <InstantSaleLineItem>[];
+    if (isPackageSale) {
+      lines.add(InstantSaleLineItem(
+        name: displayTitle,
+        quantity: quantity,
+        unitCost: cost,
+        isPackageHeader: true,
+      ));
+    } else {
+      lines.add(InstantSaleLineItem(
+        name: product.isNotEmpty ? product : displayTitle,
+        quantity: quantity,
+        unitCost: cost,
+      ));
+    }
+    for (final sub in subProducts) {
+      lines.add(InstantSaleLineItem(
+        name: sub.productName,
+        quantity: sub.quantity,
+        unitCost: sub.cost,
+      ));
+    }
+    return lines;
+  }
 
   String get displayBuyerLine {
     final name = buyerName?.trim();
@@ -105,6 +172,14 @@ class InstantSalesModel {
           : int.tryParse('${json['offer_package_id']}'),
       packageName: asNullableString(json['package_name']),
       saleType: asString(json['sale_type'], 'product'),
+      createdBy: json['created_by'] == null
+          ? null
+          : int.tryParse('${json['created_by']}'),
+      createdByName: asNullableString(json['created_by_name']),
+      updatedBy: json['updated_by'] == null
+          ? null
+          : int.tryParse('${json['updated_by']}'),
+      updatedByName: asNullableString(json['updated_by_name']),
     );
   }
 
@@ -127,6 +202,20 @@ class InstantSalesModel {
       'project_name': projectName,
     };
   }
+}
+
+class InstantSaleLineItem {
+  final String name;
+  final String quantity;
+  final String unitCost;
+  final bool isPackageHeader;
+
+  const InstantSaleLineItem({
+    required this.name,
+    required this.quantity,
+    required this.unitCost,
+    this.isPackageHeader = false,
+  });
 }
 
 class SubProductsModel {

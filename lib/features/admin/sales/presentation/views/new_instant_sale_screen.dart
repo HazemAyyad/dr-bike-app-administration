@@ -7,11 +7,17 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
+import '../../../checks/data/repositories/checks_implement.dart';
+import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
+import '../../../payment_method/data/repositories/payment_implement.dart';
+import '../../../payment_method/domain/usecases/add_payment_usecase.dart';
 import '../../../payment_method/presentation/controllers/payment_controller.dart';
-import '../../../payment_method/presentation/views/payment_screen.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/new_instant_sale/add_new_instant_sale.dart';
 import '../widgets/new_instant_sale/discount_widget.dart';
+import '../widgets/new_instant_sale/instant_sale_payment_section.dart';
 
 class NewInstantSaleScreen extends StatefulWidget {
   const NewInstantSaleScreen({Key? key}) : super(key: key);
@@ -26,19 +32,62 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
   @override
   void initState() {
     super.initState();
+    _ensurePaymentController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       controller.loadOfferPackagesForSale();
+      controller.syncPaymentCashFromTotal();
     });
+  }
+
+  void _ensurePaymentController() {
+    if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+      final existing = Get.find<PaymentController>(tag: kInstantSalePaymentTag);
+      existing.forInstantSale = true;
+      existing.clearPaymentForm();
+      return;
+    }
+
+    final pc = PaymentController(
+      allCustomersSellersUsecase: AllCustomersSellersUsecase(
+        checksRepository: Get.find<ChecksImplement>(),
+      ),
+      getShownBoxUsecase: GetShownBoxUsecase(
+        boxesRepository: Get.find<BoxesImplement>(),
+      ),
+      addPaymentUsecase: AddPaymentUsecase(
+        paymentRepository: Get.find<PaymentImplement>(),
+      ),
+    );
+    pc.forInstantSale = true;
+    Get.put(pc, tag: kInstantSalePaymentTag);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+        Get.delete<PaymentController>(tag: kInstantSalePaymentTag);
+      }
+    });
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+      return Scaffold(
+        appBar: CustomAppBar(title: 'newInstantSale'.tr, action: false),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: CustomAppBar(title: 'newInstantSale'.tr, action: false),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Form(
-          key: controller.formKey,
+          key: controller.instantSaleFormKey,
           child: Column(
             children: [
               SizedBox(height: 5.h),
@@ -52,6 +101,13 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
               ),
               SizedBox(height: 10.h),
               const DiscountWidget(),
+              SizedBox(height: 16.h),
+              Divider(
+                color: Colors.grey.shade300,
+                height: 1,
+              ),
+              SizedBox(height: 12.h),
+              const InstantSalePaymentSection(),
               SizedBox(height: 20.h),
               AppButton(
                 isLoading: controller.isLoading,
@@ -61,82 +117,9 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
-                onPressed: () async {
-                  if (controller.formKey.currentState!.validate()) {
-                    if (controller.isPackageSale.value) {
-                      if (controller.selectedPackageId.value == null) {
-                        Get.snackbar(
-                          'error'.tr,
-                          'selectOfferPackage'.tr,
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: Colors.red,
-                        );
-                        return;
-                      }
-                      if (controller.selectedOfferPackage != null) {
-                        final qtyError =
-                            controller.validatePackageSaleQuantity(
-                          controller.items.first.quantityController.text,
-                        );
-                        if (qtyError != null) {
-                          Get.snackbar(
-                            'error'.tr,
-                            qtyError,
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 4),
-                          );
-                          return;
-                        }
-                      }
-                    }
-
-                    final hasOutOfStock = !controller.isPackageSale.value &&
-                        controller.items.any((item) {
-                      // دور على المنتج اللي ليه نفس الـ id
-                      final product = controller.products.firstWhereOrNull(
-                        (p) => p.id.toString() == item.selectedItem.toString(),
-                      );
-                      // قارن المخزون بالكمية المطلوبة
-                      final stock = int.tryParse(product!.stock) ?? 0;
-                      final requestedQty =
-                          int.tryParse(item.quantityController.text) ?? 0;
-                      return requestedQty > stock;
-                    });
-                    if (hasOutOfStock) {
-                      Get.snackbar(
-                        'error'.tr,
-                        'out_of_stock_products'.tr,
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: Colors.red,
-                      );
-                      return;
-                    }
-
-                    final value = await Get.to(
-                      () => PaymentScreen(
-                        type: 'receive',
-                        forInstantSale: true,
-                        initialCashValue: controller.totalCost.value.toString(),
-                        instantSaleBoxLogNote:
-                            controller.buildInstantSalePaymentBoxNote(),
-                      ),
-                      fullscreenDialog: true,
-                    );
-
-                    if (!PaymentController.isSuccessResult(value)) {
-                      return;
-                    }
-                    if (value is Map) {
-                      controller.applyBuyerFromPayment(
-                        Map<String, dynamic>.from(value),
-                      );
-                    }
-                    // ignore: use_build_context_synchronously
-                    await controller.addInstantSale(context);
-                  }
-                },
+                onPressed: () => controller.submitInstantSaleWithPayment(context),
               ),
+              SizedBox(height: 24.h),
             ],
           ),
         ),

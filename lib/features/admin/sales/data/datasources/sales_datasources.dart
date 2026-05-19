@@ -174,6 +174,7 @@ class SalesDatasource {
     required RxList<ItemModel> otherProducts,
     required String buyerType,
     String? buyerId,
+    String? sellerId,
     String? buyerName,
     String? paymentBoxId,
     String? paymentBoxName,
@@ -219,6 +220,7 @@ class SalesDatasource {
           if (projectId.isNotEmpty) 'project_id': projectId,
           'buyer_type': buyerType,
           if (buyerId != null && buyerId.isNotEmpty) 'buyer_id': buyerId,
+          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
           if (buyerName != null && buyerName.isNotEmpty)
             'buyer_name': buyerName,
           if (paymentBoxId != null && paymentBoxId.isNotEmpty)

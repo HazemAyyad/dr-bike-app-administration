@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -38,289 +41,270 @@ class MarkTaskComplete extends GetView<EmployeeTasksController> {
               borderRadius: BorderRadius.circular(11.r),
               border: Border.all(color: AppColors.customGreyColor6),
             ),
-            // height: 80.h,
             width: double.infinity,
-            child: IntrinsicHeight(
-              child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: CustomCheckBox(
+                          scale: 1.5,
+                          shape: const CircleBorder(
+                            side: BorderSide(
+                              color: AppColors.primaryColor,
+                            ),
+                          ),
+                          title:
+                              '${tasks.name}${'\n'}${tasks.description}',
+                          style: theme.copyWith(
+                            decoration: tasks.status == 'ongoing'
+                                ? TextDecoration.none
+                                : TextDecoration.lineThrough,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w500,
+                            color: ThemeService.isDark.value
+                                ? AppColors.customGreyColor6
+                                : AppColors.customGreyColor4,
+                          ),
+                          value: tasks.status == 'ongoing'
+                              ? false.obs
+                              : true.obs,
+                          onChanged: userType == 'admin'
+                              ? (value) {}
+                              : tasks.status != 'ongoing'
+                                  ? (value) {}
+                                  : (value) async {
+                                      _showCompleteSubTaskDialog(
+                                        context,
+                                        tasks as SubTaskModel,
+                                      );
+                                    },
+                        ),
+                      ),
+                      if (tasks.employeeImg != null &&
+                          tasks.employeeImg!.isNotEmpty)
+                        _SubTaskThumb(
+                          label: 'employeeImage'.tr,
+                          imageUrl: tasks.employeeImg!.first,
+                          theme: theme,
+                        ),
+                      SizedBox(width: 10.w),
+                      if (tasks.adminImg != null && tasks.adminImg!.isNotEmpty)
+                        _SubTaskThumb(
+                          label: 'adminImage'.tr,
+                          imageUrl: tasks.adminImg!.first,
+                          theme: theme,
+                        ),
+                    ],
+                  ),
+                ),
+                if (userType != 'admin' &&
+                    tasks.isForcedToUploadImg &&
+                    tasks.status == 'ongoing' &&
+                    (tasks.employeeImg == null ||
+                        tasks.employeeImg!.isEmpty)) ...[
+                  SizedBox(height: 8.h),
+                  MediaUploadButton(
+                    allowedType: MediaType.both,
+                    height: 120,
+                    title: 'uploadTaskProof'.tr,
+                    onFilesChanged: (files) {
+                      controller.subTaskPendingImages[tasks.id] = files;
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showCompleteSubTaskDialog(BuildContext context, SubTaskModel task) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: ThemeService.isDark.value
+            ? AppColors.darkColor
+            : AppColors.whiteColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 5.h),
+              Text(
+                'areYouSure'.tr,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              SizedBox(height: 10.h),
+              Row(
                 children: [
                   Flexible(
-                    child: CustomCheckBox(
-                      scale: 1.5,
-                      shape: const CircleBorder(
-                        side: BorderSide(
-                          color: AppColors.primaryColor,
-                        ),
+                    child: AppButton(
+                      isSafeArea: false,
+                      isLoading: controller.isLoading,
+                      width: double.infinity,
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(8.r),
                       ),
-                      title: '${tasks.name}${'\n'}${tasks.description}',
-                      style: theme.copyWith(
-                        decoration: tasks.status == 'ongoing'
-                            ? TextDecoration.none
-                            : TextDecoration.lineThrough,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w500,
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor6
-                            : AppColors.customGreyColor4,
-                      ),
-                      value: tasks.status == 'ongoing' ? false.obs : true.obs,
-                      onChanged: userType == 'admin'
-                          ? (value) {}
-                          : tasks.status != 'ongoing'
-                              ? (value) {}
-                              : (value) async {
-                                  Get.dialog(
-                                    Dialog(
-                                      backgroundColor: ThemeService.isDark.value
-                                          ? AppColors.darkColor
-                                          : AppColors.whiteColor,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8.r),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(10),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            SizedBox(height: 5.h),
-                                            Text(
-                                              'areYouSure'.tr,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
-                                                    fontSize: 20.sp,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                            ),
-                                            SizedBox(height: 10.h),
-                                            Row(
-                                              children: [
-                                                Flexible(
-                                                  child: AppButton(
-                                                    isSafeArea: false,
-                                                    isLoading:
-                                                        controller.isLoading,
-                                                    width: double.infinity,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                      Radius.circular(8.r),
-                                                    ),
-                                                    text: 'yes'.tr,
-                                                    textStyle: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium!
-                                                        .copyWith(
-                                                          color: Colors.white,
-                                                          fontSize: 15.sp,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                        ),
-                                                    onPressed: () async {
-                                                      Get.back();
-                                                      final String mainTaskId =
-                                                          Get.arguments[
-                                                              'taskId'];
-                                                      final args = Get.arguments
-                                                          as Map<String,
-                                                              dynamic>?;
-                                                      final EmployeeDashbordController
-                                                          controller1 = args?[
-                                                              'EmployeeDashbordController'];
-                                                      if (tasks
-                                                          .isForcedToUploadImg) {
-                                                        await controller
-                                                            .uploadSubTaskImage(
-                                                          taskId: tasks.id
-                                                              .toString(),
-                                                          context: context,
-                                                        );
-                                                      }
-                                                      await controller
-                                                          .uploadTaskImage(
-                                                        taskId:
-                                                            tasks.id.toString(),
-                                                      );
-                                                      controller1
-                                                          .changeTaskToCompleted(
-                                                        taskId: tasks.id,
-                                                        isSubTask: true,
-                                                        // ignore: use_build_context_synchronously
-                                                        context: context,
-                                                        mainTaskId: mainTaskId,
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                                SizedBox(width: 10.w),
-                                                Flexible(
-                                                  child: AppButton(
-                                                    isLoading:
-                                                        controller.isLoading,
-                                                    isSafeArea: false,
-                                                    color: Colors.red,
-                                                    width: double.infinity,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                      Radius.circular(8.r),
-                                                    ),
-                                                    text: 'cancel'.tr,
-                                                    textStyle: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium!
-                                                        .copyWith(
-                                                          color: Colors.white,
-                                                          fontSize: 15.sp,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                        ),
-                                                    onPressed: () {
-                                                      Get.back();
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
+                      text: 'yes'.tr,
+                      textStyle: Theme.of(context)
+                          .textTheme
+                          .bodyMedium!
+                          .copyWith(
+                            color: Colors.white,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                      onPressed: () async {
+                        Get.back();
+                        final String mainTaskId = Get.arguments['taskId'];
+                        final args =
+                            Get.arguments as Map<String, dynamic>?;
+                        final EmployeeDashbordController dashboardController =
+                            args!['EmployeeDashbordController'];
+
+                        final pending =
+                            controller.subTaskPendingImages[task.id] ??
+                                <File>[];
+
+                        if (!controller.canCompleteSubTask(task, pending)) {
+                          Get.snackbar(
+                            'error'.tr,
+                            'employeeImageRequired'.tr,
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                          return;
+                        }
+
+                        if (pending.isNotEmpty) {
+                          final uploaded = await controller.uploadTaskImage(
+                            taskId: task.id.toString(),
+                            isSubTask: true,
+                            files: pending,
+                          );
+                          if (!uploaded) return;
+                          controller.subTaskPendingImages.remove(task.id);
+                        }
+
+                        dashboardController.changeTaskToCompleted(
+                          taskId: task.id,
+                          isSubTask: true,
+                          context: context,
+                          mainTaskId: mainTaskId,
+                        );
+                      },
                     ),
                   ),
-                  tasks.employeeImg!.isEmpty
-                      ? const SizedBox()
-                      : Column(
-                          children: [
-                            Text(
-                              'employeeImage'.tr,
-                              style: theme.copyWith(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w500,
-                                color: ThemeService.isDark.value
-                                    ? AppColors.customGreyColor6
-                                    : AppColors.customGreyColor4,
-                              ),
-                            ),
-                            Flexible(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10.r),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showGeneralDialog(
-                                      context: context,
-                                      barrierDismissible: true,
-                                      barrierLabel: 'Dismiss',
-                                      barrierColor: Colors.black.withAlpha(128),
-                                      transitionDuration:
-                                          const Duration(milliseconds: 300),
-                                      pageBuilder: (context, anim1, anim2) {
-                                        return FullScreenZoomImage(
-                                          imageUrl: tasks.employeeImg!.first,
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: CachedNetworkImage(
-                                    cacheManager: CacheManager(
-                                      Config(
-                                        'imagesCache',
-                                        stalePeriod: const Duration(days: 7),
-                                        maxNrOfCacheObjects: 100,
-                                      ),
-                                    ),
-                                    imageBuilder: (context, imageProvider) =>
-                                        Container(
-                                      height: double.infinity,
-                                      width: 60.w,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.contain,
-                                          filterQuality: FilterQuality.medium,
-                                        ),
-                                      ),
-                                    ),
-                                    imageUrl: tasks.employeeImg!.first,
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                   SizedBox(width: 10.w),
-                  tasks.adminImg!.isEmpty
-                      ? const SizedBox()
-                      : Column(
-                          children: [
-                            Text(
-                              'adminImage'.tr,
-                              style: theme.copyWith(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w500,
-                                color: ThemeService.isDark.value
-                                    ? AppColors.customGreyColor6
-                                    : AppColors.customGreyColor4,
-                              ),
-                            ),
-                            Flexible(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10.r),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showGeneralDialog(
-                                      context: context,
-                                      barrierDismissible: true,
-                                      barrierLabel: 'Dismiss',
-                                      barrierColor: Colors.black.withAlpha(128),
-                                      transitionDuration:
-                                          const Duration(milliseconds: 300),
-                                      pageBuilder: (context, anim1, anim2) {
-                                        return FullScreenZoomImage(
-                                          imageUrl: tasks.adminImg!.first,
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: CachedNetworkImage(
-                                    cacheManager: CacheManager(
-                                      Config(
-                                        'imagesCache',
-                                        stalePeriod: const Duration(days: 7),
-                                        maxNrOfCacheObjects: 100,
-                                      ),
-                                    ),
-                                    imageBuilder: (context, imageProvider) =>
-                                        Container(
-                                      height: double.infinity,
-                                      width: 60.w,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.contain,
-                                          filterQuality: FilterQuality.medium,
-                                        ),
-                                      ),
-                                    ),
-                                    imageUrl: tasks.adminImg!.first,
-                                    placeholder: (context, url) => const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                  Flexible(
+                    child: AppButton(
+                      isLoading: controller.isLoading,
+                      isSafeArea: false,
+                      color: Colors.red,
+                      width: double.infinity,
+                      borderRadius: BorderRadius.all(
+                        Radius.circular(8.r),
+                      ),
+                      text: 'cancel'.tr,
+                      textStyle: Theme.of(context)
+                          .textTheme
+                          .bodyMedium!
+                          .copyWith(
+                            color: Colors.white,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                      onPressed: () {
+                        Get.back();
+                      },
+                    ),
+                  ),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubTaskThumb extends StatelessWidget {
+  const _SubTaskThumb({
+    required this.label,
+    required this.imageUrl,
+    required this.theme,
+  });
+
+  final String label;
+  final String imageUrl;
+  final TextStyle theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: theme.copyWith(
+            fontSize: 10.sp,
+            fontWeight: FontWeight.w500,
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor6
+                : AppColors.customGreyColor4,
+          ),
+        ),
+        Flexible(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10.r),
+            child: GestureDetector(
+              onTap: () {
+                showGeneralDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  barrierLabel: 'Dismiss',
+                  barrierColor: Colors.black.withAlpha(128),
+                  transitionDuration: const Duration(milliseconds: 300),
+                  pageBuilder: (context, anim1, anim2) {
+                    return FullScreenZoomImage(
+                      imageUrl: imageUrl,
+                    );
+                  },
+                );
+              },
+              child: CachedNetworkImage(
+                cacheManager: CacheManager(
+                  Config(
+                    'imagesCache',
+                    stalePeriod: const Duration(days: 7),
+                    maxNrOfCacheObjects: 100,
+                  ),
+                ),
+                imageBuilder: (context, imageProvider) => Container(
+                  height: double.infinity,
+                  width: 60.w,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: imageProvider,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.medium,
+                    ),
+                  ),
+                ),
+                imageUrl: imageUrl,
+                placeholder: (context, url) =>
+                    const Center(child: CircularProgressIndicator()),
+                errorWidget: (context, url, error) => const Icon(Icons.error),
               ),
             ),
           ),

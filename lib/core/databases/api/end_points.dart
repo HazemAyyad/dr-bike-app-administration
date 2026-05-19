@@ -77,6 +77,27 @@ class EndPoints {
   static const String addDebt = 'add/debt';
   static const String getDebtsReports = 'get/debts/reports';
 
+  // debt ledger
+  static const String debtLedgerSummary = 'debt-ledger/summary';
+  static const String debtLedgerPeople = 'debt-ledger/people';
+  static const String debtLedgerPerson = 'debt-ledger/person';
+  static const String debtLedgerPersonMeta = 'debt-ledger/person/meta';
+  static const String debtLedgerPersonShareLink = 'debt-ledger/person/share-link';
+  static const String debtLedgerPersonArchive = 'debt-ledger/person/archive';
+  static const String debtLedgerPersonDeleted = 'debt-ledger/person/deleted';
+  static const String debtLedgerArchiveBulk = 'debt-ledger/transactions/archive';
+  static const String debtLedgerRestoreBulk = 'debt-ledger/transactions/restore';
+  static const String debtLedgerTransaction = 'debt-ledger/transaction';
+  static String debtLedgerTransactionDetail(int id) =>
+      'debt-ledger/transaction/$id';
+  static String debtLedgerUpdateTransaction(int id) =>
+      'debt-ledger/transaction/$id/update';
+  static String debtLedgerArchiveTransaction(int id) =>
+      'debt-ledger/transaction/$id/archive';
+  static String debtLedgerDeleteTransaction(int id) =>
+      'debt-ledger/transaction/$id/delete';
+  static const String debtLedgerPersonReport = 'debt-ledger/person/report';
+
   // employees section
   static const String createEmployee = 'create/employee';
   static const String addPointsToEmployee = 'add/points/to/employee';

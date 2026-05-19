@@ -7,6 +7,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/profit_sale_model.dart';
 import '../controllers/sales_controller.dart';
+import '../utils/sales_amount_format.dart';
 
 class ProfitSaleCard extends GetView<SalesController> {
   const ProfitSaleCard({Key? key, required this.profitSale}) : super(key: key);
@@ -76,8 +77,8 @@ class ProfitSaleCard extends GetView<SalesController> {
           ),
           // الإجمالي
           Container(
-            width: 60.w,
-            height: 60.h,
+            constraints: BoxConstraints(minWidth: 72.w, maxWidth: 110.w),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: AppColors.customGreen1,
               borderRadius: Get.locale!.languageCode == 'en'
@@ -101,14 +102,19 @@ class ProfitSaleCard extends GetView<SalesController> {
                         color: Colors.white,
                       ),
                 ),
-                SizedBox(height: 8.h),
-                Text(
-                  profitSale.totalCost.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                SizedBox(height: 4.h),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    SalesAmountFormat.display(
+                      SalesAmountFormat.parse(profitSale.totalCost),
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                  ),
                 ),
               ],
             ),
@@ -145,17 +151,24 @@ class InfoRow extends StatelessWidget {
                 ),
           ),
         ),
-        value == '' ? const SizedBox() : const Spacer(),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w400,
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor6
-                    : AppColors.customGreyColor5,
-              ),
-        ),
+        if (value.isNotEmpty) ...[
+          SizedBox(width: 6.w),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w400,
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor6
+                        : AppColors.customGreyColor5,
+                  ),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -5,6 +5,7 @@ import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/sales_controller.dart';
+import '../../utils/sales_amount_format.dart';
 
 class DiscountWidget extends GetView<SalesController> {
   const DiscountWidget({Key? key}) : super(key: key);
@@ -35,7 +36,7 @@ class DiscountWidget extends GetView<SalesController> {
                 () => CustomTextField(
                   enabled: false,
                   label: 'totalBill',
-                  hintText: controller.totalCost.value.toString(),
+                  hintText: SalesAmountFormat.display(controller.totalCost.value),
                   controller: controller.totalController,
                   keyboardType: TextInputType.number,
                   validator: (p0) => null,

@@ -6,9 +6,9 @@ import 'package:get/get.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/instant_sales_model.dart';
-import '../controllers/sales_controller.dart';
+import '../utils/sales_amount_format.dart';
 
-class InstantSaleCard extends GetView<SalesController> {
+class InstantSaleCard extends StatelessWidget {
   const InstantSaleCard({Key? key, required this.instantSale})
       : super(key: key);
 
@@ -160,8 +160,8 @@ class InstantSaleCard extends GetView<SalesController> {
             ),
           ),
           Container(
-            width: 60.w,
-            height: 60.h,
+            constraints: BoxConstraints(minWidth: 72.w, maxWidth: 110.w),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
             decoration: BoxDecoration(
               color: AppColors.customGreen1,
               borderRadius: Get.locale!.languageCode == 'en'
@@ -185,14 +185,19 @@ class InstantSaleCard extends GetView<SalesController> {
                         color: Colors.white,
                       ),
                 ),
-                SizedBox(height: 8.h),
-                Text(
-                  instantSale.totalCost.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                SizedBox(height: 4.h),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    SalesAmountFormat.display(
+                      SalesAmountFormat.parse(instantSale.totalCost),
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                  ),
                 ),
               ],
             ),
@@ -231,15 +236,20 @@ class InfoRow extends StatelessWidget {
         ),
         if (value.isNotEmpty) ...[
           SizedBox(width: 6.w),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w400,
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor6
-                      : AppColors.customGreyColor5,
-                ),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w400,
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor6
+                        : AppColors.customGreyColor5,
+                  ),
+            ),
           ),
         ],
       ],

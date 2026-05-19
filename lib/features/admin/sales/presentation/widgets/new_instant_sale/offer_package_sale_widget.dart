@@ -8,6 +8,7 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import 'package:doctorbike/features/admin/stock/data/models/offer_package_model.dart';
 import '../../controllers/sales_controller.dart';
+import '../../utils/sales_amount_format.dart';
 
 class OfferPackageSaleWidget extends GetView<SalesController> {
   const OfferPackageSaleWidget({Key? key}) : super(key: key);
@@ -87,7 +88,7 @@ class _PackageSaleQuantityRow extends StatelessWidget {
 
   final SalesController controller;
   final OfferPackageModel? pkg;
-  final int lineTotal;
+  final double lineTotal;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +114,7 @@ class _PackageSaleQuantityRow extends StatelessWidget {
                 keyboardType: TextInputType.number,
                 onChanged: (_) {
                   controller.calculateGrandTotal();
-                  controller.formKey.currentState?.validate();
+                  controller.instantSaleFormKey.currentState?.validate();
                 },
                 validator: controller.validatePackageSaleQuantity,
               ),
@@ -136,7 +137,7 @@ class _PackageSaleQuantityRow extends StatelessWidget {
               child: CustomTextField(
                 enabled: false,
                 label: 'total',
-                hintText: lineTotal.toString(),
+                hintText: SalesAmountFormat.display(lineTotal),
                 validator: (_) => null,
               ),
             ),

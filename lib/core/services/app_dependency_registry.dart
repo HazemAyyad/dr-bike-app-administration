@@ -16,6 +16,8 @@ import '../../features/admin/counters/data/repositories/countrers_implement.dart
 import '../../features/admin/create_tasks/data/datasources/employee_tasks_remote_datasource.dart';
 import '../../features/admin/create_tasks/data/repositories/employee_tasks_implement.dart';
 import '../../features/admin/debts/data/datasources/debet_datasource.dart';
+import '../../features/admin/debts/data/datasources/debt_ledger_datasource.dart';
+import '../../features/admin/debts/data/repositories/debt_ledger_implement.dart';
 import '../../features/admin/debts/data/repositories/debts_implement.dart';
 import '../../features/admin/debts/presentation/controllers/debts_data_service.dart';
 import '../../features/admin/employee_section/data/datasources/employee_datasource.dart';
@@ -156,6 +158,23 @@ class AppDependencyRegistry {
     ensureDebts();
     ensureChecks();
     ensureBoxes();
+  }
+
+  static void ensureDebtsLedger() {
+    ensureNetworkAndApi();
+    _lazy<DebtLedgerDatasource>(
+      () => DebtLedgerDatasource(api: Get.find<DioConsumer>()),
+    );
+    _lazy<DebtLedgerImplement>(
+      () => DebtLedgerImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        datasource: Get.find<DebtLedgerDatasource>(),
+      ),
+    );
+  }
+
+  static void ensureDebtsLedgerModule() {
+    ensureDebtsLedger();
   }
 
   static void ensureEmployeeSection() {

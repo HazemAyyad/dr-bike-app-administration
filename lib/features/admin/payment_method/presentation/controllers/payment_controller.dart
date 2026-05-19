@@ -161,8 +161,9 @@ class PaymentController extends GetxController {
 
     return {
       'success': true,
-      'buyer_type': isCustomer ? 'customer' : 'trader',
+      'buyer_type': isCustomer ? 'customer' : 'seller',
       'buyer_id': isCustomer ? id : null,
+      if (!isCustomer && id.isNotEmpty) 'seller_id': id,
       'buyer_name': name ?? '',
       if (boxId.isNotEmpty) 'payment_box_id': boxId,
       if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
@@ -170,14 +171,50 @@ class PaymentController extends GetxController {
     };
   }
 
+  /// Receive (قبض) for instant sale without leaving the sale screen.
+  Future<Map<String, dynamic>?> submitReceiveForInstantSale(
+    BuildContext context,
+  ) async {
+    return _submitPayment(
+      context: context,
+      type: 'receive',
+      popOnSuccess: false,
+    );
+  }
+
   void addPayment({required BuildContext context, required String type}) async {
+    if (type == 'receive' && forInstantSale) {
+      final payload = await _submitPayment(
+        context: context,
+        type: type,
+        popOnSuccess: true,
+      );
+      if (payload != null) {
+        Get.back(result: payload);
+      }
+      return;
+    }
+
+    isLoading(true);
+    try {
+      await _submitPayment(context: context, type: type, popOnSuccess: false);
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _submitPayment({
+    required BuildContext context,
+    required String type,
+    required bool popOnSuccess,
+  }) async {
     if (partnerIdController.text.trim().isEmpty) {
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
         message: 'must_select_customer_or_seller'.tr,
       );
-      return;
+      return null;
     }
 
     if (forInstantSale && boxIdController.text.trim().isEmpty) {
@@ -186,7 +223,7 @@ class PaymentController extends GetxController {
         title: 'error'.tr,
         message: 'must_select_box'.tr,
       );
-      return;
+      return null;
     }
 
     if (boxIdController.text.trim().isNotEmpty &&
@@ -196,7 +233,7 @@ class PaymentController extends GetxController {
         title: 'error'.tr,
         message: 'must_enter_box_value'.tr,
       );
-      return;
+      return null;
     }
 
     isLoading(true);
@@ -215,19 +252,27 @@ class PaymentController extends GetxController {
         boxId: boxIdController.text,
         boxValue: sanitizedCash,
         checks: payments,
-        boxLogNote: forInstantSale ? instantSaleBoxLogNote : null,
+        boxLogNote: forInstantSale && type == 'receive'
+            ? instantSaleBoxLogNote
+            : null,
       );
+
+      Map<String, dynamic>? payload;
+      var failed = false;
+      String? successMessage;
+
       await result.fold(
         (failure) async {
+          failed = true;
           String errorMessages = '';
-          bool data = false;
+          var permissionsAdded = false;
           final errors = failure.data?['errors'] as Map<String, dynamic>?;
           if (errors != null) {
             errors.forEach((key, value) {
               if (key.startsWith('permissions')) {
-                if (!data) {
+                if (!permissionsAdded) {
                   errorMessages += "Permissions: ${value.first}\n";
-                  data = true;
+                  permissionsAdded = true;
                 }
               } else {
                 for (var msg in value) {
@@ -249,31 +294,38 @@ class PaymentController extends GetxController {
           );
         },
         (success) async {
-          final instantSaleBuyer = buildInstantSaleBuyerPayload();
-
-          if (forInstantSale) {
-            Get.back(result: instantSaleBuyer);
-            _clearPaymentForm();
-            return;
+          successMessage = success;
+          if (type == 'receive' && forInstantSale) {
+            payload = buildInstantSaleBuyerPayload();
           }
-
-          _clearPaymentForm();
-          Get.back(result: instantSaleBuyer);
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final ctx = Get.context;
-            if (ctx == null) return;
-            Helpers.showCustomDialogSuccess(
-              context: ctx,
-              title: 'success'.tr,
-              message: success,
-            );
-          });
+          if (popOnSuccess) {
+            _clearPaymentForm();
+          } else if (!forInstantSale) {
+            _clearPaymentForm();
+            Get.back(result: buildInstantSaleBuyerPayload());
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final ctx = Get.context;
+              if (ctx == null) return;
+              Helpers.showCustomDialogSuccess(
+                context: ctx,
+                title: 'success'.tr,
+                message: successMessage ?? '',
+              );
+            });
+          }
         },
       );
+
+      if (failed) {
+        return null;
+      }
+      return payload;
     } finally {
       isLoading(false);
     }
   }
+
+  void clearPaymentForm() => _clearPaymentForm();
 
   void _clearPaymentForm() {
     partnerIdController.clear();

@@ -24,9 +24,17 @@ import '../../domain/usecases/add_profit_sale.dart';
 import '../../domain/usecases/get_all_products_usecase.dart';
 import '../../domain/usecases/get_profit_sales_usecase.dart';
 import '../../domain/usecases/invoice_model_usecase.dart';
+import '../models/instant_sale_cart_line.dart';
+import '../utils/box_log_note_format.dart';
+import '../utils/instant_sale_display.dart';
+import '../utils/sales_amount_format.dart';
+import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../widgets/instant_sale_action_dialog.dart';
 import '../widgets/instant_sale_actions_sheet.dart';
 import 'sales_service.dart';
+
+/// GetX tag for payment fields on the new instant sale screen.
+const String kInstantSalePaymentTag = 'instant_sale_payment';
 
 class SalesController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -49,6 +57,7 @@ class SalesController extends GetxController
   });
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> instantSaleFormKey = GlobalKey<FormState>();
 
   final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
 
@@ -128,25 +137,12 @@ class SalesController extends GetxController
     return entries;
   }
 
-  DateTime? _parseDateGroupKey(String key) {
-    try {
-      final parts = key.split('-');
-      if (parts.length != 3) return null;
-      return DateTime(
-        int.parse(parts[0]),
-        int.parse(parts[1]),
-        int.parse(parts[2]),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
+  DateTime? _parseDateGroupKey(String key) => parseInstantSaleDateGroupKey(key);
 
   void _groupInstantSalesIntoMaps(List<InstantSalesModel> sales) {
     salesService.instantSalesTasks.clear();
     for (final instantSale in sales) {
-      final dateKey =
-          '${instantSale.date.year}-${instantSale.date.month}-${instantSale.date.day}';
+      final dateKey = instantSaleDateGroupKey(instantSale);
       salesService.instantSalesTasks
           .putIfAbsent(dateKey, () => [])
           .add(instantSale);
@@ -266,6 +262,7 @@ class SalesController extends GetxController
   }
 
   final items = <ItemModel>[ItemModel()].obs;
+  final RxList<InstantSaleCartLine> cartLines = <InstantSaleCartLine>[].obs;
 
   final RxBool isPackageSale = false.obs;
   final RxnInt selectedPackageId = RxnInt();
@@ -275,6 +272,7 @@ class SalesController extends GetxController
   /// Filled from payment screen (طريقة القبض) after successful receipt.
   String _paymentBuyerType = 'unknown';
   String? _paymentBuyerId;
+  String? _paymentSellerId;
   String? _paymentBuyerName;
   String? _paymentBoxId;
   String? _paymentBoxName;
@@ -284,6 +282,8 @@ class SalesController extends GetxController
     _paymentBuyerType = result['buyer_type']?.toString() ?? 'unknown';
     final id = result['buyer_id']?.toString();
     _paymentBuyerId = (id != null && id.isNotEmpty) ? id : null;
+    final sellerId = result['seller_id']?.toString();
+    _paymentSellerId = (sellerId != null && sellerId.isNotEmpty) ? sellerId : null;
     final name = result['buyer_name']?.toString();
     _paymentBuyerName = (name != null && name.isNotEmpty) ? name : null;
     final boxId = result['payment_box_id']?.toString();
@@ -297,6 +297,7 @@ class SalesController extends GetxController
   void _clearPaymentBuyer() {
     _paymentBuyerType = 'unknown';
     _paymentBuyerId = null;
+    _paymentSellerId = null;
     _paymentBuyerName = null;
     _paymentBoxId = null;
     _paymentBoxName = null;
@@ -310,6 +311,7 @@ class SalesController extends GetxController
     totalController.clear();
     isPackageSale.value = false;
     selectedPackageId.value = null;
+    clearCartLines();
     for (final e in items) {
       e.quantityController.clear();
       e.priceController.clear();
@@ -318,9 +320,131 @@ class SalesController extends GetxController
     while (items.length > 1) {
       items.removeLast();
     }
-    totalCost.value = 0;
+    totalCost.value = 0.0;
     _clearPaymentBuyer();
     update();
+  }
+
+  void clearCartLines() {
+    for (final line in cartLines) {
+      line.dispose();
+    }
+    cartLines.clear();
+  }
+
+  void addCartLine(InstantSaleCartLine line) {
+    cartLines.add(line);
+    calculateGrandTotal();
+  }
+
+  void updateCartLine(int index, InstantSaleCartLine line) {
+    if (index < 0 || index >= cartLines.length) return;
+    cartLines[index].dispose();
+    cartLines[index] = line;
+    calculateGrandTotal();
+  }
+
+  void removeCartLine(int index) {
+    if (index < 0 || index >= cartLines.length) return;
+    cartLines[index].dispose();
+    cartLines.removeAt(index);
+    calculateGrandTotal();
+  }
+
+  void syncCartToItems() {
+    while (items.length > 1) {
+      items.removeLast();
+    }
+    if (cartLines.isEmpty) {
+      items.first.selectedItem.value = '';
+      items.first.quantityController.clear();
+      items.first.priceController.clear();
+      return;
+    }
+    for (var i = 0; i < cartLines.length; i++) {
+      final line = cartLines[i];
+      final ItemModel item;
+      if (i == 0) {
+        item = items.first;
+      } else {
+        item = ItemModel();
+        items.add(item);
+      }
+      item.selectedItem.value = line.productId;
+      item.quantityController.text = line.quantityController.text;
+      item.priceController.text = line.priceController.text;
+      item.selectedCustomersSellers.value = line.isProjectSale.value;
+      item.selectedValue.value = line.projectId.value;
+      item.recalculateTotal();
+    }
+  }
+
+  PaymentController? get _instantSalePayment {
+    if (!Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+      return null;
+    }
+    return Get.find<PaymentController>(tag: kInstantSalePaymentTag);
+  }
+
+  void syncPaymentCashFromTotal() {
+    final payment = _instantSalePayment;
+    if (payment == null) return;
+    payment.cashValueController.text =
+        SalesAmountFormat.display(totalCost.value);
+    payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
+  }
+
+  /// Single step: قبض then create instant sale.
+  Future<void> submitInstantSaleWithPayment(BuildContext context) async {
+    if (!(instantSaleFormKey.currentState?.validate() ?? false)) return;
+
+    if (isPackageSale.value) {
+      if (selectedPackageId.value == null) {
+        Get.snackbar('error'.tr, 'selectOfferPackage'.tr,
+            backgroundColor: Colors.red);
+        return;
+      }
+      final qtyError = validatePackageSaleQuantity(
+        items.first.quantityController.text,
+      );
+      if (qtyError != null) {
+        Get.snackbar('error'.tr, qtyError, backgroundColor: Colors.red);
+        return;
+      }
+    } else {
+      if (cartLines.isEmpty) {
+        Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
+            backgroundColor: Colors.red);
+        return;
+      }
+      for (final line in cartLines) {
+        final qty = int.tryParse(line.quantityController.text.trim()) ?? 0;
+        if (qty > line.stock) {
+          Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
+              backgroundColor: Colors.red);
+          return;
+        }
+      }
+      syncCartToItems();
+    }
+
+    final payment = _instantSalePayment;
+    if (payment == null) return;
+
+    payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
+    syncPaymentCashFromTotal();
+
+    isLoading(true);
+    try {
+      final buyer = await payment.submitReceiveForInstantSale(context);
+      if (buyer == null) return;
+
+      applyBuyerFromPayment(buyer);
+      // ignore: use_build_context_synchronously
+      await addInstantSale(context);
+    } finally {
+      isLoading(false);
+    }
   }
 
   Future<void> loadOfferPackagesForSale() async {
@@ -389,7 +513,7 @@ class SalesController extends GetxController
     items.first.quantityController.text = '1';
     calculateGrandTotal();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      formKey.currentState?.validate();
+      instantSaleFormKey.currentState?.validate();
     });
   }
 
@@ -462,32 +586,39 @@ class SalesController extends GetxController
     calculateGrandTotal();
   }
 
-  final RxInt totalCost = 0.obs;
-  final RxInt packageLineTotal = 0.obs;
+  final RxDouble totalCost = 0.0.obs;
+  final RxDouble packageLineTotal = 0.0.obs;
 
   void calculateGrandTotal() {
-    int total = 0;
+    double total = 0;
     if (isPackageSale.value && selectedPackageId.value != null) {
       final pkg = selectedOfferPackage;
       final unitPrice = pkg?.price ??
-          double.tryParse(items.first.priceController.text.trim()) ??
-          0;
+          SalesAmountFormat.parse(items.first.priceController.text);
       final qty =
-          int.tryParse(items.first.quantityController.text.trim()) ?? 0;
-      final lineTotal = (unitPrice * qty).round();
+          SalesAmountFormat.parse(items.first.quantityController.text);
+      final lineTotal = unitPrice * qty;
       packageLineTotal.value = lineTotal;
       items.first.syncLineTotal(lineTotal);
       total = lineTotal;
     } else {
       packageLineTotal.value = 0;
-      for (final item in items) {
-        total += item.total.value;
+      if (cartLines.isNotEmpty) {
+        for (final line in cartLines) {
+          total += line.lineTotal.value;
+        }
+      } else {
+        for (final item in items) {
+          total += item.total.value;
+        }
       }
     }
-    final discount = int.tryParse(discountController.text.trim()) ?? 0;
+    final discount = SalesAmountFormat.parse(discountController.text);
 
     totalCost.value = total - discount;
-    totalController.text = totalCost.value.toString();
+    if (totalCost.value < 0) totalCost.value = 0;
+    totalController.text = SalesAmountFormat.display(totalCost.value);
+    syncPaymentCashFromTotal();
   }
 
   // متغير للتحكم في قائمة الإضافة
@@ -591,6 +722,7 @@ class SalesController extends GetxController
         otherProducts: isPackageSale.value ? RxList<ItemModel>() : items,
         buyerType: _paymentBuyerType,
         buyerId: _paymentBuyerId,
+        sellerId: _paymentSellerId,
         buyerName: _paymentBuyerName,
         paymentBoxId: _paymentBoxId,
         paymentBoxName: _paymentBoxName,
@@ -630,6 +762,7 @@ class SalesController extends GetxController
         },
         (success) async {
           resetInstantSaleForm();
+          _instantSalePayment?.clearPaymentForm();
           await loadOfferPackagesForSale();
           if (Get.currentRoute == AppRoutes.NEWINSTANTSALESCREEN) {
             Get.back();
@@ -840,7 +973,33 @@ class SalesController extends GetxController
 
   /// Note sent with payment receive so box history matches cancel wording.
   String buildInstantSalePaymentBoxNote() {
-    final parts = <String>[];
+    final lineLabels = <String>[];
+
+    if (!isPackageSale.value && cartLines.isNotEmpty) {
+      for (final line in cartLines) {
+        lineLabels.add(
+          '${line.productName} × ${line.quantityController.text.trim()}',
+        );
+      }
+      return BoxLogNoteFormat.instantSaleReceive(
+        lineLabels: lineLabels,
+        amount: SalesAmountFormat.display(totalCost.value),
+      );
+    }
+
+    if (isPackageSale.value && selectedPackageId.value != null) {
+      final pkg = offerPackagesForSale.firstWhereOrNull(
+        (p) => p.id == selectedPackageId.value,
+      );
+      final pkgName = pkg?.name.trim();
+      final qty = items.isNotEmpty
+          ? items.first.quantityController.text.trim()
+          : '1';
+      if (pkgName != null && pkgName.isNotEmpty) {
+        lineLabels.add('$pkgName × ${qty.isEmpty ? '1' : qty}');
+      }
+    }
+
     for (final item in items) {
       final productId = item.selectedItem.value.trim();
       if (productId.isEmpty) {
@@ -855,12 +1014,13 @@ class SalesController extends GetxController
       final name = product != null && product.nameAr.trim().isNotEmpty
           ? product.nameAr
           : 'منتج';
-      parts.add('$name × $qty');
+      lineLabels.add('$name × $qty');
     }
-    if (parts.isEmpty) {
-      return 'قبض — بيع فوري | مبلغ: ${totalCost.value}';
-    }
-    return 'قبض — بيع فوري | ${parts.join(' | ')} | مبلغ: ${totalCost.value}';
+
+    return BoxLogNoteFormat.instantSaleReceive(
+      lineLabels: lineLabels,
+      amount: SalesAmountFormat.display(totalCost.value),
+    );
   }
 
   /// After cancel/edit: refresh sales list, stock, success toast (auto-closes).
@@ -1083,7 +1243,7 @@ class ItemModel {
   final TextEditingController quantityController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
 
-  final RxInt total = 0.obs;
+  final RxDouble total = 0.0.obs;
 
   ItemModel() {
     priceController.addListener(_updateTotal);
@@ -1091,14 +1251,16 @@ class ItemModel {
   }
 
   void _updateTotal() {
-    final price = double.tryParse(priceController.text.trim()) ?? 0;
-    final quantity = double.tryParse(quantityController.text.trim()) ?? 0;
-    total.value = (price * quantity).round();
+    final price = SalesAmountFormat.parse(priceController.text);
+    final quantity = SalesAmountFormat.parse(quantityController.text);
+    total.value = price * quantity;
   }
 
-  void syncLineTotal(int value) {
+  void syncLineTotal(double value) {
     total.value = value;
   }
+
+  void recalculateTotal() => _updateTotal();
 
   void onClose() {
     priceController.dispose();
