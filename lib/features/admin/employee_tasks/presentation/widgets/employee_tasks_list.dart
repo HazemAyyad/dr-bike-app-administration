@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/widgets/skeleton_loading.dart';
 import '../controllers/employee_tasks_controller.dart';
 import 'employee_tasks_lists.dart';
 
@@ -22,12 +23,7 @@ class EmployeeTasks extends GetView<EmployeeTasksController> {
       controller.currentTab.value;
 
       if (controller.isLoading.value) {
-        return const SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: CircularProgressIndicator(color: AppColors.primaryColor),
-          ),
-        );
+        return const _EmployeeTasksSkeletonSliver();
       }
 
       if (rows.isEmpty) {
@@ -61,6 +57,74 @@ class EmployeeTasks extends GetView<EmployeeTasksController> {
         },
       );
     });
+  }
+}
+
+class _EmployeeTasksSkeletonSliver extends StatelessWidget {
+  const _EmployeeTasksSkeletonSliver();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverList.builder(
+      itemCount: 8,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: AppColors.operationalCardBorder),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    SkeletonCircle(size: 32.r),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          FractionallySizedBox(
+                            widthFactor: index.isEven ? 0.72 : 0.58,
+                            child: SkeletonBlock(
+                              width: double.infinity,
+                              height: 13.h,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          FractionallySizedBox(
+                            widthFactor: index.isEven ? 0.52 : 0.68,
+                            child: SkeletonBlock(
+                              width: double.infinity,
+                              height: 10.h,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    SkeletonBlock(width: 54.w, height: 18.h, radius: 6),
+                  ],
+                ),
+                SizedBox(height: 10.h),
+                Row(
+                  children: [
+                    SkeletonBlock(width: 68.w, height: 18.h, radius: 6),
+                    SizedBox(width: 6.w),
+                    SkeletonBlock(width: 48.w, height: 18.h, radius: 6),
+                    const Spacer(),
+                    SkeletonBlock(width: 38.w, height: 10.h, radius: 5),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

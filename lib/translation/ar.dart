@@ -204,6 +204,13 @@ const Map<String, String> ar = {
   'currency': 'شيكل',
   'currency1': 'دولار',
   'currency2': 'دينار',
+  'currencyExchange': 'تحويل العملات',
+  'exchangeAmount': 'المبلغ',
+  'convertedAmount': 'المبلغ بعد التحويل',
+  'swapCurrencies': 'تبديل العملات',
+  'refreshExchangeRate': 'تحديث سعر الصرف',
+  'exchangeRateValue': '1 @from = @rate @to • @date',
+  'exchangeRateFailed': 'تعذر جلب سعر الصرف الآن',
   'check': 'شيك',
   'deb': 'دين',
   'rejectedd': 'معدم',
@@ -520,6 +527,7 @@ const Map<String, String> ar = {
   'noPhoneNumber': 'لا يوجد رقم هاتف',
   'importContacts': 'استيراد من جهات الاتصال',
   'importContact': 'استيراد جهة اتصال',
+  'contactsSelectedCount': '@count محدد',
   'contactsPermissionRequired': 'يلزم السماح بالوصول لجهات الاتصال',
   'importedContactsCount': 'تم استيراد @count زبائن',
   'importContactsFailed': 'فشل استيراد @count (تحقق من صيغة الهاتف)',
@@ -879,14 +887,18 @@ const Map<String, String> ar = {
   'impersonationModeBanner': 'أنت تعرض حساب الموظف — اضغط للعودة لحساب الأدمن',
   'showMoreTasks': 'عرض المزيد',
   'subtaskBonusDefaultSetting': 'نقاط المهام الفرعية الافتراضية',
-  'subtaskBonusDefaultSettingDesc': 'القيمة الافتراضية عند تفعيل نقاط إضافية لمهمة فرعية',
+  'subtaskBonusDefaultSettingDesc':
+      'القيمة الافتراضية عند تفعيل نقاط إضافية لمهمة فرعية',
   'settingsUpdated': 'تم تحديث الإعدادات',
   'settingsUpdateFailed': 'تعذر تحديث الإعدادات',
-  'proofUploadNotRegistered': 'لم يُسجَّل الإثبات على السيرفر. أعد التصوير أو جرّب صورة.',
+  'proofUploadNotRegistered':
+      'لم يُسجَّل الإثبات على السيرفر. أعد التصوير أو جرّب صورة.',
   'syncingProof': 'جاري رفع الإثبات...',
-  'completeSubtasksInDetails': 'هذه المهمة تحتوي مهام فرعية — افتح التفاصيل لإكمالها',
+  'completeSubtasksInDetails':
+      'هذه المهمة تحتوي مهام فرعية — افتح التفاصيل لإكمالها',
   'subtaskCompletedSuccess': 'تم إنجاز المهمة الفرعية بنجاح',
-  'allSubtasksDoneSubmitReview': 'أنجزت كل الفرعيات — يمكنك إرسال المهمة للمراجعة',
+  'allSubtasksDoneSubmitReview':
+      'أنجزت كل الفرعيات — يمكنك إرسال المهمة للمراجعة',
   'allSubtasksDoneUploadMainProof':
       'أنجزت كل المهام الفرعية. أضف إثبات المهمة الرئيسية في الأسفل ثم اضغط إرسال.',
   'uploadFailed': 'فشل رفع الصورة، حاول مرة أخرى',
@@ -904,7 +916,8 @@ const Map<String, String> ar = {
   'todayTasksProgress': 'إنجاز مهام اليوم',
   'todayTasksProgressSubtitle': '@done من @total مكتملة/مرسلة — متوسط التقدم',
   'noTasksThisDay': 'لا مهام في هذا اليوم',
-  'cameraPermissionDenied': 'يجب السماح باستخدام الكاميرا والمعرض من إعدادات التطبيق',
+  'cameraPermissionDenied':
+      'يجب السماح باستخدام الكاميرا والمعرض من إعدادات التطبيق',
   'carLicenseImage': 'مستندات',
   'uploadCarLicenseImage': 'تحميل الصورة',
   'residenceLocation': 'موقع السكن',
@@ -954,7 +967,8 @@ const Map<String, String> ar = {
       'ستُنقل المعاملة للأرشيف ويمكنك استرجاعها لاحقاً من قسم الأرشيف.',
   'ledgerUpdated': 'تم تعديل المعاملة',
   'ledgerInstantSaleTag': 'معاملة بيع فوري',
-  'ledgerInstantSaleNoBoxEdit': 'معاملات البيع الفوري لا ترتبط بصندوق في الدفتر',
+  'ledgerInstantSaleNoBoxEdit':
+      'معاملات البيع الفوري لا ترتبط بصندوق في الدفتر',
   'ledgerTodayAt': 'اليوم ساعة',
   'ledgerTapContact': 'اضغط هنا لمعلومات الاتصال',
   'ledgerNoPhone': 'لا يوجد رقم هاتف',
@@ -1208,7 +1222,8 @@ const Map<String, String> ar = {
   'packageSelectFirst': 'اختر باكيج العرض من القائمة أولاً',
   'packageSaleQtyRequired': 'أدخل عدد الباكيجات (رقم 1 أو أكثر)',
   'packageSaleQtyInvalid': 'أدخل رقماً صحيحاً لعدد الباكيجات',
-  'packageNotAvailableForSale': 'لا يمكن بيع هذا الباكيج — المخزون أو كمية التعريف غير كافية',
+  'packageNotAvailableForSale':
+      'لا يمكن بيع هذا الباكيج — المخزون أو كمية التعريف غير كافية',
   'packageSaleMaxAvailable': 'يمكنك بيع حتى @max باكيج في هذه العملية',
   'packageQtyExceedsAvailable':
       'الكمية @qty أكبر من المتاح. الحد الأقصى للبيع الآن: @max باكيج',

@@ -15,8 +15,17 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/general_data_list_controller.dart';
 
-class AddNewCustomerScreen extends GetView<GeneralDataListController> {
+class AddNewCustomerScreen extends StatefulWidget {
   const AddNewCustomerScreen({Key? key}) : super(key: key);
+
+  @override
+  State<AddNewCustomerScreen> createState() => _AddNewCustomerScreenState();
+}
+
+class _AddNewCustomerScreenState extends State<AddNewCustomerScreen> {
+  final formKey = GlobalKey<FormState>();
+  final GeneralDataListController controller =
+      Get.find<GeneralDataListController>();
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +39,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
         action: false,
       ),
       body: Form(
-        key: controller.formKey,
+        key: formKey,
         child: GetBuilder<GeneralDataListController>(
           builder: (controller) {
             if (controller.isEditLoading.value) {
@@ -46,8 +55,7 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                   Align(
                     alignment: AlignmentDirectional.centerStart,
                     child: TextButton.icon(
-                      onPressed: () =>
-                          controller.importFromContacts(context),
+                      onPressed: () => controller.importFromContacts(context),
                       icon: Icon(
                         Icons.contacts_outlined,
                         color: AppColors.primaryColor,
@@ -460,9 +468,13 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                         color: Colors.white,
                       ),
                   onPressed: () {
+                    if (!(formKey.currentState?.validate() ?? false)) {
+                      return;
+                    }
                     if (controller.isEdit.value) {
                       controller.addPerson(
                         context: context,
+                        validateForm: false,
                         customerId: controller.currentTab.value == 1
                             ? employeeId
                             : employeeType == 'customer'
@@ -475,7 +487,10 @@ class AddNewCustomerScreen extends GetView<GeneralDataListController> {
                                 : '',
                       );
                     } else {
-                      controller.addPerson(context: context);
+                      controller.addPerson(
+                        context: context,
+                        validateForm: false,
+                      );
                     }
                   },
                 ),

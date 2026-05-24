@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -25,6 +29,9 @@ import 'checks_serves.dart';
 
 class ChecksController extends GetxController
     with GetSingleTickerProviderStateMixin {
+  static const _exchangeFromKey = 'checks_exchange_from_currency';
+  static const _exchangeToKey = 'checks_exchange_to_currency';
+
   final AddChecksUsecase addChecksUsecase;
   final GetChecksUsecase getChecksUsecase;
   final GeneralChecksDataUsecase generalChecksDataUsecase;
@@ -59,6 +66,8 @@ class ChecksController extends GetxController
   final FocusNode notesFocus = FocusNode();
 
   final TextEditingController checkValueController = TextEditingController();
+  final TextEditingController exchangeAmountController =
+      TextEditingController(text: '1');
 
   final TextEditingController employeeNameController = TextEditingController();
 
@@ -83,6 +92,145 @@ class ChecksController extends GetxController
     'currency1',
     'currency2',
   ].obs;
+
+  final List<ExchangeCurrency> exchangeCurrencies = const [
+    ExchangeCurrency(code: 'ILS', translationKey: 'currency', symbol: '₪'),
+    ExchangeCurrency(code: 'USD', translationKey: 'currency1', symbol: r'$'),
+    ExchangeCurrency(code: 'JOD', translationKey: 'currency2', symbol: 'JD'),
+  ];
+
+  final exchangeFromCurrency = 'ILS'.obs;
+  final exchangeToCurrency = 'USD'.obs;
+  final exchangeRate = 0.0.obs;
+  final convertedExchangeAmount = 0.0.obs;
+  final exchangeRateDate = ''.obs;
+  final exchangeError = ''.obs;
+  final isExchangeLoading = false.obs;
+  Timer? _exchangeDebounce;
+  final Dio _exchangeDio = Dio(
+    BaseOptions(
+      baseUrl: 'https://api.frankfurter.dev/v2',
+      connectTimeout: const Duration(seconds: 8),
+      receiveTimeout: const Duration(seconds: 8),
+    ),
+  );
+
+  ExchangeCurrency exchangeCurrencyByCode(String code) {
+    return exchangeCurrencies.firstWhere(
+      (currency) => currency.code == code,
+      orElse: () => exchangeCurrencies.first,
+    );
+  }
+
+  void loadSavedExchangeCurrencies() {
+    final storage = GetStorage();
+    final savedFrom = storage.read<String>(_exchangeFromKey);
+    final savedTo = storage.read<String>(_exchangeToKey);
+    if (savedFrom != null &&
+        exchangeCurrencies.any((currency) => currency.code == savedFrom)) {
+      exchangeFromCurrency.value = savedFrom;
+    }
+    if (savedTo != null &&
+        exchangeCurrencies.any((currency) => currency.code == savedTo)) {
+      exchangeToCurrency.value = savedTo;
+    }
+    if (exchangeFromCurrency.value == exchangeToCurrency.value) {
+      exchangeToCurrency.value =
+          exchangeFromCurrency.value == 'USD' ? 'ILS' : 'USD';
+    }
+  }
+
+  void _saveExchangeCurrencies() {
+    final storage = GetStorage();
+    storage.write(_exchangeFromKey, exchangeFromCurrency.value);
+    storage.write(_exchangeToKey, exchangeToCurrency.value);
+  }
+
+  void onExchangeAmountChanged(String value) {
+    _calculateExchange();
+  }
+
+  void changeExchangeFrom(String? code) {
+    if (code == null || code == exchangeFromCurrency.value) return;
+    exchangeFromCurrency.value = code;
+    if (exchangeFromCurrency.value == exchangeToCurrency.value) {
+      exchangeToCurrency.value =
+          exchangeCurrencies.firstWhere((item) => item.code != code).code;
+    }
+    _saveExchangeCurrencies();
+    fetchExchangeRate();
+  }
+
+  void changeExchangeTo(String? code) {
+    if (code == null || code == exchangeToCurrency.value) return;
+    exchangeToCurrency.value = code;
+    if (exchangeFromCurrency.value == exchangeToCurrency.value) {
+      exchangeFromCurrency.value =
+          exchangeCurrencies.firstWhere((item) => item.code != code).code;
+    }
+    _saveExchangeCurrencies();
+    fetchExchangeRate();
+  }
+
+  void swapExchangeCurrencies() {
+    final previousFrom = exchangeFromCurrency.value;
+    exchangeFromCurrency.value = exchangeToCurrency.value;
+    exchangeToCurrency.value = previousFrom;
+    _saveExchangeCurrencies();
+    fetchExchangeRate();
+  }
+
+  void _calculateExchange() {
+    final amount = double.tryParse(exchangeAmountController.text.trim()) ?? 0.0;
+    convertedExchangeAmount.value = amount * exchangeRate.value;
+  }
+
+  Future<void> fetchExchangeRate() async {
+    _exchangeDebounce?.cancel();
+    _exchangeDebounce = Timer(const Duration(milliseconds: 250), () async {
+      final from = exchangeFromCurrency.value;
+      final to = exchangeToCurrency.value;
+
+      if (from == to) {
+        exchangeRate.value = 1;
+        exchangeRateDate.value = '';
+        exchangeError.value = '';
+        _calculateExchange();
+        return;
+      }
+
+      isExchangeLoading.value = true;
+      exchangeError.value = '';
+
+      try {
+        final response = await _exchangeDio.get<Map<String, dynamic>>(
+          '/rate/$from/$to',
+        );
+        final data = response.data ?? {};
+        final rawRate = data['rate'];
+        final rate = rawRate is num
+            ? rawRate.toDouble()
+            : double.tryParse(rawRate?.toString() ?? '');
+
+        if (rate == null || rate <= 0) {
+          throw const FormatException('Invalid exchange rate');
+        }
+
+        exchangeRate.value = rate;
+        exchangeRateDate.value = data['date']?.toString() ?? '';
+        _calculateExchange();
+      } catch (_) {
+        exchangeError.value = 'exchangeRateFailed'.tr;
+      } finally {
+        isExchangeLoading.value = false;
+      }
+    });
+  }
+
+  String formatExchangeNumber(double value) {
+    if (value == 0) return '0';
+    return value.toStringAsFixed(value.abs() >= 100 ? 2 : 4);
+  }
 
   final TextEditingController checkNumberController = TextEditingController();
   final TextEditingController bankNameController = TextEditingController();
@@ -140,10 +288,19 @@ class ChecksController extends GetxController
     for (final c in activeFilteredChecks) {
       final cur = c.currency.trim().toLowerCase();
       final matches = currencyKey == 'shekel'
-          ? (cur.contains('شيكل') || cur.contains('shekel') || cur.contains('ils') || cur.contains('nis') || cur.contains('₪'))
+          ? (cur.contains('شيكل') ||
+              cur.contains('shekel') ||
+              cur.contains('ils') ||
+              cur.contains('nis') ||
+              cur.contains('₪'))
           : currencyKey == 'dollar'
-              ? (cur.contains('دولار') || cur.contains('dollar') || cur.contains('usd') || cur.contains(r'$'))
-              : (cur.contains('دينار') || cur.contains('dinar') || cur.contains('jd'));
+              ? (cur.contains('دولار') ||
+                  cur.contains('dollar') ||
+                  cur.contains('usd') ||
+                  cur.contains(r'$'))
+              : (cur.contains('دينار') ||
+                  cur.contains('dinar') ||
+                  cur.contains('jd'));
       if (!matches) continue;
       sum += double.tryParse(c.total.toString()) ?? 0.0;
     }
@@ -1018,6 +1175,8 @@ class ChecksController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    loadSavedExchangeCurrencies();
+    fetchExchangeRate();
     getGeneralChecksData();
 
     getAllCustomersAndSellers();
@@ -1037,6 +1196,20 @@ class ChecksController extends GetxController
     bankNameController.dispose();
     notesController.dispose();
     employeeNameController.dispose();
+    exchangeAmountController.dispose();
+    _exchangeDebounce?.cancel();
     super.onClose();
   }
+}
+
+class ExchangeCurrency {
+  const ExchangeCurrency({
+    required this.code,
+    required this.translationKey,
+    required this.symbol,
+  });
+
+  final String code;
+  final String translationKey;
+  final String symbol;
 }

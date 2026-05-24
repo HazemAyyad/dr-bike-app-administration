@@ -32,7 +32,6 @@ class GeneralDataListController extends GetxController {
   });
 
   final isEdit = false.obs;
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   final currentTab = 0.obs;
 
@@ -132,8 +131,7 @@ class GeneralDataListController extends GetxController {
 
     if (picked.length == 1) {
       customerNameController.text = picked.first.name;
-      phoneNumberController.text =
-          PhoneFormatHelper.forApi(picked.first.phone);
+      phoneNumberController.text = PhoneFormatHelper.forApi(picked.first.phone);
       if (selectedCustomerType.text.isEmpty) {
         selectedCustomerType.text = 'retail';
       }
@@ -152,7 +150,8 @@ class GeneralDataListController extends GetxController {
     final seenPhones = <String>{};
     for (final contact in picked) {
       final phone = PhoneFormatHelper.forApi(contact.phone);
-      if (!PhoneFormatHelper.isValidApiPhone(phone) || seenPhones.contains(phone)) {
+      if (!PhoneFormatHelper.isValidApiPhone(phone) ||
+          seenPhones.contains(phone)) {
         failCount++;
         continue;
       }
@@ -209,104 +208,107 @@ class GeneralDataListController extends GetxController {
     required BuildContext context,
     String? customerId,
     String? sellerId,
+    bool validateForm = true,
   }) async {
-    if (formKey.currentState!.validate()) {
-      isLoading(true);
-      final result = await addPersonUseCase.call(
-        data: AddPersonEntity(
-          isEdit: isEdit.value,
-          name: customerNameController.text,
-          personType: resolvedPersonType,
-          customerCategory: resolvedCustomerCategory,
-          phone: PhoneFormatHelper.forApi(phoneNumberController.text),
-          subPhone: subPhoneNumberController.text.trim().isEmpty
-              ? ''
-              : PhoneFormatHelper.forApi(subPhoneNumberController.text),
-          facebookUsername: facebookNameController.text,
-          facebookLink: facebookLinkController.text,
-          instagramUsername: instagramNameController.text,
-          instagramLink: instagramLinkController.text,
-          relatedPeople: closePeopleController.text,
-          iDImage: personalIdImage,
-          licenseImage: licenseImage,
-          address: residenceLocationController.text,
-          jobTitle: workController.text,
-          workAddress: workLocationController.text,
-          relativePhone: closestPersonNumberController.text.trim().isEmpty
-              ? ''
-              : PhoneFormatHelper.forApi(closestPersonNumberController.text),
-          relativeJobTitle: closestPersonWorkController.text,
-        ),
-        customerId: customerId ?? '',
-        sellerId: sellerId ?? '',
-      );
-      result.fold(
-        (failure) {
-          String errorMessages = '';
-          bool data = false;
-          final errors = failure.data?['errors'] as Map<String, dynamic>?;
-          if (errors != null) {
-            errors.forEach((key, value) {
-              if (key.startsWith('permissions')) {
-                if (!data) {
-                  errorMessages += "Permissions: ${value.first}\n";
-                  data = true;
-                }
-              } else {
-                for (var msg in value) {
-                  errorMessages += "- $key: $msg\n";
-                }
-              }
-            });
-          } else {
-            errorMessages = failure.data?['message'] ?? failure.errMessage;
-          }
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: errorMessages,
-          );
-        },
-        (success) {
-          clearForm();
-          if (_popOnceOnSuccess) {
-            Get.back(result: {
-              'added': true,
-              'employeeType': _employeeTypeFromArguments,
-            });
-            Get.snackbar(
-              'success'.tr,
-              success,
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.green,
-              colorText: Colors.white,
-              duration: const Duration(seconds: 2),
-            );
-            return;
-          }
-          Future.delayed(
-            const Duration(milliseconds: 500),
-            () {
-              getGeneralData(loding: true);
-            },
-          );
-          Future.delayed(
-            const Duration(milliseconds: 1500),
-            () {
-              Get.back();
-              Get.back();
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-        },
-      );
-      isLoading(false);
-      update();
+    if (validateForm && !(Form.maybeOf(context)?.validate() ?? false)) {
+      return;
     }
+
+    isLoading(true);
+    final result = await addPersonUseCase.call(
+      data: AddPersonEntity(
+        isEdit: isEdit.value,
+        name: customerNameController.text,
+        personType: resolvedPersonType,
+        customerCategory: resolvedCustomerCategory,
+        phone: PhoneFormatHelper.forApi(phoneNumberController.text),
+        subPhone: subPhoneNumberController.text.trim().isEmpty
+            ? ''
+            : PhoneFormatHelper.forApi(subPhoneNumberController.text),
+        facebookUsername: facebookNameController.text,
+        facebookLink: facebookLinkController.text,
+        instagramUsername: instagramNameController.text,
+        instagramLink: instagramLinkController.text,
+        relatedPeople: closePeopleController.text,
+        iDImage: personalIdImage,
+        licenseImage: licenseImage,
+        address: residenceLocationController.text,
+        jobTitle: workController.text,
+        workAddress: workLocationController.text,
+        relativePhone: closestPersonNumberController.text.trim().isEmpty
+            ? ''
+            : PhoneFormatHelper.forApi(closestPersonNumberController.text),
+        relativeJobTitle: closestPersonWorkController.text,
+      ),
+      customerId: customerId ?? '',
+      sellerId: sellerId ?? '',
+    );
+    result.fold(
+      (failure) {
+        String errorMessages = '';
+        bool data = false;
+        final errors = failure.data?['errors'] as Map<String, dynamic>?;
+        if (errors != null) {
+          errors.forEach((key, value) {
+            if (key.startsWith('permissions')) {
+              if (!data) {
+                errorMessages += "Permissions: ${value.first}\n";
+                data = true;
+              }
+            } else {
+              for (var msg in value) {
+                errorMessages += "- $key: $msg\n";
+              }
+            }
+          });
+        } else {
+          errorMessages = failure.data?['message'] ?? failure.errMessage;
+        }
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: errorMessages,
+        );
+      },
+      (success) {
+        clearForm();
+        if (_popOnceOnSuccess) {
+          Get.back(result: {
+            'added': true,
+            'employeeType': _employeeTypeFromArguments,
+          });
+          Get.snackbar(
+            'success'.tr,
+            success,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 2),
+          );
+          return;
+        }
+        Future.delayed(
+          const Duration(milliseconds: 500),
+          () {
+            getGeneralData(loding: true);
+          },
+        );
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () {
+            Get.back();
+            Get.back();
+          },
+        );
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isLoading(false);
+    update();
   }
 
   // delete person

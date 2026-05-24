@@ -204,6 +204,13 @@ const Map<String, String> en = {
   'currency': 'Shekel',
   'currency1': 'Dollar',
   'currency2': 'Dinar',
+  'currencyExchange': 'Currency Exchange',
+  'exchangeAmount': 'Amount',
+  'convertedAmount': 'Converted amount',
+  'swapCurrencies': 'Swap currencies',
+  'refreshExchangeRate': 'Refresh exchange rate',
+  'exchangeRateValue': '1 @from = @rate @to • @date',
+  'exchangeRateFailed': 'Could not load the exchange rate now',
   'check': 'Check',
   'deb': 'debt',
   'rejectedd': 'Rejected',
@@ -520,6 +527,7 @@ const Map<String, String> en = {
   'noPhoneNumber': 'No phone number',
   'importContacts': 'Import from contacts',
   'importContact': 'Import contact',
+  'contactsSelectedCount': '@count selected',
   'contactsPermissionRequired': 'Contacts permission is required',
   'importedContactsCount': 'Imported @count customers',
   'importContactsFailed': 'Failed to import @count (check phone format)',
@@ -863,7 +871,8 @@ const Map<String, String> en = {
   'personalIdImage': 'Personal ID Image',
   'uploadPersonalIdImage': 'Upload Image',
   'completeTask': 'Complete Task',
-  'employeeImageRequired': 'Please upload a photo or video before completing the task',
+  'employeeImageRequired':
+      'Please upload a photo or video before completing the task',
   'uploadTaskProof': 'Upload photo/video as task proof',
   'openTaskToUploadImage': 'Open task details to upload or take a photo',
   'impersonateEmployee': 'Login as employee',
@@ -879,10 +888,12 @@ const Map<String, String> en = {
   'impersonationModeBanner': 'Viewing as employee — tap to return to admin',
   'showMoreTasks': 'Show more',
   'subtaskBonusDefaultSetting': 'Default subtask bonus points',
-  'subtaskBonusDefaultSettingDesc': 'Default value when enabling bonus points on a subtask',
+  'subtaskBonusDefaultSettingDesc':
+      'Default value when enabling bonus points on a subtask',
   'settingsUpdated': 'Settings updated',
   'settingsUpdateFailed': 'Could not update settings',
-  'proofUploadNotRegistered': 'Proof was not saved on the server. Retake or try a photo.',
+  'proofUploadNotRegistered':
+      'Proof was not saved on the server. Retake or try a photo.',
   'syncingProof': 'Uploading proof...',
   'subtaskCompletedSuccess': 'Subtask completed successfully',
   'allSubtasksDoneUploadMainProof':
@@ -904,9 +915,11 @@ const Map<String, String> en = {
   'subtaskProofRequired': 'Proof required (photo or video)',
   'subtaskProofUploaded': 'Proof uploaded',
   'todayTasksProgress': "Today's task progress",
-  'todayTasksProgressSubtitle': '@done of @total done/submitted — avg. progress',
+  'todayTasksProgressSubtitle':
+      '@done of @total done/submitted — avg. progress',
   'noTasksThisDay': 'No tasks on this day',
-  'cameraPermissionDenied': 'Please allow camera and gallery access in app settings',
+  'cameraPermissionDenied':
+      'Please allow camera and gallery access in app settings',
   'carLicenseImage': 'Car License Image',
   'uploadCarLicenseImage': 'Upload Image',
   'residenceLocation': 'Residence Location',
@@ -956,7 +969,8 @@ const Map<String, String> en = {
       'The transaction will move to Archive and you can restore it later.',
   'ledgerUpdated': 'Transaction updated',
   'ledgerInstantSaleTag': 'Instant sale transaction',
-  'ledgerInstantSaleNoBoxEdit': 'Instant sale entries are not linked to a ledger box',
+  'ledgerInstantSaleNoBoxEdit':
+      'Instant sale entries are not linked to a ledger box',
   'ledgerTodayAt': 'Today at',
   'ledgerTapContact': 'Tap for contact info',
   'ledgerNoPhone': 'No phone number',
@@ -1196,7 +1210,8 @@ const Map<String, String> en = {
   'packageSalesCount': 'Instant sale invoices',
   'packagesSoldTotal': 'Total packages sold',
   'stockAssemblableFromInventory': 'Can assemble from stock now',
-  'offerPackageInsufficientStock': 'Stock is insufficient to assemble one package',
+  'offerPackageInsufficientStock':
+      'Stock is insufficient to assemble one package',
   'editPackageProduct': 'Edit package product',
   'quantityPerPackage': 'Qty per package',
   'tapToAddImage': 'Tap to add image',
@@ -1770,8 +1785,7 @@ const Map<String, String> en = {
   'confirmCancelInstantSale':
       'This will cancel the sale, restore stock, and reverse the box amount. Continue?',
   'editInstantSale': 'Edit sale',
-  'instantSalePaidExceedsTotal':
-      'Paid amount cannot exceed the invoice total',
+  'instantSalePaidExceedsTotal': 'Paid amount cannot exceed the invoice total',
   'instantSaleAlreadyCancelled': 'This sale is already cancelled',
   'instantSaleInvoice': 'Invoice',
   'instantSalePieces': 'Pieces',

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/checks_controller.dart';
 import '../widgets/checks_informaiton.dart';
+import '../widgets/currency_exchange_card.dart';
 
 class ChecksScreen extends GetView<ChecksController> {
   const ChecksScreen({Key? key}) : super(key: key);
@@ -49,6 +50,8 @@ class ChecksScreen extends GetView<ChecksController> {
             color: AppColors.primaryColor,
             height: 48.h,
           ),
+          SizedBox(height: 16.h),
+          const CurrencyExchangeCard(),
         ],
       ),
     );
