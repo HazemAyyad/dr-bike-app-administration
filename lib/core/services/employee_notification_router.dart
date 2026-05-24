@@ -13,7 +13,16 @@ class EmployeeNotificationRouter {
     }
 
     final String type = raw['type']?.toString() ?? '';
-    if (type == 'employee_daily_tasks') {
+    if (type == 'employee_daily_tasks' ||
+        type == 'employee_hourly_reminder' ||
+        type == 'employee_task_scheduled_reminder' ||
+        type == 'employee_daily_tasks_complete' ||
+        type == 'employee_task_assigned' ||
+        type == 'employee_task_approved' ||
+        type == 'employee_task_rejected' ||
+        type == 'employee_task_co_subtask_done' ||
+        type == 'employee_task_co_main_done' ||
+        type == 'employee_task_co_main_completed') {
       if (_openDashboard()) {
         return;
       }

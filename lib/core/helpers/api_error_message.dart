@@ -51,6 +51,9 @@ bool _isTechnicalNoise(String s) {
       l.contains('javascriptobject') ||
       l.contains('firebaseexception') ||
       l.contains('core/no-app') ||
+      l.contains('validatestatus') ||
+      l.contains('status code of 503') ||
+      l.contains('requestoptions') ||
       l.startsWith('instance of ');
 }
 

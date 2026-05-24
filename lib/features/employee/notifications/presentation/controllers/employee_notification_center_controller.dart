@@ -16,6 +16,8 @@ class EmployeeNotificationCenterController extends GetxController {
     {'id': 'all', 'labelKey': 'notifFilterAll'},
     {'id': 'unread', 'labelKey': 'notifFilterUnread'},
     {'id': 'employee_daily_tasks', 'labelKey': 'notifFilterDailyTasks'},
+    {'id': 'employee_hourly_reminder', 'labelKey': 'notifFilterHourlyReminder'},
+    {'id': 'employee_daily_tasks_complete', 'labelKey': 'notifFilterTasksComplete'},
   ];
 
   @override

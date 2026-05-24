@@ -157,8 +157,11 @@ class AuthImplement implements AuthRepository {
       if (userdata != null) {
         final permissionIds =
             userdata.employeePermissions.map((p) => p.permissionId).toList();
-        employeePermissions.addAll(permissionIds);
-        userType = userdata.user.type;
+        syncSessionIdentity(
+          type: userdata.user.type,
+          name: userdata.user.name,
+          permissionIds: permissionIds,
+        );
       }
       return Right(userModel);
     } on ServerException catch (e) {

@@ -6,9 +6,11 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
+import '../../../../../core/widgets/person_avatar_image.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import '../ledger/ledger_colors.dart';
+import '../ledger/ledger_currency_tab_bar.dart';
 import '../ledger/ledger_format.dart';
 import '../ledger/period_filter_sheet.dart';
 class DebtsScreen extends GetView<DebtLedgerController> {
@@ -32,13 +34,25 @@ class DebtsScreen extends GetView<DebtLedgerController> {
           child: CustomScrollView(
             physics: kRefreshableScrollPhysics,
             slivers: [
+              SliverToBoxAdapter(
+                child: Obx(
+                  () => LedgerCurrencyTabBar(
+                    selected: controller.selectedCurrency.value,
+                    onSelected: controller.changeCurrency,
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 8.h)),
               SliverToBoxAdapter(child: _SummaryCard(controller: controller)),
               SliverToBoxAdapter(child: SizedBox(height: 8.h)),
               SliverToBoxAdapter(
-                child: AppTabs(
-                  tabs: controller.tabs,
-                  currentTab: controller.currentTab,
-                  changeTab: controller.changeTab,
+                child: Obx(
+                  () => AppTabs(
+                    tabs: controller.tabLabels,
+                    currentTab: controller.currentTab,
+                    changeTab: controller.changeTab,
+                    translateLabels: false,
+                  ),
                 ),
               ),
               SliverToBoxAdapter(child: SizedBox(height: 8.h)),
@@ -87,12 +101,10 @@ class _SummaryCard extends StatelessWidget {
     return Obx(() {
       final tab = controller.currentTab.value;
       final summary = controller.summary.value;
-      final taken = tab == 0
-          ? (summary?.totalTakenCustomers ?? 0)
-          : (summary?.totalTakenSellers ?? 0);
-      final given = tab == 0
-          ? (summary?.totalGivenCustomers ?? 0)
-          : (summary?.totalGivenSellers ?? 0);
+      final currency = controller.selectedCurrency.value;
+      final totals = summary?.totalsFor(currency, customers: tab == 0);
+      final taken = totals?.receivable ?? 0;
+      final given = totals?.payable ?? 0;
 
       return Container(
         width: double.infinity,
@@ -114,6 +126,7 @@ class _SummaryCard extends StatelessWidget {
               child: _SummaryItem(
                 label: 'took'.tr,
                 amount: taken,
+                currency: currency,
                 color: LedgerColors.takenGreen,
               ),
             ),
@@ -122,6 +135,7 @@ class _SummaryCard extends StatelessWidget {
               child: _SummaryItem(
                 label: 'gave'.tr,
                 amount: given,
+                currency: currency,
                 color: LedgerColors.givenRed,
               ),
             ),
@@ -135,11 +149,13 @@ class _SummaryCard extends StatelessWidget {
 class _SummaryItem extends StatelessWidget {
   final String label;
   final double amount;
+  final String currency;
   final Color color;
 
   const _SummaryItem({
     required this.label,
     required this.amount,
+    required this.currency,
     required this.color,
   });
 
@@ -150,7 +166,7 @@ class _SummaryItem extends StatelessWidget {
         Text(label, style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700)),
         SizedBox(height: 4.h),
         Text(
-          LedgerFormat.shekel2(amount),
+          LedgerFormat.money(amount, currency: currency, fractionDigits: 1),
           style: TextStyle(
             fontSize: 20.sp,
             fontWeight: FontWeight.bold,
@@ -184,7 +200,25 @@ class _SearchRow extends StatelessWidget {
             onChanged: controller.onSearchChanged,
           ),
         ),
-        SizedBox(width: 8.w),
+        SizedBox(width: 4.w),
+        IconButton(
+          tooltip: 'ledgerAddDebt'.tr,
+          onPressed: controller.openPickPersonForDebt,
+          icon: Icon(
+            Icons.person_add_alt_1,
+            color: LedgerColors.primaryBlue,
+            size: 26.sp,
+          ),
+        ),
+        IconButton(
+          tooltip: 'addNewCustomer'.tr,
+          onPressed: controller.openAddPersonFromLedger,
+          icon: Icon(
+            Icons.add_circle_outline,
+            color: LedgerColors.primaryBlue,
+            size: 26.sp,
+          ),
+        ),
         IconButton(
           onPressed: () => Get.bottomSheet(
             const PeriodFilterSheet(),
@@ -203,15 +237,14 @@ class _PersonRow extends StatelessWidget {
 
   const _PersonRow({required this.person, required this.controller});
 
-  String get _initial =>
-      person.name.isNotEmpty ? person.name.substring(0, 1) : '?';
-
   @override
   Widget build(BuildContext context) {
     final last = person.lastTransaction;
-    final balanceColor = controller.balanceColor(person.balance);
-    final label = last?.typeLabel ?? '';
-    final date = last?.createdAt ?? last?.transactionDate ?? '';
+    final currency = controller.selectedCurrency.value;
+    final balance = person.balance;
+    final balanceColor = controller.balanceColor(balance);
+    final balanceLabel = controller.balanceTypeLabel(balance);
+    final lastActivity = controller.formatLastTransactionTime(last);
 
     return InkWell(
       onTap: () => controller.openPerson(person),
@@ -232,15 +265,11 @@ class _PersonRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: LedgerColors.cardBlue,
-              child: Text(
-                _initial,
-                style: TextStyle(
-                  color: LedgerColors.primaryBlue,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+            PersonAvatarImage(
+              imageUrl: person.imageUrl,
+              width: 48.w,
+              height: 48.w,
+              circular: true,
             ),
             SizedBox(width: 12.w),
             Expanded(
@@ -254,31 +283,39 @@ class _PersonRow extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  if (date.isNotEmpty)
+                  if (lastActivity.isNotEmpty)
                     Text(
-                      date,
-                      style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                      lastActivity,
+                      style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade700),
                     ),
-                  if (label.isNotEmpty)
+                  if (balanceLabel.isNotEmpty)
                     Text(
-                      label,
+                      balanceLabel,
                       style: TextStyle(
                         fontSize: 12.sp,
-                        color: last?.type == 'taken'
-                            ? LedgerColors.takenGreen
-                            : LedgerColors.givenRed,
+                        fontWeight: FontWeight.w600,
+                        color: balanceColor,
                       ),
                     ),
                 ],
               ),
             ),
-            Text(
-              LedgerFormat.shekel2(person.balance),
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-                color: balanceColor,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  LedgerFormat.money(
+                    person.balance,
+                    currency: currency,
+                    fractionDigits: 1,
+                  ),
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: balanceColor,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

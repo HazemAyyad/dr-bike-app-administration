@@ -8,6 +8,7 @@ import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../employee/my_orders/widgets/row_text.dart';
+import '../../data/models/invoice_model.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/invoice_package_expandable_line.dart';
 import '../widgets/proudact_details_widget.dart';
@@ -74,9 +75,19 @@ class BillDetailsScreen extends GetView<SalesController> {
                   ),
                 ),
                 SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-                if (invoice.isPackageSale && invoice.subProducts.isNotEmpty)
+                if (invoice.isPackageSale && invoice.packageComponentLines.isNotEmpty)
                   SliverToBoxAdapter(
                     child: InvoicePackageExpandableLine(invoice: invoice),
+                  )
+                else if (invoice.isPackageSale)
+                  SliverToBoxAdapter(
+                    child: ProudactDetailsWidget(
+                      image: invoice.productImage,
+                      cost: invoice.cost.toString(),
+                      product: invoice.displayProductTitle,
+                      quantity: invoice.quantity.toString(),
+                      subtotal: invoice.subtotal,
+                    ),
                   )
                 else
                   SliverList(
@@ -103,16 +114,37 @@ class BillDetailsScreen extends GetView<SalesController> {
                       childCount: 1 + invoice.subProducts.length,
                     ),
                   ),
-                if (invoice.isPackageSale && invoice.subProducts.isEmpty)
+                if (invoice.isPackageSale &&
+                    invoice.additionalProductLines.isNotEmpty) ...[
                   SliverToBoxAdapter(
-                    child: ProudactDetailsWidget(
-                      image: invoice.productImage,
-                      cost: invoice.cost.toString(),
-                      product: invoice.displayProductTitle,
-                      quantity: invoice.quantity.toString(),
-                      subtotal: invoice.subtotal,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 6.h),
+                      child: Text(
+                        'instantSaleAdditionalProducts'.tr,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryColor,
+                              fontSize: 14.sp,
+                            ),
+                      ),
                     ),
                   ),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final sub = invoice.additionalProductLines[index];
+                        return ProudactDetailsWidget(
+                          image: sub.productImage,
+                          cost: sub.cost,
+                          product: sub.productName,
+                          quantity: sub.quantity,
+                          subtotal: sub.subtotal,
+                        );
+                      },
+                      childCount: invoice.additionalProductLines.length,
+                    ),
+                  ),
+                ],
                 SliverToBoxAdapter(
                   child: _InvoiceTotalsSection(
                     subtotal:

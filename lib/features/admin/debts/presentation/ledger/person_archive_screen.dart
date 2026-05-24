@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
+import 'ledger_currency_tab_bar.dart';
 import 'ledger_format.dart';
 
 class PersonArchiveScreen extends StatefulWidget {
@@ -91,8 +92,10 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
             return Center(child: Text('ledgerNoTransactions'.tr));
           }
 
-          final balanceColor = controller.balanceColor(detail.balance);
-          final typeHint = detail.balance >= 0 ? 'took'.tr : 'gave'.tr;
+          final cur = controller.selectedCurrency.value;
+          final stats = detail.balanceFor(cur);
+          final balanceColor = controller.balanceColor(stats.balance);
+          final typeHint = stats.balance >= 0 ? 'took'.tr : 'gave'.tr;
 
           return Column(
             children: [
@@ -100,6 +103,14 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
                   children: [
+                    LedgerCurrencyTabBar(
+                      selected: cur,
+                      onSelected: (currency) {
+                        controller.changeCurrency(currency);
+                        controller.loadPersonArchive();
+                      },
+                    ),
+                    SizedBox(height: 12.h),
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(vertical: 20.h),
@@ -127,7 +138,11 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
                           ),
                           SizedBox(height: 6.h),
                           Text(
-                            LedgerFormat.shekel1(detail.balance.abs()),
+                            LedgerFormat.money(
+                              stats.balance.abs(),
+                              currency: cur,
+                              fractionDigits: 1,
+                            ),
                             style: TextStyle(
                               fontSize: 32.sp,
                               fontWeight: FontWeight.bold,
@@ -153,7 +168,7 @@ class _PersonArchiveScreenState extends State<PersonArchiveScreen> {
                             child: Row(
                               children: [
                                 Text(
-                                  '${'ledgerTransactions'.tr} (${detail.transactions.length})',
+                                  '${'ledgerTransactions'.tr} (${detail.transactions.length}) — $cur',
                                   style: TextStyle(
                                     fontSize: 14.sp,
                                     fontWeight: FontWeight.w600,
@@ -282,7 +297,11 @@ class _ArchivedRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    LedgerFormat.shekel1(transaction.amount),
+                    LedgerFormat.money(
+                      transaction.amount,
+                      currency: transaction.currency,
+                      fractionDigits: 1,
+                    ),
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.bold,

@@ -6,6 +6,7 @@ class ProductModel {
   final String stock;
   final List<dynamic> projects;
   final double unitPrice;
+  final double wholesalePrice;
   final String imageUrl;
   /// Parent main category id when this row is a subcategory (from API).
   final String? mainCategoryId;
@@ -16,6 +17,7 @@ class ProductModel {
     required this.stock,
     required this.projects,
     this.unitPrice = 0,
+    this.wholesalePrice = 0,
     this.imageUrl = '',
     this.mainCategoryId,
   });
@@ -44,6 +46,9 @@ class ProductModel {
       unitPrice: asDouble(
         j['normail_price'] ?? j['normailPrice'] ?? j['price'] ?? 0,
       ),
+      wholesalePrice: asDouble(
+        j['wholesale_price'] ?? j['wholesalePrice'] ?? 0,
+      ),
       imageUrl: asString(
         j['product_image'] ?? j['image'] ?? j['imageUrl'],
         '',
@@ -56,6 +61,19 @@ class ProductModel {
     if (raw == null) return <dynamic>[];
     if (raw is List) return List<dynamic>.from(raw);
     return <dynamic>[];
+  }
+
+  ProductModel copyWith({double? unitPrice, double? wholesalePrice}) {
+    return ProductModel(
+      id: id,
+      nameAr: nameAr,
+      stock: stock,
+      projects: projects,
+      unitPrice: unitPrice ?? this.unitPrice,
+      wholesalePrice: wholesalePrice ?? this.wholesalePrice,
+      imageUrl: imageUrl,
+      mainCategoryId: mainCategoryId,
+    );
   }
 
   Map<String, dynamic> toJson() {

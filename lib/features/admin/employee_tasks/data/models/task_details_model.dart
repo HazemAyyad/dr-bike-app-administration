@@ -1,8 +1,8 @@
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
-import '../../../../../core/helpers/show_net_image.dart';
-import '../../../../../core/utils/assets_manger.dart';
+import '../../../../../core/helpers/task_media_paths.dart';
+import '../../domain/entities/task_assignee_info.dart';
 import '../../domain/entities/task_details_entiny.dart';
 
 class TaskDetailsModel extends TaskDetailsEntity {
@@ -17,20 +17,32 @@ class TaskDetailsModel extends TaskDetailsEntity {
     required DateTime endTime,
     required String status,
     required bool isForcedToUploadImg,
+    bool requiresAdminReview = true,
     required String taskRecurrence,
     required List<String> taskRecurrenceTime,
     required String employeeId,
+    List<int> assigneeIds = const [],
+    List<TaskAssigneeInfo> assignees = const [],
     required String employeeName,
     required bool isCanceled,
     String? parentId,
     List<String>? adminImg,
+    List<String>? adminVideos,
     List<String>? employeeImg,
+    List<String>? employeeVideos,
     String? audio,
     required List<SubTaskModel> subTasks,
     List<Map<String, dynamic>> timeline = const [],
     int progress = 0,
     String priority = 'medium',
     String? rejectionNotes,
+    int? templateId,
+    int? occurrenceId,
+    Map<String, dynamic>? recurrenceConfig,
+    String? reminderWhen,
+    String? reminderChannel,
+    int? completedByEmployeeId,
+    String? completedByName,
   }) : super(
           taskId: taskId,
           taskName: taskName,
@@ -42,20 +54,32 @@ class TaskDetailsModel extends TaskDetailsEntity {
           endTime: endTime,
           status: status,
           isForcedToUploadImg: isForcedToUploadImg,
+          requiresAdminReview: requiresAdminReview,
           taskRecurrence: taskRecurrence,
           taskRecurrenceTime: taskRecurrenceTime,
           employeeId: employeeId,
+          assigneeIds: assigneeIds,
+          assignees: assignees,
           employeeName: employeeName,
           isCanceled: isCanceled,
           parentId: parentId,
           adminImg: adminImg,
+          adminVideos: adminVideos,
           employeeImg: employeeImg,
+          employeeVideos: employeeVideos,
           audio: audio,
           subTasks: subTasks,
           timeline: timeline,
           progress: progress,
           priority: priority,
           rejectionNotes: rejectionNotes,
+          templateId: templateId,
+          occurrenceId: occurrenceId,
+          recurrenceConfig: recurrenceConfig,
+          reminderWhen: reminderWhen,
+          reminderChannel: reminderChannel,
+          completedByEmployeeId: completedByEmployeeId,
+          completedByName: completedByName,
         );
 
   factory TaskDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -64,20 +88,8 @@ class TaskDetailsModel extends TaskDetailsEntity {
         ? trt.map((e) => asString(e)).toList()
         : <String>[];
 
-    List<String> mapImgList(dynamic raw) {
-      if (raw is! List) return [];
-      return raw
-          .map((e) => asNullableString(e))
-          .where(
-            (e) =>
-                e != null &&
-                !isNoMediaPlaceholder(e) &&
-                !isAudioMediaPath(e),
-          )
-          .map((e) => ShowNetImage.getPhoto(e))
-          .where((url) => url != AssetsManager.noImageNet)
-          .toList();
-    }
+    final adminMedia = parseTaskMediaFromApi(json[ApiKey.admin_img]);
+    final employeeMedia = parseTaskMediaFromApi(json[ApiKey.employee_img]);
 
     return TaskDetailsModel(
       taskId: asInt(json[ApiKey.id]),
@@ -96,14 +108,21 @@ class TaskDetailsModel extends TaskDetailsEntity {
       ),
       status: asString(json[ApiKey.status]),
       isForcedToUploadImg: asBool(json[ApiKey.is_forced_to_upload_img]),
+      requiresAdminReview: asBool(json['requires_admin_review'], true),
       taskRecurrence: asString(json[ApiKey.task_recurrence]),
       taskRecurrenceTime: recurrenceTimes,
       employeeId: asString(json[ApiKey.employee_id], 'Unknown'),
+      assigneeIds: json['assignee_ids'] is List
+          ? (json['assignee_ids'] as List).map((e) => asInt(e)).toList()
+          : const [],
+      assignees: _parseAssignees(json['assignees']),
       employeeName: asString(json[ApiKey.employee_name]),
       isCanceled: asBool(json[ApiKey.is_canceled]),
       parentId: asNullableString(json[ApiKey.parent_id]),
-      adminImg: mapImgList(json[ApiKey.admin_img]),
-      employeeImg: mapImgList(json[ApiKey.employee_img]),
+      adminImg: adminMedia.images,
+      adminVideos: adminMedia.videos,
+      employeeImg: employeeMedia.images,
+      employeeVideos: employeeMedia.videos,
       audio: parseAudioFromApi(asNullableString(json[ApiKey.audio])),
       subTasks: mapList(
         json[ApiKey.sub_tasks],
@@ -117,6 +136,19 @@ class TaskDetailsModel extends TaskDetailsEntity {
       progress: asInt(json['progress']),
       priority: asString(json['priority'], 'medium'),
       rejectionNotes: asNullableString(json['rejection_notes']),
+      templateId: json['template_id'] != null ? asInt(json['template_id']) : null,
+      occurrenceId: json['occurrence_id'] != null
+          ? asInt(json['occurrence_id'])
+          : null,
+      recurrenceConfig: json['recurrence_config'] is Map
+          ? Map<String, dynamic>.from(json['recurrence_config'] as Map)
+          : null,
+      reminderWhen: asNullableString(json['reminder_when']),
+      reminderChannel: asNullableString(json['reminder_channel']),
+      completedByEmployeeId: json['completed_by_employee_id'] != null
+          ? asInt(json['completed_by_employee_id'])
+          : null,
+      completedByName: asNullableString(json['completed_by_name']),
     );
   }
 
@@ -147,6 +179,37 @@ class TaskDetailsModel extends TaskDetailsEntity {
   }
 }
 
+List<TaskAssigneeInfo> _parseAssignees(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map>()
+      .map((m) => TaskAssigneeModel.fromJson(Map<String, dynamic>.from(m)))
+      .toList();
+}
+
+class TaskAssigneeModel extends TaskAssigneeInfo {
+  TaskAssigneeModel({
+    required int id,
+    required String name,
+    String photoUrl = '',
+  }) : super(id: id, name: name, photoUrl: photoUrl);
+
+  factory TaskAssigneeModel.fromJson(Map<String, dynamic> json) {
+    final photoRaw = asNullableString(json['photo']) ?? '';
+    final photo = photoRaw.isEmpty ||
+            photoRaw == 'no images' ||
+            photoRaw == 'no image'
+        ? ''
+        : resolveTaskMediaUri(photoRaw);
+
+    return TaskAssigneeModel(
+      id: asInt(json['id']),
+      name: asString(json['name']),
+      photoUrl: photo,
+    );
+  }
+}
+
 class SubTaskModel extends SubTaskEntity {
   SubTaskModel({
     required int id,
@@ -154,33 +217,29 @@ class SubTaskModel extends SubTaskEntity {
     required String description,
     required String status,
     List<String>? adminImg,
+    List<String>? adminVideos,
     required bool isForcedToUploadImg,
     List<String>? employeeImg,
+    List<String>? employeeVideos,
+    int? completedByEmployeeId,
+    String? completedByName,
   }) : super(
           id: id,
           name: name,
           description: description,
           status: status,
           adminImg: adminImg,
+          adminVideos: adminVideos,
           isForcedToUploadImg: isForcedToUploadImg,
           employeeImg: employeeImg,
+          employeeVideos: employeeVideos,
+          completedByEmployeeId: completedByEmployeeId,
+          completedByName: completedByName,
         );
 
   factory SubTaskModel.fromJson(Map<String, dynamic> json) {
-    List<String> mapImgList(dynamic raw) {
-      if (raw is! List) return [];
-      return raw
-          .map((e) => asNullableString(e))
-          .where(
-            (e) =>
-                e != null &&
-                !isNoMediaPlaceholder(e) &&
-                !isAudioMediaPath(e),
-          )
-          .map((e) => ShowNetImage.getPhoto(e))
-          .where((url) => url != AssetsManager.noImageNet)
-          .toList();
-    }
+    final adminMedia = parseTaskMediaFromApi(json[ApiKey.admin_img]);
+    final employeeMedia = parseTaskMediaFromApi(json[ApiKey.employee_img]);
 
     return SubTaskModel(
       id: asInt(json[ApiKey.id]),
@@ -188,8 +247,14 @@ class SubTaskModel extends SubTaskEntity {
       description: asString(json[ApiKey.description]),
       status: asString(json[ApiKey.status]),
       isForcedToUploadImg: asBool(json[ApiKey.is_forced_to_upload_img]),
-      adminImg: mapImgList(json[ApiKey.admin_img]),
-      employeeImg: mapImgList(json[ApiKey.employee_img]),
+      adminImg: adminMedia.images,
+      adminVideos: adminMedia.videos,
+      employeeImg: employeeMedia.images,
+      employeeVideos: employeeMedia.videos,
+      completedByEmployeeId: json['completed_by_employee_id'] != null
+          ? asInt(json['completed_by_employee_id'])
+          : null,
+      completedByName: asNullableString(json['completed_by_name']),
     );
   }
 
@@ -212,8 +277,8 @@ class ImagesPathInfoModel extends ImagesPathInfoEntity {
 
   factory ImagesPathInfoModel.fromJson(Map<String, dynamic> json) {
     return ImagesPathInfoModel(
-      subtaskAdminImgPath: ShowNetImage.getPhoto(
-        _emptyToNull(asNullableString(json[ApiKey.subtask_admin_img_path])),
+      subtaskAdminImgPath: resolveTaskMediaUri(
+        asNullableString(json[ApiKey.subtask_admin_img_path]) ?? '',
       ),
     );
   }
@@ -222,15 +287,5 @@ class ImagesPathInfoModel extends ImagesPathInfoEntity {
     return {
       ApiKey.subtask_admin_img_path: subtaskAdminImgPath,
     };
-  }
-
-  static String? _emptyToNull(String? value) {
-    if (value == null) return null;
-    return (value.startsWith('public/') ||
-            value != 'no employee image' &&
-                value != 'no admin image' &&
-                value != 'no audio')
-        ? value
-        : null;
   }
 }

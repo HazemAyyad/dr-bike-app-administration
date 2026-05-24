@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class NetworkInfo {
@@ -7,10 +9,31 @@ class NetworkInfo {
   Future<bool> get isConnected async {
     final List<ConnectivityResult> results =
         await _connectivity.checkConnectivity();
+
     if (results.isEmpty) {
+      return _probeReachability();
+    }
+
+    if (results.any((r) => r != ConnectivityResult.none)) {
       return true;
     }
-    return results.any((r) => r != ConnectivityResult.none);
+
+    // connectivity_plus often reports "none" while Wi‑Fi/data still works.
+    return _probeReachability();
+  }
+
+  Future<bool> _probeReachability() async {
+    try {
+      final result = await InternetAddress.lookup('one.one.one.one')
+          .timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    } on TimeoutException {
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

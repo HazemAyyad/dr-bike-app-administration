@@ -26,6 +26,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     required String description,
     required String notes,
     required String employeeId,
+    List<String> employeeIds = const [],
     required String points,
     required DateTime startTime,
     required DateTime endTime,
@@ -34,8 +35,13 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
+    required String requiresAdminReview,
     required List<File> adminImg,
     required File audio,
+    String? priority,
+    Map<String, dynamic>? recurrenceConfig,
+    int? templateId,
+    int? occurrenceId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -47,6 +53,7 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
         description: description,
         notes: notes,
         employeeId: employeeId,
+        employeeIds: employeeIds,
         points: points,
         startTime: startTime,
         endTime: endTime,
@@ -55,8 +62,13 @@ class CreateEmployeeTasksImplement implements CreateEmployeeTasksRepository {
         subEmployeeTasks: subEmployeeTasks,
         notShownForEmployee: notShownForEmployee,
         isForcedToUploadImg: isForcedToUploadImg,
+        requiresAdminReview: requiresAdminReview,
         adminImg: adminImg,
         audio: audio,
+        priority: priority,
+        recurrenceConfig: recurrenceConfig,
+        templateId: templateId,
+        occurrenceId: occurrenceId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

@@ -19,6 +19,9 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
 
   @override
   Widget build(BuildContext context) {
+    if (!Get.isRegistered<BottomNavBarController>()) {
+      return const SizedBox.shrink();
+    }
     return SafeArea(
       child: SizedBox(
         height: 70.h, // ارتفاع شريط التنقل
@@ -34,7 +37,11 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
               ),
             ),
             child: Obx(
-              () => Row(
+              () {
+                final role = sessionUserType.value.isNotEmpty
+                    ? sessionUserType.value
+                    : userType;
+                return Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   BuildNavItem(
@@ -43,7 +50,7 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                     label: 'home'.tr,
                     onTap: () => controller.changePage(0),
                   ),
-                  userType == 'admin'
+                  role == 'admin'
                       ? BuildNavItem(
                           assetImage: AssetsManager.taskIcon,
                           isSelected: controller.currentIndex.value == 1,
@@ -82,7 +89,8 @@ class CustomBottomNavigationBar extends GetView<BottomNavBarController> {
                     onTap: () => controller.changePage(2),
                   ),
                 ],
-              ),
+              );
+              },
             ),
           ),
         ),

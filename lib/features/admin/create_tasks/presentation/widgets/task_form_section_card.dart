@@ -11,21 +11,23 @@ class TaskFormSectionCard extends StatelessWidget {
     required this.title,
     required this.child,
     this.trailing,
+    this.compact = false,
   }) : super(key: key);
 
   final String title;
   final Widget child;
   final Widget? trailing;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(16.w),
+      margin: EdgeInsets.only(bottom: compact ? 8.h : 16.h),
+      padding: EdgeInsets.all(compact ? 10.w : 16.w),
       decoration: BoxDecoration(
         color: AppColors.whiteColor,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(compact ? 12.r : 16.r),
         border: Border.all(color: AppColors.operationalCardBorder),
         boxShadow: [
           BoxShadow(
@@ -44,7 +46,7 @@ class TaskFormSectionCard extends StatelessWidget {
                 child: Text(
                   title.tr,
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: compact ? 12.sp : 15.sp,
                     fontWeight: FontWeight.w700,
                     color: AppColors.operationalNavy,
                   ),
@@ -53,7 +55,7 @@ class TaskFormSectionCard extends StatelessWidget {
               if (trailing != null) trailing!,
             ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: compact ? 8.h : 12.h),
           child,
         ],
       ),

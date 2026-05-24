@@ -8,11 +8,11 @@ class AppColors {
   /// #6B65BD — legacy primary; prefer [operationalPurple] for task module accents.
   static const Color primaryColor = Color(0XFF6B65BD);
 
-  /// Doctor Bike operational branding
-  static const Color operationalNavy = Color(0xFF0B0B3F);
-  static const Color operationalPurple = Color(0xFF7367F0);
-  static const Color operationalSurface = Color(0xFFF4F5FA);
-  static const Color operationalCardBorder = Color(0xFFE8E9F3);
+  /// Doctor Bike operational branding (tasks module)
+  static const Color operationalNavy = Color(0xFF111827);
+  static const Color operationalPurple = Color(0xFF6C5CE7);
+  static const Color operationalSurface = Color(0xFFF6F5FA);
+  static const Color operationalCardBorder = Color(0xFFE5E7EB);
 
   /// #0F0F31
   static const Color secondaryColor = Color(0XFF0F0F31);

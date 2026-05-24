@@ -18,6 +18,8 @@ import '../../../../employee/employee_dashbord/presentation/controllers/employee
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/audio_player.dart';
 import '../widgets/mark_task_complete.dart';
+import '../widgets/task_assignees_section.dart';
+import '../widgets/task_media_thumbnail_row.dart';
 import '../widgets/task_status_badge.dart';
 import '../widgets/task_timeline_section.dart';
 
@@ -102,179 +104,61 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   title: 'taskName'.tr,
                   discription: data.taskName,
                 ),
-                SupTextAndDiscr(
-                  title: 'employeeName'.tr,
-                  discription: data.employeeName,
-                ),
+                if (data.assignees.isNotEmpty) ...[
+                  SizedBox(height: 8.h),
+                  Text(
+                    'taskAssignedTo'.tr,
+                    style: theme.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  TaskAssigneesSection(assignees: data.assignees),
+                  SizedBox(height: 8.h),
+                ] else
+                  SupTextAndDiscr(
+                    title: 'employeeName'.tr,
+                    discription: data.employeeName,
+                  ),
                 SupTextAndDiscr(
                   title: 'numberOfPoints'.tr,
                   discription: data.points.toString(),
                 ),
-                if (data.adminImg != null && data.adminImg!.isNotEmpty) ...[
-                SizedBox(height: 10.h),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'adminImage'.tr,
-                      style: theme.copyWith(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor6
-                            : AppColors.customGreyColor4,
-                      ),
-                    ),
-                    SizedBox(height: 5.h),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          ...data.adminImg!.map(
-                            (e) => Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 5.w),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(5.r),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    showGeneralDialog(
-                                      context: context,
-                                      barrierDismissible: true,
-                                      barrierLabel: 'Dismiss',
-                                      barrierColor: Colors.black.withAlpha(128),
-                                      transitionDuration:
-                                          const Duration(milliseconds: 300),
-                                      pageBuilder: (context, anim1, anim2) {
-                                        return FullScreenZoomImage(
-                                          imageUrl: e,
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: CachedNetworkImage(
-                                    cacheManager: CacheManager(
-                                      Config(
-                                        'imagesCache',
-                                        stalePeriod: const Duration(days: 7),
-                                        maxNrOfCacheObjects: 100,
-                                      ),
-                                    ),
-                                    imageBuilder: (context, imageProvider) =>
-                                        Container(
-                                      height: 200.h,
-                                      width: 200.w,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.fill,
-                                          filterQuality: FilterQuality.medium,
-                                        ),
-                                      ),
-                                    ),
-                                    imageUrl: e,
-                                    fadeInDuration:
-                                        const Duration(milliseconds: 200),
-                                    fadeOutDuration:
-                                        const Duration(milliseconds: 200),
-                                    placeholder: (context, url) => SizedBox(
-                                      height: 200.h,
-                                      width: 200.w,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                ],
-                if (data.employeeImg != null && data.employeeImg!.isNotEmpty) ...[
+                if ((data.adminImg?.isNotEmpty ?? false) ||
+                    (data.adminVideos?.isNotEmpty ?? false)) ...[
                   SizedBox(height: 10.h),
                   Text(
-                    'employeeImage'.tr,
+                    'adminAttachedMedia'.tr,
                     style: theme.copyWith(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor6
-                          : AppColors.customGreyColor4,
                     ),
                   ),
+                  SizedBox(height: 8.h),
+                  TaskMediaThumbnailRow(
+                    images: data.adminImg ?? [],
+                    videos: data.adminVideos ?? [],
+                    thumbHeight: 100,
+                    thumbWidth: 100,
+                  ),
+                ],
+                if ((data.employeeImg?.isNotEmpty ?? false) ||
+                    (data.employeeVideos?.isNotEmpty ?? false)) ...[
                   SizedBox(height: 10.h),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        ...data.employeeImg!.map(
-                          (e) => Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 5.w),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(5.r),
-                              child: GestureDetector(
-                                onTap: () {
-                                  showGeneralDialog(
-                                    context: context,
-                                    barrierDismissible: true,
-                                    barrierLabel: 'Dismiss',
-                                    barrierColor: Colors.black.withAlpha(128),
-                                    transitionDuration:
-                                        const Duration(milliseconds: 300),
-                                    pageBuilder: (context, anim1, anim2) {
-                                      return FullScreenZoomImage(
-                                        imageUrl: e,
-                                      );
-                                    },
-                                  );
-                                },
-                                child: CachedNetworkImage(
-                                  cacheManager: CacheManager(
-                                    Config(
-                                      'imagesCache',
-                                      stalePeriod: const Duration(days: 7),
-                                      maxNrOfCacheObjects: 100,
-                                    ),
-                                  ),
-                                  imageBuilder: (context, imageProvider) =>
-                                      Container(
-                                    height: 200.h,
-                                    width: 200.w,
-                                    decoration: BoxDecoration(
-                                      image: DecorationImage(
-                                        image: imageProvider,
-                                        fit: BoxFit.fill,
-                                        filterQuality: FilterQuality.medium,
-                                      ),
-                                    ),
-                                  ),
-                                  imageUrl: e,
-                                  fadeInDuration:
-                                      const Duration(milliseconds: 200),
-                                  fadeOutDuration:
-                                      const Duration(milliseconds: 200),
-                                  placeholder: (context, url) => SizedBox(
-                                    height: 200.h,
-                                    width: 200.w,
-                                    child: const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'employeeProofSection'.tr,
+                    style: theme.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  SizedBox(height: 8.h),
+                  TaskMediaThumbnailRow(
+                    images: data.employeeImg ?? [],
+                    videos: data.employeeVideos ?? [],
+                    thumbHeight: 100,
+                    thumbWidth: 100,
                   ),
                 ],
                 if (userType != 'admin' &&
@@ -295,7 +179,9 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
                   MediaUploadButton(
                     allowedType: MediaType.both,
                     onFilesChanged: (files) {
-                      controller.selectedFile = files;
+                      controller.selectedFile
+                        ..clear()
+                        ..addAll(files);
                     },
                     title: 'employeeImage'.tr,
                   ),

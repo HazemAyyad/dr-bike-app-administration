@@ -27,6 +27,7 @@ class AddInstantSalesUsecase {
     String? paymentBoxName,
     String? paymentBoxValue,
     String? offerPackageId,
+    List<Map<String, dynamic>>? cartOtherProducts,
   }) async {
     return await salesRepository.addInstantSales(
       productId: productId,
@@ -46,6 +47,7 @@ class AddInstantSalesUsecase {
       paymentBoxName: paymentBoxName,
       paymentBoxValue: paymentBoxValue,
       offerPackageId: offerPackageId,
+      cartOtherProducts: cartOtherProducts,
     );
   }
 }

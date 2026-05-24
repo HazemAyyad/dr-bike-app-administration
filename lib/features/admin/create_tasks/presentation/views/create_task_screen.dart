@@ -88,11 +88,13 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                                 value: controller.employeeService.employeeList
                                         .any((e) =>
                                             e.id.toString() ==
-                                            controller.employeeIdConroller.text)
-                                    ? controller.employeeIdConroller.text
+                                            controller.selectedEmployeeId.value)
+                                    ? controller.selectedEmployeeId.value
                                     : null,
                                 onChanged: (value) {
-                                  controller.employeeIdConroller.text = value!;
+                                  if (value != null) {
+                                    controller.selectEmployee(value);
+                                  }
                                 },
                               );
                             },

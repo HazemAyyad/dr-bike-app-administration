@@ -29,6 +29,7 @@ class DebtLedgerDatasource {
     String? search,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     try {
       final response = await api.get(
@@ -38,6 +39,25 @@ class DebtLedgerDatasource {
           if (search != null && search.isNotEmpty) 'search': search,
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
+        },
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _serverException(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getPeoplePicker({
+    required String type,
+    String? search,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.debtLedgerPeoplePicker,
+        queryParameters: {
+          'type': type,
+          if (search != null && search.isNotEmpty) 'search': search,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -101,6 +121,7 @@ class DebtLedgerDatasource {
     int? sellerId,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     try {
       final response = await api.get(
@@ -110,6 +131,7 @@ class DebtLedgerDatasource {
           if (sellerId != null) 'seller_id': sellerId,
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -124,6 +146,7 @@ class DebtLedgerDatasource {
     required String type,
     required String amount,
     required String transactionDate,
+    String? currency,
     String? note,
     String? boxId,
     List<File>? receiptImages,
@@ -134,6 +157,7 @@ class DebtLedgerDatasource {
         if (sellerId != null) 'seller_id': sellerId.toString(),
         'type': type,
         'amount': amount,
+        if (currency != null && currency.isNotEmpty) 'currency': currency,
         'transaction_date': transactionDate,
         if (note != null && note.isNotEmpty) 'note': note,
         if (boxId != null && boxId.isNotEmpty) 'box_id': boxId,
@@ -175,6 +199,7 @@ class DebtLedgerDatasource {
     required String type,
     required String amount,
     required String transactionDate,
+    String? currency,
     String? note,
     String? boxId,
     List<File>? receiptImages,
@@ -183,6 +208,7 @@ class DebtLedgerDatasource {
       final payload = <String, dynamic>{
         'type': type,
         'amount': amount,
+        if (currency != null && currency.isNotEmpty) 'currency': currency,
         'transaction_date': transactionDate,
         if (note != null && note.isNotEmpty) 'note': note,
         if (boxId != null && boxId.isNotEmpty) 'box_id': boxId,
@@ -213,6 +239,7 @@ class DebtLedgerDatasource {
   Future<Map<String, dynamic>> getPersonArchive({
     int? customerId,
     int? sellerId,
+    String? currency,
   }) async {
     try {
       final response = await api.get(
@@ -220,6 +247,7 @@ class DebtLedgerDatasource {
         queryParameters: {
           if (customerId != null) 'customer_id': customerId,
           if (sellerId != null) 'seller_id': sellerId,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -231,6 +259,7 @@ class DebtLedgerDatasource {
   Future<Map<String, dynamic>> getPersonDeleted({
     int? customerId,
     int? sellerId,
+    String? currency,
   }) async {
     try {
       final response = await api.get(
@@ -238,6 +267,7 @@ class DebtLedgerDatasource {
         queryParameters: {
           if (customerId != null) 'customer_id': customerId,
           if (sellerId != null) 'seller_id': sellerId,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -302,6 +332,7 @@ class DebtLedgerDatasource {
     String? period,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     try {
       final response = await api.post(
@@ -312,6 +343,7 @@ class DebtLedgerDatasource {
           if (period != null) 'period': period,
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
         },
         options: Options(responseType: ResponseType.bytes),
         isFormData: true,
@@ -328,6 +360,7 @@ class DebtLedgerDatasource {
     String? period,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     try {
       final response = await api.post(
@@ -338,9 +371,41 @@ class DebtLedgerDatasource {
           if (period != null) 'period': period,
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
           'json_response': true,
         },
         isFormData: true,
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _serverException(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getTransactionActivity(int id) async {
+    try {
+      final response = await api.get(
+        EndPoints.debtLedgerTransactionActivity(id),
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _serverException(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getPersonActivity({
+    int? customerId,
+    int? sellerId,
+    String? currency,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.debtLedgerPersonActivity,
+        queryParameters: {
+          if (customerId != null) 'customer_id': customerId,
+          if (sellerId != null) 'seller_id': sellerId,
+          if (currency != null && currency.isNotEmpty) 'currency': currency,
+        },
       );
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {

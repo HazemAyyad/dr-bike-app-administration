@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import 'package:doctorbike/routes/app_routes.dart';
-import 'package:intl/intl.dart';
-
-import '../../../../../core/helpers/task_nav_debug.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/custom_floating_action_button.dart';
+import '../widgets/employee_tasks_fab_lens.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/employee_tasks_controller.dart';
 import '../widgets/employee_tasks_list.dart';
+import '../widgets/tasks_view_mode_bar.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
@@ -45,66 +42,62 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
               changeTab: controller.changeTab,
             ),
           ),
+          const SliverToBoxAdapter(child: TasksViewModeBar()),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-              child: GetBuilder<EmployeeTasksController>(
-                builder: (controller) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        onPressed: () => controller.changeWeek(false),
-                        icon: const Icon(
-                          Icons.arrow_circle_right_outlined,
-                          color: AppColors.primaryColor,
-                          size: 35,
-                        ),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+              child: Obx(() {
+                controller.listEpoch.value;
+                controller.tasksViewMode.value;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(minWidth: 36.w, minHeight: 36.w),
+                      onPressed: () => controller.changePeriod(false),
+                      icon: Icon(
+                        Icons.chevron_left_rounded,
+                        color: AppColors.operationalPurple,
+                        size: 26.sp,
                       ),
-                      Text(
-                        "من ${DateFormat('d/M/yyyy').format(controller.startDate)} "
-                        "الى ${DateFormat('d/M/yyyy').format(controller.endDate)}",
+                    ),
+                    Expanded(
+                      child: Text(
+                        controller.periodLabel,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              fontSize: 14.sp,
+                              fontSize: 12.sp,
                               fontWeight: FontWeight.w600,
                               color: ThemeService.isDark.value
                                   ? AppColors.primaryColor
-                                  : AppColors.secondaryColor,
+                                  : AppColors.operationalNavy,
                             ),
                       ),
-                      IconButton(
-                        onPressed: () => controller.changeWeek(true),
-                        icon: const Icon(
-                          Icons.arrow_circle_left_outlined,
-                          color: AppColors.primaryColor,
-                          size: 35,
-                        ),
+                    ),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(minWidth: 36.w, minHeight: 36.w),
+                      onPressed: () => controller.changePeriod(true),
+                      icon: Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.operationalPurple,
+                        size: 26.sp,
                       ),
-                    ],
-                  );
-                },
-              ),
+                    ),
+                  ],
+                );
+              }),
             ),
           ),
           const EmployeeTasks(),
-          SliverToBoxAdapter(child: SizedBox(height: 80.h)),
+          SliverToBoxAdapter(child: SizedBox(height: 72.h)),
         ],
         ),
       ),
-      floatingActionButton: AddFloatingActionButton(
-        onPressed: () {
-          TaskNavDebug.log(
-            'EmployeeTasksScreen.FAB',
-            AppRoutes.CREATETASKSCREEN,
-            screen: 'CreateTaskEntryScreen -> CreateEmployeeTaskScreen',
-            extra: {'title': 'createNewEmployeeTask', 'isEdit': false},
-          );
-          Get.toNamed(
-            AppRoutes.CREATETASKSCREEN,
-            arguments: {'title': 'createNewEmployeeTask', 'isEdit': false},
-          );
-        },
-      ),
+      floatingActionButton: const EmployeeTasksCreateFab(),
       floatingActionButtonLocation: Get.locale!.languageCode == 'ar'
           ? FloatingActionButtonLocation.startFloat
           : FloatingActionButtonLocation.endFloat,

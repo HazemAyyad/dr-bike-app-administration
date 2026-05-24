@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'task_media_paths.dart';
 import 'video_view.dart';
 
 class FullScreenZoomImage extends StatelessWidget {
@@ -15,6 +16,20 @@ class FullScreenZoomImage extends StatelessWidget {
 
   const FullScreenZoomImage({Key? key, required this.imageUrl})
       : super(key: key);
+
+  /// يفتح الصورة بملء الشاشة مع إمكانية التكبير بالقرص.
+  static void open(BuildContext context, String imageUrl) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withValues(alpha: 0.88),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, anim1, anim2) {
+        return FullScreenZoomImage(imageUrl: imageUrl);
+      },
+    );
+  }
 
   Future<void> _downloadImage(BuildContext context) async {
     try {
@@ -37,7 +52,7 @@ class FullScreenZoomImage extends StatelessWidget {
       final tempPath = '${tempDir.path}/$fileName';
       // 🧩 تحميل الصورة مؤقتاً
       await Dio().download(imageUrl, tempPath);
-      if (imageUrl.endsWith('.mp4')) {
+      if (isVideoMediaPath(imageUrl)) {
         await GallerySaver.saveVideo(
           tempPath,
           albumName: "Doctor Bike",
@@ -74,19 +89,30 @@ class FullScreenZoomImage extends StatelessWidget {
               Navigator.of(context).pop();
             }
           },
-          child: imageUrl.contains('.mp4')
+          child: isVideoMediaPath(imageUrl)
               ? VideoView(videoPath: imageUrl, dsibalBack: true)
               : Container(
-                  color: Colors.transparent,
-                  child: Center(
-                    child: PhotoView(
-                      imageProvider: NetworkImage(imageUrl),
-                      backgroundDecoration: const BoxDecoration(
-                        color: Colors.transparent,
+                  color: Colors.black,
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: PhotoView(
+                    imageProvider: NetworkImage(imageUrl),
+                    backgroundDecoration: const BoxDecoration(
+                      color: Colors.black,
+                    ),
+                    minScale: PhotoViewComputedScale.contained,
+                    maxScale: PhotoViewComputedScale.covered * 4,
+                    initialScale: PhotoViewComputedScale.contained,
+                    enableRotation: false,
+                    loadingBuilder: (context, event) => const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                    errorBuilder: (context, error, stackTrace) => Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white54,
+                        size: 48.sp,
                       ),
-                      minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.covered * 2.5,
-                      enableRotation: false,
                     ),
                   ),
                 ),

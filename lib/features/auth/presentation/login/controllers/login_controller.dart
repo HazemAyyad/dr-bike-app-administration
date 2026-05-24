@@ -1,11 +1,13 @@
 import 'package:doctorbike/core/services/user_data.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/api_error_message.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
+import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../core/services/session_service.dart';
@@ -65,11 +67,26 @@ class LoginController extends GetxController {
     final service = BiometricAuthService.instance;
     final enabled = await service.isBiometricLoginEnabled();
     final hasSavedData = await service.hasSavedLoginData();
+    if (!enabled || !hasSavedData) {
+      canShowBiometricLogin.value = false;
+      return;
+    }
+
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final native = await NativeBiometricService.instance.isAvailable();
+        canShowBiometricLogin.value = native.available;
+        return;
+      } catch (_) {
+        // fall through to local_auth checks
+      }
+    }
+
     final supported = await service.isDeviceSupported();
     final canCheck = await service.canCheckBiometrics();
     final available = await service.getAvailableBiometrics();
     canShowBiometricLogin.value =
-        enabled && hasSavedData && supported && canCheck && available.isNotEmpty;
+        supported && (canCheck || available.isNotEmpty);
   }
 
   void sendOtp(BuildContext context) async {
@@ -141,28 +158,37 @@ class LoginController extends GetxController {
         return;
       }
 
-      await UserData.saveToken(savedData.token!);
+      final token = savedData.token!.trim();
+      await UserData.saveToken(token);
       await UserData.saveUserJson(savedData.userDataJson!);
       await SessionService.hydrateToken();
       await _restoreSavedUserGlobals();
 
       final validation = await SessionService.validateAndRefreshSession();
       if (!validation.isValid) {
-        await BiometricAuthService.instance.setBiometricLoginEnabled(false);
-        await BiometricAuthService.instance.clearLoginData();
-        canShowBiometricLogin.value = false;
+        if (validation.isAuthFailure) {
+          await BiometricAuthService.instance.setBiometricLoginEnabled(false);
+          await BiometricAuthService.instance.clearLoginData();
+          canShowBiometricLogin.value = false;
+        }
         await UserData.clearAllUserData();
         _showMessage(
           title: 'تنبيه',
           message: validation.isAuthFailure
               ? 'انتهت الجلسة على السيرفر (مثلاً بعد مسح الجلسات). سجّل دخولاً بكلمة المرور.'
-              : 'تعذر التحقق من الجلسة. سجّل دخولاً بكلمة المرور.',
+              : 'تعذر التحقق من الجلسة. تحقق من الإنترنت وسجّل دخولاً بكلمة المرور.',
           isError: true,
         );
         return;
       }
 
-      await _registerAdminPushAfterLogin();
+      await BiometricAuthService.instance.saveCurrentSessionForBiometricLogin();
+
+      try {
+        await _registerAdminPushAfterLogin();
+      } catch (e, st) {
+        debugPrint('biometric login push setup error: $e\n$st');
+      }
       Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
     } catch (e, st) {
       debugPrint('biometric login error: $e\n$st');
@@ -221,10 +247,12 @@ class LoginController extends GetxController {
     final userdata = await UserData.getSavedUser();
     if (userdata == null) return;
 
-    employeePermissions
-      ..clear()
-      ..addAll(userdata.employeePermissions.map((p) => p.permissionId));
-    userType = userdata.user.type;
+    syncSessionIdentity(
+      type: userdata.user.type,
+      name: userdata.user.name,
+      permissionIds:
+          userdata.employeePermissions.map((p) => p.permissionId).toList(),
+    );
   }
 
   void _showMessage({

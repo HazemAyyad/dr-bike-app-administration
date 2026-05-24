@@ -97,9 +97,7 @@ class CustomFloatingActionButton extends StatelessWidget {
                         if (addList?.isNotEmpty ?? false)
                           ...addList!.map(
                             (e) => BuildAddMenuItem(
-                              title: e['title']!,
-                              iconAsset: e['icon']!,
-                              route: e['route']!,
+                              item: e,
                               onTap: () => onTap!(),
                             ),
                           ),
@@ -144,29 +142,37 @@ class CustomFloatingActionButton extends StatelessWidget {
 class BuildAddMenuItem extends StatelessWidget {
   const BuildAddMenuItem({
     Key? key,
-    required this.title,
-    required this.iconAsset,
-    required this.route,
+    this.item,
+    this.title,
+    this.iconAsset,
+    this.route,
     required this.onTap,
   }) : super(key: key);
 
-  final String title;
-  final String iconAsset;
-  final String route;
+  final Map<String, String>? item;
+  final String? title;
+  final String? iconAsset;
+  final String? route;
   final void Function()? onTap;
+
+  String get _title => item?['title'] ?? title ?? '';
+  String get _iconAsset => item?['icon'] ?? iconAsset ?? '';
+  String get _route => item?['route'] ?? route ?? '';
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
       overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       onTap: () {
-        if (route.isNotEmpty) {
-          Get.toNamed(
-            route,
-            arguments: {
-              'isNewCheck': title == 'newCheck',
-              'isPenaltyTitle': title,
-            },
-          );
+        if (_route.isNotEmpty) {
+          final args = <String, dynamic>{
+            'isNewCheck': _title == 'newCheck',
+            'isPenaltyTitle': _title,
+          };
+          if (item?['freshInstantSale'] == 'true') {
+            args['freshInstantSale'] = true;
+          }
+          Get.toNamed(_route, arguments: args);
         }
         //  else {
         onTap?.call();
@@ -177,11 +183,11 @@ class BuildAddMenuItem extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Flexible(child: Image.asset(iconAsset, height: 24.h, width: 24.w)),
+            Flexible(child: Image.asset(_iconAsset, height: 24.h, width: 24.w)),
             SizedBox(width: 5.w),
             Flexible(
               child: Text(
-                title.tr,
+                _title.tr,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       color: Get.isDarkMode ? Colors.white : Colors.black,
                       fontSize: 16.sp,

@@ -262,7 +262,7 @@ class _UploadImageButtonState extends State<UploadImageButton> {
 }
 
 // =========================================================================================================
-enum MediaType { image, video, both }
+enum MediaType { image, video, both, cameraOnly }
 
 class MediaUploadButton extends StatefulWidget {
   final double? width;
@@ -374,6 +374,26 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           if (video != null) picked.add(video);
         }
         break;
+
+      case MediaType.cameraOnly:
+        final choice = await showModalBottomSheet<String>(
+          context: context,
+          builder: (_) => _buildCameraOnlyOptions(),
+        );
+        if (choice == 'camera_image' || choice == 'camera_video') {
+          if (!await ensureCameraPermission()) {
+            showMediaPermissionDeniedSnackbar();
+            return;
+          }
+        }
+        if (choice == 'camera_image') {
+          final image = await picker.pickImage(source: ImageSource.camera);
+          if (image != null) picked.add(image);
+        } else if (choice == 'camera_video') {
+          final video = await picker.pickVideo(source: ImageSource.camera);
+          if (video != null) picked.add(video);
+        }
+        break;
     }
 
     if (picked.isNotEmpty) {
@@ -446,6 +466,24 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           leading: const Icon(Icons.video_library),
           title: Text("selectVideo".tr),
           onTap: () => Navigator.pop(context, 'gallery_video'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCameraOnlyOptions() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.camera_alt),
+          title: Text('takeImage'.tr),
+          onTap: () => Navigator.pop(context, 'camera_image'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.videocam),
+          title: Text('takeVideo'.tr),
+          onTap: () => Navigator.pop(context, 'camera_video'),
         ),
       ],
     );

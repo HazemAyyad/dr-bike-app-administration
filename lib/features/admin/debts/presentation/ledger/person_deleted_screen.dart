@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
+import 'ledger_currency_tab_bar.dart';
 import 'ledger_format.dart';
 
 class PersonDeletedScreen extends StatefulWidget {
@@ -53,12 +54,22 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
             return Center(child: Text('ledgerNoTransactions'.tr));
           }
 
-          final balanceColor = controller.balanceColor(detail.balance);
-          final typeHint = detail.balance >= 0 ? 'took'.tr : 'gave'.tr;
+          final cur = controller.selectedCurrency.value;
+          final stats = detail.balanceFor(cur);
+          final balanceColor = controller.balanceColor(stats.balance);
+          final typeHint = stats.balance >= 0 ? 'took'.tr : 'gave'.tr;
 
           return ListView(
             padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
             children: [
+              LedgerCurrencyTabBar(
+                selected: cur,
+                onSelected: (currency) {
+                  controller.changeCurrency(currency);
+                  controller.loadPersonDeleted();
+                },
+              ),
+              SizedBox(height: 12.h),
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 14.w),
@@ -104,7 +115,11 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
                     ),
                     SizedBox(height: 6.h),
                     Text(
-                      LedgerFormat.shekel1(detail.balance.abs()),
+                      LedgerFormat.money(
+                        stats.balance.abs(),
+                        currency: cur,
+                        fractionDigits: 1,
+                      ),
                       style: TextStyle(
                         fontSize: 32.sp,
                         fontWeight: FontWeight.bold,
@@ -130,7 +145,7 @@ class _PersonDeletedScreenState extends State<PersonDeletedScreen> {
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          '${'ledgerTransactions'.tr} (${detail.transactions.length})',
+                          '${'ledgerTransactions'.tr} (${detail.transactions.length}) — $cur',
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.w600,
@@ -192,7 +207,11 @@ class _DeletedRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  LedgerFormat.shekel1(transaction.amount),
+                  LedgerFormat.money(
+                    transaction.amount,
+                    currency: transaction.currency,
+                    fractionDigits: 1,
+                  ),
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
@@ -233,6 +252,7 @@ class _DeletedRow extends StatelessWidget {
                 LedgerFormat.labeled(
                   'ledgerBalance'.tr,
                   transaction.balanceAfter,
+                  currency: transaction.currency,
                   fractionDigits: 1,
                 ),
                 style: TextStyle(

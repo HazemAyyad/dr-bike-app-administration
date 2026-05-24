@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -26,6 +27,33 @@ import 'user_data.dart';
 /// google-services.json project_id should match [DefaultFirebaseOptions] projectId.
 const String kDrBikeAdminNotificationChannelId = 'dr_bike_admin_notifications';
 const String kDrBikeAdminNotificationChannelName = 'Dr Bike Notifications';
+
+/// Must match Laravel [FirebaseService::EMPLOYEE_TASK_CHANNEL_ID] and res/raw/task_sos_alert.
+const String kDrBikeTaskNotificationChannelId = 'dr_bike_task_notifications';
+const String kDrBikeTaskNotificationChannelName = 'Dr Bike Task Alerts';
+const String kTaskSosSoundResource = 'task_sos_alert';
+const String kTaskSosSoundIos = 'task_sos_alert.mp3';
+
+/// SOS-style alert for employee task push notifications.
+final Int64List kTaskSosVibrationPattern =
+    Int64List.fromList([0, 400, 200, 400, 200, 600]);
+
+/// Employee task-related FCM types (custom urgent sound).
+const Set<String> kEmployeeTaskNotificationTypes = {
+  'employee_task_assigned',
+  'employee_task_approved',
+  'employee_task_rejected',
+  'employee_task_co_subtask_done',
+  'employee_task_co_main_done',
+  'employee_task_co_main_completed',
+  'employee_task_scheduled_reminder',
+  'employee_daily_tasks',
+  'employee_hourly_reminder',
+  'employee_daily_tasks_complete',
+};
+
+bool isEmployeeTaskNotificationType(String? type) =>
+    type != null && kEmployeeTaskNotificationTypes.contains(type);
 
 /// google-services.json (android/app) — compare with [DefaultFirebaseOptions.android.projectId].
 const String kGoogleServicesProjectIdHint = 'drbike-7fa3a';
@@ -404,7 +432,11 @@ class NotificationFirebaseService {
       return;
     }
 
-    const channel = AndroidNotificationChannel(
+    final androidPlugin = _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    const adminChannel = AndroidNotificationChannel(
       kDrBikeAdminNotificationChannelId,
       kDrBikeAdminNotificationChannelName,
       description: 'DoctorBike admin alerts',
@@ -413,13 +445,24 @@ class NotificationFirebaseService {
       enableVibration: true,
       showBadge: true,
     );
-    final androidPlugin = _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.createNotificationChannel(channel);
+    await androidPlugin?.createNotificationChannel(adminChannel);
+
+    final taskChannel = AndroidNotificationChannel(
+      kDrBikeTaskNotificationChannelId,
+      kDrBikeTaskNotificationChannelName,
+      description: 'Urgent employee task alerts (SOS tone)',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(kTaskSosSoundResource),
+      enableVibration: true,
+      vibrationPattern: kTaskSosVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(taskChannel);
+
     debugPrint(
-      '[FCM] Android notification channel created: $kDrBikeAdminNotificationChannelId '
-      'name=$kDrBikeAdminNotificationChannelName importance=max',
+      '[FCM] Android channels: admin=$kDrBikeAdminNotificationChannelId '
+      'task=$kDrBikeTaskNotificationChannelId (sound=$kTaskSosSoundResource)',
     );
 
     const initializationSettingsAndroid =
@@ -497,6 +540,22 @@ class NotificationFirebaseService {
   }
 
   Future<void> showForegroundNotification(RemoteMessage message) async {
+    final type = message.data['type']?.toString() ?? '';
+    final isTaskAlert = isEmployeeTaskNotificationType(type);
+
+    if (isTaskAlert) {
+      await _showTrayNotification(message, urgentTask: true);
+      _refreshNotificationBadge();
+      return;
+    }
+
+    await _showTrayNotification(message, urgentTask: false);
+  }
+
+  Future<void> _showTrayNotification(
+    RemoteMessage message, {
+    required bool urgentTask,
+  }) async {
     await setupFlutterNotifications();
 
     final RemoteNotification? notification = message.notification;
@@ -510,27 +569,49 @@ class NotificationFirebaseService {
       return;
     }
 
-    final androidDetails = AndroidNotificationDetails(
-      kDrBikeAdminNotificationChannelId,
-      kDrBikeAdminNotificationChannelName,
-      channelDescription: 'DoctorBike admin alerts',
-      icon: 'ic_notification',
-      importance: Importance.max,
-      priority: Priority.max,
-      playSound: true,
-      enableVibration: true,
-      visibility: NotificationVisibility.public,
-      color: AppColors.primaryColor,
-      styleInformation: BigTextStyleInformation(
-        body,
-        contentTitle: title,
-      ),
-    );
+    final androidDetails = urgentTask
+        ? AndroidNotificationDetails(
+            kDrBikeTaskNotificationChannelId,
+            kDrBikeTaskNotificationChannelName,
+            channelDescription: 'Urgent employee task alerts',
+            icon: 'ic_notification',
+            importance: Importance.max,
+            priority: Priority.max,
+            playSound: true,
+            sound: const RawResourceAndroidNotificationSound(
+              kTaskSosSoundResource,
+            ),
+            enableVibration: true,
+            vibrationPattern: kTaskSosVibrationPattern,
+            visibility: NotificationVisibility.public,
+            color: AppColors.primaryColor,
+            styleInformation: BigTextStyleInformation(
+              body,
+              contentTitle: title,
+            ),
+          )
+        : AndroidNotificationDetails(
+            kDrBikeAdminNotificationChannelId,
+            kDrBikeAdminNotificationChannelName,
+            channelDescription: 'DoctorBike admin alerts',
+            icon: 'ic_notification',
+            importance: Importance.max,
+            priority: Priority.max,
+            playSound: true,
+            enableVibration: true,
+            visibility: NotificationVisibility.public,
+            color: AppColors.primaryColor,
+            styleInformation: BigTextStyleInformation(
+              body,
+              contentTitle: title,
+            ),
+          );
 
-    const iosDetails = DarwinNotificationDetails(
+    final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      sound: urgentTask ? kTaskSosSoundIos : null,
     );
 
     final payload = jsonEncode(_payloadFromMessage(message));

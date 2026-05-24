@@ -5,9 +5,14 @@ import 'package:get/get.dart';
 import '../../../../../core/utils/app_colors.dart';
 
 class TaskStatusBadge extends StatelessWidget {
-  const TaskStatusBadge({Key? key, required this.status}) : super(key: key);
+  const TaskStatusBadge({
+    Key? key,
+    required this.status,
+    this.compact = false,
+  }) : super(key: key);
 
   final String status;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -15,16 +20,20 @@ class TaskStatusBadge extends StatelessWidget {
     final label = _resolveLabel(status);
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+      padding: compact
+          ? EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h)
+          : EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(compact ? 6.r : 20.r),
+        border: Border.all(
+          color: color.withValues(alpha: compact ? 0.25 : 0.35),
+        ),
       ),
       child: Text(
         label.tr,
         style: TextStyle(
-          fontSize: 10.sp,
+          fontSize: compact ? 9.sp : 10.sp,
           fontWeight: FontWeight.w700,
           color: color,
         ),

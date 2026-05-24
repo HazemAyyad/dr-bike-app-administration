@@ -95,12 +95,12 @@ class _InvoicePackageExpandableLineState
                                     fontSize: 13.sp,
                                   ),
                         ),
-                        if (!_expanded && invoice.subProducts.isNotEmpty)
+                        if (!_expanded && invoice.packageComponentLines.isNotEmpty)
                           Padding(
                             padding: EdgeInsets.only(top: 4.h),
                             child: Text(
                               'packageContentsCount'.trParams({
-                                'count': '${invoice.subProducts.length}',
+                                'count': '${invoice.packageComponentLines.length}',
                               }),
                               style: Theme.of(context)
                                   .textTheme
@@ -163,7 +163,7 @@ class _InvoicePackageExpandableLineState
                     ),
               ),
             ),
-            ...invoice.subProducts.map(
+            ...invoice.packageComponentLines.map(
               (sub) => Padding(
                 padding: EdgeInsets.only(left: 8.w, right: 4.w, bottom: 6.h),
                 child: ProudactDetailsWidget(

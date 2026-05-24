@@ -17,6 +17,7 @@ class CreateTaskUsecase {
     required String description,
     required String notes,
     required String employeeId,
+    List<String> employeeIds = const [],
     required String points,
     required DateTime startTime,
     required DateTime endTime,
@@ -25,8 +26,13 @@ class CreateTaskUsecase {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
+    required String requiresAdminReview,
     required List<File> adminImg,
     required File audio,
+    String? priority,
+    Map<String, dynamic>? recurrenceConfig,
+    int? templateId,
+    int? occurrenceId,
   }) {
     return employeeTasksRepository.creatEmployeeTasks(
       employeeTaskId: employeeTaskId,
@@ -34,6 +40,7 @@ class CreateTaskUsecase {
       description: description,
       notes: notes,
       employeeId: employeeId,
+      employeeIds: employeeIds,
       points: points,
       startTime: startTime,
       endTime: endTime,
@@ -42,8 +49,13 @@ class CreateTaskUsecase {
       subEmployeeTasks: subEmployeeTasks,
       notShownForEmployee: notShownForEmployee,
       isForcedToUploadImg: isForcedToUploadImg,
+      requiresAdminReview: requiresAdminReview,
       adminImg: adminImg,
       audio: audio,
+      priority: priority,
+      recurrenceConfig: recurrenceConfig,
+      templateId: templateId,
+      occurrenceId: occurrenceId,
     );
   }
 }

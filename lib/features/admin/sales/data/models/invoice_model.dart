@@ -269,6 +269,8 @@ class SubProductModel {
   final String cost;
   final String quantity;
   final String subtotal;
+  final bool isPackageComponent;
+  final bool isAdditionalProduct;
 
   SubProductModel({
     required this.id,
@@ -277,6 +279,8 @@ class SubProductModel {
     required this.cost,
     required this.quantity,
     required this.subtotal,
+    this.isPackageComponent = false,
+    this.isAdditionalProduct = false,
   });
 
   factory SubProductModel.fromJson(Map<String, dynamic> json) {
@@ -287,6 +291,12 @@ class SubProductModel {
         ? parsedSubtotal
         : ((double.tryParse(cost) ?? 0) * (double.tryParse(qty) ?? 0))
             .toStringAsFixed(2);
+    final lineCost = double.tryParse(cost) ?? 0;
+    final fromApiAdditional = json['is_additional_product'] == true ||
+        json['is_additional_product'] == 1;
+    // سعر > 0 = منتج إضافي مع الباكيج (حتى لو API أرسل is_package_component للكل)
+    final isAdditional = fromApiAdditional || lineCost > 0;
+    final isComponent = !isAdditional;
 
     return SubProductModel(
       id: asInt(json['id']),
@@ -295,6 +305,8 @@ class SubProductModel {
       cost: cost,
       quantity: qty,
       subtotal: lineSubtotal,
+      isPackageComponent: isComponent,
+      isAdditionalProduct: isAdditional,
     );
   }
 
@@ -306,6 +318,18 @@ class SubProductModel {
       'cost': cost,
       'quantity': quantity,
       'subtotal': subtotal,
+      'is_package_component': isPackageComponent,
+      'is_additional_product': isAdditionalProduct,
     };
   }
+}
+
+extension InvoiceSubProductsX on InvoiceModel {
+  List<SubProductModel> get packageComponentLines => isPackageSale
+      ? subProducts.where((s) => !s.isAdditionalProduct).toList()
+      : subProducts;
+
+  List<SubProductModel> get additionalProductLines => isPackageSale
+      ? subProducts.where((s) => s.isAdditionalProduct).toList()
+      : const [];
 }

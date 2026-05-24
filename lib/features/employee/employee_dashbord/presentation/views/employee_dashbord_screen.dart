@@ -6,15 +6,19 @@ import 'package:get/get.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 
 import '../../../../../core/services/theme_service.dart';
+import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../features/bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/admin_dashbord/presentation/widgets/actions_buttons.dart';
 import '../controllers/employee_dashbord_controller.dart';
+import '../helpers/employee_task_visibility.dart';
 import '../widgets/employee_dashbord_tasks.dart';
 import '../widgets/employee_floating_action_button.dart';
 import '../widgets/employee_home_statistics_card.dart';
-import '../widgets/employee_today_attendance_card.dart';
+import '../widgets/employee_attendance_app_bar_button.dart';
+import '../widgets/impersonation_exit_button.dart';
 
 class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
   const EmployeeDashbordScreen({Key? key}) : super(key: key);
@@ -32,7 +36,9 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
               ),
         ),
         actions: [
-          if (userType == 'employee')
+          const ImpersonationExitButton(),
+          if (userType == 'employee') ...[
+            const EmployeeAttendanceAppBarButton(),
             Obx(() {
               final c = Get.isRegistered<EmployeeNotificationBadgeController>()
                   ? Get.find<EmployeeNotificationBadgeController>()
@@ -102,18 +108,22 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                 ),
               );
             }),
+          ],
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Column(
+      body: AppPullToRefresh(
+        onRefresh: () async {
+          await controller.getEmployeeData(scrollToTodayb: false);
+        },
+        child: SingleChildScrollView(
+          physics: kRefreshableScrollPhysics,
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 10.h),
             // بطاقات الإحصائيات
             const EmployeeHomeStatisticsCard(),
-            SizedBox(height: 12.h),
-            const EmployeeTodayAttendanceCard(),
             SizedBox(height: 15.h),
             // أزرار الوظائف
             Obx(
@@ -127,14 +137,6 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                   children: [
                     Obx(
                       () {
-                        if (controller.isTaskLoading.value) {
-                          return Column(
-                            children: [
-                              SizedBox(height: 52.h),
-                              const Center(child: CircularProgressIndicator()),
-                            ],
-                          );
-                        }
                         if (controller.employeeData.value != null) {
                           return Column(
                             children: [
@@ -150,14 +152,14 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                           fontWeight: FontWeight.w700,
                                           color: ThemeService.isDark.value
                                               ? AppColors.customGreyColor5
-                                              : AppColors.secondaryColor,
+                                              : AppColors.operationalNavy,
                                         ),
                                   ),
                                 ],
                               ),
                               SizedBox(height: 8.h),
                               if (controller.employeeData.value!.tasks
-                                  .where((e) => e.status == 'ongoing')
+                                  .where(isDashboardTask)
                                   .isEmpty)
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -177,12 +179,41 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                     ),
                                   ],
                                 ),
-                              ...controller.employeeData.value!.tasks
-                                  .where((e) => e.status == 'ongoing')
-                                  .where((e) =>
-                                      e.startTime.day == DateTime.now().day)
-                                  .take(5)
-                                  .map((e) => EmployeeDashbordTasks(task: e)),
+                              ...() {
+                                final dashboardTasks = controller
+                                    .employeeData.value!.tasks
+                                    .where(isDashboardTask)
+                                    .toList();
+                                return [
+                                  ...dashboardTasks
+                                      .take(5)
+                                      .map((e) => EmployeeDashbordTasks(task: e)),
+                                  if (dashboardTasks.length > 5)
+                                    Padding(
+                                      padding: EdgeInsets.only(top: 8.h),
+                                      child: Align(
+                                        alignment: AlignmentDirectional.centerEnd,
+                                        child: TextButton(
+                                          onPressed: () {
+                                            if (Get.isRegistered<
+                                                BottomNavBarController>()) {
+                                              Get.find<BottomNavBarController>()
+                                                  .changePage(1);
+                                            }
+                                          },
+                                          child: Text(
+                                            'showMoreTasks'.tr,
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.primaryColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ];
+                              }(),
                             ],
                           );
                         }
@@ -204,6 +235,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
             ),
             SizedBox(height: 80.h),
           ],
+        ),
         ),
       ),
       floatingActionButton: const EmployeeFloatingActionButton(),

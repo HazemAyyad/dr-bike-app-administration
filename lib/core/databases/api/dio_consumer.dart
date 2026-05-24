@@ -86,6 +86,9 @@ class DioConsumer extends ApiConsumer {
           (data is Map && data['message'] == "Too Many Attempts.")) {
         // رسالة مخصصة للمستخدم
         errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة بعد قليل.";
+      } else if (statusCode == 503 || statusCode == 502 || statusCode == 504) {
+        errorMessage =
+            'السيرفر غير متاح حالياً. تحقق من الاتصال أو جرّب بعد قليل.';
       } else {
         final dynamic rawMsg =
             (data is Map && data['message'] != null) ? data['message'] : e.message;
@@ -137,6 +140,9 @@ class DioConsumer extends ApiConsumer {
           (data is Map && data['message'] == "Too Many Attempts.")) {
         // رسالة مخصصة للمستخدم
         errorMessage = "لقد قمت بمحاولات كثيرة، برجاء المحاولة بعد قليل.";
+      } else if (statusCode == 503 || statusCode == 502 || statusCode == 504) {
+        errorMessage =
+            'السيرفر غير متاح حالياً. تحقق من الاتصال أو جرّب بعد قليل.';
       } else {
         final dynamic rawMsg =
             (data is Map && data['message'] != null) ? data['message'] : e.message;

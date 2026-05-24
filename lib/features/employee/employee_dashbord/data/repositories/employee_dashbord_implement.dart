@@ -82,6 +82,8 @@ class EmployeeDashbordImplement implements EmployeeDashbordRepository {
   Future<Either<Failure, String>> changeEmployeeTaskToCompleted({
     required bool isSubTask,
     required int taskId,
+    bool isOccurrence = false,
+    int? occurrenceId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -91,6 +93,8 @@ class EmployeeDashbordImplement implements EmployeeDashbordRepository {
           await employeeDashbordDatasource.changeEmployeeTaskToCompleted(
         isSubTask: isSubTask,
         taskId: taskId,
+        isOccurrence: isOccurrence,
+        occurrenceId: occurrenceId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

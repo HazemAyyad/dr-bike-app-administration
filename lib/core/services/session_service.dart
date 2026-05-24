@@ -12,6 +12,11 @@ import 'biometric_auth_service.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
+const _loginRoutes = <String>{
+  AppRoutes.LOGINORSIGNUPSCREEN,
+  AppRoutes.LOGINSCREEN,
+};
+
 class SessionValidationResult {
   const SessionValidationResult({
     required this.isValid,
@@ -58,7 +63,12 @@ class SessionService {
     employeePermissions
       ..clear()
       ..addAll(userdata.employeePermissions.map((p) => p.permissionId));
-    userType = userdata.user.type;
+    syncSessionIdentity(
+      type: userdata.user.type,
+      name: userdata.user.name,
+      permissionIds:
+          userdata.employeePermissions.map((p) => p.permissionId).toList(),
+    );
     userName = userdata.user.name;
   }
 
@@ -122,7 +132,7 @@ class SessionService {
 
   static Future<void> clearSessionAndGoToLogin({bool showMessage = true}) async {
     if (_redirectingToLogin) return;
-    if (Get.currentRoute == AppRoutes.LOGINORSIGNUPSCREEN) return;
+    if (_loginRoutes.contains(Get.currentRoute)) return;
 
     _redirectingToLogin = true;
     try {

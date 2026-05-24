@@ -32,8 +32,10 @@ class BiometricLoginData {
 
   factory BiometricLoginData.fromJson(Map<String, dynamic> json) {
     return BiometricLoginData(
-      token: json['token']?.toString(),
-      userDataJson: json['userDataJson']?.toString(),
+      token: BiometricAuthService._normalizeStoredValue(json['token']?.toString()),
+      userDataJson: BiometricAuthService._normalizeStoredValue(
+        json['userDataJson']?.toString(),
+      ),
     );
   }
 }
@@ -210,27 +212,7 @@ class BiometricAuthService {
 
       if (_isAndroid) {
         try {
-          debugPrint(
-            'Biometric auth: starting Android Keyguard Proxy authenticate.',
-          );
-          final keyguardResult =
-              await NativeBiometricService.instance.authenticate(
-            method: 'authenticateKeyguard',
-            timeout: const Duration(seconds: 180),
-          );
-          debugPrint(
-            'Biometric auth: keyguard returned success=${keyguardResult.success} '
-            'available=${keyguardResult.available} code=${keyguardResult.code} '
-            'codeText=${keyguardResult.codeText} mode=${keyguardResult.mode} '
-            'message=${keyguardResult.message}',
-          );
-          return BiometricAuthResult(
-            success: keyguardResult.success,
-            cancelled: !keyguardResult.success,
-            message: keyguardResult.success
-                ? null
-                : keyguardResult.message ?? 'تم إلغاء عملية التحقق',
-          );
+          return await _authenticateOnAndroid();
         } on MissingPluginException catch (e) {
           debugPrint('Biometric auth: native channel missing on Android: $e');
           return const BiometricAuthResult(
@@ -245,6 +227,42 @@ class BiometricAuthService {
     } finally {
       _authInProgress = false;
     }
+  }
+
+  Future<BiometricAuthResult> _authenticateOnAndroid() async {
+    const methods = [
+      'authenticateKeyguard',
+      'authenticateStrongOrCredential',
+      'authenticateWeak',
+    ];
+
+    NativeBiometricResult? lastResult;
+    for (final method in methods) {
+      debugPrint('Biometric auth: trying Android native method=$method');
+      final result = await NativeBiometricService.instance.authenticate(
+        method: method,
+        timeout: const Duration(seconds: 180),
+      );
+      debugPrint(
+        'Biometric auth: native method=$method success=${result.success} '
+        'code=${result.code} mode=${result.mode} message=${result.message}',
+      );
+      if (result.success) {
+        return BiometricAuthResult(success: true);
+      }
+      lastResult = result;
+      if (result.available == false &&
+          result.code != null &&
+          result.code! < 0) {
+        break;
+      }
+    }
+
+    return BiometricAuthResult(
+      success: false,
+      cancelled: true,
+      message: lastResult?.message ?? 'تم إلغاء عملية التحقق',
+    );
   }
 
   Future<BiometricAuthResult> _authenticateWithLocalAuth() async {
@@ -350,8 +368,8 @@ class BiometricAuthService {
   }) async {
     if (kIsWeb) return;
     final data = BiometricLoginData(
-      token: token,
-      userDataJson: userDataJson,
+      token: _normalizeStoredValue(token),
+      userDataJson: _normalizeStoredValue(userDataJson),
     );
     await FinalClasses.secureStorage.write(
       key: _loginDataKey,
@@ -417,6 +435,12 @@ class BiometricAuthService {
 
   bool get _isAndroid =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  static String? _normalizeStoredValue(String? value) {
+    if (value == null) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
 
   void _logUiDiagnostics({
     required String source,

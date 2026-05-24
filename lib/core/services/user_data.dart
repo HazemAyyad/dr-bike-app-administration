@@ -113,5 +113,6 @@ class UserData {
     userToken = '';
     employeePermissions = [];
     userType = '';
+    sessionUserType.value = '';
   }
 }

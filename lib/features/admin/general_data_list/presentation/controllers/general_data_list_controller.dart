@@ -269,6 +269,21 @@ class GeneralDataListController extends GetxController {
         },
         (success) {
           clearForm();
+          if (_popOnceOnSuccess) {
+            Get.back(result: {
+              'added': true,
+              'employeeType': _employeeTypeFromArguments,
+            });
+            Get.snackbar(
+              'success'.tr,
+              success,
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.green,
+              colorText: Colors.white,
+              duration: const Duration(seconds: 2),
+            );
+            return;
+          }
           Future.delayed(
             const Duration(milliseconds: 500),
             () {
@@ -418,17 +433,53 @@ class GeneralDataListController extends GetxController {
     update();
   }
 
+  bool get _popOnceOnSuccess {
+    final args = Get.arguments;
+    return args is Map && args['popOnceOnSuccess'] == true;
+  }
+
+  String get _employeeTypeFromArguments {
+    final args = Get.arguments;
+    if (args is Map && args['employeeType'] != null) {
+      return args['employeeType'].toString();
+    }
+    return resolvedPersonType == 'seller' ? 'seller' : 'customer';
+  }
+
+  void _applyPersonTypeFromArguments(Map args) {
+    final force = args['forceCategory']?.toString();
+    if (force == 'wholesale') {
+      selectedCustomerType.text = 'wholesale';
+      return;
+    }
+    if (force == 'retail') {
+      selectedCustomerType.text = 'retail';
+      return;
+    }
+    final employeeType = args['employeeType']?.toString() ?? '';
+    if (employeeType == 'seller') {
+      selectedCustomerType.text = 'wholesale';
+    } else if (employeeType == 'customer') {
+      selectedCustomerType.text = 'retail';
+    }
+  }
+
   @override
   void onInit() {
     super.onInit();
     final args = Get.arguments;
-    if (args is Map && args['initialTab'] is int) {
-      currentTab.value = args['initialTab'] as int;
+    if (args is Map) {
+      if (args['initialTab'] is int) {
+        currentTab.value = args['initialTab'] as int;
+      }
+      _applyPersonTypeFromArguments(args);
     } else if (employeePermissions.contains(40) &&
         !employeePermissions.contains(9)) {
       currentTab.value = 2;
     }
-    getGeneralData();
+    if (!_popOnceOnSuccess) {
+      getGeneralData();
+    }
     employeeSearch = generalDataServes.employeeDataList;
     sellersSearch = generalDataServes.sellersDataList;
     inCompleteDataSearch = generalDataServes.inCompleteDataList;

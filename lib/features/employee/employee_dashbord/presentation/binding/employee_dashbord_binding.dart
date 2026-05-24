@@ -7,6 +7,8 @@ import '../../domain/usecases/change_task_completed_uasecase.dart';
 import '../../domain/usecases/get_employee_data_usecase.dart';
 import '../../domain/usecases/get_my_attendance_history_usecase.dart';
 import '../../domain/usecases/request_over_time_loan_usecase.dart';
+import '../../../../admin/employee_tasks/data/repositories/employee_tasks_implement.dart';
+import '../../../../admin/employee_tasks/domain/usecases/upload_task_image_usecase.dart';
 import '../controllers/employee_dashbord_controller.dart';
 
 class EmployeeDashbordBinding extends Bindings {
@@ -22,6 +24,9 @@ class EmployeeDashbordBinding extends Bindings {
         ),
         changeTaskCompletedUasecase: ChangeTaskCompletedUasecase(
           employeeDashbordRepository: Get.find<EmployeeDashbordImplement>(),
+        ),
+        uploadTaskImageUsecase: UploadTaskImageUsecase(
+          employeeTasksRepository: Get.find<EmployeeTasksImplement>(),
         ),
         getDebtsReports: GetDebtsReportsUsecase(
           debtsRepository: Get.find<DebtsImplement>(),

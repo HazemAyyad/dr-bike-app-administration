@@ -214,6 +214,66 @@ class EmployeeDatasource {
   }
 
   // get all employees
+  Future<Map<String, dynamic>> impersonateEmployee(int employeeId) async {
+    try {
+      final response = await api.post(
+        EndPoints.adminImpersonateEmployee(employeeId),
+      );
+      final data = response.data;
+      Map<String, dynamic> map;
+      if (data is Map<String, dynamic>) {
+        map = data;
+      } else if (data is Map) {
+        map = Map<String, dynamic>.from(data);
+      } else {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: 'Invalid response',
+            status: 500,
+            data: {},
+          ),
+        );
+      }
+      if (map['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: map['message']?.toString() ?? 'impersonationFailed',
+            status: map['status'] ?? 'error',
+            data: map['data'] is Map ? map['data'] : {},
+          ),
+        );
+      }
+      return map;
+    } on ServerException {
+      rethrow;
+    } on DioException catch (e) {
+      final code = e.response?.statusCode ?? 500;
+      final raw = e.response?.data;
+      String message = 'فشل الدخول كموظف';
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.response == null) {
+        message =
+            'تعذر الاتصال بالسيرفر. تأكد أن Laragon يعمل وأن رابط API في التطبيق صحيح، ثم أعد المحاولة.';
+      } else if (code == 404) {
+        message =
+            'مسار الدخول كموظف غير منشور على السيرفر. انشر آخر نسخة من routes/api.php و AdminImpersonationController.php.';
+      } else if (code == 503 || code == 502 || code == 504) {
+        message =
+            'السيرفر غير متاح حالياً. تحقق من Laragon/الاستضافة ثم أعد المحاولة.';
+      } else if (raw is Map && raw['message'] != null) {
+        message = raw['message'].toString();
+      }
+      throw ServerException(
+        ErrorModel(
+          errorMessage: message,
+          status: raw is Map ? (raw['status'] ?? code) : code,
+          data: raw is Map ? (raw['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   Future<List<EmployeeModel>> getEmployees() async {
     try {
       final response = await api.get(EndPoints.employees);

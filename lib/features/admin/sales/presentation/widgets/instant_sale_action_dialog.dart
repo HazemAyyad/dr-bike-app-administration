@@ -109,6 +109,7 @@ class InstantSaleActionDialog {
     required TextEditingController costCtrl,
     required TextEditingController qtyCtrl,
     required TextEditingController totalCtrl,
+    required TextEditingController paidCtrl,
     required TextEditingController notesCtrl,
   }) {
     final isDark = ThemeService.isDark.value;
@@ -160,6 +161,13 @@ class InstantSaleActionDialog {
                   keyboardType: TextInputType.number,
                   style: fieldStyle,
                   decoration: _fieldDecoration('total'.tr),
+                ),
+                SizedBox(height: 10.h),
+                TextField(
+                  controller: paidCtrl,
+                  keyboardType: TextInputType.number,
+                  style: fieldStyle,
+                  decoration: _fieldDecoration('paidAmount'.tr),
                 ),
                 SizedBox(height: 10.h),
                 TextField(

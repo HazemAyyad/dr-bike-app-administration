@@ -11,6 +11,7 @@ abstract class CreateEmployeeTasksRepository {
     required String description,
     required String notes,
     required String employeeId,
+    List<String> employeeIds = const [],
     required String points,
     required DateTime startTime,
     required DateTime endTime,
@@ -19,8 +20,13 @@ abstract class CreateEmployeeTasksRepository {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
+    required String requiresAdminReview,
     required List<File> adminImg,
     required File audio,
+    String? priority,
+    Map<String, dynamic>? recurrenceConfig,
+    int? templateId,
+    int? occurrenceId,
   });
 
   Future<Either<Failure, String>> creatSpecialTasks({

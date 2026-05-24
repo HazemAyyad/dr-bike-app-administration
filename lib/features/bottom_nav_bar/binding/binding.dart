@@ -5,6 +5,9 @@ import '../controllers/bottom_nav_bar_controller.dart';
 class BottomNavBarBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut(() => BottomNavBarController());
+    if (Get.isRegistered<BottomNavBarController>()) {
+      return;
+    }
+    Get.put(BottomNavBarController(), permanent: true);
   }
 }

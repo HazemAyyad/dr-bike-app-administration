@@ -19,5 +19,7 @@ abstract class EmployeeDashbordRepository {
   Future<Either<Failure, String>> changeEmployeeTaskToCompleted({
     required bool isSubTask,
     required int taskId,
+    bool isOccurrence = false,
+    int? occurrenceId,
   });
 }

@@ -33,6 +33,8 @@ class EndPoints {
       'change/employee/task/to/completed';
   static const String changeSubEmployeeTaskToCompleted =
       'change/sub/employee/task/to/completed';
+  static const String changeSubEmployeeOccurrenceTaskToCompleted =
+      'change/sub/employee/occurrence/task/to/completed';
 
   static const String addOvertimeOrder = 'employee/add/overtime/order';
   static const String addLoanOrder = 'employee/add/loan/order';
@@ -80,6 +82,7 @@ class EndPoints {
   // debt ledger
   static const String debtLedgerSummary = 'debt-ledger/summary';
   static const String debtLedgerPeople = 'debt-ledger/people';
+  static const String debtLedgerPeoplePicker = 'debt-ledger/people-picker';
   static const String debtLedgerPerson = 'debt-ledger/person';
   static const String debtLedgerPersonMeta = 'debt-ledger/person/meta';
   static const String debtLedgerPersonShareLink = 'debt-ledger/person/share-link';
@@ -96,6 +99,9 @@ class EndPoints {
       'debt-ledger/transaction/$id/archive';
   static String debtLedgerDeleteTransaction(int id) =>
       'debt-ledger/transaction/$id/delete';
+  static String debtLedgerTransactionActivity(int id) =>
+      'debt-ledger/transaction/$id/activity';
+  static const String debtLedgerPersonActivity = 'debt-ledger/person/activity';
   static const String debtLedgerPersonReport = 'debt-ledger/person/report';
 
   // employees section
@@ -104,6 +110,10 @@ class EndPoints {
   static const String minusPointsFromEmployee = 'minus/points/from/employee';
   static const String paySalaryToEmployee = 'pay/employee/salary';
   static const String employees = 'employees';
+  static String adminImpersonateEmployee(int employeeId) =>
+      'admin/impersonate-employee/$employeeId';
+
+  static const String appSettings = 'app/settings';
   static const String workingTimes = 'working/times';
   static const String financialDues = 'financial/dues';
   static const String employeeFinancialDetails =
@@ -165,6 +175,10 @@ class EndPoints {
   static const String showEmployeeTask = 'show/employee/task';
   static const String editEmployeeTaskImages =
       'employee/edit/employee/task/images';
+  static const String editEmployeeOccurrenceSubTaskImages =
+      'employee/edit/occurrence/sub/task/images';
+  static const String editEmployeeOccurrenceTaskImages =
+      'employee/edit/occurrence/task/images';
   static const String editEmployeeSubTaskImages =
       'employee/edit/employee/sub/task/images';
 
@@ -277,6 +291,7 @@ class EndPoints {
 
   // sales
   static const String allProducts = 'all/products';
+  static const String updateProductRetailPrice = 'product/retail-price';
   static const String categories = 'get/all/categories';
   static const String sub_categories = 'get/all/subcategories';
 

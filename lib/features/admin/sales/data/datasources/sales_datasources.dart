@@ -3,6 +3,7 @@ import 'dart:core';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:doctorbike/features/admin/sales/data/models/instant_sales_model.dart';
+import 'package:doctorbike/features/admin/sales/data/models/product_price_update_result.dart';
 import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
@@ -161,6 +162,53 @@ class SalesDatasource {
     }
   }
 
+  Future<ProductPriceUpdateResult> updateProductRetailPrice({
+    required String productId,
+    required double normailPrice,
+    double? wholesalePrice,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'product_id': int.tryParse(productId) ?? productId,
+        'normail_price': normailPrice,
+      };
+      if (wholesalePrice != null && wholesalePrice > 0) {
+        payload['wholesale_price'] = wholesalePrice;
+      }
+      final response = await api.post(
+        EndPoints.updateProductRetailPrice,
+        data: payload,
+      );
+      final data = response.data;
+      if (data is Map && data['status'] == 'success') {
+        return ProductPriceUpdateResult(
+          retail: asDouble(data['normail_price'] ?? normailPrice),
+          wholesale: asDouble(data['wholesale_price'] ?? wholesalePrice ?? 0),
+        );
+      }
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   // add instant sale
   Future<dynamic> addInstantSales({
     required String productId,
@@ -180,29 +228,23 @@ class SalesDatasource {
     String? paymentBoxName,
     String? paymentBoxValue,
     String? offerPackageId,
+    List<Map<String, dynamic>>? cartOtherProducts,
   }) async {
     try {
-      // final otherProductsMap = <String, dynamic>{};
-
-      // for (int i = 1; i < otherProducts.length; i++) {
-      //   otherProductsMap['other_products[$i][product_id]'] =
-      //       otherProducts[i].selectedItem.value;
-      //   otherProductsMap['other_products[$i][cost]'] =
-      //       otherProducts[i].priceController.text;
-      //   otherProductsMap['other_products[$i][quantity]'] =
-      //       otherProducts[i].quantityController.text;
-      //   otherProductsMap['other_products[$i][type]'] = 'normal';
-      // }
-      final otherProductsList = otherProducts
-          .skip(1)
-          .map((item) => {
-                'product_id': item.selectedItem.value,
-                'cost': item.priceController.text,
-                'quantity': item.quantityController.text,
-                'type':
-                    item.selectedCustomersSellers.value ? 'project' : 'normal',
-              })
-          .toList();
+      final otherProductsList =
+          (offerPackageId != null && offerPackageId.isNotEmpty)
+              ? (cartOtherProducts ?? <Map<String, dynamic>>[])
+              : otherProducts
+                  .skip(1)
+                  .map((item) => {
+                        'product_id': item.selectedItem.value,
+                        'cost': item.priceController.text,
+                        'quantity': item.quantityController.text,
+                        'type': item.selectedCustomersSellers.value
+                            ? 'project'
+                            : 'normal',
+                      })
+                  .toList();
 
       final response = await api.post(
         EndPoints.createInstantSale,
@@ -227,8 +269,8 @@ class SalesDatasource {
             'payment_box_id': paymentBoxId,
           if (paymentBoxName != null && paymentBoxName.isNotEmpty)
             'payment_box_name': paymentBoxName,
-          if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
-            'payment_box_value': paymentBoxValue,
+          if (paymentBoxId != null && paymentBoxId.isNotEmpty)
+            'payment_box_value': paymentBoxValue ?? '0',
           'other_products': otherProductsList,
         },
         isFormData: true,
@@ -271,6 +313,7 @@ class SalesDatasource {
     required String quantity,
     required String totalCost,
     String? notes,
+    String? paymentBoxValue,
   }) async {
     try {
       final response = await api.post(
@@ -281,6 +324,11 @@ class SalesDatasource {
           'quantity': quantity,
           'total_cost': totalCost,
           if (notes != null) 'notes': notes,
+          if (paymentBoxValue != null)
+            'payment_box_value': paymentBoxValue
+                .replaceAll(',', '')
+                .replaceAll('،', '')
+                .trim(),
         },
       );
       return response.data;

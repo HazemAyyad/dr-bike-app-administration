@@ -4,13 +4,12 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
-import '../../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../../core/utils/app_colors.dart';
-import '../../../../../../routes/app_routes.dart';
 import '../../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../../checks/data/models/check_model.dart';
 import '../../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../controllers/sales_controller.dart';
+import 'instant_sale_payment_summary.dart';
 
 /// Payment / قبض section embedded in the new instant sale screen.
 class InstantSalePaymentSection extends StatelessWidget {
@@ -22,6 +21,7 @@ class InstantSalePaymentSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = _payment;
+    final sales = Get.find<SalesController>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -36,24 +36,27 @@ class InstantSalePaymentSection extends StatelessWidget {
         ),
         SizedBox(height: 10.h),
         Obx(
-          () => Row(
-            children: [
-              Expanded(
-                child: CustomCheckBox(
-                  title: 'seller'.tr,
-                  value: RxBool(!controller.selectedCustomersSellers.value),
-                  onChanged: (_) => controller.setPartnerTab(isCustomer: false),
+          () {
+            final isCustomer = controller.selectedCustomersSellers.value;
+            return Row(
+              children: [
+                Expanded(
+                  child: _PartnerTabCheckbox(
+                    title: 'seller'.tr,
+                    selected: !isCustomer,
+                    onTap: () => controller.setPartnerTab(isCustomer: false),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: CustomCheckBox(
-                  title: 'customer'.tr,
-                  value: RxBool(controller.selectedCustomersSellers.value),
-                  onChanged: (_) => controller.setPartnerTab(isCustomer: true),
+                Expanded(
+                  child: _PartnerTabCheckbox(
+                    title: 'customer'.tr,
+                    selected: isCustomer,
+                    onTap: () => controller.setPartnerTab(isCustomer: true),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
         ),
         SizedBox(height: 10.h),
         Obx(
@@ -78,16 +81,7 @@ class InstantSalePaymentSection extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: () => Get.toNamed(
-                  AppRoutes.ADDNEWCUSTOMERSCREEN,
-                  arguments: {
-                    'sellerId': '',
-                    'employeeId': '',
-                    'employeeType': controller.selectedCustomersSellers.value
-                        ? 'customer'
-                        : 'seller',
-                  },
-                ),
+                onPressed: () => controller.openAddPartnerScreen(),
                 icon: Icon(
                   Icons.add_circle_sharp,
                   color: AppColors.primaryColor,
@@ -124,12 +118,51 @@ class InstantSalePaymentSection extends StatelessWidget {
                   hintText: 'totalExample',
                   controller: controller.cashValueController,
                   keyboardType: TextInputType.number,
+                  onChanged: (_) => sales.refreshInstantSalePaymentSummary(),
                 ),
               ),
             ],
           ),
         ),
+        const InstantSalePaymentSummary(),
       ],
+    );
+  }
+}
+
+class _PartnerTabCheckbox extends StatelessWidget {
+  const _PartnerTabCheckbox({
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8.r),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Checkbox(
+            value: selected,
+            onChanged: (_) => onTap(),
+            activeColor: AppColors.primaryColor,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          Flexible(
+            child: Text(
+              title.tr,
+              style: TextStyle(fontSize: 14.sp),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -30,6 +30,8 @@ import '../ledger/ledger_confirm_dialog.dart';
 import '../ledger/person_archive_screen.dart';
 import '../ledger/person_deleted_screen.dart';
 import '../ledger/transaction_entry_screen.dart';
+import '../ledger/ledger_pick_person_sheet.dart';
+import '../../../../../routes/app_routes.dart';
 
 class DebtLedgerController extends GetxController {
   final DebtLedgerRepository repository;
@@ -38,6 +40,9 @@ class DebtLedgerController extends GetxController {
 
   final RxInt currentTab = 0.obs;
   final tabs = ['ledgerCustomers', 'ledgerSuppliers'];
+
+  static const List<String> ledgerCurrencies = ['شيكل', 'دولار', 'دينار'];
+  final RxString selectedCurrency = 'شيكل'.obs;
 
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
@@ -65,13 +70,32 @@ class DebtLedgerController extends GetxController {
 
   String get peopleType => isCustomerTab ? 'customers' : 'sellers';
 
-  double get tabTotalTaken => isCustomerTab
-      ? (summary.value?.totalTakenCustomers ?? 0)
-      : (summary.value?.totalTakenSellers ?? 0);
+  double get tabTotalTaken {
+    final s = summary.value;
+    if (s == null) return 0;
+    return s
+        .totalsFor(selectedCurrency.value, customers: isCustomerTab)
+        .receivable;
+  }
 
-  double get tabTotalGiven => isCustomerTab
-      ? (summary.value?.totalGivenCustomers ?? 0)
-      : (summary.value?.totalGivenSellers ?? 0);
+  double get tabTotalGiven {
+    final s = summary.value;
+    if (s == null) return 0;
+    return s
+        .totalsFor(selectedCurrency.value, customers: isCustomerTab)
+        .payable;
+  }
+
+  LedgerCurrencyBalance? get personCurrencyBalance {
+    final detail = personDetail.value;
+    if (detail == null) return null;
+    return detail.balanceFor(selectedCurrency.value);
+  }
+
+  List<String> get tabLabels => [
+        '${'ledgerCustomers'.tr} (${summary.value?.customersCount ?? people.length})',
+        '${'ledgerSuppliers'.tr} (${summary.value?.sellersCount ?? 0})',
+      ];
 
   List<LedgerPerson> get filteredPeople {
     if (searchQuery.value.isEmpty) return people;
@@ -106,6 +130,16 @@ class DebtLedgerController extends GetxController {
     fetchPeople();
   }
 
+  void changeCurrency(String currency) {
+    if (selectedCurrency.value == currency) return;
+    selectedCurrency.value = currency;
+    fetchPeople();
+    if (selectedPerson != null) {
+      loadPersonDetail();
+      loadPersonActivity();
+    }
+  }
+
   Future<void> fetchSummary() async {
     final result = await repository.getSummary();
     result.fold((_) {}, (data) => summary.value = data);
@@ -118,6 +152,7 @@ class DebtLedgerController extends GetxController {
       search: searchQuery.value.isNotEmpty ? searchQuery.value : null,
       startDate: _formatDate(customStartDate.value),
       endDate: _formatDate(customEndDate.value),
+      currency: selectedCurrency.value,
     );
     result.fold(
       (failure) => Get.snackbar('error'.tr, failure.errMessage),
@@ -132,13 +167,60 @@ class DebtLedgerController extends GetxController {
   }
 
   Future<void> openPerson(LedgerPerson person) async {
-    selectedPerson = LedgerPersonInfo(
+    await _openPersonDetail(
       id: person.id,
       name: person.name,
       phone: person.phone,
-      personType: isCustomerTab ? 'customer' : 'seller',
+      personType: person.personType,
+    );
+  }
+
+  Future<void> _openPersonDetail({
+    required int id,
+    required String name,
+    String? phone,
+    required String personType,
+  }) async {
+    selectedPerson = LedgerPersonInfo(
+      id: id,
+      name: name,
+      phone: phone,
+      personType: personType,
     );
     await Get.to(() => const PersonDetailScreen());
+    await loadMainData();
+  }
+
+  Future<void> openPickPersonForDebt() async {
+    final picked = await Get.bottomSheet<LedgerPerson>(
+      LedgerPickPersonSheet(
+        isCustomer: isCustomerTab,
+        repository: repository,
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+    );
+    if (picked == null) return;
+    await _openPersonDetail(
+      id: picked.id,
+      name: picked.name,
+      phone: picked.phone,
+      personType: picked.personType,
+    );
+  }
+
+  /// إضافة زبون أو تاجر جديد ثم تحديث قائمة دفتر الديون.
+  Future<void> openAddPersonFromLedger() async {
+    final isCustomer = isCustomerTab;
+    await Get.toNamed(
+      AppRoutes.ADDNEWCUSTOMERSCREEN,
+      arguments: {
+        'sellerId': '',
+        'employeeId': '',
+        'employeeType': isCustomer ? 'customer' : 'seller',
+        'popOnceOnSuccess': true,
+      },
+    );
     await loadMainData();
   }
 
@@ -150,6 +232,7 @@ class DebtLedgerController extends GetxController {
       sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
       startDate: _formatDate(customStartDate.value),
       endDate: _formatDate(customEndDate.value),
+      currency: selectedCurrency.value,
     );
     result.fold(
       (failure) => Get.snackbar('error'.tr, failure.errMessage),
@@ -159,6 +242,7 @@ class DebtLedgerController extends GetxController {
       },
     );
     personLoading(false);
+    await loadPersonActivity();
   }
 
   LedgerPersonInfo? get currentPerson =>
@@ -272,6 +356,7 @@ class DebtLedgerController extends GetxController {
         totalTaken: detail.totalTaken,
         totalGiven: detail.totalGiven,
         balance: detail.balance,
+        balancesByCurrency: detail.balancesByCurrency,
         activeTransactionsCount: detail.activeTransactionsCount,
         transactions: detail.transactions,
       );
@@ -289,9 +374,45 @@ class DebtLedgerController extends GetxController {
   }
 
   final Rxn<LedgerTransaction> selectedTransaction = Rxn<LedgerTransaction>();
+  final RxList<LedgerActivityEntry> transactionActivity = <LedgerActivityEntry>[].obs;
+  final RxList<LedgerActivityEntry> personActivity = <LedgerActivityEntry>[].obs;
+  final RxBool transactionActivityLoading = false.obs;
+  final RxBool personActivityLoading = false.obs;
+
+  Future<void> loadTransactionActivity(int transactionId) async {
+    transactionActivityLoading(true);
+    final result = await repository.getTransactionActivity(transactionId);
+    result.fold(
+      (failure) {
+        transactionActivity.clear();
+        Get.snackbar('error'.tr, failure.errMessage);
+      },
+      (list) => transactionActivity.assignAll(list),
+    );
+    transactionActivityLoading(false);
+  }
+
+  Future<void> loadPersonActivity() async {
+    if (selectedPerson == null) return;
+    personActivityLoading(true);
+    final result = await repository.getPersonActivity(
+      customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
+      sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
+      currency: selectedCurrency.value,
+    );
+    result.fold(
+      (failure) {
+        personActivity.clear();
+        Get.snackbar('error'.tr, failure.errMessage);
+      },
+      (list) => personActivity.assignAll(list),
+    );
+    personActivityLoading(false);
+  }
 
   void openTransactionDetail(LedgerTransaction transaction) {
     selectedTransaction.value = transaction;
+    loadTransactionActivity(transaction.id);
     Get.to(() => const TransactionDetailScreen())?.then((changed) {
       if (changed == true) {
         loadPersonDetail();
@@ -347,6 +468,7 @@ class DebtLedgerController extends GetxController {
     required String type,
     required String amount,
     required String transactionDate,
+    String? currency,
     String? note,
     String? boxId,
   }) async {
@@ -355,6 +477,7 @@ class DebtLedgerController extends GetxController {
       type: type,
       amount: amount,
       transactionDate: transactionDate,
+      currency: currency,
       note: note,
       boxId: boxId,
     );
@@ -401,7 +524,11 @@ class DebtLedgerController extends GetxController {
       linkResult.fold((_) {}, (url) => shareUrl = url);
     }
 
-    final amountLine = LedgerFormat.shekel2(tx.amount);
+    final amountLine = LedgerFormat.money(
+      tx.amount,
+      currency: tx.currency,
+      fractionDigits: 2,
+    );
     final separator = '──────────────';
     final buffer = StringBuffer()
       ..writeln('ledgerShareYouHaveTransaction'.tr)
@@ -482,8 +609,7 @@ class DebtLedgerController extends GetxController {
     await SharePlus.instance.share(ShareParams(text: message));
   }
 
-  String formatTransactionTime(LedgerTransaction tx) {
-    final raw = tx.createdAt ?? tx.transactionDate;
+  String _formatLedgerDateTime(String? raw) {
     if (raw == null || raw.isEmpty) return '';
     try {
       final dt = DateTime.parse(raw.replaceFirst(' ', 'T'));
@@ -502,12 +628,31 @@ class DebtLedgerController extends GetxController {
     }
   }
 
+  String formatTransactionTime(LedgerTransaction tx) {
+    return _formatLedgerDateTime(tx.createdAt ?? tx.transactionDate);
+  }
+
+  String formatLastTransactionTime(LedgerLastTransaction? last) {
+    if (last == null) return '';
+    final raw = last.createdAt ?? last.transactionDate;
+    if (raw == null || raw.isEmpty) return '';
+    try {
+      final dt = DateTime.parse(raw.replaceFirst(' ', 'T'));
+      final date = DateFormat('dd-MM-yyyy', 'ar').format(dt);
+      final time = DateFormat('h:mm a', 'ar').format(dt);
+      return '$date ${'ledgerAt'.tr} $time';
+    } catch (_) {
+      return raw;
+    }
+  }
+
   Future<void> loadPersonArchive() async {
     if (selectedPerson == null) return;
     personArchiveLoading(true);
     final result = await repository.getPersonArchive(
       customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
       sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
+      currency: selectedCurrency.value,
     );
     result.fold(
       (failure) => Get.snackbar('error'.tr, failure.errMessage),
@@ -547,6 +692,7 @@ class DebtLedgerController extends GetxController {
     final result = await repository.getPersonDeleted(
       customerId: selectedPerson!.isCustomer ? selectedPerson!.id : null,
       sellerId: selectedPerson!.isCustomer ? null : selectedPerson!.id,
+      currency: selectedCurrency.value,
     );
     result.fold(
       (failure) => Get.snackbar('error'.tr, failure.errMessage),
@@ -633,6 +779,7 @@ class DebtLedgerController extends GetxController {
       period: selectedPeriod.value,
       startDate: _formatDate(customStartDate.value),
       endDate: _formatDate(customEndDate.value),
+      currency: selectedCurrency.value,
     );
     return result.fold(
       (failure) {
@@ -653,7 +800,10 @@ class DebtLedgerController extends GetxController {
   Future<void> collectDebtVia(String channel) async {
     if (selectedPerson == null) return;
 
-    final balance = personDetail.value?.balance ?? 0;
+    final currency = selectedCurrency.value;
+    final balance = personCurrencyBalance?.balance ??
+        personDetail.value?.balanceFor(currency).balance ??
+        0;
     if (balance <= 0) {
       Get.snackbar('error'.tr, 'ledgerNoDebtToCollect'.tr);
       return;
@@ -665,9 +815,10 @@ class DebtLedgerController extends GetxController {
       return;
     }
 
+    final amountLabel = LedgerFormat.money(balance, currency: currency);
     final message =
         'مرحباً ${selectedPerson!.name}\n'
-        '${'ledgerDebtCollectionMessage'.tr}: ${balance.toStringAsFixed(2)} ₪';
+        '${'ledgerDebtCollectionMessage'.tr}: $amountLabel';
 
     if (channel == 'whatsapp') {
       final uri = Uri.parse(
@@ -711,8 +862,13 @@ class DebtLedgerController extends GetxController {
   }
 
   String buildPerformanceReminderSmsMessage(String shareUrl) {
-    final balance = personDetail.value?.balance ?? 0;
-    final amount = LedgerFormat.shekel2(balance.abs());
+    final currency = selectedCurrency.value;
+    final balance = personCurrencyBalance?.balance ?? 0;
+    final amount = LedgerFormat.money(
+      balance.abs(),
+      currency: currency,
+      fractionDigits: 2,
+    );
     final buffer = StringBuffer()
       ..writeln('${'ledgerReminderSmsBody'.tr} $amount')
       ..writeln('${'ledgerTransactionsLink'.tr}:')
@@ -721,12 +877,19 @@ class DebtLedgerController extends GetxController {
   }
 
   String buildPerformanceReminderWhatsappMessage(String shareUrl) {
-    final balance = personDetail.value?.balance ?? 0;
+    final currency = selectedCurrency.value;
+    final balance = personCurrencyBalance?.balance ?? 0;
     const separator = '──────────────';
     final buffer = StringBuffer()
       ..writeln('ledgerReminderWhatsappBody'.tr)
       ..writeln(separator)
-      ..writeln(LedgerFormat.shekel2(balance.abs()))
+      ..writeln(
+        LedgerFormat.money(
+          balance.abs(),
+          currency: currency,
+          fractionDigits: 2,
+        ),
+      )
       ..writeln(separator)
       ..writeln('ledgerViewAllTransactions'.tr)
       ..write(shareUrl);
@@ -766,15 +929,18 @@ class DebtLedgerController extends GetxController {
       return;
     }
 
+    final currency = selectedCurrency.value;
+    final stats = detail.balanceFor(currency);
     final takenCount = detail.transactions.where((t) => t.isTaken).length;
     final givenCount = detail.transactions.where((t) => !t.isTaken).length;
     final imageBytes = await LedgerShareImageHelper.capturePerformanceReminder(
       personName: person.name,
       timeLabel: formatReminderTime(),
       reminderTitle: 'ledgerPerformanceReminder'.tr,
-      balance: detail.balance,
-      totalTaken: detail.totalTaken,
-      totalGiven: detail.totalGiven,
+      balance: stats.balance,
+      totalTaken: stats.totalTaken,
+      totalGiven: stats.totalGiven,
+      currency: currency,
       takenCount: takenCount,
       givenCount: givenCount,
       takenLabel: 'took'.tr,
@@ -823,9 +989,10 @@ class DebtLedgerController extends GetxController {
       return;
     }
 
-    final balance = personDetail.value?.balance ?? 0;
+    final currency = selectedCurrency.value;
+    final balance = personCurrencyBalance?.balance ?? 0;
     final message =
-        '${'ledgerReportShareIntro'.tr} ${LedgerFormat.shekel2(balance)}\n'
+        '${'ledgerReportShareIntro'.tr} ${LedgerFormat.money(balance, currency: currency, fractionDigits: 2)}\n'
         '${'ledgerViewAllTransactions'.tr}\n$shareUrl';
 
     final phone = selectedPerson?.phone?.replaceAll(RegExp(r'\D'), '') ?? '';
@@ -891,6 +1058,13 @@ class DebtLedgerController extends GetxController {
     if (balance < 0) return const Color(0xFFC62828);
     return const Color(0xFF757575);
   }
+
+  /// تسمية الرصيد في القائمة الرئيسية: موجب = أخذت (أخضر)، سالب = أعطيت (أحمر).
+  String balanceTypeLabel(double balance) {
+    if (balance > 0) return 'took'.tr;
+    if (balance < 0) return 'gave'.tr;
+    return '';
+  }
 }
 
 /// Calculator logic for transaction entry screen
@@ -911,8 +1085,10 @@ class TransactionCalculatorController extends GetxController {
     required this.personId,
   });
 
+  final RxList<ShownBoxesModel> allBoxes = <ShownBoxesModel>[].obs;
   final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
   final Rxn<ShownBoxesModel> selectedBox = Rxn<ShownBoxesModel>();
+  final RxString selectedCurrency = 'شيكل'.obs;
 
   final RxString display = '0'.obs;
   final RxString expression = ''.obs;
@@ -931,10 +1107,27 @@ class TransactionCalculatorController extends GetxController {
 
   Future<void> _loadBoxes() async {
     final boxes = await getShownBoxUsecase.call(screen: 0);
-    shownBoxesList.assignAll(
-      boxes.where((b) => b.currency == 'شيكل').toList(),
-    );
+    allBoxes.assignAll(boxes);
+    _applyBoxFilter();
   }
+
+  void setCurrency(String currency) {
+    selectedCurrency.value = currency;
+    _applyBoxFilter();
+  }
+
+  void _applyBoxFilter() {
+    shownBoxesList.assignAll(
+      allBoxes.where((b) => b.currency == selectedCurrency.value).toList(),
+    );
+    final box = selectedBox.value;
+    if (box != null && box.currency != selectedCurrency.value) {
+      selectedBox.value = null;
+    }
+  }
+
+  String get effectiveCurrency =>
+      selectedBox.value?.currency ?? selectedCurrency.value;
 
   Future<void> pickReceiptImages() async {
     final picker = ImagePicker();
@@ -1056,6 +1249,7 @@ class TransactionCalculatorController extends GetxController {
         sellerId: isCustomer ? null : personId,
         type: type,
         amount: amount.toStringAsFixed(2),
+        currency: effectiveCurrency,
         transactionDate: DateFormat('yyyy-MM-dd').format(
           selectedDate.value ?? DateTime.now(),
         ),

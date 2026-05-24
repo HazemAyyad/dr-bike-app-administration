@@ -17,11 +17,18 @@ class AppBootstrap {
       return;
     }
 
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      debugPrint('[FCM] Firebase initialized (app bootstrap)');
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        debugPrint('[FCM] Firebase initialized (app bootstrap)');
+      }
+    } on FirebaseException catch (e) {
+      if (e.code != 'duplicate-app') {
+        rethrow;
+      }
+      debugPrint('[FCM] Firebase already initialized (duplicate-app ignored)');
     }
 
     try {

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -13,9 +14,12 @@ import 'package:path/path.dart' as p;
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/impersonation_service.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../data/datasources/employee_datasource.dart';
 import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/models/financial_details_model.dart';
 import '../../data/models/employee_advances_model.dart';
@@ -359,6 +363,37 @@ class EmployeeSectionController extends GetxController
       );
     } finally {
       isDeletingEmployee.value = false;
+    }
+  }
+
+  /// Employee row id currently loading for impersonation (0 = none).
+  final RxInt impersonatingEmployeeId = 0.obs;
+
+  Future<void> impersonateEmployee(
+    BuildContext context,
+    EmployeeEntity employee,
+  ) async {
+    impersonatingEmployeeId.value = employee.id;
+    try {
+      final raw = await Get.find<EmployeeDatasource>()
+          .impersonateEmployee(employee.id);
+      await ImpersonationService.startFromLoginResponse(raw);
+    } on ServerException catch (e) {
+      if (!context.mounted) return;
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'impersonationFailed'.tr,
+      );
+    } finally {
+      impersonatingEmployeeId.value = 0;
     }
   }
 

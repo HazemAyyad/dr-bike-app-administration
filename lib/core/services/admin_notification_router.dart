@@ -26,7 +26,11 @@ class AdminNotificationRouter {
     try {
       switch (type) {
         case 'employee_task_completed':
-          final tid = raw['task_id']?.toString() ?? '';
+        case 'employee_task_submitted':
+        case 'employee_subtask_completed':
+          final tid = raw['task_id']?.toString() ??
+              raw['occurrence_id']?.toString() ??
+              '';
           if (tid.isNotEmpty && _openTaskDetails(tid)) {
             return;
           }

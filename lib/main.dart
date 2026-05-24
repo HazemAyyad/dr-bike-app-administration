@@ -26,8 +26,13 @@ void main() async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
   // ignore: deprecated_member_use
   final window = binding.window;
-  final width = window.physicalSize.width / window.devicePixelRatio;
-  final height = window.physicalSize.height / window.devicePixelRatio;
+  final physical = window.physicalSize;
+  final dpr = window.devicePixelRatio > 0 ? window.devicePixelRatio : 1.0;
+  final rawW = physical.width / dpr;
+  final rawH = physical.height / dpr;
+  // Cold start on some devices reports 0×0 — breaks ScreenUtil (.w → 0) and layout.
+  final width = rawW > 0 ? rawW : 390.0;
+  final height = rawH > 0 ? rawH : 844.0;
 
   runApp(
     // DevicePreview(

@@ -17,6 +17,7 @@ class SelectDate extends StatelessWidget {
     required this.isSelected,
     required this.date,
     required this.time,
+    this.compact = false,
   }) : super(key: key);
 
   final String label;
@@ -25,6 +26,7 @@ class SelectDate extends StatelessWidget {
   final RxInt isSelected;
   final Rx<DateTime> date;
   final Rx<TimeOfDay> time;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -40,41 +42,48 @@ class SelectDate extends StatelessWidget {
                 color: ThemeService.isDark.value
                     ? AppColors.customGreyColor6
                     : AppColors.customGreyColor,
-                fontSize: 15.sp,
+                fontSize: compact ? 11.sp : 15.sp,
                 fontWeight: FontWeight.w400,
               ),
             ),
           ],
         ),
-        SizedBox(height: 10.h),
+        SizedBox(height: compact ? 4.h : 10.h),
         Obx(
           () => GestureDetector(
             onTap: onTap,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 8.w : 16.w,
+                vertical: compact ? 8.h : 12.h,
+              ),
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.customGreyColor2),
-                borderRadius: BorderRadius.circular(11.r),
+                borderRadius: BorderRadius.circular(compact ? 8.r : 11.r),
               ),
               child: Column(
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${showData(date.value)} / ${(time.value.hour % 12 == 0 ? 12 : time.value.hour % 12).toString().padLeft(2, '0')}:${time.value.minute.toString().padLeft(2, '0')} ${time.value.hour < 12 ? 'morning'.tr : 'evening'.tr}',
-                        style: theme.copyWith(
-                          color: ThemeService.isDark.value
-                              ? AppColors.customGreyColor
-                              : AppColors.customGreyColor6,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w400,
+                      Expanded(
+                        child: Text(
+                          '${showData(date.value)} / ${(time.value.hour % 12 == 0 ? 12 : time.value.hour % 12).toString().padLeft(2, '0')}:${time.value.minute.toString().padLeft(2, '0')} ${time.value.hour < 12 ? 'morning'.tr : 'evening'.tr}',
+                          maxLines: compact ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.copyWith(
+                            color: ThemeService.isDark.value
+                                ? AppColors.customGreyColor
+                                : AppColors.customGreyColor6,
+                            fontSize: compact ? 11.sp : 16.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
                       ),
                       Icon(
                         Icons.calendar_today_outlined,
                         color: AppColors.primaryColor,
-                        size: 20.sp,
+                        size: compact ? 16.sp : 20.sp,
                       ),
                     ],
                   ),

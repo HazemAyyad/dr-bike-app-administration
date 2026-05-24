@@ -18,6 +18,14 @@ class AdminNotificationCenterController extends GetxController {
     {'id': 'employee_login', 'labelKey': 'notifFilterLogin'},
     {'id': 'employee_task_completed', 'labelKey': 'notifFilterTaskDone'},
     {
+      'id': 'employee_task_submitted',
+      'labelKey': 'notifFilterTaskSubmitted',
+    },
+    {
+      'id': 'employee_subtask_completed',
+      'labelKey': 'notifFilterSubtaskDone',
+    },
+    {
       'id': 'employee_logout_pending_tasks',
       'labelKey': 'notifFilterLogoutPending',
     },

@@ -11,10 +11,14 @@ class ChangeTaskCompletedUasecase {
   Future<Either<Failure, String>> call({
     required bool isSubTask,
     required int taskId,
+    bool isOccurrence = false,
+    int? occurrenceId,
   }) {
     return employeeDashbordRepository.changeEmployeeTaskToCompleted(
       isSubTask: isSubTask,
       taskId: taskId,
+      isOccurrence: isOccurrence,
+      occurrenceId: occurrenceId,
     );
   }
 }

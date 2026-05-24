@@ -80,7 +80,7 @@ import '../features/admin/employee_section/presentation/views/qr_history_screen.
 import '../features/admin/employee_section/presentation/views/points_rewards_guide_screen.dart';
 import '../features/admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_tasks_screen.dart';
-import '../features/admin/employee_tasks/presentation/views/task_details_screen.dart';
+import '../features/admin/employee_tasks/presentation/views/task_details_entry_screen.dart';
 import '../features/admin/financial_affairs/presentation/binding/assets_binding.dart';
 import '../features/admin/financial_affairs/presentation/binding/expenses_binding.dart';
 import '../features/admin/financial_affairs/presentation/binding/official_papers_binding.dart';
@@ -110,6 +110,7 @@ import '../features/admin/projects/presentation/views/project_details_screeen.da
 import '../features/admin/projects/presentation/views/project_screen.dart';
 import '../features/admin/sales/presentation/binding/sales_binding.dart';
 import '../features/admin/sales/presentation/views/new_cash_profit_screen.dart';
+import '../features/admin/sales/presentation/views/instant_sale_product_picker_screen.dart';
 import '../features/admin/sales/presentation/views/new_instant_sale_screen.dart';
 import '../features/admin/sales/presentation/views/bill_details_screen.dart'
     as instant_sale_bill;
@@ -300,7 +301,7 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.TASKDETAILS,
-      page: () => const TaskDetailsScreen(),
+      page: () => const TaskDetailsEntryScreen(),
       binding: EmployeeTasksBinding(),
       transition: _transitionFade,
     ),
@@ -567,6 +568,13 @@ class AppPages {
       page: () => const SalesScreen(),
       binding: SalesBinding(),
       transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.INSTANTSALEPRODUCTPICKER,
+      page: () => const InstantSaleProductPickerScreen(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
     ),
     GetPage(
       name: AppRoutes.NEWINSTANTSALESCREEN,

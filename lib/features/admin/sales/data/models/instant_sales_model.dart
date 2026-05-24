@@ -19,10 +19,14 @@ class InstantSalesModel {
   final String? status;
   final String? paymentBoxName;
   final String? paymentBoxValue;
+  final String paidAmount;
+  final String remainingAmount;
   final bool isPackageSale;
   final int? offerPackageId;
   final String? packageName;
   final String saleType;
+  final String saleComposition;
+  final bool hasAdditionalProducts;
   final int? createdBy;
   final String? createdByName;
   final int? updatedBy;
@@ -47,10 +51,14 @@ class InstantSalesModel {
     this.status,
     this.paymentBoxName,
     this.paymentBoxValue,
+    this.paidAmount = '0',
+    this.remainingAmount = '0',
     this.isPackageSale = false,
     this.offerPackageId,
     this.packageName,
     this.saleType = 'product',
+    this.saleComposition = 'product',
+    this.hasAdditionalProducts = false,
     this.createdBy,
     this.createdByName,
     this.updatedBy,
@@ -59,6 +67,36 @@ class InstantSalesModel {
 
   bool get isCancelled => status == 'cancelled';
 
+  double get paidAmountValue =>
+      double.tryParse(paidAmount) ??
+      double.tryParse(paymentBoxValue ?? '') ??
+      0;
+
+  double get remainingAmountValue {
+    final fromApi = double.tryParse(remainingAmount);
+    if (fromApi != null) return fromApi;
+    final total = double.tryParse(totalCost) ?? 0;
+    return (total - paidAmountValue).clamp(0, double.infinity);
+  }
+
+  bool get hasDebtRemaining => remainingAmountValue > 0.01;
+
+  /// `product` | `package` | `mixed`
+  String get compositionKind {
+    if (!isPackageSale) return 'product';
+    if (hasAdditionalProducts || additionalProductLines.isNotEmpty) {
+      return 'mixed';
+    }
+    if (saleComposition == 'mixed' || saleComposition == 'package') {
+      return saleComposition;
+    }
+    return 'package';
+  }
+
+  bool get isMixedPackageSale => compositionKind == 'mixed';
+
+  bool get isPackageOnlySale => compositionKind == 'package';
+
   String get displayTitle =>
       isPackageSale ? (packageName ?? product) : product;
 
@@ -66,11 +104,13 @@ class InstantSalesModel {
 
   /// Total piece count (package lines sum sub-qty; else main + extras).
   int get piecesCount {
-    if (isPackageSale && subProducts.isNotEmpty) {
-      return subProducts.fold<int>(
+    if (isPackageSale) {
+      final mainQty = int.tryParse(quantity) ?? 0;
+      final extraQty = additionalProductLines.fold<int>(
         0,
         (sum, p) => sum + (int.tryParse(p.quantity) ?? 0),
       );
+      return mainQty + extraQty;
     }
     final mainQty = int.tryParse(quantity) ?? 0;
     if (subProducts.isEmpty) return mainQty;
@@ -111,11 +151,19 @@ class InstantSalesModel {
         unitCost: cost,
       ));
     }
-    for (final sub in subProducts) {
+    for (final sub in packageComponentLines) {
       lines.add(InstantSaleLineItem(
         name: sub.productName,
         quantity: sub.quantity,
         unitCost: sub.cost,
+      ));
+    }
+    for (final sub in additionalProductLines) {
+      lines.add(InstantSaleLineItem(
+        name: sub.productName,
+        quantity: sub.quantity,
+        unitCost: sub.cost,
+        isAdditionalProduct: true,
       ));
     }
     return lines;
@@ -164,6 +212,11 @@ class InstantSalesModel {
       status: asNullableString(json['status']),
       paymentBoxName: asNullableString(json['payment_box_name']),
       paymentBoxValue: asNullableString(json['payment_box_value']?.toString()),
+      paidAmount: asString(
+        json['paid_amount'],
+        asString(json['payment_box_value'], '0'),
+      ),
+      remainingAmount: asString(json['remaining_amount'], '0'),
       isPackageSale: json['is_package_sale'] == true ||
           json['is_package_sale'] == 1 ||
           json['sale_type'] == 'package',
@@ -172,6 +225,9 @@ class InstantSalesModel {
           : int.tryParse('${json['offer_package_id']}'),
       packageName: asNullableString(json['package_name']),
       saleType: asString(json['sale_type'], 'product'),
+      saleComposition: asString(json['sale_composition'], 'product'),
+      hasAdditionalProducts: json['has_additional_products'] == true ||
+          json['has_additional_products'] == 1,
       createdBy: json['created_by'] == null
           ? null
           : int.tryParse('${json['created_by']}'),
@@ -209,12 +265,14 @@ class InstantSaleLineItem {
   final String quantity;
   final String unitCost;
   final bool isPackageHeader;
+  final bool isAdditionalProduct;
 
   const InstantSaleLineItem({
     required this.name,
     required this.quantity,
     required this.unitCost,
     this.isPackageHeader = false,
+    this.isAdditionalProduct = false,
   });
 }
 
@@ -223,20 +281,32 @@ class SubProductsModel {
   final String productName;
   final String cost;
   final String quantity;
+  final bool isPackageComponent;
+  final bool isAdditionalProduct;
 
   const SubProductsModel({
     required this.id,
     required this.productName,
     required this.cost,
     required this.quantity,
+    this.isPackageComponent = false,
+    this.isAdditionalProduct = false,
   });
 
   factory SubProductsModel.fromJson(Map<String, dynamic> json) {
+    final cost = asString(json['cost'], '0');
+    final lineCost = double.tryParse(cost) ?? 0;
+    final fromApiAdditional = json['is_additional_product'] == true ||
+        json['is_additional_product'] == 1;
+    final isAdditional = fromApiAdditional || lineCost > 0;
+
     return SubProductsModel(
       id: asInt(json['id']),
       productName: asString(json['product_name']),
-      cost: asString(json['cost'], '0'),
+      cost: cost,
       quantity: asString(json['quantity'], '0'),
+      isPackageComponent: !isAdditional,
+      isAdditionalProduct: isAdditional,
     );
   }
 
@@ -246,6 +316,18 @@ class SubProductsModel {
       'product_name': productName,
       'cost': cost,
       'quantity': quantity,
+      'is_package_component': isPackageComponent,
+      'is_additional_product': isAdditionalProduct,
     };
   }
+}
+
+extension InstantSaleSubProductsX on InstantSalesModel {
+  List<SubProductsModel> get packageComponentLines => isPackageSale
+      ? subProducts.where((s) => !s.isAdditionalProduct).toList()
+      : subProducts;
+
+  List<SubProductsModel> get additionalProductLines => isPackageSale
+      ? subProducts.where((s) => s.isAdditionalProduct).toList()
+      : const [];
 }

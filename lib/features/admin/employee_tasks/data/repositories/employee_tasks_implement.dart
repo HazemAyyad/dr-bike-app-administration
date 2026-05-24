@@ -92,6 +92,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
   @override
   Future<Either<Failure, String>> cancelEmployeeTask({
     required String employeeTaskId,
+    int? occurrenceId,
     required bool cancelWithRepetition,
     required bool isCompleted,
   }) async {
@@ -101,6 +102,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
     try {
       final result = await employeeTasksDataSource.cancelEmployeeTask(
         employeeTaskId: employeeTaskId,
+        occurrenceId: occurrenceId,
         cancelWithRepetition: cancelWithRepetition,
         isCompleted: isCompleted,
       );
@@ -120,13 +122,18 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
 
   // get task details
   @override
-  Future<dynamic> getTaskDetails({required String taskId}) async {
+  Future<dynamic> getTaskDetails({
+    required String taskId,
+    String? occurrenceId,
+  }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result =
-          await employeeTasksDataSource.getTaskDetails(taskId: taskId);
+      final result = await employeeTasksDataSource.getTaskDetails(
+        taskId: taskId,
+        occurrenceId: occurrenceId,
+      );
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
@@ -139,6 +146,8 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
     required bool isSubTask,
     required String taskId,
     required List<File> image,
+    bool isOccurrenceSubtask = false,
+    bool isOccurrenceMain = false,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -148,6 +157,8 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
         taskId: taskId,
         image: image,
         isSubTask: isSubTask,
+        isOccurrenceSubtask: isOccurrenceSubtask,
+        isOccurrenceMain: isOccurrenceMain,
       );
       return result;
     } on ServerException catch (e) {

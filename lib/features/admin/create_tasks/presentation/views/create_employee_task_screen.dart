@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,34 +7,27 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
-import '../../../../../core/helpers/task_nav_debug.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
+import 'task_recurrence_screen.dart';
 import '../controllers/create_task_controller.dart';
 import '../widgets/audio_recorder.dart';
 import '../widgets/employee_selector_field.dart';
 import '../widgets/employee_task_priority_selector.dart';
 import '../widgets/inline_subtask_builder.dart';
-import '../widgets/select_date.dart';
+import '../widgets/task_date_time_field.dart';
 import '../widgets/task_form_section_card.dart';
+import '../widgets/task_reminder_section.dart';
 
-/// Modern operational composer for employee tasks (replaces legacy long form).
+/// Compact operational composer for employee tasks.
 class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
   const CreateEmployeeTaskScreen({Key? key}) : super(key: key);
 
-  bool get _isEdit => Get.arguments?['isEdit'] == true;
+  static const _compact = true;
 
-  String get _titleArg => Get.arguments?['title']?.toString() ?? 'createNewEmployeeTask';
+  bool get _isEdit => Get.arguments?['isEdit'] == true;
 
   @override
   Widget build(BuildContext context) {
-    TaskNavDebug.log(
-      'CreateEmployeeTaskScreen.build',
-      AppRoutes.CREATETASKSCREEN,
-      screen: 'CreateEmployeeTaskScreen',
-      extra: {'isEdit': _isEdit, 'title': _titleArg},
-    );
-
     return Scaffold(
       backgroundColor: AppColors.operationalSurface,
       appBar: CustomAppBar(
@@ -49,10 +40,11 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                 child: Column(
                   children: [
                     TaskFormSectionCard(
+                      compact: _compact,
                       title: 'taskInfo',
                       child: Column(
                         children: [
@@ -61,168 +53,222 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                             label: 'taskName',
                             hintText: 'taskNameExample',
                             controller: controller.taskNameController,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            minLines: 2,
+                            maxLines: 6,
                           ),
-                          SizedBox(height: 12.h),
+                          SizedBox(height: 6.h),
                           CustomTextField(
                             label: 'taskDescription',
                             hintText: 'taskDescriptionExample',
                             controller: controller.taskDescriptionController,
-                            validator: (_) => null,
-                          ),
-                          SizedBox(height: 12.h),
-                          CustomTextField(
-                            label: 'taskNotes',
-                            hintText: 'taskDescriptionExample',
-                            controller: controller.taskNotesController,
+                            keyboardType: TextInputType.multiline,
+                            textInputAction: TextInputAction.newline,
+                            minLines: 2,
+                            maxLines: 8,
                             validator: (_) => null,
                           ),
                         ],
                       ),
                     ),
                     TaskFormSectionCard(
+                      compact: _compact,
                       title: 'employeeName',
-                      child: const EmployeeSelectorField(),
-                    ),
-                    TaskFormSectionCard(
-                      title: 'priority',
-                      child: const EmployeeTaskPrioritySelector(),
-                    ),
-                    TaskFormSectionCard(
-                      title: 'taskPoints',
-                      child: CustomTextField(
-                        label: 'taskPoints',
-                        hintText: 'taskPointsExample',
-                        controller: controller.pointsController,
-                        keyboardType: TextInputType.number,
-                        validator: (_) => null,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const EmployeeSelectorField(compact: true),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'priority'.tr,
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.customGreyColor5,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          const EmployeeTaskPrioritySelector(compact: true),
+                        ],
                       ),
                     ),
                     TaskFormSectionCard(
-                      title: 'scheduling',
+                      compact: _compact,
+                      title: 'taskPoints',
                       child: Column(
                         children: [
-                          SelectDate(
-                            label: 'startDate',
-                            onTap: () => controller.toggleCalendar(true),
-                            isSelected: controller.isSelected,
-                            date: controller.startDate,
-                            time: controller.startTime,
-                            isEndDate: controller.isStartDateCalendarVisible,
+                          CustomTextField(
+                            label: 'taskPoints',
+                            hintText: 'taskPointsExample',
+                            controller: controller.pointsController,
+                            keyboardType: TextInputType.number,
+                            validator: (_) => null,
                           ),
-                          SizedBox(height: 12.h),
-                          SelectDate(
+                          SizedBox(height: 8.h),
+                          const TaskDateTimeField(
+                            compact: true,
+                            label: 'startDate',
+                            isStart: true,
+                          ),
+                          SizedBox(height: 8.h),
+                          const TaskDateTimeField(
+                            compact: true,
                             label: 'endDate',
-                            onTap: () => controller.toggleCalendar(false),
-                            isSelected: controller.isSelected,
-                            date: controller.endDate,
-                            time: controller.endTime,
-                            isEndDate: controller.isEndDateCalendarVisible,
+                            isStart: false,
                           ),
                         ],
                       ),
                     ),
                     TaskFormSectionCard(
+                      compact: _compact,
                       title: 'taskRepeat',
-                      trailing: Icon(Icons.chevron_right, color: AppColors.operationalPurple),
+                      trailing: Icon(
+                        Icons.chevron_left,
+                        color: AppColors.operationalPurple,
+                        size: 20.sp,
+                      ),
                       child: Obx(
                         () => InkWell(
-                          onTap: () {
-                            TaskNavDebug.log(
-                              'CreateEmployeeTaskScreen.recurrenceTile',
-                              AppRoutes.TASKRECURRENCE,
-                              screen: 'TaskRecurrenceScreen',
-                            );
-                            Get.toNamed(AppRoutes.TASKRECURRENCE)?.then((_) {
-                              controller.updateRecurrenceSummary();
-                            });
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 8.h),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    controller.recurrenceSummary.value.isEmpty
-                                        ? (controller.selectedDays.value.isEmpty
-                                            ? 'taskRepeatExample'.tr
-                                            : controller.selectedDays.value.tr)
-                                        : controller.recurrenceSummary.value,
-                                    style: TextStyle(
-                                      fontSize: 14.sp,
-                                      color: AppColors.operationalNavy,
-                                    ),
+                          onTap: () async {
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (ctx) => Padding(
+                                padding: EdgeInsets.only(top: 8.h),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(16.r),
+                                  ),
+                                  child: SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height *
+                                            0.92,
+                                    child: const TaskRecurrenceScreen(),
                                   ),
                                 ),
-                                Icon(Icons.tune, color: AppColors.operationalPurple, size: 22.sp),
-                              ],
-                            ),
+                              ),
+                            );
+                            controller.updateRecurrenceSummary();
+                          },
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.repeat,
+                                size: 18.sp,
+                                color: AppColors.operationalPurple,
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: Text(
+                                  controller.recurrenceSummary.value.isEmpty
+                                      ? 'recurrenceNoRepeat'.tr
+                                      : controller.recurrenceSummary.value,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11.5.sp,
+                                    color: AppColors.operationalNavy,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ),
                     TaskFormSectionCard(
+                      compact: _compact,
+                      title: 'taskReminder',
+                      child: const TaskReminderSection(compact: true),
+                    ),
+                    TaskFormSectionCard(
+                      compact: _compact,
                       title: 'subTasks',
                       child: const InlineSubtaskBuilder(),
                     ),
                     TaskFormSectionCard(
+                      compact: _compact,
                       title: 'attachments',
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          AudioRecorderButton(
-                            label: 'recordAudio',
-                            recordedPath: controller.recordedPath,
-                          ),
-                          SizedBox(height: 12.h),
-                          MediaUploadButton(
-                            isShowPreview: !_isEdit,
-                            onFilesChanged: (files) {
-                              for (final file in files) {
-                                if (!controller.selectedFile.contains(file)) {
-                                  controller.selectedFile.add(file);
-                                }
-                              }
-                              controller.update();
-                            },
-                            title: 'uploadImage',
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: AudioRecorderButton(
+                                  label: 'recordAudio',
+                                  recordedPath: controller.recordedPath,
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: MediaUploadButton(
+                                  isShowPreview: !_isEdit,
+                                  onFilesChanged: (files) {
+                                    for (final file in files) {
+                                      if (!controller.selectedFile
+                                          .contains(file)) {
+                                        controller.selectedFile.add(file);
+                                      }
+                                    }
+                                    controller.update();
+                                  },
+                                  title: 'uploadImage',
+                                ),
+                              ),
+                            ],
                           ),
                           if (_isEdit && controller.selectedFile.isNotEmpty) ...[
-                            SizedBox(height: 12.h),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: controller.selectedFile.asMap().entries.map((entry) {
+                            SizedBox(height: 6.h),
+                            SizedBox(
+                              height: 64.h,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                children: controller.selectedFile
+                                    .asMap()
+                                    .entries
+                                    .map((entry) {
                                   final index = entry.key;
                                   final file = entry.value;
                                   return Padding(
-                                    padding: EdgeInsets.only(right: 8.w),
+                                    padding: EdgeInsets.only(left: 6.w),
                                     child: Stack(
                                       children: [
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8.r),
+                                          borderRadius:
+                                              BorderRadius.circular(8.r),
                                           child: file.path.contains('http')
                                               ? CachedNetworkImage(
                                                   imageUrl: file.path,
-                                                  height: 100.h,
-                                                  width: 100.w,
+                                                  height: 64.h,
+                                                  width: 64.w,
                                                   fit: BoxFit.cover,
                                                 )
                                               : Image.file(
                                                   file,
-                                                  height: 100.h,
-                                                  width: 100.w,
+                                                  height: 64.h,
+                                                  width: 64.w,
                                                   fit: BoxFit.cover,
                                                 ),
                                         ),
                                         Positioned(
-                                          right: 0,
                                           top: 0,
-                                          child: IconButton(
-                                            icon: const Icon(Icons.close, color: Colors.red),
-                                            onPressed: () {
-                                              controller.selectedFile.removeAt(index);
+                                          left: 0,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              controller.selectedFile
+                                                  .removeAt(index);
                                               controller.update();
                                             },
+                                            child: Icon(
+                                              Icons.cancel,
+                                              size: 18.sp,
+                                              color: Colors.red,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -232,11 +278,17 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                               ),
                             ),
                           ],
-                          SizedBox(height: 8.h),
+                          SizedBox(height: 4.h),
                           CustomCheckBox(
                             title: 'requireImage',
                             value: controller.requireImage,
                             onChanged: (v) => controller.requireImage.value = v!,
+                          ),
+                          CustomCheckBox(
+                            title: 'requireAdminReview',
+                            value: controller.requireAdminReview,
+                            onChanged: (v) =>
+                                controller.requireAdminReview.value = v!,
                           ),
                           CustomCheckBox(
                             title: 'hideTask',
@@ -246,7 +298,7 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                         ],
                       ),
                     ),
-                    SizedBox(height: 80.h),
+                    SizedBox(height: 64.h),
                   ],
                 ),
               ),
@@ -267,14 +319,14 @@ class _StickySaveBar extends GetView<CreateTaskController> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
+      padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 10.h),
       decoration: BoxDecoration(
         color: AppColors.whiteColor,
         boxShadow: [
           BoxShadow(
-            color: AppColors.operationalNavy.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
+            color: AppColors.operationalNavy.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -283,12 +335,12 @@ class _StickySaveBar extends GetView<CreateTaskController> {
         child: Obx(
           () => SizedBox(
             width: double.infinity,
-            height: 48.h,
+            height: 44.h,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.operationalPurple,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+                  borderRadius: BorderRadius.circular(10.r),
                 ),
               ),
               onPressed: controller.isLoding.value
@@ -306,8 +358,8 @@ class _StickySaveBar extends GetView<CreateTaskController> {
                     },
               child: controller.isLoding.value
                   ? const SizedBox(
-                      height: 22,
-                      width: 22,
+                      height: 20,
+                      width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,
@@ -316,7 +368,7 @@ class _StickySaveBar extends GetView<CreateTaskController> {
                   : Text(
                       isEdit ? 'editTask'.tr : 'createTask'.tr,
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),

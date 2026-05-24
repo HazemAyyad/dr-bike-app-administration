@@ -4,10 +4,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
+import 'ledger_activity_section.dart';
 import 'ledger_colors.dart';
+import 'ledger_currency_tab_bar.dart';
 import 'ledger_format.dart';
 import 'period_filter_sheet.dart';
 import 'share_sheet.dart';
@@ -105,12 +108,27 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
                   children: [
-                    _BalanceCard(
-                      balance: detail.balance,
-                      color: c.balanceColor(detail.balance),
-                      collectionLine:
-                          c.collectionReminderLabel(detail.person),
+                    Obx(
+                      () => LedgerCurrencyTabBar(
+                        selected: c.selectedCurrency.value,
+                        onSelected: c.changeCurrency,
+                      ),
                     ),
+                    SizedBox(height: 12.h),
+                    Obx(() {
+                      final cur = c.selectedCurrency.value;
+                      final stats = c.personCurrencyBalance ??
+                          detail.balanceFor(cur);
+                      return _BalanceCard(
+                        currency: cur,
+                        balance: stats.balance,
+                        totalTaken: stats.totalTaken,
+                        totalGiven: stats.totalGiven,
+                        color: c.balanceColor(stats.balance),
+                        collectionLine:
+                            c.collectionReminderLabel(detail.person),
+                      );
+                    }),
                     SizedBox(height: 16.h),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -149,16 +167,20 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                       ],
                     ),
                     SizedBox(height: 20.h),
-                    Row(
-                      children: [
-                        Text(
-                          '${'ledgerTransactions'.tr} (${detail.transactions.length})',
-                          style: TextStyle(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
-                            color: LedgerColors.primaryBlue,
-                          ),
-                        ),
+                    Obx(
+                      () {
+                        final cur = c.selectedCurrency.value;
+                        final count = c.personDetail.value?.transactions.length ?? 0;
+                        return Row(
+                          children: [
+                            Text(
+                              '${'ledgerTransactions'.tr} ($count) — $cur',
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w600,
+                                color: LedgerColors.primaryBlue,
+                              ),
+                            ),
                         const Spacer(),
                         InkWell(
                           onTap: c.openArchiveSheet,
@@ -178,29 +200,63 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                             ),
                           ),
                         ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                     SizedBox(height: 10.h),
-                    if (detail.transactions.isEmpty)
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 32.h),
-                        child: Center(
-                          child: Text(
-                            'ledgerNoTransactions'.tr,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: Colors.grey.shade600,
+                    Obx(() {
+                      final txs =
+                          c.personDetail.value?.transactions ?? const [];
+                      if (txs.isEmpty) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32.h),
+                          child: Center(
+                            child: Text(
+                              'ledgerNoTransactions'.tr,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
                           ),
-                        ),
-                      )
-                    else
-                      ...detail.transactions.map(
-                        (tx) => _TransactionCard(
-                          transaction: tx,
-                          onTap: () => c.openTransactionDetail(tx),
-                        ),
+                        );
+                      }
+                      return Column(
+                        children: txs
+                            .map(
+                              (tx) => _TransactionCard(
+                                transaction: tx,
+                                onTap: () => c.openTransactionDetail(tx),
+                              ),
+                            )
+                            .toList(),
+                      );
+                    }),
+                    SizedBox(height: 16.h),
+                    Obx(
+                      () => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'ledgerActivityLogCurrency'.trParams({
+                              'currency': c.selectedCurrency.value,
+                            }),
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          SizedBox(height: 6.h),
+                          LedgerActivitySection(
+                            entries: c.personActivity,
+                            loading: c.personActivityLoading.value,
+                            showTitle: false,
+                          ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -261,12 +317,18 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
 }
 
 class _BalanceCard extends StatelessWidget {
+  final String currency;
   final double balance;
+  final double totalTaken;
+  final double totalGiven;
   final Color color;
   final String? collectionLine;
 
   const _BalanceCard({
+    required this.currency,
     required this.balance,
+    required this.totalTaken,
+    required this.totalGiven,
     required this.color,
     this.collectionLine,
   });
@@ -275,7 +337,7 @@ class _BalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 24.h, horizontal: 20.w),
+      padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 20.w),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16.r),
@@ -289,6 +351,32 @@ class _BalanceCard extends StatelessWidget {
       ),
       child: Column(
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: _StatColumn(
+                  label: 'took'.tr,
+                  amount: totalTaken,
+                  currency: currency,
+                  color: LedgerColors.takenGreen,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 44.h,
+                color: Colors.grey.shade200,
+              ),
+              Expanded(
+                child: _StatColumn(
+                  label: 'gave'.tr,
+                  amount: totalGiven,
+                  currency: currency,
+                  color: LedgerColors.givenRed,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16.h),
           Text(
             'ledgerBalance'.tr,
             style: TextStyle(
@@ -297,9 +385,9 @@ class _BalanceCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 6.h),
           Text(
-            LedgerFormat.shekel2(balance),
+            LedgerFormat.money(balance, currency: currency, fractionDigits: 1),
             style: TextStyle(
               fontSize: 34.sp,
               fontWeight: FontWeight.bold,
@@ -321,6 +409,41 @@ class _BalanceCard extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _StatColumn extends StatelessWidget {
+  final String label;
+  final double amount;
+  final String currency;
+  final Color color;
+
+  const _StatColumn({
+    required this.label,
+    required this.amount,
+    required this.currency,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade600),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          LedgerFormat.money(amount, currency: currency, fractionDigits: 1),
+          style: TextStyle(
+            fontSize: 17.sp,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -400,19 +523,28 @@ class _TransactionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14.r),
         elevation: 0,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14.r),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14.r),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.vertical(
+                  top: const Radius.circular(14),
+                  bottom: transaction.receiptImages.isEmpty
+                      ? const Radius.circular(14)
+                      : Radius.zero,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
@@ -433,7 +565,10 @@ class _TransactionCard extends StatelessWidget {
                               ),
                               SizedBox(width: 8.w),
                               Text(
-                                LedgerFormat.shekel2(transaction.amount),
+                                LedgerFormat.money(
+                                  transaction.amount,
+                                  currency: transaction.currency,
+                                ),
                                 style: TextStyle(
                                   fontSize: 18.sp,
                                   fontWeight: FontWeight.bold,
@@ -453,6 +588,7 @@ class _TransactionCard extends StatelessWidget {
                             LedgerFormat.labeled(
                               'ledgerBalanceBefore'.tr,
                               transaction.balanceBefore,
+                              currency: transaction.currency,
                             ),
                             style: TextStyle(
                               fontSize: 12.sp,
@@ -472,7 +608,11 @@ class _TransactionCard extends StatelessWidget {
                     ),
                     SizedBox(width: 16.w),
                     Text(
-                      LedgerFormat.shekel2(transaction.balanceAfter),
+                      LedgerFormat.money(
+                        transaction.balanceAfter,
+                        currency: transaction.currency,
+                        fractionDigits: 1,
+                      ),
                       style: TextStyle(
                         fontSize: 17.sp,
                         fontWeight: FontWeight.bold,
@@ -481,11 +621,10 @@ class _TransactionCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (transaction.note != null &&
-                    transaction.note!.trim().isNotEmpty) ...[
+                if (transaction.displayDescription.isNotEmpty) ...[
                   SizedBox(height: 10.h),
                   Text(
-                    transaction.note!.trim(),
+                    transaction.displayDescription,
                     style: TextStyle(
                       fontSize: 13.sp,
                       color: Colors.grey.shade800,
@@ -493,52 +632,86 @@ class _TransactionCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (transaction.receiptImages.isNotEmpty) ...[
-                  SizedBox(height: 10.h),
-                  SizedBox(
-                    height: 72.h,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: transaction.receiptImages.length,
-                      separatorBuilder: (_, __) => SizedBox(width: 8.w),
-                      itemBuilder: (_, index) {
-                        final url = ShowNetImage.getPhoto(
-                          transaction.receiptImages[index],
-                        );
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(8.r),
-                          child: CachedNetworkImage(
-                            imageUrl: url,
-                            width: 72.w,
-                            height: 72.h,
-                            fit: BoxFit.cover,
-                            placeholder: (_, __) => Container(
-                              width: 72.w,
-                              height: 72.h,
-                              color: Colors.grey.shade200,
-                              child: const Center(
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            ),
-                            errorWidget: (_, __, ___) => Container(
-                              width: 72.w,
-                              height: 72.h,
-                              color: Colors.grey.shade200,
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    ],
                   ),
-                ],
-              ],
-            ),
+                ),
+              ),
+              if (transaction.receiptImages.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 12.h),
+                  child: _ReceiptThumbnails(
+                    images: transaction.receiptImages,
+                  ),
+                ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ReceiptThumbnails extends StatelessWidget {
+  const _ReceiptThumbnails({required this.images});
+
+  final List<String> images;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 72.h,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: images.length,
+        separatorBuilder: (_, __) => SizedBox(width: 8.w),
+        itemBuilder: (_, index) {
+          final url = ShowNetImage.getPhoto(images[index]);
+          return GestureDetector(
+            onTap: () => FullScreenZoomImage.open(context, url),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8.r),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: url,
+                    width: 72.w,
+                    height: 72.h,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      width: 72.w,
+                      height: 72.h,
+                      color: Colors.grey.shade200,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      width: 72.w,
+                      height: 72.h,
+                      color: Colors.grey.shade200,
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.zoom_in,
+                    color: Colors.white.withValues(alpha: 0.9),
+                    size: 22.sp,
+                    shadows: const [
+                      Shadow(
+                        blurRadius: 6,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

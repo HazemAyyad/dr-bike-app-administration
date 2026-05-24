@@ -6,6 +6,7 @@ import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import '../../data/models/instant_sales_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/models/product_model.dart';
+import '../../data/models/product_price_update_result.dart';
 import '../../data/models/profit_sale_model.dart';
 
 abstract class SalesRepository {
@@ -21,6 +22,12 @@ abstract class SalesRepository {
   });
 
   Future<List<ProductModel>> getAllProducts({required String endPoint});
+
+  Future<Either<Failure, ProductPriceUpdateResult>> updateProductRetailPrice({
+    required String productId,
+    required double normailPrice,
+    double? wholesalePrice,
+  });
 
   Future<Either<Failure, String>> addInstantSales({
     required String productId,
@@ -40,6 +47,7 @@ abstract class SalesRepository {
     String? paymentBoxName,
     String? paymentBoxValue,
     String? offerPackageId,
+    List<Map<String, dynamic>>? cartOtherProducts,
   });
 
   Future<Either<Failure, String>> cancelInstantSale({required String instantSaleId});
@@ -50,6 +58,7 @@ abstract class SalesRepository {
     required String quantity,
     required String totalCost,
     String? notes,
+    String? paymentBoxValue,
   });
 
   Future<InvoiceModel> getInvoice({required String invoiceId});

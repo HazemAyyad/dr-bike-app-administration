@@ -106,20 +106,32 @@ class EmployeeDashbordDatasource {
     }
   }
 
-  // change employee task to completed
+  // change employee task to completed (legacy + v2 occurrence)
   Future<Map<String, dynamic>> changeEmployeeTaskToCompleted({
     required bool isSubTask,
     required int taskId,
+    bool isOccurrence = false,
+    int? occurrenceId,
   }) async {
     try {
-      final response = await api.post(
-          isSubTask
-              ? EndPoints.changeSubEmployeeTaskToCompleted
-              : EndPoints.changeEmployeeTaskToCompleted,
-          data: {
-            if (isSubTask) 'sub_task_id': taskId,
-            if (!isSubTask) 'employee_task_id': taskId,
-          });
+      final String endpoint;
+      final Map<String, dynamic> data;
+
+      if (isSubTask && isOccurrence) {
+        endpoint = EndPoints.changeSubEmployeeOccurrenceTaskToCompleted;
+        data = {'sub_task_id': taskId};
+      } else if (isSubTask) {
+        endpoint = EndPoints.changeSubEmployeeTaskToCompleted;
+        data = {'sub_task_id': taskId};
+      } else if (isOccurrence && occurrenceId != null) {
+        endpoint = EndPoints.employeeTaskSubmit;
+        data = {'occurrence_id': occurrenceId};
+      } else {
+        endpoint = EndPoints.changeEmployeeTaskToCompleted;
+        data = {'employee_task_id': taskId};
+      }
+
+      final response = await api.post(endpoint, data: data);
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import 'package:flutter/services.dart';
+
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/user_data.dart';
@@ -24,6 +28,89 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
   void initState() {
     super.initState();
     _loadBiometricState();
+    AppSettingsService.instance.ensureLoaded();
+  }
+
+  Future<void> _editSubtaskBonusDefault() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final initial = AppSettingsService.instance.subtaskBonusDefault.value;
+    final ctrl = TextEditingController(text: '$initial');
+
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+    const actionBg = Color(0xFFE5E7EB);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          'subtaskBonusDefaultSetting'.tr,
+          style: const TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: textPrimary),
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: InputDecoration(
+            labelText: 'bonusPointsValue'.tr,
+            labelStyle: const TextStyle(color: textSecondary),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'cancel'.tr,
+              style: const TextStyle(color: textSecondary),
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: actionBg,
+              foregroundColor: textPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('save'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true || !mounted) {
+      ctrl.dispose();
+      return;
+    }
+
+    final value = int.tryParse(ctrl.text.trim()) ?? initial;
+    ctrl.dispose();
+    if (value < 0) return;
+
+    final ok = await AppSettingsService.instance.updateSubtaskBonusDefault(value);
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
   }
 
   Future<void> _loadBiometricState() async {
@@ -72,6 +159,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         titleKey: 'pointCategoriesSetting',
         descriptionKey: 'pointCategoriesSettingDesc',
         onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTCATEGORIESSCREEN),
+      ),
+      _SettingsItem(
+        icon: Icons.stars_rounded,
+        iconColor: const Color(0xFFEA580C),
+        titleKey: 'subtaskBonusDefaultSetting',
+        descriptionKey: 'subtaskBonusDefaultSettingDesc',
+        onTap: _editSubtaskBonusDefault,
       ),
       _SettingsItem(
         icon: Icons.emoji_events_outlined,

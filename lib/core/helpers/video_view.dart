@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:video_player/video_player.dart';
 
 import 'custom_app_bar.dart';
+import 'task_media_paths.dart';
 
 class VideoView extends StatefulWidget {
   const VideoView({Key? key, required this.videoPath, this.dsibalBack})
@@ -34,22 +35,34 @@ class _VideoViewState extends State<VideoView> {
   }
 
   Future<void> _initializeVideo() async {
-    final videoUrl = widget.videoPath.isEmpty
-        ? 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4'
-        : widget.videoPath;
+    try {
+      final path = widget.videoPath.isEmpty
+          ? 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4'
+          : widget.videoPath.trim();
 
-    final encodedUrl = Uri.encodeFull(videoUrl);
+      final VideoPlayerController controller;
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        controller = VideoPlayerController.networkUrl(
+          Uri.parse(Uri.encodeFull(path)),
+        );
+      } else {
+        final file = File(path);
+        if (!file.existsSync()) {
+          return;
+        }
+        controller = VideoPlayerController.file(file);
+      }
 
-    final controller = VideoPlayerController.networkUrl(Uri.parse(encodedUrl));
+      await controller.initialize();
 
-    await controller.initialize();
-
-    if (mounted) {
-      setState(() {
-        _controller = controller;
-      });
-
-      controller.addListener(_videoListener);
+      if (mounted) {
+        setState(() {
+          _controller = controller;
+        });
+        controller.addListener(_videoListener);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _controller = null);
     }
   }
 

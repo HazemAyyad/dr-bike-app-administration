@@ -11,6 +11,7 @@ import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
+import 'ledger_currency_chips.dart';
 
 class EditTransactionSheet extends StatefulWidget {
   final LedgerTransaction transaction;
@@ -29,6 +30,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   late DateTime selectedDate;
   bool isSaving = false;
   bool isLoadingBoxes = true;
+  late String selectedCurrency;
+  final RxList<ShownBoxesModel> allBoxes = <ShownBoxesModel>[].obs;
   final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
   final Rxn<ShownBoxesModel> selectedBox = Rxn<ShownBoxesModel>();
 
@@ -43,7 +46,18 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
         TextEditingController(text: tx.amount.toStringAsFixed(2));
     noteController = TextEditingController(text: tx.note ?? '');
     selectedDate = DateTime.tryParse(tx.transactionDate ?? '') ?? DateTime.now();
+    selectedCurrency = tx.currency;
     _loadBoxes(tx.boxId);
+  }
+
+  void _applyBoxFilter() {
+    shownBoxesList.assignAll(
+      allBoxes.where((b) => b.currency == selectedCurrency).toList(),
+    );
+    final box = selectedBox.value;
+    if (box != null && box.currency != selectedCurrency) {
+      selectedBox.value = null;
+    }
   }
 
   Future<void> _loadBoxes(int? currentBoxId) async {
@@ -52,13 +66,16 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
       boxesRepository: Get.find<BoxesImplement>(),
     );
     final boxes = await usecase.call(screen: 0);
-    shownBoxesList.assignAll(
-      boxes.where((b) => b.currency == 'شيكل').toList(),
-    );
+    allBoxes.assignAll(boxes);
+    _applyBoxFilter();
     if (currentBoxId != null) {
-      selectedBox.value = shownBoxesList.firstWhereOrNull(
+      selectedBox.value = allBoxes.firstWhereOrNull(
         (b) => b.boxId == currentBoxId,
       );
+      if (selectedBox.value != null) {
+        selectedCurrency = selectedBox.value!.currency;
+        _applyBoxFilter();
+      }
     }
     isLoadingBoxes = false;
     if (mounted) setState(() {});
@@ -84,6 +101,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
       id: widget.transaction.id,
       type: type,
       amount: amount.toStringAsFixed(2),
+      currency: selectedBox.value?.currency ?? selectedCurrency,
       transactionDate: DateFormat('yyyy-MM-dd').format(selectedDate),
       note: noteController.text.trim().isEmpty
           ? null
@@ -163,6 +181,16 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
+              ),
+              SizedBox(height: 12.h),
+              LedgerCurrencyChips(
+                selected: selectedCurrency,
+                onSelected: (currency) {
+                  setState(() {
+                    selectedCurrency = currency;
+                    _applyBoxFilter();
+                  });
+                },
               ),
               SizedBox(height: 12.h),
               if (_requiresBox) ...[

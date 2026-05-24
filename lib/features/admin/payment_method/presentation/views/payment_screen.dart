@@ -134,14 +134,7 @@ class PaymentScreen extends GetView<PaymentController> {
                     ),
                   ),
                   IconButton(
-                    onPressed: () =>
-                        Get.toNamed(AppRoutes.ADDNEWCUSTOMERSCREEN, arguments: {
-                      'sellerId': '',
-                      'employeeId': '',
-                      'employeeType': controller.selectedCustomersSellers.value
-                          ? 'customer'
-                          : 'seller',
-                    }),
+                    onPressed: () => controller.openAddPartnerScreen(),
                     icon: Icon(
                       Icons.add_circle_sharp,
                       color: AppColors.primaryColor,

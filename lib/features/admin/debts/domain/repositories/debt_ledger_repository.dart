@@ -13,6 +13,11 @@ abstract class DebtLedgerRepository {
     String? search,
     String? startDate,
     String? endDate,
+    String? currency,
+  });
+  Future<Either<Failure, List<LedgerPerson>>> getPeoplePicker({
+    required String type,
+    String? search,
   });
   Future<Either<Failure, String>> createPersonShareLink({
     int? customerId,
@@ -32,6 +37,7 @@ abstract class DebtLedgerRepository {
     int? sellerId,
     String? startDate,
     String? endDate,
+    String? currency,
   });
   Future<Either<Failure, LedgerCreateResult>> createTransaction({
     int? customerId,
@@ -39,6 +45,7 @@ abstract class DebtLedgerRepository {
     required String type,
     required String amount,
     required String transactionDate,
+    String? currency,
     String? note,
     String? boxId,
     List<File>? receiptImages,
@@ -49,6 +56,7 @@ abstract class DebtLedgerRepository {
     required String type,
     required String amount,
     required String transactionDate,
+    String? currency,
     String? note,
     String? boxId,
     List<File>? receiptImages,
@@ -58,10 +66,12 @@ abstract class DebtLedgerRepository {
   Future<Either<Failure, LedgerPersonArchiveDetail>> getPersonArchive({
     int? customerId,
     int? sellerId,
+    String? currency,
   });
   Future<Either<Failure, LedgerPersonArchiveDetail>> getPersonDeleted({
     int? customerId,
     int? sellerId,
+    String? currency,
   });
   Future<Either<Failure, void>> archiveTransactionsBulk(List<int> transactionIds);
   Future<Either<Failure, void>> restoreTransactionsBulk(List<int> transactionIds);
@@ -71,6 +81,7 @@ abstract class DebtLedgerRepository {
     String? period,
     String? startDate,
     String? endDate,
+    String? currency,
   });
   Future<Either<Failure, LedgerReportData>> generateReportJson({
     int? customerId,
@@ -78,5 +89,14 @@ abstract class DebtLedgerRepository {
     String? period,
     String? startDate,
     String? endDate,
+    String? currency,
+  });
+  Future<Either<Failure, List<LedgerActivityEntry>>> getTransactionActivity(
+    int transactionId,
+  );
+  Future<Either<Failure, List<LedgerActivityEntry>>> getPersonActivity({
+    int? customerId,
+    int? sellerId,
+    String? currency,
   });
 }

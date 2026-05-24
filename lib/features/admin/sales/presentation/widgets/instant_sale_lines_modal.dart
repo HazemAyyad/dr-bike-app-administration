@@ -13,6 +13,7 @@ import '../utils/instant_sale_display.dart';
 import '../utils/product_image_viewer.dart';
 import '../utils/sales_amount_format.dart';
 import 'instant_sale_audit_info.dart';
+import 'instant_sale_payment_totals_footer.dart';
 
 void showInstantSaleLinesModal(BuildContext context, InstantSalesModel sale) {
   showModalBottomSheet<void>(
@@ -140,37 +141,16 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
               )
             else
               Flexible(child: _buildLinesList(_invoice!, sale)),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(14.w),
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(16.r),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'total'.tr,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15.sp,
-                    ),
-                  ),
-                  Text(
-                    SalesAmountFormat.display(
-                      SalesAmountFormat.parse(sale.totalCost),
-                    ),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16.sp,
-                      color: AppColors.primaryColor,
-                    ),
-                  ),
-                ],
-              ),
+            InstantSalePaymentTotalsFooter(
+              total: _invoice != null
+                  ? SalesAmountFormat.parse(_invoice!.totalCost)
+                  : SalesAmountFormat.parse(sale.totalCost),
+              paid: _invoice != null
+                  ? SalesAmountFormat.parse(_invoice!.paidAmount)
+                  : sale.paidAmountValue,
+              remaining: _invoice != null
+                  ? SalesAmountFormat.parse(_invoice!.remainingAmount)
+                  : sale.remainingAmountValue,
             ),
           ],
         ),
@@ -181,28 +161,75 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
   Widget _buildLinesList(InvoiceModel invoice, InstantSalesModel sale) {
     final rows = <Widget>[];
 
-    rows.add(_LineRow(
-      context: context,
-      imageUrl: invoice.productImage,
-      name: invoice.displayProductTitle,
-      quantity: invoice.quantity,
-      unitPrice: invoice.cost,
-      badge: invoice.isPackageSale ? 'saleTypeOfferPackage'.tr : null,
-    ));
-
-    for (final sub in invoice.subProducts) {
-      rows.add(Divider(height: 1, color: Colors.grey.shade200));
+    if (invoice.isPackageSale) {
+      rows.add(_ModalPackageExpandable(invoice: invoice));
+      var extras = invoice.additionalProductLines;
+      if (extras.isEmpty && sale.additionalProductLines.isNotEmpty) {
+        extras = sale.additionalProductLines
+            .map(
+              (s) => SubProductModel(
+                id: s.id,
+                productName: s.productName,
+                productImage: 'no image',
+                cost: s.cost,
+                quantity: s.quantity,
+                subtotal: ((double.tryParse(s.cost) ?? 0) *
+                        (double.tryParse(s.quantity) ?? 0))
+                    .toStringAsFixed(2),
+                isPackageComponent: false,
+                isAdditionalProduct: true,
+              ),
+            )
+            .toList();
+      }
+      if (extras.isNotEmpty) {
+        rows.add(SizedBox(height: 12.h));
+        rows.add(
+          Padding(
+            padding: EdgeInsets.only(bottom: 6.h),
+            child: Text(
+              'instantSaleAdditionalProducts'.tr,
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryColor,
+              ),
+            ),
+          ),
+        );
+        for (final sub in extras) {
+          rows.add(Divider(height: 1, color: Colors.grey.shade200));
+          rows.add(_LineRow(
+            context: context,
+            imageUrl: sub.productImage,
+            name: sub.productName,
+            quantity: sub.quantity,
+            unitPrice: sub.cost,
+          ));
+        }
+      }
+    } else {
       rows.add(_LineRow(
         context: context,
-        imageUrl: sub.productImage,
-        name: sub.productName,
-        quantity: sub.quantity,
-        unitPrice: sub.cost,
-        isPackageComponent: invoice.isPackageSale,
+        imageUrl: invoice.productImage,
+        name: invoice.displayProductTitle,
+        quantity: invoice.quantity,
+        unitPrice: invoice.cost,
       ));
+
+      for (final sub in invoice.subProducts) {
+        rows.add(Divider(height: 1, color: Colors.grey.shade200));
+        rows.add(_LineRow(
+          context: context,
+          imageUrl: sub.productImage,
+          name: sub.productName,
+          quantity: sub.quantity,
+          unitPrice: sub.cost,
+        ));
+      }
     }
 
-    if (rows.isEmpty && !invoice.isPackageSale) {
+    if (rows.isEmpty) {
       for (final line in sale.lineItems) {
         rows.add(_LineRow(
           context: context,
@@ -210,7 +237,11 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
           name: line.name,
           quantity: line.quantity,
           unitPrice: line.unitCost,
-          badge: line.isPackageHeader ? 'saleTypeOfferPackage'.tr : null,
+          badge: line.isPackageHeader
+              ? 'instantSalePackageBadge'.tr
+              : line.isAdditionalProduct
+                  ? 'instantSaleAdditionalProducts'.tr
+                  : null,
         ));
       }
     }
@@ -223,6 +254,168 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
   }
 }
 
+class _ModalPackageExpandable extends StatefulWidget {
+  const _ModalPackageExpandable({required this.invoice});
+
+  final InvoiceModel invoice;
+
+  @override
+  State<_ModalPackageExpandable> createState() => _ModalPackageExpandableState();
+}
+
+class _ModalPackageExpandableState extends State<_ModalPackageExpandable> {
+  bool _expanded = false;
+
+  static const Color _accent = Color(0xFFE65100);
+  static const Color _bg = Color(0xFFFFF3E0);
+
+  @override
+  Widget build(BuildContext context) {
+    final invoice = widget.invoice;
+    final components = invoice.packageComponentLines;
+    final qty = SalesAmountFormat.parse(invoice.quantity);
+    final unit = SalesAmountFormat.parse(invoice.cost);
+    final lineTotal = qty * unit;
+    final url = ShowNetImage.getThumbnailPhoto(invoice.productImage);
+    final hasImage =
+        url.isNotEmpty && invoice.productImage.trim().isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFFFCC80)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(10.r),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (hasImage)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8.r),
+                      child: SizedBox(
+                        width: 48.w,
+                        height: 48.w,
+                        child: CachedNetworkImage(
+                          imageUrl: url,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.card_giftcard_rounded,
+                      color: _accent,
+                      size: 40.sp,
+                    ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 2.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _accent,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: Text(
+                            'instantSalePackageBadge'.tr,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          invoice.displayProductTitle,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          '${'quantity'.tr}: ${SalesAmountFormat.display(qty)} · '
+                          '${'price'.tr}: ${SalesAmountFormat.display(unit)} · '
+                          '${'total'.tr}: ${SalesAmountFormat.display(lineTotal)}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        if (!_expanded && components.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 4.h),
+                            child: Text(
+                              'packageContentsCount'.trParams({
+                                'count': '${components.length}',
+                              }),
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                color: _accent,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: _accent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded && components.isNotEmpty) ...[
+            Divider(height: 1, color: Colors.orange.shade200),
+            Padding(
+              padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
+              child: Text(
+                'packageContents'.tr,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                  color: _accent,
+                ),
+              ),
+            ),
+            ...components.map(
+              (sub) => Padding(
+                padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 8.h),
+                child: _LineRow(
+                  context: context,
+                  imageUrl: sub.productImage,
+                  name: sub.productName,
+                  quantity: sub.quantity,
+                  unitPrice: sub.cost,
+                  indent: true,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _LineRow extends StatelessWidget {
   final BuildContext context;
   final String imageUrl;
@@ -230,7 +423,7 @@ class _LineRow extends StatelessWidget {
   final String quantity;
   final String unitPrice;
   final String? badge;
-  final bool isPackageComponent;
+  final bool indent;
 
   const _LineRow({
     required this.context,
@@ -239,7 +432,7 @@ class _LineRow extends StatelessWidget {
     required this.quantity,
     required this.unitPrice,
     this.badge,
-    this.isPackageComponent = false,
+    this.indent = false,
   });
 
   @override
@@ -248,7 +441,11 @@ class _LineRow extends StatelessWidget {
     final unit = SalesAmountFormat.parse(unitPrice);
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 10.h),
+      padding: EdgeInsets.only(
+        left: indent ? 12.w : 0,
+        top: 10.h,
+        bottom: 10.h,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -266,18 +463,7 @@ class _LineRow extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.secondaryColor,
-                      ),
-                    ),
-                  ),
-                if (isPackageComponent)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 2.h),
-                    child: Text(
-                      'saleTypeOfferPackage'.tr,
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        color: Colors.grey.shade600,
+                        color: const Color(0xFFE65100),
                       ),
                     ),
                   ),

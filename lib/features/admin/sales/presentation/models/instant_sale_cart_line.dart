@@ -15,6 +15,9 @@ class InstantSaleCartLine {
   final RxBool isProjectSale;
   final RxnString projectId;
   final RxDouble lineTotal;
+  bool _disposed = false;
+
+  bool get isDisposed => _disposed;
 
   InstantSaleCartLine({
     required this.productId,
@@ -66,12 +69,22 @@ class InstantSaleCartLine {
   }
 
   void recalculateTotal() {
+    if (_disposed) return;
     final qty = SalesAmountFormat.parse(quantityController.text);
     final unit = SalesAmountFormat.parse(priceController.text);
     lineTotal.value = qty * unit;
   }
 
+  String get quantityText =>
+      _disposed ? '' : quantityController.text.trim();
+
+  String get priceText => _disposed ? '' : priceController.text.trim();
+
   void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    quantityController.removeListener(recalculateTotal);
+    priceController.removeListener(recalculateTotal);
     quantityController.dispose();
     priceController.dispose();
   }

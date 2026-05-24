@@ -11,11 +11,15 @@ class UploadTaskImageUsecase {
     required String taskId,
     required List<File> image,
     required bool isSubTask,
+    bool isOccurrenceSubtask = false,
+    bool isOccurrenceMain = false,
   }) {
     return employeeTasksRepository.uplodeTaskImage(
       taskId: taskId,
       image: image,
       isSubTask: isSubTask,
+      isOccurrenceSubtask: isOccurrenceSubtask,
+      isOccurrenceMain: isOccurrenceMain,
     );
   }
 }

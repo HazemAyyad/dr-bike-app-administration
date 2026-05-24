@@ -1,4 +1,3 @@
-import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -10,69 +9,82 @@ import 'package:doctorbike/features/admin/stock/data/models/offer_package_model.
 import '../../controllers/sales_controller.dart';
 import '../../utils/sales_amount_format.dart';
 
-class OfferPackageSaleWidget extends GetView<SalesController> {
-  const OfferPackageSaleWidget({Key? key}) : super(key: key);
+/// ملخص الباكيج المختار في شاشة الدفع (الاختيار من شاشة المنتجات).
+class OfferPackageCheckoutSection extends GetView<SalesController> {
+  const OfferPackageCheckoutSection({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final isPackage = controller.isPackageSale.value;
+      if (!controller.isPackageSale.value) {
+        return const SizedBox.shrink();
+      }
+
       final pkg = controller.selectedOfferPackage;
       final lineTotal = controller.packageLineTotal.value;
+
+      if (pkg == null) {
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 8.h),
+          child: Text(
+            'packageSelectFirst'.tr,
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: Colors.orange.shade800,
+            ),
+          ),
+        );
+      }
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: ChoiceChip(
-                  label: Text('item'.tr),
-                  selected: !isPackage,
-                  onSelected: (_) => controller.setPackageSaleMode(false),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: const Color(0xFFFFCC80)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.card_giftcard_rounded,
+                  color: const Color(0xFFE65100),
+                  size: 22.sp,
                 ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: ChoiceChip(
-                  label: Text('saleOfferPackage'.tr),
-                  selected: isPackage,
-                  onSelected: (_) => controller.setPackageSaleMode(true),
-                ),
-              ),
-            ],
-          ),
-          if (isPackage) ...[
-            SizedBox(height: 12.h),
-            DropdownSearch<OfferPackageModel>(
-              selectedItem: pkg,
-              items: (filter, _) => controller.offerPackagesForSale,
-              itemAsString: (p) =>
-                  '${p.name} — ${'unitPackagePrice'.tr}: ${p.price} (${'maxPackagesToSell'.tr}: ${p.maxSellableQuantity})',
-              compareFn: (a, b) => a.id == b.id,
-              onChanged: controller.onOfferPackageSelected,
-              decoratorProps: DropDownDecoratorProps(
-                decoration: InputDecoration(
-                  labelText: 'selectOfferPackage'.tr,
-                  filled: true,
-                  fillColor: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11.r),
-                    borderSide: BorderSide.none,
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'saleOfferPackage'.tr,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFFE65100),
+                        ),
+                      ),
+                      Text(
+                        pkg.name,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              popupProps: const PopupProps.menu(showSearchBox: true),
+              ],
             ),
-            SizedBox(height: 10.h),
-            _PackageSaleQuantityRow(
-              controller: controller,
-              pkg: pkg,
-              lineTotal: lineTotal,
-            ),
-          ],
+          ),
+          SizedBox(height: 10.h),
+          _PackageSaleQuantityRow(
+            controller: controller,
+            pkg: pkg,
+            lineTotal: lineTotal,
+          ),
         ],
       );
     });

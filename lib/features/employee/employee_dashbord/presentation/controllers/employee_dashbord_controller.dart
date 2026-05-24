@@ -12,12 +12,17 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/task_details_debug.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
 import '../../../../admin/employee_section/data/models/employee_attendance_history_model.dart';
+import '../../../../admin/employee_tasks/domain/usecases/upload_task_image_usecase.dart';
 import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks_controller.dart';
+import '../../../../../core/helpers/camera_capture_helper.dart';
+import '../../../../admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../../domain/usecases/change_task_completed_uasecase.dart';
 import '../../domain/usecases/get_employee_data_usecase.dart';
@@ -29,6 +34,7 @@ class EmployeeDashbordController extends GetxController
   final RequestOverTimeLoanUsecase requestOverTimeLoanUsecase;
   final GetEmployeeDataUsecase getEmployeeDataUsecase;
   final ChangeTaskCompletedUasecase changeTaskCompletedUasecase;
+  final UploadTaskImageUsecase uploadTaskImageUsecase;
   final GetDebtsReportsUsecase getDebtsReports;
   final GetMyAttendanceHistoryUsecase getMyAttendanceHistoryUsecase;
 
@@ -36,6 +42,7 @@ class EmployeeDashbordController extends GetxController
     required this.requestOverTimeLoanUsecase,
     required this.getEmployeeDataUsecase,
     required this.changeTaskCompletedUasecase,
+    required this.uploadTaskImageUsecase,
     required this.getDebtsReports,
     required this.getMyAttendanceHistoryUsecase,
   });
@@ -281,71 +288,188 @@ class EmployeeDashbordController extends GetxController
   }
 
   final RxBool isTaskLoading = false.obs;
+  final Rxn<int> completingTaskId = Rxn<int>();
 
-// change task to completed
-  void changeTaskToCompleted({
+  /// Camera-only proof then mark complete (from list checkbox).
+  Future<void> completeTaskWithCameraProof(
+    BuildContext context,
+    Task task,
+  ) async {
+    final file = await CameraCaptureHelper.captureProof(context);
+    if (file == null) return;
+
+    completingTaskId.value = task.id;
+    final uploadResult = await uploadTaskImageUsecase.call(
+      isSubTask: false,
+      taskId: task.id.toString(),
+      image: [file],
+    );
+
+    final uploaded = await uploadResult.fold<Future<bool>>(
+      (failure) async {
+        Get.snackbar(
+          'error'.tr,
+          failure.data?['message']?.toString() ?? failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      },
+      (_) async => true,
+    );
+
+    completingTaskId.value = null;
+    if (!uploaded) return;
+
+    changeTaskToCompleted(
+      context: context,
+      isSubTask: false,
+      taskId: task.id,
+      task: task,
+    );
+  }
+
+  /// Load the correct task, then open details (avoids showing a previous task).
+  Future<void> openTaskDetails(Task task) async {
+    if (!Get.isRegistered<EmployeeTasksController>()) {
+      EmployeeTasksBinding().dependencies();
+    }
+    final tasksCtrl = Get.find<EmployeeTasksController>();
+    final occurrenceId = task.isOccurrence
+        ? (task.occurrenceId ?? task.id).toString()
+        : null;
+
+    TaskDetailsDebug.tap(
+      source: 'EmployeeDashbordController.openTaskDetails',
+      taskId: task.taskId.toString(),
+      occurrenceId: occurrenceId,
+      taskName: task.name,
+      status: task.status,
+    );
+
+    try {
+      await tasksCtrl.getTaskDetails(
+        taskId: task.taskId.toString(),
+        occurrenceId: occurrenceId,
+      );
+    } catch (e) {
+      TaskDetailsDebug.fail('openTaskDetails_exception', detail: e.toString());
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (tasksCtrl.employeeTaskService.taskDetails.value == null) {
+      TaskDetailsDebug.fail(
+        'openTaskDetails_null_after_load',
+        detail: {
+          'taskId': task.taskId,
+          'occurrenceId': occurrenceId,
+        },
+      );
+      Get.snackbar(
+        'error'.tr,
+        'errorLoadingTaskDetails'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    await Get.toNamed(
+      AppRoutes.TASKDETAILS,
+      arguments: {
+        'taskId': task.taskId.toString(),
+        if (occurrenceId != null && occurrenceId.isNotEmpty)
+          'occurrence_id': occurrenceId,
+        'EmployeeDashbordController': this,
+      },
+    );
+    await getEmployeeData(scrollToTodayb: false);
+  }
+
+  int? _occurrenceIdFor(Task? task) {
+    if (task == null || !task.isOccurrence) return null;
+    return task.occurrenceId ?? task.id;
+  }
+
+  /// Mark task or subtask complete (legacy row or v2 occurrence).
+  Future<void> changeTaskToCompleted({
     required BuildContext context,
     required bool isSubTask,
     required int taskId,
     String? mainTaskId,
+    String? reloadOccurrenceId,
+    Task? task,
   }) async {
+    final isOccurrence = task?.isOccurrence ?? false;
+    final occurrenceId = _occurrenceIdFor(task);
+    final isOccurrenceSubtask = isSubTask &&
+        reloadOccurrenceId != null &&
+        reloadOccurrenceId.isNotEmpty;
+    completingTaskId.value = isSubTask ? taskId : (task?.id ?? taskId);
     isTaskLoading(true);
-    final result = await changeTaskCompletedUasecase.call(
-      isSubTask: isSubTask,
-      taskId: taskId,
-    );
-    result.fold(
-      (failure) {
-        String errorMessages = '';
-        bool data = false;
-        final errors = failure.data?['errors'] as Map<String, dynamic>?;
-        if (errors != null) {
-          errors.forEach((key, value) {
-            if (key.startsWith('permissions')) {
-              if (!data) {
-                errorMessages += "Permissions: ${value.first}\n";
-                data = true;
+    try {
+      final result = await changeTaskCompletedUasecase.call(
+        isSubTask: isSubTask,
+        taskId: taskId,
+        isOccurrence: isOccurrence || isOccurrenceSubtask,
+        occurrenceId: isSubTask ? null : occurrenceId,
+      );
+      await result.fold(
+        (failure) async {
+          String errorMessages = '';
+          var permissionsShown = false;
+          final errors = failure.data?['errors'] as Map<String, dynamic>?;
+          if (errors != null) {
+            errors.forEach((key, value) {
+              if (key.startsWith('permissions')) {
+                if (!permissionsShown) {
+                  errorMessages += "Permissions: ${value.first}\n";
+                  permissionsShown = true;
+                }
+              } else {
+                for (var msg in value) {
+                  errorMessages += "- $key: $msg\n";
+                }
               }
-            } else {
-              for (var msg in value) {
-                errorMessages += "- $key: $msg\n";
-              }
-            }
-          });
-        } else {
-          errorMessages = failure.data?['message'] ?? failure.errMessage;
-        }
-        Get.snackbar(
-          'error'.tr,
-          errorMessages,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
-        );
-      },
-      (success) {
-        Get.closeAllSnackbars();
-        // Get.back();
-        if (mainTaskId != null) {
-          Get.find<EmployeeTasksController>()
-              .getTaskDetails(taskId: mainTaskId.toString());
-        }
-        // Get.back();
-        Future.delayed(
-          const Duration(milliseconds: 1000),
-          () {
-            getEmployeeData(scrollToTodayb: false);
-            // Get.back();
-          },
-        );
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1000),
-        );
-      },
-    );
-    isTaskLoading(false);
+            });
+          } else {
+            errorMessages = failure.data?['message'] ?? failure.errMessage;
+          }
+          Get.snackbar(
+            'error'.tr,
+            errorMessages,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(milliseconds: 1000),
+          );
+        },
+        (success) async {
+          Get.closeAllSnackbars();
+          if (mainTaskId != null &&
+              Get.isRegistered<EmployeeTasksController>()) {
+            await Get.find<EmployeeTasksController>().getTaskDetails(
+              taskId: mainTaskId,
+              occurrenceId: reloadOccurrenceId,
+            );
+          }
+          Future.delayed(
+            const Duration(milliseconds: 1000),
+            () => getEmployeeData(scrollToTodayb: false),
+          );
+          Get.snackbar(
+            'success'.tr,
+            success,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(milliseconds: 1000),
+          );
+        },
+      );
+    } finally {
+      completingTaskId.value = null;
+      isTaskLoading(false);
+    }
   }
 
   // get employee data
@@ -353,10 +477,28 @@ class EmployeeDashbordController extends GetxController
   final Map<String, List<Task>> tasksData = {};
   final Map<String, List<Task>> tasksDataFilter = {};
 
-  void getEmployeeData({bool scrollToTodayb = true}) async {
+  Future<void> getEmployeeData({bool scrollToTodayb = true}) async {
     employeeData.value != null ? isLoading(false) : isLoading(true);
     final result = await getEmployeeDataUsecase.call();
-    employeeData.value = result;
+    final summary = result.todayTasksSummary.total > 0
+        ? result.todayTasksSummary
+        : TodayTasksSummary.fromTasks(result.tasks);
+    employeeData.value = DashbordEmployeeDetailsModel(
+      id: result.id,
+      userId: result.userId,
+      numberOfWorkHours: result.numberOfWorkHours,
+      hourWorkPrice: result.hourWorkPrice,
+      debts: result.debts,
+      salary: result.salary,
+      points: result.points,
+      startWorkTime: result.startWorkTime,
+      endWorkTime: result.endWorkTime,
+      totalWorkHours: result.totalWorkHours,
+      permissions: result.permissions,
+      user: result.user,
+      tasks: result.tasks,
+      todayTasksSummary: summary,
+    );
     isLoading(false);
     tasksData.clear();
     tasksDataFilter.clear();
@@ -368,9 +510,13 @@ class EmployeeDashbordController extends GetxController
         tasksData[dateKey]!.add(task);
       }
     }
+    syncPeriodBounds();
     tasksDataFilter.assignAll(filterByRange(tasksData));
     update();
     refreshTodayAttendance();
+    if (scrollToTodayb) {
+      Future.delayed(const Duration(milliseconds: 400), scrollToToday);
+    }
   }
 
   // download report
@@ -433,28 +579,84 @@ class EmployeeDashbordController extends GetxController
     }
   }
 
+  static const String tasksViewDaily = 'daily';
+  static const String tasksViewWeekly = 'weekly';
+  static const String tasksViewMonthly = 'monthly';
+
+  final RxString tasksViewMode = tasksViewDaily.obs;
+
   DateTime startDate = DateTime.now();
   DateTime endDate = DateTime.now();
 
+  static String dateKeyFrom(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  String get periodLabel {
+    if (tasksViewMode.value == tasksViewDaily) {
+      return DateFormat('EEEE, d/M/yyyy', Get.locale?.languageCode)
+          .format(startDate);
+    }
+    return '${DateFormat('d/M/yyyy').format(startDate)} — ${DateFormat('d/M/yyyy').format(endDate)}';
+  }
+
+  int get _periodDayCount => endDate.difference(startDate).inDays + 1;
+
+  void syncPeriodBounds({DateTime? anchor}) {
+    final ref = anchor ?? DateTime.now();
+    final day = DateTime(ref.year, ref.month, ref.day);
+    switch (tasksViewMode.value) {
+      case tasksViewDaily:
+        startDate = day;
+        endDate = day;
+        break;
+      case tasksViewMonthly:
+        startDate = DateTime(day.year, day.month, 1);
+        endDate = DateTime(day.year, day.month + 1, 0);
+        break;
+      case tasksViewWeekly:
+      default:
+        startDate = getStartOfWeek(day);
+        endDate = startDate.add(const Duration(days: 6));
+        break;
+    }
+  }
+
   Map<String, List<Task>> filterByRange(Map<String, List<Task>> source) {
     final filtered = <String, List<Task>>{};
-
-    // نضمن إن الأسبوع دايمًا 7 أيام من السبت للجمعة
-    for (int i = 0; i < 7; i++) {
-      final currentDay = startDate.add(Duration(days: i));
-      final dateKey =
-          "${currentDay.year}-${currentDay.month.toString().padLeft(2, '0')}-${currentDay.day.toString().padLeft(2, '0')}";
-
-      // لو اليوم موجود في الـ source نضيف المهام، لو مش موجود نحط لستة فاضية
+    for (int i = 0; i < _periodDayCount; i++) {
+      final currentDay = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+      ).add(Duration(days: i));
+      final dateKey = dateKeyFrom(currentDay);
       filtered[dateKey] = List<Task>.from(source[dateKey] ?? []);
     }
-
-    // الترتيب تنازليًا (اختياري)
-    return LinkedHashMap.fromEntries(
-      filtered.entries.toList()
-        ..sort(
-            (a, b) => DateTime.parse(b.key).compareTo(DateTime.parse(a.key))),
+    return LinkedHashMap.fromIterable(
+      orderedDisplayKeys(filtered.keys.toList()),
+      key: (k) => k as String,
+      value: (k) => filtered[k]!,
     );
+  }
+
+  List<String> orderedDisplayKeys(List<String> keys) {
+    if (keys.isEmpty) return [];
+    final today = dateKeyFrom(DateTime.now());
+    final entries = keys.map((k) => MapEntry(k, DateTime.parse(k))).toList();
+    final todayEntry = entries.where((e) => e.key == today).toList();
+    final future = entries
+        .where((e) => e.key != today && !e.value.isBefore(DateTime.parse(today)))
+        .toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    final past = entries
+        .where((e) => e.value.isBefore(DateTime.parse(today)))
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return [
+      ...todayEntry.map((e) => e.key),
+      ...future.map((e) => e.key),
+      ...past.map((e) => e.key),
+    ];
   }
 
   void filterDataByDateRange() {
@@ -462,18 +664,49 @@ class EmployeeDashbordController extends GetxController
     update();
   }
 
-  void changeWeek(bool isNext) {
-    const int daysInWeek = 7;
-    if (isNext) {
-      startDate = startDate.add(const Duration(days: daysInWeek));
-    } else {
-      startDate = startDate.subtract(const Duration(days: daysInWeek));
+  void setTasksViewMode(String mode) {
+    tasksViewMode.value = mode;
+    syncPeriodBounds(anchor: DateTime.now());
+    filterDataByDateRange();
+    scrollToToday();
+    update();
+  }
+
+  void changePeriod(bool isNext) {
+    switch (tasksViewMode.value) {
+      case tasksViewDaily:
+        startDate = isNext
+            ? startDate.add(const Duration(days: 1))
+            : startDate.subtract(const Duration(days: 1));
+        endDate = startDate;
+        break;
+      case tasksViewMonthly:
+        final m = DateTime(startDate.year, startDate.month + (isNext ? 1 : -1), 1);
+        startDate = m;
+        endDate = DateTime(m.year, m.month + 1, 0);
+        break;
+      case tasksViewWeekly:
+      default:
+        startDate = isNext
+            ? startDate.add(const Duration(days: 7))
+            : startDate.subtract(const Duration(days: 7));
+        endDate = startDate.add(const Duration(days: 6));
+        break;
     }
-    // دايمًا نهاية الأسبوع بعد 6 أيام من البداية
-    endDate = startDate.add(const Duration(days: 6));
-    // بعد ما نحدث النطاق نفلتر الداتا
     filterDataByDateRange();
     update();
+  }
+
+  void changeWeek(bool isNext) => changePeriod(isNext);
+
+  void openTasksTab() {
+    if (Get.isRegistered<BottomNavBarController>()) {
+      Get.find<BottomNavBarController>().changePage(1);
+    }
+  }
+
+  void openMyAttendanceHistory() {
+    Get.toNamed(AppRoutes.MYATTENDANCEHISTORY);
   }
 
   DateTime getStartOfWeek(DateTime date) {
@@ -505,8 +738,7 @@ class EmployeeDashbordController extends GetxController
     if (Get.isRegistered<EmployeeNotificationBadgeController>()) {
       unawaited(Get.find<EmployeeNotificationBadgeController>().refresh());
     }
-    startDate = getStartOfWeek(DateTime.now());
-    endDate = startDate.add(const Duration(days: 6));
+    syncPeriodBounds();
     _loadStartTime();
     getEmployeeData(scrollToTodayb: false);
     animController = AnimationController(

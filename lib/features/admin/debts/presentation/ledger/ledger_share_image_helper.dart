@@ -51,6 +51,7 @@ class LedgerShareImageHelper {
     required String takenLabel,
     required String givenLabel,
     required String transactionsWord,
+    String currency = 'شيكل',
   }) async {
     try {
       return await _controller.captureFromWidget(
@@ -70,6 +71,7 @@ class LedgerShareImageHelper {
               takenLabel: takenLabel,
               givenLabel: givenLabel,
               transactionsWord: transactionsWord,
+              currency: currency,
             ),
           ),
         ),

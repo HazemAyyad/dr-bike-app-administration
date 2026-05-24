@@ -9,26 +9,32 @@ import '../../../../../../core/utils/app_colors.dart';
 import '../../controllers/sales_controller.dart';
 import '../../utils/product_image_viewer.dart';
 import '../../utils/sales_amount_format.dart';
-import 'instant_sale_add_product_modal.dart';
+import 'instant_sale_package_cart_row.dart';
 
+/// ملخص أصناف السلة (باكيج + منتجات).
 class InstantSaleCartTable extends GetView<SalesController> {
-  const InstantSaleCartTable({Key? key}) : super(key: key);
+  const InstantSaleCartTable({
+    Key? key,
+    this.editablePackageQty = false,
+  }) : super(key: key);
+
+  final bool editablePackageQty;
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.cartLines.isEmpty) {
-        return Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: 28.h, horizontal: 16.w),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12.r),
-          ),
+      final _ = controller.cartRevision.value;
+      final __ = controller.selectedPackageId.value;
+      final hasPackage = controller.hasSelectedPackage;
+      final productLines = controller.cartLines;
+
+      if (!hasPackage && productLines.isEmpty) {
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 16.h),
           child: Text(
             'instantSaleCartEmpty'.tr,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 14.sp),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13.sp),
           ),
         );
       }
@@ -38,106 +44,121 @@ class InstantSaleCartTable extends GetView<SalesController> {
           ? AppColors.customGreyColor
           : const Color(0xFFEEF4FF);
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 10.h),
-            decoration: BoxDecoration(
-              color: headerBg,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
-              border: Border.all(color: Colors.grey.shade300),
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(8.r),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: headerBg,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(7.r)),
+              ),
+              child: Row(
+                children: [
+                  _header('item', 4, start: true),
+                  _header('quantity', 2),
+                  _header('price', 2),
+                  _header('total', 2),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                _headerCell('item', 5, alignStart: true),
-                _headerCell('quantity', 2),
-                _headerCell('price', 2),
-                _headerCell('total', 2),
-                SizedBox(width: 32.w),
-              ],
-            ),
-          ),
-          ...List.generate(controller.cartLines.length, (index) {
-            final line = controller.cartLines[index];
-            return Obx(
-              () => Material(
-                color: isDark ? AppColors.customGreyColor4 : Colors.white,
-                child: Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 4.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(color: Colors.grey.shade300),
-                      right: BorderSide(color: Colors.grey.shade300),
-                      bottom: BorderSide(color: Colors.grey.shade300),
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _thumb(context, line.imageUrl),
-                            SizedBox(width: 4.w),
-                            Expanded(
-                              child: Text(
-                                line.productName,
-                                softWrap: true,
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
-                                ),
+            if (hasPackage)
+              InstantSalePackageCartRow(
+                compact: true,
+                editable: editablePackageQty,
+              ),
+            ...List.generate(productLines.length, (index) {
+              final line = productLines[index];
+              if (line.isDisposed) return const SizedBox.shrink();
+              final qty = line.quantityText;
+              final price = line.priceText;
+              final total = line.lineTotal.value;
+              final isLast = index == productLines.length - 1;
+
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.customGreyColor4 : Colors.white,
+                  border: isLast
+                      ? null
+                      : Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Row(
+                        children: [
+                          _thumb(context, line.imageUrl),
+                          SizedBox(width: 6.w),
+                          Expanded(
+                            child: Text(
+                              line.productName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w600,
+                                height: 1.2,
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        qty.isEmpty ? '—' : qty,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11.sp),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        price.isEmpty
+                            ? '—'
+                            : SalesAmountFormat.display(
+                                SalesAmountFormat.parse(price),
+                              ),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11.sp),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        SalesAmountFormat.display(total),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryColor,
                         ),
                       ),
-                      Expanded(
-                        flex: 2,
-                        child: _numericCell(line.quantityController.text),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: _numericCell(line.priceController.text),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: _numericCell(
-                          SalesAmountFormat.display(line.lineTotal.value),
-                          highlight: true,
-                        ),
-                      ),
-                      _lineMenu(
-                        context: context,
-                        onEdit: () => showInstantSaleAddProductModal(
-                          context,
-                          editLine: line,
-                          editIndex: index,
-                        ),
-                        onDelete: () => controller.removeCartLine(index),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ),
-            );
-          }),
-        ],
+              );
+            }),
+          ],
+        ),
       );
     });
   }
 
-  Widget _headerCell(String key, int flex, {bool alignStart = false}) {
+  Widget _header(String key, int flex, {bool start = false}) {
     return Expanded(
       flex: flex,
       child: Text(
         key.tr,
-        textAlign: alignStart ? TextAlign.start : TextAlign.center,
+        textAlign: start ? TextAlign.start : TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
@@ -149,66 +170,6 @@ class InstantSaleCartTable extends GetView<SalesController> {
     );
   }
 
-  Widget _numericCell(String text, {bool highlight = false}) {
-    return Padding(
-      padding: EdgeInsets.only(top: 2.h, left: 1.w, right: 1.w),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.center,
-        child: Text(
-          text,
-          maxLines: 1,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 11.sp,
-            fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
-            color: highlight ? AppColors.primaryColor : null,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _lineMenu({
-    required BuildContext context,
-    required VoidCallback onEdit,
-    required VoidCallback onDelete,
-  }) {
-    return SizedBox(
-      width: 32.w,
-      child: PopupMenuButton<String>(
-        padding: EdgeInsets.zero,
-        iconSize: 18.sp,
-        splashRadius: 18.r,
-        constraints: BoxConstraints(minWidth: 28.w, minHeight: 28.w),
-        icon: Icon(Icons.more_vert, size: 18.sp, color: Colors.grey.shade700),
-      onSelected: (value) {
-        if (value == 'edit') {
-          onEdit();
-        } else if (value == 'delete') {
-          onDelete();
-        }
-      },
-      itemBuilder: (ctx) => [
-        PopupMenuItem<String>(
-          value: 'edit',
-          child: Text(
-            'edit'.tr,
-            style: TextStyle(fontSize: 13.sp, color: Colors.black87),
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'delete',
-          child: Text(
-            'delete'.tr,
-            style: TextStyle(fontSize: 13.sp, color: Colors.red),
-          ),
-        ),
-      ],
-      ),
-    );
-  }
-
   Widget _thumb(BuildContext context, String imageUrl) {
     final url = ShowNetImage.getThumbnailPhoto(imageUrl);
     final ok = url.isNotEmpty && imageUrl != 'no image';
@@ -216,17 +177,19 @@ class InstantSaleCartTable extends GetView<SalesController> {
     return GestureDetector(
       onTap: () => openProductImageViewer(context, imageUrl),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(6.r),
-        child: Container(
-          width: 32.w,
-          height: 32.w,
-          color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(4.r),
+        child: SizedBox(
+          width: 28.w,
+          height: 28.w,
           child: ok
               ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover)
-              : Icon(
-                  Icons.inventory_2_outlined,
-                  size: 18.sp,
-                  color: Colors.grey,
+              : ColoredBox(
+                  color: Colors.grey.shade200,
+                  child: Icon(
+                    Icons.inventory_2_outlined,
+                    size: 14.sp,
+                    color: Colors.grey,
+                  ),
                 ),
         ),
       ),

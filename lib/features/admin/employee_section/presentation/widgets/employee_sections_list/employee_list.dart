@@ -59,6 +59,61 @@ class EmployeeList extends GetView<EmployeeSectionController> {
     );
   }
 
+  Future<void> _confirmImpersonate(BuildContext context) async {
+    final isDark = ThemeService.isDark.value;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        backgroundColor:
+            isDark ? AppColors.customGreyColor : const Color(0xFFF3F4F6),
+        title: Text(
+          'impersonateConfirmTitle'.tr,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : const Color(0xFF1F2937),
+          ),
+        ),
+        content: Text(
+          'impersonateConfirmBody'
+              .trParams({'name': employee.employeeName}),
+          style: TextStyle(
+            fontSize: 13.sp,
+            color: isDark ? AppColors.customGreyColor5 : const Color(0xFF4B5563),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'cancel'.tr,
+              style: TextStyle(
+                color: isDark ? AppColors.customGreyColor5 : const Color(0xFF6B7280),
+              ),
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.operationalPurple,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('impersonateConfirmAction'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await controller.impersonateEmployee(context, employee);
+    }
+  }
+
   Future<bool> _confirmDelete(BuildContext context) async {
     final isDark = ThemeService.isDark.value;
     final result = await showDialog<bool>(
@@ -179,6 +234,25 @@ class EmployeeList extends GetView<EmployeeSectionController> {
               ],
             ),
           ),
+          Obx(() {
+            final busy =
+                controller.impersonatingEmployeeId.value == employee.id;
+            return IconButton(
+              tooltip: 'impersonateEmployee'.tr,
+              onPressed: busy ? null : () => _confirmImpersonate(context),
+              icon: busy
+                  ? SizedBox(
+                      width: 22.sp,
+                      height: 22.sp,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      Icons.switch_account_rounded,
+                      color: AppColors.operationalPurple,
+                      size: 22.sp,
+                    ),
+            );
+          }),
           _PointsBadge(employee: employee),
         ],
       ),

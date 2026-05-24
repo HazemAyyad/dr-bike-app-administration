@@ -43,6 +43,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     String? search,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -53,6 +54,34 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         search: search,
         startDate: startDate,
         endDate: endDate,
+        currency: currency,
+      );
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      final people = (data['people'] as List<dynamic>? ?? [])
+          .map((e) => LedgerPerson.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return Right(people);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(
+          e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<LedgerPerson>>> getPeoplePicker({
+    required String type,
+    String? search,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final data = await datasource.getPeoplePicker(
+        type: type,
+        search: search,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(
@@ -133,6 +162,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     int? sellerId,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -143,6 +173,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         sellerId: sellerId,
         startDate: startDate,
         endDate: endDate,
+        currency: currency,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(
@@ -162,6 +193,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     required String type,
     required String amount,
     required String transactionDate,
+    String? currency,
     String? note,
     String? boxId,
     List<File>? receiptImages,
@@ -176,6 +208,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         type: type,
         amount: amount,
         transactionDate: transactionDate,
+        currency: currency,
         note: note,
         boxId: boxId,
         receiptImages: receiptImages,
@@ -216,6 +249,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     required String type,
     required String amount,
     required String transactionDate,
+    String? currency,
     String? note,
     String? boxId,
     List<File>? receiptImages,
@@ -229,6 +263,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         type: type,
         amount: amount,
         transactionDate: transactionDate,
+        currency: currency,
         note: note,
         boxId: boxId,
         receiptImages: receiptImages,
@@ -249,6 +284,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
   Future<Either<Failure, LedgerPersonArchiveDetail>> getPersonArchive({
     int? customerId,
     int? sellerId,
+    String? currency,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -257,6 +293,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       final data = await datasource.getPersonArchive(
         customerId: customerId,
         sellerId: sellerId,
+        currency: currency,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(
@@ -273,6 +310,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
   Future<Either<Failure, LedgerPersonArchiveDetail>> getPersonDeleted({
     int? customerId,
     int? sellerId,
+    String? currency,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -281,6 +319,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       final data = await datasource.getPersonDeleted(
         customerId: customerId,
         sellerId: sellerId,
+        currency: currency,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(
@@ -376,6 +415,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     String? period,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -387,6 +427,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         period: period,
         startDate: startDate,
         endDate: endDate,
+        currency: currency,
       );
       return Right(bytes);
     } on ServerException catch (e) {
@@ -402,6 +443,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     String? period,
     String? startDate,
     String? endDate,
+    String? currency,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -413,12 +455,66 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         period: period,
         startDate: startDate,
         endDate: endDate,
+        currency: currency,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(
             data['message']?.toString() ?? 'error', data['data'] ?? {}));
       }
       return Right(LedgerReportData.fromJson(data));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(
+          e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  List<LedgerActivityEntry> _parseActivityList(Map<String, dynamic> data) {
+    final list = data['activity'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => LedgerActivityEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<Either<Failure, List<LedgerActivityEntry>>> getTransactionActivity(
+    int transactionId,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final data = await datasource.getTransactionActivity(transactionId);
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      return Right(_parseActivityList(data));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(
+          e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<LedgerActivityEntry>>> getPersonActivity({
+    int? customerId,
+    int? sellerId,
+    String? currency,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final data = await datasource.getPersonActivity(
+        customerId: customerId,
+        sellerId: sellerId,
+        currency: currency,
+      );
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      return Right(_parseActivityList(data));
     } on ServerException catch (e) {
       return Left(ServerFailure(
           e.errorModel.errorMessage, e.errorModel.data));

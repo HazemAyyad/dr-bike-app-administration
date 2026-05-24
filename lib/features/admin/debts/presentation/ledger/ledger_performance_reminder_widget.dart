@@ -21,6 +21,7 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
   final String takenLabel;
   final String givenLabel;
   final String transactionsWord;
+  final String currency;
 
   const LedgerPerformanceReminderWidget({
     Key? key,
@@ -35,6 +36,7 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
     required this.takenLabel,
     required this.givenLabel,
     required this.transactionsWord,
+    this.currency = 'شيكل',
   }) : super(key: key);
 
   @override
@@ -78,7 +80,11 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
                           const Color(0xFF1A3A6B)),
                       const SizedBox(height: 10),
                       _line(
-                        LedgerFormat.shekel2(displayBalance),
+                        LedgerFormat.money(
+                          displayBalance,
+                          currency: currency,
+                          fractionDigits: 2,
+                        ),
                         40,
                         FontWeight.bold,
                         balanceColor,
@@ -94,6 +100,7 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
                               count: givenCount,
                               label: givenLabel,
                               transactionsWord: transactionsWord,
+                              currency: currency,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -105,6 +112,7 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
                               count: takenCount,
                               label: takenLabel,
                               transactionsWord: transactionsWord,
+                              currency: currency,
                             ),
                           ),
                         ],
@@ -153,6 +161,7 @@ class _SummaryColumn extends StatelessWidget {
   final int count;
   final String label;
   final String transactionsWord;
+  final String currency;
 
   const _SummaryColumn({
     required this.color,
@@ -161,6 +170,7 @@ class _SummaryColumn extends StatelessWidget {
     required this.count,
     required this.label,
     required this.transactionsWord,
+    required this.currency,
   });
 
   @override
@@ -170,7 +180,11 @@ class _SummaryColumn extends StatelessWidget {
         Icon(icon, color: color, size: 22),
         const SizedBox(height: 4),
         Text(
-          LedgerFormat.shekel1(amount),
+          LedgerFormat.money(
+            amount,
+            currency: currency,
+            fractionDigits: 1,
+          ),
           textDirection: TextDirection.rtl,
           style: TextStyle(
             fontSize: 16,

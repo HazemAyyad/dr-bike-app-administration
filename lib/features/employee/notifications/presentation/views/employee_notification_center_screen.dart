@@ -177,13 +177,38 @@ class EmployeeNotificationCenterScreen
                                 icon: const Icon(Icons.delete_outline),
                                 onPressed: controller.isBusyAction.value
                                     ? null
-                                    : () {
-                                        if (id != null) {
-                                          final parsedId =
-                                              int.tryParse(id.toString());
-                                          if (parsedId != null) {
-                                            controller.deleteOne(parsedId);
-                                          }
+                                    : () async {
+                                        if (id == null) return;
+                                        final parsedId =
+                                            int.tryParse(id.toString());
+                                        if (parsedId == null) return;
+                                        final ok = await Get.dialog<bool>(
+                                          AlertDialog(
+                                            title: Text('confirmDelete'.tr),
+                                            content: Text(
+                                              'deleteNotificationConfirm'.tr,
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Get.back(result: false),
+                                                child: Text('cancel'.tr),
+                                              ),
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Get.back(result: true),
+                                                child: Text(
+                                                  'delete'.tr,
+                                                  style: const TextStyle(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (ok == true) {
+                                          await controller.deleteOne(parsedId);
                                         }
                                       },
                               ),

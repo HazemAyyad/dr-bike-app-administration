@@ -11,11 +11,21 @@ import '../../../../../../core/databases/api/end_points.dart';
 import '../../../../../../core/errors/error_model.dart';
 import '../../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../presentation/helpers/recurrence_config_helper.dart';
 
 class CreateEmployeeTasksDatasource {
   final ApiConsumer api;
 
   CreateEmployeeTasksDatasource({required this.api});
+
+  /// Laravel expects indexed keys (`employee_ids[0]`, …), not a single `employee_ids[]` array.
+  static Map<String, dynamic> employeeIdsFormFields(List<String> ids) {
+    final map = <String, dynamic>{};
+    for (var i = 0; i < ids.length; i++) {
+      map['employee_ids[$i]'] = ids[i];
+    }
+    return map;
+  }
 
   // create employee task
   Future<Map<String, dynamic>> creatEmployeeTasks({
@@ -24,6 +34,7 @@ class CreateEmployeeTasksDatasource {
     required String description,
     required String notes,
     required String employeeId,
+    List<String> employeeIds = const [],
     required String points,
     required DateTime startTime,
     required DateTime endTime,
@@ -32,8 +43,13 @@ class CreateEmployeeTasksDatasource {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
+    required String requiresAdminReview,
     required List<File> adminImg,
     required File audio,
+    String? priority,
+    Map<String, dynamic>? recurrenceConfig,
+    int? templateId,
+    int? occurrenceId,
   }) async {
     try {
       final subEmployeeTasksMap = <String, dynamic>{};
@@ -51,6 +67,8 @@ class CreateEmployeeTasksDatasource {
             task['subTaskdescription'] ?? '';
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
             task['imageIsRequired'] == true ? 1 : 0;
+        subEmployeeTasksMap['sub_employee_tasks[$i][bonus_points]'] =
+            task['bonusPoints'] ?? 0;
 
         // لا نرسل صور الشبكة عند التعديل — تبقى على السيرفر ما لم يُرفع ملف جديد
         final imgList = task['subTaskImage'];
@@ -79,24 +97,38 @@ class CreateEmployeeTasksDatasource {
           }
         }
       }
+      final configMap = recurrenceConfig ?? <String, dynamic>{};
+      final isEdit = employeeTaskId != 0;
+      final multiAssign = employeeIds.length > 1;
+      final useV2 = !multiAssign &&
+          (isEdit
+              ? (templateId != null && templateId > 0)
+              : taskRecurrence != 'noRepeat' && taskRecurrence.isNotEmpty);
+
       final response = await api.post(
-        employeeTaskId != 0
-            ? EndPoints.editEmployeeTask
-            : EndPoints.createEmployeeTask,
+        isEdit ? EndPoints.editEmployeeTask : EndPoints.createEmployeeTask,
         data: {
-          if (employeeTaskId != 0) 'employee_task_id': employeeTaskId,
+          if (isEdit) 'employee_task_id': employeeTaskId,
+          if (templateId != null && templateId > 0) 'template_id': templateId,
+          if (occurrenceId != null && occurrenceId > 0)
+            'occurrence_id': occurrenceId,
           'name': name,
           'description': description,
           'notes': notes,
           'employee_id': employeeId,
+          ...employeeIdsFormFields(employeeIds),
           'points': points,
+          if (priority != null && priority.isNotEmpty) 'priority': priority,
           'start_time': startTime.toIso8601String(),
           'end_time': endTime.toIso8601String(),
           'task_recurrence': taskRecurrence,
           'task_recurrence_time[]': taskRecurrenceTime,
+          if (useV2) 'use_v2_recurrence': '1',
+          if (useV2) ...RecurrenceConfigHelper.flattenForRequest(configMap),
           ...subEmployeeTasksMap,
           'not_shown_for_employee': notShownForEmployee,
           'is_forced_to_upload_img': isForcedToUploadImg,
+          'requires_admin_review': requiresAdminReview,
           if (adminImg.isNotEmpty)
             'admin_img[]': await Future.wait(
               adminImg.map((e) async {

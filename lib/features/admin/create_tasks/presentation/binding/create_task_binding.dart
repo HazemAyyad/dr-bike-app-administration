@@ -1,3 +1,4 @@
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:get/get.dart';
 
 import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
@@ -13,6 +14,10 @@ import '../controllers/create_task_controller.dart';
 class CreateTaskBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureEmployeeSection();
+    if (!Get.isRegistered<EmployeeService>()) {
+      Get.put(EmployeeService(), permanent: true);
+    }
     Get.lazyPut(
       () => CreateTaskController(
         createTaskUsecase: CreateTaskUsecase(

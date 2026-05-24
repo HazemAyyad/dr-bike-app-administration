@@ -57,12 +57,6 @@ class SalesScreen extends GetView<SalesController> {
                     ? SliverToBoxAdapter(
                         child: Column(
                           children: [
-                            AppTabs(
-                              tabs: controller.instantSalesSubTabs,
-                              currentTab: controller.instantSalesSubTab,
-                              changeTab: controller.changeInstantSalesSubTab,
-                            ),
-                            SizedBox(height: 14.h),
                             const SalesInvoicesToolbar(),
                             SizedBox(height: 8.h),
                           ],
@@ -76,7 +70,7 @@ class SalesScreen extends GetView<SalesController> {
                   () {
                     final _ = controller.salesListRevision.value;
                     if (controller.currentTab.value == 0) {
-                      controller.instantSalesSubTab.value;
+                      controller.instantSalesPackageFilter.value;
                     }
                     if (controller.isLoading.value) {
                       return const SliverFillRemaining(

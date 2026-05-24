@@ -9,6 +9,7 @@ import '../../data/models/employee_task_model.dart';
 abstract class EmployeeTasksRepository {
   Future<Either<Failure, String>> cancelEmployeeTask({
     required String employeeTaskId,
+    int? occurrenceId,
     required bool cancelWithRepetition,
     required bool isCompleted,
   });
@@ -31,11 +32,16 @@ abstract class EmployeeTasksRepository {
     required File audio,
   });
 
-  Future<dynamic> getTaskDetails({required String taskId});
+  Future<dynamic> getTaskDetails({
+    required String taskId,
+    String? occurrenceId,
+  });
 
   Future<dynamic> uplodeTaskImage({
     required String taskId,
     required List<File> image,
     required bool isSubTask,
+    bool isOccurrenceSubtask = false,
+    bool isOccurrenceMain = false,
   });
 }

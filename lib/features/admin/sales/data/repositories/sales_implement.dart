@@ -4,6 +4,7 @@ import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasourc
 import 'package:doctorbike/features/admin/sales/data/models/instant_sales_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/invoice_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/product_model.dart';
+import 'package:doctorbike/features/admin/sales/data/models/product_price_update_result.dart';
 import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
 import 'package:doctorbike/features/admin/sales/domain/repositories/sales_repositores.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
@@ -95,6 +96,27 @@ class SalesImplement implements SalesRepository {
   }
 
   @override
+  Future<Either<Failure, ProductPriceUpdateResult>> updateProductRetailPrice({
+    required String productId,
+    required double normailPrice,
+    double? wholesalePrice,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final prices = await salesDatasource.updateProductRetailPrice(
+        productId: productId,
+        normailPrice: normailPrice,
+        wholesalePrice: wholesalePrice,
+      );
+      return Right(prices);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
   Future<Either<Failure, String>> addInstantSales(
       {required String productId,
       required String quantity,
@@ -112,7 +134,8 @@ class SalesImplement implements SalesRepository {
       String? paymentBoxId,
       String? paymentBoxName,
       String? paymentBoxValue,
-      String? offerPackageId}) async {
+      String? offerPackageId,
+      List<Map<String, dynamic>>? cartOtherProducts}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -135,6 +158,7 @@ class SalesImplement implements SalesRepository {
         paymentBoxName: paymentBoxName,
         paymentBoxValue: paymentBoxValue,
         offerPackageId: offerPackageId,
+        cartOtherProducts: cartOtherProducts,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -178,6 +202,7 @@ class SalesImplement implements SalesRepository {
     required String quantity,
     required String totalCost,
     String? notes,
+    String? paymentBoxValue,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -189,6 +214,7 @@ class SalesImplement implements SalesRepository {
         quantity: quantity,
         totalCost: totalCost,
         notes: notes,
+        paymentBoxValue: paymentBoxValue,
       );
       if (result['status'] == 'success') {
         return Right(result['message']?.toString() ?? 'success');

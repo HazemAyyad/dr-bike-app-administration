@@ -1,8 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../controllers/debt_ledger_controller.dart';
+import 'ledger_activity_section.dart';
 import 'ledger_colors.dart';
 import 'ledger_format.dart';
 
@@ -43,12 +47,11 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
             foregroundColor: LedgerColors.primaryBlue,
             elevation: 0,
           ),
-          body: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: 12.h),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -79,7 +82,7 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               ),
                               SizedBox(width: 10.w),
                               Text(
-                                LedgerFormat.shekel1(tx.amount),
+                                LedgerFormat.money(tx.amount, currency: tx.currency, fractionDigits: 1),
                                 style: TextStyle(
                                   fontSize: 36.sp,
                                   fontWeight: FontWeight.bold,
@@ -106,6 +109,7 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               LedgerFormat.labeled(
                                 'ledgerBalance'.tr,
                                 tx.balanceAfter,
+                                currency: tx.currency,
                                 fractionDigits: 1,
                               ),
                               style: TextStyle(
@@ -115,28 +119,39 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                               ),
                             ),
                           ),
-                          if (tx.isInstantSale) ...[
-                            SizedBox(height: 10.h),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Icon(
-                                  Icons.check_circle,
-                                  size: 16.sp,
-                                  color: LedgerColors.takenGreen,
-                                ),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  'ledgerInstantSaleTag'.tr,
-                                  style: TextStyle(
-                                    fontSize: 13.sp,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
+                          if (tx.displayDescription.isNotEmpty) ...[
+                            SizedBox(height: 12.h),
+                            Text(
+                              tx.displayDescription,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.grey.shade800,
+                                height: 1.35,
+                              ),
                             ),
                           ],
+                          if (tx.receiptImages.isNotEmpty) ...[
+                            SizedBox(height: 16.h),
+                            Text(
+                              'ledgerReceiptImages'.tr,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            SizedBox(height: 8.h),
+                            _ReceiptImagesGallery(images: tx.receiptImages),
+                          ],
+                          SizedBox(height: 20.h),
+                          Obx(
+                            () => LedgerActivitySection(
+                              entries: controller.transactionActivity,
+                              loading: controller.transactionActivityLoading.value,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -177,7 +192,6 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
                     ),
                   ],
                 ),
-                const Spacer(),
               ],
             ),
           ),
@@ -272,5 +286,65 @@ class TransactionDetailScreen extends GetView<DebtLedgerController> {
         ),
       );
     });
+  }
+}
+
+class _ReceiptImagesGallery extends StatelessWidget {
+  const _ReceiptImagesGallery({required this.images});
+
+  final List<String> images;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10.w,
+      runSpacing: 10.h,
+      children: List.generate(images.length, (index) {
+        final url = ShowNetImage.getPhoto(images[index]);
+        return GestureDetector(
+          onTap: () => FullScreenZoomImage.open(context, url),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10.r),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CachedNetworkImage(
+                  imageUrl: url,
+                  width: 108.w,
+                  height: 108.w,
+                  fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
+                width: 108.w,
+                height: 108.w,
+                color: Colors.grey.shade200,
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+                  errorWidget: (_, __, ___) => Container(
+                    width: 108.w,
+                    height: 108.w,
+                    color: Colors.grey.shade200,
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.grey.shade500,
+                      size: 32.sp,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.zoom_in,
+                  color: Colors.white.withValues(alpha: 0.92),
+                  size: 28.sp,
+                  shadows: const [
+                    Shadow(blurRadius: 8, color: Colors.black54),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
+    );
   }
 }

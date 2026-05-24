@@ -5,7 +5,13 @@ class GetTaskDetailsUsecase {
 
   GetTaskDetailsUsecase({required this.employeeTasksRepository});
 
-  Future<dynamic> call({required String taskId}) {
-    return employeeTasksRepository.getTaskDetails(taskId: taskId);
+  Future<dynamic> call({
+    required String taskId,
+    String? occurrenceId,
+  }) {
+    return employeeTasksRepository.getTaskDetails(
+      taskId: taskId,
+      occurrenceId: occurrenceId,
+    );
   }
 }

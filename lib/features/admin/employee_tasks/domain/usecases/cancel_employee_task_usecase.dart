@@ -10,11 +10,13 @@ class CancelEmployeeTaskUsecase {
 
   Future<Either<Failure, String>> call({
     required String employeeTaskId,
+    int? occurrenceId,
     bool cancelWithRepetition = false,
     bool isCompleted = false,
   }) {
     return employeeTasksRepository.cancelEmployeeTask(
       employeeTaskId: employeeTaskId,
+      occurrenceId: occurrenceId,
       cancelWithRepetition: cancelWithRepetition,
       isCompleted: isCompleted,
     );

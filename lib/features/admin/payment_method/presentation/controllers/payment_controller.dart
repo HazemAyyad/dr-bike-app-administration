@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/data/models/check_model.dart';
@@ -86,13 +87,73 @@ class PaymentController extends GetxController {
       ? 'customerNameExample'
       : 'sellerName1';
 
-  void getAllCustomersAndSellers() async {
+  Future<void> getAllCustomersAndSellers() async {
     final resultCustomers = await allCustomersSellersUsecase.call(
-        endPoint: EndPoints.all_customers);
+      endPoint: EndPoints.all_customers,
+    );
     allCustomersList.assignAll(resultCustomers);
-    final resultSellers =
-        await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
+    final resultSellers = await allCustomersSellersUsecase.call(
+      endPoint: EndPoints.all_sellers,
+    );
     allSellersList.assignAll(resultSellers);
+  }
+
+  Set<int> _partnerIds(bool isCustomer) {
+    final list = isCustomer ? allCustomersList : allSellersList;
+    return list.map((e) => e.id).toSet();
+  }
+
+  Future<void> _refreshPartnerList({required bool isCustomer}) async {
+    if (isCustomer) {
+      final customers = await allCustomersSellersUsecase.call(
+        endPoint: EndPoints.all_customers,
+      );
+      allCustomersList.assignAll(customers);
+      return;
+    }
+    final sellers = await allCustomersSellersUsecase.call(
+      endPoint: EndPoints.all_sellers,
+    );
+    allSellersList.assignAll(sellers);
+  }
+
+  void _selectNewlyAddedPartner({
+    required bool isCustomer,
+    required Set<int> previousIds,
+  }) {
+    final list = isCustomer ? allCustomersList : allSellersList;
+    final newcomers =
+        list.where((e) => !previousIds.contains(e.id)).toList();
+    if (newcomers.isEmpty) return;
+    final pick = newcomers.length == 1
+        ? newcomers.first
+        : newcomers.reduce((a, b) => a.id > b.id ? a : b);
+    onPartnerSelected(pick);
+  }
+
+  /// فتح شاشة إضافة زبون/تاجر ثم تحديث القائمة عند العودة (بيع فوري وغيره).
+  Future<void> openAddPartnerScreen() async {
+    final isCustomer = selectedCustomersSellers.value;
+    final previousIds = _partnerIds(isCustomer);
+
+    final result = await Get.toNamed(
+      AppRoutes.ADDNEWCUSTOMERSCREEN,
+      arguments: {
+        'sellerId': '',
+        'employeeId': '',
+        'employeeType': isCustomer ? 'customer' : 'seller',
+        'popOnceOnSuccess': true,
+      },
+    );
+
+    await _refreshPartnerList(isCustomer: isCustomer);
+
+    if (result is Map && result['added'] == true) {
+      _selectNewlyAddedPartner(
+        isCustomer: isCustomer,
+        previousIds: previousIds,
+      );
+    }
   }
 
   // get shown boxes
@@ -167,7 +228,7 @@ class PaymentController extends GetxController {
       'buyer_name': name ?? '',
       if (boxId.isNotEmpty) 'payment_box_id': boxId,
       if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
-      if (cashRaw.isNotEmpty) 'payment_box_value': cashRaw,
+      if (boxId.isNotEmpty) 'payment_box_value': cashRaw.isEmpty ? '0' : cashRaw,
     };
   }
 
@@ -226,7 +287,8 @@ class PaymentController extends GetxController {
       return null;
     }
 
-    if (boxIdController.text.trim().isNotEmpty &&
+    if (!forInstantSale &&
+        boxIdController.text.trim().isNotEmpty &&
         cashValueController.text.trim().isEmpty) {
       Helpers.showCustomDialogError(
         context: context,
@@ -238,10 +300,15 @@ class PaymentController extends GetxController {
 
     isLoading(true);
     try {
-      final sanitizedCash = cashValueController.text
+      var sanitizedCash = cashValueController.text
           .replaceAll(',', '')
           .replaceAll('،', '')
           .trim();
+      if (forInstantSale &&
+          boxIdController.text.trim().isNotEmpty &&
+          sanitizedCash.isEmpty) {
+        sanitizedCash = '0';
+      }
 
       final result = await addPaymentUsecase.call(
         customerId:

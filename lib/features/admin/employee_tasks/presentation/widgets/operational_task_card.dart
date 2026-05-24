@@ -9,7 +9,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_task_model.dart';
 import 'task_status_badge.dart';
 
-/// Modern operational task card for list screens.
+/// Compact operational task card — fits more tasks per screen.
 class OperationalTaskCard extends StatelessWidget {
   const OperationalTaskCard({
     Key? key,
@@ -24,131 +24,133 @@ class OperationalTaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme.bodyMedium!;
     final isDark = ThemeService.isDark.value;
-    final hoursLeft = task.endTime.difference(DateTime.now()).inHours;
     final imageUrl = task.employeePhoto ?? task.adminImg;
+    final progress = task.progress.clamp(0, 100);
+    final showProgress = progress > 0 && task.status != 'completed';
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 4.w, vertical: 6.h),
-          padding: EdgeInsets.all(14.w),
+          margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 3.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
           decoration: BoxDecoration(
             color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
-            borderRadius: BorderRadius.circular(16.r),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(color: AppColors.operationalCardBorder),
             boxShadow: [
               BoxShadow(
-                color: AppColors.operationalNavy.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: AppColors.operationalNavy.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   _Avatar(url: imageUrl),
-                  SizedBox(width: 12.w),
+                  SizedBox(width: 8.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          task.taskName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.copyWith(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? AppColors.whiteColor
-                                : AppColors.operationalNavy,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                task.taskName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.2,
+                                  color: isDark
+                                      ? AppColors.whiteColor
+                                      : AppColors.operationalNavy,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 6.w),
+                            _TimeLeftLabel(endTime: task.endTime),
+                          ],
                         ),
-                        SizedBox(height: 4.h),
+                        SizedBox(height: 2.h),
                         Text(
-                          task.employeeName,
-                          style: theme.copyWith(
-                            fontSize: 12.sp,
+                          '${task.employeeName} · ${'dueDate'.tr}: ${showDateTime12(task.endTime)}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5.sp,
+                            height: 1.2,
                             color: AppColors.customGreyColor5,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  if (trailing != null) trailing!,
+                  if (trailing != null) ...[
+                    SizedBox(width: 4.w),
+                    trailing!,
+                  ],
                 ],
               ),
-              SizedBox(height: 12.h),
+              SizedBox(height: 6.h),
               Row(
                 children: [
-                  TaskStatusBadge(status: task.status),
-                  SizedBox(width: 8.w),
-                  _Chip(
+                  TaskStatusBadge(status: task.status, compact: true),
+                  SizedBox(width: 4.w),
+                  _MiniChip(
                     label: task.priority.tr,
                     color: _priorityColor(task.priority),
                   ),
                   if (task.points > 0) ...[
-                    SizedBox(width: 8.w),
-                    _Chip(
-                      label: '${task.points} XP',
+                    SizedBox(width: 4.w),
+                    _MiniChip(
+                      label: '${task.points}',
                       color: AppColors.operationalPurple,
-                      icon: Icons.stars_rounded,
+                      icon: Icons.bolt,
                     ),
                   ],
                   if (task.proofRequired) ...[
-                    SizedBox(width: 8.w),
+                    SizedBox(width: 4.w),
                     Icon(
                       Icons.camera_alt_outlined,
-                      size: 18.sp,
+                      size: 14.sp,
                       color: AppColors.operationalPurple,
                     ),
                   ],
+                  const Spacer(),
+                  if (showProgress)
+                    Text(
+                      '$progress%',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.operationalPurple,
+                      ),
+                    ),
                 ],
               ),
-              SizedBox(height: 12.h),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.r),
-                child: LinearProgressIndicator(
-                  value: (task.progress.clamp(0, 100)) / 100,
-                  minHeight: 6.h,
-                  backgroundColor: AppColors.operationalSurface,
-                  color: AppColors.operationalPurple,
+              if (showProgress) ...[
+                SizedBox(height: 4.h),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4.r),
+                  child: LinearProgressIndicator(
+                    value: progress / 100,
+                    minHeight: 3.h,
+                    backgroundColor: AppColors.operationalSurface,
+                    color: AppColors.operationalPurple,
+                  ),
                 ),
-              ),
-              SizedBox(height: 8.h),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${'dueDate'.tr}: ${showData(task.endTime)}',
-                    style: theme.copyWith(
-                      fontSize: 11.sp,
-                      color: AppColors.customGreyColor5,
-                    ),
-                  ),
-                  Text(
-                    hoursLeft > 0 ? '$hoursLeft ${'hours'.tr}' : 'overdue'.tr,
-                    style: theme.copyWith(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w600,
-                      color: hoursLeft > 2
-                          ? AppColors.customGreen1
-                          : hoursLeft > 0
-                              ? AppColors.customOrange3
-                              : AppColors.redColor,
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ],
           ),
         ),
@@ -168,6 +170,50 @@ class OperationalTaskCard extends StatelessWidget {
   }
 }
 
+class _TimeLeftLabel extends StatelessWidget {
+  const _TimeLeftLabel({required this.endTime});
+
+  final DateTime endTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _formatTimeLeft(endTime);
+    final color = _colorFor(endTime);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9.5.sp,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  static String _formatTimeLeft(DateTime end) {
+    final diff = end.difference(DateTime.now());
+    if (diff.inSeconds <= 0) return 'overdue'.tr;
+    if (diff.inDays >= 1) return '${diff.inDays} ${'days'.tr}';
+    if (diff.inHours >= 1) return '${diff.inHours} ${'hours'.tr}';
+    final mins = diff.inMinutes.clamp(1, 59);
+    return '$mins ${'minute'.tr}';
+  }
+
+  static Color _colorFor(DateTime end) {
+    final hours = end.difference(DateTime.now()).inHours;
+    if (hours <= 0) return AppColors.redColor;
+    if (hours <= 24) return AppColors.customOrange3;
+    return AppColors.customGreen1;
+  }
+}
+
 class _Avatar extends StatelessWidget {
   const _Avatar({this.url});
 
@@ -176,19 +222,19 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CircleAvatar(
-      radius: 24.r,
+      radius: 16.r,
       backgroundColor: AppColors.operationalSurface,
       backgroundImage:
           url != null && url!.isNotEmpty ? CachedNetworkImageProvider(url!) : null,
       child: url == null || url!.isEmpty
-          ? Icon(Icons.person, color: AppColors.operationalPurple, size: 24.sp)
+          ? Icon(Icons.person, color: AppColors.operationalPurple, size: 16.sp)
           : null,
     );
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.color, this.icon});
+class _MiniChip extends StatelessWidget {
+  const _MiniChip({required this.label, required this.color, this.icon});
 
   final String label;
   final Color color;
@@ -197,22 +243,22 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20.r),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12.sp, color: color),
-            SizedBox(width: 4.w),
+            Icon(icon, size: 10.sp, color: color),
+            SizedBox(width: 2.w),
           ],
           Text(
             label,
             style: TextStyle(
-              fontSize: 10.sp,
+              fontSize: 9.sp,
               fontWeight: FontWeight.w600,
               color: color,
             ),

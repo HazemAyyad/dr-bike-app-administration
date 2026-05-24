@@ -23,7 +23,7 @@ class BiometricProxyActivity : AppCompatActivity() {
             "ProxyActivity keyguard resultCode=${activityResult.resultCode}"
         )
         setResult(
-            if (activityResult.resultCode == Activity.RESULT_OK) {
+            if (isKeyguardAuthenticationSuccess(activityResult.resultCode)) {
                 Activity.RESULT_OK
             } else {
                 Activity.RESULT_CANCELED
@@ -114,5 +114,10 @@ class BiometricProxyActivity : AppCompatActivity() {
         if (finished) return
         finished = true
         finish()
+    }
+
+    private fun isKeyguardAuthenticationSuccess(resultCode: Int): Boolean {
+        if (resultCode == Activity.RESULT_OK) return true
+        return resultCode > 0
     }
 }

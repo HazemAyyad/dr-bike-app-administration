@@ -10,6 +10,7 @@ import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../controllers/debt_ledger_controller.dart';
 import 'ledger_colors.dart';
+import 'ledger_currency_chips.dart';
 
 class TransactionEntryScreen extends StatelessWidget {
   final String personName;
@@ -151,6 +152,13 @@ class TransactionEntryScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 8.h),
                   Obx(
+                    () => LedgerCurrencyChips(
+                      selected: calc.selectedCurrency.value,
+                      onSelected: calc.setCurrency,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Obx(
                     () => CustomDropdownFieldWithSearch(
                       tital: 'ledgerBoxOptional'.tr,
                       hint: 'boxName',
@@ -158,6 +166,9 @@ class TransactionEntryScreen extends StatelessWidget {
                       items: calc.shownBoxesList,
                       onChanged: (value) {
                         calc.selectedBox.value = value;
+                        if (value != null) {
+                          calc.setCurrency(value.currency);
+                        }
                       },
                       itemAsString: (item) =>
                           '${item.boxName} - (${item.totalBalance} ${item.currency})',

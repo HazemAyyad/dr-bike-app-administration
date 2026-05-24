@@ -19,7 +19,7 @@ class InstantSalesTable extends GetView<SalesController> {
   Widget build(BuildContext context) {
     return Obx(() {
       final _ = controller.salesListRevision.value;
-      final subTab = controller.instantSalesSubTab.value;
+      final filterMode = controller.instantSalesPackageFilter.value;
       final groups = controller.orderedInstantSalesGroupsFiltered;
 
       if (groups.isEmpty) {
@@ -27,7 +27,7 @@ class InstantSalesTable extends GetView<SalesController> {
       }
 
       return Column(
-      key: ValueKey<int>(subTab),
+      key: ValueKey<int>(filterMode),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _TableHeaderRow(),
@@ -189,18 +189,26 @@ class _InstantSaleTableRow extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 6.w,
+                        horizontal: 4.w,
                         vertical: 4.h,
                       ),
-                      child: Text(
-                        sale.invoiceNumber,
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryColor,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.primaryColor,
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _SaleCompositionBadge(kind: sale.compositionKind),
+                          SizedBox(height: 2.h),
+                          Text(
+                            sale.invoiceNumber,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w700,
+                              color: _invoiceColorForKind(sale.compositionKind),
+                              decoration: TextDecoration.underline,
+                              decorationColor:
+                                  _invoiceColorForKind(sale.compositionKind),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -212,16 +220,33 @@ class _InstantSaleTableRow extends StatelessWidget {
               ),
               Expanded(
                 flex: 2,
-                child: Text(
-                  SalesAmountFormat.display(
-                    SalesAmountFormat.parse(sale.totalCost),
-                  ),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: cancelled ? Colors.red.shade700 : null,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      SalesAmountFormat.display(
+                        SalesAmountFormat.parse(sale.totalCost),
+                      ),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: cancelled ? Colors.red.shade700 : null,
+                      ),
+                    ),
+                    if (sale.hasDebtRemaining && !cancelled) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        '${'remainingAmount'.tr}: ${SalesAmountFormat.display(sale.remainingAmountValue)}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               Expanded(
@@ -265,6 +290,57 @@ class _InstantSaleTableRow extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _invoiceColorForKind(String kind) {
+  switch (kind) {
+    case 'mixed':
+      return const Color(0xFF6A1B9A);
+    case 'package':
+      return const Color(0xFFE65100);
+    default:
+      return AppColors.primaryColor;
+  }
+}
+
+class _SaleCompositionBadge extends StatelessWidget {
+  const _SaleCompositionBadge({required this.kind});
+
+  final String kind;
+
+  @override
+  Widget build(BuildContext context) {
+    late Color bg;
+    late String labelKey;
+    switch (kind) {
+      case 'mixed':
+        bg = const Color(0xFF6A1B9A);
+        labelKey = 'instantSaleCompositionMixed';
+        break;
+      case 'package':
+        bg = const Color(0xFFE65100);
+        labelKey = 'instantSaleCompositionPackage';
+        break;
+      default:
+        bg = AppColors.secondaryColor;
+        labelKey = 'instantSaleCompositionProduct';
+    }
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4.r),
+      ),
+      child: Text(
+        labelKey.tr,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 8.sp,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

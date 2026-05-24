@@ -6,7 +6,6 @@ import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
 import '../../data/models/employee_task_model.dart';
 import '../controllers/employee_tasks_controller.dart';
 import 'operational_task_card.dart';
@@ -29,9 +28,8 @@ class EmployeeTasksLists extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(height: 8.h),
         GestureDetector(
-          onLongPress: () => controller.currentTab.value != 2
+          onLongPress: () => controller.currentTab.value != controller.archiveTabIndex
               ? Get.dialog(
                   Dialog(
                     backgroundColor: ThemeService.isDark.value
@@ -100,6 +98,7 @@ class EmployeeTasksLists extends StatelessWidget {
                                             ? null
                                             : controller.cancelEmployeeTask(
                                                 taskId: order.taskId.toString(),
+                                                occurrenceId: order.occurrenceId,
                                                 cancelWithRepetition: controller
                                                     .deleteTasDuplicate.value,
                                               ),
@@ -111,10 +110,7 @@ class EmployeeTasksLists extends StatelessWidget {
                   ),
                 )
               : null,
-          onTap: () {
-            controller.getTaskDetails(taskId: order.taskId.toString());
-            Get.toNamed(AppRoutes.TASKDETAILS);
-          },
+          onTap: () => controller.openTaskDetails(order),
           child: OperationalTaskCard(task: order),
         ),
       ],

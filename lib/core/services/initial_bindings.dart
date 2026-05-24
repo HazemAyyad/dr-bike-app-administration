@@ -14,10 +14,36 @@ import 'session_service.dart';
 import 'user_data.dart';
 
 String userType = '';
+
+/// Reactive role for bottom nav / home — [userType] alone does not rebuild GetX widgets.
+final RxString sessionUserType = ''.obs;
+
+/// Bumped on impersonation / role switch so bottom nav rebuilds.
+final RxInt sessionEpoch = 0.obs;
+
 RxBool startApp = true.obs;
 bool supabase = true;
 List<int> employeePermissions = [];
 String userName = '';
+
+void syncSessionIdentity({
+  String? type,
+  String? name,
+  List<int>? permissionIds,
+}) {
+  if (type != null) {
+    userType = type;
+    sessionUserType.value = type;
+  }
+  if (name != null) {
+    userName = name;
+  }
+  if (permissionIds != null) {
+    employeePermissions
+      ..clear()
+      ..addAll(permissionIds);
+  }
+}
 
 class InitialBindings implements Bindings {
   @override
@@ -93,8 +119,12 @@ class InitialBindings implements Bindings {
       employeePermissions
         ..clear()
         ..addAll(userdata.employeePermissions.map((p) => p.permissionId));
-      userType = userdata.user.type;
-      userName = userdata.user.name;
+      syncSessionIdentity(
+        type: userdata.user.type,
+        name: userdata.user.name,
+        permissionIds:
+            userdata.employeePermissions.map((p) => p.permissionId).toList(),
+      );
 
       if (userdata.user.type == 'admin') {
         if (!Get.isRegistered<AdminNotificationBadgeController>()) {

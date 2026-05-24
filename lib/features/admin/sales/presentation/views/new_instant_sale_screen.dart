@@ -7,6 +7,7 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../checks/data/repositories/checks_implement.dart';
@@ -36,7 +37,9 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       controller.loadOfferPackagesForSale();
+      controller.syncCartToItems();
       controller.syncPaymentCashFromTotal();
+      controller.refreshInstantSalePaymentSummary();
     });
   }
 
@@ -63,14 +66,10 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
     Get.put(pc, tag: kInstantSalePaymentTag);
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
-        Get.delete<PaymentController>(tag: kInstantSalePaymentTag);
-      }
-    });
-    super.dispose();
+  void _releasePaymentController() {
+    if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+      Get.delete<PaymentController>(tag: kInstantSalePaymentTag);
+    }
   }
 
   @override
@@ -82,8 +81,58 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
       );
     }
 
-    return Scaffold(
-      appBar: CustomAppBar(title: 'newInstantSale'.tr, action: false),
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _releasePaymentController();
+      },
+      child: Scaffold(
+      appBar: CustomAppBar(
+        title: 'newInstantSale',
+        action: false,
+        actions: [
+          Obx(() {
+            final _ = controller.cartRevision.value;
+            final __ = controller.selectedPackageId.value;
+            final n = controller.pickerSelectionCount;
+            final packageOnly = controller.hasSelectedPackage && n == 1;
+            return IconButton(
+              onPressed: () => showInstantSaleCartSheet(context),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    color: AppColors.primaryColor,
+                    size: 26.sp,
+                  ),
+                  if (n > 0)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        padding: EdgeInsets.all(4.w),
+                        decoration: BoxDecoration(
+                          color: packageOnly
+                              ? const Color(0xFFE65100)
+                              : Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$n',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 24.w),
         child: Form(
@@ -123,6 +172,7 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

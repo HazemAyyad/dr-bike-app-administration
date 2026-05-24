@@ -38,15 +38,7 @@ class MainActivity : FlutterFragmentActivity() {
                 "DrBikeBiometric",
                 "Direct Keyguard ActivityResult resultCode=${activityResult.resultCode}"
             )
-            if (activityResult.resultCode == Activity.RESULT_OK) {
-                completeKeyguard(true, 0, "تم التحقق بنجاح")
-            } else {
-                completeKeyguard(
-                    false,
-                    "user_cancelled_or_not_completed",
-                    "تم إلغاء التحقق أو لم يتم إكمال قفل الجهاز"
-                )
-            }
+            handleKeyguardActivityResult(activityResult.resultCode, "keyguardDirect")
         }
         biometricProxyLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()
@@ -55,15 +47,7 @@ class MainActivity : FlutterFragmentActivity() {
                 "DrBikeBiometric",
                 "ProxyActivity ActivityResult resultCode=${activityResult.resultCode}"
             )
-            if (activityResult.resultCode == Activity.RESULT_OK) {
-                completeKeyguard(true, 0, "تم التحقق بنجاح")
-            } else {
-                completeKeyguard(
-                    false,
-                    "user_cancelled_or_not_completed",
-                    "تم إلغاء التحقق أو لم يتم إكمال قفل الجهاز"
-                )
-            }
+            handleKeyguardActivityResult(activityResult.resultCode, "keyguardProxy")
         }
         Log.d("DrBikeBiometric", "Keyguard direct and proxy ActivityResultLaunchers initialized")
     }
@@ -113,12 +97,47 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     private fun checkAvailability(): Map<String, Any> {
-        val code = BiometricManager.from(this).canAuthenticate(strong)
+        val manager = BiometricManager.from(this)
+        val strongCode = manager.canAuthenticate(strong)
+        val weakCode = manager.canAuthenticate(weak)
+        val credentialCode = manager.canAuthenticate(strongOrCredential)
+        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        val deviceSecure = keyguardManager.isDeviceSecure
+        val available = strongCode == BiometricManager.BIOMETRIC_SUCCESS ||
+            weakCode == BiometricManager.BIOMETRIC_SUCCESS ||
+            credentialCode == BiometricManager.BIOMETRIC_SUCCESS ||
+            deviceSecure
+        val code = when {
+            strongCode == BiometricManager.BIOMETRIC_SUCCESS -> strongCode
+            weakCode == BiometricManager.BIOMETRIC_SUCCESS -> weakCode
+            credentialCode == BiometricManager.BIOMETRIC_SUCCESS -> credentialCode
+            deviceSecure -> 0
+            else -> strongCode
+        }
         return mapOf(
-            "available" to (code == BiometricManager.BIOMETRIC_SUCCESS),
+            "available" to available,
             "code" to code,
             "message" to messageForCode(code),
         )
+    }
+
+    private fun handleKeyguardActivityResult(resultCode: Int, mode: String) {
+        if (isKeyguardAuthenticationSuccess(resultCode)) {
+            completeKeyguard(true, 0, "تم التحقق بنجاح", mode)
+        } else {
+            completeKeyguard(
+                success = false,
+                code = "user_cancelled_or_not_completed",
+                message = "تم إلغاء التحقق أو لم يتم إكمال قفل الجهاز",
+                mode = mode,
+            )
+        }
+    }
+
+    /** Some Samsung/One UI builds return vendor-specific positive codes on success. */
+    private fun isKeyguardAuthenticationSuccess(resultCode: Int): Boolean {
+        if (resultCode == Activity.RESULT_OK) return true
+        return resultCode > 0
     }
 
     private fun authenticate(result: MethodChannel.Result, authenticators: Int, mode: String) {
@@ -242,77 +261,14 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     private fun authenticateKeyguard(result: MethodChannel.Result) {
-        val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        Log.d(
-            "DrBikeBiometric",
-            "Proxy keyguard start lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
-                "isFinishing=$isFinishing isDestroyed=$isDestroyed isDeviceSecure=${keyguardManager.isDeviceSecure}"
-        )
-
-        if (!keyguardManager.isDeviceSecure) {
-            result.success(
-                mapOf(
-                    "success" to false,
-                    "available" to false,
-                    "code" to "device_not_secure",
-                    "message" to "يرجى تفعيل قفل الشاشة من إعدادات الجهاز",
-                    "mode" to "keyguardProxy",
-                )
-            )
-            return
-        }
-
-        if (pendingKeyguardResult != null) {
-            result.success(
-                mapOf(
-                    "success" to false,
-                    "available" to true,
-                    "code" to "keyguard_in_progress",
-                    "message" to "عملية التحقق قيد التنفيذ",
-                    "mode" to "keyguardProxy",
-                )
-            )
-            return
-        }
-
-        pendingKeyguardResult = result
-        runOnUiThread {
-            window.decorView.postDelayed({
-                Log.d(
-                    "DrBikeBiometric",
-                    "Proxy keyguard post lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
-                        "isFinishing=$isFinishing isDestroyed=$isDestroyed"
-                )
-                if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) || isFinishing || isDestroyed) {
-                    completeKeyguard(
-                        success = false,
-                        code = "activity_not_resumed",
-                        message = "الشاشة غير جاهزة لفتح نافذة البصمة، حاول مرة أخرى"
-                    )
-                    return@postDelayed
-                }
-                try {
-                    Log.d("DrBikeBiometric", "Before proxyActivityLauncher.launch")
-                    keyguardLaunchStartedAt = System.currentTimeMillis()
-                    biometricProxyLauncher.launch(Intent(this, BiometricProxyActivity::class.java))
-                    Log.d("DrBikeBiometric", "After proxyActivityLauncher.launch")
-                } catch (e: Exception) {
-                    Log.d("DrBikeBiometric", "Proxy launch exception message=${e.message}")
-                    completeKeyguard(
-                        success = false,
-                        code = "proxy_launch_exception",
-                        message = e.message ?: "تعذر فتح شاشة قفل الجهاز"
-                    )
-                }
-            }, 500)
-        }
+        authenticateKeyguardDirect(result, mode = "keyguard")
     }
 
-    private fun authenticateKeyguardDirect(result: MethodChannel.Result) {
+    private fun authenticateKeyguardDirect(result: MethodChannel.Result, mode: String = "keyguardDirect") {
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         Log.d(
             "DrBikeBiometric",
-            "Keyguard start lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
+            "Keyguard start mode=$mode lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
                 "isFinishing=$isFinishing isDestroyed=$isDestroyed isDeviceSecure=${keyguardManager.isDeviceSecure}"
         )
 
@@ -323,7 +279,7 @@ class MainActivity : FlutterFragmentActivity() {
                     "available" to false,
                     "code" to "device_not_secure",
                     "message" to "يرجى تفعيل قفل الشاشة من إعدادات الجهاز",
-                    "mode" to "keyguard",
+                    "mode" to mode,
                 )
             )
             return
@@ -336,7 +292,7 @@ class MainActivity : FlutterFragmentActivity() {
                     "available" to true,
                     "code" to "keyguard_in_progress",
                     "message" to "عملية التحقق قيد التنفيذ",
-                    "mode" to "keyguard",
+                    "mode" to mode,
                 )
             )
             return
@@ -348,45 +304,79 @@ class MainActivity : FlutterFragmentActivity() {
         )
 
         if (intent == null) {
-            result.success(
-                mapOf(
-                    "success" to false,
-                    "available" to false,
-                    "code" to "keyguard_intent_null",
-                    "message" to "تعذر فتح شاشة قفل الجهاز",
-                    "mode" to "keyguard",
-                )
-            )
+            launchKeyguardProxyFallback(result, mode)
             return
         }
 
         pendingKeyguardResult = result
+        pendingKeyguardMode = mode
         runOnUiThread {
             window.decorView.postDelayed({
                 Log.d(
                     "DrBikeBiometric",
-                    "Keyguard post lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
+                    "Keyguard post mode=$mode lifecycle=${lifecycle.currentState} hasFocus=${window?.decorView?.hasWindowFocus()} " +
                         "isFinishing=$isFinishing isDestroyed=$isDestroyed"
                 )
                 if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) || isFinishing || isDestroyed) {
                     completeKeyguard(
                         success = false,
                         code = "activity_not_resumed",
-                        message = "الشاشة غير جاهزة لفتح نافذة البصمة، حاول مرة أخرى"
+                        message = "الشاشة غير جاهزة لفتح نافذة البصمة، حاول مرة أخرى",
+                        mode = mode,
                     )
                     return@postDelayed
                 }
                 try {
-                    Log.d("DrBikeBiometric", "Before keyguardDirectLauncher.launch")
+                    Log.d("DrBikeBiometric", "Before keyguardDirectLauncher.launch mode=$mode")
                     keyguardLaunchStartedAt = System.currentTimeMillis()
                     keyguardDirectLauncher.launch(intent)
-                    Log.d("DrBikeBiometric", "After keyguardDirectLauncher.launch")
+                    Log.d("DrBikeBiometric", "After keyguardDirectLauncher.launch mode=$mode")
                 } catch (e: Exception) {
-                    Log.d("DrBikeBiometric", "Keyguard launch exception message=${e.message}")
+                    Log.d("DrBikeBiometric", "Keyguard launch exception mode=$mode message=${e.message}")
+                    launchKeyguardProxyFallback(result, mode)
+                }
+            }, 500)
+        }
+    }
+
+    private var pendingKeyguardMode: String = "keyguard"
+
+    private fun launchKeyguardProxyFallback(result: MethodChannel.Result, mode: String) {
+        Log.d("DrBikeBiometric", "Falling back to proxy keyguard mode=$mode")
+        if (pendingKeyguardResult != null) {
+            result.success(
+                mapOf(
+                    "success" to false,
+                    "available" to true,
+                    "code" to "keyguard_in_progress",
+                    "message" to "عملية التحقق قيد التنفيذ",
+                    "mode" to "keyguardProxy",
+                )
+            )
+            return
+        }
+        pendingKeyguardResult = result
+        pendingKeyguardMode = "keyguardProxy"
+        runOnUiThread {
+            window.decorView.postDelayed({
+                if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) || isFinishing || isDestroyed) {
                     completeKeyguard(
                         success = false,
-                        code = "keyguard_launch_exception",
-                        message = e.message ?: "تعذر فتح شاشة قفل الجهاز"
+                        code = "activity_not_resumed",
+                        message = "الشاشة غير جاهزة لفتح نافذة البصمة، حاول مرة أخرى",
+                        mode = "keyguardProxy",
+                    )
+                    return@postDelayed
+                }
+                try {
+                    keyguardLaunchStartedAt = System.currentTimeMillis()
+                    biometricProxyLauncher.launch(Intent(this, BiometricProxyActivity::class.java))
+                } catch (e: Exception) {
+                    completeKeyguard(
+                        success = false,
+                        code = "proxy_launch_exception",
+                        message = e.message ?: "تعذر فتح شاشة قفل الجهاز",
+                        mode = "keyguardProxy",
                     )
                 }
             }, 500)
@@ -420,9 +410,15 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 
-    private fun completeKeyguard(success: Boolean, code: Any, message: String) {
+    private fun completeKeyguard(
+        success: Boolean,
+        code: Any,
+        message: String,
+        mode: String = pendingKeyguardMode,
+    ) {
         val result = pendingKeyguardResult
         pendingKeyguardResult = null
+        pendingKeyguardMode = "keyguard"
         keyguardLaunchStartedAt = 0L
         result?.success(
             mapOf(
@@ -430,7 +426,7 @@ class MainActivity : FlutterFragmentActivity() {
                 "available" to true,
                 "code" to code,
                 "message" to message,
-                "mode" to "keyguard",
+                "mode" to mode,
             )
         )
     }

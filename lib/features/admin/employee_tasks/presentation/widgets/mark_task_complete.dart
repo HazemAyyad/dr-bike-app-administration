@@ -1,21 +1,19 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
-import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../../data/models/task_details_model.dart';
 import '../controllers/employee_tasks_controller.dart';
+import 'task_media_thumbnail_row.dart';
 
 class MarkTaskComplete extends GetView<EmployeeTasksController> {
   const MarkTaskComplete({Key? key, required this.data}) : super(key: key);
@@ -84,19 +82,31 @@ class MarkTaskComplete extends GetView<EmployeeTasksController> {
                         ),
                       ),
                       if (tasks.employeeImg != null &&
-                          tasks.employeeImg!.isNotEmpty)
-                        _SubTaskThumb(
-                          label: 'employeeImage'.tr,
-                          imageUrl: tasks.employeeImg!.first,
-                          theme: theme,
+                          tasks.employeeImg!.isNotEmpty) ...[
+                        SizedBox(width: 10.w),
+                        SizedBox(
+                          width: 72.w,
+                          child: TaskMediaThumbnailRow(
+                            images: tasks.employeeImg ?? [],
+                            videos: tasks.employeeVideos ?? [],
+                            thumbHeight: 60,
+                            thumbWidth: 60,
+                          ),
                         ),
-                      SizedBox(width: 10.w),
-                      if (tasks.adminImg != null && tasks.adminImg!.isNotEmpty)
-                        _SubTaskThumb(
-                          label: 'adminImage'.tr,
-                          imageUrl: tasks.adminImg!.first,
-                          theme: theme,
+                      ],
+                      if ((tasks.adminImg?.isNotEmpty ?? false) ||
+                          (tasks.adminVideos?.isNotEmpty ?? false)) ...[
+                        SizedBox(width: 10.w),
+                        SizedBox(
+                          width: 72.w,
+                          child: TaskMediaThumbnailRow(
+                            images: tasks.adminImg ?? [],
+                            videos: tasks.adminVideos ?? [],
+                            thumbHeight: 60,
+                            thumbWidth: 60,
+                          ),
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -235,81 +245,6 @@ class MarkTaskComplete extends GetView<EmployeeTasksController> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SubTaskThumb extends StatelessWidget {
-  const _SubTaskThumb({
-    required this.label,
-    required this.imageUrl,
-    required this.theme,
-  });
-
-  final String label;
-  final String imageUrl;
-  final TextStyle theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: theme.copyWith(
-            fontSize: 10.sp,
-            fontWeight: FontWeight.w500,
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor6
-                : AppColors.customGreyColor4,
-          ),
-        ),
-        Flexible(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10.r),
-            child: GestureDetector(
-              onTap: () {
-                showGeneralDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  barrierLabel: 'Dismiss',
-                  barrierColor: Colors.black.withAlpha(128),
-                  transitionDuration: const Duration(milliseconds: 300),
-                  pageBuilder: (context, anim1, anim2) {
-                    return FullScreenZoomImage(
-                      imageUrl: imageUrl,
-                    );
-                  },
-                );
-              },
-              child: CachedNetworkImage(
-                cacheManager: CacheManager(
-                  Config(
-                    'imagesCache',
-                    stalePeriod: const Duration(days: 7),
-                    maxNrOfCacheObjects: 100,
-                  ),
-                ),
-                imageBuilder: (context, imageProvider) => Container(
-                  height: double.infinity,
-                  width: 60.w,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: imageProvider,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.medium,
-                    ),
-                  ),
-                ),
-                imageUrl: imageUrl,
-                placeholder: (context, url) =>
-                    const Center(child: CircularProgressIndicator()),
-                errorWidget: (context, url, error) => const Icon(Icons.error),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
