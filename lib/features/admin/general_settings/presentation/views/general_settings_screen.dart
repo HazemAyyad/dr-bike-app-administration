@@ -41,6 +41,10 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     const textSecondary = Color(0xFF6B7280);
     const actionBg = Color(0xFFE5E7EB);
 
+    if (!mounted) {
+      ctrl.dispose();
+      return;
+    }
     final saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -96,7 +100,8 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     ctrl.dispose();
     if (value < 0) return;
 
-    final ok = await AppSettingsService.instance.updateSubtaskBonusDefault(value);
+    final ok =
+        await AppSettingsService.instance.updateSubtaskBonusDefault(value);
     if (!mounted) return;
     if (ok) {
       Helpers.showCustomDialogSuccess(
@@ -245,6 +250,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       }
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
+      if (!mounted) return;
       final authResult = await service.authenticate(
         checkReadinessFirst: false,
         context: context,
@@ -320,9 +326,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         'mode=${result.mode} message=${result.message}',
       );
       _showMessage(
-        result.success
-            ? '$label نجح'
-            : result.message ?? '$label لم ينجح',
+        result.success ? '$label نجح' : result.message ?? '$label لم ينجح',
         isError: !result.success,
       );
     } catch (e) {

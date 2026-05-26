@@ -52,8 +52,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                                 Flexible(
                                   child: CustomCheckBox(
                                     title: 'seller'.tr,
-                                    value: RxBool(
-                                        !controller.isCustomer.value == true),
+                                    value: RxBool(!controller.isCustomer.value),
                                     onChanged: (val) {
                                       if (controller.isEdite.value) {
                                         return;
@@ -69,8 +68,7 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                                 Flexible(
                                   child: CustomCheckBox(
                                     title: 'customer'.tr,
-                                    value: RxBool(
-                                        !controller.isCustomer.value == false),
+                                    value: RxBool(controller.isCustomer.value),
                                     onChanged: (val) {
                                       if (controller.isEdite.value) {
                                         return;
@@ -87,17 +85,17 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                             ),
                             SizedBox(height: 10.h),
                             CustomDropdownFieldWithSearch(
-                              tital: controller.isCustomer.value == false
+                              tital: controller.isCustomer.value
                                   ? 'customerName'.tr
                                   : 'sellerName'.tr,
                               hint: 'employeeNameExample',
-                              items: controller.isCustomer.value == false
+                              items: controller.isCustomer.value
                                   ? controller.allCustomersList
                                   : controller.allSellersList,
                               value: (controller.customerAndSellerIdController
                                       .text.isEmpty)
                                   ? null
-                                  : (controller.isCustomer.value == false
+                                  : (controller.isCustomer.value
                                       ? controller.allCustomersList
                                           .firstWhereOrNull(
                                           (e) =>
@@ -156,6 +154,41 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                     keyboardType: TextInputType.multiline,
                     textInputAction: TextInputAction.newline,
                   ),
+                  if (controller.canUseAdminOnly) ...[
+                    SizedBox(height: 10.h),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      activeThumbColor: AppColors.primaryColor,
+                      title: Text(
+                        'adminOnlyFollowUp'.tr,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                              color: ThemeService.isDark.value
+                                  ? AppColors.whiteColor
+                                  : AppColors.secondaryColor,
+                            ),
+                      ),
+                      subtitle: Text(
+                        'adminOnlyFollowUpHint'.tr,
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                              fontSize: 11.sp,
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor3
+                                  : AppColors.customGreyColor5,
+                            ),
+                      ),
+                      value: controller.adminOnly.value,
+                      onChanged: (value) {
+                        controller.adminOnly.value = value;
+                        controller.update();
+                      },
+                    ),
+                  ],
+                  if (controller.isEdite.value) ...[
+                    SizedBox(height: 10.h),
+                    _FollowUpAuditSection(controller: controller),
+                  ],
                   SizedBox(height: 20.h),
                   Row(
                     children: [
@@ -200,8 +233,11 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                       Flexible(
                         child: NextBackButton(
                           isLoading: controller.isLoading,
-                          endTitle: 'delivered',
-                          totalSteps: controller.timeLineSteps.length.obs,
+                          endTitle:
+                              controller.isEdite.value ? 'delivered' : 'save',
+                          totalSteps: controller.isEdite.value
+                              ? controller.timeLineSteps.length.obs
+                              : 1.obs,
                           selectedStep: controller.selectedStep,
                           onPressedBack: () {
                             if (controller.formKey.currentState!.validate()) {
@@ -220,7 +256,8 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
                       ),
                       if (controller.selectedStep.value == 3)
                         SizedBox(width: 10.w),
-                      if (controller.selectedStep.value == 3)
+                      if (controller.isEdite.value &&
+                          controller.selectedStep.value == 3)
                         AppButton(
                           isLoading: controller.isLoading,
                           text: 'sale_rejected',
@@ -240,6 +277,90 @@ class AddNewFollowUpScreen extends GetView<FollowUpController> {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FollowUpAuditSection extends StatelessWidget {
+  const _FollowUpAuditSection({required this.controller});
+
+  final FollowUpController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(10.r),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.customGreyColor : AppColors.whiteColor2,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color:
+              isDark ? AppColors.customGreyColor2 : AppColors.customGreyColor7,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (controller.createdByName.value.isNotEmpty)
+            Text(
+              '${'createdBy'.tr}: ${controller.createdByName.value}',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.whiteColor : AppColors.secondaryColor,
+              ),
+            ),
+          if (controller.activityLogs.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Text(
+              'followUpActivityLog'.tr,
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppColors.whiteColor : AppColors.secondaryColor,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            ...controller.activityLogs.map((log) {
+              final description = log['description']?.toString() ?? '';
+              final actorName = log['actor_name']?.toString() ?? '';
+              final createdAt = log['created_at']?.toString() ?? '';
+              return Padding(
+                padding: EdgeInsets.only(bottom: 6.h),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.history_rounded,
+                      size: 15.sp,
+                      color: AppColors.primaryColor,
+                    ),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: Text(
+                        [
+                          if (description.isNotEmpty) description,
+                          if (actorName.isNotEmpty) actorName,
+                          if (createdAt.isNotEmpty) createdAt,
+                        ].join(' - '),
+                        style: TextStyle(
+                          fontSize: 10.5.sp,
+                          height: 1.25,
+                          color: isDark
+                              ? AppColors.customGreyColor3
+                              : AppColors.customGreyColor5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ],
       ),
     );
   }

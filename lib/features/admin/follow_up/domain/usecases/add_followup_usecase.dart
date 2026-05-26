@@ -14,6 +14,7 @@ class AddFollowupUsecase {
     required String sellerId,
     required String productId,
     required String status,
+    required bool adminOnly,
   }) {
     return followupRepository.addAndUpdateFollowup(
       followupId: followupId,
@@ -21,6 +22,7 @@ class AddFollowupUsecase {
       sellerId: sellerId,
       productId: productId,
       status: status,
+      adminOnly: adminOnly,
     );
   }
 }

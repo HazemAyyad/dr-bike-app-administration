@@ -43,6 +43,7 @@ class FollowupDatasource {
     required String sellerId,
     required String productId,
     required String status,
+    required bool adminOnly,
   }) async {
     try {
       final response = await api.post(
@@ -54,6 +55,7 @@ class FollowupDatasource {
             if (customerId.isNotEmpty) 'customer_id': customerId,
             if (sellerId.isNotEmpty) 'seller_id': sellerId,
             'product_id': productId,
+            'admin_only': adminOnly ? '1' : '0',
             if (status.isNotEmpty) 'status': status
           });
       return response.data;
@@ -78,6 +80,27 @@ class FollowupDatasource {
       final response = await api.post(
           isCancel ? EndPoints.cancelFollowup : EndPoints.showFollowup,
           data: {'followup_id': followupId});
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteFollowup({
+    required String followupId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.deleteFollowup,
+        data: {'followup_id': followupId},
+      );
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

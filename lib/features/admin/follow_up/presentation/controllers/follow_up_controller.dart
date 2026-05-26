@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
@@ -11,6 +13,7 @@ import '../../../sales/domain/usecases/get_all_products_usecase.dart';
 import '../../data/models/followup_modle.dart';
 import '../../domain/usecases/add_followup_usecase.dart';
 import '../../domain/usecases/add_new_follow_customer_usecase.dart';
+import '../../domain/usecases/delete_followup_usecase.dart';
 import '../../domain/usecases/followup_details_cancel_usecase.dart';
 import '../../domain/usecases/get_followup_usecase.dart';
 import 'gfollow_up_services.dart';
@@ -22,6 +25,7 @@ class FollowUpController extends GetxController {
   final GetAllProductsUsecase getAllProductsUsecase;
   final FollowupDetailsCancelUsecase followupDetailsCancelUsecase;
   final AddNewFollowCustomerUsecase addNewFollowCustomerUsecase;
+  final DeleteFollowupUsecase deleteFollowupUsecase;
 
   FollowUpController({
     required this.addFollowupUsecase,
@@ -30,6 +34,7 @@ class FollowUpController extends GetxController {
     required this.getAllProductsUsecase,
     required this.followupDetailsCancelUsecase,
     required this.addNewFollowCustomerUsecase,
+    required this.deleteFollowupUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -80,9 +85,19 @@ class FollowUpController extends GetxController {
   ];
   final RxInt selectedStep = 1.obs;
 
-  void changeSelected(int index) => selectedStep.value = index;
+  void changeSelected(int index) {
+    if (!isEdite.value) {
+      return;
+    }
+    selectedStep.value = index;
+    update();
+  }
 
   void nextStep() {
+    if (!isEdite.value) {
+      addFollowUp();
+      return;
+    }
     if (selectedStep.value < timeLineSteps.length) {
       addFollowUp(step: selectedStep.value);
       selectedStep.value += 1;
@@ -97,6 +112,9 @@ class FollowUpController extends GetxController {
   }
 
   void prevStep() {
+    if (!isEdite.value) {
+      return;
+    }
     selectedStep.value -= 1;
     addFollowUp(step: selectedStep.value - 1);
     update();
@@ -114,29 +132,31 @@ class FollowUpController extends GetxController {
       isLoading(true);
     }
     update();
-    FollowUpServices()
-        .initialFollowups
-        .assignAll(await getFollowupUsecase.call(page: 0));
-    initialFollowupsFilterList.assignAll(FollowUpServices().initialFollowups);
+    try {
+      final results = await Future.wait([
+        getFollowupUsecase.call(page: 0),
+        getFollowupUsecase.call(page: 1),
+        getFollowupUsecase.call(page: 2),
+        getFollowupUsecase.call(page: 3),
+      ]);
 
-    FollowUpServices()
-        .informFollowups
-        .assignAll(await getFollowupUsecase.call(page: 1));
-    informFollowupsFilterList.assignAll(FollowUpServices().informFollowups);
+      FollowUpServices().initialFollowups.assignAll(results[0]);
+      initialFollowupsFilterList.assignAll(FollowUpServices().initialFollowups);
 
-    FollowUpServices()
-        .finishAndAgreementFollowups
-        .assignAll(await getFollowupUsecase.call(page: 2));
-    finishAndAgreementFollowupsFilterList
-        .assignAll(FollowUpServices().finishAndAgreementFollowups);
+      FollowUpServices().informFollowups.assignAll(results[1]);
+      informFollowupsFilterList.assignAll(FollowUpServices().informFollowups);
 
-    FollowUpServices()
-        .archivedFollowups
-        .assignAll(await getFollowupUsecase.call(page: 3));
-    archivedFollowupsFilterList.assignAll(FollowUpServices().archivedFollowups);
+      FollowUpServices().finishAndAgreementFollowups.assignAll(results[2]);
+      finishAndAgreementFollowupsFilterList
+          .assignAll(FollowUpServices().finishAndAgreementFollowups);
 
-    isLoading(false);
-    update();
+      FollowUpServices().archivedFollowups.assignAll(results[3]);
+      archivedFollowupsFilterList
+          .assignAll(FollowUpServices().archivedFollowups);
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 
   // get all customers and sellers
@@ -144,14 +164,19 @@ class FollowUpController extends GetxController {
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
 
   final RxBool isCustomer = true.obs;
+  final RxBool adminOnly = false.obs;
+  final RxString createdByName = ''.obs;
+  final RxList<Map<String, dynamic>> activityLogs =
+      <Map<String, dynamic>>[].obs;
+  bool get canUseAdminOnly => userType == 'admin';
 
   void getAllCustomersAndSellers() async {
-    final resultCustomers = await allCustomersSellersUsecase.call(
-        endPoint: EndPoints.all_customers);
-    final resultSellers =
-        await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
-    allSellersList.assignAll(resultSellers);
-    allCustomersList.assignAll(resultCustomers);
+    final results = await Future.wait([
+      allCustomersSellersUsecase.call(endPoint: EndPoints.all_customers),
+      allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers),
+    ]);
+    allCustomersList.assignAll(results[0]);
+    allSellersList.assignAll(results[1]);
   }
 
   // get all products
@@ -194,16 +219,25 @@ class FollowUpController extends GetxController {
     );
     final followupDetails = result['followup'];
     if (followupDetails['customer'] != null) {
-      isCustomer.value = false;
+      isCustomer.value = true;
       customerAndSellerIdController.text =
           followupDetails['customer']['id'].toString();
     }
     if (followupDetails['seller'] != null) {
-      isCustomer.value = true;
+      isCustomer.value = false;
       customerAndSellerIdController.text =
           followupDetails['seller']['id'].toString();
     }
     itemIdController.text = followupDetails['product_id'].toString();
+    adminOnly.value = asBool(followupDetails['admin_only']);
+    createdByName.value = asString(
+      asMap(followupDetails['created_by'])['name'],
+    );
+    activityLogs.assignAll(
+      ((result['activity_logs'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList(),
+    );
     selectedStep.value = followupDetails['status'] == 'initial'
         ? 1
         : followupDetails['status'] == 'inform'
@@ -222,7 +256,10 @@ class FollowUpController extends GetxController {
     Get.toNamed(AppRoutes.ADDFOLLOWUPSCREEN);
     customerAndSellerIdController.clear();
     itemIdController.clear();
-    followupId == '';
+    followupId = '';
+    adminOnly.value = false;
+    createdByName.value = '';
+    activityLogs.clear();
     selectedStep.value = 1;
     update();
   }
@@ -230,7 +267,7 @@ class FollowUpController extends GetxController {
   // add follow up
   void addFollowUp({int step = 0}) async {
     isLoading(true);
-    String status = '';
+    String status = 'initial';
     if (step == 1) {
       status = 'inform';
     } else if (step == 2) {
@@ -242,10 +279,11 @@ class FollowUpController extends GetxController {
     }
     final result = await addFollowupUsecase.call(
       followupId: followupId,
-      customerId: !isCustomer.value ? customerAndSellerIdController.text : '',
-      sellerId: isCustomer.value ? customerAndSellerIdController.text : '',
+      customerId: isCustomer.value ? customerAndSellerIdController.text : '',
+      sellerId: !isCustomer.value ? customerAndSellerIdController.text : '',
       productId: itemIdController.text,
       status: status,
+      adminOnly: adminOnly.value,
     );
     // values [inform,agreement,delivered,rejected]
 
@@ -274,20 +312,15 @@ class FollowUpController extends GetxController {
       },
       (success) {
         getAllFollowUps();
-        if (selectedStep.value == 1) {
+        if (!isEdite.value) {
           customerAndSellerIdController.clear();
           itemIdController.clear();
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-              Get.back();
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: Get.context!,
-            title: 'success'.tr,
-            message: success,
+          Get.back();
+          Get.snackbar(
+            'success'.tr,
+            success,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(milliseconds: 1500),
           );
           selectedStep.value = 1;
           return;
@@ -301,6 +334,44 @@ class FollowUpController extends GetxController {
       },
     );
     isLoading(false);
+  }
+
+  void deleteFollowUp({required String followupId}) async {
+    isLoading(true);
+    final result = await deleteFollowupUsecase.call(followupId: followupId);
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: Get.context!,
+          title: failure.errMessage,
+          message: failure.data?['message'] ?? failure.errMessage,
+        );
+      },
+      (success) {
+        getAllFollowUps();
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+      },
+    );
+    isLoading(false);
+    update();
+  }
+
+  Future<List<Map<String, dynamic>>> getFollowUpActivityLogs({
+    required String followupId,
+  }) async {
+    final result = await followupDetailsCancelUsecase.call(
+      followupId: followupId,
+      isCancel: false,
+    );
+    final logs = ((result['activity_logs'] as List?) ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    return logs;
   }
 
   // add new follow customer

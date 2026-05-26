@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../maintenance/presentation/widgets/custom_line_steps_widget.dart';
-import '../../../maintenance/presentation/widgets/next_back_button.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../controllers/product_management_controller.dart';
 import '../widgets/product_management_widget.dart';
 
@@ -24,26 +24,19 @@ class AddProductManagementScreen extends StatelessWidget {
             key: controller.formKey,
             child: Column(
               children: [
-                CustomLineSteps(
-                  timeLineSteps: controller.timeLineSteps,
-                  selectedStep: controller.selectedStep,
-                  changeSelected: (step) =>
-                      controller.changeSelected(step, isSecond: false),
+                SizedBox(height: 16.h),
+                ProductDevelopmentStepper(
+                  firstSteps: controller.timeLineSteps,
+                  secondSteps: controller.timeLineSteps2,
+                  activeStep: controller.currentGlobalStep,
                 ),
-                SizedBox(height: 20.h),
-                CustomLineSteps(
-                  width: 50.w,
-                  timeLineSteps: controller.timeLineSteps2,
-                  selectedStep: controller.selectedStep2,
-                  changeSelected: (step) =>
-                      controller.changeSelected(step, isSecond: true),
-                ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 30.h),
                 GetBuilder<ProductManagementController>(
                   builder: (controller) {
                     if (controller.isEdit.value) {
                       return ProductManagementWidget(
                         currentStep: controller.currentStep.toString(),
+                        rating: 0,
                         productImage: controller.productImage,
                         productName: controller.productName,
                         isEdit: true,
@@ -55,14 +48,16 @@ class AddProductManagementScreen extends StatelessWidget {
                           tital: 'productName',
                           hint: 'itemExample',
                           items: controller.products,
+                          value: controller.selectedProduct,
                           onChanged: (value) {
+                            controller.selectedProduct = value;
                             controller.productIdController.text =
                                 value.id.toString();
                           },
                           itemAsString: (item) => item.nameAr,
                           compareFn: (item1, item2) => item1.id == item2.id,
                         ),
-                        SizedBox(height: 10.h),
+                        SizedBox(height: 12.h),
                         CustomTextField(
                           label: 'details',
                           hintText: 'detailsExample',
@@ -78,17 +73,19 @@ class AddProductManagementScreen extends StatelessWidget {
                   },
                 ),
                 SizedBox(height: 20.h),
-                NextBackButton(
+                AppButton(
                   isLoading: controller.isLoading,
-                  endTitle: 'delivered',
-                  totalSteps: controller.totalSteps.obs,
-                  selectedStep: controller.currentGlobalStep.obs,
-                  onPressedBack: () {
-                    if (controller.formKey.currentState!.validate()) {
-                      controller.prevStep();
-                    }
-                  },
-                  onPressedNext: () {
+                  text: controller.currentGlobalStep >= controller.totalSteps
+                      ? 'delivered'
+                      : 'next',
+                  color: controller.currentGlobalStep >= controller.totalSteps
+                      ? Colors.green
+                      : AppColors.secondaryColor,
+                  borderRadius: BorderRadius.circular(6.r),
+                  height: 40.h,
+                  width: double.infinity,
+                  isSafeArea: false,
+                  onPressed: () {
                     if (controller.formKey.currentState!.validate()) {
                       controller.nextStep();
                     }

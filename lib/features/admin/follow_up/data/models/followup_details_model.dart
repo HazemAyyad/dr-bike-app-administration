@@ -35,8 +35,7 @@ class FollowupDetailsModel {
       customer: j['customer'] != null
           ? Customer.fromJson(asMap(j['customer']))
           : null,
-      seller:
-          j['seller'] != null ? Seller.fromJson(asMap(j['seller'])) : null,
+      seller: j['seller'] != null ? Seller.fromJson(asMap(j['seller'])) : null,
       product:
           j['product'] != null ? Product.fromJson(asMap(j['product'])) : null,
     );

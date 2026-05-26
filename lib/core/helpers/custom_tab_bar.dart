@@ -12,6 +12,12 @@ class AppTabs extends StatelessWidget {
     required this.currentTab,
     required this.changeTab,
     this.width,
+    this.height,
+    this.horizontalPadding,
+    this.tabHorizontalPadding,
+    this.tabVerticalPadding,
+    this.tabHorizontalMargin,
+    this.fontSize,
     this.translateLabels = true,
   }) : super(key: key);
 
@@ -19,6 +25,12 @@ class AppTabs extends StatelessWidget {
   final RxInt currentTab;
   final Function(int index) changeTab;
   final double? width;
+  final double? height;
+  final double? horizontalPadding;
+  final double? tabHorizontalPadding;
+  final double? tabVerticalPadding;
+  final double? tabHorizontalMargin;
+  final double? fontSize;
   final bool translateLabels;
 
   @override
@@ -27,9 +39,11 @@ class AppTabs extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Container(
-          margin: width != null ? null : EdgeInsets.symmetric(horizontal: 10.w),
+          margin: width != null
+              ? null
+              : EdgeInsets.symmetric(horizontal: horizontalPadding ?? 10.w),
           padding: width != null ? null : EdgeInsets.symmetric(horizontal: 2.w),
-          height: 48.h,
+          height: height ?? 48.h,
           width: width,
           decoration: BoxDecoration(
             color: ThemeService.isDark.value
@@ -47,6 +61,10 @@ class AppTabs extends StatelessWidget {
                   currentTab: currentTab,
                   onTap: () => changeTab(tabs.indexOf(e)),
                   translateLabel: translateLabels,
+                  horizontalPadding: tabHorizontalPadding,
+                  verticalPadding: tabVerticalPadding,
+                  horizontalMargin: tabHorizontalMargin,
+                  fontSize: fontSize,
                 ),
               ),
             ],
@@ -64,6 +82,9 @@ class CustomTabBar extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.fontSize,
+    this.horizontalPadding,
+    this.verticalPadding,
+    this.horizontalMargin,
     this.translateLabel = true,
     Key? key,
   }) : super(key: key);
@@ -72,6 +93,9 @@ class CustomTabBar extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final double? fontSize;
+  final double? horizontalPadding;
+  final double? verticalPadding;
+  final double? horizontalMargin;
   final bool translateLabel;
   @override
   Widget build(BuildContext context) {
@@ -81,9 +105,12 @@ class CustomTabBar extends StatelessWidget {
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 5.w),
+            margin: EdgeInsets.symmetric(horizontal: horizontalMargin ?? 5.w),
             key: ValueKey<int>(currentTab.value),
-            padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 20.w),
+            padding: EdgeInsets.symmetric(
+              vertical: verticalPadding ?? 10.h,
+              horizontal: horizontalPadding ?? 20.w,
+            ),
             decoration: BoxDecoration(
               color: currentTab.value == index
                   ? ThemeService.isDark.value

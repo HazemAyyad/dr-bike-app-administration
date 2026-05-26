@@ -6,6 +6,7 @@ import '../../../sales/data/models/product_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
 import '../../data/models/product_development_model.dart';
 import '../../domain/usecases/create_product_development_usecase.dart';
+import '../../domain/usecases/delete_product_development_usecase.dart';
 import '../../domain/usecases/get_product_developments_usecase.dart';
 import 'product_management_serves.dart';
 
@@ -13,11 +14,13 @@ class ProductManagementController extends GetxController {
   final GetProductDevelopmentsUsecase getProductDevelopmentsUsecase;
   final GetAllProductsUsecase getAllProductsUsecase;
   final CreateProductDevelopmentUsecase createProductDevelopmentUsecase;
+  final DeleteProductDevelopmentUsecase deleteProductDevelopmentUsecase;
 
   ProductManagementController({
     required this.getProductDevelopmentsUsecase,
     required this.getAllProductsUsecase,
     required this.createProductDevelopmentUsecase,
+    required this.deleteProductDevelopmentUsecase,
   });
 
   final formKey = GlobalKey<FormState>();
@@ -31,6 +34,7 @@ class ProductManagementController extends GetxController {
 
   final tabs = [
     'products',
+    'productInDevelopment',
     'archive',
   ].obs;
 
@@ -131,6 +135,7 @@ class ProductManagementController extends GetxController {
   }
 
   final RxBool isLoading = false.obs;
+  final RxBool isProductsLoading = false.obs;
 
   // Product Management
   void getProductManagement() async {
@@ -152,8 +157,32 @@ class ProductManagementController extends GetxController {
   List<ProductDevelopmentModel> searchProductManagement = [];
   List<ProductDevelopmentModel> searcharchiveProductManagement = [];
 
+  ProductDevelopmentModel? developmentForProduct(String productId) {
+    return searchProductManagement.firstWhereOrNull(
+      (element) => element.productId == productId,
+    );
+  }
+
+  String stepTitle(String currentStep) {
+    final step = int.tryParse(currentStep) ?? 0;
+    for (final item in [...timeLineSteps, ...timeLineSteps2]) {
+      if (item.containsKey(step)) {
+        return item[step]!.tr;
+      }
+    }
+    return '';
+  }
+
   void searchBar(String value) {
     if (value.isNotEmpty) {
+      searchProducts.assignAll(
+        products
+            .where(
+              (element) =>
+                  element.nameAr.toLowerCase().contains(value.toLowerCase()),
+            )
+            .toList(),
+      );
       searchProductManagement.assignAll(ProductManagementServes()
           .productManagement
           .where((element) => element.currentStep != '7')
@@ -179,14 +208,93 @@ class ProductManagementController extends GetxController {
           .productManagement
           .where((element) => element.currentStep == '7')
           .toList());
+      searchProducts.assignAll(products);
     }
     update();
   }
 
   final List<ProductModel> products = [];
+  final List<ProductModel> searchProducts = [];
   void getAllProducts() async {
-    final result = await getAllProductsUsecase.call();
-    products.assignAll(result);
+    if (products.isEmpty) {
+      isProductsLoading(true);
+      update();
+    }
+    try {
+      final result = await getAllProductsUsecase.call();
+      products.assignAll(result);
+      searchProducts.assignAll(result);
+    } finally {
+      isProductsLoading(false);
+      update();
+    }
+  }
+
+  ProductModel? selectedProduct;
+  void selectProductForDevelopment(ProductModel product) {
+    final development = developmentForProduct(product.id);
+    isEdit(development != null);
+    selectedProduct = product;
+    productIdController.text = development?.id.toString() ?? product.id;
+    descriptionController.text = development?.description ?? '';
+    productName = product.nameAr;
+    productImage = development?.productImage.isNotEmpty == true
+        ? development!.productImage
+        : product.imageUrl;
+    description = development?.description ?? '';
+    currentStep = int.tryParse(development?.currentStep ?? '') ?? 0;
+    if (development == null) {
+      selectedStep.value = 1;
+      selectedStep2.value = 0;
+    } else if (currentStep < timeLineSteps.length) {
+      selectedStep.value = currentStep + 1;
+      selectedStep2.value = 0;
+    } else {
+      selectedStep2.value = currentStep - timeLineSteps.length + 1;
+      selectedStep.value = timeLineSteps.length + 1;
+    }
+    update();
+  }
+
+  void editDevelopment(ProductDevelopmentModel product) {
+    editProduct(id: product.id.toString(), isEditing: true);
+  }
+
+  void deleteDevelopment(String productDevelopmentId) async {
+    isLoading(true);
+    update();
+    final result = await deleteProductDevelopmentUsecase.call(
+      productDevelopmentId: productDevelopmentId,
+    );
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: Get.context!,
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
+      },
+      (success) {
+        ProductManagementServes().productManagement.removeWhere(
+              (element) => element.id.toString() == productDevelopmentId,
+            );
+        searchProductManagement.removeWhere(
+          (element) => element.id.toString() == productDevelopmentId,
+        );
+        searcharchiveProductManagement.removeWhere(
+          (element) => element.id.toString() == productDevelopmentId,
+        );
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1500),
+        );
+        getProductManagement();
+      },
+    );
+    isLoading(false);
+    update();
   }
 
   // create product
@@ -225,21 +333,8 @@ class ProductManagementController extends GetxController {
       (success) {
         productIdController.clear();
         descriptionController.clear();
-        // currentStep = '';
         getProductManagement();
-        // isEdit.value
-        // ?
-        // if (selectedStep.value == 2) Get.back();
-        // if (selectedStep.value != 2) {
-        //   editProduct(isEditing: true, id: productIdController.text);
-        // }
         Get.back();
-        Future.delayed(
-          const Duration(milliseconds: 2000),
-          () {
-            Get.back();
-          },
-        );
         Get.snackbar(
           'success'.tr,
           success,
@@ -289,7 +384,9 @@ class ProductManagementController extends GetxController {
       }
     } else {
       isEdit(false);
+      selectedProduct = null;
       productIdController.clear();
+      descriptionController.clear();
       selectedStep.value = 1;
       selectedStep2.value = 0;
       productName = '';

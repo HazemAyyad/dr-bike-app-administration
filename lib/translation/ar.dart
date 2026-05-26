@@ -242,6 +242,10 @@ const Map<String, String> ar = {
   'checksandCommitments': 'ادارة الشيكات',
   'countersAndStatisticsAndReports': 'العدادات والاحصائيات والتقارير',
   'productManagement': 'إدارة وتطوير المنتجات',
+  'productInDevelopment': 'قيد التطوير',
+  'productDevelopmentLog': 'سجل تطوير المنتج',
+  'removeFromDevelopment': 'حذف من التطوير',
+  'removeFromDevelopmentConfirm': 'هل تريد حذف هذا المنتج من قائمة التطوير؟',
 
   'add': 'إضافة',
   'minus': 'عقوبة',
@@ -719,6 +723,12 @@ const Map<String, String> ar = {
   "step_two": "الخطوة الثانية: الاتصال بالزبون وابلاغه بتوفر منتج او عدمه",
   "step_three": "الخطوة الثالثة: توضيح تفاصيل المتابعة وبيان هل تم البيع ام لا",
   "cancel_followup_confirmation": "هل انت متاكد انك تريد إلغاء المتابعة؟",
+  'adminOnlyFollowUp': 'إظهار المتابعة للأدمن فقط',
+  'adminOnlyFollowUpHint':
+      'لن تظهر هذه المتابعة للموظفين حتى لو لديهم صلاحية المتابعات',
+  'createdBy': 'أضافها',
+  'followUpActivityLog': 'سجل المتابعة',
+  'viewActivityLog': 'مشاهدة السجل',
 
   'createFollowUp': 'إنشاء متابعة جديدة',
   'productDetailsTitle': 'تفاصيل المنتج المطلوب',

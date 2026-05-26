@@ -11,4 +11,8 @@ abstract class ProductManagementRepository {
     required String description,
     required String step,
   });
+
+  Future<Either<Failure, String>> deleteProductDevelopment({
+    required String productDevelopmentId,
+  });
 }

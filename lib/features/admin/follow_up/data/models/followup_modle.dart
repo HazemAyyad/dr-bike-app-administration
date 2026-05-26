@@ -11,6 +11,8 @@ class FollowupModel {
   final String sellerImg;
   final String productName;
   final String followupStatus;
+  final String createdByName;
+  final bool adminOnly;
   final DateTime createdAt;
 
   FollowupModel({
@@ -23,6 +25,8 @@ class FollowupModel {
     required this.sellerImg,
     required this.productName,
     required this.followupStatus,
+    required this.createdByName,
+    required this.adminOnly,
     required this.createdAt,
   });
 
@@ -38,6 +42,8 @@ class FollowupModel {
       sellerImg: PersonAvatarHelper.resolve(j['seller_img']),
       productName: asString(j['product_name']),
       followupStatus: asString(j['followup_status']),
+      createdByName: asString(j['created_by_name']),
+      adminOnly: asBool(j['admin_only']),
       createdAt: parseApiDateTime(j['created_at']),
     );
   }
@@ -51,6 +57,8 @@ class FollowupModel {
       'seller_phone': sellerPhone,
       'product_name': productName,
       'followup_status': followupStatus,
+      'created_by_name': createdByName,
+      'admin_only': adminOnly,
     };
   }
 }

@@ -241,6 +241,11 @@ const Map<String, String> en = {
   'checksandCommitments': 'Check Management',
   'countersAndStatisticsAndReports': 'Counters and Statistics and Reports',
   'productManagement': 'Product Management and Development',
+  'productInDevelopment': 'In development',
+  'productDevelopmentLog': 'Product development log',
+  'removeFromDevelopment': 'Remove from development',
+  'removeFromDevelopmentConfirm':
+      'Do you want to remove this product from development?',
 
   'add': 'Add',
   'minus': 'minus',
@@ -723,6 +728,12 @@ const Map<String, String> en = {
       "Step Three: Clarify follow-up details and indicate whether the sale was completed or not",
   "cancel_followup_confirmation":
       "Are you sure you want to cancel the follow-up?",
+  'adminOnlyFollowUp': 'Show this follow-up to admin only',
+  'adminOnlyFollowUpHint':
+      'Employees will not see this follow-up even if they have follow-up permission',
+  'createdBy': 'Created by',
+  'followUpActivityLog': 'Follow-up activity log',
+  'viewActivityLog': 'View activity log',
   'createFollowUp': 'Create New Follow-Up',
   'productDetailsTitle': 'Requested Product Details',
   'productDetailsExample': 'Example: Car Engine Model 211',

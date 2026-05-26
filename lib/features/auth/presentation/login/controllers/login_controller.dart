@@ -114,6 +114,7 @@ class LoginController extends GetxController {
       );
     } catch (e, st) {
       debugPrint('login error: $e\n$st');
+      if (!context.mounted) return;
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
@@ -139,12 +140,14 @@ class LoginController extends GetxController {
         canShowBiometricLogin.value = false;
         _showMessage(
           title: 'تنبيه',
-          message: 'انتهت صلاحية بيانات الدخول بالبصمة، يرجى تسجيل الدخول مرة أخرى',
+          message:
+              'انتهت صلاحية بيانات الدخول بالبصمة، يرجى تسجيل الدخول مرة أخرى',
           isError: true,
         );
         return;
       }
 
+      if (!context.mounted) return;
       final authResult = await service.authenticate(
         context: context,
         source: 'login_biometric_button',

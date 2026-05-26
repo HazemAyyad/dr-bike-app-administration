@@ -60,4 +60,27 @@ class ProductManagementDatasource {
       );
     }
   }
+
+  Future<Map<String, dynamic>> deleteProductDevelopment({
+    required String productDevelopmentId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.deleteProductDevelopment,
+        data: FormData.fromMap({
+          'product_development_id': productDevelopmentId,
+        }),
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
 }

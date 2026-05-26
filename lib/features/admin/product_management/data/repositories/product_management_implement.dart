@@ -56,4 +56,29 @@ class ProductManagementImplement implements ProductManagementRepository {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
+
+  @override
+  Future<Either<Failure, String>> deleteProductDevelopment({
+    required String productDevelopmentId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await productManagementDatasource.deleteProductDevelopment(
+        productDevelopmentId: productDevelopmentId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
 }

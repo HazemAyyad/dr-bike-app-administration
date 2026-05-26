@@ -12,11 +12,16 @@ abstract class FollowupRepository {
     required String sellerId,
     required String productId,
     required String status,
+    required bool adminOnly,
   });
 
   Future<dynamic> getfollowupDetailsAndCancel({
     required String followupId,
     required bool isCancel,
+  });
+
+  Future<Either<Failure, String>> deleteFollowup({
+    required String followupId,
   });
 
   Future<Either<Failure, String>> addNewFollwCustomer({

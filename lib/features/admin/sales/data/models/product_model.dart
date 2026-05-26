@@ -7,7 +7,9 @@ class ProductModel {
   final List<dynamic> projects;
   final double unitPrice;
   final double wholesalePrice;
+  final double rate;
   final String imageUrl;
+
   /// Parent main category id when this row is a subcategory (from API).
   final String? mainCategoryId;
 
@@ -18,6 +20,7 @@ class ProductModel {
     required this.projects,
     this.unitPrice = 0,
     this.wholesalePrice = 0,
+    this.rate = 0,
     this.imageUrl = '',
     this.mainCategoryId,
   });
@@ -25,10 +28,8 @@ class ProductModel {
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
 
-    final idRaw = j['id'] ??
-        j['product_id'] ??
-        j['category_id'] ??
-        j['sub_category_id'];
+    final idRaw =
+        j['id'] ?? j['product_id'] ?? j['category_id'] ?? j['sub_category_id'];
     final nameRaw = j['nameAr'] ??
         j['name'] ??
         j['product_name'] ??
@@ -49,6 +50,7 @@ class ProductModel {
       wholesalePrice: asDouble(
         j['wholesale_price'] ?? j['wholesalePrice'] ?? 0,
       ),
+      rate: asDouble(j['rate'] ?? 0),
       imageUrl: asString(
         j['product_image'] ?? j['image'] ?? j['imageUrl'],
         '',
@@ -71,6 +73,7 @@ class ProductModel {
       projects: projects,
       unitPrice: unitPrice ?? this.unitPrice,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
+      rate: rate,
       imageUrl: imageUrl,
       mainCategoryId: mainCategoryId,
     );
@@ -83,6 +86,7 @@ class ProductModel {
       'stock': stock,
       'projects': projects,
       'normail_price': unitPrice,
+      'rate': rate,
       'product_image': imageUrl,
       if (mainCategoryId != null) 'mainCategoryId': mainCategoryId,
     };

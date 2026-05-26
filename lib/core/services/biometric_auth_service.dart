@@ -32,7 +32,8 @@ class BiometricLoginData {
 
   factory BiometricLoginData.fromJson(Map<String, dynamic> json) {
     return BiometricLoginData(
-      token: BiometricAuthService._normalizeStoredValue(json['token']?.toString()),
+      token:
+          BiometricAuthService._normalizeStoredValue(json['token']?.toString()),
       userDataJson: BiometricAuthService._normalizeStoredValue(
         json['userDataJson']?.toString(),
       ),
@@ -175,7 +176,8 @@ class BiometricAuthService {
     if (!canCheck && available.isEmpty) {
       return const BiometricReadinessResult(
         ready: false,
-        message: 'يرجى تفعيل البصمة أو الوجه أو قفل الشاشة من إعدادات الجهاز أولاً',
+        message:
+            'يرجى تفعيل البصمة أو الوجه أو قفل الشاشة من إعدادات الجهاز أولاً',
       );
     }
 
@@ -231,26 +233,33 @@ class BiometricAuthService {
 
   Future<BiometricAuthResult> _authenticateOnAndroid() async {
     const methods = [
-      'authenticateKeyguard',
-      'authenticateStrongOrCredential',
       'authenticateWeak',
+      'authenticateStrongOrCredential',
+      'authenticateKeyguard',
     ];
+    debugPrint('Biometric auth: Android method order=$methods');
 
     NativeBiometricResult? lastResult;
     for (final method in methods) {
       debugPrint('Biometric auth: trying Android native method=$method');
+      final timeout = method == 'authenticateKeyguard'
+          ? const Duration(seconds: 180)
+          : const Duration(seconds: 25);
       final result = await NativeBiometricService.instance.authenticate(
         method: method,
-        timeout: const Duration(seconds: 180),
+        timeout: timeout,
       );
       debugPrint(
         'Biometric auth: native method=$method success=${result.success} '
         'code=${result.code} mode=${result.mode} message=${result.message}',
       );
       if (result.success) {
-        return BiometricAuthResult(success: true);
+        return const BiometricAuthResult(success: true);
       }
       lastResult = result;
+      if (result.code == -1001) {
+        break;
+      }
       if (result.available == false &&
           result.code != null &&
           result.code! < 0) {
@@ -271,13 +280,14 @@ class BiometricAuthService {
       final forceBiometricOnly =
           !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
       debugPrint(
-        'Biometric auth: platform=${kIsWeb ? 'web' : defaultTargetPlatform.name} '
+        'Biometric auth: platform=${kIsWeb ? 'web' : _platformName()} '
         'androidSdk=unknown availableBiometrics=$available '
         'forceBiometricOnly=$forceBiometricOnly',
       );
       debugPrint('Biometric auth: starting local_auth authenticate.');
 
-      final success = await _auth.authenticate(
+      final success = await _auth
+          .authenticate(
         localizedReason: 'يرجى تأكيد هويتك لتسجيل الدخول',
         authMessages: const [
           AndroidAuthMessages(
@@ -288,7 +298,8 @@ class BiometricAuthService {
         biometricOnly: forceBiometricOnly,
         sensitiveTransaction: false,
         persistAcrossBackgrounding: true,
-      ).timeout(
+      )
+          .timeout(
         const Duration(seconds: 45),
         onTimeout: () async {
           debugPrint('Biometric auth: timeout after 45 seconds.');
@@ -314,7 +325,7 @@ class BiometricAuthService {
       );
     } on LocalAuthException catch (e) {
       debugPrint(
-        'Biometric auth LocalAuthException: code=${e.code.name} '
+        'Biometric auth LocalAuthException: code=${_localAuthCodeName(e.code)} '
         'message=${e.description}',
       );
       if (e.code == LocalAuthExceptionCode.authInProgress) {
@@ -393,7 +404,8 @@ class BiometricAuthService {
 
   Future<BiometricLoginData?> getSavedLoginData() async {
     if (kIsWeb) return null;
-    final jsonString = await FinalClasses.secureStorage.read(key: _loginDataKey);
+    final jsonString =
+        await FinalClasses.secureStorage.read(key: _loginDataKey);
     if (jsonString == null || jsonString.isEmpty) return null;
 
     try {
@@ -435,6 +447,14 @@ class BiometricAuthService {
 
   bool get _isAndroid =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  String _platformName() {
+    return defaultTargetPlatform.toString().split('.').last;
+  }
+
+  String _localAuthCodeName(LocalAuthExceptionCode code) {
+    return code.toString().split('.').last;
+  }
 
   static String? _normalizeStoredValue(String? value) {
     if (value == null) return null;

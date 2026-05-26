@@ -152,12 +152,41 @@ class AdminDashboardController extends GetxController
   ];
 
   final RxBool isLoading = false.obs;
+  final RxBool isLogsLoading = false.obs;
 
   final Map<String, List<LogsModel>> logsMap = {};
+  String logsSearchQuery = '';
+  DateTime? logsFilterDate;
+  DateTimeRange? logsFilterRange;
+
+  void setLogsSearchQuery(String value) {
+    logsSearchQuery = value.trim();
+    update();
+  }
+
+  void setLogsFilterDate(DateTime? value) {
+    logsFilterDate = value;
+    if (value != null) logsFilterRange = null;
+    update();
+  }
+
+  void setLogsFilterRange(DateTimeRange? value) {
+    logsFilterRange = value;
+    if (value != null) logsFilterDate = null;
+    update();
+  }
+
+  void clearLogsFilters() {
+    logsSearchQuery = '';
+    logsFilterDate = null;
+    logsFilterRange = null;
+    update();
+  }
 
   // Get Logs
   void getLogs() async {
-    isLoading(true);
+    isLogsLoading(true);
+    update();
     logsMap.clear();
     final result = await getAdminLogsUsecase.call();
     for (var task in result) {
@@ -171,7 +200,7 @@ class AdminDashboardController extends GetxController
         logsMap[dateKey] = [task];
       }
     }
-    isLoading(false);
+    isLogsLoading(false);
     update();
   }
 

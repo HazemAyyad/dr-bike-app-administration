@@ -34,6 +34,7 @@ class FollowupImplement implements FollowupRepository {
     required String sellerId,
     required String productId,
     required String status,
+    required bool adminOnly,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -45,6 +46,7 @@ class FollowupImplement implements FollowupRepository {
         sellerId: sellerId,
         productId: productId,
         status: status,
+        adminOnly: adminOnly,
       );
 
       if (result['status'] == 'success') {
@@ -76,6 +78,32 @@ class FollowupImplement implements FollowupRepository {
         isCancel: isCancel,
       );
       return result;
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> deleteFollowup({
+    required String followupId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await followupDataSource.deleteFollowup(
+        followupId: followupId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']);
+      } else {
+        return Left(
+          ValidationFailure(
+            result['message'] ?? 'Unknown error',
+            result,
+          ),
+        );
+      }
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }

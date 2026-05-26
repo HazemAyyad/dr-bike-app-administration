@@ -85,11 +85,14 @@ class EndPoints {
   static const String debtLedgerPeoplePicker = 'debt-ledger/people-picker';
   static const String debtLedgerPerson = 'debt-ledger/person';
   static const String debtLedgerPersonMeta = 'debt-ledger/person/meta';
-  static const String debtLedgerPersonShareLink = 'debt-ledger/person/share-link';
+  static const String debtLedgerPersonShareLink =
+      'debt-ledger/person/share-link';
   static const String debtLedgerPersonArchive = 'debt-ledger/person/archive';
   static const String debtLedgerPersonDeleted = 'debt-ledger/person/deleted';
-  static const String debtLedgerArchiveBulk = 'debt-ledger/transactions/archive';
-  static const String debtLedgerRestoreBulk = 'debt-ledger/transactions/restore';
+  static const String debtLedgerArchiveBulk =
+      'debt-ledger/transactions/archive';
+  static const String debtLedgerRestoreBulk =
+      'debt-ledger/transactions/restore';
   static const String debtLedgerTransaction = 'debt-ledger/transaction';
   static String debtLedgerTransactionDetail(int id) =>
       'debt-ledger/transaction/$id';
@@ -399,6 +402,7 @@ class EndPoints {
   static const String showFollowup = 'show/followup';
   static const String storeCustomer = 'followup/store/customer';
   static const String cancelFollowup = 'cancel/followup';
+  static const String deleteFollowup = 'delete/followup';
   static const String getInitialFollowups = 'get/initial/followups';
   static const String getInformPersonFollowups = 'get/inform/person/followups';
   static const String getFinishAndAgreementFollowups =
@@ -434,6 +438,7 @@ class EndPoints {
   static const String createProductDevelopment = 'create/product/development';
   static const String updateProductDevelopment =
       'update/product/development/step';
+  static const String deleteProductDevelopment = 'delete/product/development';
 
   // category management (admin CRUD)
   static const String getAllCategoriesManagement = 'admin/categories';

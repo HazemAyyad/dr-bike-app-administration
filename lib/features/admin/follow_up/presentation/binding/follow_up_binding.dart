@@ -8,6 +8,7 @@ import '../../../sales/data/repositories/sales_implement.dart';
 import '../../data/repositories/followup_implement.dart';
 import '../../domain/usecases/add_followup_usecase.dart';
 import '../../domain/usecases/add_new_follow_customer_usecase.dart';
+import '../../domain/usecases/delete_followup_usecase.dart';
 import '../../domain/usecases/followup_details_cancel_usecase.dart';
 import '../../domain/usecases/get_followup_usecase.dart';
 import '../controllers/follow_up_controller.dart';
@@ -37,6 +38,9 @@ class FollowUpBinding extends Bindings {
           followupRepository: Get.find<FollowupImplement>(),
         ),
         addNewFollowCustomerUsecase: AddNewFollowCustomerUsecase(
+          followupRepository: Get.find<FollowupImplement>(),
+        ),
+        deleteFollowupUsecase: DeleteFollowupUsecase(
           followupRepository: Get.find<FollowupImplement>(),
         ),
       ),
