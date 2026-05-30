@@ -66,6 +66,15 @@ class EndPoints {
   static String employeeNotificationDelete(int id) =>
       'employee/notifications/$id';
 
+  static const String employeeReminders = 'employee-reminders';
+  static String employeeReminder(int id) => 'employee-reminders/$id';
+  static String employeeReminderHistory(int id) =>
+      'employee-reminders/$id/history';
+  static const String employeeMyReminders = 'employee/reminders';
+  static String employeeReminderDone(int id) => 'employee/reminders/$id/done';
+  static String employeeReminderSnooze(int id) =>
+      'employee/reminders/$id/snooze';
+
   // banks (checks)
   static const String banks = 'banks';
   static const String banksFindOrCreate = 'banks/find-or-create';
@@ -83,6 +92,11 @@ class EndPoints {
   static const String debtLedgerSummary = 'debt-ledger/summary';
   static const String debtLedgerPeople = 'debt-ledger/people';
   static const String debtLedgerPeoplePicker = 'debt-ledger/people-picker';
+  static const String contactCategories = 'debt-ledger/categories';
+  static String contactCategoryUpdate(int id) =>
+      'debt-ledger/categories/$id/update';
+  static String contactCategoryDelete(int id) =>
+      'debt-ledger/categories/$id/delete';
   static const String debtLedgerPerson = 'debt-ledger/person';
   static const String debtLedgerPersonMeta = 'debt-ledger/person/meta';
   static const String debtLedgerPersonShareLink =
@@ -263,6 +277,9 @@ class EndPoints {
 
   // stock
   static const String getProductsList = 'get/products/list';
+  static const String exportProductsCsv = 'products/export-csv';
+  static const String previewImportProductsCsv = 'products/import-csv/preview';
+  static const String importProductsCsv = 'products/import-csv';
   static const String productSizeOptions = 'get/product/size-options';
   static const String getUnarchivedCloseouts = 'get/unarchived/closeouts';
   static const String getAllCombinations = 'get/all/combinations';

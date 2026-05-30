@@ -32,8 +32,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(LedgerSummary.fromJson(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -44,6 +43,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    int? categoryId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -55,6 +55,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         startDate: startDate,
         endDate: endDate,
         currency: currency,
+        categoryId: categoryId,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(
@@ -65,8 +66,73 @@ class DebtLedgerImplement implements DebtLedgerRepository {
           .toList();
       return Right(people);
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ContactCategory>>> getCategories() async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final data = await datasource.getCategories();
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      final categories = (data['categories'] as List<dynamic>? ?? [])
+          .map((e) => ContactCategory.fromJson(e as Map<String, dynamic>))
+          .toList();
+      return Right(categories);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> saveCategory({
+    int? id,
+    required String name,
+    required String color,
+    List<int> customerIds = const [],
+    List<int> sellerIds = const [],
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final data = await datasource.saveCategory(
+        id: id,
+        name: name,
+        color: color,
+        customerIds: customerIds,
+        sellerIds: sellerIds,
+      );
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteCategory(int id) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final data = await datasource.deleteCategory(id);
+      if (data['status'] != 'success') {
+        return Left(ServerFailure(
+            data['message']?.toString() ?? 'error', data['data'] ?? {}));
+      }
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -92,8 +158,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
           .toList();
       return Right(people);
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -116,8 +181,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(data['share_url']?.toString() ?? '');
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -148,11 +212,10 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         return Left(ServerFailure(
             data['message']?.toString() ?? 'error', data['data'] ?? {}));
       }
-      return Right(LedgerPersonInfo.fromJson(
-          data['person'] as Map<String, dynamic>));
+      return Right(
+          LedgerPersonInfo.fromJson(data['person'] as Map<String, dynamic>));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -181,8 +244,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(LedgerPersonDetail.fromJson(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -219,8 +281,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(LedgerCreateResult.fromJson(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -238,8 +299,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       return Right(LedgerTransaction.fromJson(
           data['transaction'] as Map<String, dynamic>));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -275,8 +335,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       return Right(LedgerTransaction.fromJson(
           data['transaction'] as Map<String, dynamic>));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -301,8 +360,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(LedgerPersonArchiveDetail.fromJson(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -327,8 +385,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(LedgerPersonArchiveDetail.fromJson(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -347,8 +404,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -367,8 +423,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -385,8 +440,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -403,8 +457,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -431,8 +484,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       );
       return Right(bytes);
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -463,8 +515,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(LedgerReportData.fromJson(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -490,8 +541,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(_parseActivityList(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 
@@ -516,8 +566,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
       }
       return Right(_parseActivityList(data));
     } on ServerException catch (e) {
-      return Left(ServerFailure(
-          e.errorModel.errorMessage, e.errorModel.data));
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }

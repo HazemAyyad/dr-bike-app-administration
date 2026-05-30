@@ -147,6 +147,9 @@ class _ActivityLogFilters extends StatelessWidget {
     final hasDateFilters =
         controller.logsFilterDate != null || controller.logsFilterRange != null;
     final hasFilters = controller.logsSearchQuery.isNotEmpty || hasDateFilters;
+    final sortLabel = controller.logsNewestFirst
+        ? 'sortNewestFirst'.tr
+        : 'sortOldestFirst'.tr;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,6 +207,12 @@ class _ActivityLogFilters extends StatelessWidget {
         _FilterIconButton(
           active: hasDateFilters,
           onTap: () => _showFiltersSheet(context),
+        ),
+        SizedBox(width: 8.w),
+        _SortIconButton(
+          newestFirst: controller.logsNewestFirst,
+          tooltip: sortLabel,
+          onTap: controller.toggleLogsSortOrder,
         ),
         if (hasFilters) ...[
           SizedBox(width: 8.w),
@@ -471,6 +480,64 @@ class _FilterIconButton extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SortIconButton extends StatelessWidget {
+  const _SortIconButton({
+    required this.newestFirst,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final bool newestFirst;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final background =
+        isDark ? AppColors.customGreyColor : AppColors.whiteColor2;
+    final foreground =
+        isDark ? AppColors.customGreyColor6 : AppColors.customGreyColor5;
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(8.r),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8.r),
+          child: SizedBox(
+            width: 42.h,
+            height: 42.h,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.sort_rounded,
+                  color: foreground,
+                  size: 20.sp,
+                ),
+                Positioned(
+                  right: 8.w,
+                  bottom: 8.h,
+                  child: Icon(
+                    newestFirst
+                        ? Icons.keyboard_arrow_down_rounded
+                        : Icons.keyboard_arrow_up_rounded,
+                    color: AppColors.customOrange2,
+                    size: 15.sp,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

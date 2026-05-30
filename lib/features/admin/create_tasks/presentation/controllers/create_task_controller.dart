@@ -79,9 +79,9 @@ class CreateTaskController extends GetxController {
 
   bool isEmployeeSelected(String id) => selectedEmployeeIds.contains(id);
 
-  List<String> get employeeIdsForApi =>
-      selectedEmployeeIds.isNotEmpty ? selectedEmployeeIds.toList() : 
-      (employeeIdConroller.text.isNotEmpty ? [employeeIdConroller.text] : []);
+  List<String> get employeeIdsForApi => selectedEmployeeIds.isNotEmpty
+      ? selectedEmployeeIds.toList()
+      : (employeeIdConroller.text.isNotEmpty ? [employeeIdConroller.text] : []);
   final TextEditingController subTaskNameController = TextEditingController();
   final TextEditingController subTaskDescriptionController =
       TextEditingController();
@@ -113,13 +113,10 @@ class CreateTaskController extends GetxController {
       if (first.isNotEmpty && !first.startsWith('http')) {
         localPath = first;
       }
-    } else if (img is String &&
-        img.isNotEmpty &&
-        !img.startsWith('http')) {
+    } else if (img is String && img.isNotEmpty && !img.startsWith('http')) {
       localPath = img;
     }
-    subTaskFile.value =
-        localPath != null ? XFile(localPath) : null;
+    subTaskFile.value = localPath != null ? XFile(localPath) : null;
     requireSubTasImage.value = task['imageIsRequired'] == true;
     final bonus = task['bonusPoints'] as int? ?? 0;
     subtaskBonusEnabled.value = bonus > 0;
@@ -151,8 +148,7 @@ class CreateTaskController extends GetxController {
       'subTaskName': subTaskNameController.text,
       'subTaskdescription': subTaskDescriptionController.text,
       'imageIsRequired': requireSubTasImage.value,
-      'bonusPoints':
-          subtaskBonusEnabled.value ? subtaskBonusPoints.value : 0,
+      'bonusPoints': subtaskBonusEnabled.value ? subtaskBonusPoints.value : 0,
     };
     if (subTaskFile.value != null) {
       data['subTaskImage'] = subTaskFile.value!.path;
@@ -338,7 +334,8 @@ class CreateTaskController extends GetxController {
   RxString recurrenceSummary = ''.obs;
 
   // Monthly / yearly recurrence options
-  RxString monthlyMode = 'day_of_month'.obs; // day_of_month | nth_weekday | custom_dates
+  RxString monthlyMode =
+      'day_of_month'.obs; // day_of_month | nth_weekday | custom_dates
   RxInt monthDay = 1.obs;
   RxString weekdayOrdinal = 'second'.obs;
   RxString monthlyWeekday = 'monday'.obs;
@@ -368,8 +365,8 @@ class CreateTaskController extends GetxController {
     }
   }
 
-  String get durationCountUnit =>
-      RecurrenceConfigHelper.countUnitLabel(selectedDays.value, endAfterCount.value);
+  String get durationCountUnit => RecurrenceConfigHelper.countUnitLabel(
+      selectedDays.value, endAfterCount.value);
 
   void setRecurrenceType(String type) {
     selectedDays.value = type;
@@ -414,7 +411,8 @@ class CreateTaskController extends GetxController {
 
   Map<String, dynamic> buildRecurrenceConfigMap() {
     return RecurrenceConfigHelper.build(
-      recurrenceType: selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
+      recurrenceType:
+          selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
       durationType: durationType.value,
       endAfterCount: endAfterCount.value,
       anchorStart: startDate.value,
@@ -564,8 +562,8 @@ class CreateTaskController extends GetxController {
           Get.find<EmployeeTasksController>().getEmployeeTasks();
           if (isEdit && details != null) {
             Get.find<EmployeeTasksController>().getTaskDetails(
-              taskId: details.occurrenceId?.toString() ??
-                  details.taskId.toString(),
+              taskId:
+                  details.occurrenceId?.toString() ?? details.taskId.toString(),
               occurrenceId: details.occurrenceId?.toString(),
             );
           }
@@ -590,6 +588,21 @@ class CreateTaskController extends GetxController {
   // دالة لإنشاء المهمة خاصة
   void createSpecialTask(BuildContext context, {int specialTaskId = 0}) async {
     if (formKey.currentState!.validate()) {
+      _mergeStartDateTime();
+      _mergeEndDateTime();
+      if (!_ensureEndAfterStart()) {
+        final startLabel = _formatTimeLabel(startDate.value);
+        final endLabel = _formatTimeLabel(endDate.value);
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: 'endDateBeforeStartDateDetail'
+              .tr
+              .replaceAll('@start', startLabel)
+              .replaceAll('@end', endLabel),
+        );
+        return;
+      }
       isLoding(true);
 
       final result = await creatSpecialTasksUsecase.call(
@@ -699,6 +712,11 @@ class CreateTaskController extends GetxController {
       selectedDaysList.add(element);
     }
     selectedFile = data.adminImg.map((e) => File(e)).toList();
+    startDate.value = data.startTime;
+    endDate.value = data.endTime;
+    startTime.value = TimeOfDay.fromDateTime(data.startTime);
+    endTime.value = TimeOfDay.fromDateTime(data.endTime);
+    recordedPath.value = parseAudioFromApi(data.audio) ?? '';
     for (var element in data.subTasks) {
       subTasks.add({
         'subTaskId': element.subTaskId,
@@ -707,9 +725,6 @@ class CreateTaskController extends GetxController {
         'subTaskImage': element.adminImg,
         'imageIsRequired': element.forceEmployeeToAddImg,
       });
-      startDate.value = data.startTime;
-      endDate.value = data.endTime;
-      recordedPath.value = parseAudioFromApi(data.audio) ?? '';
     }
   }
 
@@ -719,7 +734,8 @@ class CreateTaskController extends GetxController {
   void _applyReminderFromDetails(TaskDetailsEntity data) {
     final rem = RecurrenceConfigHelper.parseReminderFromApi({
       if (data.reminderWhen != null) 'reminder_when': data.reminderWhen,
-      if (data.reminderChannel != null) 'reminder_channel': data.reminderChannel,
+      if (data.reminderChannel != null)
+        'reminder_channel': data.reminderChannel,
       if (data.recurrenceConfig != null)
         'recurrence_config': data.recurrenceConfig,
     });
@@ -811,10 +827,14 @@ class CreateTaskController extends GetxController {
     getEmployee();
     if (isEdit) {
       title == 'editSpecialTask' ? updateSpecialTask() : updateEmployeeTask();
-    } else if (title == 'createNewEmployeeTask') {
+    } else if (title == 'createNewEmployeeTask' ||
+        title == 'addNewPravateTask') {
       _initDefaultEndAfterStart();
     }
-    if (title == 'createNewEmployeeTask' || title == 'editEmployeeTask') {
+    if (title == 'createNewEmployeeTask' ||
+        title == 'editEmployeeTask' ||
+        title == 'addNewPravateTask' ||
+        title == 'editSpecialTask') {
       updateRecurrenceSummary();
     }
   }

@@ -33,6 +33,7 @@ import '../features/admin/notifications/presentation/bindings/admin_notification
 import '../features/admin/notifications/presentation/views/admin_notification_center_screen.dart';
 import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
 import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
+import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
@@ -49,7 +50,6 @@ import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart'
 import '../features/admin/counters/presentation/binding/counters_binding.dart';
 import '../features/admin/counters/presentation/views/counters_screen.dart';
 import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
-import '../features/admin/create_tasks/presentation/views/create_task_screen.dart';
 import '../features/admin/create_tasks/presentation/views/create_task_entry_screen.dart';
 import '../features/admin/create_tasks/presentation/views/task_recurrence_screen.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_task_performance_screen.dart';
@@ -73,6 +73,7 @@ import '../features/admin/employee_section/presentation/views/global_employee_po
 import '../core/services/banks_service.dart';
 import '../features/admin/general_settings/presentation/controllers/banks_settings_controller.dart';
 import '../features/admin/general_settings/presentation/views/banks_settings_screen.dart';
+import '../features/admin/general_settings/presentation/views/contact_categories_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
@@ -275,6 +276,11 @@ class AppPages {
       binding: EmployeeNotificationCenterBinding(),
       transition: _transitionFadeIn,
     ),
+    GetPage(
+      name: AppRoutes.EMPLOYEEREMINDERSSCREEN,
+      page: () => const EmployeeRemindersScreen(isAdmin: true),
+      transition: _transitionFadeIn,
+    ),
 
     // Employee Dashboard
     GetPage(
@@ -282,6 +288,11 @@ class AppPages {
       page: () => const EmployeeDashbordScreen(),
       binding: EmployeeDashbordBinding(),
       transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.MYEMPLOYEEREMINDERSSCREEN,
+      page: () => const EmployeeRemindersScreen(isAdmin: false),
+      transition: _transitionFadeIn,
     ),
 
     // مهام الموظفين
@@ -469,6 +480,11 @@ class AppPages {
           Get.put(BanksService());
         }
       }),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN,
+      page: () => const ContactCategoriesSettingsScreen(),
       transition: _transitionFadeIn,
     ),
 

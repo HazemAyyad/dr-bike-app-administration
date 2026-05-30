@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +25,96 @@ class StockDatasource {
   final ApiConsumer api;
 
   StockDatasource({required this.api});
+
+  Future<Uint8List> exportProductsCsv() async {
+    try {
+      final response = await api.get(
+        EndPoints.exportProductsCsv,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final data = response.data;
+      if (data is Uint8List) {
+        return data;
+      }
+      if (data is List<int>) {
+        return Uint8List.fromList(data);
+      }
+      throw ServerException(
+        ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> importProductsCsv(String filePath) async {
+    return _sendProductsCsv(
+      endpoint: EndPoints.importProductsCsv,
+      filePath: filePath,
+    );
+  }
+
+  Future<Map<String, dynamic>> previewImportProductsCsv(String filePath) async {
+    return _sendProductsCsv(
+      endpoint: EndPoints.previewImportProductsCsv,
+      filePath: filePath,
+    );
+  }
+
+  Future<Map<String, dynamic>> _sendProductsCsv({
+    required String endpoint,
+    required String filePath,
+  }) async {
+    try {
+      final response = await api.post(
+        endpoint,
+        data: {
+          'file': await MultipartFile.fromFile(
+            filePath,
+            filename: filePath.split(Platform.pathSeparator).last,
+          ),
+        },
+        isFormData: true,
+      );
+      final raw = response.data;
+      if (raw is Map) {
+        final map = Map<String, dynamic>.from(raw);
+        if (map['status']?.toString() == 'error') {
+          throw ServerException(
+            ErrorModel(
+              errorMessage: map['message']?.toString() ?? 'Error',
+              status: 422,
+              data: map,
+            ),
+          );
+        }
+        return map;
+      }
+      throw ServerException(
+        ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
 
   // Get all products
   Future<List<AllStockProductsModel>> getAllStock({
@@ -73,7 +166,8 @@ class StockDatasource {
       final response = await api.get(
         EndPoints.productSizeOptions,
         queryParameters: {
-          if (productId != null && productId.isNotEmpty) 'product_id': productId,
+          if (productId != null && productId.isNotEmpty)
+            'product_id': productId,
         },
       );
       final raw = response.data;
@@ -89,7 +183,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -105,7 +201,8 @@ class StockDatasource {
       final response = await api.post(EndPoints.getProductDetails,
           queryParameters: {'product_id': productId});
       final raw = response.data;
-      final productMap = raw is Map ? asMap((raw as Map)['product']) : <String, dynamic>{};
+      final productMap =
+          raw is Map ? asMap(raw['product']) : <String, dynamic>{};
       return ProductDetailsModel.fromJson(productMap);
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -306,7 +403,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message']?.toString() ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? Map<String, dynamic>.from(data) : {},
         ),
@@ -333,7 +432,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -384,7 +485,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -413,7 +516,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -439,7 +544,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -447,7 +554,8 @@ class StockDatasource {
     }
   }
 
-  Future<List<OfferPackageModel>> getOfferPackages({required String tab}) async {
+  Future<List<OfferPackageModel>> getOfferPackages(
+      {required String tab}) async {
     try {
       final response = await api.get(
         EndPoints.offerPackages,
@@ -462,7 +570,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -482,7 +592,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -508,7 +620,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -559,7 +673,8 @@ class StockDatasource {
       if (raw is Map && raw['status'] == 'success') {
         return raw['message']?.toString() ?? 'success';
       }
-      final message = raw is Map ? (raw['message'] ?? 'Unknown error') : 'Unknown error';
+      final message =
+          raw is Map ? (raw['message'] ?? 'Unknown error') : 'Unknown error';
       throw ServerException(
         ErrorModel(
           errorMessage: message.toString(),
@@ -573,7 +688,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -593,7 +710,9 @@ class StockDatasource {
       }
       throw ServerException(
         ErrorModel(
-          errorMessage: raw is Map ? (raw['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: raw is Map
+              ? (raw['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: 500,
           data: raw is Map ? raw : {},
         ),
@@ -602,7 +721,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -620,7 +741,9 @@ class StockDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),

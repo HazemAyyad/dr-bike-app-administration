@@ -11,6 +11,8 @@ class AllStockProductsModel {
   final String productMinSalePrice;
   final double normailPrice;
   final String image;
+  final String viewImage;
+  final String normalImage;
   final String numberOfUsedProducts;
   final String productCode;
   final List<ProductTagModel> tags;
@@ -24,6 +26,8 @@ class AllStockProductsModel {
     required this.productMinSalePrice,
     this.normailPrice = 0,
     required this.image,
+    this.viewImage = '',
+    this.normalImage = '',
     required this.numberOfUsedProducts,
     this.productCode = '',
     this.tags = const [],
@@ -48,6 +52,8 @@ class AllStockProductsModel {
         json['product_normail_price'] ?? json['normail_price'],
       ),
       image: asString(json['product_image']),
+      viewImage: _firstImage(json['product_viewImages']),
+      normalImage: _firstImage(json['product_normalImages']),
       numberOfUsedProducts: asString(json['number_of_used_products'], '0'),
       productCode: asString(json['product_code']),
       tags: tags,
@@ -63,9 +69,18 @@ class AllStockProductsModel {
       'product_stock': stock,
       'product_min_sale_price': productMinSalePrice,
       'product_image': image,
+      'product_viewImages': viewImage.isEmpty ? [] : [viewImage],
+      'product_normalImages': normalImage.isEmpty ? [] : [normalImage],
       'number_of_used_products': numberOfUsedProducts,
       'product_code': productCode,
       'tags': tags.map((e) => e.toJson()).toList(),
     };
+  }
+
+  static String _firstImage(dynamic value) {
+    if (value is List && value.isNotEmpty) {
+      return asString(value.first);
+    }
+    return asString(value);
   }
 }

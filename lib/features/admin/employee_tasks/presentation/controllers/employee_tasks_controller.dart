@@ -117,8 +117,7 @@ class EmployeeTasksController extends GetxController {
         filtered = filtered.where((t) => only.contains(t.status)).toList();
       }
       if (exclude != null) {
-        filtered =
-            filtered.where((t) => !exclude.contains(t.status)).toList();
+        filtered = filtered.where((t) => !exclude.contains(t.status)).toList();
       }
       if (filtered.isNotEmpty) {
         out[key] = filtered;
@@ -144,8 +143,8 @@ class EmployeeTasksController extends GetxController {
 
   final RxBool deleteTasDuplicate = false.obs;
 
-  /// Default: today only. User can switch to weekly / monthly.
-  final RxString tasksViewMode = tasksViewDaily.obs;
+  /// Default: current week. User can switch to daily / monthly.
+  final RxString tasksViewMode = tasksViewWeekly.obs;
 
   /// Flat rows for lazy list (headers + tasks).
   List<EmployeeTaskListRow> flatTaskRows = [];
@@ -179,8 +178,7 @@ class EmployeeTasksController extends GetxController {
   Map<String, List<EmployeeTaskModel>> canceledTasksFilter = {};
 
   // get employee tasks
-  Future<void> pullToRefresh() =>
-      getEmployeeTasks(scrollToTodayb: true);
+  Future<void> pullToRefresh() => getEmployeeTasks(scrollToTodayb: true);
 
   void _mergeTaskInto(
     Map<String, List<EmployeeTaskModel>> target,
@@ -337,8 +335,7 @@ class EmployeeTasksController extends GetxController {
   }
 
   void applyAllFilters() {
-    final ongoingSorted =
-        sortByDate(employeeTaskService.ongoingEmployeeTasks);
+    final ongoingSorted = sortByDate(employeeTaskService.ongoingEmployeeTasks);
     if (_isAdminViewer) {
       ongoingTasksFilter = _applyNameAndRange(
         _filterMapByStatus(ongoingSorted, exclude: ['waiting_review']),
@@ -514,8 +511,7 @@ class EmployeeTasksController extends GetxController {
     required String mainTaskId,
     String? occurrenceId,
   }) async {
-    final isOccurrenceSubtask =
-        occurrenceId != null && occurrenceId.isNotEmpty;
+    final isOccurrenceSubtask = occurrenceId != null && occurrenceId.isNotEmpty;
 
     if (!sub.isForcedToUploadImg || subTaskHasEmployeeImage(sub)) {
       return completeSubtaskAtEmployee(
@@ -904,7 +900,8 @@ class EmployeeTasksController extends GetxController {
 
     final todayEntry = entries.where((e) => e.key == today).toList();
     final future = entries
-        .where((e) => e.key != today && !e.value.isBefore(DateTime.parse(today)))
+        .where(
+            (e) => e.key != today && !e.value.isBefore(DateTime.parse(today)))
         .toList()
       ..sort((a, b) => a.value.compareTo(b.value));
     final past = entries
@@ -932,7 +929,8 @@ class EmployeeTasksController extends GetxController {
           tasksViewMode.value == tasksViewDaily ||
           tasksViewMode.value == tasksViewWeekly;
       if (!showSection) continue;
-      rows.add(EmployeeTaskListRow.header(day, isFirstHeader: headerIndex == 0));
+      rows.add(
+          EmployeeTaskListRow.header(day, isFirstHeader: headerIndex == 0));
       headerIndex++;
       final sorted = List<EmployeeTaskModel>.from(tasks)
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
@@ -958,7 +956,8 @@ class EmployeeTasksController extends GetxController {
         endDate = startDate;
         break;
       case tasksViewMonthly:
-        final m = DateTime(startDate.year, startDate.month + (isNext ? 1 : -1), 1);
+        final m =
+            DateTime(startDate.year, startDate.month + (isNext ? 1 : -1), 1);
         startDate = m;
         endDate = DateTime(m.year, m.month + 1, 0);
         break;
@@ -1029,9 +1028,11 @@ class EmployeeTasksController extends GetxController {
       );
       if (res['status'] == 'success') {
         await getTaskDetails(taskId: taskId, occurrenceId: occ);
-        Get.snackbar('success'.tr, '${res['message'] ?? 'taskSubmittedForReview'.tr}');
+        Get.snackbar(
+            'success'.tr, '${res['message'] ?? 'taskSubmittedForReview'.tr}');
         if (Get.isRegistered<EmployeeDashbordController>()) {
-          Get.find<EmployeeDashbordController>().getEmployeeData(scrollToTodayb: false);
+          Get.find<EmployeeDashbordController>()
+              .getEmployeeData(scrollToTodayb: false);
         }
         return true;
       }
@@ -1130,7 +1131,7 @@ class EmployeeTasksController extends GetxController {
         'archive',
       ]);
     }
-    tasksViewMode.value = tasksViewDaily;
+    tasksViewMode.value = tasksViewWeekly;
     syncPeriodBounds();
     if (userType == 'admin') {
       getEmployeeTasks();

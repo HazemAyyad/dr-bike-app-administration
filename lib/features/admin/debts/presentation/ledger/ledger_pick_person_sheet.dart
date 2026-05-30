@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -25,6 +27,7 @@ class _LedgerPickPersonSheetState extends State<LedgerPickPersonSheet> {
   final _searchController = TextEditingController();
   final RxList<LedgerPerson> _people = <LedgerPerson>[].obs;
   final RxBool _loading = true.obs;
+  Timer? _searchDebounce;
 
   String get _type => widget.isCustomer ? 'customers' : 'sellers';
 
@@ -36,6 +39,7 @@ class _LedgerPickPersonSheetState extends State<LedgerPickPersonSheet> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -54,6 +58,14 @@ class _LedgerPickPersonSheetState extends State<LedgerPickPersonSheet> {
       (list) => _people.assignAll(list),
     );
     _loading(false);
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 350),
+      () => _load(search: value.trim()),
+    );
   }
 
   @override
@@ -88,7 +100,7 @@ class _LedgerPickPersonSheetState extends State<LedgerPickPersonSheet> {
                   ),
                   isDense: true,
                 ),
-                onSubmitted: (value) => _load(search: value),
+                onChanged: _onSearchChanged,
               ),
               SizedBox(height: 8.h),
               SizedBox(
@@ -119,10 +131,10 @@ class _LedgerPickPersonSheetState extends State<LedgerPickPersonSheet> {
                             fontSize: 15.sp,
                           ),
                         ),
-                        subtitle: person.phone != null &&
-                                person.phone!.isNotEmpty
-                            ? Text(person.phone!)
-                            : null,
+                        subtitle:
+                            person.phone != null && person.phone!.isNotEmpty
+                                ? Text(person.phone!)
+                                : null,
                         trailing: Icon(
                           Icons.post_add_outlined,
                           color: LedgerColors.primaryBlue,
@@ -133,11 +145,6 @@ class _LedgerPickPersonSheetState extends State<LedgerPickPersonSheet> {
                     },
                   );
                 }),
-              ),
-              SizedBox(height: 8.h),
-              TextButton(
-                onPressed: () => _load(search: _searchController.text.trim()),
-                child: Text('search'.tr),
               ),
             ],
           ),

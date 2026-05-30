@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -17,6 +15,7 @@ class TransactionEntryScreen extends StatelessWidget {
   final String type;
   final bool isCustomer;
   final int personId;
+  final String initialCurrency;
 
   const TransactionEntryScreen({
     Key? key,
@@ -24,6 +23,7 @@ class TransactionEntryScreen extends StatelessWidget {
     required this.type,
     required this.isCustomer,
     required this.personId,
+    required this.initialCurrency,
   }) : super(key: key);
 
   @override
@@ -43,6 +43,7 @@ class TransactionEntryScreen extends StatelessWidget {
         initialType: type,
         isCustomer: isCustomer,
         personId: personId,
+        initialCurrency: initialCurrency,
       ),
       tag: tag,
     );
@@ -233,7 +234,8 @@ class TransactionEntryScreen extends StatelessWidget {
                           label: Text('ledgerAddImage'.tr),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: LedgerColors.primaryBlue,
-                            side: const BorderSide(color: LedgerColors.primaryBlue),
+                            side: const BorderSide(
+                                color: LedgerColors.primaryBlue),
                             padding: EdgeInsets.symmetric(vertical: 10.h),
                           ),
                         ),
@@ -267,8 +269,7 @@ class TransactionEntryScreen extends StatelessWidget {
                                 top: 0,
                                 right: 0,
                                 child: GestureDetector(
-                                  onTap: () =>
-                                      calc.removeReceiptImage(index),
+                                  onTap: () => calc.removeReceiptImage(index),
                                   child: Container(
                                     padding: const EdgeInsets.all(2),
                                     decoration: const BoxDecoration(
@@ -331,9 +332,8 @@ class _CalcPad extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10.r),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10.r),
-                      onTap: calc.isSaving.value
-                          ? null
-                          : () => _onKey(calc, key),
+                      onTap:
+                          calc.isSaving.value ? null : () => _onKey(calc, key),
                       child: SizedBox(
                         height: 44.h,
                         child: Center(

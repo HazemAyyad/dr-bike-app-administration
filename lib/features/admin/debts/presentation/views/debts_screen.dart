@@ -13,6 +13,7 @@ import '../ledger/ledger_colors.dart';
 import '../ledger/ledger_currency_tab_bar.dart';
 import '../ledger/ledger_format.dart';
 import '../ledger/period_filter_sheet.dart';
+
 class DebtsScreen extends GetView<DebtLedgerController> {
   const DebtsScreen({Key? key}) : super(key: key);
 
@@ -57,11 +58,13 @@ class DebtsScreen extends GetView<DebtLedgerController> {
               ),
               SliverToBoxAdapter(child: SizedBox(height: 8.h)),
               SliverToBoxAdapter(child: _SearchRow(controller: controller)),
+              SliverToBoxAdapter(
+                  child: _CategoryQuickFilter(controller: controller)),
               SliverToBoxAdapter(child: SizedBox(height: 8.h)),
               Obx(() {
                 final loading = controller.isLoading.value;
-                final _ = controller.people.length;
-                final __ = controller.searchQuery.value;
+                controller.people.length;
+                controller.searchQuery.value;
                 if (loading) {
                   return const SliverFillRemaining(
                     child: Center(child: CircularProgressIndicator()),
@@ -163,7 +166,8 @@ class _SummaryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700)),
+        Text(label,
+            style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700)),
         SizedBox(height: 4.h),
         Text(
           LedgerFormat.money(amount, currency: currency, fractionDigits: 1),
@@ -231,6 +235,107 @@ class _SearchRow extends StatelessWidget {
   }
 }
 
+class _CategoryQuickFilter extends StatelessWidget {
+  const _CategoryQuickFilter({required this.controller});
+
+  final DebtLedgerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.categories.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      final selectedId = controller.selectedCategoryId.value;
+      return Padding(
+        padding: EdgeInsets.only(top: 8.h),
+        child: SizedBox(
+          height: 38.h,
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: controller.categories.length + 1,
+              separatorBuilder: (_, __) => SizedBox(width: 8.w),
+              itemBuilder: (_, index) {
+                if (index == 0) {
+                  return _CategoryChip(
+                    label: 'ledgerAllCategories'.tr,
+                    selected: selectedId == null,
+                    color: LedgerColors.primaryBlue,
+                    onTap: () => controller.applyCategory(null),
+                  );
+                }
+                final category = controller.categories[index - 1];
+                return _CategoryChip(
+                  label: category.name,
+                  selected: selectedId == category.id,
+                  color: _categoryColor(category.color),
+                  onTap: () => controller.applyCategory(category.id),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: .14) : Colors.white,
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: selected ? color : const Color(0xFFE5E7EB),
+          ),
+        ),
+        child: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8.w,
+                height: 8.w,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: TextStyle(
+                  color: selected ? color : Colors.grey.shade700,
+                  fontSize: 12.sp,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PersonRow extends StatelessWidget {
   final LedgerPerson person;
   final DebtLedgerController controller;
@@ -286,7 +391,8 @@ class _PersonRow extends StatelessWidget {
                   if (lastActivity.isNotEmpty)
                     Text(
                       lastActivity,
-                      style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade700),
+                      style: TextStyle(
+                          fontSize: 12.sp, color: Colors.grey.shade700),
                     ),
                   if (balanceLabel.isNotEmpty)
                     Text(
@@ -322,4 +428,12 @@ class _PersonRow extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _categoryColor(String value) {
+  final hex = value.replaceAll('#', '').trim();
+  if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(hex)) {
+    return LedgerColors.primaryBlue;
+  }
+  return Color(int.parse('ff$hex', radix: 16));
 }

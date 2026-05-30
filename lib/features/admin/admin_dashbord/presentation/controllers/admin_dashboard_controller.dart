@@ -107,6 +107,11 @@ class AdminDashboardController extends GetxController
       'title': 'pointsReportTitle',
       'route': AppRoutes.EMPLOYEEPOINTSREPORTSCREEN
     },
+    {
+      'id': '23',
+      'title': 'employeeReminders',
+      'route': AppRoutes.EMPLOYEEREMINDERSSCREEN
+    },
   ];
 
   // متغيرات للإحصائيات
@@ -158,6 +163,7 @@ class AdminDashboardController extends GetxController
   String logsSearchQuery = '';
   DateTime? logsFilterDate;
   DateTimeRange? logsFilterRange;
+  bool logsNewestFirst = true;
 
   void setLogsSearchQuery(String value) {
     logsSearchQuery = value.trim();
@@ -183,12 +189,19 @@ class AdminDashboardController extends GetxController
     update();
   }
 
+  void toggleLogsSortOrder() {
+    logsNewestFirst = !logsNewestFirst;
+    _sortLogsMap();
+    update();
+  }
+
   // Get Logs
   void getLogs() async {
     isLogsLoading(true);
     update();
     logsMap.clear();
-    final result = await getAdminLogsUsecase.call();
+    final result = await getAdminLogsUsecase.call()
+      ..sort(_compareLogsByDate);
     for (var task in result) {
       String dateKey =
           "${task.createdAt.year}-${task.createdAt.month}-${task.createdAt.day}";
@@ -200,8 +213,33 @@ class AdminDashboardController extends GetxController
         logsMap[dateKey] = [task];
       }
     }
+    _sortLogsMap();
     isLogsLoading(false);
     update();
+  }
+
+  int _compareLogsByDate(LogsModel a, LogsModel b) {
+    final comparison = b.createdAt.compareTo(a.createdAt);
+    return logsNewestFirst ? comparison : -comparison;
+  }
+
+  void _sortLogsMap() {
+    for (final logs in logsMap.values) {
+      logs.sort(_compareLogsByDate);
+    }
+
+    final entries = logsMap.entries.toList()
+      ..sort((a, b) {
+        if (a.value.isEmpty || b.value.isEmpty) return 0;
+        final comparison = b.value.first.createdAt.compareTo(
+          a.value.first.createdAt,
+        );
+        return logsNewestFirst ? comparison : -comparison;
+      });
+
+    logsMap
+      ..clear()
+      ..addEntries(entries);
   }
 
   // cancel Log

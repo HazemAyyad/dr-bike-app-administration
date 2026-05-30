@@ -12,20 +12,24 @@ import '../../data/models/person_data_model.dart';
 import '../../domain/entity/add_person_entity.dart';
 import '../../domain/usecases/add_person_usecase.dart';
 import '../../domain/usecases/delete_person_usecase.dart';
+import '../../domain/usecases/get_contact_categories_usecase.dart';
 import '../../domain/usecases/get_customers_usecase.dart';
 import '../../domain/usecases/get_person_data_usecase.dart';
+import '../../../debts/data/models/debt_ledger_models.dart';
 import 'general_data_serves.dart';
 
 class GeneralDataListController extends GetxController {
   final GeneralDataServes generalDataServes;
   final GetCustomersUseCase getCustomersUseCase;
   final AddPersonUseCase addPersonUseCase;
+  final GetContactCategoriesUseCase getContactCategoriesUseCase;
   final GetPersonDataUseCase getPersonDataUseCase;
   final DeletePersonUsecase deletePersonUsecase;
 
   GeneralDataListController({
     required this.generalDataServes,
     required this.getCustomersUseCase,
+    required this.getContactCategoriesUseCase,
     required this.addPersonUseCase,
     required this.getPersonDataUseCase,
     required this.deletePersonUsecase,
@@ -67,6 +71,8 @@ class GeneralDataListController extends GetxController {
   final isLoading = false.obs;
 
   final isEditLoading = false.obs;
+  final contactCategories = <ContactCategory>[].obs;
+  final selectedContactCategoryIds = <int>{}.obs;
 
   List<String> customerTypeList = ['wholesale', 'retail'];
 
@@ -176,6 +182,7 @@ class GeneralDataListController extends GetxController {
           workAddress: '',
           relativePhone: '',
           relativeJobTitle: '',
+          contactCategoryIds: selectedContactCategoryIds.toList(),
         ),
         customerId: '',
         sellerId: '',
@@ -239,6 +246,7 @@ class GeneralDataListController extends GetxController {
             ? ''
             : PhoneFormatHelper.forApi(closestPersonNumberController.text),
         relativeJobTitle: closestPersonWorkController.text,
+        contactCategoryIds: selectedContactCategoryIds.toList(),
       ),
       customerId: customerId ?? '',
       sellerId: sellerId ?? '',
@@ -430,6 +438,9 @@ class GeneralDataListController extends GetxController {
             ? 'wholesale'
             : 'retail'
         : '';
+    selectedContactCategoryIds
+      ..clear()
+      ..addAll(personData.value!.contactCategoryIds);
     closePeopleController.text = personData.value!.relatedPeople;
     isEditLoading(false);
     update();
@@ -466,6 +477,24 @@ class GeneralDataListController extends GetxController {
     }
   }
 
+  Future<void> getContactCategories() async {
+    try {
+      contactCategories.assignAll(await getContactCategoriesUseCase.call());
+    } catch (_) {
+      contactCategories.clear();
+    }
+    update();
+  }
+
+  void toggleContactCategory(int id) {
+    if (selectedContactCategoryIds.contains(id)) {
+      selectedContactCategoryIds.remove(id);
+    } else {
+      selectedContactCategoryIds.add(id);
+    }
+    update();
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -482,6 +511,7 @@ class GeneralDataListController extends GetxController {
     if (!_popOnceOnSuccess) {
       getGeneralData();
     }
+    getContactCategories();
     employeeSearch = generalDataServes.employeeDataList;
     sellersSearch = generalDataServes.sellersDataList;
     inCompleteDataSearch = generalDataServes.inCompleteDataList;
@@ -509,6 +539,7 @@ class GeneralDataListController extends GetxController {
   void clearForm() {
     customerNameController.clear();
     selectedCustomerType.clear();
+    selectedContactCategoryIds.clear();
     phoneNumberController.clear();
     subPhoneNumberController.clear();
     facebookNameController.clear();

@@ -13,6 +13,7 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/general_data_list_controller.dart';
 
 class AddNewCustomerScreen extends StatefulWidget {
@@ -175,6 +176,102 @@ class _AddNewCustomerScreenState extends State<AddNewCustomerScreen> {
                   itemAsString: (item) => item.name,
                   compareFn: (item, value) => item.id == value.id,
                   validator: (p0) => null,
+                ),
+                SizedBox(height: 14.h),
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: ThemeService.isDark.value
+                        ? AppColors.darkColor
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: AppColors.primaryColor.withValues(alpha: .18),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'تصنيفات العملاء والموردين',
+                              textAlign: TextAlign.right,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppColors.primaryColor,
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => Get.toNamed(
+                              AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN,
+                            )?.then((_) => controller.getContactCategories()),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w),
+                              minimumSize: Size(0, 38.h),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            icon: const Icon(Icons.settings_outlined),
+                            label: const Text(
+                              'إدارة',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'يمكن اختيار أكثر من تصنيف لنفس العميل أو المورد',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: AppColors.customGreyColor2,
+                          fontSize: 11.sp,
+                          height: 1.4,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      controller.contactCategories.isEmpty
+                          ? Text(
+                              'لا توجد تصنيفات',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: AppColors.customGreyColor2,
+                                fontSize: 13.sp,
+                              ),
+                            )
+                          : Wrap(
+                              spacing: 8.w,
+                              runSpacing: 8.h,
+                              children: controller.contactCategories.map(
+                                (category) {
+                                  final selected = controller
+                                      .selectedContactCategoryIds
+                                      .contains(category.id);
+                                  return FilterChip(
+                                    label: Text(category.name),
+                                    selected: selected,
+                                    selectedColor: AppColors.primaryColor
+                                        .withValues(alpha: .16),
+                                    checkmarkColor: AppColors.primaryColor,
+                                    avatar: CircleAvatar(
+                                      radius: 5.r,
+                                      backgroundColor: _contactCategoryColor(
+                                        category.color,
+                                      ),
+                                    ),
+                                    onSelected: (_) => controller
+                                        .toggleContactCategory(category.id),
+                                  );
+                                },
+                              ).toList(),
+                            ),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 20.h),
                 controller.isEdit.value
@@ -501,4 +598,12 @@ class _AddNewCustomerScreenState extends State<AddNewCustomerScreen> {
       ),
     );
   }
+}
+
+Color _contactCategoryColor(String value) {
+  final hex = value.replaceAll('#', '').trim();
+  if (!RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(hex)) {
+    return AppColors.primaryColor;
+  }
+  return Color(int.parse('ff$hex', radix: 16));
 }

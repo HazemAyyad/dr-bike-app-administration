@@ -30,6 +30,7 @@ class DebtLedgerDatasource {
     String? startDate,
     String? endDate,
     String? currency,
+    int? categoryId,
   }) async {
     try {
       final response = await api.get(
@@ -40,6 +41,7 @@ class DebtLedgerDatasource {
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
           if (currency != null && currency.isNotEmpty) 'currency': currency,
+          if (categoryId != null) 'category_id': categoryId,
         },
       );
       return response.data as Map<String, dynamic>;
@@ -60,6 +62,49 @@ class DebtLedgerDatasource {
           if (search != null && search.isNotEmpty) 'search': search,
         },
       );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _serverException(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getCategories() async {
+    try {
+      final response = await api.get(EndPoints.contactCategories);
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _serverException(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> saveCategory({
+    int? id,
+    required String name,
+    required String color,
+    List<int> customerIds = const [],
+    List<int> sellerIds = const [],
+  }) async {
+    try {
+      final response = await api.post(
+        id == null
+            ? EndPoints.contactCategories
+            : EndPoints.contactCategoryUpdate(id),
+        data: {
+          'name': name,
+          'color': color,
+          'customer_ids': customerIds,
+          'seller_ids': sellerIds,
+        },
+      );
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (e) {
+      throw _serverException(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteCategory(int id) async {
+    try {
+      final response = await api.post(EndPoints.contactCategoryDelete(id));
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
       throw _serverException(e);

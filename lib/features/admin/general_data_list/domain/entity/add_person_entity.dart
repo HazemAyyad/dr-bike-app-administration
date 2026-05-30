@@ -3,8 +3,10 @@ import 'dart:io';
 class AddPersonEntity {
   final int? id;
   final bool? isEdit;
+
   /// customer | seller (جدول الزبون أو التاجر)
   final String personType;
+
   /// retail | wholesale (نوع الزبون في الواجهة)
   final String customerCategory;
   final String name;
@@ -22,6 +24,7 @@ class AddPersonEntity {
   final String workAddress;
   final List<File> iDImage;
   final List<File> licenseImage;
+  final List<int> contactCategoryIds;
 
   const AddPersonEntity({
     this.id,
@@ -43,5 +46,6 @@ class AddPersonEntity {
     required this.workAddress,
     required this.iDImage,
     required this.licenseImage,
+    this.contactCategoryIds = const [],
   });
 }

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/employee_data_model.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/person_data_model.dart';
+import 'package:doctorbike/features/admin/debts/data/models/debt_ledger_models.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../entity/add_person_entity.dart';
@@ -14,6 +15,7 @@ abstract class GeneralDataListRepository {
     required String sellerId,
   });
   Future<List<GeneralDataModel>> getGeneralList({required int tab});
+  Future<List<ContactCategory>> getContactCategories();
 
   Future<PersonDataModel> getPersonData({
     required String customerId,

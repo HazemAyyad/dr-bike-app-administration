@@ -25,13 +25,18 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
   static const _compact = true;
 
   bool get _isEdit => Get.arguments?['isEdit'] == true;
+  String get _title => Get.arguments?['title']?.toString() ?? '';
+  bool get _isSpecialTask =>
+      _title == 'addNewPravateTask' || _title == 'editSpecialTask';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.operationalSurface,
       appBar: CustomAppBar(
-        title: _isEdit ? 'editEmployeeTask' : 'createNewEmployeeTask',
+        title: _isSpecialTask
+            ? (_isEdit ? 'editSpecialTask' : 'addNewPravateTask')
+            : (_isEdit ? 'editEmployeeTask' : 'createNewEmployeeTask'),
         action: false,
       ),
       body: Form(
@@ -69,43 +74,59 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                             maxLines: 8,
                             validator: (_) => null,
                           ),
-                        ],
-                      ),
-                    ),
-                    TaskFormSectionCard(
-                      compact: _compact,
-                      title: 'employeeName',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const EmployeeSelectorField(compact: true),
-                          SizedBox(height: 8.h),
-                          Text(
-                            'priority'.tr,
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.customGreyColor5,
+                          if (_isSpecialTask) ...[
+                            SizedBox(height: 6.h),
+                            CustomTextField(
+                              label: 'taskNotes',
+                              hintText: 'taskDescriptionExample',
+                              controller: controller.taskNotesController,
+                              keyboardType: TextInputType.multiline,
+                              textInputAction: TextInputAction.newline,
+                              minLines: 2,
+                              maxLines: 8,
+                              validator: (_) => null,
                             ),
-                          ),
-                          SizedBox(height: 4.h),
-                          const EmployeeTaskPrioritySelector(compact: true),
+                          ],
                         ],
                       ),
                     ),
+                    if (!_isSpecialTask)
+                      TaskFormSectionCard(
+                        compact: _compact,
+                        title: 'employeeName',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const EmployeeSelectorField(compact: true),
+                            SizedBox(height: 8.h),
+                            Text(
+                              'priority'.tr,
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.customGreyColor5,
+                              ),
+                            ),
+                            SizedBox(height: 4.h),
+                            const EmployeeTaskPrioritySelector(compact: true),
+                          ],
+                        ),
+                      ),
                     TaskFormSectionCard(
                       compact: _compact,
-                      title: 'taskPoints',
+                      title: _isSpecialTask ? 'date' : 'taskPoints',
                       child: Column(
                         children: [
-                          CustomTextField(
-                            label: 'taskPoints',
-                            hintText: 'taskPointsExample',
-                            controller: controller.pointsController,
-                            keyboardType: TextInputType.number,
-                            validator: (_) => null,
-                          ),
-                          SizedBox(height: 8.h),
+                          if (!_isSpecialTask) ...[
+                            CustomTextField(
+                              label: 'taskPoints',
+                              hintText: 'taskPointsExample',
+                              controller: controller.pointsController,
+                              keyboardType: TextInputType.number,
+                              validator: (_) => null,
+                            ),
+                            SizedBox(height: 8.h),
+                          ],
                           const TaskDateTimeField(
                             compact: true,
                             label: 'startDate',
@@ -143,9 +164,8 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                                     top: Radius.circular(16.r),
                                   ),
                                   child: SizedBox(
-                                    height:
-                                        MediaQuery.of(context).size.height *
-                                            0.92,
+                                    height: MediaQuery.of(context).size.height *
+                                        0.92,
                                     child: const TaskRecurrenceScreen(),
                                   ),
                                 ),
@@ -179,15 +199,15 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                         ),
                       ),
                     ),
-                    TaskFormSectionCard(
+                    const TaskFormSectionCard(
                       compact: _compact,
                       title: 'taskReminder',
-                      child: const TaskReminderSection(compact: true),
+                      child: TaskReminderSection(compact: true),
                     ),
-                    TaskFormSectionCard(
+                    const TaskFormSectionCard(
                       compact: _compact,
                       title: 'subTasks',
-                      child: const InlineSubtaskBuilder(),
+                      child: InlineSubtaskBuilder(),
                     ),
                     TaskFormSectionCard(
                       compact: _compact,
@@ -222,7 +242,8 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                               ),
                             ],
                           ),
-                          if (_isEdit && controller.selectedFile.isNotEmpty) ...[
+                          if (_isEdit &&
+                              controller.selectedFile.isNotEmpty) ...[
                             SizedBox(height: 6.h),
                             SizedBox(
                               height: 64.h,
@@ -282,19 +303,22 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                           CustomCheckBox(
                             title: 'requireImage',
                             value: controller.requireImage,
-                            onChanged: (v) => controller.requireImage.value = v!,
-                          ),
-                          CustomCheckBox(
-                            title: 'requireAdminReview',
-                            value: controller.requireAdminReview,
                             onChanged: (v) =>
-                                controller.requireAdminReview.value = v!,
+                                controller.requireImage.value = v!,
                           ),
-                          CustomCheckBox(
-                            title: 'hideTask',
-                            value: controller.hideTask,
-                            onChanged: (v) => controller.hideTask.value = v!,
-                          ),
+                          if (!_isSpecialTask) ...[
+                            CustomCheckBox(
+                              title: 'requireAdminReview',
+                              value: controller.requireAdminReview,
+                              onChanged: (v) =>
+                                  controller.requireAdminReview.value = v!,
+                            ),
+                            CustomCheckBox(
+                              title: 'hideTask',
+                              value: controller.hideTask,
+                              onChanged: (v) => controller.hideTask.value = v!,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -303,7 +327,7 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                 ),
               ),
             ),
-            _StickySaveBar(isEdit: _isEdit),
+            _StickySaveBar(isEdit: _isEdit, isSpecialTask: _isSpecialTask),
           ],
         ),
       ),
@@ -312,9 +336,13 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
 }
 
 class _StickySaveBar extends GetView<CreateTaskController> {
-  const _StickySaveBar({required this.isEdit});
+  const _StickySaveBar({
+    required this.isEdit,
+    required this.isSpecialTask,
+  });
 
   final bool isEdit;
+  final bool isSpecialTask;
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +374,15 @@ class _StickySaveBar extends GetView<CreateTaskController> {
               onPressed: controller.isLoding.value
                   ? null
                   : () {
-                      if (isEdit) {
+                      if (isSpecialTask) {
+                        controller.createSpecialTask(
+                          context,
+                          specialTaskId: isEdit
+                              ? controller.specialTasksService
+                                  .specialTaskDetails.value!.taskId
+                              : 0,
+                        );
+                      } else if (isEdit) {
                         controller.createTask(
                           context,
                           employeeTaskId: controller

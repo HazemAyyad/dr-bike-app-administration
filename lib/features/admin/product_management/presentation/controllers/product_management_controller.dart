@@ -158,9 +158,10 @@ class ProductManagementController extends GetxController {
   List<ProductDevelopmentModel> searcharchiveProductManagement = [];
 
   ProductDevelopmentModel? developmentForProduct(String productId) {
-    return searchProductManagement.firstWhereOrNull(
-      (element) => element.productId == productId,
-    );
+    return ProductManagementServes().productManagement.firstWhereOrNull(
+          (element) =>
+              element.productId == productId && element.currentStep != '7',
+        );
   }
 
   String stepTitle(String currentStep) {

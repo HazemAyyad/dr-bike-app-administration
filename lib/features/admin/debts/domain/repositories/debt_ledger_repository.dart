@@ -14,7 +14,17 @@ abstract class DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    int? categoryId,
   });
+  Future<Either<Failure, List<ContactCategory>>> getCategories();
+  Future<Either<Failure, void>> saveCategory({
+    int? id,
+    required String name,
+    required String color,
+    List<int> customerIds,
+    List<int> sellerIds,
+  });
+  Future<Either<Failure, void>> deleteCategory(int id);
   Future<Either<Failure, List<LedgerPerson>>> getPeoplePicker({
     required String type,
     String? search,
@@ -73,8 +83,10 @@ abstract class DebtLedgerRepository {
     int? sellerId,
     String? currency,
   });
-  Future<Either<Failure, void>> archiveTransactionsBulk(List<int> transactionIds);
-  Future<Either<Failure, void>> restoreTransactionsBulk(List<int> transactionIds);
+  Future<Either<Failure, void>> archiveTransactionsBulk(
+      List<int> transactionIds);
+  Future<Either<Failure, void>> restoreTransactionsBulk(
+      List<int> transactionIds);
   Future<Either<Failure, Uint8List>> downloadReport({
     int? customerId,
     int? sellerId,

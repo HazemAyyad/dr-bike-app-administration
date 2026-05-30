@@ -195,16 +195,14 @@ class _RatingStars extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: List.generate(5, (index) {
-          final value = rating.clamp(0, 5);
-          final filled = index + 1 <= value;
-          final half = !filled && index < value;
+        children: List.generate(7, (index) {
+          final value = rating.clamp(0, 7).round();
+          final filled = index < value;
           return Icon(
-            half ? Icons.star_half : Icons.star,
+            Icons.star,
             size: 12.sp,
-            color: filled || half
-                ? const Color(0xFFFF8A00)
-                : AppColors.customGreyColor5,
+            color:
+                filled ? const Color(0xFFFF8A00) : AppColors.customGreyColor5,
           );
         }),
       ),

@@ -39,6 +39,22 @@ class LedgerShareImageHelper {
     }
   }
 
+  static Future<Uint8List?> captureReportVoucher({
+    required String personName,
+    required String timeLabel,
+    required String balanceLabel,
+    required double amount,
+    required bool isTaken,
+  }) {
+    return captureTransactionVoucher(
+      personName: personName,
+      timeLabel: timeLabel,
+      transactionValueLabel: balanceLabel,
+      amount: amount,
+      isTaken: isTaken,
+    );
+  }
+
   static Future<Uint8List?> capturePerformanceReminder({
     required String personName,
     required String timeLabel,

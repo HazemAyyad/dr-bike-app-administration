@@ -36,7 +36,7 @@ class AddProductManagementScreen extends StatelessWidget {
                     if (controller.isEdit.value) {
                       return ProductManagementWidget(
                         currentStep: controller.currentStep.toString(),
-                        rating: 0,
+                        rating: controller.currentStep.toDouble(),
                         productImage: controller.productImage,
                         productName: controller.productName,
                         isEdit: true,

@@ -13,6 +13,7 @@ import 'ledger_colors.dart';
 import 'ledger_currency_tab_bar.dart';
 import 'ledger_format.dart';
 import 'period_filter_sheet.dart';
+import 'person_report_screen.dart';
 import 'share_sheet.dart';
 
 class PersonDetailScreen extends StatefulWidget {
@@ -117,8 +118,8 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     SizedBox(height: 12.h),
                     Obx(() {
                       final cur = c.selectedCurrency.value;
-                      final stats = c.personCurrencyBalance ??
-                          detail.balanceFor(cur);
+                      final stats =
+                          c.personCurrencyBalance ?? detail.balanceFor(cur);
                       return _BalanceCard(
                         currency: cur,
                         balance: stats.balance,
@@ -159,10 +160,7 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                         _QuickAction(
                           icon: Icons.picture_as_pdf_outlined,
                           label: 'ledgerReport'.tr,
-                          onTap: () async {
-                            final file = await c.downloadPersonReport();
-                            if (file != null) c.openDownloadedReport(file);
-                          },
+                          onTap: () => Get.to(() => const PersonReportScreen()),
                         ),
                       ],
                     ),
@@ -170,7 +168,8 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                     Obx(
                       () {
                         final cur = c.selectedCurrency.value;
-                        final count = c.personDetail.value?.transactions.length ?? 0;
+                        final count =
+                            c.personDetail.value?.transactions.length ?? 0;
                         return Row(
                           children: [
                             Text(
@@ -181,25 +180,25 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                                 color: LedgerColors.primaryBlue,
                               ),
                             ),
-                        const Spacer(),
-                        InkWell(
-                          onTap: c.openArchiveSheet,
-                          borderRadius: BorderRadius.circular(8.r),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 4.w,
-                              vertical: 4.h,
-                            ),
-                            child: Text(
-                              'ledgerArchive'.tr,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                                color: LedgerColors.givenRed,
+                            const Spacer(),
+                            InkWell(
+                              onTap: c.openArchiveSheet,
+                              borderRadius: BorderRadius.circular(8.r),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 4.w,
+                                  vertical: 4.h,
+                                ),
+                                child: Text(
+                                  'ledgerArchive'.tr,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: LedgerColors.givenRed,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
                           ],
                         );
                       },
@@ -292,7 +291,8 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
             SizedBox(height: 16.h),
             if (person.phone != null && person.phone!.isNotEmpty)
               ListTile(
-                leading: const Icon(Icons.phone, color: LedgerColors.primaryBlue),
+                leading:
+                    const Icon(Icons.phone, color: LedgerColors.primaryBlue),
                 title: Text(person.phone!),
                 onTap: () {
                   Get.back();
@@ -540,98 +540,101 @@ class _TransactionCard extends StatelessWidget {
                       : Radius.zero,
                 ),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  transaction.typeLabel,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        transaction.typeLabel,
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: color,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      LedgerFormat.money(
+                                        transaction.amount,
+                                        currency: transaction.currency,
+                                      ),
+                                      style: TextStyle(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    SizedBox(width: 4.w),
+                                    Icon(
+                                      isTaken
+                                          ? Icons.south_east
+                                          : Icons.north_east,
+                                      size: 15.sp,
+                                      color: color,
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4.h),
+                                Text(
+                                  LedgerFormat.labeled(
+                                    'ledgerBalanceBefore'.tr,
+                                    transaction.balanceBefore,
+                                    currency: transaction.currency,
+                                  ),
                                   style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: color,
+                                    fontSize: 12.sp,
+                                    color: Colors.grey.shade600,
                                   ),
                                 ),
-                              ),
-                              SizedBox(width: 8.w),
-                              Text(
-                                LedgerFormat.money(
-                                  transaction.amount,
-                                  currency: transaction.currency,
+                                SizedBox(height: 4.h),
+                                Text(
+                                  ledger.formatTransactionTime(transaction),
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    color: Colors.grey.shade500,
+                                  ),
                                 ),
-                                style: TextStyle(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              SizedBox(width: 4.w),
-                              Icon(
-                                isTaken ? Icons.south_east : Icons.north_east,
-                                size: 15.sp,
-                                color: color,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          SizedBox(height: 4.h),
+                          SizedBox(width: 16.w),
                           Text(
-                            LedgerFormat.labeled(
-                              'ledgerBalanceBefore'.tr,
-                              transaction.balanceBefore,
+                            LedgerFormat.money(
+                              transaction.balanceAfter,
                               currency: transaction.currency,
+                              fractionDigits: 1,
                             ),
                             style: TextStyle(
-                              fontSize: 12.sp,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            ledger.formatTransactionTime(transaction),
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              color: Colors.grey.shade500,
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.bold,
+                              color: color,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    SizedBox(width: 16.w),
-                    Text(
-                      LedgerFormat.money(
-                        transaction.balanceAfter,
-                        currency: transaction.currency,
-                        fractionDigits: 1,
-                      ),
-                      style: TextStyle(
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                  ],
-                ),
-                if (transaction.displayDescription.isNotEmpty) ...[
-                  SizedBox(height: 10.h),
-                  Text(
-                    transaction.displayDescription,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: Colors.grey.shade800,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
+                      if (transaction.displayDescription.isNotEmpty) ...[
+                        SizedBox(height: 10.h),
+                        Text(
+                          transaction.displayDescription,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: Colors.grey.shade800,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

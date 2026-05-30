@@ -1,9 +1,15 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 import '../../../../../core/helpers/custom_dropdown_field.dart';
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
@@ -34,6 +40,7 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
   final RxList<ShownBoxesModel> allBoxes = <ShownBoxesModel>[].obs;
   final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
   final Rxn<ShownBoxesModel> selectedBox = Rxn<ShownBoxesModel>();
+  final RxList<File> receiptImages = <File>[].obs;
 
   bool get _requiresBox => widget.transaction.isManual;
 
@@ -45,7 +52,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
     amountController =
         TextEditingController(text: tx.amount.toStringAsFixed(2));
     noteController = TextEditingController(text: tx.note ?? '');
-    selectedDate = DateTime.tryParse(tx.transactionDate ?? '') ?? DateTime.now();
+    selectedDate =
+        DateTime.tryParse(tx.transactionDate ?? '') ?? DateTime.now();
     selectedCurrency = tx.currency;
     _loadBoxes(tx.boxId);
   }
@@ -88,6 +96,21 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
     super.dispose();
   }
 
+  Future<void> _pickReceiptImages() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickMultiImage(imageQuality: 85);
+    if (picked.isEmpty) return;
+    receiptImages
+      ..clear()
+      ..addAll(picked.map((x) => File(x.path)));
+  }
+
+  void _removeReceiptImage(int index) {
+    if (index >= 0 && index < receiptImages.length) {
+      receiptImages.removeAt(index);
+    }
+  }
+
   Future<void> _save() async {
     final amount = double.tryParse(amountController.text.trim());
     if (amount == null || amount <= 0) {
@@ -107,6 +130,8 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
           ? null
           : noteController.text.trim(),
       boxId: selectedBox.value?.boxId.toString(),
+      receiptImages:
+          receiptImages.isEmpty ? null : List<File>.from(receiptImages),
     );
 
     setState(() => isSaving = false);
@@ -256,6 +281,13 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
                   ),
                 ),
               ),
+              SizedBox(height: 12.h),
+              _ReceiptImageEditor(
+                existingImages: widget.transaction.receiptImages,
+                newImages: receiptImages,
+                onPick: _pickReceiptImages,
+                onRemoveNew: _removeReceiptImage,
+              ),
               SizedBox(height: 20.h),
               SizedBox(
                 height: 48.h,
@@ -283,6 +315,138 @@ class _EditTransactionSheetState extends State<EditTransactionSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ReceiptImageEditor extends StatelessWidget {
+  const _ReceiptImageEditor({
+    required this.existingImages,
+    required this.newImages,
+    required this.onPick,
+    required this.onRemoveNew,
+  });
+
+  final List<String> existingImages;
+  final RxList<File> newImages;
+  final VoidCallback onPick;
+  final ValueChanged<int> onRemoveNew;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final hasNewImages = newImages.isNotEmpty;
+      final imagesToShow =
+          hasNewImages ? newImages.length : existingImages.length;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton.icon(
+            onPressed: onPick,
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: Text(
+              hasNewImages || existingImages.isNotEmpty
+                  ? 'ledgerReplaceImages'.tr
+                  : 'ledgerAddImage'.tr,
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: LedgerColors.primaryBlue,
+              side: const BorderSide(color: LedgerColors.primaryBlue),
+              padding: EdgeInsets.symmetric(vertical: 10.h),
+            ),
+          ),
+          if (existingImages.isNotEmpty && !hasNewImages) ...[
+            SizedBox(height: 6.h),
+            Text(
+              'ledgerImageReplaceHint'.tr,
+              style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          if (imagesToShow > 0) ...[
+            SizedBox(height: 8.h),
+            SizedBox(
+              height: 76.h,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: imagesToShow,
+                separatorBuilder: (_, __) => SizedBox(width: 8.w),
+                itemBuilder: (context, index) {
+                  return hasNewImages
+                      ? _NewReceiptThumb(
+                          file: newImages[index],
+                          onRemove: () => onRemoveNew(index),
+                        )
+                      : _ExistingReceiptThumb(image: existingImages[index]);
+                },
+              ),
+            ),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+class _ExistingReceiptThumb extends StatelessWidget {
+  const _ExistingReceiptThumb({required this.image});
+
+  final String image;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = ShowNetImage.getPhoto(image);
+    return GestureDetector(
+      onTap: () => FullScreenZoomImage.open(context, url),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8.r),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          width: 76.w,
+          height: 76.h,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
+class _NewReceiptThumb extends StatelessWidget {
+  const _NewReceiptThumb({required this.file, required this.onRemove});
+
+  final File file;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8.r),
+          child: Image.file(
+            file,
+            width: 76.w,
+            height: 76.h,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close, size: 14, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

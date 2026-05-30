@@ -7,6 +7,7 @@ import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../debts/data/models/debt_ledger_models.dart';
 import '../../domain/entity/add_person_entity.dart';
 import '../models/employee_data_model.dart';
 
@@ -67,6 +68,10 @@ class GeneralDataListDatasource {
         'work_address': data.workAddress,
       };
 
+      if (data.contactCategoryIds.isNotEmpty) {
+        formFields['contact_category_ids[]'] = data.contactCategoryIds;
+      }
+
       if (data.iDImage.isNotEmpty) {
         formFields['ID_image[]'] = await Future.wait(
           data.iDImage.map((e) async {
@@ -103,6 +108,24 @@ class GeneralDataListDatasource {
         isFormData: true,
       );
       return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<ContactCategory>> getContactCategories() async {
+    try {
+      final response = await api.get(EndPoints.contactCategories);
+      return (response.data['categories'] as List<dynamic>? ?? [])
+          .map((e) => ContactCategory.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

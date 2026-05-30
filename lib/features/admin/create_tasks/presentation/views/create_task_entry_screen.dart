@@ -12,7 +12,10 @@ class CreateTaskEntryScreen extends StatelessWidget {
 
   static bool _isEmployeeTaskFlow(Map<String, dynamic>? args) {
     final title = args?['title']?.toString() ?? '';
-    return title == 'createNewEmployeeTask' || title == 'editEmployeeTask';
+    return title == 'createNewEmployeeTask' ||
+        title == 'editEmployeeTask' ||
+        title == 'addNewPravateTask' ||
+        title == 'editSpecialTask';
   }
 
   @override

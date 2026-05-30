@@ -113,6 +113,12 @@ class ProductManagementScreen extends GetView<ProductManagementController> {
                             ? controller.searcharchiveProductManagement.reversed
                                 .toList()[index]
                             : null;
+                    final stockDevelopment = tab == 0 && stockProduct != null
+                        ? controller.developmentForProduct(stockProduct.id)
+                        : null;
+                    final displayStep = productDevelopment?.currentStep ??
+                        stockDevelopment?.currentStep ??
+                        (tab == 0 ? '0' : '4');
                     return GestureDetector(
                       onTap: () {
                         if (tab == 2) {
@@ -137,10 +143,8 @@ class ProductManagementScreen extends GetView<ProductManagementController> {
                               )
                           : null,
                       child: ProductManagementWidget(
-                        currentStep: productDevelopment?.currentStep ??
-                            (tab == 0 ? '0' : '4'),
-                        rating:
-                            productDevelopment?.rate ?? stockProduct?.rate ?? 0,
+                        currentStep: displayStep,
+                        rating: double.tryParse(displayStep) ?? 0,
                         productImage: productDevelopment?.productImage ??
                             stockProduct?.imageUrl ??
                             '',

@@ -48,6 +48,10 @@ class DebtLedgerController extends GetxController {
   final RxBool isSaving = false.obs;
   final RxString searchQuery = ''.obs;
   final RxString selectedPeriod = 'all'.obs;
+  final RxString selectedSort = 'newest'.obs;
+  final RxString selectedDebtType = 'all'.obs;
+  final RxnInt selectedCategoryId = RxnInt();
+  final RxList<ContactCategory> categories = <ContactCategory>[].obs;
   final Rxn<DateTime> customStartDate = Rxn<DateTime>();
   final Rxn<DateTime> customEndDate = Rxn<DateTime>();
 
@@ -98,15 +102,63 @@ class DebtLedgerController extends GetxController {
       ];
 
   List<LedgerPerson> get filteredPeople {
-    if (searchQuery.value.isEmpty) return people;
-    final q = searchQuery.value.toLowerCase();
-    return people
-        .where(
-          (p) =>
-              p.name.toLowerCase().contains(q) ||
-              (p.phone ?? '').contains(q),
-        )
-        .toList();
+    final list = searchQuery.value.isEmpty
+        ? people.toList()
+        : people.where(
+            (p) {
+              final q = searchQuery.value.toLowerCase();
+              return p.name.toLowerCase().contains(q) ||
+                  (p.phone ?? '').contains(q);
+            },
+          ).toList();
+    list.removeWhere((person) => !_matchesDebtType(person));
+    list.sort(_comparePeople);
+    return list;
+  }
+
+  bool _matchesDebtType(LedgerPerson person) {
+    switch (selectedDebtType.value) {
+      case 'taken':
+        return person.balance > 0;
+      case 'given':
+        return person.balance < 0;
+      case 'settled':
+        return person.balance.abs() < 0.001;
+      case 'all':
+      default:
+        return true;
+    }
+  }
+
+  int _comparePeople(LedgerPerson a, LedgerPerson b) {
+    switch (selectedSort.value) {
+      case 'oldest':
+        return _personActivityDate(a).compareTo(_personActivityDate(b));
+      case 'largest_amount':
+        return b.balance.abs().compareTo(a.balance.abs());
+      case 'smallest_amount':
+        return a.balance.abs().compareTo(b.balance.abs());
+      case 'alphabetical':
+        return a.name.compareTo(b.name);
+      case 'newest':
+      default:
+        return _personActivityDate(b).compareTo(_personActivityDate(a));
+    }
+  }
+
+  DateTime _personActivityDate(LedgerPerson person) {
+    final last = person.lastTransaction;
+    final raw = last?.transactionDate ?? last?.createdAt;
+    return DateTime.tryParse(raw ?? '') ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  void changeSort(String sort) {
+    selectedSort.value = sort;
+  }
+
+  void changeDebtType(String type) {
+    selectedDebtType.value = type;
   }
 
   @override
@@ -117,7 +169,7 @@ class DebtLedgerController extends GetxController {
 
   Future<void> loadMainData() async {
     isLoading(true);
-    await Future.wait([fetchSummary(), fetchPeople()]);
+    await Future.wait([fetchSummary(), fetchPeople(), fetchCategories()]);
     isLoading(false);
   }
 
@@ -153,6 +205,7 @@ class DebtLedgerController extends GetxController {
       startDate: _formatDate(customStartDate.value),
       endDate: _formatDate(customEndDate.value),
       currency: selectedCurrency.value,
+      categoryId: selectedCategoryId.value,
     );
     result.fold(
       (failure) => Get.snackbar('error'.tr, failure.errMessage),
@@ -164,6 +217,66 @@ class DebtLedgerController extends GetxController {
   void onSearchChanged(String value) {
     searchQuery.value = value;
     fetchPeople();
+  }
+
+  Future<void> fetchCategories() async {
+    final result = await repository.getCategories();
+    result.fold(
+      (failure) => Get.snackbar('error'.tr, failure.errMessage),
+      (list) => categories.assignAll(list),
+    );
+  }
+
+  Future<void> applyCategory(int? id) async {
+    selectedCategoryId.value = id;
+    await fetchPeople();
+  }
+
+  Future<bool> saveCategory({
+    int? id,
+    required String name,
+    required String color,
+    List<int> customerIds = const [],
+    List<int> sellerIds = const [],
+  }) async {
+    final result = await repository.saveCategory(
+      id: id,
+      name: name,
+      color: color,
+      customerIds: customerIds,
+      sellerIds: sellerIds,
+    );
+    final success = result.fold(
+      (failure) {
+        Get.snackbar('error'.tr, failure.errMessage);
+        return false;
+      },
+      (_) => true,
+    );
+    if (success) {
+      await fetchCategories();
+      await fetchPeople();
+    }
+    return success;
+  }
+
+  Future<bool> deleteCategory(int id) async {
+    final result = await repository.deleteCategory(id);
+    final success = result.fold(
+      (failure) {
+        Get.snackbar('error'.tr, failure.errMessage);
+        return false;
+      },
+      (_) => true,
+    );
+    if (success) {
+      if (selectedCategoryId.value == id) {
+        selectedCategoryId.value = null;
+      }
+      await fetchCategories();
+      await fetchPeople();
+    }
+    return success;
   }
 
   Future<void> openPerson(LedgerPerson person) async {
@@ -374,8 +487,10 @@ class DebtLedgerController extends GetxController {
   }
 
   final Rxn<LedgerTransaction> selectedTransaction = Rxn<LedgerTransaction>();
-  final RxList<LedgerActivityEntry> transactionActivity = <LedgerActivityEntry>[].obs;
-  final RxList<LedgerActivityEntry> personActivity = <LedgerActivityEntry>[].obs;
+  final RxList<LedgerActivityEntry> transactionActivity =
+      <LedgerActivityEntry>[].obs;
+  final RxList<LedgerActivityEntry> personActivity =
+      <LedgerActivityEntry>[].obs;
   final RxBool transactionActivityLoading = false.obs;
   final RxBool personActivityLoading = false.obs;
 
@@ -471,6 +586,7 @@ class DebtLedgerController extends GetxController {
     String? currency,
     String? note,
     String? boxId,
+    List<File>? receiptImages,
   }) async {
     final result = await repository.updateTransaction(
       id: id,
@@ -480,6 +596,7 @@ class DebtLedgerController extends GetxController {
       currency: currency,
       note: note,
       boxId: boxId,
+      receiptImages: receiptImages,
     );
     return result.fold(
       (failure) {
@@ -497,7 +614,7 @@ class DebtLedgerController extends GetxController {
     Get.bottomSheet(
       EditTransactionSheet(transaction: transaction),
       isScrollControlled: true,
-    )?.then((updated) async {
+    ).then((updated) async {
       if (updated == true) {
         await loadPersonDetail();
       }
@@ -614,9 +731,8 @@ class DebtLedgerController extends GetxController {
     try {
       final dt = DateTime.parse(raw.replaceFirst(' ', 'T'));
       final now = DateTime.now();
-      final isToday = dt.year == now.year &&
-          dt.month == now.month &&
-          dt.day == now.day;
+      final isToday =
+          dt.year == now.year && dt.month == now.month && dt.day == now.day;
       final time = DateFormat('h:mm a', 'ar').format(dt);
       if (isToday) {
         return '${'ledgerTodayAt'.tr} $time';
@@ -638,12 +754,21 @@ class DebtLedgerController extends GetxController {
     if (raw == null || raw.isEmpty) return '';
     try {
       final dt = DateTime.parse(raw.replaceFirst(' ', 'T'));
-      final date = DateFormat('dd-MM-yyyy', 'ar').format(dt);
-      final time = DateFormat('h:mm a', 'ar').format(dt);
-      return '$date ${'ledgerAt'.tr} $time';
+      return _formatRelativeLedgerDate(dt);
     } catch (_) {
       return raw;
     }
+  }
+
+  String _formatRelativeLedgerDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDay = DateTime(date.year, date.month, date.day);
+    final diffDays = today.difference(targetDay).inDays;
+
+    if (diffDays <= 0) return 'ledgerToday'.tr;
+    if (diffDays == 1) return 'ledgerYesterday'.tr;
+    return 'ledgerDaysAgo'.trParams({'days': '$diffDays'});
   }
 
   Future<void> loadPersonArchive() async {
@@ -671,7 +796,7 @@ class DebtLedgerController extends GetxController {
       ArchiveTransactionsSheet(transactions: txs),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-    )?.then((archived) async {
+    ).then((archived) async {
       if (archived == true) {
         await loadPersonDetail();
         await fetchSummary();
@@ -743,6 +868,7 @@ class DebtLedgerController extends GetxController {
         type: type,
         isCustomer: selectedPerson!.isCustomer,
         personId: selectedPerson!.id,
+        initialCurrency: selectedCurrency.value,
       ),
     )?.then((saved) {
       if (saved == true) {
@@ -816,8 +942,7 @@ class DebtLedgerController extends GetxController {
     }
 
     final amountLabel = LedgerFormat.money(balance, currency: currency);
-    final message =
-        'مرحباً ${selectedPerson!.name}\n'
+    final message = 'مرحباً ${selectedPerson!.name}\n'
         '${'ledgerDebtCollectionMessage'.tr}: $amountLabel';
 
     if (channel == 'whatsapp') {
@@ -1011,11 +1136,30 @@ class DebtLedgerController extends GetxController {
       return;
     }
 
-    final file = await downloadPersonReport();
-    if (file != null) {
+    final person = selectedPerson;
+    if (person == null) return;
+
+    final imageBytes = await LedgerShareImageHelper.captureReportVoucher(
+      personName: person.name,
+      timeLabel: formatReminderTime(),
+      balanceLabel: 'ledgerBalance'.tr,
+      amount: balance.abs(),
+      isTaken: balance < 0,
+    );
+
+    File? voucherFile;
+    if (imageBytes != null && imageBytes.isNotEmpty) {
+      final dir = await getTemporaryDirectory();
+      voucherFile = File(
+        '${dir.path}/ledger_report_${person.id}_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await voucherFile.writeAsBytes(imageBytes);
+    }
+
+    if (voucherFile != null) {
       await SharePlus.instance.share(
         ShareParams(
-          files: [XFile(file.path)],
+          files: [XFile(voucherFile.path)],
           text: message,
         ),
       );
@@ -1075,6 +1219,7 @@ class TransactionCalculatorController extends GetxController {
   final String initialType;
   final bool isCustomer;
   final int personId;
+  final String initialCurrency;
 
   TransactionCalculatorController({
     required this.repository,
@@ -1083,6 +1228,7 @@ class TransactionCalculatorController extends GetxController {
     required this.initialType,
     required this.isCustomer,
     required this.personId,
+    required this.initialCurrency,
   });
 
   final RxList<ShownBoxesModel> allBoxes = <ShownBoxesModel>[].obs;
@@ -1102,6 +1248,7 @@ class TransactionCalculatorController extends GetxController {
   void onInit() {
     super.onInit();
     transactionType.value = initialType;
+    selectedCurrency.value = initialCurrency;
     _loadBoxes();
   }
 
@@ -1132,7 +1279,7 @@ class TransactionCalculatorController extends GetxController {
   Future<void> pickReceiptImages() async {
     final picker = ImagePicker();
     final picked = await picker.pickMultiImage(imageQuality: 85);
-    if (picked == null || picked.isEmpty) return;
+    if (picked.isEmpty) return;
     receiptImages.addAll(picked.map((x) => File(x.path)));
   }
 
@@ -1280,7 +1427,8 @@ class TransactionCalculatorController extends GetxController {
               type: type,
               typeLabel: tx.typeLabel,
               amount: tx.amount,
-              balanceAfter: createResult.balance,
+              currency: tx.currency,
+              balanceAfter: tx.balanceAfter,
               timeLabel: ledger.formatTransactionTime(tx),
             ),
           );

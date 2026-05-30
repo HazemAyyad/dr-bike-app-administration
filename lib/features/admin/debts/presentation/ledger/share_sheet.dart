@@ -13,48 +13,51 @@ class ShareSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<DebtLedgerController>();
 
-    return Container(
-      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'ledgerShareReport'.tr,
-            style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 16.h),
-          Row(
-            children: [
-              Expanded(
-                child: _ShareButton(
-                  icon: Icons.chat,
-                  label: 'WhatsApp',
-                  color: const Color(0xFF25D366),
-                  onTap: () {
-                    Get.back();
-                    controller.shareReportVia('whatsapp');
-                  },
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 28.h),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'ledgerShareReport'.tr,
+              style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16.h),
+            Row(
+              children: [
+                Expanded(
+                  child: _ShareButton(
+                    icon: Icons.chat,
+                    label: 'WhatsApp',
+                    color: const Color(0xFF25D366),
+                    onTap: () {
+                      Get.back();
+                      controller.shareReportVia('whatsapp');
+                    },
+                  ),
                 ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: _ShareButton(
-                  icon: Icons.sms,
-                  label: 'SMS',
-                  color: LedgerColors.primaryBlue,
-                  onTap: () {
-                    Get.back();
-                    controller.shareReportVia('sms');
-                  },
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: _ShareButton(
+                    icon: Icons.sms,
+                    label: 'SMS',
+                    color: LedgerColors.primaryBlue,
+                    onTap: () {
+                      Get.back();
+                      controller.shareReportVia('sms');
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -88,7 +91,8 @@ class _ShareButton extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 28.sp),
             SizedBox(height: 6.h),
-            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+            Text(label,
+                style: TextStyle(color: color, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -178,7 +182,8 @@ class ShareOptionsSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: const Icon(Icons.receipt_long, color: LedgerColors.primaryBlue),
+            leading:
+                const Icon(Icons.receipt_long, color: LedgerColors.primaryBlue),
             title: Text('ledgerShareTransactions'.tr),
             onTap: () {
               Get.back();

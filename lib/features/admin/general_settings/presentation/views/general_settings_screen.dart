@@ -152,6 +152,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         ),
       ),
       _SettingsItem(
+        icon: Icons.category_outlined,
+        iconColor: const Color(0xFF6B65BD),
+        titleKey: 'contactCategoriesSettings',
+        descriptionKey: 'contactCategoriesSettingsDesc',
+        onTap: () => Get.toNamed(AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN),
+      ),
+      _SettingsItem(
         icon: Icons.account_balance_outlined,
         iconColor: const Color(0xFF0D9488),
         titleKey: 'banksManagement',

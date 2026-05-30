@@ -24,6 +24,7 @@ class PersonDataModel extends AddPersonEntity {
     required String workAddress,
     required List<File> iDImage,
     required List<File> licenseImage,
+    List<int> contactCategoryIds = const [],
   }) : super(
           id: id,
           isEdit: isEdit ?? false,
@@ -43,6 +44,7 @@ class PersonDataModel extends AddPersonEntity {
           workAddress: workAddress,
           iDImage: iDImage,
           licenseImage: licenseImage,
+          contactCategoryIds: contactCategoryIds,
         );
 
   factory PersonDataModel.fromJson(Map<String, dynamic> json) {
@@ -72,7 +74,16 @@ class PersonDataModel extends AddPersonEntity {
       workAddress: asString(j['work_address']),
       iDImage: mapUrlList(j['ID_image']),
       licenseImage: mapUrlList(j['license_image']),
+      contactCategoryIds: parseContactCategoryIds(j['contact_category_ids']),
     );
+  }
+
+  static List<int> parseContactCategoryIds(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map((e) => int.tryParse(e?.toString() ?? '') ?? 0)
+        .where((id) => id > 0)
+        .toList();
   }
 
   Map<String, dynamic> toJson() {
@@ -93,6 +104,7 @@ class PersonDataModel extends AddPersonEntity {
       'work_address': workAddress,
       'id_image': iDImage,
       'license_image': licenseImage,
+      'contact_category_ids': contactCategoryIds,
     };
   }
 }

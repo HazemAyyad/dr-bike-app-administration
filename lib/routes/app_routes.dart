@@ -19,6 +19,8 @@ class AppRoutes {
   static const ADMINDASHBOARDSCREEN = '/dashboardscreen';
   static const EMPLOYEEDASHBOARDSCREEN = '/EmployeeDashbordScreen';
   static const EMPLOYEETASKSSCREEN = '/employeetasksscreen';
+  static const EMPLOYEEREMINDERSSCREEN = '/employeeremindersscreen';
+  static const MYEMPLOYEEREMINDERSSCREEN = '/myemployeeremindersscreen';
   static const CREATETASKSCREEN = '/createtaskscreen';
   static const TASKDETAILS = '/taskdetails';
   static const TASKRECURRENCE = '/taskrecurrence';
@@ -118,6 +120,7 @@ class AppRoutes {
   // bill
   static const ADDNEWBILLSCREEN = '/AddNewBillScreen';
   static const BILLDETAILSSCREEN = '/BillDetailsScreen';
+
   /// تفاصيل فاتورة البيع الفوري (منفصل عن فواتير المشتريات).
   static const INSTANTSALEBILLDETAILSSCREEN = '/InstantSaleBillDetailsScreen';
   // purchase orders
@@ -141,4 +144,6 @@ class AppRoutes {
   // General Settings (admin)
   static const GENERALSETTINGSSCREEN = '/GeneralSettingsScreen';
   static const BANKSSETTINGSSCREEN = '/BanksSettingsScreen';
+  static const CONTACTCATEGORIESSETTINGSSCREEN =
+      '/ContactCategoriesSettingsScreen';
 }

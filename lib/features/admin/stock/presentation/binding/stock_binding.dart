@@ -60,6 +60,7 @@ class StockBinding extends Bindings {
             stockRepository: Get.find<StockImplement>(),
           ),
           stockTagsInteractor: Get.find<StockTagsInteractor>(),
+          stockDatasource: Get.find<StockDatasource>(),
         ),
       );
     }

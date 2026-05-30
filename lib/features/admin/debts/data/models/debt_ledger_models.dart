@@ -16,9 +16,48 @@ class LedgerCurrencyTotals {
   }
 }
 
+class ContactCategory {
+  final int id;
+  final String name;
+  final String color;
+  final int customersCount;
+  final int sellersCount;
+  final List<int> customerIds;
+  final List<int> sellerIds;
+
+  const ContactCategory({
+    required this.id,
+    required this.name,
+    required this.color,
+    required this.customersCount,
+    required this.sellersCount,
+    this.customerIds = const [],
+    this.sellerIds = const [],
+  });
+
+  factory ContactCategory.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic value) => int.tryParse(value?.toString() ?? '') ?? 0;
+    List<int> parseIds(dynamic value) {
+      if (value is! List) return const [];
+      return value.map(parseInt).where((id) => id > 0).toList();
+    }
+
+    return ContactCategory(
+      id: parseInt(json['id']),
+      name: json['name']?.toString() ?? '',
+      color: json['color']?.toString() ?? '#2196F3',
+      customersCount: parseInt(json['customers_count']),
+      sellersCount: parseInt(json['sellers_count']),
+      customerIds: parseIds(json['customer_ids']),
+      sellerIds: parseIds(json['seller_ids']),
+    );
+  }
+}
+
 class LedgerSummary {
   /// مجموع الأرصدة الموجبة (لنا) — يُعرض في «أخذت».
   final double totalTakenCustomers;
+
   /// مجموع الأرصدة السالبة (علينا) — يُعرض في «أعطيت».
   final double totalGivenCustomers;
   final double balanceCustomers;
@@ -131,8 +170,7 @@ class LedgerPerson {
     if (balancesRaw != null) {
       for (final entry in balancesRaw.entries) {
         final inner = entry.value as Map<String, dynamic>?;
-        balancesByCurrency[entry.key] =
-            parse(inner?['balance'] ?? entry.value);
+        balancesByCurrency[entry.key] = parse(inner?['balance'] ?? entry.value);
       }
     }
 
@@ -361,13 +399,15 @@ class LedgerTransaction {
       typeLabel: json['type_label']?.toString() ?? '',
       amount: double.tryParse(json['amount']?.toString() ?? '0') ?? 0,
       currency: json['currency']?.toString() ?? 'شيكل',
-      balanceBefore: double.tryParse(json['balance_before']?.toString() ?? '') ??
-          _calcBalanceBefore(
-            json['type']?.toString() ?? '',
-            double.tryParse(json['balance_after']?.toString() ?? '0') ?? 0,
-            double.tryParse(json['amount']?.toString() ?? '0') ?? 0,
-          ),
-      balanceAfter: double.tryParse(json['balance_after']?.toString() ?? '0') ?? 0,
+      balanceBefore:
+          double.tryParse(json['balance_before']?.toString() ?? '') ??
+              _calcBalanceBefore(
+                json['type']?.toString() ?? '',
+                double.tryParse(json['balance_after']?.toString() ?? '0') ?? 0,
+                double.tryParse(json['amount']?.toString() ?? '0') ?? 0,
+              ),
+      balanceAfter:
+          double.tryParse(json['balance_after']?.toString() ?? '0') ?? 0,
       note: json['note']?.toString(),
       receiptImages: (json['receipt_images'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
@@ -384,8 +424,7 @@ class LedgerTransaction {
 
   bool get isTaken => type == 'taken';
 
-  bool get isManual =>
-      source == null || source == '' || source == 'manual';
+  bool get isManual => source == null || source == '' || source == 'manual';
 
   bool get isInstantSale => source == 'instant_sale';
 
@@ -464,8 +503,7 @@ class LedgerPersonArchiveDetail {
       balance: parse(data['balance']),
       balancesByCurrency:
           _parseBalancesByCurrency(data['balances'] as Map<String, dynamic>?),
-      archivedTransactionsCount:
-          data['archived_transactions_count'] as int? ??
+      archivedTransactionsCount: data['archived_transactions_count'] as int? ??
           data['deleted_transactions_count'] as int? ??
           list.length,
       transactions: list,

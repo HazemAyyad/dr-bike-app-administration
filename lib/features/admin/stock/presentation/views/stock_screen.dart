@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
@@ -22,6 +23,32 @@ class StockScreen extends GetView<StockController> {
       appBar: CustomAppBar(
         title: 'stock',
         actions: [
+          if (userType == 'admin') ...[
+            Obx(
+              () => IconButton(
+                icon: controller.isProductsCsvBusy.value
+                    ? SizedBox(
+                        width: 20.w,
+                        height: 20.w,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.file_download_outlined),
+                tooltip: 'exportProducts'.tr,
+                onPressed: controller.isProductsCsvBusy.value
+                    ? null
+                    : controller.exportProductsCsv,
+              ),
+            ),
+            Obx(
+              () => IconButton(
+                icon: const Icon(Icons.file_upload_outlined),
+                tooltip: 'importProducts'.tr,
+                onPressed: controller.isProductsCsvBusy.value
+                    ? null
+                    : controller.importProductsCsv,
+              ),
+            ),
+          ],
           IconButton(
             icon: const Icon(Icons.local_offer_outlined),
             tooltip: 'offerPackages'.tr,
@@ -44,30 +71,30 @@ class StockScreen extends GetView<StockController> {
               controller: controller.scrollController,
               physics: kRefreshableScrollPhysics,
               slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
-                  child: AppTabs(
-                    tabs: controller.tabs,
-                    currentTab: controller.currentTab,
-                    changeTab: controller.changeTab,
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
+                    child: AppTabs(
+                      tabs: controller.tabs,
+                      currentTab: controller.currentTab,
+                      changeTab: controller.changeTab,
+                    ),
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: Obx(() {
-                  if (controller.currentTab.value == 3) {
-                    return const SizedBox.shrink();
-                  }
-                  return Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                    child: const StockSearchBar(),
-                  );
-                }),
-              ),
-              const GridViewItems(),
-            ],
+                SliverToBoxAdapter(
+                  child: Obx(() {
+                    if (controller.currentTab.value == 3) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 16.w, vertical: 12.h),
+                      child: const StockSearchBar(),
+                    );
+                  }),
+                ),
+                const GridViewItems(),
+              ],
             ),
           ),
           Positioned(

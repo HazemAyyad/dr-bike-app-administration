@@ -13,8 +13,11 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/task_details_debug.dart';
+import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../employee_reminders/data/employee_reminder_models.dart';
+import '../../../../employee_reminders/data/employee_reminders_datasource.dart';
 import '../../../../bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
@@ -146,6 +149,11 @@ class EmployeeDashbordController extends GetxController
       'id': '7',
       'title': 'employeeTasks',
       'route': AppRoutes.EMPLOYEETASKSSCREEN
+    },
+    {
+      'id': '23',
+      'title': 'employeeReminders',
+      'route': AppRoutes.MYEMPLOYEEREMINDERSSCREEN
     },
     {'id': '6', 'title': 'privateTasks', 'route': AppRoutes.PRIVATETASKSSCREEN},
     {
@@ -334,9 +342,8 @@ class EmployeeDashbordController extends GetxController
       EmployeeTasksBinding().dependencies();
     }
     final tasksCtrl = Get.find<EmployeeTasksController>();
-    final occurrenceId = task.isOccurrence
-        ? (task.occurrenceId ?? task.id).toString()
-        : null;
+    final occurrenceId =
+        task.isOccurrence ? (task.occurrenceId ?? task.id).toString() : null;
 
     TaskDetailsDebug.tap(
       source: 'EmployeeDashbordController.openTaskDetails',
@@ -474,6 +481,9 @@ class EmployeeDashbordController extends GetxController
 
   // get employee data
   final Rxn<DashbordEmployeeDetailsModel> employeeData = Rxn();
+  final RxList<EmployeeReminderItem> dashboardReminders =
+      <EmployeeReminderItem>[].obs;
+  final RxBool remindersLoading = false.obs;
   final Map<String, List<Task>> tasksData = {};
   final Map<String, List<Task>> tasksDataFilter = {};
 
@@ -514,8 +524,24 @@ class EmployeeDashbordController extends GetxController
     tasksDataFilter.assignAll(filterByRange(tasksData));
     update();
     refreshTodayAttendance();
+    loadDashboardReminders();
     if (scrollToTodayb) {
       Future.delayed(const Duration(milliseconds: 400), scrollToToday);
+    }
+  }
+
+  Future<void> loadDashboardReminders() async {
+    if (!Get.isRegistered<DioConsumer>()) return;
+    try {
+      remindersLoading.value = true;
+      final datasource =
+          EmployeeRemindersDatasource(api: Get.find<DioConsumer>());
+      final items = await datasource.getMyReminders();
+      dashboardReminders.assignAll(items.take(3));
+    } catch (_) {
+      dashboardReminders.clear();
+    } finally {
+      remindersLoading.value = false;
     }
   }
 
@@ -645,7 +671,8 @@ class EmployeeDashbordController extends GetxController
     final entries = keys.map((k) => MapEntry(k, DateTime.parse(k))).toList();
     final todayEntry = entries.where((e) => e.key == today).toList();
     final future = entries
-        .where((e) => e.key != today && !e.value.isBefore(DateTime.parse(today)))
+        .where(
+            (e) => e.key != today && !e.value.isBefore(DateTime.parse(today)))
         .toList()
       ..sort((a, b) => a.value.compareTo(b.value));
     final past = entries
@@ -681,7 +708,8 @@ class EmployeeDashbordController extends GetxController
         endDate = startDate;
         break;
       case tasksViewMonthly:
-        final m = DateTime(startDate.year, startDate.month + (isNext ? 1 : -1), 1);
+        final m =
+            DateTime(startDate.year, startDate.month + (isNext ? 1 : -1), 1);
         startDate = m;
         endDate = DateTime(m.year, m.month + 1, 0);
         break;

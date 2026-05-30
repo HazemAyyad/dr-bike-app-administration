@@ -10,6 +10,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/general_data_list_repository.dart';
 import '../datasources/general_data_list_datasource.dart';
 import '../models/employee_data_model.dart';
+import '../../../debts/data/models/debt_ledger_models.dart';
 
 class GeneralDataListImplement implements GeneralDataListRepository {
   final GeneralDataListDatasource generalDataListDatasource;
@@ -25,6 +26,26 @@ class GeneralDataListImplement implements GeneralDataListRepository {
       try {
         final result = await generalDataListDatasource.getGeneralList(tab: tab);
         return result;
+      } on ServerException catch (e) {
+        Get.snackbar(
+          "error".tr,
+          e.errorModel.errorMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<List<ContactCategory>> getContactCategories() async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await generalDataListDatasource.getContactCategories();
       } on ServerException catch (e) {
         Get.snackbar(
           "error".tr,

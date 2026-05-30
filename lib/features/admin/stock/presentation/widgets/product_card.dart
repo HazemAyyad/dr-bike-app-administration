@@ -205,10 +205,11 @@ class BuildProductCard extends GetView<StockController> {
   }
 
   Widget _buildProductImage() {
-    final resolved = ShowNetImage.getThumbnailPhoto(product.image);
-    final original = ShowNetImage.getPhoto(product.image);
+    final imageSource = _preferredImageSource();
+    final resolved = ShowNetImage.getThumbnailPhoto(imageSource);
+    final original = ShowNetImage.getPhoto(imageSource);
     final missing =
-        resolved == AssetsManager.noImageNet || product.image == 'no image';
+        resolved == AssetsManager.noImageNet || imageSource == 'no image';
 
     if (missing) {
       return Image.asset(
@@ -253,5 +254,19 @@ class BuildProductCard extends GetView<StockController> {
         ),
       ),
     );
+  }
+
+  String _preferredImageSource() {
+    for (final image in [
+      product.viewImage,
+      product.normalImage,
+      product.image,
+    ]) {
+      final trimmed = image.trim();
+      if (trimmed.isNotEmpty && trimmed != 'no image') {
+        return trimmed;
+      }
+    }
+    return 'no image';
   }
 }

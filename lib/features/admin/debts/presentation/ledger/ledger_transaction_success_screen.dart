@@ -15,6 +15,7 @@ class LedgerTransactionSuccessScreen extends StatefulWidget {
   final String type;
   final String typeLabel;
   final double amount;
+  final String currency;
   final double balanceAfter;
   final String timeLabel;
 
@@ -24,6 +25,7 @@ class LedgerTransactionSuccessScreen extends StatefulWidget {
     required this.type,
     required this.typeLabel,
     required this.amount,
+    required this.currency,
     required this.balanceAfter,
     required this.timeLabel,
   }) : super(key: key);
@@ -74,8 +76,8 @@ class _LedgerTransactionSuccessScreenState
 
   void _share() {
     final text = '${widget.personName}\n'
-        '${widget.typeLabel}: ${LedgerFormat.shekel2(widget.amount)}\n'
-        '${LedgerFormat.labeled('ledgerBalance'.tr, widget.balanceAfter)}\n'
+        '${widget.typeLabel}: ${LedgerFormat.money(widget.amount, currency: widget.currency)}\n'
+        '${LedgerFormat.labeled('ledgerBalance'.tr, widget.balanceAfter, currency: widget.currency)}\n'
         '${widget.timeLabel}';
 
     SharePlus.instance.share(ShareParams(text: text));
@@ -120,6 +122,7 @@ class _LedgerTransactionSuccessScreenState
                       timeLabel: widget.timeLabel,
                       typeLabel: widget.typeLabel,
                       amount: widget.amount,
+                      currency: widget.currency,
                       amountColor: _amountColor,
                       balanceAfter: widget.balanceAfter,
                       balanceColor: balanceColor,
@@ -160,6 +163,7 @@ class _SuccessCard extends StatelessWidget {
   final String timeLabel;
   final String typeLabel;
   final double amount;
+  final String currency;
   final Color amountColor;
   final double balanceAfter;
   final Color balanceColor;
@@ -169,6 +173,7 @@ class _SuccessCard extends StatelessWidget {
     required this.timeLabel,
     required this.typeLabel,
     required this.amount,
+    required this.currency,
     required this.amountColor,
     required this.balanceAfter,
     required this.balanceColor,
@@ -222,7 +227,7 @@ class _SuccessCard extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           Text(
-            LedgerFormat.shekel2(amount),
+            LedgerFormat.money(amount, currency: currency),
             style: TextStyle(
               fontSize: 36.sp,
               fontWeight: FontWeight.bold,
@@ -239,7 +244,11 @@ class _SuccessCard extends StatelessWidget {
               border: Border.all(color: balanceColor.withValues(alpha: 0.35)),
             ),
             child: Text(
-              LedgerFormat.labeled('ledgerBalance'.tr, balanceAfter),
+              LedgerFormat.labeled(
+                'ledgerBalance'.tr,
+                balanceAfter,
+                currency: currency,
+              ),
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,

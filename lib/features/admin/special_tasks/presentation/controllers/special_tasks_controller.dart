@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:doctorbike/features/admin/special_tasks/domain/usecases/subs_pecial_task_completed_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../data/models/special_task_model.dart';
@@ -13,6 +14,10 @@ import '../../domain/usecases/special_tasks_usecase.dart';
 import 'special_tasks_service.dart';
 
 class SpecialTasksController extends GetxController {
+  static const String tasksViewDaily = 'daily';
+  static const String tasksViewWeekly = 'weekly';
+  static const String tasksViewMonthly = 'monthly';
+
   final SpecialTasksUsecase specialTasksUsecase;
   final CompletedSpecialTasksUsecase completedSpecialTasksUsecase;
   final SpecialTaskDetailsUsecase specialTaskDetailsUsecase;
@@ -35,12 +40,34 @@ class SpecialTasksController extends GetxController {
   final RxInt currentTab = 0.obs;
 
   final tabs = ['weeklyTasks', 'noDateTasks', 'archive'].obs;
+  final RxString tasksViewMode = tasksViewWeekly.obs;
 
   final isLoading = false.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
-    update();
+    update(['specialTasksList', 'specialPeriodBar', 'specialViewMode']);
+  }
+
+  void setTasksViewMode(String mode) {
+    tasksViewMode.value = mode;
+    syncPeriodBounds(anchor: DateTime.now());
+    filterDataByDateRange();
+    scrollToToday();
+    update(['specialTasksList', 'specialPeriodBar', 'specialViewMode']);
+  }
+
+  String get periodLabel {
+    if (tasksViewMode.value == tasksViewDaily) {
+      return DateFormat('EEEE, d/M/yyyy', Get.locale?.languageCode)
+          .format(startDate);
+    }
+    if (tasksViewMode.value == tasksViewWeekly) {
+      final startLabel =
+          DateFormat('EEEE d/M', Get.locale?.languageCode).format(startDate);
+      return '$startLabel — ${DateFormat('d/M/yyyy').format(endDate)}';
+    }
+    return '${DateFormat('d/M/yyyy').format(startDate)} — ${DateFormat('d/M/yyyy').format(endDate)}';
   }
 
   final RxMap<String, RxBool> checkedMap = <String, RxBool>{}.obs;
@@ -72,8 +99,8 @@ class SpecialTasksController extends GetxController {
       Map<String, List<SpecialTaskModel>> source) {
     final sortedKeys = source.keys.toList()
       ..sort((a, b) {
-        final aDate = a;
-        final bDate = b;
+        final aDate = DateTime.parse(a);
+        final bDate = DateTime.parse(b);
         return bDate.compareTo(aDate);
       });
 
@@ -103,7 +130,7 @@ class SpecialTasksController extends GetxController {
     // specialTasksService.weeklyTasks.isEmpty ?
     isLoading(true);
     //  : null;
-    update();
+    update(['specialTasksList']);
     specialTasksService.weeklyTasks.clear();
     specialTasksService.noDateTasks.clear();
     specialTasksService.archivedTasks.clear();
@@ -161,8 +188,10 @@ class SpecialTasksController extends GetxController {
         scrollToToday();
       });
     }
-    update();
+    update(['specialTasksList', 'specialPeriodBar']);
   }
+
+  Future<void> pullToRefresh() => getSpecialTasks(scrollToTodayb: true);
 
   final RxBool isGetLoading = false.obs;
 
@@ -371,7 +400,7 @@ class SpecialTasksController extends GetxController {
       filteredArchivedTasks
           .assignAll(filterByRange(specialTasksService.archivedTasks));
       if (isFilter) Get.back();
-      update();
+      update(['specialTasksList', 'specialPeriodBar']);
       return;
     }
 
@@ -385,30 +414,73 @@ class SpecialTasksController extends GetxController {
     );
 
     if (isFilter) Get.back();
-    update();
+    update(['specialTasksList', 'specialPeriodBar']);
   }
 
   DateTime startDate = DateTime.now();
   DateTime endDate = DateTime.now();
 
+  static String dateKeyFrom(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  void syncPeriodBounds({DateTime? anchor}) {
+    final ref = anchor ?? DateTime.now();
+    final day = DateTime(ref.year, ref.month, ref.day);
+    switch (tasksViewMode.value) {
+      case tasksViewDaily:
+        startDate = day;
+        endDate = day;
+        break;
+      case tasksViewMonthly:
+        startDate = DateTime(day.year, day.month, 1);
+        endDate = DateTime(day.year, day.month + 1, 0);
+        break;
+      case tasksViewWeekly:
+      default:
+        startDate = getStartOfWeek(day);
+        endDate = startDate.add(const Duration(days: 6));
+        break;
+    }
+  }
+
+  int get _periodDayCount => endDate.difference(startDate).inDays + 1;
+
   Map<String, List<SpecialTaskModel>> filterByRange(
       Map<String, List<SpecialTaskModel>> source) {
     final filtered = <String, List<SpecialTaskModel>>{};
 
-    // نضمن إن الأسبوع دايمًا 7 أيام من السبت للجمعة
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < _periodDayCount; i++) {
       final currentDay = startDate.add(Duration(days: i));
-      final dateKey =
-          "${currentDay.year}-${currentDay.month.toString().padLeft(2, '0')}-${currentDay.day.toString().padLeft(2, '0')}";
-      // لو اليوم موجود في الـ source نضيف المهام، لو مش موجود نحط لستة فاضية
+      final dateKey = dateKeyFrom(currentDay);
       filtered[dateKey] = List<SpecialTaskModel>.from(source[dateKey] ?? []);
     }
-    // الترتيب تنازليًا (اختياري)
+
     return LinkedHashMap.fromEntries(
-      filtered.entries.toList()
-        ..sort(
-            (a, b) => DateTime.parse(b.key).compareTo(DateTime.parse(a.key))),
+      orderedDisplayKeys(filtered.keys.toList()).map(
+        (key) => MapEntry(key, filtered[key]!),
+      ),
     );
+  }
+
+  List<String> orderedDisplayKeys(List<String> keys) {
+    if (keys.isEmpty) return [];
+    final today = dateKeyFrom(DateTime.now());
+    final todayDate = DateTime.parse(today);
+    final entries = keys.map((k) => MapEntry(k, DateTime.parse(k))).toList();
+
+    final todayEntry = entries.where((e) => e.key == today).toList();
+    final future = entries
+        .where((e) => e.key != today && !e.value.isBefore(todayDate))
+        .toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+    final past = entries.where((e) => e.value.isBefore(todayDate)).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return [
+      ...todayEntry.map((e) => e.key),
+      ...future.map((e) => e.key),
+      ...past.map((e) => e.key),
+    ];
   }
 
   void filterDataByDateRange() {
@@ -416,22 +488,37 @@ class SpecialTasksController extends GetxController {
         .assignAll(filterByRange(specialTasksService.weeklyTasks));
     filteredArchivedTasks
         .assignAll(filterByRange(specialTasksService.archivedTasks));
-    update();
+    update(['specialTasksList', 'specialPeriodBar']);
   }
 
-  void changeWeek(bool isNext) {
-    const int daysInWeek = 7;
-    if (isNext) {
-      startDate = startDate.add(const Duration(days: daysInWeek));
-    } else {
-      startDate = startDate.subtract(const Duration(days: daysInWeek));
+  void changePeriod(bool isNext) {
+    switch (tasksViewMode.value) {
+      case tasksViewDaily:
+        startDate = isNext
+            ? startDate.add(const Duration(days: 1))
+            : startDate.subtract(const Duration(days: 1));
+        endDate = startDate;
+        break;
+      case tasksViewMonthly:
+        final month =
+            DateTime(startDate.year, startDate.month + (isNext ? 1 : -1), 1);
+        startDate = month;
+        endDate = DateTime(month.year, month.month + 1, 0);
+        break;
+      case tasksViewWeekly:
+      default:
+        startDate = isNext
+            ? startDate.add(const Duration(days: 7))
+            : startDate.subtract(const Duration(days: 7));
+        endDate = startDate.add(const Duration(days: 6));
+        break;
     }
-    // دايمًا نهاية الأسبوع بعد 6 أيام من البداية
-    endDate = startDate.add(const Duration(days: 6));
-    // بعد ما نحدث النطاق نفلتر الداتا
     filterDataByDateRange();
-    update();
+    scrollToToday();
+    update(['specialTasksList', 'specialPeriodBar']);
   }
+
+  void changeWeek(bool isNext) => changePeriod(isNext);
 
   DateTime getStartOfWeek(DateTime date) {
     int weekday = date.weekday; // 1 = Monday ... 7 = Sunday
@@ -443,24 +530,15 @@ class SpecialTasksController extends GetxController {
 
   final ScrollController scrollController = ScrollController();
   void scrollToToday() {
-    DateTime today = DateTime.now();
-    DateTime startOfWeek = getStartOfWeek(today);
-    int todayIndex = today.difference(startOfWeek).inDays;
-
-    // نحرك بناءً على index اليوم (0 = السبت، 6 = الجمعة)
-    double position = todayIndex * 120.0; // عرض العنصر تقريبًا أو حجمه الرأسي
-    scrollController.animateTo(
-      position,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeInOut,
-    );
+    if (!scrollController.hasClients) return;
+    scrollController.jumpTo(0);
   }
 
   @override
   void onInit() {
     super.onInit();
-    startDate = getStartOfWeek(DateTime.now());
-    endDate = startDate.add(const Duration(days: 6));
+    tasksViewMode.value = tasksViewWeekly;
+    syncPeriodBounds();
     getSpecialTasks();
     filteredWeeklyTasks.assignAll(
       filterByRange(sortByDate(specialTasksService.weeklyTasks)),

@@ -15,6 +15,7 @@ import '../../../../admin/admin_dashbord/presentation/widgets/actions_buttons.da
 import '../controllers/employee_dashbord_controller.dart';
 import '../helpers/employee_task_visibility.dart';
 import '../widgets/employee_dashbord_tasks.dart';
+import '../widgets/employee_dashboard_reminders.dart';
 import '../widgets/employee_floating_action_button.dart';
 import '../widgets/employee_home_statistics_card.dart';
 import '../widgets/employee_attendance_app_bar_button.dart';
@@ -119,123 +120,125 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
           physics: kRefreshableScrollPhysics,
           padding: EdgeInsets.symmetric(horizontal: 24.w),
           child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 10.h),
-            // بطاقات الإحصائيات
-            const EmployeeHomeStatisticsCard(),
-            SizedBox(height: 15.h),
-            // أزرار الوظائف
-            Obx(
-              () {
-                if (controller.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (controller.employeeData.value == null) {
-                  return const ShowNoData();
-                }
-                return Column(
-                  children: [
-                    Obx(
-                      () {
-                        if (controller.employeeData.value != null) {
-                          return Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'tasks'.tr,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium!
-                                        .copyWith(
-                                          fontSize: 17.sp,
-                                          fontWeight: FontWeight.w700,
-                                          color: ThemeService.isDark.value
-                                              ? AppColors.customGreyColor5
-                                              : AppColors.operationalNavy,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8.h),
-                              if (controller.employeeData.value!.tasks
-                                  .where(isDashboardTask)
-                                  .isEmpty)
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 10.h),
+              // بطاقات الإحصائيات
+              const EmployeeHomeStatisticsCard(),
+              SizedBox(height: 15.h),
+              // أزرار الوظائف
+              Obx(
+                () {
+                  if (controller.isLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (controller.employeeData.value == null) {
+                    return const ShowNoData();
+                  }
+                  return Column(
+                    children: [
+                      Obx(
+                        () {
+                          if (controller.employeeData.value != null) {
+                            return Column(
+                              children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      'لا يوجد مهمات'.tr,
+                                      'tasks'.tr,
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyMedium!
                                           .copyWith(
-                                            fontSize: 14.sp,
-                                            fontWeight: FontWeight.w400,
+                                            fontSize: 17.sp,
+                                            fontWeight: FontWeight.w700,
                                             color: ThemeService.isDark.value
-                                                ? AppColors.customGreyColor7
-                                                : AppColors.customGreyColor4,
+                                                ? AppColors.customGreyColor5
+                                                : AppColors.operationalNavy,
                                           ),
                                     ),
                                   ],
                                 ),
-                              ...() {
-                                final dashboardTasks = controller
-                                    .employeeData.value!.tasks
+                                SizedBox(height: 8.h),
+                                if (controller.employeeData.value!.tasks
                                     .where(isDashboardTask)
-                                    .toList();
-                                return [
-                                  ...dashboardTasks
-                                      .take(5)
-                                      .map((e) => EmployeeDashbordTasks(task: e)),
-                                  if (dashboardTasks.length > 5)
-                                    Padding(
-                                      padding: EdgeInsets.only(top: 8.h),
-                                      child: Align(
-                                        alignment: AlignmentDirectional.centerEnd,
-                                        child: TextButton(
-                                          onPressed: () {
-                                            if (Get.isRegistered<
-                                                BottomNavBarController>()) {
-                                              Get.find<BottomNavBarController>()
-                                                  .changePage(1);
-                                            }
-                                          },
-                                          child: Text(
-                                            'showMoreTasks'.tr,
-                                            style: TextStyle(
+                                    .isEmpty)
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'لا يوجد مهمات'.tr,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
                                               fontSize: 14.sp,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.primaryColor,
+                                              fontWeight: FontWeight.w400,
+                                              color: ThemeService.isDark.value
+                                                  ? AppColors.customGreyColor7
+                                                  : AppColors.customGreyColor4,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ...() {
+                                  final dashboardTasks = controller
+                                      .employeeData.value!.tasks
+                                      .where(isDashboardTask)
+                                      .toList();
+                                  return [
+                                    ...dashboardTasks.take(5).map(
+                                        (e) => EmployeeDashbordTasks(task: e)),
+                                    if (dashboardTasks.length > 5)
+                                      Padding(
+                                        padding: EdgeInsets.only(top: 8.h),
+                                        child: Align(
+                                          alignment:
+                                              AlignmentDirectional.centerEnd,
+                                          child: TextButton(
+                                            onPressed: () {
+                                              if (Get.isRegistered<
+                                                  BottomNavBarController>()) {
+                                                Get.find<
+                                                        BottomNavBarController>()
+                                                    .changePage(1);
+                                              }
+                                            },
+                                            child: Text(
+                                              'showMoreTasks'.tr,
+                                              style: TextStyle(
+                                                fontSize: 14.sp,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.primaryColor,
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                ];
-                              }(),
-                            ],
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-                    controller.employeeData.value!.permissions.isNotEmpty
-                        ? BuildActionButtons(
-                            buttons: controller.buttons,
-                            employeePermissions: controller
-                                .employeeData.value?.permissions
-                                .map((e) => e.id)
-                                .toList(),
-                          )
-                        : const SizedBox.shrink(),
-                  ],
-                );
-              },
-            ),
-            SizedBox(height: 80.h),
-          ],
-        ),
+                                  ];
+                                }(),
+                              ],
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      const EmployeeDashboardReminders(),
+                      controller.employeeData.value!.permissions.isNotEmpty
+                          ? BuildActionButtons(
+                              buttons: controller.buttons,
+                              employeePermissions: controller
+                                  .employeeData.value?.permissions
+                                  .map((e) => e.id)
+                                  .toList(),
+                            )
+                          : const SizedBox.shrink(),
+                    ],
+                  );
+                },
+              ),
+              SizedBox(height: 80.h),
+            ],
+          ),
         ),
       ),
       floatingActionButton: const EmployeeFloatingActionButton(),
