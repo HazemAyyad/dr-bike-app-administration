@@ -16,8 +16,7 @@ import '../widgets/proudact_details_widget.dart';
 class BillDetailsScreen extends GetView<SalesController> {
   const BillDetailsScreen({Key? key}) : super(key: key);
 
-  String _dash(String? v) =>
-      (v == null || v.trim().isEmpty) ? '-' : v.trim();
+  String _dash(String? v) => (v == null || v.trim().isEmpty) ? '-' : v.trim();
 
   @override
   Widget build(BuildContext context) {
@@ -36,130 +35,136 @@ class BillDetailsScreen extends GetView<SalesController> {
           final fmt = NumberFormat('#,###.##');
 
           return CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _InvoiceHeaderCard(
-                    invoiceNumber: _dash(invoice.invoiceNumber),
-                    invoiceDate: _dash(invoice.invoiceDate),
-                    buyerTypeLabel: invoice.displayBuyerTypeLabel,
-                    buyerName: _dash(invoice.buyerName),
-                    phone: _dash(invoice.buyerPhone ?? invoice.phone),
-                    address: _dash(invoice.buyerAddress ?? invoice.address),
-                    paymentMethod: _dash(invoice.paymentMethod),
-                    paymentBoxName: invoice.displayPaymentBox,
-                    saleStatus: invoice.displaySaleStatus,
-                    notes: _dash(invoice.notes),
+            slivers: [
+              SliverToBoxAdapter(
+                child: _InvoiceHeaderCard(
+                  invoiceNumber: _dash(invoice.invoiceNumber),
+                  invoiceDate: _dash(invoice.invoiceDate),
+                  buyerTypeLabel: invoice.displayBuyerTypeLabel,
+                  buyerName: _dash(invoice.buyerName),
+                  phone: _dash(invoice.buyerPhone ?? invoice.phone),
+                  address: _dash(invoice.buyerAddress ?? invoice.address),
+                  paymentMethod: _dash(invoice.paymentMethod),
+                  paymentBoxName: invoice.displayPaymentBox,
+                  saleStatus: invoice.displaySaleStatus,
+                  notes: _dash(invoice.notes),
+                  additionalNotes: invoice.additionalNotes,
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 24.w),
+                  height: 32.h,
+                  decoration: BoxDecoration(
+                    color: ThemeService.isDark.value
+                        ? AppColors.secondaryColor
+                        : AppColors.primaryColor,
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      SizedBox.shrink(),
+                      Flexible(child: RowText(title: 'productName')),
+                      Flexible(child: RowText(title: 'quantity')),
+                      Flexible(child: RowText(title: 'price')),
+                      Flexible(child: RowText(title: 'total')),
+                    ],
                   ),
                 ),
-                SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+              if (invoice.isPackageSale &&
+                  invoice.packageComponentLines.isNotEmpty)
                 SliverToBoxAdapter(
-                  child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 24.w),
-                    height: 32.h,
-                    decoration: BoxDecoration(
-                      color: ThemeService.isDark.value
-                          ? AppColors.secondaryColor
-                          : AppColors.primaryColor,
-                      borderRadius: BorderRadius.circular(6.r),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        SizedBox.shrink(),
-                        Flexible(child: RowText(title: 'productName')),
-                        Flexible(child: RowText(title: 'quantity')),
-                        Flexible(child: RowText(title: 'price')),
-                        Flexible(child: RowText(title: 'total')),
-                      ],
-                    ),
+                  child: InvoicePackageExpandableLine(invoice: invoice),
+                )
+              else if (invoice.isPackageSale)
+                SliverToBoxAdapter(
+                  child: ProudactDetailsWidget(
+                    image: invoice.productImage,
+                    cost: invoice.cost.toString(),
+                    product: invoice.displayProductTitle,
+                    quantity: invoice.quantity.toString(),
+                    subtotal: invoice.subtotal,
                   ),
-                ),
-                SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-                if (invoice.isPackageSale && invoice.packageComponentLines.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: InvoicePackageExpandableLine(invoice: invoice),
-                  )
-                else if (invoice.isPackageSale)
-                  SliverToBoxAdapter(
-                    child: ProudactDetailsWidget(
-                      image: invoice.productImage,
-                      cost: invoice.cost.toString(),
-                      product: invoice.displayProductTitle,
-                      quantity: invoice.quantity.toString(),
-                      subtotal: invoice.subtotal,
-                    ),
-                  )
-                else
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index == 0) {
-                          return ProudactDetailsWidget(
-                            image: invoice.productImage,
-                            cost: invoice.cost.toString(),
-                            product: invoice.displayProductTitle,
-                            quantity: invoice.quantity.toString(),
-                            subtotal: invoice.subtotal,
-                          );
-                        }
-                        final sub = invoice.subProducts[index - 1];
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index == 0) {
                         return ProudactDetailsWidget(
-                          image: sub.productImage,
-                          cost: sub.cost.toString(),
-                          product: sub.productName.toString(),
-                          quantity: sub.quantity.toString(),
-                          subtotal: sub.subtotal,
+                          image: invoice.productImage,
+                          cost: invoice.cost.toString(),
+                          product: invoice.displayProductTitle,
+                          quantity: invoice.quantity.toString(),
+                          subtotal: invoice.subtotal,
                         );
-                      },
-                      childCount: 1 + invoice.subProducts.length,
-                    ),
-                  ),
-                if (invoice.isPackageSale &&
-                    invoice.additionalProductLines.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 6.h),
-                      child: Text(
-                        'instantSaleAdditionalProducts'.tr,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryColor,
-                              fontSize: 14.sp,
-                            ),
-                      ),
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final sub = invoice.additionalProductLines[index];
-                        return ProudactDetailsWidget(
-                          image: sub.productImage,
-                          cost: sub.cost,
-                          product: sub.productName,
-                          quantity: sub.quantity,
-                          subtotal: sub.subtotal,
-                        );
-                      },
-                      childCount: invoice.additionalProductLines.length,
-                    ),
-                  ),
-                ],
-                SliverToBoxAdapter(
-                  child: _InvoiceTotalsSection(
-                    subtotal:
-                        fmt.format(double.tryParse(invoice.subtotal) ?? 0),
-                    discount:
-                        fmt.format(double.tryParse(invoice.discount) ?? 0),
-                    tax: fmt.format(double.tryParse(invoice.tax) ?? 0),
-                    paid:
-                        fmt.format(double.tryParse(invoice.paidAmount) ?? 0),
-                    remaining: fmt.format(
-                        double.tryParse(invoice.remainingAmount) ?? 0),
-                    total:
-                        fmt.format(double.tryParse(invoice.totalCost) ?? 0),
+                      }
+                      final sub = invoice.subProducts[index - 1];
+                      return ProudactDetailsWidget(
+                        image: sub.productImage,
+                        cost: sub.cost.toString(),
+                        product: sub.productName.toString(),
+                        quantity: sub.quantity.toString(),
+                        subtotal: sub.subtotal,
+                      );
+                    },
+                    childCount: 1 + invoice.subProducts.length,
                   ),
                 ),
+              if (invoice.isPackageSale &&
+                  invoice.additionalProductLines.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 6.h),
+                    child: Text(
+                      'instantSaleAdditionalProducts'.tr,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryColor,
+                            fontSize: 14.sp,
+                          ),
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final sub = invoice.additionalProductLines[index];
+                      return ProudactDetailsWidget(
+                        image: sub.productImage,
+                        cost: sub.cost,
+                        product: sub.productName,
+                        quantity: sub.quantity,
+                        subtotal: sub.subtotal,
+                      );
+                    },
+                    childCount: invoice.additionalProductLines.length,
+                  ),
+                ),
+              ],
+              SliverToBoxAdapter(
+                child: _InvoiceAdditionalNotesSection(
+                  notes: invoice.additionalNotes,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: _InvoiceTotalsSection(
+                  subtotal: fmt.format(double.tryParse(invoice.subtotal) ?? 0),
+                  discount: fmt.format(double.tryParse(invoice.discount) ?? 0),
+                  notesTotal: fmt.format(
+                    double.tryParse(invoice.additionalNotesTotal) ?? 0,
+                  ),
+                  tax: fmt.format(double.tryParse(invoice.tax) ?? 0),
+                  paid: fmt.format(double.tryParse(invoice.paidAmount) ?? 0),
+                  remaining:
+                      fmt.format(double.tryParse(invoice.remainingAmount) ?? 0),
+                  total: fmt.format(double.tryParse(invoice.totalCost) ?? 0),
+                ),
+              ),
               SliverToBoxAdapter(child: SizedBox(height: 24.h)),
             ],
           );
@@ -181,6 +186,7 @@ class _InvoiceHeaderCard extends StatelessWidget {
     required this.paymentBoxName,
     required this.saleStatus,
     required this.notes,
+    required this.additionalNotes,
   });
 
   final String invoiceNumber;
@@ -193,6 +199,7 @@ class _InvoiceHeaderCard extends StatelessWidget {
   final String paymentBoxName;
   final String saleStatus;
   final String notes;
+  final List<InvoiceAdditionalNote> additionalNotes;
 
   @override
   Widget build(BuildContext context) {
@@ -231,7 +238,8 @@ class _InvoiceHeaderCard extends StatelessWidget {
           if (paymentBoxName != '-')
             _metaRow(context, 'boxName'.tr, paymentBoxName, highlight: true),
           _metaRow(context, 'status'.tr, saleStatus),
-          if (notes != '-') _metaRow(context, 'notes'.tr, notes),
+          if (notes != '-' && additionalNotes.isEmpty)
+            _metaRow(context, 'notes'.tr, notes),
         ],
       ),
     );
@@ -263,10 +271,59 @@ class _InvoiceHeaderCard extends StatelessWidget {
               value,
               textAlign: TextAlign.start,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight:
-                        highlight ? FontWeight.w700 : FontWeight.w600,
+                    fontWeight: highlight ? FontWeight.w700 : FontWeight.w600,
                     fontSize: highlight ? 13.sp : 12.sp,
                   ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InvoiceAdditionalNotesSection extends StatelessWidget {
+  const _InvoiceAdditionalNotesSection({required this.notes});
+
+  final List<InvoiceAdditionalNote> notes;
+
+  @override
+  Widget build(BuildContext context) {
+    if (notes.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24.w, 8.h, 24.w, 4.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'additionalNotes'.tr,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primaryColor,
+                  fontSize: 14.sp,
+                ),
+          ),
+          SizedBox(height: 6.h),
+          ...notes.map(
+            (note) => Padding(
+              padding: EdgeInsets.only(bottom: 4.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      note.text.trim().isEmpty ? '-' : note.text,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  Text(
+                    '${note.amount} ${'currency'.tr}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -279,6 +336,7 @@ class _InvoiceTotalsSection extends StatelessWidget {
   const _InvoiceTotalsSection({
     required this.subtotal,
     required this.discount,
+    required this.notesTotal,
     required this.tax,
     required this.paid,
     required this.remaining,
@@ -287,6 +345,7 @@ class _InvoiceTotalsSection extends StatelessWidget {
 
   final String subtotal;
   final String discount;
+  final String notesTotal;
   final String tax;
   final String paid;
   final String remaining;
@@ -307,6 +366,8 @@ class _InvoiceTotalsSection extends StatelessWidget {
           SizedBox(height: 10.h),
           _totalLine(context, 'subtotal'.tr, subtotal),
           _totalLine(context, 'discount'.tr, discount),
+          if (notesTotal != '0')
+            _totalLine(context, 'notesTotal'.tr, notesTotal),
           _totalLine(context, 'tax'.tr, tax),
           _totalLine(context, 'totalBill'.tr, total, bold: true),
           SizedBox(height: 4.h),

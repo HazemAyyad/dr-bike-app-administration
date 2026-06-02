@@ -11,11 +11,9 @@ import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/show_net_image.dart';
-import '../../../../../core/services/theme_service.dart';
-import '../../../../../core/utils/app_colors.dart';
 
-/// يزيل القيم الوهمية من الـ API ويزيل التكرار بنفس المسار.
 List<String> _filterProductImageList(List<String> images) {
   final seen = <String>{};
   final out = <String>[];
@@ -35,43 +33,16 @@ List<String> _filterProductImageList(List<String> images) {
   return out;
 }
 
-CarouselOptions _carouselOptionsForCount(int n, {double height = 150}) {
-  final h = height;
-  if (n <= 0) {
-    return CarouselOptions(height: h, viewportFraction: 1);
-  }
-  // صورة واحدة: شريحة مدمجة (~ربع المساحة السابقة) + بدون لف لا نهائي
-  if (n == 1) {
-    return CarouselOptions(
-      height: h,
-      viewportFraction: 0.58,
-      enlargeCenterPage: false,
-      enableInfiniteScroll: false,
-      autoPlay: false,
-      padEnds: true,
-    );
-  }
-  if (n == 2) {
-    return CarouselOptions(
-      height: h,
-      viewportFraction: 0.48,
-      enlargeCenterPage: true,
-      enableInfiniteScroll: true,
-      autoPlay: false,
-      padEnds: true,
-    );
-  }
-  return CarouselOptions(
-    height: h,
-    viewportFraction: 0.34,
-    enlargeCenterPage: true,
-    enableInfiniteScroll: true,
-    autoPlay: false,
-    padEnds: true,
+CacheManager _productImageCache() {
+  return CacheManager(
+    Config(
+      'imagesCache',
+      stalePeriod: const Duration(days: 7),
+      maxNrOfCacheObjects: 100,
+    ),
   );
 }
 
-/// شارة صغيرة تبيّن إن الصورة من الأرشيف (Images/Items) أو محلية (storage).
 class _ImageSourceBadge extends StatelessWidget {
   const _ImageSourceBadge({required this.source});
 
@@ -86,13 +57,12 @@ class _ImageSourceBadge extends StatelessWidget {
     return Align(
       alignment: Alignment.topRight,
       child: Padding(
-        padding: EdgeInsets.all(6.r),
-        child: Material(
-          elevation: 2,
-          borderRadius: BorderRadius.circular(8.r),
-          color: legacy
-              ? const Color(0xFFE65100).withValues(alpha: 0.95)
-              : const Color(0xFF00695C).withValues(alpha: 0.95),
+        padding: EdgeInsets.all(7.r),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: legacy ? const Color(0xFFE65100) : const Color(0xFF00695C),
+            borderRadius: BorderRadius.circular(999),
+          ),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
             child: Row(
@@ -100,18 +70,16 @@ class _ImageSourceBadge extends StatelessWidget {
               children: [
                 Icon(
                   legacy ? Icons.storefront_outlined : Icons.storage_outlined,
-                  size: 14.sp,
+                  size: 13.sp,
                   color: Colors.white,
                 ),
                 SizedBox(width: 4.w),
                 Text(
-                  legacy
-                      ? 'imageBadgeLegacyStore'.tr
-                      : 'imageBadgeLaravel'.tr,
+                  legacy ? 'imageBadgeLegacyStore'.tr : 'imageBadgeLaravel'.tr,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -124,14 +92,14 @@ class _ImageSourceBadge extends StatelessWidget {
 }
 
 class ProductImagesSlider extends StatelessWidget {
-  final List<String> images;
-  final String title;
-
   const ProductImagesSlider({
     Key? key,
     required this.images,
     required this.title,
   }) : super(key: key);
+
+  final List<String> images;
+  final String title;
 
   Future<void> downloadImage(BuildContext context, String imageUrl) async {
     try {
@@ -143,8 +111,8 @@ class ProductImagesSlider extends StatelessWidget {
       }
 
       Get.snackbar(
-        "تنبيه",
-        "جاري تحميل الصورة...",
+        'تنبيه',
+        'جاري تحميل الصورة...',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
@@ -154,27 +122,117 @@ class ProductImagesSlider extends StatelessWidget {
       final tempPath = '${tempDir.path}/$fileName';
 
       await Dio().download(imageUrl, tempPath);
-
-      if (imageUrl.endsWith('.mp4')) {
-        await GallerySaver.saveVideo(tempPath, albumName: "Doctor Bike");
-      } else {
-        await GallerySaver.saveImage(tempPath, albumName: "Doctor Bike");
-      }
+      await GallerySaver.saveImage(tempPath, albumName: 'Doctor Bike');
 
       Get.snackbar(
-        "تم",
-        "تم حفظ الصورة في المعرض ✅",
+        'تم',
+        'تم حفظ الصورة في المعرض',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
       Get.snackbar(
-        "خطأ",
-        "فشل التحميل: $e",
+        'خطأ',
+        'فشل التحميل: $e',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 2),
       );
     }
+  }
+
+  void _openViewer(BuildContext context, List<String> slides, int initialPage) {
+    final carouselController = CarouselSliderController();
+    final currentIndex = initialPage.obs;
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withValues(alpha: 0.74),
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (context, anim1, anim2) {
+        return Material(
+          color: Colors.transparent,
+          child: Stack(
+            children: [
+              Positioned(
+                top: 58.h,
+                right: 16.w,
+                child: _ViewerIconButton(
+                  icon: Icons.close,
+                  onTap: Get.back,
+                ),
+              ),
+              Positioned(
+                top: 58.h,
+                left: 16.w,
+                child: Obx(
+                  () => _ViewerIconButton(
+                    icon: Icons.download,
+                    onTap: () => downloadImage(
+                      context,
+                      ShowNetImage.getPhoto(slides[currentIndex.value]),
+                    ),
+                  ),
+                ),
+              ),
+              Center(
+                child: CarouselSlider.builder(
+                  carouselController: carouselController,
+                  itemCount: slides.length,
+                  itemBuilder: (context, index, realIdx) {
+                    final raw = slides[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 6.w),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18.r),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            _NetworkProductImage(
+                              imageUrl: ShowNetImage.getPhoto(raw),
+                              fit: BoxFit.contain,
+                              backgroundColor: Colors.black,
+                            ),
+                            _ImageSourceBadge(
+                              source: ShowNetImage.classifySource(raw),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  options: CarouselOptions(
+                    height: MediaQuery.sizeOf(context).height * 0.62,
+                    enlargeCenterPage: slides.length > 1,
+                    enableInfiniteScroll: slides.length > 1,
+                    autoPlay: false,
+                    viewportFraction: slides.length == 1 ? 0.92 : 0.86,
+                    initialPage: initialPage,
+                    onPageChanged: (i, reason) => currentIndex.value = i,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 42.h,
+                left: 0,
+                right: 0,
+                child: Obx(
+                  () => Text(
+                    '${currentIndex.value + 1} / ${slides.length}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -183,199 +241,264 @@ class ProductImagesSlider extends StatelessWidget {
     if (slides.isEmpty) {
       return const SizedBox.shrink();
     }
-    final n = slides.length;
-    final carouselOptions = _carouselOptionsForCount(n, height: 86.h);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Center(
-          child: Container(
-            margin: EdgeInsets.symmetric(vertical: 6.h),
-            height: 1.h,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: ThemeService.isDark.value
-                  ? AppColors.customGreyColor
-                  : AppColors.customGreyColor3,
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-          ),
+    final first = slides.first;
+    final thumbs = slides.skip(1).take(4).toList();
+    final extraCount = slides.length - 5;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 14.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: AdminUiColors.cardBackground(context),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.32),
         ),
-        Text(
-          title.tr,
-          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                fontSize: 17.sp,
-                fontWeight: FontWeight.w700,
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor6
-                    : AppColors.customGreyColor,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.photo_library_outlined,
+                size: 20.sp,
+                color: Theme.of(context).colorScheme.primary,
               ),
-        ),
-        SizedBox(height: 10.h),
-        /// سلايدر — مع صورة واحدة: عرض كامل بدون تكرار (كان viewportFraction=0.3 + infinite يسبب 3 نسخ).
-        CarouselSlider.builder(
-          itemCount: n,
-          options: carouselOptions,
-          itemBuilder: (context, index, realIdx) {
-            final raw = slides[index];
-            final image = ShowNetImage.getPhoto(raw);
-            final src = ShowNetImage.classifySource(raw);
-            return GestureDetector(
-              onTap: () {
-                final CarouselSliderController controller =
-                    CarouselSliderController();
-                final RxInt currentIndex = index.obs;
-                showGeneralDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  barrierLabel: 'Dismiss',
-                  barrierColor: Colors.black.withAlpha(128),
-                  transitionDuration: const Duration(milliseconds: 300),
-                  pageBuilder: (context, anim1, anim2) {
-                    return Stack(
-                      children: [
-                        /// زر إغلاق
-                        Positioned(
-                          top: 80.h,
-                          right: 20.w,
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.close,
-                              color: Colors.red,
-                              size: 30.sp,
-                            ),
-                            onPressed: () => Get.back(),
-                          ),
-                        ),
-                        Positioned(
-                          top: 80.h,
-                          left: 20.w,
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.download,
-                              color: Colors.green,
-                              size: 30.sp,
-                            ),
-                            onPressed: () => downloadImage(
-                              context,
-                              ShowNetImage.getPhoto(
-                                slides[currentIndex.value],
-                              ),
-                            ),
-                          ),
-                        ),
-                        /// السلايدر داخل الـDialog
-                        Center(
-                          child: CarouselSlider.builder(
-                            carouselController: controller,
-                            itemCount: n,
-                            itemBuilder: (context, index, realIdx) {
-                              final rawDlg = slides[index];
-                              return Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  CachedNetworkImage(
-                                    cacheManager: CacheManager(
-                                      Config(
-                                        'imagesCache',
-                                        stalePeriod: const Duration(days: 7),
-                                        maxNrOfCacheObjects: 100,
-                                      ),
-                                    ),
-                                    imageBuilder: (context, imageProvider) =>
-                                        Container(
-                                      width: double.infinity,
-                                      decoration: BoxDecoration(
-                                        image: DecorationImage(
-                                          image: imageProvider,
-                                          fit: BoxFit.cover,
-                                          filterQuality: FilterQuality.medium,
-                                        ),
-                                      ),
-                                    ),
-                                    imageUrl:
-                                        ShowNetImage.getPhoto(rawDlg),
-                                    fadeInDuration:
-                                        const Duration(milliseconds: 200),
-                                    fadeOutDuration:
-                                        const Duration(milliseconds: 200),
-                                    placeholder: (context, url) =>
-                                        const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
-                                  ),
-                                  _ImageSourceBadge(
-                                    source: ShowNetImage.classifySource(
-                                      rawDlg,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                            options: CarouselOptions(
-                              height: MediaQuery.sizeOf(context).height * 0.55,
-                              enlargeCenterPage: n > 1,
-                              enableInfiniteScroll: n > 1,
-                              autoPlay: false,
-                              viewportFraction: n == 1 ? 1.0 : 0.85,
-                              initialPage: index,
-                              onPageChanged: (i, reason) {
-                                currentIndex.value = i;
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  title.tr,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: AdminUiColors.subtleOverlay(context),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${slides.length}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          GestureDetector(
+            onTap: () => _openViewer(context, slides, 0),
+            child: AspectRatio(
+              aspectRatio: 1.85,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(10.r),
+                borderRadius: BorderRadius.circular(16.r),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    CachedNetworkImage(
-                      cacheManager: CacheManager(
-                        Config(
-                          'imagesCache',
-                          stalePeriod: const Duration(days: 7),
-                          maxNrOfCacheObjects: 100,
-                        ),
-                      ),
-                      imageBuilder: (context, imageProvider) => Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: imageProvider,
-                            fit: BoxFit.cover,
-                            filterQuality: FilterQuality.low,
-                          ),
-                        ),
-                      ),
-                      imageUrl: image,
-                      fadeInDuration: const Duration(milliseconds: 200),
-                      fadeOutDuration: const Duration(milliseconds: 200),
-                      placeholder: (context, url) => const SizedBox(
-                        width: double.infinity,
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
+                    _NetworkProductImage(
+                      imageUrl: ShowNetImage.getPhoto(first),
+                      fit: BoxFit.cover,
                     ),
-                    _ImageSourceBadge(source: src),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.28),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                    _ImageSourceBadge(
+                      source: ShowNetImage.classifySource(first),
+                    ),
+                    Positioned(
+                      bottom: 10.h,
+                      right: 10.w,
+                      child: const _ImageActionPill(
+                        icon: Icons.open_in_full,
+                        label: 'عرض',
+                      ),
+                    ),
                   ],
                 ),
               ),
-            );
-          },
+            ),
+          ),
+          if (thumbs.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            Row(
+              children: [
+                for (var i = 0; i < thumbs.length; i++) ...[
+                  Expanded(
+                    child: _ThumbnailTile(
+                      raw: thumbs[i],
+                      overlayText: i == thumbs.length - 1 && extraCount > 0
+                          ? '+$extraCount'
+                          : null,
+                      onTap: () => _openViewer(context, slides, i + 1),
+                    ),
+                  ),
+                  if (i != thumbs.length - 1) SizedBox(width: 8.w),
+                ],
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _NetworkProductImage extends StatelessWidget {
+  const _NetworkProductImage({
+    required this.imageUrl,
+    required this.fit,
+    this.backgroundColor,
+  });
+
+  final String imageUrl;
+  final BoxFit fit;
+  final Color? backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: backgroundColor ?? AdminUiColors.subtleOverlay(context),
+      child: CachedNetworkImage(
+        cacheManager: _productImageCache(),
+        imageUrl: imageUrl,
+        fit: fit,
+        fadeInDuration: const Duration(milliseconds: 120),
+        fadeOutDuration: const Duration(milliseconds: 80),
+        placeholder: (context, url) => const Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
-      ],
+        errorWidget: (context, url, error) => Icon(
+          Icons.broken_image_outlined,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _ThumbnailTile extends StatelessWidget {
+  const _ThumbnailTile({
+    required this.raw,
+    required this.onTap,
+    this.overlayText,
+  });
+
+  final String raw;
+  final VoidCallback onTap;
+  final String? overlayText;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12.r),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _NetworkProductImage(
+                imageUrl: ShowNetImage.getPhoto(raw),
+                fit: BoxFit.cover,
+              ),
+              if (overlayText != null)
+                ColoredBox(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  child: Center(
+                    child: Text(
+                      overlayText!,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ViewerIconButton extends StatelessWidget {
+  const _ViewerIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.12),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 46.w,
+          height: 46.w,
+          child: Icon(icon, color: Colors.white, size: 24.sp),
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageActionPill extends StatelessWidget {
+  const _ImageActionPill({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15.sp, color: Colors.white),
+            SizedBox(width: 5.w),
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

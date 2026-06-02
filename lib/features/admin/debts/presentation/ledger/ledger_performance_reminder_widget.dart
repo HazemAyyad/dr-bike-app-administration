@@ -41,8 +41,7 @@ class LedgerPerformanceReminderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final balanceColor =
-        balance >= 0 ? LedgerColors.givenRed : LedgerColors.takenGreen;
+    final balanceColor = LedgerColors.signedAmount(balance);
     final displayBalance = balance.abs();
 
     return SizedBox(

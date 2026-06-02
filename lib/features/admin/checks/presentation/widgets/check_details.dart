@@ -132,6 +132,18 @@ class CheckDetails extends GetView<ChecksController> {
               title: 'due_date',
               discription: showData(check.dueDate),
             ),
+            if (check.receivedAt != null)
+              SupTextAndDiscr(
+                titleColor: AppColors.primaryColor,
+                title: 'receivedDate',
+                discription: showData(check.receivedAt!),
+              ),
+            if (check.batchNumber != null && check.batchNumber!.isNotEmpty)
+              SupTextAndDiscr(
+                titleColor: AppColors.primaryColor,
+                title: 'batchNumber',
+                discription: check.batchNumber!,
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

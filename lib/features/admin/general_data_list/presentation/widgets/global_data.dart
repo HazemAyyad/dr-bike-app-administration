@@ -1,7 +1,11 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/person_avatar_helper.dart';
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:doctorbike/core/widgets/person_avatar_image.dart';
+import 'package:doctorbike/features/admin/debts/data/models/debt_ledger_models.dart';
+import 'package:doctorbike/features/admin/debts/data/repositories/debt_ledger_implement.dart';
+import 'package:doctorbike/features/admin/debts/presentation/ledger/ledger_activity_section.dart';
 import 'package:doctorbike/features/admin/general_data_list/data/models/employee_data_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -295,6 +299,15 @@ class GlobalData extends GetView<GeneralDataListController> {
                         ),
                       ],
                     ),
+                    IconButton(
+                      tooltip: 'ledgerActivityLog'.tr,
+                      onPressed: () => _showPersonHistory(context),
+                      icon: Icon(
+                        Icons.history_rounded,
+                        color: AppColors.primaryColor,
+                        size: 24.sp,
+                      ),
+                    ),
                     Text(
                       employee.phone,
                       maxLines: 2,
@@ -311,6 +324,159 @@ class GlobalData extends GetView<GeneralDataListController> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  bool get _isCustomer {
+    if (controller.currentTab.value == 1) return true;
+    if (controller.currentTab.value == 0) return false;
+    return employee.type == 'customer';
+  }
+
+  Future<List<LedgerActivityEntry>> _loadHistory() async {
+    AppDependencyRegistry.ensureDebtsLedger();
+    final result = await Get.find<DebtLedgerImplement>().getPersonActivity(
+      customerId: _isCustomer ? employee.id : null,
+      sellerId: _isCustomer ? null : employee.id,
+    );
+
+    return result.fold(
+      (failure) => throw Exception(failure.errMessage),
+      (list) => list,
+    );
+  }
+
+  void _showPersonHistory(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PersonHistorySheet(
+        title: employee.name,
+        loadHistory: _loadHistory,
+      ),
+    );
+  }
+}
+
+class _PersonHistorySheet extends StatefulWidget {
+  const _PersonHistorySheet({
+    required this.title,
+    required this.loadHistory,
+  });
+
+  final String title;
+  final Future<List<LedgerActivityEntry>> Function() loadHistory;
+
+  @override
+  State<_PersonHistorySheet> createState() => _PersonHistorySheetState();
+}
+
+class _PersonHistorySheetState extends State<_PersonHistorySheet> {
+  late Future<List<LedgerActivityEntry>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.loadHistory();
+  }
+
+  void _reload() {
+    setState(() {
+      _future = widget.loadHistory();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Container(
+        constraints: BoxConstraints(maxHeight: 0.85.sh),
+        margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.customGreyColor4 : Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 12.h, 8.w, 8.h),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.history_rounded,
+                    color: AppColors.primaryColor,
+                    size: 24.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      '${'ledgerActivityLog'.tr} - ${widget.title}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _reload,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: Colors.grey.shade300),
+            Flexible(
+              child: FutureBuilder<List<LedgerActivityEntry>>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: EdgeInsets.all(20.w),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            snapshot.error.toString(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13.sp),
+                          ),
+                          SizedBox(height: 12.h),
+                          AppButton(
+                            text: 'tryAgain'.tr,
+                            onPressed: _reload,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SingleChildScrollView(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                    child: LedgerActivitySection(
+                      entries: snapshot.data ?? const [],
+                      showTitle: false,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

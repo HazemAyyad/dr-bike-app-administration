@@ -6,7 +6,9 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../controllers/checks_controller.dart';
+import 'bulk_checks_actions.dart';
 
 class CustomActionsAppBar extends GetView<ChecksController> {
   const CustomActionsAppBar({Key? key, required this.isNewCheck})
@@ -18,6 +20,63 @@ class CustomActionsAppBar extends GetView<ChecksController> {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        Obx(
+          () => controller.isBulkSelectionMode.value
+              ? Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'bulkChecksActions'.tr,
+                      highlightColor: Colors.transparent,
+                      icon: Icon(
+                        Icons.playlist_add_check_circle_outlined,
+                        size: 24.sp,
+                        color: AppColors.primaryColor,
+                      ),
+                      onPressed: controller.selectedBulkCheckIds.isEmpty
+                          ? null
+                          : () {
+                              controller.getShowBoxes();
+                              controller.getAllCustomersAndSellers();
+                              Get.dialog(const BulkChecksActionsDialog());
+                            },
+                    ),
+                    IconButton(
+                      tooltip: 'cancel'.tr,
+                      highlightColor: Colors.transparent,
+                      icon: Icon(
+                        Icons.close,
+                        size: 24.sp,
+                        color: Colors.red,
+                      ),
+                      onPressed: controller.clearBulkSelection,
+                    ),
+                  ],
+                )
+              : IconButton(
+                  tooltip: 'selectChecks'.tr,
+                  highlightColor: Colors.transparent,
+                  icon: Icon(
+                    Icons.checklist_rtl,
+                    size: 24.sp,
+                    color: ThemeService.isDark.value
+                        ? AppColors.primaryColor
+                        : AppColors.secondaryColor,
+                  ),
+                  onPressed: controller.startBulkSelection,
+                ),
+        ),
+        IconButton(
+          tooltip: 'checkNotifications'.tr,
+          highlightColor: Colors.transparent,
+          icon: Icon(
+            Icons.notifications_active_outlined,
+            size: 22.sp,
+            color: ThemeService.isDark.value
+                ? AppColors.primaryColor
+                : AppColors.secondaryColor,
+          ),
+          onPressed: () => Get.toNamed(AppRoutes.CHECKNOTIFICATIONRULESSCREEN),
+        ),
         IconButton(
           highlightColor: Colors.transparent,
           icon: Icon(

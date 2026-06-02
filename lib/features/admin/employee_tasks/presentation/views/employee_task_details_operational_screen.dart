@@ -17,7 +17,8 @@ import '../widgets/task_assignees_section.dart';
 import '../widgets/task_timeline_section.dart';
 
 /// Admin/manager task details — compact layout.
-class EmployeeTaskDetailsOperationalScreen extends GetView<EmployeeTasksController> {
+class EmployeeTaskDetailsOperationalScreen
+    extends GetView<EmployeeTasksController> {
   const EmployeeTaskDetailsOperationalScreen({Key? key}) : super(key: key);
 
   static const _compact = true;
@@ -39,7 +40,25 @@ class EmployeeTaskDetailsOperationalScreen extends GetView<EmployeeTasksControll
           ),
         ),
         actions: [
-          if (userType == 'admin')
+          if (userType == 'admin') ...[
+            IconButton(
+              tooltip: 'cloneTask'.tr,
+              icon: Icon(
+                Icons.copy_all_outlined,
+                color: AppColors.operationalPurple,
+                size: 20.sp,
+              ),
+              onPressed: () {
+                Get.toNamed(
+                  AppRoutes.CREATETASKSCREEN,
+                  arguments: {
+                    'title': 'createNewEmployeeTask',
+                    'isEdit': false,
+                    'cloneFromTask': true,
+                  },
+                );
+              },
+            ),
             TextButton(
               style: TextButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -53,19 +72,22 @@ class EmployeeTaskDetailsOperationalScreen extends GetView<EmployeeTasksControll
               },
               child: Text('edit'.tr, style: TextStyle(fontSize: 13.sp)),
             ),
+          ],
         ],
       ),
       body: Obx(() {
         if (controller.isTaskDetailsLoading.value) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.operationalPurple),
+            child:
+                CircularProgressIndicator(color: AppColors.operationalPurple),
           );
         }
         final data = controller.employeeTaskService.taskDetails.value;
         if (data == null) return Center(child: Text('noData'.tr));
 
         final progress = controller.subtaskProgress(data);
-        final showReview = data.status == 'waiting_review' && userType == 'admin';
+        final showReview =
+            data.status == 'waiting_review' && userType == 'admin';
 
         return Column(
           children: [
@@ -318,9 +340,8 @@ class _ReviewBar extends GetView<EmployeeTasksController> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: controller.isLoading.value
-                    ? null
-                    : () => _reject(context),
+                onPressed:
+                    controller.isLoading.value ? null : () => _reject(context),
                 style: OutlinedButton.styleFrom(
                   minimumSize: Size(0, 40.h),
                   padding: EdgeInsets.zero,
@@ -364,7 +385,8 @@ class _ReviewBar extends GetView<EmployeeTasksController> {
                 icon: Icon(Icons.check_circle_outline, size: 18.sp),
                 label: Text(
                   'approveTask'.tr,
-                  style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+                  style:
+                      TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
                 ),
               ),
             ),
@@ -389,7 +411,9 @@ class _ReviewBar extends GetView<EmployeeTasksController> {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(result: false), child: Text('cancel'.tr)),
+          TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('cancel'.tr)),
           TextButton(
             onPressed: () {
               if (notesController.text.trim().isEmpty) {
@@ -459,7 +483,8 @@ class OperationalChecklist extends StatelessWidget {
               borderRadius: BorderRadius.circular(compact ? 8.r : 14.r),
               border: needsProof && !done
                   ? Border.all(
-                      color: AppColors.operationalPurple.withValues(alpha: 0.35),
+                      color:
+                          AppColors.operationalPurple.withValues(alpha: 0.35),
                     )
                   : null,
             ),
@@ -482,8 +507,7 @@ class OperationalChecklist extends StatelessWidget {
                         style: TextStyle(
                           fontSize: compact ? 11.5.sp : 14.sp,
                           fontWeight: FontWeight.w600,
-                          decoration:
-                              done ? TextDecoration.lineThrough : null,
+                          decoration: done ? TextDecoration.lineThrough : null,
                           color: done
                               ? AppColors.customGreyColor5
                               : AppColors.operationalNavy,

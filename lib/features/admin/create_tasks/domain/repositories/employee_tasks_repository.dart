@@ -20,6 +20,7 @@ abstract class CreateEmployeeTasksRepository {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
+    required String proofMediaType,
     required String requiresAdminReview,
     required List<File> adminImg,
     required File audio,

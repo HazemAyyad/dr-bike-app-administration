@@ -67,9 +67,11 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
   }
 
   void _releasePaymentController() {
-    if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
-      Get.delete<PaymentController>(tag: kInstantSalePaymentTag);
-    }
+    Future<void>.delayed(const Duration(milliseconds: 350), () {
+      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+        Get.delete<PaymentController>(tag: kInstantSalePaymentTag);
+      }
+    });
   }
 
   @override
@@ -86,93 +88,93 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
         if (didPop) _releasePaymentController();
       },
       child: Scaffold(
-      appBar: CustomAppBar(
-        title: 'newInstantSale',
-        action: false,
-        actions: [
-          Obx(() {
-            final _ = controller.cartRevision.value;
-            final __ = controller.selectedPackageId.value;
-            final n = controller.pickerSelectionCount;
-            final packageOnly = controller.hasSelectedPackage && n == 1;
-            return IconButton(
-              onPressed: () => showInstantSaleCartSheet(context),
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    color: AppColors.primaryColor,
-                    size: 26.sp,
-                  ),
-                  if (n > 0)
-                    Positioned(
-                      right: -2,
-                      top: -2,
-                      child: Container(
-                        padding: EdgeInsets.all(4.w),
-                        decoration: BoxDecoration(
-                          color: packageOnly
-                              ? const Color(0xFFE65100)
-                              : Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '$n',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.bold,
+        appBar: CustomAppBar(
+          title: 'newInstantSale',
+          action: false,
+          actions: [
+            Obx(() {
+              final _ = controller.cartRevision.value;
+              final n = controller.pickerSelectionCount;
+              final packageOnly = controller.hasSelectedPackage && n == 1;
+              return IconButton(
+                onPressed: () => showInstantSaleCartSheet(context),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      color: AppColors.primaryColor,
+                      size: 26.sp,
+                    ),
+                    if (n > 0)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          padding: EdgeInsets.all(4.w),
+                          decoration: BoxDecoration(
+                            color: packageOnly
+                                ? const Color(0xFFE65100)
+                                : Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$n',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Form(
-          key: controller.instantSaleFormKey,
-          child: Column(
-            children: [
-              SizedBox(height: 5.h),
-              const AddNewInstantSaleWidget(),
-              Divider(
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
-                thickness: 0.8,
-                height: 1,
-              ),
-              SizedBox(height: 10.h),
-              const DiscountWidget(),
-              SizedBox(height: 16.h),
-              Divider(
-                color: Colors.grey.shade300,
-                height: 1,
-              ),
-              SizedBox(height: 12.h),
-              const InstantSalePaymentSection(),
-              SizedBox(height: 20.h),
-              AppButton(
-                isLoading: controller.isLoading,
-                text: 'complete'.tr,
-                textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                onPressed: () => controller.submitInstantSaleWithPayment(context),
-              ),
-              SizedBox(height: 24.h),
-            ],
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Form(
+            key: controller.instantSaleFormKey,
+            child: Column(
+              children: [
+                SizedBox(height: 5.h),
+                const AddNewInstantSaleWidget(),
+                Divider(
+                  color: ThemeService.isDark.value
+                      ? AppColors.primaryColor
+                      : AppColors.secondaryColor,
+                  thickness: 0.8,
+                  height: 1,
+                ),
+                SizedBox(height: 10.h),
+                const DiscountWidget(),
+                SizedBox(height: 16.h),
+                Divider(
+                  color: Colors.grey.shade300,
+                  height: 1,
+                ),
+                SizedBox(height: 12.h),
+                const InstantSalePaymentSection(),
+                SizedBox(height: 20.h),
+                AppButton(
+                  isLoading: controller.isLoading,
+                  text: 'complete'.tr,
+                  textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                  onPressed: () =>
+                      controller.submitInstantSaleWithPayment(context),
+                ),
+                SizedBox(height: 24.h),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }

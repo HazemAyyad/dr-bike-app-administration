@@ -136,12 +136,14 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
           ],
         ),
       ),
-      floatingActionButton: CustomFloatingActionButton(
-        isAddMenuOpen: controller.isAddMenuOpen,
-        onTap: () => controller.toggleAddMenu(),
-        opacityAnimation: controller.sizeAnimation,
-        sizeAnimation: controller.opacityAnimation,
-        addList: controller.adminAddList,
+      floatingActionButton: Obx(
+        () => CustomFloatingActionButton(
+          isAddMenuOpen: controller.isAddMenuOpen,
+          onTap: () => controller.toggleAddMenu(),
+          opacityAnimation: controller.sizeAnimation,
+          sizeAnimation: controller.opacityAnimation,
+          addList: controller.visibleAdminAddList,
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );

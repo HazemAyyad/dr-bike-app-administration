@@ -115,7 +115,6 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
             }
 
             final keys = controller.orderedDisplayKeys(filtered.keys.toList());
-            final showCheckbox = controller.currentTab.value == 0;
             final isDaily =
                 controller.tasksViewMode.value ==
                     EmployeeDashbordController.tasksViewDaily;
@@ -206,7 +205,7 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
                         ...tasks.map(
                           (t) => EmployeeOperationalTaskCard(
                             task: t,
-                            showCheckbox: showCheckbox,
+                            showCheckbox: false,
                           ),
                         ),
                     ],

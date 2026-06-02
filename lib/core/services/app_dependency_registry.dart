@@ -254,6 +254,7 @@ class AppDependencyRegistry {
 
   static void ensureGeneralDataList() {
     ensureNetworkAndApi();
+    ensureDebtsLedger();
     _lazy<GeneralDataListDatasource>(
       () => GeneralDataListDatasource(api: Get.find<DioConsumer>()),
     );

@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/proof_media_type.dart';
 
 class DashbordEmployeeDetailsModel {
   final int id;
@@ -134,6 +135,7 @@ class User {
 
 class Task {
   final int id;
+
   /// Legacy [employee_tasks.id] for API calls (details, complete). For occurrences, may differ from [id].
   final int taskId;
   final int employeeId;
@@ -142,6 +144,7 @@ class Task {
   final DateTime endTime;
   final String status;
   final bool isForcedToUploadImg;
+  final String proofMediaType;
   final int? occurrenceId;
   final String source;
   final bool hasSubTasks;
@@ -160,6 +163,7 @@ class Task {
     required this.endTime,
     required this.status,
     required this.isForcedToUploadImg,
+    this.proofMediaType = ProofMediaType.none,
     this.occurrenceId,
     this.source = 'legacy',
     this.hasSubTasks = false,
@@ -184,16 +188,20 @@ class Task {
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
       id: asInt(json['id']),
-      taskId: json['task_id'] != null ? asInt(json['task_id']) : asInt(json['id']),
+      taskId:
+          json['task_id'] != null ? asInt(json['task_id']) : asInt(json['id']),
       employeeId: asInt(json['employee_id']),
       name: asString(json['name']),
       startTime: parseApiDateTime(json['start_time']),
       endTime: parseApiDateTime(json['end_time']),
       status: asString(json['status']),
       isForcedToUploadImg: asBool(json['is_forced_to_upload_img']),
-      occurrenceId: json['occurrence_id'] != null
-          ? asInt(json['occurrence_id'])
-          : null,
+      proofMediaType: ProofMediaType.normalize(
+        asNullableString(json['proof_media_type']),
+        required: asBool(json['is_forced_to_upload_img']),
+      ),
+      occurrenceId:
+          json['occurrence_id'] != null ? asInt(json['occurrence_id']) : null,
       source: asString(json['source'], 'legacy'),
       hasSubTasks: asBool(json['has_sub_tasks']),
       subTasksCount: asInt(json['sub_tasks_count']),
@@ -202,9 +210,8 @@ class Task {
           ? asInt(json['completed_by_employee_id'])
           : null,
       completedByName: asNullableString(json['completed_by_name']),
-      canExecute: json['can_execute'] == null
-          ? true
-          : asBool(json['can_execute']),
+      canExecute:
+          json['can_execute'] == null ? true : asBool(json['can_execute']),
     );
   }
 }

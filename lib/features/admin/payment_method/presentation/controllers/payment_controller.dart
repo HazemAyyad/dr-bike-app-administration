@@ -232,6 +232,80 @@ class PaymentController extends GetxController {
     };
   }
 
+  Map<String, dynamic> buildOptionalProfitSalePayload() {
+    final id = partnerIdController.text.trim();
+    final hasPartner = id.isNotEmpty;
+    final isCustomer = selectedCustomersSellers.value;
+
+    String? name;
+    if (hasPartner) {
+      if (isCustomer) {
+        name = allCustomersList
+            .firstWhereOrNull((e) => e.id.toString() == id)
+            ?.name;
+      } else {
+        name = allSellersList
+            .firstWhereOrNull((e) => e.id.toString() == id)
+            ?.name;
+      }
+    }
+
+    final boxId = boxIdController.text.trim();
+    String? boxName;
+    if (boxId.isNotEmpty) {
+      boxName = shownBoxes
+          .firstWhereOrNull((e) => e.boxId.toString() == boxId)
+          ?.boxName;
+    }
+
+    final cashRaw = cashValueController.text
+        .replaceAll(',', '')
+        .replaceAll('،', '')
+        .trim();
+    final normalizedCash = _normalizeAmountDigits(cashRaw);
+
+    return {
+      'success': true,
+      'buyer_type': hasPartner ? (isCustomer ? 'customer' : 'seller') : 'unknown',
+      if (hasPartner && isCustomer) 'buyer_id': id,
+      if (hasPartner && !isCustomer) 'seller_id': id,
+      if (name != null && name.isNotEmpty) 'buyer_name': name,
+      if (boxId.isNotEmpty) 'payment_box_id': boxId,
+      if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
+      if (normalizedCash.isNotEmpty) 'payment_box_value': normalizedCash,
+    };
+  }
+
+  String _normalizeAmountDigits(String value) {
+    const eastern = {
+      '٠': '0',
+      '١': '1',
+      '٢': '2',
+      '٣': '3',
+      '٤': '4',
+      '٥': '5',
+      '٦': '6',
+      '٧': '7',
+      '٨': '8',
+      '٩': '9',
+      '۰': '0',
+      '۱': '1',
+      '۲': '2',
+      '۳': '3',
+      '۴': '4',
+      '۵': '5',
+      '۶': '6',
+      '۷': '7',
+      '۸': '8',
+      '۹': '9',
+    };
+    var text = value.trim();
+    eastern.forEach((from, to) {
+      text = text.replaceAll(from, to);
+    });
+    return text;
+  }
+
   /// Receive (قبض) for instant sale without leaving the sale screen.
   Future<Map<String, dynamic>?> submitReceiveForInstantSale(
     BuildContext context,

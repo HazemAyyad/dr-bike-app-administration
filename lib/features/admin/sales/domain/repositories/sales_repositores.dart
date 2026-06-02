@@ -2,6 +2,7 @@ import 'package:doctorbike/core/errors/failure.dart';
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/instant_sales_model.dart';
 import '../../data/models/invoice_model.dart';
@@ -13,6 +14,15 @@ abstract class SalesRepository {
   Future<Either<Failure, String>> addProfitSales({
     required String notes,
     required String totalCost,
+    String? buyerType,
+    String? buyerId,
+    String? sellerId,
+    String? buyerName,
+    String? paymentBoxId,
+    String? paymentBoxName,
+    String? paymentBoxValue,
+    XFile? image,
+    XFile? video,
   });
   Future<List<ProfitSale>> getProfitSales();
 
@@ -36,6 +46,7 @@ abstract class SalesRepository {
     required String discount,
     required String totalCost,
     required String note,
+    List<Map<String, dynamic>> additionalNotes = const [],
     required String type,
     required String projectId,
     required RxList<ItemModel> otherProducts,
@@ -50,7 +61,11 @@ abstract class SalesRepository {
     List<Map<String, dynamic>>? cartOtherProducts,
   });
 
-  Future<Either<Failure, String>> cancelInstantSale({required String instantSaleId});
+  Future<Either<Failure, String>> cancelInstantSale(
+      {required String instantSaleId});
+
+  Future<Either<Failure, String>> cancelProfitSale(
+      {required String profitSaleId});
 
   Future<Either<Failure, String>> editInstantSale({
     required String instantSaleId,

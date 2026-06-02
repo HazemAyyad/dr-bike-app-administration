@@ -144,18 +144,34 @@ class ProductManagementController extends GetxController {
         : null;
     final result = await getProductDevelopmentsUsecase.call();
     ProductManagementServes().productManagement.assignAll(result);
-    searchProductManagement.assignAll(ProductManagementServes()
-        .productManagement
-        .where((element) => element.currentStep != '7'));
-    searcharchiveProductManagement.assignAll(ProductManagementServes()
-        .productManagement
-        .where((element) => element.currentStep == '7'));
+    searchProductManagement.assignAll(_sortByStarsDesc(
+      ProductManagementServes()
+          .productManagement
+          .where((element) => element.currentStep != '7'),
+    ));
+    searcharchiveProductManagement.assignAll(_sortByStarsDesc(
+      ProductManagementServes()
+          .productManagement
+          .where((element) => element.currentStep == '7'),
+    ));
     isLoading(false);
     update();
   }
 
   List<ProductDevelopmentModel> searchProductManagement = [];
   List<ProductDevelopmentModel> searcharchiveProductManagement = [];
+
+  List<ProductDevelopmentModel> _sortByStarsDesc(
+    Iterable<ProductDevelopmentModel> items,
+  ) {
+    return items.toList()
+      ..sort((a, b) {
+        final byStep = (int.tryParse(b.currentStep) ?? 0)
+            .compareTo(int.tryParse(a.currentStep) ?? 0);
+        if (byStep != 0) return byStep;
+        return b.id.compareTo(a.id);
+      });
+  }
 
   ProductDevelopmentModel? developmentForProduct(String productId) {
     return ProductManagementServes().productManagement.firstWhereOrNull(
@@ -191,7 +207,9 @@ class ProductManagementController extends GetxController {
             (element) =>
                 element.productName.toLowerCase().contains(value.toLowerCase()),
           )
-          .toList());
+          .toList()
+        ..sort((a, b) => (int.tryParse(b.currentStep) ?? 0)
+            .compareTo(int.tryParse(a.currentStep) ?? 0)));
       searcharchiveProductManagement.assignAll(ProductManagementServes()
           .productManagement
           .where((element) => element.currentStep == '7')
@@ -199,16 +217,20 @@ class ProductManagementController extends GetxController {
             (element) =>
                 element.productName.toLowerCase().contains(value.toLowerCase()),
           )
-          .toList());
+          .toList()
+        ..sort((a, b) => (int.tryParse(b.currentStep) ?? 0)
+            .compareTo(int.tryParse(a.currentStep) ?? 0)));
     } else {
-      searchProductManagement.assignAll(ProductManagementServes()
-          .productManagement
-          .where((element) => element.currentStep != '7')
-          .toList());
-      searcharchiveProductManagement.assignAll(ProductManagementServes()
-          .productManagement
-          .where((element) => element.currentStep == '7')
-          .toList());
+      searchProductManagement.assignAll(_sortByStarsDesc(
+        ProductManagementServes()
+            .productManagement
+            .where((element) => element.currentStep != '7'),
+      ));
+      searcharchiveProductManagement.assignAll(_sortByStarsDesc(
+        ProductManagementServes()
+            .productManagement
+            .where((element) => element.currentStep == '7'),
+      ));
       searchProducts.assignAll(products);
     }
     update();

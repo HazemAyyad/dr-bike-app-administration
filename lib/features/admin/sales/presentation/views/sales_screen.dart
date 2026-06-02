@@ -7,13 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/utils/app_colors.dart';
-
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/profit_sale_card.dart';
+import '../widgets/profit_sales_toolbar.dart';
 import '../widgets/sales_invoices_toolbar.dart';
 
 class SalesScreen extends GetView<SalesController> {
@@ -38,111 +37,70 @@ class SalesScreen extends GetView<SalesController> {
             child: CustomScrollView(
               physics: kRefreshableScrollPhysics,
               slivers: [
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    Center(
-                      child: AppTabs(
-                        tabs: controller.tabs,
-                        currentTab: controller.currentTab,
-                        changeTab: controller.changeTab,
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                  ],
-                ),
-              ),
-              Obx(
-                () => controller.currentTab.value == 0
-                    ? SliverToBoxAdapter(
-                        child: Column(
-                          children: [
-                            const SalesInvoicesToolbar(),
-                            SizedBox(height: 8.h),
-                          ],
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      Center(
+                        child: AppTabs(
+                          tabs: controller.tabs,
+                          currentTab: controller.currentTab,
+                          changeTab: controller.changeTab,
                         ),
-                      )
-                    : const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                sliver: Obx(
+                      ),
+                      SizedBox(height: 12.h),
+                    ],
+                  ),
+                ),
+                Obx(
                   () {
-                    final _ = controller.salesListRevision.value;
-                    if (controller.currentTab.value == 0) {
-                      controller.instantSalesPackageFilter.value;
-                    }
-                    if (controller.isLoading.value) {
-                      return const SliverFillRemaining(
-                        hasScrollBody: true,
-                        child: Center(child: CircularProgressIndicator()),
-                      );
-                    }
-                    if (controller.currentTab.value == 0) {
-                      if (controller.orderedInstantSalesGroupsFiltered.isEmpty) {
-                        return const SliverFillRemaining(child: ShowNoData());
-                      }
-                    } else if (controller.currentTab.value == 1) {
-                      if (controller
-                          .salesService.filterProfitSalesTasks.isEmpty) {
-                        return const SliverFillRemaining(child: ShowNoData());
-                      }
-                    }
-                    return controller.currentTab.value == 0
-                        ? const SliverToBoxAdapter(
-                            child: InstantSalesTable(),
-                          )
-                        : SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final month = controller
-                                    .salesService.filterProfitSalesTasks.keys
-                                    .toList()
-                                    .toList()[index];
-
-                                final sales = controller.salesService
-                                    .filterProfitSalesTasks[month]!.reversed
-                                    .toList();
-                                return Column(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          month.toString(),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineMedium!
-                                              .copyWith(
-                                                color: AppColors.primaryColor,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15.sp,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 5.h),
-                                    Container(
-                                      height: 1.h,
-                                      width: double.infinity,
-                                      color: AppColors.primaryColor,
-                                    ),
-                                    SizedBox(height: 10.h),
-                                    ...sales.map(
-                                      (sale) =>
-                                          ProfitSaleCard(profitSale: sale),
-                                    ),
-                                  ],
-                                );
-                              },
-                              childCount: controller
-                                  .salesService.filterProfitSalesTasks.length,
-                            ),
-                          );
+                    final toolbar = controller.currentTab.value == 0
+                        ? const SalesInvoicesToolbar()
+                        : const ProfitSalesToolbar();
+                    return SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          toolbar,
+                          SizedBox(height: 8.h),
+                        ],
+                      ),
+                    );
                   },
                 ),
-              ),
-              SliverToBoxAdapter(child: SizedBox(height: 50.h)),
-            ],
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  sliver: Obx(
+                    () {
+                      final _ = controller.salesListRevision.value;
+                      if (controller.currentTab.value == 0) {
+                        controller.instantSalesPackageFilter.value;
+                      }
+                      if (controller.isLoading.value) {
+                        return const SliverFillRemaining(
+                          hasScrollBody: true,
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      if (controller.currentTab.value == 0) {
+                        if (controller
+                            .orderedInstantSalesGroupsFiltered.isEmpty) {
+                          return const SliverFillRemaining(child: ShowNoData());
+                        }
+                      } else if (controller.currentTab.value == 1) {
+                        if (controller
+                            .salesService.filterProfitSalesTasks.isEmpty) {
+                          return const SliverFillRemaining(child: ShowNoData());
+                        }
+                      }
+                      return SliverToBoxAdapter(
+                        child: controller.currentTab.value == 0
+                            ? const InstantSalesTable()
+                            : const ProfitSalesTable(),
+                      );
+                    },
+                  ),
+                ),
+                SliverToBoxAdapter(child: SizedBox(height: 50.h)),
+              ],
             ),
           ),
           Obx(

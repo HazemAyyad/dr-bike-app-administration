@@ -12,13 +12,20 @@ import 'view_checks_widget.dart';
 
 String _currencyLabelForTotals(String rawCurrency) {
   final c = rawCurrency.trim().toLowerCase();
-  if (c.contains('شيكل') || c.contains('shekel') || c.contains('nis') || c.contains('ils') || c.contains('₪')) {
+  if (c.contains('شيكل') ||
+      c.contains('shekel') ||
+      c.contains('nis') ||
+      c.contains('ils') ||
+      c.contains('₪')) {
     return '₪';
   }
   if (c.contains('دينار') || c.contains('dinar') || c.contains('jd')) {
     return 'دينار';
   }
-  if (c.contains('دولار') || c.contains('dollar') || c.contains('usd') || c.contains('\$')) {
+  if (c.contains('دولار') ||
+      c.contains('dollar') ||
+      c.contains('usd') ||
+      c.contains('\$')) {
     return 'دولار';
   }
   return rawCurrency.trim();
@@ -133,7 +140,8 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                             .reversed
                         : controller.filteredArchiveTasks[month];
 
-            final totalsText = _formatTotalsByCurrency(checks ?? const <CheckModel>[]);
+            final totalsText =
+                _formatTotalsByCurrency(checks ?? const <CheckModel>[]);
 
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -182,14 +190,34 @@ class CustomListVeiwBuilder extends GetView<ChecksController> {
                   ...checks!.map(
                     (check) => GestureDetector(
                       onLongPress: () {
+                        if (controller.isBulkSelectionMode.value) return;
                         controller.getShowBoxes();
                         controller.getAllCustomersAndSellers();
                         Get.dialog(OnLongPress(check: check));
                       },
-                      child: ViewChecksWidget(
-                        type: controller.isInComing,
-                        check: check,
-                        currentTab: controller.currentTab.value,
+                      onTap: controller.isBulkSelectionMode.value
+                          ? () => controller.toggleBulkCheck(check)
+                          : null,
+                      child: Row(
+                        children: [
+                          if (controller.isBulkSelectionMode.value)
+                            Checkbox(
+                              value: controller.selectedBulkCheckIds
+                                  .contains(check.id),
+                              onChanged: (_) =>
+                                  controller.toggleBulkCheck(check),
+                              activeColor: AppColors.primaryColor,
+                            ),
+                          Expanded(
+                            child: ViewChecksWidget(
+                              type: controller.isInComing,
+                              check: check,
+                              currentTab: controller.currentTab.value,
+                              disableDetails:
+                                  controller.isBulkSelectionMode.value,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

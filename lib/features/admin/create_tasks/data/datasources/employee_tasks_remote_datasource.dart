@@ -43,6 +43,7 @@ class CreateEmployeeTasksDatasource {
     required RxList subEmployeeTasks,
     required String notShownForEmployee,
     required String isForcedToUploadImg,
+    required String proofMediaType,
     required String requiresAdminReview,
     required List<File> adminImg,
     required File audio,
@@ -67,6 +68,8 @@ class CreateEmployeeTasksDatasource {
             task['subTaskdescription'] ?? '';
         subEmployeeTasksMap['sub_employee_tasks[$i][is_forced_to_upload_img]'] =
             task['imageIsRequired'] == true ? 1 : 0;
+        subEmployeeTasksMap['sub_employee_tasks[$i][proof_media_type]'] =
+            task['proofMediaType']?.toString() ?? 'none';
         subEmployeeTasksMap['sub_employee_tasks[$i][bonus_points]'] =
             task['bonusPoints'] ?? 0;
 
@@ -89,7 +92,8 @@ class CreateEmployeeTasksDatasource {
           }
           for (final path in localPaths) {
             final compressedImg = await compressImage(XFile(path));
-            subEmployeeTasksMap['sub_employee_tasks[$i][admin_subtask__img][]'] =
+            subEmployeeTasksMap[
+                    'sub_employee_tasks[$i][admin_subtask__img][]'] =
                 await MultipartFile.fromFile(
               compressedImg.path,
               filename: compressedImg.path.split('/').last,
@@ -128,6 +132,7 @@ class CreateEmployeeTasksDatasource {
           ...subEmployeeTasksMap,
           'not_shown_for_employee': notShownForEmployee,
           'is_forced_to_upload_img': isForcedToUploadImg,
+          'proof_media_type': proofMediaType,
           'requires_admin_review': requiresAdminReview,
           if (adminImg.isNotEmpty)
             'admin_img[]': await Future.wait(

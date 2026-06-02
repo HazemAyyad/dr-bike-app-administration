@@ -107,11 +107,9 @@ class ProductManagementScreen extends GetView<ProductManagementController> {
                     final stockProduct =
                         tab == 0 ? controller.searchProducts[index] : null;
                     final productDevelopment = tab == 1
-                        ? controller.searchProductManagement.reversed
-                            .toList()[index]
+                        ? controller.searchProductManagement[index]
                         : tab == 2
-                            ? controller.searcharchiveProductManagement.reversed
-                                .toList()[index]
+                            ? controller.searcharchiveProductManagement[index]
                             : null;
                     final stockDevelopment = tab == 0 && stockProduct != null
                         ? controller.developmentForProduct(stockProduct.id)

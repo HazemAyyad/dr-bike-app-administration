@@ -72,6 +72,7 @@ class AppRoutes {
   static const OUTGOINGCHECKSSCREEN = '/OutgoingChecksScreen';
   static const INCOMINGCHECKSSCREEN = '/IncomingChecksScreen';
   static const NEWCHECKSCREEN = '/NewCheckScreen';
+  static const CHECKNOTIFICATIONRULESSCREEN = '/CheckNotificationRulesScreen';
 
   // Profile Screen
   static const PROFILESCREEN = '/profilescreen';

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
@@ -154,7 +155,21 @@ class AdminDashboardController extends GetxController
       'icon': AssetsManager.userIcon,
       'route': AppRoutes.ADDNEWCUSTOMERSCREEN,
     },
+    {
+      'title': 'newTask',
+      'icon': AssetsManager.taskIcon,
+      'route': AppRoutes.CREATETASKSCREEN,
+      'settingKey': 'createNewEmployeeTask',
+      'flowTitle': 'createNewEmployeeTask',
+    },
   ];
+
+  List<Map<String, String>> get visibleAdminAddList {
+    final enabled = AppSettingsService.instance.adminFabOptions;
+    return adminAddList
+        .where((item) => enabled.contains(item['settingKey'] ?? item['title']))
+        .toList(growable: false);
+  }
 
   final RxBool isLoading = false.obs;
   final RxBool isLogsLoading = false.obs;
@@ -294,6 +309,7 @@ class AdminDashboardController extends GetxController
       }
       Get.find<AdminNotificationBadgeController>().refresh();
     }
+    AppSettingsService.instance.ensureLoaded();
     getMainDashboardData();
     super.onInit();
     animController = AnimationController(

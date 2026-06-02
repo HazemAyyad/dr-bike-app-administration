@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -32,6 +34,7 @@ class _BankNameFieldState extends State<BankNameField> {
   void initState() {
     super.initState();
     widget.controller.addListener(_onTextChanged);
+    widget.focusNode.addListener(_onFocusChanged);
     _ensureBanksLoaded();
   }
 
@@ -48,14 +51,20 @@ class _BankNameFieldState extends State<BankNameField> {
   @override
   void dispose() {
     widget.controller.removeListener(_onTextChanged);
+    widget.focusNode.removeListener(_onFocusChanged);
     _removeOverlay();
     super.dispose();
   }
 
+  void _onFocusChanged() {
+    if (!widget.focusNode.hasFocus) {
+      _removeOverlay();
+    }
+  }
+
   void _onTextChanged() {
     if (!Get.isRegistered<BanksService>()) return;
-    final matches =
-        Get.find<BanksService>().matchNames(widget.controller.text);
+    final matches = Get.find<BanksService>().matchNames(widget.controller.text);
     if (matches.isEmpty) {
       _removeOverlay();
       return;
@@ -66,31 +75,65 @@ class _BankNameFieldState extends State<BankNameField> {
 
   void _showOverlay() {
     _removeOverlay();
+    final fieldBox = context.findRenderObject() as RenderBox?;
+    final overlayBox =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (fieldBox == null ||
+        overlayBox == null ||
+        !fieldBox.hasSize ||
+        !overlayBox.hasSize) {
+      return;
+    }
+
+    final fieldOffset =
+        fieldBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+    final fieldSize = fieldBox.size;
+    final overlaySize = overlayBox.size;
+    final screenMargin = 12.w;
+    final availableWidth = math.max(0.0, overlaySize.width - (screenMargin * 2));
+    final menuWidth = math.min(fieldSize.width, availableWidth);
+    final maxLeft =
+        math.max(screenMargin, overlaySize.width - menuWidth - screenMargin);
+    final left = fieldOffset.dx.clamp(screenMargin, maxLeft).toDouble();
+    final top = fieldOffset.dy + fieldSize.height + 4.h;
+
     _overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        width: MediaQuery.sizeOf(context).width - 48.w,
-        child: CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          offset: Offset(0, 52.h),
-          child: Material(
-            elevation: 4,
-            borderRadius: BorderRadius.circular(8.r),
-            child: ListView.builder(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              itemCount: _suggestions.length,
-              itemBuilder: (context, index) {
-                final name = _suggestions[index];
-                return ListTile(
-                  dense: true,
-                  title: Text(name),
-                  onTap: () => _applySuggestion(name),
-                );
-              },
+      builder: (context) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: _removeOverlay,
+              child: const SizedBox.expand(),
             ),
           ),
-        ),
+          Positioned(
+            left: left,
+            top: top,
+            width: menuWidth,
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(8.r),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: 240.h),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.zero,
+                  itemCount: _suggestions.length,
+                  itemBuilder: (context, index) {
+                    final name = _suggestions[index];
+                    return ListTile(
+                      dense: true,
+                      title: Text(name),
+                      onTap: () => _applySuggestion(name),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
     Overlay.of(context).insert(_overlayEntry!);

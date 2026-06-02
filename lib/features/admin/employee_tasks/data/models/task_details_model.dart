@@ -1,6 +1,7 @@
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/helpers/proof_media_type.dart';
 import '../../../../../core/helpers/task_media_paths.dart';
 import '../../domain/entities/task_assignee_info.dart';
 import '../../domain/entities/task_details_entiny.dart';
@@ -17,6 +18,7 @@ class TaskDetailsModel extends TaskDetailsEntity {
     required DateTime endTime,
     required String status,
     required bool isForcedToUploadImg,
+    String proofMediaType = ProofMediaType.none,
     bool requiresAdminReview = true,
     required String taskRecurrence,
     required List<String> taskRecurrenceTime,
@@ -54,6 +56,7 @@ class TaskDetailsModel extends TaskDetailsEntity {
           endTime: endTime,
           status: status,
           isForcedToUploadImg: isForcedToUploadImg,
+          proofMediaType: proofMediaType,
           requiresAdminReview: requiresAdminReview,
           taskRecurrence: taskRecurrence,
           taskRecurrenceTime: taskRecurrenceTime,
@@ -84,9 +87,8 @@ class TaskDetailsModel extends TaskDetailsEntity {
 
   factory TaskDetailsModel.fromJson(Map<String, dynamic> json) {
     final trt = json[ApiKey.task_recurrence_time];
-    final List<String> recurrenceTimes = trt is List
-        ? trt.map((e) => asString(e)).toList()
-        : <String>[];
+    final List<String> recurrenceTimes =
+        trt is List ? trt.map((e) => asString(e)).toList() : <String>[];
 
     final adminMedia = parseTaskMediaFromApi(json[ApiKey.admin_img]);
     final employeeMedia = parseTaskMediaFromApi(json[ApiKey.employee_img]);
@@ -108,6 +110,10 @@ class TaskDetailsModel extends TaskDetailsEntity {
       ),
       status: asString(json[ApiKey.status]),
       isForcedToUploadImg: asBool(json[ApiKey.is_forced_to_upload_img]),
+      proofMediaType: ProofMediaType.normalize(
+        asNullableString(json[ApiKey.proof_media_type]),
+        required: asBool(json[ApiKey.is_forced_to_upload_img]),
+      ),
       requiresAdminReview: asBool(json['requires_admin_review'], true),
       taskRecurrence: asString(json[ApiKey.task_recurrence]),
       taskRecurrenceTime: recurrenceTimes,
@@ -136,10 +142,10 @@ class TaskDetailsModel extends TaskDetailsEntity {
       progress: asInt(json['progress']),
       priority: asString(json['priority'], 'medium'),
       rejectionNotes: asNullableString(json['rejection_notes']),
-      templateId: json['template_id'] != null ? asInt(json['template_id']) : null,
-      occurrenceId: json['occurrence_id'] != null
-          ? asInt(json['occurrence_id'])
-          : null,
+      templateId:
+          json['template_id'] != null ? asInt(json['template_id']) : null,
+      occurrenceId:
+          json['occurrence_id'] != null ? asInt(json['occurrence_id']) : null,
       recurrenceConfig: json['recurrence_config'] is Map
           ? Map<String, dynamic>.from(json['recurrence_config'] as Map)
           : null,
@@ -164,6 +170,7 @@ class TaskDetailsModel extends TaskDetailsEntity {
       ApiKey.end_time: endTime.toIso8601String(),
       ApiKey.status: status,
       ApiKey.is_forced_to_upload_img: isForcedToUploadImg ? "1" : "0",
+      ApiKey.proof_media_type: proofMediaType,
       ApiKey.task_recurrence: taskRecurrence,
       ApiKey.task_recurrence_time: taskRecurrenceTime,
       ApiKey.employee_id: employeeId,
@@ -196,11 +203,10 @@ class TaskAssigneeModel extends TaskAssigneeInfo {
 
   factory TaskAssigneeModel.fromJson(Map<String, dynamic> json) {
     final photoRaw = asNullableString(json['photo']) ?? '';
-    final photo = photoRaw.isEmpty ||
-            photoRaw == 'no images' ||
-            photoRaw == 'no image'
-        ? ''
-        : resolveTaskMediaUri(photoRaw);
+    final photo =
+        photoRaw.isEmpty || photoRaw == 'no images' || photoRaw == 'no image'
+            ? ''
+            : resolveTaskMediaUri(photoRaw);
 
     return TaskAssigneeModel(
       id: asInt(json['id']),
@@ -219,6 +225,7 @@ class SubTaskModel extends SubTaskEntity {
     List<String>? adminImg,
     List<String>? adminVideos,
     required bool isForcedToUploadImg,
+    String proofMediaType = ProofMediaType.none,
     List<String>? employeeImg,
     List<String>? employeeVideos,
     int? completedByEmployeeId,
@@ -231,6 +238,7 @@ class SubTaskModel extends SubTaskEntity {
           adminImg: adminImg,
           adminVideos: adminVideos,
           isForcedToUploadImg: isForcedToUploadImg,
+          proofMediaType: proofMediaType,
           employeeImg: employeeImg,
           employeeVideos: employeeVideos,
           completedByEmployeeId: completedByEmployeeId,
@@ -247,6 +255,10 @@ class SubTaskModel extends SubTaskEntity {
       description: asString(json[ApiKey.description]),
       status: asString(json[ApiKey.status]),
       isForcedToUploadImg: asBool(json[ApiKey.is_forced_to_upload_img]),
+      proofMediaType: ProofMediaType.normalize(
+        asNullableString(json[ApiKey.proof_media_type]),
+        required: asBool(json[ApiKey.is_forced_to_upload_img]),
+      ),
       adminImg: adminMedia.images,
       adminVideos: adminMedia.videos,
       employeeImg: employeeMedia.images,
@@ -266,6 +278,7 @@ class SubTaskModel extends SubTaskEntity {
       ApiKey.status: status,
       ApiKey.admin_img: adminImg,
       ApiKey.is_forced_to_upload_img: isForcedToUploadImg ? "1" : "0",
+      ApiKey.proof_media_type: proofMediaType,
       ApiKey.employee_img: employeeImg,
     };
   }

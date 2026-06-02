@@ -45,7 +45,8 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
       ..androidEncoder = AndroidEncoder.aac
       ..androidOutputFormat = AndroidOutputFormat.mpeg4
       ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
-      ..sampleRate = 44100;
+      ..sampleRate = 48000
+      ..bitRate = 192000;
 
     _playerSub = _previewPlayer.playerStateStream.listen(_onPlayerState);
   }
@@ -205,7 +206,9 @@ class AudioRecorderButtonState extends State<AudioRecorderButton> {
                       color: AppColors.primaryColor,
                     )
                   : Icon(
-                      playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                      playing
+                          ? Icons.pause_circle_filled
+                          : Icons.play_circle_fill,
                       color: AppColors.primaryColor,
                       size: 32.sp,
                     ),

@@ -168,6 +168,7 @@ class BuildAddMenuItem extends StatelessWidget {
           final args = <String, dynamic>{
             'isNewCheck': _title == 'newCheck',
             'isPenaltyTitle': _title,
+            'title': item?['flowTitle'] ?? _title,
           };
           if (item?['freshInstantSale'] == 'true') {
             args['freshInstantSale'] = true;

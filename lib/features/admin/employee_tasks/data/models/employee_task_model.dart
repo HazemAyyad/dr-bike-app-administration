@@ -9,6 +9,8 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
   EmployeeTaskModel({
     required int taskId,
     int? occurrenceId,
+    String? parentId,
+    String source = 'legacy',
     required String taskName,
     required String employeeId,
     required String employeeName,
@@ -27,6 +29,8 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
   }) : super(
           taskId: taskId,
           occurrenceId: occurrenceId,
+          parentId: parentId,
+          source: source,
           taskName: taskName,
           employeeId: employeeId,
           employeeName: employeeName,
@@ -47,14 +51,18 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
   factory EmployeeTaskModel.fromJson(Map<String, dynamic> json) {
     return EmployeeTaskModel(
       taskId: asInt(json[ApiKey.task_id]),
-      occurrenceId: json['occurrence_id'] != null ? asInt(json['occurrence_id']) : null,
+      occurrenceId:
+          json['occurrence_id'] != null ? asInt(json['occurrence_id']) : null,
+      parentId: asNullableString(json[ApiKey.parent_id]),
+      source: asString(json['source'], 'legacy'),
       taskName: asString(json[ApiKey.task_name], 'Unknown'),
       employeeId: asString(json[ApiKey.employee_id], 'Unknown'),
       employeeName: asString(json[ApiKey.employee_name], 'Unknown'),
       startTime: parseApiDateTime(json[ApiKey.start_time]),
       endTime: parseApiDateTime(json[ApiKey.end_time]),
       isCanceled: asBool(json[ApiKey.is_canceled]),
-      employeeImg: ShowNetImage.getPhoto(asNullableString(json[ApiKey.employee_img])),
+      employeeImg:
+          ShowNetImage.getPhoto(asNullableString(json[ApiKey.employee_img])),
       employeePhoto: ShowNetImage.getPhoto(
         asNullableString(json[ApiKey.employee_photo]),
       ),
@@ -71,6 +79,8 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
   Map<String, dynamic> toJson() {
     return {
       ApiKey.task_id: taskId,
+      ApiKey.parent_id: parentId,
+      'source': source,
       ApiKey.task_name: taskName,
       ApiKey.employee_name: employeeName,
       ApiKey.start_time: startTime.toIso8601String(),

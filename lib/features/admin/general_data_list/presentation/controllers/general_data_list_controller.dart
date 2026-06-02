@@ -433,11 +433,11 @@ class GeneralDataListController extends GetxController {
     closestPersonWorkController.text = personData.value!.relativeJobTitle;
     personalIdImage = personData.value!.iDImage;
     licenseImage = personData.value!.licenseImage;
-    selectedCustomerType.text = personData.value!.personType.isNotEmpty
-        ? personData.value!.personType == 'seller'
-            ? 'wholesale'
-            : 'retail'
-        : '';
+    selectedCustomerType.text = _categoryFromPersonData(
+      personData.value!.personType,
+      customerId: customerId ?? '',
+      sellerId: sellerId ?? '',
+    );
     selectedContactCategoryIds
       ..clear()
       ..addAll(personData.value!.contactCategoryIds);
@@ -457,6 +457,27 @@ class GeneralDataListController extends GetxController {
       return args['employeeType'].toString();
     }
     return resolvedPersonType == 'seller' ? 'seller' : 'customer';
+  }
+
+  String _categoryFromPersonData(
+    String value, {
+    required String customerId,
+    required String sellerId,
+  }) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'wholesale' || normalized == 'seller') {
+      return 'wholesale';
+    }
+    if (normalized == 'retail' || normalized == 'customer') {
+      return 'retail';
+    }
+    if (sellerId.isNotEmpty) {
+      return 'wholesale';
+    }
+    if (customerId.isNotEmpty) {
+      return 'retail';
+    }
+    return '';
   }
 
   void _applyPersonTypeFromArguments(Map args) {

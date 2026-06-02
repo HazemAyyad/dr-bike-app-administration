@@ -9,6 +9,7 @@ import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.da
 import 'package:doctorbike/features/admin/sales/domain/repositories/sales_repositores.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
@@ -24,6 +25,15 @@ class SalesImplement implements SalesRepository {
   Future<Either<Failure, String>> addProfitSales({
     required String notes,
     required String totalCost,
+    String? buyerType,
+    String? buyerId,
+    String? sellerId,
+    String? buyerName,
+    String? paymentBoxId,
+    String? paymentBoxName,
+    String? paymentBoxValue,
+    XFile? image,
+    XFile? video,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -32,6 +42,15 @@ class SalesImplement implements SalesRepository {
       final result = await salesDatasource.addProfitSales(
         notes: notes,
         totalCost: totalCost,
+        buyerType: buyerType,
+        buyerId: buyerId,
+        sellerId: sellerId,
+        buyerName: buyerName,
+        paymentBoxId: paymentBoxId,
+        paymentBoxName: paymentBoxName,
+        paymentBoxValue: paymentBoxValue,
+        image: image,
+        video: video,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);
@@ -124,6 +143,7 @@ class SalesImplement implements SalesRepository {
       required String discount,
       required String totalCost,
       required String note,
+      List<Map<String, dynamic>> additionalNotes = const [],
       required String type,
       required String projectId,
       required RxList<ItemModel> otherProducts,
@@ -147,6 +167,7 @@ class SalesImplement implements SalesRepository {
         discount: discount,
         totalCost: totalCost,
         note: note,
+        additionalNotes: additionalNotes,
         type: type,
         projectId: projectId,
         otherProducts: otherProducts,
@@ -183,6 +204,27 @@ class SalesImplement implements SalesRepository {
     try {
       final result =
           await salesDatasource.cancelInstantSale(instantSaleId: instantSaleId);
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(ValidationFailure(
+        result['message'] ?? 'Unknown error',
+        result,
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> cancelProfitSale(
+      {required String profitSaleId}) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result =
+          await salesDatasource.cancelProfitSale(profitSaleId: profitSaleId);
       if (result['status'] == 'success') {
         return Right(result['message']?.toString() ?? 'success');
       }

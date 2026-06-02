@@ -14,6 +14,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
 import '../widgets/add_sub_task.dart';
+import '../widgets/proof_media_type_selector.dart';
 import '../widgets/select_date.dart';
 import '../../../../../core/helpers/multi_select_dropdown.dart';
 import '../widgets/audio_recorder.dart';
@@ -23,7 +24,8 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
 
   @override
   Widget build(BuildContext context) {
-    final String title = Get.arguments['title'];
+    final args = Get.arguments is Map ? Get.arguments as Map : const {};
+    final String title = args['title']?.toString() ?? 'addNewPravateTask';
 
     return Scaffold(
       appBar: CustomAppBar(title: title, action: false),
@@ -322,12 +324,11 @@ class CreateTaskScreen extends GetView<CreateTaskController> {
                   SizedBox(height: 10.h),
                   title == 'editEmployeeTask' ||
                           title == 'createNewEmployeeTask'
-                      ? CustomCheckBox(
-                          title: 'requireImage',
-                          value: controller.requireImage,
-                          onChanged: (value) {
-                            controller.requireImage.value = value!;
-                          },
+                      ? Obx(
+                          () => ProofMediaTypeSelector(
+                            value: controller.proofMediaType.value,
+                            onChanged: controller.setMainProofMediaType,
+                          ),
                         )
                       : const SizedBox.shrink(),
                 ],

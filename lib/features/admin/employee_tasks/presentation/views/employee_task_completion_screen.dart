@@ -15,7 +15,8 @@ import '../widgets/task_media_thumbnail_row.dart';
 import '../widgets/task_operational_shared.dart';
 import '../widgets/task_status_badge.dart';
 import '../widgets/task_assignees_section.dart';
-import 'employee_task_details_operational_screen.dart' show OperationalChecklist;
+import 'employee_task_details_operational_screen.dart'
+    show OperationalChecklist;
 
 /// Employee flow: complete subtasks, upload proof, submit for review.
 class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
@@ -50,7 +51,8 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
         final data = controller.employeeTaskService.taskDetails.value;
         if (controller.isTaskDetailsLoading.value && data == null) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.operationalPurple),
+            child:
+                CircularProgressIndicator(color: AppColors.operationalPurple),
           );
         }
         if (data == null) {
@@ -148,8 +150,8 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
         ? Get.arguments as Map<String, dynamic>
         : <String, dynamic>{};
     final mainTaskId = details.taskId.toString();
-    final occurrenceId = args['occurrence_id']?.toString() ??
-        controller.lastLoadedOccurrenceId;
+    final occurrenceId =
+        args['occurrence_id']?.toString() ?? controller.lastLoadedOccurrenceId;
 
     final ok = await controller.completeSubtaskWithCameraProof(
       context: context,
@@ -181,8 +183,8 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     }
 
     final refreshed = controller.employeeTaskService.taskDetails.value;
-    final allDone = refreshed?.subTasks.every((s) => s.status == 'completed') ??
-        false;
+    final allDone =
+        refreshed?.subTasks.every((s) => s.status == 'completed') ?? false;
     if (!allDone || !context.mounted) return;
 
     final needsMainProof = (refreshed ?? details).isForcedToUploadImg &&
@@ -222,12 +224,11 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     }
 
     final occurrenceId = (Get.arguments is Map<String, dynamic>
-            ? (Get.arguments as Map<String, dynamic>)['occurrence_id']
-            : null)
-        ?.toString() ??
+                ? (Get.arguments as Map<String, dynamic>)['occurrence_id']
+                : null)
+            ?.toString() ??
         controller.lastLoadedOccurrenceId;
-    final isOccurrence =
-        occurrenceId != null && occurrenceId.isNotEmpty;
+    final isOccurrence = occurrenceId != null && occurrenceId.isNotEmpty;
 
     if (data.isForcedToUploadImg &&
         !controller.taskHasEmployeeImage(data) &&
@@ -313,7 +314,8 @@ class _SummaryCard extends StatelessWidget {
           SizedBox(height: 2.h),
           Text(
             '${data.employeeName}\n${'endDate'.tr}: ${showDateTime12(data.endTime)}',
-            style: TextStyle(fontSize: 10.5.sp, color: AppColors.customGreyColor5),
+            style:
+                TextStyle(fontSize: 10.5.sp, color: AppColors.customGreyColor5),
           ),
           SizedBox(height: 6.h),
           Row(
@@ -352,7 +354,10 @@ class _ProofSection extends GetView<EmployeeTasksController> {
   final TaskDetailsModel data;
 
   Future<void> _pickCameraProof(BuildContext context) async {
-    final file = await CameraCaptureHelper.captureProof(context);
+    final file = await CameraCaptureHelper.captureProof(
+      context,
+      proofMediaType: data.proofMediaType,
+    );
     if (file == null) return;
     if (!controller.selectedFile.contains(file)) {
       controller.selectedFile.add(file);
@@ -361,10 +366,9 @@ class _ProofSection extends GetView<EmployeeTasksController> {
     final args = Get.arguments is Map<String, dynamic>
         ? Get.arguments as Map<String, dynamic>
         : <String, dynamic>{};
-    final occurrenceId = args['occurrence_id']?.toString() ??
-        controller.lastLoadedOccurrenceId;
-    final isOccurrence =
-        occurrenceId != null && occurrenceId.isNotEmpty;
+    final occurrenceId =
+        args['occurrence_id']?.toString() ?? controller.lastLoadedOccurrenceId;
+    final isOccurrence = occurrenceId != null && occurrenceId.isNotEmpty;
 
     await controller.uploadTaskImage(
       taskId: isOccurrence ? occurrenceId! : data.taskId.toString(),
@@ -464,7 +468,8 @@ class _AddProofTile extends StatelessWidget {
             SizedBox(height: 2.h),
             Text(
               'uploadTaskProof'.tr,
-              style: TextStyle(fontSize: 10.sp, color: AppColors.operationalPurple),
+              style: TextStyle(
+                  fontSize: 10.sp, color: AppColors.operationalPurple),
             ),
           ],
         ),
@@ -472,4 +477,3 @@ class _AddProofTile extends StatelessWidget {
     );
   }
 }
-

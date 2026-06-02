@@ -1,15 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/task_nav_debug.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -35,36 +32,85 @@ class TaskDetailsScreen extends GetView<EmployeeTasksController> {
         action: false,
         actions: [
           userType == 'admin'
-              ? TextButton.icon(
-                  icon: Icon(
-                    Icons.edit_calendar_outlined,
-                    color: ThemeService.isDark.value
-                        ? AppColors.primaryColor
-                        : AppColors.secondaryColor,
-                    size: 25.sp,
-                  ),
-                  onPressed: () {
-                    TaskNavDebug.log(
-                      'TaskDetailsScreen.editButton',
-                      AppRoutes.CREATETASKSCREEN,
-                      screen: 'CreateTaskEntryScreen -> CreateEmployeeTaskScreen',
-                      extra: {'title': 'editEmployeeTask', 'isEdit': true},
-                    );
-                    Get.toNamed(
-                      AppRoutes.CREATETASKSCREEN,
-                      arguments: {'title': 'editEmployeeTask', 'isEdit': true},
-                    );
-                  },
-                  label: Text(
-                    'edit'.tr,
-                    style: theme.copyWith(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w700,
-                      color: ThemeService.isDark.value
-                          ? AppColors.primaryColor
-                          : AppColors.secondaryColor,
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton.icon(
+                      icon: Icon(
+                        Icons.copy_all_outlined,
+                        color: ThemeService.isDark.value
+                            ? AppColors.primaryColor
+                            : AppColors.secondaryColor,
+                        size: 22.sp,
+                      ),
+                      onPressed: () {
+                        TaskNavDebug.log(
+                          'TaskDetailsScreen.cloneButton',
+                          AppRoutes.CREATETASKSCREEN,
+                          screen:
+                              'CreateTaskEntryScreen -> CreateEmployeeTaskScreen',
+                          extra: {
+                            'title': 'createNewEmployeeTask',
+                            'isEdit': false,
+                            'cloneFromTask': true,
+                          },
+                        );
+                        Get.toNamed(
+                          AppRoutes.CREATETASKSCREEN,
+                          arguments: {
+                            'title': 'createNewEmployeeTask',
+                            'isEdit': false,
+                            'cloneFromTask': true,
+                          },
+                        );
+                      },
+                      label: Text(
+                        'cloneTask'.tr,
+                        style: theme.copyWith(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: ThemeService.isDark.value
+                              ? AppColors.primaryColor
+                              : AppColors.secondaryColor,
+                        ),
+                      ),
                     ),
-                  ),
+                    TextButton.icon(
+                      icon: Icon(
+                        Icons.edit_calendar_outlined,
+                        color: ThemeService.isDark.value
+                            ? AppColors.primaryColor
+                            : AppColors.secondaryColor,
+                        size: 22.sp,
+                      ),
+                      onPressed: () {
+                        TaskNavDebug.log(
+                          'TaskDetailsScreen.editButton',
+                          AppRoutes.CREATETASKSCREEN,
+                          screen:
+                              'CreateTaskEntryScreen -> CreateEmployeeTaskScreen',
+                          extra: {'title': 'editEmployeeTask', 'isEdit': true},
+                        );
+                        Get.toNamed(
+                          AppRoutes.CREATETASKSCREEN,
+                          arguments: {
+                            'title': 'editEmployeeTask',
+                            'isEdit': true,
+                          },
+                        );
+                      },
+                      label: Text(
+                        'edit'.tr,
+                        style: theme.copyWith(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: ThemeService.isDark.value
+                              ? AppColors.primaryColor
+                              : AppColors.secondaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
                 )
               : const SizedBox.shrink(),
         ],

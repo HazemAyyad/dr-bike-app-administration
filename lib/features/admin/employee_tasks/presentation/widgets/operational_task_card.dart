@@ -106,6 +106,14 @@ class OperationalTaskCard extends StatelessWidget {
               Row(
                 children: [
                   TaskStatusBadge(status: task.status, compact: true),
+                  if (task.isRepeatedCopy) ...[
+                    SizedBox(width: 4.w),
+                    _MiniChip(
+                      label: 'taskRepeatedCopy'.tr,
+                      color: AppColors.customOrange3,
+                      icon: Icons.copy_all_outlined,
+                    ),
+                  ],
                   SizedBox(width: 4.w),
                   _MiniChip(
                     label: task.priority.tr,
@@ -224,8 +232,9 @@ class _Avatar extends StatelessWidget {
     return CircleAvatar(
       radius: 16.r,
       backgroundColor: AppColors.operationalSurface,
-      backgroundImage:
-          url != null && url!.isNotEmpty ? CachedNetworkImageProvider(url!) : null,
+      backgroundImage: url != null && url!.isNotEmpty
+          ? CachedNetworkImageProvider(url!)
+          : null,
       child: url == null || url!.isEmpty
           ? Icon(Icons.person, color: AppColors.operationalPurple, size: 16.sp)
           : null,

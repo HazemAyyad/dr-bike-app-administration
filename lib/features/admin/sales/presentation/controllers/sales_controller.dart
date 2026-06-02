@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
@@ -37,6 +38,7 @@ import 'sales_service.dart';
 
 /// GetX tag for payment fields on the new instant sale screen.
 const String kInstantSalePaymentTag = 'instant_sale_payment';
+const String kProfitSalePaymentTag = 'profit_sale_payment';
 
 class SalesController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -73,6 +75,10 @@ class SalesController extends GetxController
   final TextEditingController totalController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
   final TextEditingController totalCostController = TextEditingController();
+  final Rx<XFile?> profitSaleImage = Rx<XFile?>(null);
+  final Rx<XFile?> profitSaleVideo = Rx<XFile?>(null);
+  final RxList<InstantSaleNoteLine> instantSaleNotes =
+      <InstantSaleNoteLine>[].obs;
 
   // filters
   final TextEditingController fromDateController = TextEditingController();
@@ -83,6 +89,11 @@ class SalesController extends GetxController
   final instantSalesSearchQuery = ''.obs;
   final instantSalesSortDescending = true.obs;
   Timer? _instantSalesSearchDebounce;
+  final TextEditingController profitSalesSearchController =
+      TextEditingController();
+  final profitSalesSearchQuery = ''.obs;
+  final profitSalesSortDescending = true.obs;
+  Timer? _profitSalesSearchDebounce;
 
   String get instantSalesSortDirection =>
       instantSalesSortDescending.value ? 'desc' : 'asc';
@@ -113,8 +124,35 @@ class SalesController extends GetxController
     getInstantSales(loding: true, clearCache: true);
   }
 
+  void onProfitSalesSearchChanged(String value) {
+    profitSalesSearchQuery.value = value;
+    _profitSalesSearchDebounce?.cancel();
+    _profitSalesSearchDebounce = Timer(
+      const Duration(milliseconds: 250),
+      notifySalesListChanged,
+    );
+  }
+
+  void onProfitSalesSearchSubmitted(String value) {
+    _profitSalesSearchDebounce?.cancel();
+    profitSalesSearchQuery.value = value;
+    notifySalesListChanged();
+  }
+
+  void clearProfitSalesSearch() {
+    profitSalesSearchController.clear();
+    profitSalesSearchQuery.value = '';
+    notifySalesListChanged();
+  }
+
+  void toggleProfitSalesSort() {
+    profitSalesSortDescending.value = !profitSalesSortDescending.value;
+    notifySalesListChanged();
+  }
+
   /// Date groups for instant sales tab, newest dates first when sort is desc.
-  List<MapEntry<String, List<InstantSalesModel>>> get orderedInstantSalesGroups {
+  List<MapEntry<String, List<InstantSalesModel>>>
+      get orderedInstantSalesGroups {
     final map = salesService.filterInstantSalesTasks;
     final entries = map.entries.toList();
 
@@ -192,33 +230,71 @@ class SalesController extends GetxController
   void _syncFilteredProfitSales() {
     final from = DateTime.tryParse(fromDateController.text);
     final to = DateTime.tryParse(toDateController.text);
-    if (from == null && to == null) {
-      salesService.filterProfitSalesTasks
-          .assignAll(salesService.profitSalesTasks);
-      return;
-    }
-    final filtered = Map<String, List<ProfitSale>>.fromEntries(
-      salesService.profitSalesTasks.entries.map((entry) {
-        final list = entry.value.where((task) {
-          final start = task.createdAt;
-          final end = task.updatedAt;
-          if (from != null && to == null) {
-            return start.isAtSameMomentAs(from) || start.isAfter(from);
-          }
-          if (to != null && from == null) {
-            return end.isAtSameMomentAs(to) || end.isBefore(to);
-          }
-          if (from != null && to != null) {
-            final okStart =
-                start.isAtSameMomentAs(from) || start.isAfter(from);
-            final okEnd = end.isAtSameMomentAs(to) || end.isBefore(to);
-            return okStart && okEnd;
-          }
-          return true;
-        }).toList();
-        return MapEntry(entry.key, list);
-      }).where((e) => e.value.isNotEmpty),
-    );
+    final query = profitSalesSearchQuery.value.trim().toLowerCase();
+
+    final entries = salesService.profitSalesTasks.entries
+        .map((entry) {
+          final list = entry.value.where((task) {
+            final start = task.createdAt;
+            final end = task.updatedAt;
+            if (from != null && to == null) {
+              if (!(start.isAtSameMomentAs(from) || start.isAfter(from))) {
+                return false;
+              }
+            }
+            if (to != null && from == null) {
+              if (!(end.isAtSameMomentAs(to) || end.isBefore(to))) {
+                return false;
+              }
+            }
+            if (from != null && to != null) {
+              final okStart =
+                  start.isAtSameMomentAs(from) || start.isAfter(from);
+              final okEnd = end.isAtSameMomentAs(to) || end.isBefore(to);
+              if (!(okStart && okEnd)) {
+                return false;
+              }
+            }
+            if (query.isNotEmpty) {
+              final haystack = [
+                task.id.toString(),
+                task.notes,
+                task.partnerDisplay,
+                task.paymentDisplay,
+                task.paymentBoxName ?? '',
+                task.paymentBoxValue ?? '',
+                task.totalCost,
+                task.buyerType ?? '',
+              ].join(' ').toLowerCase();
+              return haystack.contains(query);
+            }
+            return true;
+          }).toList();
+
+          list.sort((a, b) {
+            final cmp = b.createdAt.compareTo(a.createdAt);
+            return profitSalesSortDescending.value ? cmp : -cmp;
+          });
+
+          return MapEntry(entry.key, list);
+        })
+        .where((e) => e.value.isNotEmpty)
+        .toList();
+
+    entries.sort((a, b) {
+      final da = _parseDateGroupKey(a.key);
+      final db = _parseDateGroupKey(b.key);
+      if (da == null || db == null) {
+        return profitSalesSortDescending.value
+            ? b.key.compareTo(a.key)
+            : a.key.compareTo(b.key);
+      }
+      return profitSalesSortDescending.value
+          ? db.compareTo(da)
+          : da.compareTo(db);
+    });
+
+    final filtered = Map<String, List<ProfitSale>>.fromEntries(entries);
     salesService.filterProfitSalesTasks.assignAll(filtered);
   }
 
@@ -377,9 +453,7 @@ class SalesController extends GetxController
   List<ProductModel> get filteredProductsForPicker {
     final q = instantSaleProductSearch.value.trim().toLowerCase();
     if (q.isEmpty) return products;
-    return products
-        .where((p) => p.nameAr.toLowerCase().contains(q))
-        .toList();
+    return products.where((p) => p.nameAr.toLowerCase().contains(q)).toList();
   }
 
   List<OfferPackageModel> get filteredPackagesForPicker {
@@ -388,9 +462,7 @@ class SalesController extends GetxController
       (p) => p.isActive && p.maxSellableQuantity > 0,
     );
     if (q.isEmpty) return sellable.toList();
-    return sellable
-        .where((p) => p.name.toLowerCase().contains(q))
-        .toList();
+    return sellable.where((p) => p.name.toLowerCase().contains(q)).toList();
   }
 
   int get pickerGridItemCount =>
@@ -640,7 +712,8 @@ class SalesController extends GetxController
     final id = result['buyer_id']?.toString();
     _paymentBuyerId = (id != null && id.isNotEmpty) ? id : null;
     final sellerId = result['seller_id']?.toString();
-    _paymentSellerId = (sellerId != null && sellerId.isNotEmpty) ? sellerId : null;
+    _paymentSellerId =
+        (sellerId != null && sellerId.isNotEmpty) ? sellerId : null;
     final name = result['buyer_name']?.toString();
     _paymentBuyerName = (name != null && name.isNotEmpty) ? name : null;
     final boxId = result['payment_box_id']?.toString();
@@ -668,6 +741,7 @@ class SalesController extends GetxController
 
   void resetInstantSaleForm({bool renewFormKey = true}) {
     noteController.clear();
+    clearInstantSaleNotes(dispose: false);
     totalCostController.clear();
     discountController.clear();
     totalController.clear();
@@ -769,9 +843,11 @@ class SalesController extends GetxController
   }
 
   static void _releaseInstantSalePaymentController() {
-    if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
-      Get.delete<PaymentController>(tag: kInstantSalePaymentTag);
-    }
+    Future<void>.delayed(const Duration(milliseconds: 350), () {
+      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+        Get.delete<PaymentController>(tag: kInstantSalePaymentTag);
+      }
+    });
   }
 
   /// إغلاق شاشة الدفع ثم اختيار المنتجات قبل تفريغ السلة (تجنّب disposed controllers).
@@ -802,7 +878,7 @@ class SalesController extends GetxController
     instantSalePaidAmount.value = double.tryParse(raw) ?? 0;
   }
 
-  void syncPaymentCashFromTotal({bool onlyIfCashEmpty = true}) {
+  void syncPaymentCashFromTotal({bool onlyIfCashEmpty = false}) {
     final payment = _instantSalePayment;
     if (payment == null) return;
 
@@ -926,9 +1002,8 @@ class SalesController extends GetxController
     calculateGrandTotal();
   }
 
-  OfferPackageModel? get selectedOfferPackage =>
-      offerPackagesForSale
-          .firstWhereOrNull((p) => p.id == selectedPackageId.value);
+  OfferPackageModel? get selectedOfferPackage => offerPackagesForSale
+      .firstWhereOrNull((p) => p.id == selectedPackageId.value);
 
   void onOfferPackageSelected(OfferPackageModel? pkg) {
     if (pkg == null) {
@@ -1020,8 +1095,7 @@ class SalesController extends GetxController
   final RxDouble instantSalePaidAmount = 0.0.obs;
 
   double get instantSaleRemainingAmount =>
-      (totalCost.value - instantSalePaidAmount.value)
-          .clamp(0, double.infinity);
+      (totalCost.value - instantSalePaidAmount.value).clamp(0, double.infinity);
   final RxDouble packageLineTotal = 0.0.obs;
 
   void calculateGrandTotal() {
@@ -1031,8 +1105,7 @@ class SalesController extends GetxController
       final pkg = selectedOfferPackage;
       final unitPrice = pkg?.price ??
           SalesAmountFormat.parse(items.first.priceController.text);
-      final qty =
-          SalesAmountFormat.parse(items.first.quantityController.text);
+      final qty = SalesAmountFormat.parse(items.first.quantityController.text);
       final lineTotal = unitPrice * qty;
       packageLineTotal.value = lineTotal;
       items.first.syncLineTotal(lineTotal);
@@ -1052,10 +1125,10 @@ class SalesController extends GetxController
     }
     final discount = SalesAmountFormat.parse(discountController.text);
 
-    totalCost.value = total - discount;
+    totalCost.value = total - discount + instantSaleNotesTotal;
     if (totalCost.value < 0) totalCost.value = 0;
     totalController.text = SalesAmountFormat.display(totalCost.value);
-    syncPaymentCashFromTotal(onlyIfCashEmpty: true);
+    syncPaymentCashFromTotal();
     refreshInstantSalePaymentSummary();
   }
 
@@ -1085,14 +1158,26 @@ class SalesController extends GetxController
   ];
 
   // add profit sale
-  Future<bool> addProfitSale(BuildContext context) async {
+  Future<bool> addProfitSale(
+    BuildContext context, {
+    Map<String, dynamic>? paymentPayload,
+  }) async {
     if (formKey.currentState!.validate()) {
       isLoading(true);
       final result = await addProfitSaleUsecase.call(
         notes: noteController.text,
         totalCost: totalCostController.text,
+        buyerType: paymentPayload?['buyer_type']?.toString(),
+        buyerId: paymentPayload?['buyer_id']?.toString(),
+        sellerId: paymentPayload?['seller_id']?.toString(),
+        buyerName: paymentPayload?['buyer_name']?.toString(),
+        paymentBoxId: paymentPayload?['payment_box_id']?.toString(),
+        paymentBoxName: paymentPayload?['payment_box_name']?.toString(),
+        paymentBoxValue: paymentPayload?['payment_box_value']?.toString(),
+        image: profitSaleImage.value,
+        video: profitSaleVideo.value,
       );
-      result.fold(
+      final saved = await result.fold<Future<bool>>(
         (failure) {
           String errorMessages = '';
           bool permissionsAdded = false;
@@ -1113,16 +1198,22 @@ class SalesController extends GetxController
           } else {
             errorMessages = failure.data?['message'] ?? failure.errMessage;
           }
+          final serverError = failure.data?['error']?.toString();
+          if (serverError != null && serverError.trim().isNotEmpty) {
+            errorMessages += '\n$serverError';
+          }
           Helpers.showCustomDialogError(
             context: context,
             title: failure.errMessage,
             message: errorMessages,
           );
-          return false;
+          return Future.value(false);
         },
         (success) async {
           noteController.clear();
           totalCostController.clear();
+          profitSaleImage.value = null;
+          profitSaleVideo.value = null;
           await refreshAllSalesData(showLoading: true);
           if (Get.currentRoute == AppRoutes.NEWCASHPROFITSCREEN) {
             Get.back();
@@ -1135,9 +1226,46 @@ class SalesController extends GetxController
           return true;
         },
       );
+      isLoading(false);
+      return saved;
     }
     isLoading(false);
     return false;
+  }
+
+  Future<bool> submitProfitSaleWithPayment(BuildContext context) async {
+    if (!(formKey.currentState?.validate() ?? false)) return false;
+    if (!Get.isRegistered<PaymentController>(tag: kProfitSalePaymentTag)) {
+      return false;
+    }
+
+    final payment = Get.find<PaymentController>(tag: kProfitSalePaymentTag);
+    final total = SalesAmountFormat.parse(totalCostController.text);
+    final paidAmount =
+        SalesAmountFormat.parse(payment.cashValueController.text);
+    if (paidAmount > total + 0.0001) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'instantSalePaidExceedsTotal'.tr,
+      );
+      return false;
+    }
+    payment.instantSaleBoxLogNote =
+        'قبض بيع ربحي بقيمة ${totalCostController.text}';
+
+    isLoading(true);
+    try {
+      final paymentPayload = payment.buildOptionalProfitSalePayload();
+      final saved =
+          await addProfitSale(context, paymentPayload: paymentPayload);
+      if (saved) {
+        payment.clearPaymentForm();
+      }
+      return saved;
+    } finally {
+      isLoading(false);
+    }
   }
 
   // add instant sale
@@ -1153,7 +1281,8 @@ class SalesController extends GetxController
         discount:
             discountController.text.isEmpty ? '0' : discountController.text,
         totalCost: totalCost.value.toString(),
-        note: noteController.text,
+        note: instantSaleNotesText,
+        additionalNotes: instantSaleNotesPayload(),
         type: items.first.selectedCustomersSellers.value ? 'project' : 'normal',
         projectId: items.first.selectedCustomersSellers.value
             ? items.first.selectedValue.value!
@@ -1168,9 +1297,8 @@ class SalesController extends GetxController
         paymentBoxId: _paymentBoxId,
         paymentBoxName: _paymentBoxName,
         paymentBoxValue: _paymentBoxValue,
-        offerPackageId: isPackageSale.value
-            ? selectedPackageId.value?.toString()
-            : null,
+        offerPackageId:
+            isPackageSale.value ? selectedPackageId.value?.toString() : null,
       );
       await result.fold(
         (failure) async {
@@ -1357,11 +1485,10 @@ class SalesController extends GetxController
     final to = DateTime.tryParse(toDateController.text);
 
     if (from == null && to == null) {
-      salesService.filterProfitSalesTasks.assignAll(
-        salesService.profitSalesTasks,
-      );
+      _syncFilteredProfitSales();
       salesService.filterInstantSalesTasks
           .assignAll(salesService.instantSalesTasks);
+      salesListRevision.value++;
       isFilter ? Get.back() : null;
       isLoading(false);
       return;
@@ -1455,22 +1582,22 @@ class SalesController extends GetxController
     }
 
     if (lineLabels.isEmpty) {
-    for (final item in items) {
-      final productId = item.selectedItem.value.trim();
-      if (productId.isEmpty) {
-        continue;
+      for (final item in items) {
+        final productId = item.selectedItem.value.trim();
+        if (productId.isEmpty) {
+          continue;
+        }
+        final qty = item.quantityController.text.trim();
+        if (qty.isEmpty || qty == '0') {
+          continue;
+        }
+        final product =
+            products.firstWhereOrNull((p) => p.id.toString() == productId);
+        final name = product != null && product.nameAr.trim().isNotEmpty
+            ? product.nameAr
+            : 'منتج';
+        lineLabels.add('$name × $qty');
       }
-      final qty = item.quantityController.text.trim();
-      if (qty.isEmpty || qty == '0') {
-        continue;
-      }
-      final product =
-          products.firstWhereOrNull((p) => p.id.toString() == productId);
-      final name = product != null && product.nameAr.trim().isNotEmpty
-          ? product.nameAr
-          : 'منتج';
-      lineLabels.add('$name × $qty');
-    }
     }
 
     return BoxLogNoteFormat.instantSaleReceive(
@@ -1566,6 +1693,47 @@ class SalesController extends GetxController
     }
   }
 
+  Future<void> confirmCancelProfitSale(
+    BuildContext context,
+    ProfitSale sale,
+  ) async {
+    if (sale.isCancelled) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'instantSaleAlreadyCancelled'.tr,
+      );
+      return;
+    }
+
+    final confirmed = await InstantSaleActionDialog.showCancelConfirm(context);
+    if (confirmed != true) return;
+
+    isLoading(true);
+    try {
+      final result = await Get.find<SalesImplement>().cancelProfitSale(
+        profitSaleId: sale.id.toString(),
+      );
+      await result.fold(
+        (failure) async {
+          final serverError = failure.data?['error']?.toString();
+          Helpers.showCustomDialogError(
+            context: context,
+            title: 'error'.tr,
+            message: serverError != null && serverError.trim().isNotEmpty
+                ? '${failure.errMessage}\n$serverError'
+                : failure.errMessage,
+          );
+        },
+        (_) async {
+          await _completeInstantSaleListAction(context);
+        },
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
   Future<void> showEditInstantSaleDialog(
     BuildContext context,
     InstantSalesModel sale,
@@ -1638,10 +1806,10 @@ class SalesController extends GetxController
         quantity: quantity,
         totalCost: totalCostStr,
         notes: notes,
-        paymentBoxValue: sale.paymentBoxName != null ||
-                sale.paymentBoxValue != null
-            ? paidStr
-            : null,
+        paymentBoxValue:
+            sale.paymentBoxName != null || sale.paymentBoxValue != null
+                ? paidStr
+                : null,
       );
       await result.fold(
         (failure) async {
@@ -1712,8 +1880,89 @@ class SalesController extends GetxController
     fromDateController.dispose();
     toDateController.dispose();
     instantSalesSearchController.dispose();
+    profitSalesSearchController.dispose();
+    clearInstantSaleNotes(dispose: true);
     _instantSalesSearchDebounce?.cancel();
+    _profitSalesSearchDebounce?.cancel();
     super.onClose();
+  }
+
+  double get instantSaleNotesTotal => instantSaleNotes.fold<double>(
+        0,
+        (sum, line) => sum + SalesAmountFormat.parse(line.amount.text),
+      );
+
+  String get instantSaleNotesText => instantSaleNotes
+      .map((line) => line.text.text.trim())
+      .where((text) => text.isNotEmpty)
+      .join('\n');
+
+  void addInstantSaleNoteLine() {
+    instantSaleNotes.add(InstantSaleNoteLine());
+  }
+
+  void saveInstantSaleNoteLine({
+    int? index,
+    required String text,
+    required String amount,
+  }) {
+    if (index != null && index >= 0 && index < instantSaleNotes.length) {
+      instantSaleNotes[index].text.text = text;
+      instantSaleNotes[index].amount.text = amount;
+      instantSaleNotes.refresh();
+    } else {
+      instantSaleNotes.add(InstantSaleNoteLine(text: text, amount: amount));
+    }
+    calculateGrandTotal();
+  }
+
+  void removeInstantSaleNoteLine(int index) {
+    if (index < 0 || index >= instantSaleNotes.length) return;
+    final line = instantSaleNotes.removeAt(index);
+    line.dispose();
+    calculateGrandTotal();
+  }
+
+  void clearInstantSaleNotes({bool dispose = true}) {
+    for (final line in instantSaleNotes) {
+      if (dispose) {
+        line.dispose();
+      } else {
+        line.clear();
+      }
+    }
+    instantSaleNotes.clear();
+  }
+
+  List<Map<String, dynamic>> instantSaleNotesPayload() {
+    return instantSaleNotes
+        .map((line) => {
+              'text': line.text.text.trim(),
+              'amount': SalesAmountFormat.parse(line.amount.text),
+            })
+        .where((line) =>
+            (line['text'] as String).isNotEmpty ||
+            ((line['amount'] as double) > 0))
+        .toList();
+  }
+}
+
+class InstantSaleNoteLine {
+  InstantSaleNoteLine({String text = '', String amount = ''})
+      : text = TextEditingController(text: text),
+        amount = TextEditingController(text: amount);
+
+  final TextEditingController text;
+  final TextEditingController amount;
+
+  void dispose() {
+    text.dispose();
+    amount.dispose();
+  }
+
+  void clear() {
+    text.clear();
+    amount.clear();
   }
 }
 

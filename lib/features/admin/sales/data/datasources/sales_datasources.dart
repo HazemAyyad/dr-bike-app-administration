@@ -7,6 +7,7 @@ import 'package:doctorbike/features/admin/sales/data/models/product_price_update
 import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/api_consumer.dart';
 import '../../../../../core/databases/api/end_points.dart';
@@ -22,18 +23,80 @@ class SalesDatasource {
 
   SalesDatasource({required this.api});
 
+  String _cleanAmount(String value) {
+    const eastern = {
+      '٠': '0',
+      '١': '1',
+      '٢': '2',
+      '٣': '3',
+      '٤': '4',
+      '٥': '5',
+      '٦': '6',
+      '٧': '7',
+      '٨': '8',
+      '٩': '9',
+      '۰': '0',
+      '۱': '1',
+      '۲': '2',
+      '۳': '3',
+      '۴': '4',
+      '۵': '5',
+      '۶': '6',
+      '۷': '7',
+      '۸': '8',
+      '۹': '9',
+    };
+    var text = value.trim().replaceAll(',', '').replaceAll('،', '');
+    eastern.forEach((from, to) {
+      text = text.replaceAll(from, to);
+    });
+    return text;
+  }
+
   // add profit sale
   Future<dynamic> addProfitSales({
     required String notes,
     required String totalCost,
+    String? buyerType,
+    String? buyerId,
+    String? sellerId,
+    String? buyerName,
+    String? paymentBoxId,
+    String? paymentBoxName,
+    String? paymentBoxValue,
+    XFile? image,
+    XFile? video,
   }) async {
     try {
       final response = await api.post(
         EndPoints.createProfitSale,
         data: {
           'notes': notes,
-          'total_cost': totalCost,
+          'total_cost': _cleanAmount(totalCost),
+          if (buyerType != null && buyerType.isNotEmpty)
+            'buyer_type': buyerType,
+          if (buyerId != null && buyerId.isNotEmpty) 'buyer_id': buyerId,
+          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (buyerName != null && buyerName.isNotEmpty)
+            'buyer_name': buyerName,
+          if (paymentBoxId != null && paymentBoxId.isNotEmpty)
+            'payment_box_id': paymentBoxId,
+          if (paymentBoxName != null && paymentBoxName.isNotEmpty)
+            'payment_box_name': paymentBoxName,
+          if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
+            'payment_box_value': _cleanAmount(paymentBoxValue),
+          if (image != null)
+            'image': await MultipartFile.fromFile(
+              image.path,
+              filename: image.path.split('/').last,
+            ),
+          if (video != null)
+            'video': await MultipartFile.fromFile(
+              video.path,
+              filename: video.path.split('/').last,
+            ),
         },
+        isFormData: true,
       );
       return response.data;
     } on DioException catch (e) {
@@ -154,7 +217,9 @@ class SalesDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data is Map ? (data['message'] ?? 'Unknown error') : 'Unknown error',
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
           status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? data : {},
         ),
@@ -217,6 +282,7 @@ class SalesDatasource {
     required String discount,
     required String totalCost,
     required String note,
+    List<Map<String, dynamic>> additionalNotes = const [],
     required String type,
     required String projectId,
     required RxList<ItemModel> otherProducts,
@@ -245,6 +311,14 @@ class SalesDatasource {
                             : 'normal',
                       })
                   .toList();
+      final additionalNotesMap = <String, dynamic>{};
+      for (var i = 0; i < additionalNotes.length; i++) {
+        final note = additionalNotes[i];
+        additionalNotesMap['additional_notes[$i][text]'] =
+            note['text']?.toString() ?? '';
+        additionalNotesMap['additional_notes[$i][amount]'] =
+            note['amount']?.toString() ?? '0';
+      }
 
       final response = await api.post(
         EndPoints.createInstantSale,
@@ -258,6 +332,7 @@ class SalesDatasource {
           'discount': discount,
           'total_cost': totalCost,
           'notes': note,
+          ...additionalNotesMap,
           'type': type,
           if (projectId.isNotEmpty) 'project_id': projectId,
           'buyer_type': buyerType,
@@ -307,6 +382,25 @@ class SalesDatasource {
     }
   }
 
+  Future<dynamic> cancelProfitSale({required String profitSaleId}) async {
+    try {
+      final response = await api.post(
+        EndPoints.cancelProfitSale,
+        data: {'profit_sale_id': profitSaleId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> editInstantSale({
     required String instantSaleId,
     required String cost,
@@ -325,10 +419,8 @@ class SalesDatasource {
           'total_cost': totalCost,
           if (notes != null) 'notes': notes,
           if (paymentBoxValue != null)
-            'payment_box_value': paymentBoxValue
-                .replaceAll(',', '')
-                .replaceAll('،', '')
-                .trim(),
+            'payment_box_value':
+                paymentBoxValue.replaceAll(',', '').replaceAll('،', '').trim(),
         },
       );
       return response.data;
@@ -358,8 +450,8 @@ class SalesDatasource {
       if (raw == null) {
         throw ServerException(
           ErrorModel(
-            errorMessage: response.data['message']?.toString() ??
-                'Unknown error',
+            errorMessage:
+                response.data['message']?.toString() ?? 'Unknown error',
             status: 500,
             data: {},
           ),

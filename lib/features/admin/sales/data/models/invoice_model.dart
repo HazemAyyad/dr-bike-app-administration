@@ -22,6 +22,8 @@ class InvoiceModel {
   final String? status;
   final String? saleStatus;
   final String? notes;
+  final List<InvoiceAdditionalNote> additionalNotes;
+  final String additionalNotesTotal;
   final String subtotal;
   final String tax;
   final String paidAmount;
@@ -59,6 +61,8 @@ class InvoiceModel {
     this.status,
     this.saleStatus,
     this.notes,
+    this.additionalNotes = const [],
+    this.additionalNotesTotal = '0',
     required this.subtotal,
     required this.tax,
     required this.paidAmount,
@@ -156,9 +160,15 @@ class InvoiceModel {
       status: asNullableString(json['status']),
       saleStatus: asNullableString(json['sale_status']),
       notes: asNullableString(json['notes']),
+      additionalNotes: mapList(
+        json['additional_notes'],
+        (Map<String, dynamic> m) => InvoiceAdditionalNote.fromJson(m),
+      ),
+      additionalNotesTotal: asString(json['additional_notes_total'], '0'),
       subtotal: asString(json['subtotal'], asString(json['total_cost'], '0')),
       tax: asString(json['tax'], '0'),
-      paidAmount: asString(json['paid_amount'], asString(json['total_cost'], '0')),
+      paidAmount:
+          asString(json['paid_amount'], asString(json['total_cost'], '0')),
       remainingAmount: asString(json['remaining_amount'], '0'),
       projectName: legacyProject,
       buyerType: buyerType.isEmpty ? 'unknown' : buyerType,
@@ -178,15 +188,16 @@ class InvoiceModel {
   String get displayProductTitle =>
       isPackageSale ? (packageName ?? product) : product;
 
-  String get displayTraderName => buyerName.trim().isNotEmpty && buyerName != '-'
-      ? buyerName
-      : (traderName?.trim().isNotEmpty == true
-              ? traderName
-              : customerName?.trim().isNotEmpty == true
-                  ? customerName
-                  : projectName)
-          ?.trim() ??
-      '-';
+  String get displayTraderName =>
+      buyerName.trim().isNotEmpty && buyerName != '-'
+          ? buyerName
+          : (traderName?.trim().isNotEmpty == true
+                      ? traderName
+                      : customerName?.trim().isNotEmpty == true
+                          ? customerName
+                          : projectName)
+                  ?.trim() ??
+              '-';
 
   String get displayPaymentBox {
     final name = paymentBoxName?.trim();
@@ -212,8 +223,7 @@ class InvoiceModel {
   }
 
   String get displayBuyerTypeLabel {
-    if (buyerTypeLabelAr.trim().isNotEmpty &&
-        buyerTypeLabelAr != 'غير محدد') {
+    if (buyerTypeLabelAr.trim().isNotEmpty && buyerTypeLabelAr != 'غير محدد') {
       return buyerTypeLabelAr;
     }
     switch (buyerType) {
@@ -245,6 +255,8 @@ class InvoiceModel {
       'payment_method': paymentMethod,
       'sale_status': saleStatus,
       'notes': notes,
+      'additional_notes': additionalNotes.map((e) => e.toJson()).toList(),
+      'additional_notes_total': additionalNotesTotal,
       'subtotal': subtotal,
       'tax': tax,
       'paid_amount': paidAmount,
@@ -258,6 +270,30 @@ class InvoiceModel {
         'address': buyerAddress,
         'id': buyerId,
       },
+    };
+  }
+}
+
+class InvoiceAdditionalNote {
+  final String text;
+  final String amount;
+
+  const InvoiceAdditionalNote({
+    required this.text,
+    required this.amount,
+  });
+
+  factory InvoiceAdditionalNote.fromJson(Map<String, dynamic> json) {
+    return InvoiceAdditionalNote(
+      text: asString(json['text']),
+      amount: asString(json['amount'], '0'),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'amount': amount,
     };
   }
 }

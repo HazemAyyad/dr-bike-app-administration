@@ -12,7 +12,11 @@ import 'check_details.dart';
 
 String _currencyDisplay(String rawCurrency) {
   final c = rawCurrency.trim().toLowerCase();
-  if (c.contains('شيكل') || c.contains('shekel') || c.contains('nis') || c.contains('ils') || c.contains('₪')) {
+  if (c.contains('شيكل') ||
+      c.contains('shekel') ||
+      c.contains('nis') ||
+      c.contains('ils') ||
+      c.contains('₪')) {
     return '₪';
   }
   return rawCurrency;
@@ -23,12 +27,14 @@ class ViewChecksWidget extends GetView<ChecksController> {
   final bool? shadowed;
   final int? currentTab;
   final bool type;
+  final bool disableDetails;
   const ViewChecksWidget({
     Key? key,
     required this.check,
     this.shadowed = true,
     this.currentTab,
     required this.type,
+    this.disableDetails = false,
   }) : super(key: key);
 
   @override
@@ -58,7 +64,9 @@ class ViewChecksWidget extends GetView<ChecksController> {
     // }
 
     return GestureDetector(
-      onTap: () => Get.dialog(CheckDetails(check: check, type: type)),
+      onTap: disableDetails
+          ? null
+          : () => Get.dialog(CheckDetails(check: check, type: type)),
       child: Container(
         margin: EdgeInsets.only(bottom: 10.h),
         decoration: BoxDecoration(
@@ -147,6 +155,23 @@ class ViewChecksWidget extends GetView<ChecksController> {
                                   fontWeight: FontWeight.w400,
                                 ),
                           ),
+                          if (check.batchNumber != null &&
+                              check.batchNumber!.isNotEmpty) ...[
+                            SizedBox(height: 5.h),
+                            Text(
+                              "${'batchNumber'.tr} : ${check.batchNumber}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primaryColor,
+                                  ),
+                            ),
+                          ],
                           if (currentTab == 1)
                             SizedBox(
                               // width: 200.w,
@@ -236,10 +261,10 @@ class ViewChecksWidget extends GetView<ChecksController> {
                         children: [
                           Text(
                             (DateTime(
-                                      check.dueDate.year,
-                                      check.dueDate.month,
-                                      check.dueDate.day,
-                                    )
+                              check.dueDate.year,
+                              check.dueDate.month,
+                              check.dueDate.day,
+                            )
                                     .difference(
                                       DateTime(
                                         DateTime.now().year,
@@ -261,8 +286,12 @@ class ViewChecksWidget extends GetView<ChecksController> {
                           ),
                           SizedBox(width: 4.w),
                           Text(
-                            check.dueDate.difference(DateTime.now()).inDays > 10 ||
-                                    check.dueDate.difference(DateTime.now()).inDays < -10
+                            check.dueDate.difference(DateTime.now()).inDays >
+                                        10 ||
+                                    check.dueDate
+                                            .difference(DateTime.now())
+                                            .inDays <
+                                        -10
                                 ? 'days'.tr
                                 : 'dayss'.tr,
                             style: Theme.of(context)

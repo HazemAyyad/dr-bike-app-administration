@@ -14,6 +14,7 @@ import '../widgets/audio_recorder.dart';
 import '../widgets/employee_selector_field.dart';
 import '../widgets/employee_task_priority_selector.dart';
 import '../widgets/inline_subtask_builder.dart';
+import '../widgets/proof_media_type_selector.dart';
 import '../widgets/task_date_time_field.dart';
 import '../widgets/task_form_section_card.dart';
 import '../widgets/task_reminder_section.dart';
@@ -300,11 +301,11 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                             ),
                           ],
                           SizedBox(height: 4.h),
-                          CustomCheckBox(
-                            title: 'requireImage',
-                            value: controller.requireImage,
-                            onChanged: (v) =>
-                                controller.requireImage.value = v!,
+                          Obx(
+                            () => ProofMediaTypeSelector(
+                              value: controller.proofMediaType.value,
+                              onChanged: controller.setMainProofMediaType,
+                            ),
                           ),
                           if (!_isSpecialTask) ...[
                             CustomCheckBox(

@@ -1144,7 +1144,7 @@ class DebtLedgerController extends GetxController {
       timeLabel: formatReminderTime(),
       balanceLabel: 'ledgerBalance'.tr,
       amount: balance.abs(),
-      isTaken: balance < 0,
+      isTaken: balance > 0,
     );
 
     File? voucherFile;

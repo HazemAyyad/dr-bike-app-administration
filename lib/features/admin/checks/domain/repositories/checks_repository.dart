@@ -5,6 +5,28 @@ import '../../../../../core/errors/failure.dart';
 import '../../data/models/check_model.dart';
 import '../../data/models/general_checks_data_model.dart';
 
+class IncomingCheckBatchItem {
+  const IncomingCheckBatchItem({
+    required this.total,
+    required this.dueDate,
+    required this.currency,
+    required this.checkId,
+    required this.bankName,
+    required this.notes,
+    this.frontImage,
+    this.backImage,
+  });
+
+  final String total;
+  final DateTime dueDate;
+  final String currency;
+  final String checkId;
+  final String bankName;
+  final String notes;
+  final XFile? frontImage;
+  final XFile? backImage;
+}
+
 abstract class ChecksRepository {
   Future<Either<Failure, String>> addChecks({
     required bool isInComing,
@@ -18,6 +40,13 @@ abstract class ChecksRepository {
     XFile? frontImage,
     XFile? backImage,
     required String notes,
+  });
+
+  Future<Either<Failure, String>> addIncomingChecksBatch({
+    String? customerId,
+    String? sellerId,
+    required DateTime receivedAt,
+    required List<IncomingCheckBatchItem> checks,
   });
 
   Future<Either<Failure, String>> editChecks({

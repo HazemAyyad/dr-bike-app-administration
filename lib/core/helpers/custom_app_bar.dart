@@ -37,6 +37,24 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Color? backgroundColor;
   final Color? surfaceTintColor;
   final PreferredSizeWidget? bottom;
+
+  static bool _backNavigationInProgress = false;
+
+  static void _safeBack() {
+    if (_backNavigationInProgress) return;
+    _backNavigationInProgress = true;
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    Future<void>.delayed(const Duration(milliseconds: 120), () {
+      if (Get.key.currentState?.canPop() ?? false) {
+        Get.back();
+      }
+      Future<void>.delayed(const Duration(milliseconds: 300), () {
+        _backNavigationInProgress = false;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBar(
@@ -64,7 +82,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ? AppColors.primaryColor
                     : AppColors.secondaryColor,
               ),
-              onPressed: () => Get.back(),
+              onPressed: _safeBack,
             ),
       actions: actions ??
           [

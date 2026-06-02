@@ -515,7 +515,10 @@ class _TransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ledger = Get.find<DebtLedgerController>();
     final isTaken = transaction.isTaken;
-    final color = isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+    final typeColor =
+        isTaken ? LedgerColors.takenGreen : LedgerColors.givenRed;
+    final balanceAfterColor =
+        LedgerColors.signedAmount(transaction.balanceAfter);
 
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
@@ -560,7 +563,7 @@ class _TransactionCard extends StatelessWidget {
                                         style: TextStyle(
                                           fontSize: 14.sp,
                                           fontWeight: FontWeight.w600,
-                                          color: color,
+                                          color: typeColor,
                                         ),
                                       ),
                                     ),
@@ -582,7 +585,7 @@ class _TransactionCard extends StatelessWidget {
                                           ? Icons.south_east
                                           : Icons.north_east,
                                       size: 15.sp,
-                                      color: color,
+                                      color: typeColor,
                                     ),
                                   ],
                                 ),
@@ -619,7 +622,7 @@ class _TransactionCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 17.sp,
                               fontWeight: FontWeight.bold,
-                              color: color,
+                              color: balanceAfterColor,
                             ),
                           ),
                         ],

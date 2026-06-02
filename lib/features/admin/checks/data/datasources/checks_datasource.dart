@@ -13,6 +13,7 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../models/check_model.dart';
 import '../models/general_checks_data_model.dart';
+import '../../domain/repositories/checks_repository.dart';
 
 class ChecksDatasource {
   final ApiConsumer api;
@@ -48,8 +49,10 @@ class ChecksDatasource {
       final response = await api.post(
         isInComing ? EndPoints.addIncomingCheck : EndPoints.addOutgoingCheck,
         data: {
-          if (customerId != null) 'from_customer': customerId,
-          if (sellerId != null) 'from_seller': sellerId,
+          if (isInComing && customerId != null) 'from_customer': customerId,
+          if (isInComing && sellerId != null) 'from_seller': sellerId,
+          if (!isInComing && customerId != null) 'customer_id': customerId,
+          if (!isInComing && sellerId != null) 'seller_id': sellerId,
           'total': total,
           'due_date': dueDate,
           'currency': currency,
@@ -72,6 +75,66 @@ class ChecksDatasource {
               filename: compressedBackImage.path.split('/').last,
             ),
           'notes': notes,
+        },
+        isFormData: true,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> addIncomingChecksBatch({
+    String? customerId,
+    String? sellerId,
+    required DateTime receivedAt,
+    required List<IncomingCheckBatchItem> checks,
+  }) async {
+    try {
+      final rows = <Map<String, dynamic>>[];
+
+      for (final check in checks) {
+        final compressedFrontImage = check.frontImage == null
+            ? null
+            : await compressImage(check.frontImage!);
+        final compressedBackImage = check.backImage == null
+            ? null
+            : await compressImage(check.backImage!);
+
+        rows.add({
+          'total': check.total,
+          'due_date': check.dueDate.toIso8601String(),
+          'currency': check.currency,
+          'check_id': check.checkId,
+          'bank_name': check.bankName,
+          'notes': check.notes,
+          if (compressedFrontImage != null)
+            'front_image': await MultipartFile.fromFile(
+              compressedFrontImage.path,
+              filename: compressedFrontImage.path.split('/').last,
+            ),
+          if (compressedBackImage != null)
+            'back_image': await MultipartFile.fromFile(
+              compressedBackImage.path,
+              filename: compressedBackImage.path.split('/').last,
+            ),
+        });
+      }
+
+      final response = await api.post(
+        EndPoints.addIncomingChecksBatch,
+        data: {
+          if (customerId != null) 'from_customer': customerId,
+          if (sellerId != null) 'from_seller': sellerId,
+          'received_at': receivedAt.toIso8601String(),
+          'checks': rows,
         },
         isFormData: true,
       );

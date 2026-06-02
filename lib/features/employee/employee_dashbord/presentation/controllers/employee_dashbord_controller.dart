@@ -303,7 +303,10 @@ class EmployeeDashbordController extends GetxController
     BuildContext context,
     Task task,
   ) async {
-    final file = await CameraCaptureHelper.captureProof(context);
+    final file = await CameraCaptureHelper.captureProof(
+      context,
+      proofMediaType: task.proofMediaType,
+    );
     if (file == null) return;
 
     completingTaskId.value = task.id;
@@ -667,6 +670,11 @@ class EmployeeDashbordController extends GetxController
 
   List<String> orderedDisplayKeys(List<String> keys) {
     if (keys.isEmpty) return [];
+    if (tasksViewMode.value == tasksViewWeekly) {
+      return keys
+        ..sort((a, b) => DateTime.parse(a).compareTo(DateTime.parse(b)));
+    }
+
     final today = dateKeyFrom(DateTime.now());
     final entries = keys.map((k) => MapEntry(k, DateTime.parse(k))).toList();
     final todayEntry = entries.where((e) => e.key == today).toList();

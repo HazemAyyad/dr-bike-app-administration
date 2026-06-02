@@ -11,6 +11,6 @@ class EmployeeDashbordTasks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return EmployeeOperationalTaskCard(task: task);
+    return EmployeeOperationalTaskCard(task: task, showCheckbox: false);
   }
 }

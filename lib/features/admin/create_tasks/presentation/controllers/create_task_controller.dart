@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/helpers/proof_media_type.dart';
 import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -98,6 +99,7 @@ class CreateTaskController extends GetxController {
     subTaskDescriptionController.clear();
     subTaskFile.value = null;
     requireSubTasImage.value = false;
+    subTaskProofMediaType.value = ProofMediaType.none;
     editingSubTaskIndex.value = null;
   }
 
@@ -118,6 +120,10 @@ class CreateTaskController extends GetxController {
     }
     subTaskFile.value = localPath != null ? XFile(localPath) : null;
     requireSubTasImage.value = task['imageIsRequired'] == true;
+    subTaskProofMediaType.value = ProofMediaType.normalize(
+      task['proofMediaType']?.toString(),
+      required: requireSubTasImage.value,
+    );
     final bonus = task['bonusPoints'] as int? ?? 0;
     subtaskBonusEnabled.value = bonus > 0;
     subtaskBonusPoints.value = bonus;
@@ -135,6 +141,7 @@ class CreateTaskController extends GetxController {
     subTaskDescriptionController.clear();
     subTaskFile.value = null;
     requireSubTasImage.value = false;
+    subTaskProofMediaType.value = ProofMediaType.none;
     subtaskBonusEnabled.value = false;
     subtaskBonusPoints.value = 0;
     editingSubTaskIndex.value = null;
@@ -147,7 +154,8 @@ class CreateTaskController extends GetxController {
     final data = <String, dynamic>{
       'subTaskName': subTaskNameController.text,
       'subTaskdescription': subTaskDescriptionController.text,
-      'imageIsRequired': requireSubTasImage.value,
+      'imageIsRequired': subTaskProofMediaType.value != ProofMediaType.none,
+      'proofMediaType': subTaskProofMediaType.value,
       'bonusPoints': subtaskBonusEnabled.value ? subtaskBonusPoints.value : 0,
     };
     if (subTaskFile.value != null) {
@@ -476,6 +484,7 @@ class CreateTaskController extends GetxController {
   List<File> selectedFile = [];
 
   final RxBool requireSubTasImage = false.obs;
+  final RxString subTaskProofMediaType = ProofMediaType.none.obs;
   final RxBool subtaskBonusEnabled = false.obs;
   final RxInt subtaskBonusPoints = 0.obs;
 
@@ -487,6 +496,17 @@ class CreateTaskController extends GetxController {
   }
 
   final RxBool requireImage = false.obs;
+  final RxString proofMediaType = ProofMediaType.none.obs;
+
+  void setMainProofMediaType(String value) {
+    proofMediaType.value = value;
+    requireImage.value = value != ProofMediaType.none;
+  }
+
+  void setSubTaskProofMediaType(String value) {
+    subTaskProofMediaType.value = value;
+    requireSubTasImage.value = value != ProofMediaType.none;
+  }
 
   RxBool isLoding = false.obs;
 
@@ -541,7 +561,9 @@ class CreateTaskController extends GetxController {
         taskRecurrenceTime: selectedDaysList,
         subEmployeeTasks: subTasks,
         notShownForEmployee: hideTask.value ? '1' : '0',
-        isForcedToUploadImg: requireImage.value ? '1' : '0',
+        isForcedToUploadImg:
+            proofMediaType.value != ProofMediaType.none ? '1' : '0',
+        proofMediaType: proofMediaType.value,
         requiresAdminReview: requireAdminReview.value ? '1' : '0',
         adminImg: selectedFile,
         audio: hasPlayableAudio(recordedPath.value)
@@ -724,6 +746,9 @@ class CreateTaskController extends GetxController {
         'subTaskdescription': element.subTaskDescription,
         'subTaskImage': element.adminImg,
         'imageIsRequired': element.forceEmployeeToAddImg,
+        'proofMediaType': element.forceEmployeeToAddImg
+            ? ProofMediaType.both
+            : ProofMediaType.none,
       });
     }
   }
@@ -793,6 +818,7 @@ class CreateTaskController extends GetxController {
         'subTaskdescription': element.description,
         'subTaskImage': element.adminImg,
         'imageIsRequired': element.isForcedToUploadImg,
+        'proofMediaType': element.proofMediaType,
       });
     }
     pointsController.text = data.points.toString();
@@ -808,12 +834,57 @@ class CreateTaskController extends GetxController {
     recordedPath.value = parseAudioFromApi(data.audio) ?? '';
     selectedFile.addAll(data.adminImg?.map((e) => File(e)).toList() ?? []);
     requireImage.value = data.isForcedToUploadImg;
+    proofMediaType.value = data.proofMediaType;
     requireAdminReview.value = data.requiresAdminReview;
     priority.value = data.priority;
     if (data.taskRecurrence.isNotEmpty) {
       selectedDays.value = data.taskRecurrence;
       isRecurrenceVisible.value = data.taskRecurrence != 'noRepeat';
     }
+    if (data.recurrenceConfig != null && data.recurrenceConfig!.isNotEmpty) {
+      _applyRecurrenceConfigFromDetails(data.recurrenceConfig!);
+    }
+    _applyReminderFromDetails(data);
+  }
+
+  void cloneEmployeeTask() {
+    final data = employeeTaskService.taskDetails.value!;
+    editTemplateId = null;
+    editOccurrenceId = null;
+    taskNameController.text = data.taskName;
+    taskDescriptionController.text = data.taskDescription;
+    taskNotesController.text = data.notes;
+    selectedEmployeeIds.clear();
+    selectedEmployeeId.value = '';
+    employeeIdConroller.clear();
+    subTasks.clear();
+    for (var element in data.subTasks) {
+      subTasks.add({
+        'subTaskName': element.name,
+        'subTaskdescription': element.description,
+        'subTaskImage': element.adminImg,
+        'imageIsRequired': element.isForcedToUploadImg,
+        'proofMediaType': element.proofMediaType,
+      });
+    }
+    pointsController.text = data.points.toString();
+    startDate.value = data.startTime;
+    endDate.value = data.endTime;
+    startTime.value = TimeOfDay.fromDateTime(data.startTime);
+    endTime.value = TimeOfDay.fromDateTime(data.endTime);
+    hideTask.value = data.notShownForEmployee;
+    selectedDays.value = data.taskRecurrence;
+    selectedDaysList
+      ..clear()
+      ..addAll(data.taskRecurrenceTime);
+    recordedPath.value = '';
+    selectedFile.clear();
+    requireImage.value = data.isForcedToUploadImg;
+    proofMediaType.value = data.proofMediaType;
+    requireAdminReview.value = data.requiresAdminReview;
+    priority.value = data.priority;
+    isRecurrenceVisible.value =
+        data.taskRecurrence.isNotEmpty && data.taskRecurrence != 'noRepeat';
     if (data.recurrenceConfig != null && data.recurrenceConfig!.isNotEmpty) {
       _applyRecurrenceConfigFromDetails(data.recurrenceConfig!);
     }
@@ -827,6 +898,8 @@ class CreateTaskController extends GetxController {
     getEmployee();
     if (isEdit) {
       title == 'editSpecialTask' ? updateSpecialTask() : updateEmployeeTask();
+    } else if (isCloneFromTask) {
+      cloneEmployeeTask();
     } else if (title == 'createNewEmployeeTask' ||
         title == 'addNewPravateTask') {
       _initDefaultEndAfterStart();
@@ -852,4 +925,6 @@ class CreateTaskController extends GetxController {
     selectedDaysList.clear();
     super.onClose();
   }
+
+  final bool isCloneFromTask = Get.arguments?['cloneFromTask'] == true;
 }

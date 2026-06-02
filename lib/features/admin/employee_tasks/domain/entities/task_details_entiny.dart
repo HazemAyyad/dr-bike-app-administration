@@ -11,6 +11,7 @@ class TaskDetailsEntity {
   final DateTime endTime;
   final String status;
   final bool isForcedToUploadImg;
+  final String proofMediaType;
   final bool requiresAdminReview;
   final String taskRecurrence;
   final List<String> taskRecurrenceTime;
@@ -49,6 +50,7 @@ class TaskDetailsEntity {
     required this.endTime,
     required this.status,
     required this.isForcedToUploadImg,
+    this.proofMediaType = 'none',
     this.requiresAdminReview = true,
     required this.taskRecurrence,
     required this.taskRecurrenceTime,
@@ -88,6 +90,7 @@ class SubTaskEntity {
   final List<String>? adminImg;
   final List<String>? adminVideos;
   final bool isForcedToUploadImg;
+  final String proofMediaType;
   final List<String>? employeeImg;
   final List<String>? employeeVideos;
   final int? completedByEmployeeId;
@@ -101,6 +104,7 @@ class SubTaskEntity {
     this.adminImg,
     this.adminVideos,
     required this.isForcedToUploadImg,
+    this.proofMediaType = 'none',
     this.employeeImg,
     this.employeeVideos,
     this.completedByEmployeeId,

@@ -6,10 +6,21 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'media_permissions.dart';
+import 'proof_media_type.dart';
 
 /// Camera-only capture for task proof (no gallery / studio).
 class CameraCaptureHelper {
-  static Future<File?> captureProof(BuildContext context) async {
+  static Future<File?> captureProof(
+    BuildContext context, {
+    String proofMediaType = ProofMediaType.both,
+  }) async {
+    final normalized = ProofMediaType.normalize(proofMediaType, required: true);
+
+    if (normalized == ProofMediaType.image ||
+        normalized == ProofMediaType.video) {
+      return _pickFromCamera(normalized);
+    }
+
     final choice = await showModalBottomSheet<String>(
       context: context,
       shape: RoundedRectangleBorder(
@@ -35,6 +46,12 @@ class CameraCaptureHelper {
 
     if (choice == null) return null;
 
+    return _pickFromCamera(
+      choice == 'camera_image' ? ProofMediaType.image : ProofMediaType.video,
+    );
+  }
+
+  static Future<File?> _pickFromCamera(String proofMediaType) async {
     if (!await ensureCameraPermission()) {
       showMediaPermissionDeniedSnackbar();
       return null;
@@ -42,9 +59,9 @@ class CameraCaptureHelper {
 
     final picker = ImagePicker();
     XFile? picked;
-    if (choice == 'camera_image') {
+    if (proofMediaType == ProofMediaType.image) {
       picked = await picker.pickImage(source: ImageSource.camera);
-    } else if (choice == 'camera_video') {
+    } else if (proofMediaType == ProofMediaType.video) {
       picked = await picker.pickVideo(source: ImageSource.camera);
     }
 

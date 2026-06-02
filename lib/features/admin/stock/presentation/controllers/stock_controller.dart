@@ -837,20 +837,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     try {
       isProductsCsvBusy(true);
       final bytes = await stockDatasource.exportProductsCsv();
-      final appDir = await getApplicationDocumentsDirectory();
-      final dir = Directory('${appDir.path}/Doctor Bike/Products');
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-
+      final dir = await _productsCsvExportDirectory();
       final file = File('${dir.path}/${_productsCsvFileName()}');
       await file.writeAsBytes(bytes, flush: true);
       Get.snackbar(
         'success'.tr,
-        'productsExported'.tr,
+        '${'productsExported'.tr}\n${file.path}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+        duration: const Duration(seconds: 4),
       );
       await OpenFilex.open(file.path);
     } on ServerException catch (e) {
@@ -950,6 +946,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
                   final map = item is Map ? item : const {};
                   final fieldsRaw = map['fields'];
                   final fields = fieldsRaw is List ? fieldsRaw : const [];
+                  final isCreate = map['operation']?.toString() == 'create';
+                  final title = isCreate
+                      ? '${'newProduct'.tr}: ${map['product_name'] ?? ''}'
+                      : '${map['product_name'] ?? ''} #${map['product_id'] ?? ''}';
                   return Card(
                     margin: const EdgeInsets.only(bottom: 10),
                     child: Padding(
@@ -958,7 +958,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${map['product_name'] ?? ''} #${map['product_id'] ?? ''}',
+                            title,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
@@ -1013,6 +1013,28 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     String two(int value) => value.toString().padLeft(2, '0');
 
     return 'products_${now.year}-${two(now.month)}-${two(now.day)}_${two(now.hour)}-${two(now.minute)}.csv';
+  }
+
+  Future<Directory> _productsCsvExportDirectory() async {
+    if (Platform.isAndroid) {
+      final downloadsDir =
+          Directory('/storage/emulated/0/Download/Doctor Bike/Products');
+      try {
+        if (!await downloadsDir.exists()) {
+          await downloadsDir.create(recursive: true);
+        }
+        return downloadsDir;
+      } catch (_) {
+        // Some Android versions block direct writes to public Downloads.
+      }
+    }
+
+    final appDir = await getApplicationDocumentsDirectory();
+    final fallbackDir = Directory('${appDir.path}/Doctor Bike/Products');
+    if (!await fallbackDir.exists()) {
+      await fallbackDir.create(recursive: true);
+    }
+    return fallbackDir;
   }
 
   void _showProductsCsvError(String message) {

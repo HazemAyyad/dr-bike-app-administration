@@ -37,49 +37,61 @@ class IncomingChecksScreen extends GetView<ChecksController> {
                 child: CustomScrollView(
                   physics: kRefreshableScrollPhysics,
                   slivers: [
-                  SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-                  const SliverToBoxAdapter(
-                    child: ChecksDataDetails(isOutGoing: false),
-                  ),
-                  SliverToBoxAdapter(child: SizedBox(height: 20.h)),
-                  SliverToBoxAdapter(
-                    child: Obx(
-                      () => AppTabs(
-                        tabs: [
-                          '${'didNotActOnIt'.tr} (${controller.notActedTabCount.value})',
-                          '${'actedOnIt'.tr} (${controller.actedTabCount.value})',
-                          '${'archive'.tr} (${controller.archiveTabCount.value})',
-                        ],
-                        currentTab: controller.currentTab,
-                        changeTab: controller.changeTab,
-                        translateLabels: false,
+                    SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                    const SliverToBoxAdapter(
+                      child: ChecksDataDetails(isOutGoing: false),
+                    ),
+                    SliverToBoxAdapter(child: SizedBox(height: 20.h)),
+                    SliverToBoxAdapter(
+                      child: Obx(
+                        () => AppTabs(
+                          tabs: [
+                            '${'didNotActOnIt'.tr} (${controller.notActedTabCount.value})',
+                            '${'actedOnIt'.tr} (${controller.actedTabCount.value})',
+                            '${'archive'.tr} (${controller.archiveTabCount.value})',
+                          ],
+                          currentTab: controller.currentTab,
+                          changeTab: controller.changeTab,
+                          translateLabels: false,
+                          height: 38.h,
+                          horizontalPadding: 6.w,
+                          tabHorizontalPadding: 10.w,
+                          tabVerticalPadding: 7.h,
+                          tabHorizontalMargin: 2.w,
+                          fontSize: 12.sp,
+                        ),
                       ),
                     ),
-                  ),
-                  SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 50.w),
-                      child: SearchBar(
-                        shadowColor:
-                            WidgetStateProperty.all(Colors.transparent),
-                        leading: const Icon(
-                          Icons.search,
+                    SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 50.w),
+                        child: SearchBar(
+                          shadowColor:
+                              WidgetStateProperty.all(Colors.transparent),
+                          textStyle: WidgetStateProperty.all(
+                            const TextStyle(fontSize: 16),
+                          ),
+                          hintStyle: WidgetStateProperty.all(
+                            const TextStyle(fontSize: 16),
+                          ),
+                          leading: const Icon(
+                            Icons.search,
+                          ),
+                          hintText: 'search'.tr,
+                          backgroundColor: WidgetStateProperty.all(
+                            ThemeService.isDark.value
+                                ? AppColors.customGreyColor
+                                : AppColors.customGreyColor7,
+                          ),
+                          onChanged: (value) => controller.searchBar(value),
                         ),
-                        hintText: 'search'.tr,
-                        backgroundColor: WidgetStateProperty.all(
-                          ThemeService.isDark.value
-                              ? AppColors.customGreyColor
-                              : AppColors.customGreyColor7,
-                        ),
-                        onChanged: (value) => controller.searchBar(value),
                       ),
                     ),
-                  ),
-                  SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-                  const CustomListVeiwBuilder(),
-                  SliverToBoxAdapter(child: SizedBox(height: 80.h)),
-                ],
+                    SliverToBoxAdapter(child: SizedBox(height: 10.h)),
+                    const CustomListVeiwBuilder(),
+                    SliverToBoxAdapter(child: SizedBox(height: 80.h)),
+                  ],
                 ),
               );
             },

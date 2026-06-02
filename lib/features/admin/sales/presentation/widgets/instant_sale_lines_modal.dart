@@ -246,6 +246,47 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
       }
     }
 
+    if (invoice.additionalNotes.isNotEmpty) {
+      rows.add(SizedBox(height: 12.h));
+      rows.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: 6.h),
+          child: Text(
+            'additionalNotes'.tr,
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryColor,
+            ),
+          ),
+        ),
+      );
+      for (final note in invoice.additionalNotes) {
+        rows.add(
+          Padding(
+            padding: EdgeInsets.only(bottom: 6.h),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    note.text.trim().isEmpty ? '-' : note.text,
+                    style: TextStyle(fontSize: 12.sp),
+                  ),
+                ),
+                Text(
+                  '${note.amount} ${'currency'.tr}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
     return ListView(
       shrinkWrap: true,
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -260,7 +301,8 @@ class _ModalPackageExpandable extends StatefulWidget {
   final InvoiceModel invoice;
 
   @override
-  State<_ModalPackageExpandable> createState() => _ModalPackageExpandableState();
+  State<_ModalPackageExpandable> createState() =>
+      _ModalPackageExpandableState();
 }
 
 class _ModalPackageExpandableState extends State<_ModalPackageExpandable> {
@@ -277,8 +319,7 @@ class _ModalPackageExpandableState extends State<_ModalPackageExpandable> {
     final unit = SalesAmountFormat.parse(invoice.cost);
     final lineTotal = qty * unit;
     final url = ShowNetImage.getThumbnailPhoto(invoice.productImage);
-    final hasImage =
-        url.isNotEmpty && invoice.productImage.trim().isNotEmpty;
+    final hasImage = url.isNotEmpty && invoice.productImage.trim().isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(

@@ -1,6 +1,8 @@
 class EmployeeTaskEntity {
   final int taskId;
   final int? occurrenceId;
+  final String? parentId;
+  final String source;
   final String taskName;
   final String employeeId;
   final String employeeName;
@@ -20,6 +22,8 @@ class EmployeeTaskEntity {
   EmployeeTaskEntity({
     required this.taskId,
     this.occurrenceId,
+    this.parentId,
+    this.source = 'legacy',
     required this.taskName,
     required this.employeeId,
     required this.employeeName,
@@ -36,4 +40,7 @@ class EmployeeTaskEntity {
     this.progress = 0,
     this.proofRequired = false,
   });
+
+  bool get isRepeatedCopy =>
+      parentId != null && parentId!.isNotEmpty && parentId != '0';
 }

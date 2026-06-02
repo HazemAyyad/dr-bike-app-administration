@@ -136,6 +136,8 @@ class CheckModel extends CheckEntity {
     String? backImage,
     required DateTime createdAt,
     required DateTime updatedAt,
+    DateTime? receivedAt,
+    String? batchNumber,
     String? sellerId,
     Seller? customer,
     Seller? seller,
@@ -157,6 +159,8 @@ class CheckModel extends CheckEntity {
           backImage: backImage,
           createdAt: createdAt,
           updatedAt: updatedAt,
+          receivedAt: receivedAt,
+          batchNumber: batchNumber,
           sellerId: sellerId,
           customer: customer,
           seller: seller,
@@ -189,18 +193,19 @@ class CheckModel extends CheckEntity {
       frontImage: frontRel != null
           ? ShowNetImage.getPhoto('$frontImg/$frontRel')
           : null,
-      backImage: backRel != null
-          ? ShowNetImage.getPhoto('$backImg/$backRel')
-          : null,
+      backImage:
+          backRel != null ? ShowNetImage.getPhoto('$backImg/$backRel') : null,
       createdAt: parseApiDateTime(j['created_at']),
       updatedAt: parseApiDateTime(j['updated_at']),
+      receivedAt:
+          j['received_at'] == null ? null : parseApiDateTime(j['received_at']),
+      batchNumber: asNullableString(j['batch_number']),
       sellerId: asNullableString(j['seller_id']),
       customer: j['customer'] != null
           ? SellerModel.fromJson(asMap(j['customer']))
           : null,
-      seller: j['seller'] != null
-          ? SellerModel.fromJson(asMap(j['seller']))
-          : null,
+      seller:
+          j['seller'] != null ? SellerModel.fromJson(asMap(j['seller'])) : null,
       fromCustomer: j['from_customer'] != null
           ? SellerModel.fromJson(asMap(j['from_customer']))
           : null,
@@ -230,6 +235,8 @@ class CheckModel extends CheckEntity {
       'img': frontImage,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'received_at': receivedAt?.toIso8601String(),
+      'batch_number': batchNumber,
       'seller_id': sellerId,
       'customer': customer,
       'seller': seller,

@@ -3,12 +3,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
-import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
+import 'proof_media_type_selector.dart';
 
 /// خلفية المودال — رمادي فاتح (مثل قسم الموظفين) بدون حواف بيضاء.
 Color subTaskSheetBackground(BuildContext context) {
@@ -158,11 +158,11 @@ class SubTaskFormSheet extends StatelessWidget {
                       if (title == 'createNewEmployeeTask' ||
                           title == 'editEmployeeTask') ...[
                         SizedBox(height: 8.h),
-                        CustomCheckBox(
-                          value: controller.requireSubTasImage,
-                          title: 'requireImage',
-                          onChanged: (v) =>
-                              controller.requireSubTasImage.value = v!,
+                        Obx(
+                          () => ProofMediaTypeSelector(
+                            value: controller.subTaskProofMediaType.value,
+                            onChanged: controller.setSubTaskProofMediaType,
+                          ),
                         ),
                       ],
                       SizedBox(height: 16.h),
@@ -182,10 +182,10 @@ class SubTaskFormSheet extends StatelessWidget {
                           Expanded(
                             child: Obx(
                               () => AppButton(
-                                text: controller.editingSubTaskIndex.value !=
-                                        null
-                                    ? 'save'
-                                    : 'add',
+                                text:
+                                    controller.editingSubTaskIndex.value != null
+                                        ? 'save'
+                                        : 'add',
                                 onPressed: onSave,
                               ),
                             ),

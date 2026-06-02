@@ -4,7 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/helpers/proof_media_type.dart';
 import '../controllers/create_task_controller.dart';
+import 'proof_media_type_selector.dart';
 
 /// Operational subtask list with reorder, image requirement, and bonus points.
 class InlineSubtaskBuilder extends GetView<CreateTaskController> {
@@ -29,7 +31,10 @@ class InlineSubtaskBuilder extends GetView<CreateTaskController> {
                 key: ValueKey('subtask_${index}_${task['subTaskId'] ?? index}'),
                 index: index,
                 title: task['subTaskName']?.toString() ?? '',
-                requiresImage: task['imageIsRequired'] == true,
+                proofMediaType: ProofMediaType.normalize(
+                  task['proofMediaType']?.toString(),
+                  required: task['imageIsRequired'] == true,
+                ),
                 bonusPoints: task['bonusPoints'] as int? ?? 0,
                 defaultBonus: controller.defaultSubtaskBonusPoints,
                 onEdit: () {
@@ -45,8 +50,9 @@ class InlineSubtaskBuilder extends GetView<CreateTaskController> {
                   );
                 },
                 onDelete: () => controller.subTasks.removeAt(index),
-                onRequiresImageChanged: (v) {
-                  task['imageIsRequired'] = v;
+                onProofMediaTypeChanged: (v) {
+                  task['proofMediaType'] = v;
+                  task['imageIsRequired'] = v != ProofMediaType.none;
                   controller.subTasks[index] = task;
                   controller.subTasks.refresh();
                 },
@@ -73,7 +79,6 @@ class InlineSubtaskBuilder extends GetView<CreateTaskController> {
       ),
     );
   }
-
 }
 
 Future<void> _showBonusPointsDialog(
@@ -163,11 +168,13 @@ class _BonusPointsDialogState extends State<_BonusPointsDialog> {
                 fillColor: AppColors.operationalSurface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide(color: AppColors.operationalCardBorder),
+                  borderSide:
+                      BorderSide(color: AppColors.operationalCardBorder),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide(color: AppColors.operationalCardBorder),
+                  borderSide:
+                      BorderSide(color: AppColors.operationalCardBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
@@ -316,12 +323,9 @@ class _SubtaskEditorSheet extends GetView<CreateTaskController> {
           ),
           SizedBox(height: 8.h),
           Obx(
-            () => SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('requiresPhoto'.tr),
-              value: controller.requireSubTasImage.value,
-              activeThumbColor: AppColors.operationalPurple,
-              onChanged: (v) => controller.requireSubTasImage.value = v,
+            () => ProofMediaTypeSelector(
+              value: controller.subTaskProofMediaType.value,
+              onChanged: controller.setSubTaskProofMediaType,
             ),
           ),
           Obx(
@@ -372,11 +376,11 @@ class _SubtaskCard extends StatelessWidget {
     Key? key,
     required this.index,
     required this.title,
-    required this.requiresImage,
+    required this.proofMediaType,
     required this.bonusPoints,
     required this.onEdit,
     required this.onDelete,
-    required this.onRequiresImageChanged,
+    required this.onProofMediaTypeChanged,
     required this.onBonusChanged,
     required this.onBonusLongPress,
     required this.defaultBonus,
@@ -384,18 +388,19 @@ class _SubtaskCard extends StatelessWidget {
 
   final int index;
   final String title;
-  final bool requiresImage;
+  final String proofMediaType;
   final int bonusPoints;
   final int defaultBonus;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final ValueChanged<bool> onRequiresImageChanged;
+  final ValueChanged<String> onProofMediaTypeChanged;
   final void Function(bool enabled, int points) onBonusChanged;
   final VoidCallback onBonusLongPress;
 
   @override
   Widget build(BuildContext context) {
     final bonusEnabled = bonusPoints > 0;
+    final requiresProof = proofMediaType != ProofMediaType.none;
 
     return Container(
       key: key,
@@ -446,15 +451,22 @@ class _SubtaskCard extends StatelessWidget {
                   runSpacing: 6.h,
                   children: [
                     _MiniFlag(
-                      icon: Icons.photo_camera_outlined,
-                      label: 'requiresPhoto',
-                      enabled: requiresImage,
+                      icon: proofMediaType == ProofMediaType.video
+                          ? Icons.videocam_outlined
+                          : proofMediaType == ProofMediaType.both
+                              ? Icons.perm_media_outlined
+                              : Icons.photo_camera_outlined,
+                      label: _proofLabel(proofMediaType),
+                      enabled: requiresProof,
                       color: AppColors.operationalPurple,
-                      onTap: () => onRequiresImageChanged(!requiresImage),
+                      onTap: () => onProofMediaTypeChanged(
+                        _nextProofType(proofMediaType),
+                      ),
                     ),
                     _MiniFlag(
                       icon: Icons.bolt,
-                      label: bonusEnabled ? '+$bonusPoints' : 'additionalPoints',
+                      label:
+                          bonusEnabled ? '+$bonusPoints' : 'additionalPoints',
                       enabled: bonusEnabled,
                       color: AppColors.operationalPurple,
                       onTap: () => onBonusChanged(
@@ -488,6 +500,20 @@ class _SubtaskCard extends StatelessWidget {
       ),
     );
   }
+
+  static String _proofLabel(String value) {
+    if (value == ProofMediaType.image) return 'proofMediaImage';
+    if (value == ProofMediaType.video) return 'proofMediaVideo';
+    if (value == ProofMediaType.both) return 'proofMediaEither';
+    return 'proofMediaNone';
+  }
+
+  static String _nextProofType(String value) {
+    if (value == ProofMediaType.none) return ProofMediaType.image;
+    if (value == ProofMediaType.image) return ProofMediaType.video;
+    if (value == ProofMediaType.video) return ProofMediaType.both;
+    return ProofMediaType.none;
+  }
 }
 
 class _MiniFlag extends StatelessWidget {
@@ -509,7 +535,8 @@ class _MiniFlag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = enabled ? color.withValues(alpha: 0.12) : AppColors.operationalSurface;
+    final bg =
+        enabled ? color.withValues(alpha: 0.12) : AppColors.operationalSurface;
     final fg = enabled ? color : AppColors.customGreyColor5;
     return Material(
       color: bg,

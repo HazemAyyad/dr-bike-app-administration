@@ -63,6 +63,41 @@ class ChecksImplement implements ChecksRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String>> addIncomingChecksBatch({
+    String? customerId,
+    String? sellerId,
+    required DateTime receivedAt,
+    required List<IncomingCheckBatchItem> checks,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await checksDatasource.addIncomingChecksBatch(
+        customerId: customerId,
+        sellerId: sellerId,
+        receivedAt: receivedAt,
+        checks: checks,
+      );
+      if (result['status'] == 'success') {
+        final batch = result['batch_number']?.toString();
+        final message = result['message']?.toString() ?? '';
+        return Right(batch == null || batch.isEmpty
+            ? message
+            : '$message\n${'batchNumber'.tr}: $batch');
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
   // get not cashed
   @override
   Future<dynamic> getChecks({required String endPoint}) async {

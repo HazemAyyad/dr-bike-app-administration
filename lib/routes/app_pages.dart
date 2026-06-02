@@ -44,6 +44,7 @@ import '../features/admin/buying/presentation/views/bills_screens/bills_screen.d
 import '../features/admin/buying/presentation/views/buying_screen.dart';
 import '../features/admin/checks/presentation/binding/checks_binding.dart';
 import '../features/admin/checks/presentation/views/checks_screen.dart';
+import '../features/admin/checks/presentation/views/check_notification_rules_screen.dart';
 import '../features/admin/checks/presentation/views/incoming_checks_screen.dart';
 import '../features/admin/checks/presentation/views/new_check_screen.dart';
 import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart';
@@ -167,6 +168,7 @@ const _transitionRightToLeft = Transition.rightToLeft;
 const _transitionLeftToRight = Transition.leftToRight;
 const _transitionDownToUp = Transition.downToUp;
 const _transitionUpToDown = Transition.upToDown;
+const _transitionNo = Transition.noTransition;
 // const _transitionCupertino = Transition.cupertino;
 // const _transitionTopLevel = Transition.topLevel;
 const _transitionCircularReveal = Transition.circularReveal;
@@ -635,9 +637,14 @@ class AppPages {
     GetPage(
       name: AppRoutes.NEWCHECKSCREEN,
       page: () => const NewCheckScreen(),
-      transition: Get.locale == const Locale('ar')
-          ? _transitionLeftToRight
-          : _transitionRightToLeft,
+      binding: ChecksBinding(),
+      transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.CHECKNOTIFICATIONRULESSCREEN,
+      page: () => const CheckNotificationRulesScreen(),
+      binding: ChecksBinding(),
+      transition: _transitionDownToUp,
     ),
 
     // Boxes
@@ -682,49 +689,48 @@ class AppPages {
       name: AppRoutes.STOCKSCREEN,
       page: () => const StockScreen(),
       binding: StockBinding(),
-      transition: _transitionFadeIn,
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
     ),
     GetPage(
       name: AppRoutes.PRODUCTDETAILSSCREEN,
       page: () => const ProductDetailsScreen(),
       binding: StockBinding(),
-      transition: _transitionSize,
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
     ),
     GetPage(
       name: AppRoutes.EDITPRODUCTSCREEN,
       page: () => const EditProductScreen(),
       binding: StockBinding(),
-      transition: Get.locale == const Locale('ar')
-          ? _transitionLeftToRight
-          : _transitionRightToLeft,
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
     ),
     GetPage(
       name: AppRoutes.CLOSEOUTSSCREEN,
       page: () => const CloseoutsScreen(),
-      transition: Get.locale == const Locale('ar')
-          ? _transitionLeftToRight
-          : _transitionRightToLeft,
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
     ),
     GetPage(
       name: AppRoutes.ADDCOMBINATIONSCREEN,
       page: () => const AddCombinationScreen(),
-      transition: Get.locale == const Locale('ar')
-          ? _transitionLeftToRight
-          : _transitionRightToLeft,
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
     ),
     GetPage(
       name: AppRoutes.OFFERPACKAGESSCREEN,
       page: () => const OfferPackagesScreen(),
       binding: OfferPackagesBinding(),
-      transition: _transitionFadeIn,
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
     ),
     GetPage(
       name: AppRoutes.ADDEDITOFFERPACKAGESCREEN,
       page: () => const AddEditOfferPackageScreen(),
       binding: OfferPackagesBinding(),
-      transition: Get.locale == const Locale('ar')
-          ? _transitionLeftToRight
-          : _transitionRightToLeft,
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
     ),
 
     // Buying

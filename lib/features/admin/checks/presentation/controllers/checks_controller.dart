@@ -17,6 +17,7 @@ import '../../data/models/general_incoming_model.dart';
 import '../../data/models/general_outgoing_data_model.dart';
 import '../../../../../core/services/banks_service.dart';
 import '../../domain/usecases/add_checks_usecase.dart';
+import '../../domain/usecases/add_incoming_checks_batch_usecase.dart';
 import '../../domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/cashed_to_person_cancel_usecase.dart';
 import '../../domain/usecases/delete_check_usecase.dart';
@@ -25,6 +26,7 @@ import '../../domain/usecases/general_checks_data_usecase.dart';
 import '../../domain/usecases/get_checks_usecase.dart';
 import '../../domain/usecases/return_check_usercase.dart';
 import '../../domain/usecases/chash_to_box_usecase.dart';
+import '../../domain/repositories/checks_repository.dart';
 import 'checks_serves.dart';
 
 class ChecksController extends GetxController
@@ -33,6 +35,7 @@ class ChecksController extends GetxController
   static const _exchangeToKey = 'checks_exchange_to_currency';
 
   final AddChecksUsecase addChecksUsecase;
+  final AddIncomingChecksBatchUsecase addIncomingChecksBatchUsecase;
   final GetChecksUsecase getChecksUsecase;
   final GeneralChecksDataUsecase generalChecksDataUsecase;
   final CashedToPersonOrCashedUsecase cashedToPersonCancelUsecase;
@@ -46,6 +49,7 @@ class ChecksController extends GetxController
 
   ChecksController({
     required this.addChecksUsecase,
+    required this.addIncomingChecksBatchUsecase,
     required this.getChecksUsecase,
     required this.generalChecksDataUsecase,
     required this.cashedToPersonCancelUsecase,
@@ -80,9 +84,15 @@ class ChecksController extends GetxController
   // متغيرات للتقويم
   final selectedDay = DateTime.now().obs;
   final isCalendarVisible = false.obs;
+  final receivedDay = DateTime.now().obs;
+  final isReceivedCalendarVisible = false.obs;
   // دالة لإظهار/إخفاء التقويم
   void toggleCalendar() {
     isCalendarVisible.value = !isCalendarVisible.value;
+  }
+
+  void toggleReceivedCalendar() {
+    isReceivedCalendarVisible.value = !isReceivedCalendarVisible.value;
   }
 
   // العملات
@@ -234,22 +244,97 @@ class ChecksController extends GetxController
 
   final TextEditingController checkNumberController = TextEditingController();
   final TextEditingController bankNameController = TextEditingController();
+  final TextEditingController incomingBatchCountController =
+      TextEditingController(text: '1');
   // صورة الشيك من الامام
   final Rx<XFile?> checkFrontImage = Rx<XFile?>(null);
   // List<File> checkFrontImage = [];
   // صورة الشيك من الخلف
   final Rx<XFile?> checkBackImage = Rx<XFile?>(null);
   // List<File> checkBackImage = [];
+  final RxList<IncomingCheckDraft> incomingBatchRows =
+      <IncomingCheckDraft>[].obs;
+
+  DateTime _addMonths(DateTime date, int months) {
+    return DateTime(date.year, date.month + months, date.day);
+  }
+
+  void generateIncomingBatchRows() {
+    final count = int.tryParse(incomingBatchCountController.text.trim()) ?? 0;
+    if (count < 1) {
+      Get.snackbar('error'.tr, 'incomingBatchCountRequired'.tr);
+      return;
+    }
+
+    for (final row in incomingBatchRows) {
+      row.dispose();
+    }
+
+    final defaultCurrency = currencyController.text.isEmpty
+        ? 'currency'.tr
+        : currencyController.text.tr;
+    incomingBatchRows.assignAll(
+      List.generate(
+        count,
+        (index) => IncomingCheckDraft(
+          total: checkValueController.text,
+          dueDate: _addMonths(selectedDay.value, index),
+          currency: defaultCurrency,
+          checkId: count == 1 ? checkNumberController.text : '',
+          bankName: bankNameController.text,
+          notes: notesController.text,
+        ),
+      ),
+    );
+    update();
+  }
 
   final currentTab = 0.obs;
   final tabs = ['didNotActOnIt', 'actedOnIt', 'archive'].obs;
 
   final isLoading = false.obs;
+  final isBulkSelectionMode = false.obs;
+  final RxSet<int> selectedBulkCheckIds = <int>{}.obs;
 
   void changeTab(int index) {
     currentTab.value = index;
+    clearBulkSelection();
     // generalData();
     update();
+  }
+
+  void startBulkSelection() {
+    isBulkSelectionMode.value = true;
+    update();
+  }
+
+  void clearBulkSelection() {
+    selectedBulkCheckIds.clear();
+    isBulkSelectionMode.value = false;
+    update();
+  }
+
+  void toggleBulkCheck(CheckModel check) {
+    if (selectedBulkCheckIds.contains(check.id)) {
+      selectedBulkCheckIds.remove(check.id);
+    } else {
+      selectedBulkCheckIds.add(check.id);
+    }
+    isBulkSelectionMode.value = selectedBulkCheckIds.isNotEmpty;
+    update();
+  }
+
+  List<CheckModel> get selectedBulkChecks => activeFilteredChecks
+      .where((check) => selectedBulkCheckIds.contains(check.id))
+      .toList(growable: false);
+
+  double selectedBulkTotalForCurrency(String currency) {
+    return selectedBulkChecks
+        .where((check) => check.currency == currency)
+        .fold<double>(
+          0,
+          (sum, check) => sum + (double.tryParse(check.total) ?? 0),
+        );
   }
 
   int _countChecksInMap(Map<String, List<CheckModel>> source) {
@@ -428,6 +513,102 @@ class ChecksController extends GetxController
     update();
   }
 
+  void addIncomingChecksBatch({
+    required BuildContext context,
+    String? customerId,
+    String? sellerId,
+  }) async {
+    if (!(formKey.currentState as FormState).validate()) return;
+    if (incomingBatchRows.isEmpty) {
+      generateIncomingBatchRows();
+      if (incomingBatchRows.isEmpty) return;
+    }
+
+    isLoading(true);
+    if (!Get.isRegistered<BanksService>()) {
+      Get.put(BanksService());
+    }
+
+    for (final row in incomingBatchRows) {
+      await Get.find<BanksService>().findOrCreateByName(row.bankName.text);
+    }
+
+    final items = incomingBatchRows
+        .map(
+          (row) => IncomingCheckBatchItem(
+            total: row.total.text,
+            dueDate: row.dueDate.value,
+            currency: row.currency.value,
+            checkId: row.checkId.text,
+            bankName: row.bankName.text,
+            notes: row.notes.text,
+            frontImage: row.frontImage.value,
+            backImage: row.backImage.value,
+          ),
+        )
+        .toList();
+
+    final result = await addIncomingChecksBatchUsecase.call(
+      customerId: customerId,
+      sellerId: sellerId,
+      receivedAt: receivedDay.value,
+      checks: items,
+    );
+
+    result.fold(
+      (failure) {
+        final errors = failure.data['errors'];
+        final errorMessage = errors is Map
+            ? errors.entries
+                .map((e) => "${e.key}: ${(e.value as List).join(', ')}")
+                .join("\n")
+            : errors.toString();
+        Helpers.showCustomDialogError(
+          context: context,
+          title: failure.errMessage,
+          message: errorMessage,
+        );
+      },
+      (success) {
+        getGeneralChecksData();
+        getCashedToPerson();
+        getNotCashed();
+        getArchive();
+        resetCheckForm();
+        Get.back();
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          Get.back();
+        });
+        Helpers.showCustomDialogSuccess(
+          context: context,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isLoading(false);
+    update();
+  }
+
+  void resetCheckForm() {
+    checkValueController.clear();
+    currencyController.clear();
+    checkNumberController.clear();
+    bankNameController.clear();
+    notesController.clear();
+    incomingBatchCountController.text = '1';
+    checkFrontImage.value = null;
+    checkBackImage.value = null;
+    selectedDay.value = DateTime.now();
+    receivedDay.value = DateTime.now();
+    isCalendarVisible.value = false;
+    isReceivedCalendarVisible.value = false;
+    for (final row in incomingBatchRows) {
+      row.dispose();
+    }
+    incomingBatchRows.clear();
+  }
+
   final RxnString selectedValue = RxnString();
   RxBool isEdit = false.obs;
   final Rx<XFile?> editCheckFrontImage = Rx<XFile?>(null);
@@ -436,6 +617,7 @@ class ChecksController extends GetxController
   String? checkId;
 
   void getCeckData({CheckModel? check, required bool isOutgoing}) {
+    isInComing = !isOutgoing;
     if (isEdit.value) {
       Get.toNamed(
         AppRoutes.NEWCHECKSCREEN,
@@ -458,6 +640,11 @@ class ChecksController extends GetxController
           : check.fromSeller?.id.toString();
       selectedCustomersSellers.value = check.fromCustomer == null;
       notesController.text = check.notes ?? '';
+      receivedDay.value = check.createdAt;
+      for (final row in incomingBatchRows) {
+        row.dispose();
+      }
+      incomingBatchRows.clear();
     } else {
       Get.toNamed(
         AppRoutes.NEWCHECKSCREEN,
@@ -472,10 +659,17 @@ class ChecksController extends GetxController
       checkNumberController.clear();
       bankNameController.clear();
       notesController.clear();
+      incomingBatchCountController.text = '1';
       editCheckFrontImage.value = null;
       editCheckBackImage.value = null;
       selectedDay.value = DateTime.now();
+      receivedDay.value = DateTime.now();
       isCalendarVisible.value = false;
+      isReceivedCalendarVisible.value = false;
+      for (final row in incomingBatchRows) {
+        row.dispose();
+      }
+      incomingBatchRows.clear();
     }
     update();
   }
@@ -612,6 +806,36 @@ class ChecksController extends GetxController
     update();
   }
 
+  Future<void> bulkCashedToPersonOrCashed({
+    String? customerId,
+    String? sellerId,
+  }) async {
+    final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
+    if (ids.isEmpty) return;
+    isLoading(true);
+    for (final id in ids) {
+      final result = await cashedToPersonCancelUsecase.call(
+        isInComing: isInComing,
+        checkId: id,
+        customerId: customerId,
+        sellerId: sellerId,
+      );
+      if (result.isLeft()) {
+        break;
+      }
+    }
+    Get.back();
+    clearBulkSelection();
+    await Future.wait([
+      getGeneralChecksData(),
+      getCashedToPerson(isStopLoding: false),
+      getNotCashed(isStopLoding: false),
+      getArchive(isStopLoding: false),
+    ]);
+    isLoading(false);
+    update();
+  }
+
   // return check
   void returnCheck({required String checkId, required bool isCancel}) async {
     isLoading(true);
@@ -666,6 +890,32 @@ class ChecksController extends GetxController
     update();
   }
 
+  Future<void> bulkReturnCheck({required bool isCancel}) async {
+    final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
+    if (ids.isEmpty) return;
+    isLoading(true);
+    for (final id in ids) {
+      final result = await returnCheckUsercase.call(
+        checkId: id,
+        isInComing: isInComing,
+        isCancel: isCancel,
+      );
+      if (result.isLeft()) {
+        break;
+      }
+    }
+    Get.back();
+    clearBulkSelection();
+    await Future.wait([
+      getGeneralChecksData(),
+      getCashedToPerson(isStopLoding: false),
+      getNotCashed(isStopLoding: false),
+      getArchive(isStopLoding: false),
+    ]);
+    isLoading(false);
+    update();
+  }
+
   // cash to box
   void chashToBox({required String checkId, required String boxId}) async {
     isLoading(true);
@@ -714,6 +964,32 @@ class ChecksController extends GetxController
     update();
   }
 
+  Future<void> bulkChashToBox({required String boxId}) async {
+    final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
+    if (ids.isEmpty) return;
+    isLoading(true);
+    for (final id in ids) {
+      final result = await chashToBoxUsecase.chashToBox(
+        checkId: id,
+        boxId: boxId,
+        isInComing: isInComing,
+      );
+      if (result.isLeft()) {
+        break;
+      }
+    }
+    Get.back();
+    clearBulkSelection();
+    await Future.wait([
+      getGeneralChecksData(),
+      getCashedToPerson(isStopLoding: false),
+      getNotCashed(isStopLoding: false),
+      getArchive(isStopLoding: false),
+    ]);
+    isLoading(false);
+    update();
+  }
+
   // delete check
   void deleteCheck({required String checkId}) async {
     isLoading(true);
@@ -755,6 +1031,31 @@ class ChecksController extends GetxController
         );
       },
     );
+    isLoading(false);
+    update();
+  }
+
+  Future<void> bulkDeleteCheck() async {
+    final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
+    if (ids.isEmpty) return;
+    isLoading(true);
+    for (final id in ids) {
+      final result = await deleteCheckUsecase.deleteCheck(
+        checkId: id,
+        isInComing: isInComing,
+      );
+      if (result.isLeft()) {
+        break;
+      }
+    }
+    Get.back();
+    clearBulkSelection();
+    await Future.wait([
+      getArchive(isStopLoding: false),
+      getCashedToPerson(isStopLoding: false),
+      getNotCashed(isStopLoding: false),
+      getGeneralChecksData(),
+    ]);
     isLoading(false);
     update();
   }
@@ -931,19 +1232,24 @@ class ChecksController extends GetxController
       isLoading(true);
       update();
     }
-    await getNotCashed(isStopLoding: false);
-    await getCashedToPerson(isStopLoding: false);
-    await getArchive(isStopLoding: false);
-    if (showLoading) {
-      isLoading(false);
+    try {
+      await getNotCashed(isStopLoding: false);
+      await getCashedToPerson(isStopLoding: false);
+      await getArchive(isStopLoding: false);
+      _syncTabCounts();
+    } catch (e) {
+      debugPrint('[Checks] loadAllChecksTabs failed: $e');
+    } finally {
+      if (showLoading) {
+        isLoading(false);
+      }
+      update();
     }
-    _syncTabCounts();
-    update();
   }
 
   void openOutgoingChecks() {
     isInComing = false;
-    currentTab.value = 0;
+    currentTab.value = 1;
     loadAllChecksTabs();
     Get.toNamed(AppRoutes.OUTGOINGCHECKSSCREEN);
   }
@@ -960,9 +1266,13 @@ class ChecksController extends GetxController
   //     Rxn<GeneralChecksDataModel>(null);
 
   Future<void> getGeneralChecksData() async {
-    final result = await generalChecksDataUsecase.call();
-    ChecksServes().generalChecksData.value = result;
-    update();
+    try {
+      final result = await generalChecksDataUsecase.call();
+      ChecksServes().generalChecksData.value = result;
+      update();
+    } catch (e) {
+      debugPrint('[Checks] getGeneralChecksData failed: $e');
+    }
   }
 
   // get all customers and sellers
@@ -970,12 +1280,16 @@ class ChecksController extends GetxController
   final RxList<SellerModel> allSellersList = <SellerModel>[].obs;
 
   void getAllCustomersAndSellers() async {
-    final resultCustomers = await allCustomersSellersUsecase.call(
-        endPoint: EndPoints.all_customers);
-    final resultSellers =
-        await allCustomersSellersUsecase.call(endPoint: EndPoints.all_sellers);
-    allSellersList.assignAll(resultSellers);
-    allCustomersList.assignAll(resultCustomers);
+    try {
+      final resultCustomers = await allCustomersSellersUsecase.call(
+          endPoint: EndPoints.all_customers);
+      final resultSellers = await allCustomersSellersUsecase.call(
+          endPoint: EndPoints.all_sellers);
+      allSellersList.assignAll(resultSellers);
+      allCustomersList.assignAll(resultCustomers);
+    } catch (e) {
+      debugPrint('[Checks] getAllCustomersAndSellers failed: $e');
+    }
   }
 
   // get general incoming
@@ -1001,8 +1315,12 @@ class ChecksController extends GetxController
   final RxList<ShownBoxesModel> shownBoxesList = <ShownBoxesModel>[].obs;
 
   void getShowBoxes() async {
-    final boxes = await getShownBoxUsecase.call(screen: 0);
-    shownBoxesList.value = boxes;
+    try {
+      final boxes = await getShownBoxUsecase.call(screen: 0);
+      shownBoxesList.value = boxes;
+    } catch (e) {
+      debugPrint('[Checks] getShowBoxes failed: $e');
+    }
   }
 
   // filter assets by date
@@ -1168,8 +1486,12 @@ class ChecksController extends GetxController
   }
 
   Future<void> pullToRefresh() async {
-    await getGeneralChecksData();
-    await loadAllChecksTabs(showLoading: true);
+    try {
+      await getGeneralChecksData();
+      await loadAllChecksTabs(showLoading: true);
+    } catch (e) {
+      debugPrint('[Checks] pullToRefresh failed: $e');
+    }
   }
 
   @override
@@ -1195,6 +1517,10 @@ class ChecksController extends GetxController
     checkNumberController.dispose();
     bankNameController.dispose();
     notesController.dispose();
+    incomingBatchCountController.dispose();
+    for (final row in incomingBatchRows) {
+      row.dispose();
+    }
     employeeNameController.dispose();
     exchangeAmountController.dispose();
     _exchangeDebounce?.cancel();
@@ -1212,4 +1538,36 @@ class ExchangeCurrency {
   final String code;
   final String translationKey;
   final String symbol;
+}
+
+class IncomingCheckDraft {
+  IncomingCheckDraft({
+    required String total,
+    required DateTime dueDate,
+    required String currency,
+    required String checkId,
+    required String bankName,
+    required String notes,
+  })  : total = TextEditingController(text: total),
+        dueDate = dueDate.obs,
+        currency = currency.obs,
+        checkId = TextEditingController(text: checkId),
+        bankName = TextEditingController(text: bankName),
+        notes = TextEditingController(text: notes);
+
+  final TextEditingController total;
+  final Rx<DateTime> dueDate;
+  final RxString currency;
+  final TextEditingController checkId;
+  final TextEditingController bankName;
+  final TextEditingController notes;
+  final Rx<XFile?> frontImage = Rx<XFile?>(null);
+  final Rx<XFile?> backImage = Rx<XFile?>(null);
+
+  void dispose() {
+    total.dispose();
+    checkId.dispose();
+    bankName.dispose();
+    notes.dispose();
+  }
 }

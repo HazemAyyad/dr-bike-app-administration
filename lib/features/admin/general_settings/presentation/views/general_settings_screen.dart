@@ -118,6 +118,103 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _editAdminFabOptions() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final service = AppSettingsService.instance;
+    final options = <String, String>{
+      'newInvoice': 'newInvoice',
+      'newEmployee': 'newEmployee',
+      'newExpense': 'newExpense',
+      'newCustomer': 'newCustomer',
+      'createNewEmployeeTask': 'newTask',
+    };
+    final selected = service.adminFabOptions.toSet();
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+    const actionBg = Color(0xFFE5E7EB);
+
+    if (!mounted) return;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: dialogBg,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'adminFabOptionsSetting'.tr,
+            style: const TextStyle(
+              color: textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: options.entries
+                .map(
+                  (entry) => CheckboxListTile(
+                    value: selected.contains(entry.key),
+                    activeColor: const Color(0xFF059669),
+                    checkColor: Colors.white,
+                    title: Text(
+                      entry.value.tr,
+                      style: const TextStyle(color: textPrimary),
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        if (value == true) {
+                          selected.add(entry.key);
+                        } else {
+                          selected.remove(entry.key);
+                        }
+                      });
+                    },
+                  ),
+                )
+                .toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(
+                'cancel'.tr,
+                style: const TextStyle(color: textSecondary),
+              ),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: actionBg,
+                foregroundColor: textPrimary,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('save'.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true || !mounted) return;
+    final ok = await service.updateAdminFabOptions(selected);
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
+  }
+
   Future<void> _loadBiometricState() async {
     final enabled =
         await BiometricAuthService.instance.isBiometricLoginEnabled();
@@ -185,6 +282,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         titleKey: 'rewardRulesSetting',
         descriptionKey: 'rewardRulesSettingDesc',
         onTap: () => Get.toNamed(AppRoutes.EMPLOYEEREWARDRULESSCREEN),
+      ),
+      _SettingsItem(
+        icon: Icons.add_circle_outline,
+        iconColor: const Color(0xFF0F766E),
+        titleKey: 'adminFabOptionsSetting',
+        descriptionKey: 'adminFabOptionsSettingDesc',
+        onTap: _editAdminFabOptions,
       ),
     ];
 

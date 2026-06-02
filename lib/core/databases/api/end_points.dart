@@ -239,6 +239,9 @@ class EndPoints {
       'general/checks/data/first/page';
   static const String addOutgoingCheck = 'add/outgoing/check';
   static const String addIncomingCheck = 'add/incoming/check';
+  static const String addIncomingChecksBatch = 'add/incoming/checks/batch';
+  static const String checkNotificationRules = 'check-notification-rules';
+  static String checkNotificationRule(int id) => 'check-notification-rules/$id';
 
   static const String editOutgoingCheck = 'edit/outgoing/check';
   static const String editIncomingCheck = 'edit/incoming/check';
@@ -319,6 +322,7 @@ class EndPoints {
 
   static const String createProfitSale = 'create/profit/sale';
   static const String allProfitSales = 'all/profit/sales';
+  static const String cancelProfitSale = 'cancel/profit/sale';
 
   static const String createInstantSale = 'create/instant/sale';
   // offer_package_id supported on createInstantSale
@@ -543,6 +547,7 @@ class ApiKey {
   static const String description = 'description';
   static const String not_shown_for_employee = 'not_shown_for_employee';
   static const String is_forced_to_upload_img = 'is_forced_to_upload_img';
+  static const String proof_media_type = 'proof_media_type';
   static const String task_recurrence = 'task_recurrence';
   static const String task_recurrence_time = 'task_recurrence_time';
   static const String sub_tasks = 'sub_tasks';

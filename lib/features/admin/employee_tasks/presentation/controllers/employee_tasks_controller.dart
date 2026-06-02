@@ -521,7 +521,10 @@ class EmployeeTasksController extends GetxController {
       );
     }
 
-    final file = await CameraCaptureHelper.captureProof(context);
+    final file = await CameraCaptureHelper.captureProof(
+      context,
+      proofMediaType: sub.proofMediaType,
+    );
     if (file == null) return false;
 
     final uploaded = await uploadTaskImage(
@@ -895,6 +898,11 @@ class EmployeeTasksController extends GetxController {
   /// Today first, then future days, then earlier days in range.
   List<String> orderedDisplayKeys(List<String> keys) {
     if (keys.isEmpty) return [];
+    if (tasksViewMode.value == tasksViewWeekly) {
+      return keys
+        ..sort((a, b) => DateTime.parse(a).compareTo(DateTime.parse(b)));
+    }
+
     final today = dateKeyFrom(DateTime.now());
     final entries = keys.map((k) => MapEntry(k, DateTime.parse(k))).toList();
 

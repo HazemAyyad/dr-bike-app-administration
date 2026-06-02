@@ -11,6 +11,8 @@ class CheckEntity {
   final String? backImage;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? receivedAt;
+  final String? batchNumber;
   final String? sellerId;
   final Seller? customer;
   final Seller? seller;
@@ -33,6 +35,8 @@ class CheckEntity {
     this.backImage,
     required this.createdAt,
     required this.updatedAt,
+    this.receivedAt,
+    this.batchNumber,
     this.sellerId,
     this.customer,
     this.seller,
