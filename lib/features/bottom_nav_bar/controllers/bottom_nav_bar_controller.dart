@@ -52,18 +52,11 @@ class BottomNavBarController extends GetxController {
   Widget animatedSwitch() {
     return Obx(
       () {
-        final role = sessionUserType.value.isNotEmpty
-            ? sessionUserType.value
-            : userType;
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (Widget child, Animation<double> animation) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          child: KeyedSubtree(
-            key: ValueKey<String>('nav_${role}_${sessionEpoch.value}'),
-            child: _getPage(currentIndex.value, role),
-          ),
+        final role =
+            sessionUserType.value.isNotEmpty ? sessionUserType.value : userType;
+        return KeyedSubtree(
+          key: ValueKey<String>('nav_${role}_${sessionEpoch.value}'),
+          child: _getPage(currentIndex.value, role),
         );
       },
     );

@@ -28,7 +28,7 @@ class ShowImageOrVideo extends StatelessWidget {
               barrierDismissible: true,
               barrierLabel: 'Dismiss',
               barrierColor: Colors.black.withAlpha(128),
-              transitionDuration: const Duration(milliseconds: 300),
+              transitionDuration: Duration.zero,
               pageBuilder: (context, anim1, anim2) {
                 return VideoView(videoPath: path);
               },
@@ -39,7 +39,7 @@ class ShowImageOrVideo extends StatelessWidget {
               barrierDismissible: true,
               barrierLabel: 'Dismiss',
               barrierColor: Colors.black.withAlpha(128),
-              transitionDuration: const Duration(milliseconds: 300),
+              transitionDuration: Duration.zero,
               pageBuilder: (context, anim1, anim2) {
                 return FullScreenZoomImage(imageUrl: path);
               },
@@ -73,8 +73,8 @@ class ShowImageOrVideo extends StatelessWidget {
                       ),
                     ),
                     imageUrl: path,
-                    fadeInDuration: const Duration(milliseconds: 200),
-                    fadeOutDuration: const Duration(milliseconds: 200),
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
                     placeholder: (context, url) => SizedBox(
                       height: 200.h,
                       width: 200.w,

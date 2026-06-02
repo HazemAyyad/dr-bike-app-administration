@@ -9,6 +9,8 @@ class EmployeeDetailsEntity {
   final String numberOfWorkHours;
   final String startWorkTime;
   final String endWorkTime;
+  final bool fingerprintEnabled;
+  final String? deviceUserId;
   final List<String> employeeImg;
   final List<String> documentImg;
   final List<String> weeklyDaysOff;
@@ -26,6 +28,8 @@ class EmployeeDetailsEntity {
     required this.numberOfWorkHours,
     required this.startWorkTime,
     required this.endWorkTime,
+    this.fingerprintEnabled = false,
+    this.deviceUserId,
     required this.employeeImg,
     required this.documentImg,
     required this.weeklyDaysOff,

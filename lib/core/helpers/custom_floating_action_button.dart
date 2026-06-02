@@ -50,64 +50,58 @@ class CustomFloatingActionButton extends StatelessWidget {
               );
             }),
 
-            Positioned(
-              bottom: 50.h,
-              left: 50.w,
-              right: 50.w,
-              child: SizeTransition(
-                sizeFactor: sizeAnimation,
-                axisAlignment: -1.0,
-                child: FadeTransition(
-                  opacity: sizeAnimation,
-                  child: Container(
-                    // width: 250.w,
-                    // height: 211.h,
-                    padding: EdgeInsets.symmetric(vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: ThemeService.isDark.value
-                          ? AppColors.customGreyColor
-                          : AppColors.whiteColor2,
-                      borderRadius: BorderRadius.circular(8.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(25),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                          offset: const Offset(2, 4),
+            Obx(() {
+              if (!isAddMenuOpen.value) return const SizedBox.shrink();
+              return Positioned(
+                bottom: 50.h,
+                left: 50.w,
+                right: 50.w,
+                child: Container(
+                  // width: 250.w,
+                  // height: 211.h,
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.whiteColor2,
+                    borderRadius: BorderRadius.circular(8.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(25),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                        offset: const Offset(2, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'add'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: AppColors.primaryColor,
+                                    fontSize: 17.sp,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'add'.tr,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  color: AppColors.primaryColor,
-                                  fontSize: 17.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
+                      ),
+                      SizedBox(height: 8.h),
+                      if (addList?.isNotEmpty ?? false)
+                        ...addList!.map(
+                          (e) => BuildAddMenuItem(
+                            item: e,
+                            onTap: () => onTap!(),
                           ),
                         ),
-                        SizedBox(height: 8.h),
-                        if (addList?.isNotEmpty ?? false)
-                          ...addList!.map(
-                            (e) => BuildAddMenuItem(
-                              item: e,
-                              onTap: () => onTap!(),
-                            ),
-                          ),
-                        customWidget ?? const SizedBox.shrink(),
-                      ],
-                    ),
+                      customWidget ?? const SizedBox.shrink(),
+                    ],
                   ),
                 ),
-              ),
-            ),
+              );
+            }),
 
             // زر الإضافة
             Positioned(
@@ -117,17 +111,10 @@ class CustomFloatingActionButton extends StatelessWidget {
                 backgroundColor: AppColors.secondaryColor,
                 elevation: 2.0,
                 shape: const CircleBorder(),
-                child: Obx(
-                  () => AnimatedRotation(
-                    turns: isAddMenuOpen.value ? -0.125 : 0, // 0.125 = 45 درجة
-                    duration: const Duration(milliseconds: 300),
-                    child: Icon(
-                      Icons.add,
-                      key: ValueKey(isAddMenuOpen.value),
-                      color: AppColors.whiteColor,
-                      size: 42.sp,
-                    ),
-                  ),
+                child: Icon(
+                  Icons.add,
+                  color: AppColors.whiteColor,
+                  size: 42.sp,
                 ),
               ),
             ),

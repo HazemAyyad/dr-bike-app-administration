@@ -32,6 +32,7 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
 
   OverlayEntry? _overlay;
   bool _loadingEmployees = false;
+
   /// -1 = clear filter (center), 0..n-1 = employee index.
   int _highlightIndex = -1;
   Offset? _anchorCenter;
@@ -160,13 +161,15 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
     if (total <= 8) {
       final angle = -math.pi / 2 + (2 * math.pi * index / total);
       return center +
-          Offset(math.cos(angle) * _innerRadius, math.sin(angle) * _innerRadius);
+          Offset(
+              math.cos(angle) * _innerRadius, math.sin(angle) * _innerRadius);
     }
     final innerCount = (total / 2).ceil();
     if (index < innerCount) {
       final angle = -math.pi / 2 + (2 * math.pi * index / innerCount);
       return center +
-          Offset(math.cos(angle) * _innerRadius, math.sin(angle) * _innerRadius);
+          Offset(
+              math.cos(angle) * _innerRadius, math.sin(angle) * _innerRadius);
     }
     final outerIndex = index - innerCount;
     final outerCount = total - innerCount;
@@ -234,9 +237,8 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
                   return Positioned(
                     left: pos.dx - 24,
                     top: pos.dy - 24,
-                    child: AnimatedScale(
+                    child: Transform.scale(
                       scale: selected ? 1.22 : 0.92,
-                      duration: const Duration(milliseconds: 90),
                       child: _EmployeeBubble(
                         name: emp.employeeName,
                         imageUrl: emp.employeeImg,
@@ -333,8 +335,7 @@ class _CenterClearBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 90),
+    return Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(

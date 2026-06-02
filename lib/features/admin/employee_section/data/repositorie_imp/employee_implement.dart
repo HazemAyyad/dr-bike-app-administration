@@ -47,6 +47,8 @@ class EmployeeImplement implements EmployeeRepository {
     required List<File> employeeImg,
     required List<String> permissions,
     required List<String> weeklyDaysOff,
+    required bool fingerprintEnabled,
+    String? deviceUserId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -68,6 +70,8 @@ class EmployeeImplement implements EmployeeRepository {
         employeeImg: employeeImg,
         permissions: permissions,
         weeklyDaysOff: weeklyDaysOff,
+        fingerprintEnabled: fingerprintEnabled,
+        deviceUserId: deviceUserId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

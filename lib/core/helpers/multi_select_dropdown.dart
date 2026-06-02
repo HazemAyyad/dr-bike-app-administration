@@ -101,68 +101,54 @@ class MultiSelectDropdown extends StatelessWidget {
                       ),
                     ],
                   ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.decelerate,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) {
-                        return SizeTransition(
-                          sizeFactor: animation,
-                          child: child,
-                        );
-                      },
-                      child: isRecurrenceVisible.value
-                          ? Column(
-                              children: [
-                                ...days.map(
-                                  (day) {
-                                    return Obx(
-                                      () {
-                                        final isSelected =
-                                            selectedDaysList.contains(day);
-                                        return ListTile(
-                                          dense: true,
-                                          contentPadding: EdgeInsets.zero,
-                                          visualDensity:
-                                              const VisualDensity(vertical: -2),
-                                          horizontalTitleGap: 5.w,
-                                          titleAlignment: ListTileTitleAlignment
-                                              .titleHeight,
-                                          leading: isSelected
-                                              ? Icon(
-                                                  Icons.check,
-                                                  color: AppColors.primaryColor,
-                                                  size: 20.sp,
-                                                )
-                                              : SizedBox(width: 24.w),
-                                          title: Text(
-                                            day.tr,
-                                            style: textTheme.copyWith(
-                                              color: ThemeService.isDark.value
-                                                  ? AppColors.whiteColor
-                                                  : AppColors.customGreyColor4,
-                                              fontSize: 15.sp,
-                                              fontWeight: FontWeight.w400,
-                                            ),
-                                          ),
-                                          onTap: () {
-                                            if (isSelected) {
-                                              selectedDaysList.remove(day);
-                                            } else {
-                                              selectedDaysList.add(day);
-                                            }
-                                          },
-                                        );
-                                      },
-                                    );
+                  if (isRecurrenceVisible.value)
+                    Column(
+                      children: [
+                        ...days.map(
+                          (day) {
+                            return Obx(
+                              () {
+                                final isSelected =
+                                    selectedDaysList.contains(day);
+                                return ListTile(
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  visualDensity:
+                                      const VisualDensity(vertical: -2),
+                                  horizontalTitleGap: 5.w,
+                                  titleAlignment:
+                                      ListTileTitleAlignment.titleHeight,
+                                  leading: isSelected
+                                      ? Icon(
+                                          Icons.check,
+                                          color: AppColors.primaryColor,
+                                          size: 20.sp,
+                                        )
+                                      : SizedBox(width: 24.w),
+                                  title: Text(
+                                    day.tr,
+                                    style: textTheme.copyWith(
+                                      color: ThemeService.isDark.value
+                                          ? AppColors.whiteColor
+                                          : AppColors.customGreyColor4,
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    if (isSelected) {
+                                      selectedDaysList.remove(day);
+                                    } else {
+                                      selectedDaysList.add(day);
+                                    }
                                   },
-                                )
-                              ],
-                            )
-                          : const SizedBox(key: ValueKey('empty')),
+                                );
+                              },
+                            );
+                          },
+                        )
+                      ],
                     ),
-                  ),
                 ],
               ),
             ),

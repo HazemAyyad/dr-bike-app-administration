@@ -99,48 +99,33 @@ class CustomTimePicker extends FormField<TimeOfDay?> {
                               ),
                             ],
                           ),
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.decelerate,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder: (child, animation) {
-                                return SizeTransition(
-                                  sizeFactor: animation,
-                                  child: child,
-                                );
-                              },
-                              child: isVisible.value
-                                  ? Padding(
-                                      padding: EdgeInsets.only(top: 20.h),
-                                      child: OmniDateTimePicker(
-                                        initialDate: DateTime(
-                                          DateTime.now().year,
-                                          DateTime.now().month,
-                                          DateTime.now().day,
-                                          selectedTime.value.hour,
-                                          selectedTime.value.minute,
-                                        ),
-                                        firstDate: DateTime(2020),
-                                        lastDate: DateTime(2100),
-                                        is24HourMode: false,
-                                        isShowSeconds: false,
-                                        minutesInterval: 1,
-                                        amText: 'morning'.tr,
-                                        pmText: 'evening'.tr,
-                                        type: OmniDateTimePickerType.time,
-                                        onDateTimeChanged: (pickedDateTime) {
-                                          final newTime =
-                                              TimeOfDay.fromDateTime(
-                                                  pickedDateTime);
-                                          selectedTime.value = newTime;
-                                          state.didChange(newTime);
-                                        },
-                                      ),
-                                    )
-                                  : const SizedBox(),
+                          if (isVisible.value)
+                            Padding(
+                              padding: EdgeInsets.only(top: 20.h),
+                              child: OmniDateTimePicker(
+                                initialDate: DateTime(
+                                  DateTime.now().year,
+                                  DateTime.now().month,
+                                  DateTime.now().day,
+                                  selectedTime.value.hour,
+                                  selectedTime.value.minute,
+                                ),
+                                firstDate: DateTime(2020),
+                                lastDate: DateTime(2100),
+                                is24HourMode: false,
+                                isShowSeconds: false,
+                                minutesInterval: 1,
+                                amText: 'morning'.tr,
+                                pmText: 'evening'.tr,
+                                type: OmniDateTimePickerType.time,
+                                onDateTimeChanged: (pickedDateTime) {
+                                  final newTime =
+                                      TimeOfDay.fromDateTime(pickedDateTime);
+                                  selectedTime.value = newTime;
+                                  state.didChange(newTime);
+                                },
+                              ),
                             ),
-                          ),
 
                           // Error Text
                           if (state.hasError)

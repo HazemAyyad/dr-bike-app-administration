@@ -590,7 +590,7 @@ class CreateTaskController extends GetxController {
             );
           }
           Future.delayed(
-            const Duration(milliseconds: 1500),
+            const Duration(milliseconds: 650),
             () {
               Get.back();
               Get.back();
@@ -682,7 +682,7 @@ class CreateTaskController extends GetxController {
             );
           }
           Future.delayed(
-            const Duration(milliseconds: 1000),
+            const Duration(milliseconds: 650),
             () {
               Get.back();
               Get.back();

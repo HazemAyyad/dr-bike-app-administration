@@ -13,7 +13,6 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final description = (product.descriptionAr ?? '').trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -31,36 +30,53 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
                     ),
               ),
             ),
+            if (_isCompleteProduct) ...[
+              SizedBox(width: 6.w),
+              Tooltip(
+                message: 'بيانات المنتج مكتملة',
+                child: Icon(
+                  Icons.verified_rounded,
+                  color: const Color(0xFF1877F2),
+                  size: 24.sp,
+                ),
+              ),
+            ],
             SizedBox(width: 8.w),
             Tooltip(
-              message: 'اللغات الاخرى',
+              message: 'بيانات الاسم والوصف',
               child: IconButton.filledTonal(
-                icon: const Icon(Icons.translate),
-                onPressed: () => _showOtherLanguages(context),
+                icon: const Icon(Icons.info_outline_rounded),
+                onPressed: () => _showProductTextInfo(context),
               ),
             ),
           ],
-        ),
-        SizedBox(height: 12.h),
-        Container(
-          padding: EdgeInsets.all(14.w),
-          decoration: BoxDecoration(
-            color: AdminUiColors.subtleOverlay(context),
-            borderRadius: BorderRadius.circular(14.r),
-          ),
-          child: Text(
-            description.isEmpty ? '—' : description,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  height: 1.55,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-          ),
         ),
       ],
     );
   }
 
-  void _showOtherLanguages(BuildContext context) {
+  bool get _isCompleteProduct {
+    final hasImage = [
+      product.viewImages,
+      product.normalImages,
+      product.image3d,
+    ].any((list) => list != null && list.any((v) => v.trim().isNotEmpty));
+    final hasRetail = _hasValue(product.normailPrice);
+    final hasWholesale = _hasValue(product.wholesalePrice);
+    final hasCost = product.purchasePrices != null &&
+        product.purchasePrices!.any((p) => _hasValue(p.price));
+    return hasImage && hasRetail && hasWholesale && hasCost;
+  }
+
+  bool _hasValue(Object? value) {
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty || text == '0' || text == '0.0' || text == 'null') {
+      return false;
+    }
+    return true;
+  }
+
+  void _showProductTextInfo(BuildContext context) {
     Get.dialog(
       Dialog(
         insetPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 24.h),
@@ -76,13 +92,13 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    Icons.translate,
+                    Icons.info_outline_rounded,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
-                      'اللغات الاخرى',
+                      'بيانات الاسم والوصف',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
@@ -93,6 +109,13 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
                     onPressed: Get.back,
                   ),
                 ],
+              ),
+              SizedBox(height: 12.h),
+              _languageBlock(
+                context,
+                title: 'langArabic'.tr,
+                name: product.nameAr,
+                description: product.descriptionAr ?? '',
               ),
               SizedBox(height: 12.h),
               _languageBlock(

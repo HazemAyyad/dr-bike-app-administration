@@ -52,11 +52,11 @@ class _PriorityChip extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 3.w),
         child: GestureDetector(
           onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+          child: Container(
             padding: EdgeInsets.symmetric(vertical: compact ? 8.h : 12.h),
             decoration: BoxDecoration(
-              color: selected ? AppColors.operationalPurple : AppColors.whiteColor,
+              color:
+                  selected ? AppColors.operationalPurple : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(compact ? 8.r : 14.r),
               border: Border.all(
                 color: selected

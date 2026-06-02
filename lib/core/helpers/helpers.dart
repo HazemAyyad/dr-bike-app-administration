@@ -44,8 +44,8 @@ class Helpers {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.asset(
-                      AssetsManager.errorAnimationImage,
+                    SvgPicture.asset(
+                      AssetsManager.errorImage,
                       height: 90.h,
                       width: 90.w,
                       fit: BoxFit.contain,
@@ -109,13 +109,14 @@ class Helpers {
     required BuildContext context,
     required String title,
     required String message,
-    Duration autoCloseAfter = const Duration(seconds: 2),
+    Duration autoCloseAfter = const Duration(milliseconds: 500),
   }) {
-    showDialog(
+    showGeneralDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: const Color(0XFFD9D9D9).withOpacity(0.55),
-      builder: (dialogContext) {
+      transitionDuration: Duration.zero,
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return _AutoCloseSuccessDialog(
           title: title,
           message: message,
@@ -294,53 +295,84 @@ class _AutoCloseSuccessDialogState extends State<_AutoCloseSuccessDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final cardColor = isDark ? AppColors.darkColor : AppColors.whiteColor;
+    final textColor = isDark ? AppColors.whiteColor : AppColors.blackColor;
+
     return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22.r),
       ),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
+        width: MediaQuery.of(context).size.width * 0.72,
         decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.darkColor
-              : AppColors.whiteColor,
-          borderRadius: BorderRadius.circular(20),
+          color: cardColor,
+          borderRadius: BorderRadius.circular(22.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.14),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: ScreenUtilNew.width(16),
-            vertical: ScreenUtilNew.height(16),
+            horizontal: 18.w,
+            vertical: 18.h,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                AssetsManager.successAnimation,
-                height: ScreenUtilNew.height(89),
-                width: ScreenUtilNew.width(89),
-                fit: BoxFit.contain,
+              Container(
+                width: 56.w,
+                height: 56.w,
+                decoration: BoxDecoration(
+                  color: const Color(0XFF39C67E).withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Container(
+                    width: 40.w,
+                    height: 40.w,
+                    decoration: const BoxDecoration(
+                      color: Color(0XFF39C67E),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 25.sp,
+                    ),
+                  ),
+                ),
               ),
-              SizedBox(height: ScreenUtilNew.height(4)),
+              SizedBox(height: 9.h),
               Text(
                 widget.title.tr,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.cairo(
-                  fontSize: 24.sp,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w800,
                   color: const Color(0XFF39C67E),
                 ),
               ),
-              SizedBox(height: ScreenUtilNew.height(4)),
-              Text(
-                widget.message,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.cairo(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0XFF8C9191),
+              if (widget.message.trim().isNotEmpty) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  widget.message,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.cairo(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: textColor.withOpacity(0.55),
+                  ),
                 ),
-              ),
-              SizedBox(height: ScreenUtilNew.height(24)),
+              ],
             ],
           ),
         ),

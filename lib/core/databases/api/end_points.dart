@@ -131,6 +131,16 @@ class EndPoints {
       'admin/impersonate-employee/$employeeId';
 
   static const String appSettings = 'app/settings';
+  static const String attendanceSettings = 'admin/settings/attendance';
+  static const String attendanceDevices = 'admin/attendance-devices';
+  static String attendanceDeviceTestConnection(int id) =>
+      'admin/attendance-devices/$id/test-connection';
+  static String attendanceDeviceSyncUsers(int id) =>
+      'admin/attendance-devices/$id/sync-users';
+  static String attendanceDeviceSyncLogs(int id) =>
+      'admin/attendance-devices/$id/sync-logs';
+  static String attendanceDeviceUsers(int id) => 'admin/attendance-devices/$id/users';
+  static String attendanceDeviceLogs(int id) => 'admin/attendance-devices/$id/logs';
   static const String workingTimes = 'working/times';
   static const String financialDues = 'financial/dues';
   static const String employeeFinancialDetails =

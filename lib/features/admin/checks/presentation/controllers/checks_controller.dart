@@ -813,6 +813,9 @@ class ChecksController extends GetxController
     final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
     if (ids.isEmpty) return;
     isLoading(true);
+    String? failureMessage;
+    String? successMessage;
+    var processed = 0;
     for (final id in ids) {
       final result = await cashedToPersonCancelUsecase.call(
         isInComing: isInComing,
@@ -820,9 +823,14 @@ class ChecksController extends GetxController
         customerId: customerId,
         sellerId: sellerId,
       );
-      if (result.isLeft()) {
-        break;
-      }
+      result.fold(
+        (failure) => failureMessage = failure.errMessage,
+        (success) {
+          successMessage = success;
+          processed++;
+        },
+      );
+      if (failureMessage != null) break;
     }
     Get.back();
     clearBulkSelection();
@@ -833,6 +841,12 @@ class ChecksController extends GetxController
       getArchive(isStopLoding: false),
     ]);
     isLoading(false);
+    Get.snackbar(
+      failureMessage == null ? 'success'.tr : 'error'.tr,
+      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(milliseconds: 1500),
+    );
     update();
   }
 
@@ -894,15 +908,23 @@ class ChecksController extends GetxController
     final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
     if (ids.isEmpty) return;
     isLoading(true);
+    String? failureMessage;
+    String? successMessage;
+    var processed = 0;
     for (final id in ids) {
       final result = await returnCheckUsercase.call(
         checkId: id,
         isInComing: isInComing,
         isCancel: isCancel,
       );
-      if (result.isLeft()) {
-        break;
-      }
+      result.fold(
+        (failure) => failureMessage = failure.errMessage,
+        (success) {
+          successMessage = success;
+          processed++;
+        },
+      );
+      if (failureMessage != null) break;
     }
     Get.back();
     clearBulkSelection();
@@ -913,6 +935,12 @@ class ChecksController extends GetxController
       getArchive(isStopLoding: false),
     ]);
     isLoading(false);
+    Get.snackbar(
+      failureMessage == null ? 'success'.tr : 'error'.tr,
+      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(milliseconds: 1500),
+    );
     update();
   }
 
@@ -968,15 +996,23 @@ class ChecksController extends GetxController
     final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
     if (ids.isEmpty) return;
     isLoading(true);
+    String? failureMessage;
+    String? successMessage;
+    var processed = 0;
     for (final id in ids) {
       final result = await chashToBoxUsecase.chashToBox(
         checkId: id,
         boxId: boxId,
         isInComing: isInComing,
       );
-      if (result.isLeft()) {
-        break;
-      }
+      result.fold(
+        (failure) => failureMessage = failure.errMessage,
+        (success) {
+          successMessage = success;
+          processed++;
+        },
+      );
+      if (failureMessage != null) break;
     }
     Get.back();
     clearBulkSelection();
@@ -987,6 +1023,12 @@ class ChecksController extends GetxController
       getArchive(isStopLoding: false),
     ]);
     isLoading(false);
+    Get.snackbar(
+      failureMessage == null ? 'success'.tr : 'error'.tr,
+      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(milliseconds: 1500),
+    );
     update();
   }
 
@@ -1039,14 +1081,22 @@ class ChecksController extends GetxController
     final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
     if (ids.isEmpty) return;
     isLoading(true);
+    String? failureMessage;
+    String? successMessage;
+    var processed = 0;
     for (final id in ids) {
       final result = await deleteCheckUsecase.deleteCheck(
         checkId: id,
         isInComing: isInComing,
       );
-      if (result.isLeft()) {
-        break;
-      }
+      result.fold(
+        (failure) => failureMessage = failure.errMessage,
+        (success) {
+          successMessage = success;
+          processed++;
+        },
+      );
+      if (failureMessage != null) break;
     }
     Get.back();
     clearBulkSelection();
@@ -1057,6 +1107,12 @@ class ChecksController extends GetxController
       getGeneralChecksData(),
     ]);
     isLoading(false);
+    Get.snackbar(
+      failureMessage == null ? 'success'.tr : 'error'.tr,
+      failureMessage ?? successMessage ?? '${'selectedChecks'.tr}: $processed',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(milliseconds: 1500),
+    );
     update();
   }
 

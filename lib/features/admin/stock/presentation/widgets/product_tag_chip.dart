@@ -55,7 +55,7 @@ class ProductTagChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: fg,
-          fontSize: dense ? 9.sp : 11.sp,
+          fontSize: dense ? 8.sp : 9.sp,
           fontWeight: FontWeight.w600,
         ),
       ),

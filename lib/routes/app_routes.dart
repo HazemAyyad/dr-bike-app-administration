@@ -147,4 +147,8 @@ class AppRoutes {
   static const BANKSSETTINGSSCREEN = '/BanksSettingsScreen';
   static const CONTACTCATEGORIESSETTINGSSCREEN =
       '/ContactCategoriesSettingsScreen';
+
+  // Attendance / Fingerprint (admin)
+  static const ATTENDANCEDEVICESSCREEN = '/AttendanceDevicesScreen';
+  static const FINGERPRINTDEVICEUSERSSCREEN = '/FingerprintDeviceUsersScreen';
 }

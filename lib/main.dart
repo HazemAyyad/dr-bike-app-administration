@@ -75,8 +75,18 @@ class MyApp extends StatelessWidget {
           initialBinding: InitialBindings(),
           initialRoute: AppRoutes.SPLASHSCREEN,
           getPages: AppPages.pages,
-          builder: (_, child) {
-            return child!;
+          defaultTransition: Transition.noTransition,
+          transitionDuration: Duration.zero,
+          builder: (context, child) {
+            final media = MediaQuery.maybeOf(context);
+            if (media == null) return child!;
+            return MediaQuery(
+              data: media.copyWith(
+                accessibleNavigation: true,
+                disableAnimations: true,
+              ),
+              child: child!,
+            );
           },
         );
       },

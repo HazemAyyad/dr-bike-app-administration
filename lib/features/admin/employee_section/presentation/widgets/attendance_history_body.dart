@@ -155,6 +155,22 @@ class AttendanceHistoryDayCard extends StatelessWidget {
 
   final EmployeeAttendanceDay day;
 
+  String _sourceLabel() {
+    final s = (day.source ?? '').toLowerCase().trim();
+    if (s == 'fingerprint') return 'fingerprintAttendance'.tr;
+    if (s == 'manual') return 'manualAttendance'.tr;
+    if (s == 'qr') return 'qrAttendance'.tr;
+    return '—';
+  }
+
+  Color _sourceColor() {
+    final s = (day.source ?? '').toLowerCase().trim();
+    if (s == 'fingerprint') return const Color(0xFF2563EB);
+    if (s == 'manual') return const Color(0xFF6B7280);
+    if (s == 'qr') return const Color(0xFF7C3AED);
+    return const Color(0xFF6B7280);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
@@ -193,12 +209,35 @@ class AttendanceHistoryDayCard extends StatelessWidget {
             color: primaryText,
           ),
         ),
-        subtitle: Text(
-          '${AttendanceHistoryController.formatMinutes(day.workedMinutes)} · ${'awayMinutesLabel'.tr}: ${AttendanceHistoryController.formatMinutes(day.awayMinutes)}',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: secondaryText),
+        subtitle: Wrap(
+          spacing: 8.w,
+          runSpacing: 6.h,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              '${AttendanceHistoryController.formatMinutes(day.workedMinutes)} · ${'awayMinutesLabel'.tr}: ${AttendanceHistoryController.formatMinutes(day.awayMinutes)}',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: secondaryText),
+            ),
+            if (day.source != null && (day.source ?? '').isNotEmpty)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: _sourceColor().withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  _sourceLabel(),
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: _sourceColor(),
+                  ),
+                ),
+              ),
+          ],
         ),
         children: [
           Padding(

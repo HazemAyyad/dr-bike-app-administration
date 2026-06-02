@@ -76,6 +76,8 @@ import '../features/admin/general_settings/presentation/controllers/banks_settin
 import '../features/admin/general_settings/presentation/views/banks_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/contact_categories_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
+import '../features/admin/attendance_devices/presentation/views/attendance_devices_screen.dart';
+import '../features/admin/fingerprint_device_users/presentation/views/fingerprint_device_users_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
 import '../features/admin/employee_section/presentation/views/qr_history_screen.dart';
@@ -159,20 +161,20 @@ import '../features/employee/my_orders/presentation/binding/my_orders_binding.da
 import '../features/employee/my_orders/presentation/views/my_orders_screen.dart';
 import 'app_routes.dart';
 
-const _defaultTransition = Transition.native;
+const _defaultTransition = Transition.noTransition;
 // const _transitionZoom = Transition.zoom;
-const _transitionFade = Transition.fade;
-const _transitionFadeIn = Transition.fadeIn;
-const _transitionSize = Transition.size;
-const _transitionRightToLeft = Transition.rightToLeft;
-const _transitionLeftToRight = Transition.leftToRight;
-const _transitionDownToUp = Transition.downToUp;
-const _transitionUpToDown = Transition.upToDown;
+const _transitionFade = Transition.noTransition;
+const _transitionFadeIn = Transition.noTransition;
+const _transitionSize = Transition.noTransition;
+const _transitionRightToLeft = Transition.noTransition;
+const _transitionLeftToRight = Transition.noTransition;
+const _transitionDownToUp = Transition.noTransition;
+const _transitionUpToDown = Transition.noTransition;
 const _transitionNo = Transition.noTransition;
 // const _transitionCupertino = Transition.cupertino;
 // const _transitionTopLevel = Transition.topLevel;
-const _transitionCircularReveal = Transition.circularReveal;
-const _transitionCupertinoDialog = Transition.cupertinoDialog;
+const _transitionCircularReveal = Transition.noTransition;
+const _transitionCupertinoDialog = Transition.noTransition;
 
 class AppPages {
   static final splashScreen = GetPage(
@@ -487,6 +489,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN,
       page: () => const ContactCategoriesSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.ATTENDANCEDEVICESSCREEN,
+      page: () => const AttendanceDevicesScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.FINGERPRINTDEVICEUSERSSCREEN,
+      page: () => const FingerprintDeviceUsersScreen(),
       transition: _transitionFadeIn,
     ),
 

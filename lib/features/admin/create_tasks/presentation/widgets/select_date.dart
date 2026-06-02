@@ -88,112 +88,97 @@ class SelectDate extends StatelessWidget {
                     ],
                   ),
                   Obx(
-                    () => AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.decelerate,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (child, animation) {
-                          return SizeTransition(
-                            sizeFactor: animation,
-                            child: child,
-                          );
-                        },
-                        child: isEndDate!.value
-                            ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(height: 10.h),
-                                  // رأس التقويم
-                                  Container(
-                                    height: 35.h,
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.primaryColor,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextButton(
-                                            style: TextButton.styleFrom(
-                                              backgroundColor:
-                                                  isSelected.value == 1
-                                                      ? const Color.fromARGB(
-                                                          255, 136, 129, 233)
-                                                      : AppColors.primaryColor,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(0),
-                                              ),
-                                            ),
-                                            child: Text(
-                                              'day'.tr,
-                                              style: theme.copyWith(
-                                                color: AppColors.whiteColor,
-                                                fontSize: 15.sp,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              isSelected.value = 0;
-                                            },
+                    () => isEndDate!.value
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(height: 10.h),
+                              // رأس التقويم
+                              Container(
+                                height: 35.h,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primaryColor,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextButton(
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: isSelected.value == 1
+                                              ? const Color.fromARGB(
+                                                  255, 136, 129, 233)
+                                              : AppColors.primaryColor,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(0),
                                           ),
                                         ),
-                                        Expanded(
-                                          child: TextButton(
-                                            style: TextButton.styleFrom(
-                                              backgroundColor:
-                                                  isSelected.value == 0
-                                                      ? const Color.fromARGB(
-                                                          255, 136, 129, 233)
-                                                      : AppColors.primaryColor,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(0),
-                                              ),
-                                            ),
-                                            child: Text(
-                                              'time'.tr,
-                                              style: theme.copyWith(
-                                                color: AppColors.whiteColor,
-                                                fontSize: 15.sp,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                            ),
-                                            onPressed: () {
-                                              isSelected.value = 1;
-                                            },
+                                        child: Text(
+                                          'day'.tr,
+                                          style: theme.copyWith(
+                                            color: AppColors.whiteColor,
+                                            fontSize: 15.sp,
+                                            fontWeight: FontWeight.w400,
                                           ),
                                         ),
-                                      ],
+                                        onPressed: () {
+                                          isSelected.value = 0;
+                                        },
+                                      ),
                                     ),
-                                  ),
+                                    Expanded(
+                                      child: TextButton(
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: isSelected.value == 0
+                                              ? const Color.fromARGB(
+                                                  255, 136, 129, 233)
+                                              : AppColors.primaryColor,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(0),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'time'.tr,
+                                          style: theme.copyWith(
+                                            color: AppColors.whiteColor,
+                                            fontSize: 15.sp,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          isSelected.value = 1;
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
 
-                                  isSelected.value == 0
-                                      ? Calendar(
-                                          onDaySelected: (dateTime) {
-                                            date.value = dateTime;
-                                          },
-                                        )
-                                      : OmniDateTimePicker(
-                                          initialDate: DateTime.now(),
-                                          firstDate: DateTime(2020),
-                                          lastDate: DateTime(2100),
-                                          is24HourMode: false,
-                                          isShowSeconds: false,
-                                          minutesInterval: 1,
-                                          amText: 'morning'.tr,
-                                          pmText: 'evening'.tr,
-                                          type: OmniDateTimePickerType.time,
-                                          onDateTimeChanged: (selectedTime) {
-                                            time.value = TimeOfDay.fromDateTime(
-                                                selectedTime);
-                                          },
-                                        ),
-                                ],
-                              )
-                            : const SizedBox(key: ValueKey('empty')),
-                      ),
-                    ),
+                              isSelected.value == 0
+                                  ? Calendar(
+                                      onDaySelected: (dateTime) {
+                                        date.value = dateTime;
+                                      },
+                                    )
+                                  : OmniDateTimePicker(
+                                      initialDate: DateTime.now(),
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime(2100),
+                                      is24HourMode: false,
+                                      isShowSeconds: false,
+                                      minutesInterval: 1,
+                                      amText: 'morning'.tr,
+                                      pmText: 'evening'.tr,
+                                      type: OmniDateTimePickerType.time,
+                                      onDateTimeChanged: (selectedTime) {
+                                        time.value = TimeOfDay.fromDateTime(
+                                            selectedTime);
+                                      },
+                                    ),
+                            ],
+                          )
+                        : const SizedBox(key: ValueKey('empty')),
                   ),
                 ],
               ),

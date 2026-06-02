@@ -76,6 +76,7 @@ class EmployeeAttendanceSegmentRow {
 
 class EmployeeAttendanceDay {
   final String date;
+  final String? source; // qr|fingerprint|manual (nullable for backward compatibility)
   final DateTime? firstCheckIn;
   final DateTime? lastCheckOut;
   final bool currentlyIn;
@@ -98,6 +99,7 @@ class EmployeeAttendanceDay {
 
   const EmployeeAttendanceDay({
     required this.date,
+    required this.source,
     required this.firstCheckIn,
     required this.lastCheckOut,
     required this.currentlyIn,
@@ -127,6 +129,7 @@ class EmployeeAttendanceDay {
     }
     return EmployeeAttendanceDay(
       date: asString(j['date']),
+      source: asNullableString(j['source']),
       firstCheckIn: j['first_check_in'] == null
           ? null
           : parseApiDateTime(j['first_check_in']),

@@ -24,7 +24,7 @@ class FullScreenZoomImage extends StatelessWidget {
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
       barrierColor: Colors.black.withValues(alpha: 0.88),
-      transitionDuration: const Duration(milliseconds: 250),
+      transitionDuration: Duration.zero,
       pageBuilder: (context, anim1, anim2) {
         return FullScreenZoomImage(imageUrl: imageUrl);
       },

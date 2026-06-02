@@ -252,14 +252,15 @@ class BulkCashToPersonDialog extends GetView<ChecksController> {
               text: 'continue',
               onPressed: () {
                 if (selectedValue.value == null) return;
+                Get.back();
                 Get.dialog(
                   BulkCheckConfirmDialog(
                     actionTitle: 'endorseTheCheck',
                     onConfirm: () => controller.bulkCashedToPersonOrCashed(
-                      customerId: !controller.selectedCustomersSellers.value
+                      customerId: controller.selectedCustomersSellers.value
                           ? selectedValue.value
                           : null,
-                      sellerId: controller.selectedCustomersSellers.value
+                      sellerId: !controller.selectedCustomersSellers.value
                           ? selectedValue.value
                           : null,
                     ),
@@ -312,6 +313,7 @@ class BulkCashToBoxDialog extends GetView<ChecksController> {
               text: 'continue',
               onPressed: () {
                 if (selectedValue.value == null) return;
+                Get.back();
                 Get.dialog(
                   BulkCheckConfirmDialog(
                     actionTitle: 'cashTheCheck',

@@ -68,6 +68,8 @@ abstract class EmployeeRepository {
     required List<File> employeeImg,
     required List<String> permissions,
     required List<String> weeklyDaysOff,
+    required bool fingerprintEnabled,
+    String? deviceUserId,
   });
 
   Future<Either<Failure, String>> addPointsToEmployee({

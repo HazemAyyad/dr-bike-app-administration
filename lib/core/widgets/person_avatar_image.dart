@@ -30,9 +30,7 @@ class PersonAvatarImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = borderRadius ??
-        (circular
-            ? BorderRadius.circular(width / 2)
-            : BorderRadius.zero);
+        (circular ? BorderRadius.circular(width / 2) : BorderRadius.zero);
 
     Widget image;
     if (PersonAvatarHelper.isAssetPath(_resolved)) {
@@ -57,8 +55,8 @@ class PersonAvatarImage extends StatelessWidget {
         fit: fit,
         imageUrl: _resolved,
         filterQuality: FilterQuality.medium,
-        fadeInDuration: const Duration(milliseconds: 200),
-        fadeOutDuration: const Duration(milliseconds: 200),
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
         placeholder: (context, url) => SizedBox(
           height: height,
           width: width,

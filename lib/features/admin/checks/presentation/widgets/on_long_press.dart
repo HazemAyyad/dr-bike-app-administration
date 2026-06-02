@@ -404,10 +404,10 @@ class CashTheCheck extends GetView<ChecksController> {
               if (selectedValue.value != null) {
                 controller.cashedToPersonOrCashed(
                   checkId: check.id.toString(),
-                  customerId: !controller.selectedCustomersSellers.value
+                  customerId: controller.selectedCustomersSellers.value
                       ? selectedValue.value
                       : null,
-                  sellerId: controller.selectedCustomersSellers.value
+                  sellerId: !controller.selectedCustomersSellers.value
                       ? selectedValue.value
                       : null,
                 );

@@ -34,21 +34,16 @@ class BuildNavItem extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedScale(
-              scale: isSelected ? 1.12 : 1.0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: SizedBox(
+            SizedBox(
+              width: iconSize,
+              height: iconSize,
+              child: Image.asset(
+                assetImage,
                 width: iconSize,
                 height: iconSize,
-                child: Image.asset(
-                  assetImage,
-                  width: iconSize,
-                  height: iconSize,
-                  fit: BoxFit.contain,
-                  color: iconColor,
-                  filterQuality: FilterQuality.medium,
-                ),
+                fit: BoxFit.contain,
+                color: iconColor,
+                filterQuality: FilterQuality.medium,
               ),
             ),
             SizedBox(height: 2.h),

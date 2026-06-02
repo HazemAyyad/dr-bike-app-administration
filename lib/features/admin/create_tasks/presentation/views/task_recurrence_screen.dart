@@ -52,7 +52,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
 
     return Scaffold(
       backgroundColor: AppColors.operationalSurface,
-      appBar: CustomAppBar(title: 'recurrenceSettings'),
+      appBar: const CustomAppBar(title: 'recurrenceSettings'),
       body: Obx(() {
         if (controller.recurrenceSummary.value.isEmpty) {
           controller.updateRecurrenceSummary();
@@ -60,7 +60,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
         return ListView(
           padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 88.h),
           children: [
-            TaskSectionTitle('repeatPattern', compact: true),
+            const TaskSectionTitle('repeatPattern', compact: true),
             TaskOpCard(
               compact: true,
               margin: EdgeInsets.zero,
@@ -78,7 +78,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
             ),
             if (controller.selectedDays.value == 'weekly') ...[
               SizedBox(height: 6.h),
-              TaskSectionTitle('selectWeekdays', compact: true),
+              const TaskSectionTitle('selectWeekdays', compact: true),
               TaskOpCard(
                 compact: true,
                 margin: EdgeInsets.zero,
@@ -92,7 +92,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
             ],
             if (controller.selectedDays.value == 'monthly') ...[
               SizedBox(height: 6.h),
-              TaskSectionTitle('monthlyRepeatMode', compact: true),
+              const TaskSectionTitle('monthlyRepeatMode', compact: true),
               TaskOpCard(
                 compact: true,
                 margin: EdgeInsets.zero,
@@ -122,7 +122,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
             ],
             if (controller.selectedDays.value == 'yearly') ...[
               SizedBox(height: 6.h),
-              TaskSectionTitle('yearlyRepeatOn', compact: true),
+              const TaskSectionTitle('yearlyRepeatOn', compact: true),
               TaskOpCard(
                 compact: true,
                 margin: EdgeInsets.zero,
@@ -135,7 +135,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
             ],
             if (controller.showRecurrenceDuration) ...[
               SizedBox(height: 6.h),
-              TaskSectionTitle('duration', compact: true),
+              const TaskSectionTitle('duration', compact: true),
               TaskOpCard(
                 compact: true,
                 margin: EdgeInsets.zero,
@@ -146,7 +146,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
               ),
             ],
             SizedBox(height: 6.h),
-            TaskSectionTitle('summary', compact: true),
+            const TaskSectionTitle('summary', compact: true),
             TaskOpCard(
               compact: true,
               margin: EdgeInsets.zero,
@@ -197,13 +197,11 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
         padding: EdgeInsets.symmetric(horizontal: 3.w),
         child: GestureDetector(
           onTap: () => controller.setRecurrenceType(type),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+          child: Container(
             padding: EdgeInsets.symmetric(vertical: 9.h),
             decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.operationalPurple
-                  : AppColors.whiteColor,
+              color:
+                  selected ? AppColors.operationalPurple : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(10.r),
               border: Border.all(
                 color: selected
@@ -272,7 +270,8 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
         children: [
           Text(
             'recurrenceDayOfMonth'.tr,
-            style: TextStyle(fontSize: 11.sp, color: AppColors.customGreyColor5),
+            style:
+                TextStyle(fontSize: 11.sp, color: AppColors.customGreyColor5),
           ),
           const Spacer(),
           IconButton(
@@ -330,9 +329,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
         spacing: 6.w,
         runSpacing: 6.h,
         children: TaskRecurrenceScreen.weekdays.map((d) {
-          final sel = forMonthly
-              ? controller.monthlyWeekday.value == d
-              : false;
+          final sel = forMonthly ? controller.monthlyWeekday.value == d : false;
           return _miniChip(
             label: _weekdayShort(d),
             selected: sel,
@@ -391,7 +388,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
     return Column(
       children: [
         DropdownButtonFormField<int>(
-          value: controller.yearlyMonth.value,
+          initialValue: controller.yearlyMonth.value,
           decoration: _dropdownDecoration('yearlyMonth'.tr),
           items: List.generate(12, (i) {
             final m = i + 1;
@@ -511,8 +508,7 @@ class _WeekdayDragRow extends StatelessWidget {
                     onToggle(day);
                   },
                   behavior: HitTestBehavior.opaque,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 120),
+                  child: Container(
                     margin: EdgeInsets.symmetric(horizontal: 2.w),
                     height: 36.w,
                     alignment: Alignment.center,
@@ -582,82 +578,82 @@ class _DurationSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(
       () => Column(
-      children: [
-        _tile('forever', 'forever'),
-        _tile('end_after_count', controller.durationCountLabelKey),
-        if (controller.durationType.value == 'end_after_count')
-          Padding(
-            padding: EdgeInsets.only(bottom: 6.h),
-            child: Obx(
-              () => Row(
-                children: [
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(Icons.remove_circle_outline, size: 24.sp),
-                    color: AppColors.operationalPurple,
-                    onPressed: () {
-                      if (controller.endAfterCount.value > 1) {
-                        controller.endAfterCount.value--;
-                        controller.updateRecurrenceSummary();
-                      }
-                    },
-                  ),
-                  Text(
-                    '${controller.endAfterCount.value}',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.operationalNavy,
+        children: [
+          _tile('forever', 'forever'),
+          _tile('end_after_count', controller.durationCountLabelKey),
+          if (controller.durationType.value == 'end_after_count')
+            Padding(
+              padding: EdgeInsets.only(bottom: 6.h),
+              child: Obx(
+                () => Row(
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.remove_circle_outline, size: 24.sp),
+                      color: AppColors.operationalPurple,
+                      onPressed: () {
+                        if (controller.endAfterCount.value > 1) {
+                          controller.endAfterCount.value--;
+                          controller.updateRecurrenceSummary();
+                        }
+                      },
                     ),
-                  ),
-                  IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Icon(Icons.add_circle_outline, size: 24.sp),
-                    color: AppColors.operationalPurple,
-                    onPressed: () {
-                      controller.endAfterCount.value++;
-                      controller.updateRecurrenceSummary();
-                    },
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      controller.durationCountUnit,
+                    Text(
+                      '${controller.endAfterCount.value}',
                       style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.operationalPurple,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.operationalNavy,
                       ),
                     ),
-                  ),
-                ],
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(Icons.add_circle_outline, size: 24.sp),
+                      color: AppColors.operationalPurple,
+                      onPressed: () {
+                        controller.endAfterCount.value++;
+                        controller.updateRecurrenceSummary();
+                      },
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        controller.durationCountUnit,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.operationalPurple,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        _tile('end_date', 'endAtDate'),
-        if (controller.durationType.value == 'end_date')
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              showData(controller.recurrenceEndDate.value),
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                color: AppColors.operationalNavy,
+          _tile('end_date', 'endAtDate'),
+          if (controller.durationType.value == 'end_date')
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                showData(controller.recurrenceEndDate.value),
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.operationalNavy,
+                ),
               ),
+              trailing: Icon(
+                Icons.calendar_today_outlined,
+                size: 18.sp,
+                color: AppColors.operationalPurple,
+              ),
+              onTap: onPickEndDate,
             ),
-            trailing: Icon(
-              Icons.calendar_today_outlined,
-              size: 18.sp,
-              color: AppColors.operationalPurple,
-            ),
-            onTap: onPickEndDate,
-          ),
-      ],
-    ),
+        ],
+      ),
     );
   }
 
@@ -678,9 +674,8 @@ class _DurationSection extends StatelessWidget {
       trailing: Icon(
         selected ? Icons.radio_button_checked : Icons.radio_button_off,
         size: 20.sp,
-        color: selected
-            ? AppColors.operationalPurple
-            : AppColors.customGreyColor5,
+        color:
+            selected ? AppColors.operationalPurple : AppColors.customGreyColor5,
       ),
       onTap: () {
         controller.durationType.value = value;

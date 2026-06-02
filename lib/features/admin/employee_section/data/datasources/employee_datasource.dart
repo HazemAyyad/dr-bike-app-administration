@@ -47,6 +47,8 @@ class EmployeeDatasource {
     required List<File> employeeImg,
     required List<String> permissions,
     required List<String> weeklyDaysOff,
+    required bool fingerprintEnabled,
+    String? deviceUserId,
   }) async {
     try {
       Map<String, dynamic> documentsImageList = {};
@@ -99,6 +101,9 @@ class EmployeeDatasource {
           'overtime_work_price': overtimeWorkPrice,
           'number_of_work_hours': numberOfWorkHours,
           'start_work_time': startWorkTime,
+          'fingerprint_enabled': fingerprintEnabled ? 1 : 0,
+          if (deviceUserId != null && deviceUserId.trim().isNotEmpty)
+            'device_user_id': deviceUserId.trim(),
           ...employeeImgList,
           ...documentsImageList,
           'permissions[]': permissions,

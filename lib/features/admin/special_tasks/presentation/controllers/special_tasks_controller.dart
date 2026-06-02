@@ -464,6 +464,11 @@ class SpecialTasksController extends GetxController {
 
   List<String> orderedDisplayKeys(List<String> keys) {
     if (keys.isEmpty) return [];
+    if (tasksViewMode.value == tasksViewWeekly) {
+      return keys.toList()
+        ..sort((a, b) => DateTime.parse(a).compareTo(DateTime.parse(b)));
+    }
+
     final today = dateKeyFrom(DateTime.now());
     final todayDate = DateTime.parse(today);
     final entries = keys.map((k) => MapEntry(k, DateTime.parse(k))).toList();

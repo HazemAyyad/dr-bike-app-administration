@@ -26,6 +26,8 @@ class AddEmployeeUsecase {
     required List<File> employeeImg,
     required List<String> permissions,
     required List<String> weeklyDaysOff,
+    required bool fingerprintEnabled,
+    String? deviceUserId,
   }) {
     return employeeRepository.creatEmployee(
       employeeId: employeeId,
@@ -43,6 +45,8 @@ class AddEmployeeUsecase {
       employeeImg: employeeImg,
       permissions: permissions,
       weeklyDaysOff: weeklyDaysOff,
+      fingerprintEnabled: fingerprintEnabled,
+      deviceUserId: deviceUserId,
     );
   }
 }

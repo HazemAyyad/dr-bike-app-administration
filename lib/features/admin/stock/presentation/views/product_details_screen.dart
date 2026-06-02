@@ -14,6 +14,7 @@ import '../widgets/product_language_details_tabs.dart';
 import '../widgets/product_images_slider.dart';
 import '../widgets/product_inline_video.dart';
 import '../widgets/purchase_price_widget.dart';
+import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/product_details_model.dart';
 import '../widgets/product_tag_chip.dart';
@@ -28,18 +29,18 @@ class _ProductDetailsHero extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final meta = _ProductCategoryMeta.from(product);
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: AdminUiColors.cardBackground(context),
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(15.r),
         border: Border.all(
           color: cs.primary.withValues(alpha: 0.12),
         ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -47,10 +48,10 @@ class _ProductDetailsHero extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ProductLanguageDetailsTabs(product: product),
-          SizedBox(height: 14.h),
+          SizedBox(height: 10.h),
           Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
+            spacing: 6.w,
+            runSpacing: 6.h,
             children: [
               if ((product.productCode ?? '').trim().isNotEmpty)
                 _ProductMetaChip(
@@ -62,7 +63,7 @@ class _ProductDetailsHero extends StatelessWidget {
                   icon: Icons.account_tree_outlined,
                   text: meta.mainName,
                 ),
-              for (final sub in meta.subNames.take(3))
+              for (final sub in meta.subNames)
                 _ProductMetaChip(
                   icon: Icons.label_outline,
                   text: sub,
@@ -71,7 +72,7 @@ class _ProductDetailsHero extends StatelessWidget {
           ),
           if (product.productTags != null && product.productTags!.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(top: 12.h),
+              padding: EdgeInsets.only(top: 8.h),
               child: _PrettyTagsRow(product: product),
             ),
         ],
@@ -92,20 +93,20 @@ class _ProductMetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
       decoration: BoxDecoration(
         color: AdminUiColors.subtleOverlay(context),
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(10.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
-            size: 18.sp,
+            size: 15.sp,
             color: Theme.of(context).colorScheme.primary,
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 6.w),
           Flexible(
             child: Text(
               text.trim().isEmpty ? '—' : text,
@@ -113,6 +114,7 @@ class _ProductMetaChip extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w800,
+                    fontSize: 11.sp,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
             ),
@@ -133,10 +135,10 @@ class _PrettyTagsRow extends StatelessWidget {
     final tags = product.productTags ?? [];
     if (tags.isEmpty) return const SizedBox.shrink();
     return Container(
-      padding: EdgeInsets.all(10.w),
+      padding: EdgeInsets.all(8.w),
       decoration: BoxDecoration(
         color: AdminUiColors.subtleOverlay(context),
-        borderRadius: BorderRadius.circular(14.r),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Wrap(
         spacing: 7.w,
@@ -189,15 +191,23 @@ class _ProductCategoryMeta {
   }
 }
 
-class _ProductOverviewGrid extends StatelessWidget {
+class _ProductOverviewGrid extends StatefulWidget {
   const _ProductOverviewGrid({required this.product});
 
   final ProductDetailsModel product;
+
+  @override
+  State<_ProductOverviewGrid> createState() => _ProductOverviewGridState();
+}
+
+class _ProductOverviewGridState extends State<_ProductOverviewGrid> {
+  bool expanded = false;
 
   bool get _isAdmin => userType.toLowerCase() == 'admin';
 
   @override
   Widget build(BuildContext context) {
+    final product = widget.product;
     final cost =
         product.purchasePrices != null && product.purchasePrices!.isNotEmpty
             ? product.purchasePrices!.first.price.toString()
@@ -209,6 +219,9 @@ class _ProductOverviewGrid extends StatelessWidget {
           product.minStock?.toString() ?? '—'),
       _MetricData(Icons.sell_outlined, 'retailPrice'.tr,
           product.normailPrice?.toString() ?? '—'),
+      _MetricData(Icons.storefront_outlined, 'wholesalePriceField'.tr,
+          product.wholesalePrice?.toString() ?? '—',
+          onTap: () => Get.dialog(ShowWholesalePrices(product: product))),
       _MetricData(
           Icons.percent, 'discountPercentage'.tr, '${product.discount ?? 0}%'),
       _MetricData(Icons.price_change_outlined, 'minimumSalePrice'.tr,
@@ -216,30 +229,69 @@ class _ProductOverviewGrid extends StatelessWidget {
       if (_isAdmin)
         _MetricData(Icons.shopping_bag_outlined, 'ThePurchase'.tr, cost,
             onTap: () => Get.dialog(ShowPurchasePrice(product: product))),
-    ];
-
-    return GridView.builder(
-      itemCount: items.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10.w,
-        mainAxisSpacing: 10.h,
-        childAspectRatio: 2.45,
+      _MetricData(Icons.price_check_outlined, 'listPriceField'.tr,
+          product.price?.toString() ?? '—'),
+      _MetricData(Icons.two_wheeler_outlined, 'productModel'.tr,
+          product.model?.toString() ?? '—'),
+      _MetricData(Icons.calendar_month_outlined, 'manufactureYear'.tr,
+          product.manufactureYear?.toString() ?? '—'),
+      _MetricData(Icons.star_rate_rounded, 'rateLabel'.tr,
+          product.rate?.toString() ?? '—'),
+      _MetricData(Icons.update_rounded, 'rotationDateField'.tr,
+          product.rotationDate?.toString() ?? '—'),
+      _MetricData(
+        product.isSoldWithPaper == 1 || product.isSoldWithPaper == '1'
+            ? Icons.menu_book_rounded
+            : Icons.menu_book_outlined,
+        'isForcedSale'.tr,
+        product.isSoldWithPaper == 1 || product.isSoldWithPaper == '1'
+            ? 'مفعل'
+            : 'غير مفعل',
+        trailingIcon: Icons.gavel_rounded,
       ),
-      itemBuilder: (context, index) => _MetricCard(data: items[index]),
+    ];
+    final visibleItems = expanded ? items : items.take(4).toList();
+
+    return Column(
+      children: [
+        GridView.builder(
+          itemCount: visibleItems.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 8.w,
+            mainAxisSpacing: 8.h,
+            childAspectRatio: 2.85,
+          ),
+          itemBuilder: (context, index) =>
+              _MetricCard(data: visibleItems[index]),
+        ),
+        if (items.length > 4)
+          TextButton.icon(
+            onPressed: () => setState(() => expanded = !expanded),
+            icon: Icon(
+              expanded
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              size: 19.sp,
+            ),
+            label: Text(expanded ? 'عرض أقل' : 'عرض المزيد'),
+          ),
+      ],
     );
   }
 }
 
 class _MetricData {
-  const _MetricData(this.icon, this.label, this.value, {this.onTap});
+  const _MetricData(this.icon, this.label, this.value,
+      {this.onTap, this.trailingIcon});
 
   final IconData icon;
   final String label;
   final String value;
   final VoidCallback? onTap;
+  final IconData? trailingIcon;
 }
 
 class _MetricCard extends StatelessWidget {
@@ -250,7 +302,7 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
       decoration: BoxDecoration(
         color: AdminUiColors.cardBackground(context),
         borderRadius: BorderRadius.circular(14.r),
@@ -261,8 +313,8 @@ class _MetricCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 34.w,
-            height: 34.w,
+            width: 28.w,
+            height: 28.w,
             decoration: BoxDecoration(
               color:
                   Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
@@ -270,11 +322,11 @@ class _MetricCard extends StatelessWidget {
             ),
             child: Icon(
               data.icon,
-              size: 18.sp,
+              size: 15.sp,
               color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          SizedBox(width: 9.w),
+          SizedBox(width: 7.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,6 +350,7 @@ class _MetricCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w900,
+                        fontSize: 12.sp,
                       ),
                 ),
               ],
@@ -306,7 +359,13 @@ class _MetricCard extends StatelessWidget {
           if (data.onTap != null)
             Icon(
               Icons.open_in_new,
-              size: 15.sp,
+              size: 13.sp,
+              color: Theme.of(context).colorScheme.primary,
+            )
+          else if (data.trailingIcon != null)
+            Icon(
+              data.trailingIcon,
+              size: 14.sp,
               color: Theme.of(context).colorScheme.primary,
             ),
         ],
@@ -325,115 +384,189 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _ProductExtraInfoPanel extends StatelessWidget {
-  const _ProductExtraInfoPanel({required this.product});
+class _ProductMediaSection extends StatefulWidget {
+  const _ProductMediaSection({required this.product});
 
   final ProductDetailsModel product;
 
   @override
+  State<_ProductMediaSection> createState() => _ProductMediaSectionState();
+}
+
+class _ProductMediaSectionState extends State<_ProductMediaSection> {
+  bool expanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final soldWithPaper =
-        product.isSoldWithPaper == 1 || product.isSoldWithPaper == '1';
-    final rows = [
-      _InfoLine('wholesalePriceField'.tr, product.wholesalePrice ?? '—'),
-      _InfoLine('listPriceField'.tr, product.price?.toString() ?? '—'),
-      _InfoLine('productModel'.tr, product.model ?? '—'),
-      _InfoLine('manufactureYear'.tr, product.manufactureYear ?? '—'),
-      _InfoLine('rateLabel'.tr, product.rate ?? '—'),
-      _InfoLine(
-          'rotationDateField'.tr, product.rotationDate?.toString() ?? '—'),
-    ];
+    final product = widget.product;
+    final cards = <Widget>[];
+
+    if (product.viewImages != null && product.viewImages!.isNotEmpty) {
+      cards.add(
+        ProductImagesSlider(
+          title: 'productImages',
+          images: product.viewImages!,
+          compact: true,
+        ),
+      );
+    }
+    if (product.normalImages != null && product.normalImages!.isNotEmpty) {
+      cards.add(
+        ProductImagesSlider(
+          title: 'naturalImages',
+          images: product.normalImages!,
+          compact: true,
+        ),
+      );
+    }
+    if (product.image3d != null && product.image3d!.isNotEmpty) {
+      cards.add(
+        ProductImagesSlider(
+          title: 'dimensionImages',
+          images: product.image3d!,
+          compact: true,
+        ),
+      );
+    }
+
+    final rawVideo = product.videoUrl?.toString().trim();
+    final resolvedVideo =
+        rawVideo == null || rawVideo.isEmpty || rawVideo == 'null'
+            ? null
+            : ShowNetImage.getPhoto(rawVideo);
+    if (resolvedVideo != null &&
+        resolvedVideo != AssetsManager.noImageNet &&
+        resolvedVideo.isNotEmpty) {
+      cards.add(_CompactVideoCard(videoUrl: resolvedVideo));
+    }
+
+    if (cards.isEmpty) return const SizedBox.shrink();
+
+    final visibleCards = expanded ? cards : <Widget>[];
 
     return Container(
-      padding: EdgeInsets.all(14.w),
+      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: AdminUiColors.cardBackground(context),
         borderRadius: BorderRadius.circular(16.r),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final row in rows) _InfoRow(line: row),
-          Divider(height: 18.h),
           Row(
             children: [
               Icon(
-                soldWithPaper ? Icons.check_circle : Icons.cancel,
+                Icons.perm_media_outlined,
                 size: 20.sp,
-                color: soldWithPaper ? Colors.green.shade700 : Colors.grey,
+                color: Theme.of(context).colorScheme.primary,
               ),
               SizedBox(width: 8.w),
               Expanded(
                 child: Text(
-                  'isForcedSale'.tr,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                  'productDetailsSectionMedia'.tr,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => setState(() => expanded = !expanded),
+                icon: Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 20.sp,
+                ),
+                label: Text(expanded ? 'إخفاء' : 'عرض'),
+              ),
+            ],
+          ),
+          if (expanded) ...[
+            SizedBox(height: 10.h),
+            GridView.builder(
+              itemCount: visibleCards.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10.w,
+                mainAxisSpacing: 10.h,
+                childAspectRatio: 0.78,
+              ),
+              itemBuilder: (context, index) => visibleCards[index],
+            ),
+          ] else
+            Padding(
+              padding: EdgeInsets.only(top: 6.h),
+              child: Text(
+                '${cards.length} وسائط',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55),
+                    ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactVideoCard extends StatelessWidget {
+  const _CompactVideoCard({required this.videoUrl});
+
+  final String videoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(9.w),
+      decoration: BoxDecoration(
+        color: AdminUiColors.cardBackground(context),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.32),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.play_circle_outline,
+                size: 17.sp,
+                color: AppColors.secondaryColor,
+              ),
+              SizedBox(width: 5.w),
+              Expanded(
+                child: Text(
+                  'productVideo'.tr,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11.sp,
                       ),
                 ),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoLine {
-  const _InfoLine(this.label, this.value);
-
-  final String label;
-  final String value;
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.line});
-
-  final _InfoLine line;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 5.h),
-      child: Row(
-        children: [
+          SizedBox(height: 8.h),
           Expanded(
-            child: Text(
-              line.label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.62),
-                  ),
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Flexible(
-            child: Text(
-              line.value.trim().isEmpty ? '—' : line.value,
-              textAlign: TextAlign.end,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(13.r),
+              child: ProductInlineVideo(videoUrl: videoUrl),
             ),
           ),
         ],
       ),
     );
   }
-}
-
-Widget _pdSectionTitle(BuildContext context, String keyTr) {
-  return Padding(
-    padding: EdgeInsets.only(bottom: 8.h, top: 8.h),
-    child: Text(
-      keyTr.tr,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-    ),
-  );
 }
 
 class ProductDetailsScreen extends GetView<StockController> {
@@ -494,79 +627,14 @@ class ProductDetailsScreen extends GetView<StockController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(height: 8.h),
+                      SizedBox(height: 6.h),
                       _ProductDetailsHero(product: product),
-                      SizedBox(height: 14.h),
+                      SizedBox(height: 8.h),
                       _ProductOverviewGrid(product: product),
-                      SizedBox(height: 14.h),
-                      _ProductExtraInfoPanel(product: product),
-                      SizedBox(height: 18.h),
-                      _pdSectionTitle(context, 'productDetailsSectionSizes'),
+                      SizedBox(height: 12.h),
                       _SizeColorDetailsTable(product: product),
-                      SizedBox(height: 18.h),
-                      _pdSectionTitle(context, 'productDetailsSectionMedia'),
-                      product.viewImages != null &&
-                              product.viewImages!.isNotEmpty
-                          ? ProductImagesSlider(
-                              title: 'productImages',
-                              images: product.viewImages!,
-                            )
-                          : const SizedBox.shrink(),
-                      product.normalImages != null &&
-                              product.normalImages!.isNotEmpty
-                          ? ProductImagesSlider(
-                              title: 'naturalImages',
-                              images: product.normalImages!,
-                            )
-                          : const SizedBox.shrink(),
-                      product.image3d != null && product.image3d!.isNotEmpty
-                          ? ProductImagesSlider(
-                              title: 'dimensionImages',
-                              images: product.image3d!,
-                            )
-                          : const SizedBox.shrink(),
-                      Builder(
-                        builder: (context) {
-                          final rawVideo = product.videoUrl?.toString().trim();
-                          if (rawVideo == null ||
-                              rawVideo.isEmpty ||
-                              rawVideo == 'null') {
-                            return const SizedBox.shrink();
-                          }
-                          final resolved = ShowNetImage.getPhoto(rawVideo);
-                          if (resolved == AssetsManager.noImageNet ||
-                              resolved.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(height: 8.h),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.play_circle_outline,
-                                    size: 22.sp,
-                                    color: AppColors.secondaryColor,
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  Text(
-                                    'productVideo'.tr,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8.h),
-                              ProductInlineVideo(videoUrl: resolved),
-                            ],
-                          );
-                        },
-                      ),
+                      SizedBox(height: 12.h),
+                      _ProductMediaSection(product: product),
                       SizedBox(height: 32.h),
                     ],
                   ),
@@ -582,10 +650,17 @@ class ProductDetailsScreen extends GetView<StockController> {
 
 // ── Sizes & Colors read-only table ───────────────────────────────────────────
 
-class _SizeColorDetailsTable extends StatelessWidget {
+class _SizeColorDetailsTable extends StatefulWidget {
   const _SizeColorDetailsTable({required this.product});
 
   final ProductDetailsModel product;
+
+  @override
+  State<_SizeColorDetailsTable> createState() => _SizeColorDetailsTableState();
+}
+
+class _SizeColorDetailsTableState extends State<_SizeColorDetailsTable> {
+  bool expanded = false;
 
   void _showColorLanguages(BuildContext context, ColorSize color) {
     Get.dialog(
@@ -679,6 +754,7 @@ class _SizeColorDetailsTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final product = widget.product;
     // Flatten sizes into flat rows. Avoid explicit 'Size' type to prevent
     // conflict with dart:ui.Size — let Dart infer from product.sizes.
     final rows = <_SizeColorRow>[];
@@ -690,10 +766,15 @@ class _SizeColorDetailsTable extends StatelessWidget {
     }
 
     if (rows.isEmpty) {
-      return Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.h),
+      return _CollapsibleShell(
+        icon: Icons.straighten,
+        title: 'productDetailsSectionSizes'.tr,
+        countText: '0',
+        expanded: false,
+        onToggle: null,
         child: Text(
           'noData'.tr,
+          textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context)
                     .colorScheme
@@ -710,16 +791,104 @@ class _SizeColorDetailsTable extends StatelessWidget {
       grouped[row.size.trim().isEmpty ? '—' : row.size]!.add(row.color);
     }
 
-    return Column(
-      children: grouped.entries
-          .map(
-            (entry) => _SizeColorCard(
-              size: entry.key,
-              colors: entry.value,
-              onTranslate: (color) => _showColorLanguages(context, color),
-            ),
-          )
-          .toList(),
+    return _CollapsibleShell(
+      icon: Icons.straighten,
+      title: 'productDetailsSectionSizes'.tr,
+      countText: '${grouped.length} / ${rows.length}',
+      expanded: expanded,
+      onToggle: () => setState(() => expanded = !expanded),
+      child: Column(
+        children: grouped.entries
+            .map(
+              (entry) => _SizeColorCard(
+                size: entry.key,
+                colors: entry.value,
+                onTranslate: (color) => _showColorLanguages(context, color),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _CollapsibleShell extends StatelessWidget {
+  const _CollapsibleShell({
+    required this.icon,
+    required this.title,
+    required this.countText,
+    required this.expanded,
+    required this.child,
+    this.onToggle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String countText;
+  final bool expanded;
+  final Widget child;
+  final VoidCallback? onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: AdminUiColors.cardBackground(context),
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 20.sp,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                decoration: BoxDecoration(
+                  color: AdminUiColors.subtleOverlay(context),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  countText,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              SizedBox(width: 6.w),
+              if (onToggle != null)
+                TextButton.icon(
+                  onPressed: onToggle,
+                  icon: Icon(
+                    expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 19.sp,
+                  ),
+                  label: Text(expanded ? 'إخفاء' : 'عرض'),
+                ),
+            ],
+          ),
+          if (expanded || onToggle == null) ...[
+            SizedBox(height: 10.h),
+            child,
+          ],
+        ],
+      ),
     );
   }
 }
@@ -738,8 +907,8 @@ class _SizeColorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.all(12.w),
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(9.w),
       decoration: BoxDecoration(
         color: AdminUiColors.cardBackground(context),
         borderRadius: BorderRadius.circular(16.r),
@@ -753,7 +922,7 @@ class _SizeColorCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.straighten,
-                size: 18.sp,
+                size: 16.sp,
                 color: Theme.of(context).colorScheme.primary,
               ),
               SizedBox(width: 8.w),
@@ -780,10 +949,10 @@ class _SizeColorCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 10.h),
+          SizedBox(height: 7.h),
           for (final color in colors) ...[
             _ColorSizeLine(color: color, onTranslate: onTranslate),
-            if (color != colors.last) SizedBox(height: 8.h),
+            if (color != colors.last) SizedBox(height: 6.h),
           ],
         ],
       ),
@@ -803,7 +972,7 @@ class _ColorSizeLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(10.w),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
       decoration: BoxDecoration(
         color: AdminUiColors.subtleOverlay(context),
         borderRadius: BorderRadius.circular(12.r),
@@ -827,9 +996,10 @@ class _ColorSizeLine extends StatelessWidget {
             tooltip: 'اللغات الاخرى',
             icon: Icon(
               Icons.translate,
-              size: 18.sp,
+              size: 16.sp,
               color: Theme.of(context).colorScheme.primary,
             ),
+            visualDensity: VisualDensity.compact,
             onPressed: () => onTranslate(color),
           ),
         ],
@@ -847,7 +1017,7 @@ class _MiniStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 62.w,
+      width: 54.w,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

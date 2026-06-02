@@ -71,6 +71,12 @@ class AddEmployeeController extends GetxController {
       if (existing.isEmpty) {
         weeklyDaysOff['friday']!.value = true;
       }
+
+      // Fingerprint
+      fingerprintEnabled.value =
+          employeeService.employeeDetails.value!.fingerprintEnabled;
+      deviceUserIdController.text =
+          employeeService.employeeDetails.value!.deviceUserId ?? '';
     } else {
       // Default weekly day off: Friday (week starts Saturday)
       weeklyDaysOff['friday']!.value = true;
@@ -90,6 +96,10 @@ class AddEmployeeController extends GetxController {
   final TextEditingController overTimeRateController = TextEditingController();
   final TextEditingController workHoursOfDayController =
       TextEditingController();
+
+  // Fingerprint settings
+  final RxBool fingerprintEnabled = false.obs;
+  final TextEditingController deviceUserIdController = TextEditingController();
 
   final List<File> documentsImageList = [];
   final List<File> employeeImageList = [];
@@ -196,6 +206,10 @@ class AddEmployeeController extends GetxController {
               .map<String>((e) => e['id'])
               .toList(),
           weeklyDaysOff: selectedWeeklyDaysOff,
+          fingerprintEnabled: fingerprintEnabled.value,
+          deviceUserId: deviceUserIdController.text.trim().isEmpty
+              ? null
+              : deviceUserIdController.text.trim(),
         );
         result.fold(
           (failure) {
@@ -315,6 +329,7 @@ class AddEmployeeController extends GetxController {
     hourlyRateController.dispose();
     overTimeRateController.dispose();
     workHoursOfDayController.dispose();
+    deviceUserIdController.dispose();
     // regularWorkingHoursController.dispose();
     employeeNameController.dispose();
     employeeConroller.dispose();

@@ -357,6 +357,13 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                                 .join(', '),
                       ),
                       SizedBox(height: 10.h),
+                      _FingerprintInfoCard(
+                        enabled: controller.employeeService.employeeDetails
+                            .value!.fingerprintEnabled,
+                        deviceUserId: controller.employeeService.employeeDetails
+                            .value!.deviceUserId,
+                      ),
+                      SizedBox(height: 10.h),
                       Row(
                         // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,6 +511,76 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
           );
         },
       ),
+      ),
+    );
+  }
+}
+
+class _FingerprintInfoCard extends StatelessWidget {
+  const _FingerprintInfoCard({
+    required this.enabled,
+    required this.deviceUserId,
+  });
+
+  final bool enabled;
+  final String? deviceUserId;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final border = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
+    final bg = isDark ? AppColors.customGreyColor4 : Colors.white;
+    final titleColor = isDark ? Colors.white : const Color(0xFF111827);
+    final subColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
+    final badgeColor = enabled ? const Color(0xFF059669) : const Color(0xFF6B7280);
+    final badgeText = enabled ? 'enabledLabel'.tr : 'disabledLabel'.tr;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'fingerprintAttendance'.tr,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            '${'deviceUserId'.tr}: ${deviceUserId == null || deviceUserId!.isEmpty ? '—' : deviceUserId}',
+            style: TextStyle(fontSize: 12.sp, color: subColor),
+          ),
+        ],
       ),
     );
   }

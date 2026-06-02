@@ -89,29 +89,15 @@ class CustomCalendar extends StatelessWidget {
                       ),
                     ],
                   ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.decelerate,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) {
-                        return SizeTransition(
-                          sizeFactor: animation,
-                          child: child,
-                        );
-                      },
-                      child: isVisible.value
-                          ? Padding(
-                              padding: EdgeInsets.only(top: 20.h),
-                              child: Calendar(
-                                onDaySelected: (value) {
-                                  selectedDay.value = value;
-                                },
-                              ),
-                            )
-                          : const SizedBox(),
+                  if (isVisible.value)
+                    Padding(
+                      padding: EdgeInsets.only(top: 20.h),
+                      child: Calendar(
+                        onDaySelected: (value) {
+                          selectedDay.value = value;
+                        },
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),

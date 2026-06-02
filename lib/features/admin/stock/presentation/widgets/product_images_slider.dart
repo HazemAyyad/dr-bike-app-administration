@@ -96,10 +96,12 @@ class ProductImagesSlider extends StatelessWidget {
     Key? key,
     required this.images,
     required this.title,
+    this.compact = false,
   }) : super(key: key);
 
   final List<String> images;
   final String title;
+  final bool compact;
 
   Future<void> downloadImage(BuildContext context, String imageUrl) async {
     try {
@@ -148,7 +150,7 @@ class ProductImagesSlider extends StatelessWidget {
       barrierDismissible: true,
       barrierLabel: 'Dismiss',
       barrierColor: Colors.black.withValues(alpha: 0.74),
-      transitionDuration: const Duration(milliseconds: 180),
+      transitionDuration: Duration.zero,
       pageBuilder: (context, anim1, anim2) {
         return Material(
           color: Colors.transparent,
@@ -165,13 +167,11 @@ class ProductImagesSlider extends StatelessWidget {
               Positioned(
                 top: 58.h,
                 left: 16.w,
-                child: Obx(
-                  () => _ViewerIconButton(
-                    icon: Icons.download,
-                    onTap: () => downloadImage(
-                      context,
-                      ShowNetImage.getPhoto(slides[currentIndex.value]),
-                    ),
+                child: _ViewerIconButton(
+                  icon: Icons.download,
+                  onTap: () => downloadImage(
+                    context,
+                    ShowNetImage.getPhoto(slides[currentIndex.value]),
                   ),
                 ),
               ),
@@ -243,12 +243,12 @@ class ProductImagesSlider extends StatelessWidget {
     }
 
     final first = slides.first;
-    final thumbs = slides.skip(1).take(4).toList();
+    final thumbs = compact ? <String>[] : slides.skip(1).take(4).toList();
     final extraCount = slides.length - 5;
 
     return Container(
-      margin: EdgeInsets.only(bottom: 14.h),
-      padding: EdgeInsets.all(12.w),
+      margin: EdgeInsets.only(bottom: compact ? 0 : 14.h),
+      padding: EdgeInsets.all(compact ? 9.w : 12.w),
       decoration: BoxDecoration(
         color: AdminUiColors.cardBackground(context),
         borderRadius: BorderRadius.circular(18.r),
@@ -263,16 +263,19 @@ class ProductImagesSlider extends StatelessWidget {
             children: [
               Icon(
                 Icons.photo_library_outlined,
-                size: 20.sp,
+                size: compact ? 17.sp : 20.sp,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              SizedBox(width: 8.w),
+              SizedBox(width: compact ? 5.w : 8.w),
               Expanded(
                 child: Text(
                   title.tr,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w900,
+                        fontSize: compact ? 11.sp : null,
                       ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
@@ -294,7 +297,7 @@ class ProductImagesSlider extends StatelessWidget {
           GestureDetector(
             onTap: () => _openViewer(context, slides, 0),
             child: AspectRatio(
-              aspectRatio: 1.85,
+              aspectRatio: compact ? 1.25 : 1.85,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.r),
                 child: Stack(
@@ -376,8 +379,8 @@ class _NetworkProductImage extends StatelessWidget {
         cacheManager: _productImageCache(),
         imageUrl: imageUrl,
         fit: fit,
-        fadeInDuration: const Duration(milliseconds: 120),
-        fadeOutDuration: const Duration(milliseconds: 80),
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
         placeholder: (context, url) => const Center(
           child: CircularProgressIndicator(strokeWidth: 2),
         ),

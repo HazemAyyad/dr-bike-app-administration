@@ -101,34 +101,30 @@ class StockScreen extends GetView<StockController> {
             bottom: 50.h,
             right: 20.w,
             child: Obx(
-              () => AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: controller.showScrollToTopButton.value ? 1.0 : 0.0,
-                child: controller.showScrollToTopButton.value
-                    ? GestureDetector(
-                        onTap: controller.scrollToTop,
-                        child: Container(
-                          padding: const EdgeInsets.all(13),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondaryColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(80),
-                                spreadRadius: 1,
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.keyboard_arrow_up,
-                            color: Colors.white,
-                          ),
+              () => controller.showScrollToTopButton.value
+                  ? GestureDetector(
+                      onTap: controller.scrollToTop,
+                      child: Container(
+                        padding: const EdgeInsets.all(13),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondaryColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(80),
+                              spreadRadius: 1,
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
+                        child: const Icon(
+                          Icons.keyboard_arrow_up,
+                          color: Colors.white,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ),
         ],

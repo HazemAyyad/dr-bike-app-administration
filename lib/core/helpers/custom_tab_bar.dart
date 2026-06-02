@@ -102,46 +102,43 @@ class CustomTabBar extends StatelessWidget {
     return Obx(
       () => GestureDetector(
         onTap: onTap,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: horizontalMargin ?? 5.w),
-            key: ValueKey<int>(currentTab.value),
-            padding: EdgeInsets.symmetric(
-              vertical: verticalPadding ?? 10.h,
-              horizontal: horizontalPadding ?? 20.w,
-            ),
-            decoration: BoxDecoration(
-              color: currentTab.value == index
-                  ? ThemeService.isDark.value
-                      ? AppColors.customGreyColor5
-                      : AppColors.whiteColor
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(31.r),
-              boxShadow: [
-                currentTab.value == index
-                    ? BoxShadow(
-                        color: AppColors.customGreyColor.withAlpha(51),
-                        blurRadius: 3,
-                        offset: const Offset(0, 0),
-                      )
-                    : const BoxShadow(
-                        color: Colors.transparent,
-                        blurRadius: 0,
-                        offset: Offset(0, 0),
-                      ),
-              ],
-            ),
-            child: Text(
-              translateLabel ? label.tr : label,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: fontSize ?? 17.sp,
-                    fontWeight: FontWeight.w400,
-                    color: ThemeService.isDark.value
-                        ? Colors.white
-                        : AppColors.secondaryColor,
-                  ),
-            ),
+        child: Container(
+          margin: EdgeInsets.symmetric(horizontal: horizontalMargin ?? 5.w),
+          key: ValueKey<int>(currentTab.value),
+          padding: EdgeInsets.symmetric(
+            vertical: verticalPadding ?? 10.h,
+            horizontal: horizontalPadding ?? 20.w,
+          ),
+          decoration: BoxDecoration(
+            color: currentTab.value == index
+                ? ThemeService.isDark.value
+                    ? AppColors.customGreyColor5
+                    : AppColors.whiteColor
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(31.r),
+            boxShadow: [
+              currentTab.value == index
+                  ? BoxShadow(
+                      color: AppColors.customGreyColor.withAlpha(51),
+                      blurRadius: 3,
+                      offset: const Offset(0, 0),
+                    )
+                  : const BoxShadow(
+                      color: Colors.transparent,
+                      blurRadius: 0,
+                      offset: Offset(0, 0),
+                    ),
+            ],
+          ),
+          child: Text(
+            translateLabel ? label.tr : label,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: fontSize ?? 17.sp,
+                  fontWeight: FontWeight.w400,
+                  color: ThemeService.isDark.value
+                      ? Colors.white
+                      : AppColors.secondaryColor,
+                ),
           ),
         ),
       ),
