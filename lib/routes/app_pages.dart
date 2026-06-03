@@ -73,10 +73,12 @@ import '../features/admin/employee_section/presentation/views/employee_reward_ru
 import '../features/admin/employee_section/presentation/views/global_employee_points_screen.dart';
 import '../core/services/banks_service.dart';
 import '../features/admin/general_settings/presentation/controllers/banks_settings_controller.dart';
+import '../features/admin/general_settings/presentation/views/attendance_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/banks_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/contact_categories_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/attendance_devices/presentation/views/attendance_devices_screen.dart';
+import '../features/admin/fingerprint_device_users/presentation/views/fingerprint_device_logs_screen.dart';
 import '../features/admin/fingerprint_device_users/presentation/views/fingerprint_device_users_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_attendance_history_screen.dart';
 import '../features/admin/employee_section/presentation/views/employee_section_screen.dart';
@@ -492,6 +494,11 @@ class AppPages {
       transition: _transitionFadeIn,
     ),
     GetPage(
+      name: AppRoutes.ATTENDANCESETTINGSSCREEN,
+      page: () => const AttendanceSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
       name: AppRoutes.ATTENDANCEDEVICESSCREEN,
       page: () => const AttendanceDevicesScreen(),
       transition: _transitionFadeIn,
@@ -499,6 +506,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.FINGERPRINTDEVICEUSERSSCREEN,
       page: () => const FingerprintDeviceUsersScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.FINGERPRINTDEVICELOGSSCREEN,
+      page: () => const FingerprintDeviceLogsScreen(),
       transition: _transitionFadeIn,
     ),
 

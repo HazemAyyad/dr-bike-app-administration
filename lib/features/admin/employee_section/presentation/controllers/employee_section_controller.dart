@@ -366,6 +366,69 @@ class EmployeeSectionController extends GetxController
     }
   }
 
+  final RxBool isManualCheckoutLoading = false.obs;
+
+  Future<void> manualCheckoutEmployee(BuildContext context) async {
+    final details = employeeService.employeeDetails.value;
+    if (details == null || isManualCheckoutLoading.value) return;
+
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('manualCheckout'.tr),
+        content: Text('manualCheckoutConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    isManualCheckoutLoading.value = true;
+    try {
+      final raw = await Get.find<EmployeeDatasource>()
+          .manualEmployeeCheckout(employeeId: details.id.toString());
+      if (raw['status']?.toString() != 'success') {
+        if (!context.mounted) return;
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: raw['message']?.toString() ?? 'error'.tr,
+        );
+        return;
+      }
+      await employeeDetailsUsecase.call(employeeId: details.id.toString());
+      if (!context.mounted) return;
+      Get.snackbar(
+        'success'.tr,
+        raw['message']?.toString() ?? 'manualCheckoutSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } on ServerException catch (e) {
+      if (!context.mounted) return;
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: e.errorModel.errorMessage,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: e.toString(),
+      );
+    } finally {
+      isManualCheckoutLoading.value = false;
+    }
+  }
+
   /// Employee row id currently loading for impersonation (0 = none).
   final RxInt impersonatingEmployeeId = 0.obs;
 

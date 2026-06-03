@@ -7,6 +7,7 @@ class EmployeeAttendanceHead {
   final String? numberOfWorkHours;
   /// From API; may be empty until backend sends it (or if not migrated).
   final List<String> weeklyDaysOff;
+  final bool currentlyInToday;
 
   const EmployeeAttendanceHead({
     required this.id,
@@ -14,6 +15,7 @@ class EmployeeAttendanceHead {
     required this.startWorkTime,
     required this.numberOfWorkHours,
     required this.weeklyDaysOff,
+    this.currentlyInToday = false,
   });
 
   factory EmployeeAttendanceHead.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,7 @@ class EmployeeAttendanceHead {
       startWorkTime: asNullableString(j['start_work_time']),
       numberOfWorkHours: asNullableString(j['number_of_work_hours']),
       weeklyDaysOff: asStringList(j['weekly_days_off']),
+      currentlyInToday: asBool(j['currently_in_today']),
     );
   }
 }

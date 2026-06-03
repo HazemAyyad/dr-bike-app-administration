@@ -11,6 +11,9 @@ class EmployeeDetailsEntity {
   final String endWorkTime;
   final bool fingerprintEnabled;
   final String? deviceUserId;
+  final String? lastFingerprintScanAt;
+  final String? lastFingerprintAttendanceAt;
+  final bool currentlyInToday;
   final List<String> employeeImg;
   final List<String> documentImg;
   final List<String> weeklyDaysOff;
@@ -30,6 +33,9 @@ class EmployeeDetailsEntity {
     required this.endWorkTime,
     this.fingerprintEnabled = false,
     this.deviceUserId,
+    this.lastFingerprintScanAt,
+    this.lastFingerprintAttendanceAt,
+    this.currentlyInToday = false,
     required this.employeeImg,
     required this.documentImg,
     required this.weeklyDaysOff,

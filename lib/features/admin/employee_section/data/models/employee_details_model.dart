@@ -25,6 +25,9 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
     required String endWorkTime,
     required bool fingerprintEnabled,
     required String? deviceUserId,
+    required String? lastFingerprintScanAt,
+    required String? lastFingerprintAttendanceAt,
+    required bool currentlyInToday,
     required List<String> employeeImg,
     required List<String> documentImg,
     required List<String> weeklyDaysOff,
@@ -43,6 +46,9 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
           endWorkTime: endWorkTime,
           fingerprintEnabled: fingerprintEnabled,
           deviceUserId: deviceUserId,
+          lastFingerprintScanAt: lastFingerprintScanAt,
+          lastFingerprintAttendanceAt: lastFingerprintAttendanceAt,
+          currentlyInToday: currentlyInToday,
           employeeImg: employeeImg,
           documentImg: documentImg,
           weeklyDaysOff: weeklyDaysOff,
@@ -52,13 +58,17 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
 
   factory EmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
-    final details = asMap(j[ApiKey.employee_details]);
+    var details = asMap(j[ApiKey.employee_details]);
+    final wrapped = asMap(details['data']);
+    if (wrapped.isNotEmpty) {
+      details = wrapped;
+    }
     return EmployeeDetailsModel(
       id: asInt(details[ApiKey.id]),
-      name: asString(details[ApiKey.name], 'Unknown'),
-      email: asString(details[ApiKey.email], 'Unknown'),
-      phone: asString(details[ApiKey.phone], 'Unknown'),
-      subPhone: asString(details[ApiKey.sub_phone], 'Unknown'),
+      name: asString(details[ApiKey.name]),
+      email: asString(details[ApiKey.email]),
+      phone: asString(details[ApiKey.phone]),
+      subPhone: asString(details[ApiKey.sub_phone]),
       hourWorkPrice: asString(details[ApiKey.hour_work_price], '0'),
       overtimeWorkPrice: asString(details[ApiKey.overtime_work_price], '0'),
       numberOfWorkHours: asString(details[ApiKey.number_of_work_hours], '0'),
@@ -66,6 +76,10 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
       endWorkTime: asString(details[ApiKey.end_work_time]),
       fingerprintEnabled: asBool(details['fingerprint_enabled']),
       deviceUserId: asNullableString(details['device_user_id']),
+      lastFingerprintScanAt: asNullableString(details['last_fingerprint_scan_at']),
+      lastFingerprintAttendanceAt:
+          asNullableString(details['last_fingerprint_attendance_at']),
+      currentlyInToday: asBool(details['currently_in_today']),
       employeeImg: _imageUrlList(details[ApiKey.employee_img]),
       documentImg: _imageUrlList(details[ApiKey.document_img]),
       weeklyDaysOff: asStringList(details[ApiKey.weekly_days_off]),

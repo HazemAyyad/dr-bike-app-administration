@@ -436,6 +436,15 @@ class EmployeeDatasource {
         'employee_id': employeeId,
       });
       final raw = response.data;
+      if (raw is Map && raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw['message']?.toString() ?? 'Unknown error',
+            status: raw['status'] ?? 500,
+            data: raw['data'] ?? {},
+          ),
+        );
+      }
       final employee = EmployeeDetailsModel.fromJson(asMap(raw));
       return employee;
     } on DioException catch (e) {
@@ -468,6 +477,29 @@ class EmployeeDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> manualEmployeeCheckout({
+    required String employeeId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.adminEmployeeManualCheckout(employeeId),
+        data: const {},
+      );
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }

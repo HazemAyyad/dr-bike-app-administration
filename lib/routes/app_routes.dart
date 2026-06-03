@@ -150,5 +150,7 @@ class AppRoutes {
 
   // Attendance / Fingerprint (admin)
   static const ATTENDANCEDEVICESSCREEN = '/AttendanceDevicesScreen';
+  static const ATTENDANCESETTINGSSCREEN = '/AttendanceSettingsScreen';
   static const FINGERPRINTDEVICEUSERSSCREEN = '/FingerprintDeviceUsersScreen';
+  static const FINGERPRINTDEVICELOGSSCREEN = '/FingerprintDeviceLogsScreen';
 }

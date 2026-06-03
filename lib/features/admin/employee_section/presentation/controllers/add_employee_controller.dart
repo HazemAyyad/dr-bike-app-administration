@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/showtime.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
 import '../../domain/usecases/add_points_usecase.dart';
 import 'employee_section_controller.dart';
@@ -45,11 +46,8 @@ class AddEmployeeController extends GetxController {
           in employeeService.employeeDetails.value!.employeeImg) {
         employeeImageList.add(File(docImgPath));
       }
-      selectedTime.value = TimeOfDay(
-        hour: int.parse(
-            employeeService.employeeDetails.value!.startWorkTime.split(':')[0]),
-        minute: int.parse(
-            employeeService.employeeDetails.value!.startWorkTime.split(':')[1]),
+      selectedTime.value = parseTimeOfDay(
+        employeeService.employeeDetails.value!.startWorkTime,
       );
       for (var element in permissionsList) {
         element['permission'].value =

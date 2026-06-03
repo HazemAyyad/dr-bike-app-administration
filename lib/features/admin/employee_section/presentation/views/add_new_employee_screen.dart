@@ -610,7 +610,12 @@ class _FingerprintSettingsCard extends StatelessWidget {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (_) => _DeviceUserPickerSheet(users: users),
+        builder: (_) => _DeviceUserPickerSheet(
+          users: users,
+          currentEmployeeId: controller.isEditEmployee
+              ? controller.employeeService.employeeDetails.value?.id
+              : null,
+        ),
       );
       if (selected == null) return;
       final id = selected['device_user_id']?.toString().trim() ?? '';
@@ -709,9 +714,13 @@ class _FingerprintSettingsCard extends StatelessWidget {
 }
 
 class _DeviceUserPickerSheet extends StatefulWidget {
-  const _DeviceUserPickerSheet({required this.users});
+  const _DeviceUserPickerSheet({
+    required this.users,
+    this.currentEmployeeId,
+  });
 
   final List<Map<String, dynamic>> users;
+  final int? currentEmployeeId;
 
   @override
   State<_DeviceUserPickerSheet> createState() => _DeviceUserPickerSheetState();
@@ -733,8 +742,29 @@ class _DeviceUserPickerSheetState extends State<_DeviceUserPickerSheet> {
     return widget.users.where((u) {
       final id = u['device_user_id']?.toString().toLowerCase() ?? '';
       final name = u['name']?.toString().toLowerCase() ?? '';
-      return id.contains(q) || name.contains(q);
+      final emp = u['linked_employee_name']?.toString().toLowerCase() ?? '';
+      return id.contains(q) || name.contains(q) || emp.contains(q);
     }).toList();
+  }
+
+  String _linkLabel(Map<String, dynamic> u) {
+    final linked = u['status']?.toString().toLowerCase() == 'linked';
+    if (!linked) return 'fingerprintUnlinked'.tr;
+
+    final linkedEmpId =
+        int.tryParse(u['linked_employee_id']?.toString() ?? '');
+    final empName = u['linked_employee_name']?.toString().trim() ?? '';
+    final currentId = widget.currentEmployeeId;
+
+    if (currentId != null &&
+        linkedEmpId != null &&
+        linkedEmpId == currentId) {
+      return 'fingerprintLinkedToCurrentEmployee'.tr;
+    }
+    if (empName.isNotEmpty) {
+      return '${'fingerprintLinkedWith'.tr}: $empName';
+    }
+    return 'fingerprintLinked'.tr;
   }
 
   @override
@@ -803,18 +833,97 @@ class _DeviceUserPickerSheetState extends State<_DeviceUserPickerSheet> {
                     itemBuilder: (_, i) {
                       final u = rows[i];
                       final id = u['device_user_id']?.toString() ?? '';
-                      final name = u['name']?.toString() ?? '';
+                      final name = u['name']?.toString().trim() ?? '';
                       final linked =
                           u['status']?.toString().toLowerCase() == 'linked';
+                      final linkLabel = _linkLabel(u);
+                      final linkedEmpId =
+                          int.tryParse(u['linked_employee_id']?.toString() ?? '');
+                      final isCurrentEmployee = widget.currentEmployeeId != null &&
+                          linkedEmpId != null &&
+                          linkedEmpId == widget.currentEmployeeId;
+
                       return ListTile(
                         tileColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r),
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          side: BorderSide(
+                            color: linked
+                                ? (isCurrentEmployee
+                                    ? const Color(0xFF059669)
+                                    : const Color(0xFFF59E0B))
+                                : const Color(0xFFE5E7EB),
+                          ),
                         ),
-                        title: Text('$id • $name'),
-                        subtitle: Text(linked ? 'مربوط' : 'غير مربوط'),
-                        trailing: const Icon(Icons.chevron_right_rounded),
+                        title: Text(
+                          name.isNotEmpty ? 'PIN $id • $name' : 'PIN $id',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        subtitle: Padding(
+                          padding: EdgeInsets.only(top: 4.h),
+                          child: Row(
+                            children: [
+                              Icon(
+                                linked
+                                    ? Icons.link_rounded
+                                    : Icons.link_off_rounded,
+                                size: 14.sp,
+                                color: linked
+                                    ? (isCurrentEmployee
+                                        ? const Color(0xFF059669)
+                                        : const Color(0xFFD97706))
+                                    : const Color(0xFF9CA3AF),
+                              ),
+                              SizedBox(width: 4.w),
+                              Expanded(
+                                child: Text(
+                                  linkLabel,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: linked
+                                        ? (isCurrentEmployee
+                                            ? const Color(0xFF059669)
+                                            : const Color(0xFFB45309))
+                                        : const Color(0xFF6B7280),
+                                    fontWeight: linked
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        trailing: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (linked
+                                    ? (isCurrentEmployee
+                                        ? const Color(0xFF059669)
+                                        : const Color(0xFFF59E0B))
+                                    : const Color(0xFF9CA3AF))
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            linked ? 'fingerprintLinked'.tr : 'fingerprintUnlinked'.tr,
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w800,
+                              color: linked
+                                  ? (isCurrentEmployee
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFFD97706))
+                                  : const Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
                         onTap: () => Navigator.pop(context, u),
                       );
                     },

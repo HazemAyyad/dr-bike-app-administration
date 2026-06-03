@@ -333,11 +333,15 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                       SizedBox(height: 10.h),
                       SupTextAndDiscr(
                         title: 'workHoursOfDay',
-                        discription: int.parse(controller.employeeService
-                                    .employeeDetails.value!.numberOfWorkHours) >
-                                10
-                            ? '${controller.employeeService.employeeDetails.value!.numberOfWorkHours} ${'hour'.tr}'
-                            : '${controller.employeeService.employeeDetails.value!.numberOfWorkHours} ${'hours'.tr}',
+                        discription: () {
+                          final raw = controller.employeeService.employeeDetails
+                              .value!.numberOfWorkHours;
+                          final hours = int.tryParse(raw.trim());
+                          if (hours == null) return '—';
+                          return hours > 10
+                              ? '$raw ${'hour'.tr}'
+                              : '$raw ${'hours'.tr}';
+                        }(),
                       ),
                       SizedBox(height: 10.h),
                       SupTextAndDiscr(
@@ -362,7 +366,37 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                             .value!.fingerprintEnabled,
                         deviceUserId: controller.employeeService.employeeDetails
                             .value!.deviceUserId,
+                        lastScan: controller.employeeService.employeeDetails
+                            .value!.lastFingerprintScanAt,
+                        lastAttendance: controller.employeeService.employeeDetails
+                            .value!.lastFingerprintAttendanceAt,
                       ),
+                      if (controller.employeeService.employeeDetails
+                          .value!.currentlyInToday) ...[
+                        SizedBox(height: 10.h),
+                        Obx(
+                          () => SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: controller.isManualCheckoutLoading.value
+                                  ? null
+                                  : () => controller.manualCheckoutEmployee(
+                                        context,
+                                      ),
+                              icon: controller.isManualCheckoutLoading.value
+                                  ? SizedBox(
+                                      width: 18.w,
+                                      height: 18.w,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.logout),
+                              label: Text('manualCheckout'.tr),
+                            ),
+                          ),
+                        ),
+                      ],
                       SizedBox(height: 10.h),
                       Row(
                         // mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -520,10 +554,14 @@ class _FingerprintInfoCard extends StatelessWidget {
   const _FingerprintInfoCard({
     required this.enabled,
     required this.deviceUserId,
+    this.lastScan,
+    this.lastAttendance,
   });
 
   final bool enabled;
   final String? deviceUserId;
+  final String? lastScan;
+  final String? lastAttendance;
 
   @override
   Widget build(BuildContext context) {
@@ -578,6 +616,16 @@ class _FingerprintInfoCard extends StatelessWidget {
           SizedBox(height: 6.h),
           Text(
             '${'deviceUserId'.tr}: ${deviceUserId == null || deviceUserId!.isEmpty ? '—' : deviceUserId}',
+            style: TextStyle(fontSize: 12.sp, color: subColor),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            '${'lastFingerprintScan'.tr}: ${formatApiDateTime12(lastScan)}',
+            style: TextStyle(fontSize: 12.sp, color: subColor),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            '${'lastFingerprintAttendance'.tr}: ${formatApiDateTime12(lastAttendance)}',
             style: TextStyle(fontSize: 12.sp, color: subColor),
           ),
         ],

@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
+import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
@@ -467,30 +469,47 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final pageBg = isDark ? AppColors.darkColor : const Color(0xFFF5F5F5);
+    final cardBg = isDark ? const Color(0xFF1F2937) : Colors.white;
+    final borderColor =
+        isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF111827);
+    final textSecondary =
+        isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
+
+    final activeCount =
+        _devices.where((d) => d['is_active'] == true).length;
+    final onlineCount = _devices.where((d) => d['is_online'] == true).length;
 
     return Scaffold(
       backgroundColor: pageBg,
-      appBar: AppBar(
+      appBar: CustomAppBar(
+        title: 'fingerprintDevices',
         backgroundColor: pageBg,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text('fingerprintDevices'.tr),
         actions: [
-          TextButton.icon(
-            onPressed: _loading.value ? null : _load,
-            icon: const Icon(Icons.refresh, size: 20),
-            label: Text('refresh'.tr),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF111827),
+          IconButton(
+            tooltip: 'fingerprintActivityLog'.tr,
+            onPressed: () => Get.toNamed(
+              AppRoutes.FINGERPRINTDEVICELOGSSCREEN,
+              arguments: const {'allDevices': true},
             ),
+            icon: const Icon(Icons.history_rounded),
+          ),
+          IconButton(
+            tooltip: 'refresh'.tr,
+            onPressed: _loading.value ? null : _load,
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddEditSheet(),
         backgroundColor: AppColors.primaryColor,
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
+        label: Text(
+          'add'.tr,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        ),
       ),
       body: Obx(() {
         if (_loading.value) {
@@ -503,10 +522,9 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    _error.value,
-                    textAlign: TextAlign.center,
-                  ),
+                  Icon(Icons.error_outline, size: 40.sp, color: Colors.red.shade400),
+                  SizedBox(height: 12.h),
+                  Text(_error.value, textAlign: TextAlign.center),
                   SizedBox(height: 12.h),
                   OutlinedButton.icon(
                     onPressed: _load,
@@ -518,196 +536,601 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
             ),
           );
         }
-        if (_devices.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: EdgeInsets.all(16.w),
-              child: Text('noData'.tr),
-            ),
-          );
-        }
 
         return RefreshIndicator(
           onRefresh: _load,
-          child: ListView.separated(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-          itemBuilder: (_, i) {
-            final d = _devices[i];
-            final id = int.tryParse(d['id']?.toString() ?? '') ?? 0;
-            final name = d['name']?.toString() ?? '';
-            final ip = d['ip_address']?.toString();
-            final port = d['port']?.toString();
-            final syncMode = d['sync_mode']?.toString() ?? 'disabled';
-            final active = d['is_active'] == true;
-            final serial = d['serial_number']?.toString();
-            final lastSeen = d['last_seen_at']?.toString();
-            final lastSync = d['last_sync_at']?.toString();
-            return Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14.r),
-                onTap: id > 0 ? () => _openAddEditSheet(device: d) : null,
-                child: Container(
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14.r),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+          child: _devices.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    SizedBox(height: 80.h),
+                    Icon(Icons.devices_other_outlined,
+                        size: 56.sp, color: textSecondary),
+                    SizedBox(height: 12.h),
+                    Center(
+                      child: Text('noData'.tr, style: TextStyle(color: textSecondary)),
+                    ),
+                  ],
+                )
+              : ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 88.h),
+                  children: [
+                    Text(
+                      'fingerprintDevicesDesc'.tr,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (_devices.isNotEmpty) ...[
+                      SizedBox(height: 12.h),
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              name,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF111827),
-                              ),
+                            child: _SummaryTile(
+                              label: 'active'.tr,
+                              value: '$activeCount/${_devices.length}',
+                              color: const Color(0xFF2563EB),
+                              bg: const Color(0xFFEFF6FF),
+                              icon: Icons.check_circle_outline_rounded,
                             ),
                           ),
-                          IconButton(
-                            tooltip: 'edit'.tr,
-                            onPressed: id > 0 ? () => _openAddEditSheet(device: d) : null,
-                            icon: const Icon(Icons.edit_outlined),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: _SummaryTile(
+                              label: 'online'.tr,
+                              value: '$onlineCount',
+                              color: const Color(0xFF059669),
+                              bg: const Color(0xFFECFDF5),
+                              icon: Icons.wifi_rounded,
+                            ),
                           ),
-                          IconButton(
-                            tooltip: 'fingerprintDeviceUsers'.tr,
-                            onPressed: id > 0
-                                ? () => Get.toNamed(
-                                      AppRoutes.FINGERPRINTDEVICEUSERSSCREEN,
-                                      arguments: {'deviceId': id, 'deviceName': name},
-                                    )
-                                : null,
-                            icon: const Icon(Icons.badge_outlined),
+                        ],
+                      ),
+                    ],
+                    SizedBox(height: 14.h),
+                    ...List.generate(_devices.length, (i) {
+                      final d = _devices[i];
+                      final id = int.tryParse(d['id']?.toString() ?? '') ?? 0;
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 12.h),
+                        child: _DeviceCard(
+                          device: d,
+                          deviceId: id,
+                          cardBg: cardBg,
+                          borderColor: borderColor,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
+                          busyDeviceId: _busyDeviceId.value,
+                          onEdit: () => _openAddEditSheet(device: d),
+                          onUsers: () => Get.toNamed(
+                            AppRoutes.FINGERPRINTDEVICEUSERSSCREEN,
+                            arguments: {
+                              'deviceId': id,
+                              'deviceName': d['name']?.toString() ?? '',
+                            },
+                          ),
+                          onLogs: () => Get.toNamed(
+                            AppRoutes.FINGERPRINTDEVICELOGSSCREEN,
+                            arguments: {
+                              'deviceId': id,
+                              'deviceName': d['name']?.toString() ?? '',
+                            },
+                          ),
+                          onTest: () => _testConnection(id),
+                          onSyncUsers: () => _syncUsers(id),
+                          onSyncLogs: () => _syncLogs(id),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+        );
+      }),
+    );
+  }
+}
+
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.bg,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+  final Color bg;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20.sp),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w900,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeviceCard extends StatelessWidget {
+  const _DeviceCard({
+    required this.device,
+    required this.deviceId,
+    required this.cardBg,
+    required this.borderColor,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.busyDeviceId,
+    required this.onEdit,
+    required this.onUsers,
+    required this.onLogs,
+    required this.onTest,
+    required this.onSyncUsers,
+    required this.onSyncLogs,
+  });
+
+  final Map<String, dynamic> device;
+  final int deviceId;
+  final Color cardBg;
+  final Color borderColor;
+  final Color textPrimary;
+  final Color textSecondary;
+  final int busyDeviceId;
+  final VoidCallback onEdit;
+  final VoidCallback onUsers;
+  final VoidCallback onLogs;
+  final VoidCallback onTest;
+  final VoidCallback onSyncUsers;
+  final VoidCallback onSyncLogs;
+
+  Color _syncModeColor(String mode) {
+    switch (mode) {
+      case 'push':
+        return const Color(0xFF7C3AED);
+      case 'pull':
+        return const Color(0xFF2563EB);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
+
+  String _syncModeLabel(String mode) {
+    switch (mode) {
+      case 'push':
+        return 'fingerprintSyncModePush'.tr;
+      case 'pull':
+        return 'fingerprintSyncModePull'.tr;
+      default:
+        return 'fingerprintSyncModeDisabled'.tr;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = device['name']?.toString() ?? '';
+    final ip = device['ip_address']?.toString();
+    final port = device['port']?.toString();
+    final syncMode = device['sync_mode']?.toString() ?? 'disabled';
+    final active = device['is_active'] == true;
+    final serial = device['serial_number']?.toString();
+    final lastSeen = device['last_seen_at']?.toString();
+    final lastSync = device['last_sync_at']?.toString();
+    final isOnline = device['is_online'] == true;
+    final usersCount = device['users_count']?.toString() ?? '0';
+    final logsCount = device['fingerprint_logs_count']?.toString() ?? '0';
+    final busy = busyDeviceId == deviceId;
+    final syncColor = _syncModeColor(syncMode);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(14.w),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48.w,
+                  height: 48.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                  child: Icon(
+                    Icons.fingerprint_rounded,
+                    color: const Color(0xFF7C3AED),
+                    size: 26.sp,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name.isEmpty ? '#$deviceId' : name,
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w800,
+                          color: textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Wrap(
+                        spacing: 6.w,
+                        runSpacing: 4.h,
+                        children: [
+                          _Badge(
+                            text: isOnline ? 'online'.tr : 'offline'.tr,
+                            color: isOnline
+                                ? const Color(0xFF059669)
+                                : const Color(0xFF6B7280),
                           ),
                           _Badge(
                             text: active ? 'active'.tr : 'notActive'.tr,
                             color: active
-                                ? const Color(0xFF059669)
-                                : const Color(0xFF6B7280),
+                                ? const Color(0xFF2563EB)
+                                : const Color(0xFF9CA3AF),
+                          ),
+                          _Badge(
+                            text: _syncModeLabel(syncMode),
+                            color: syncColor,
                           ),
                         ],
                       ),
-                      SizedBox(height: 6.h),
-                      Text(
-                        '${ip ?? '—'}:${port ?? '—'} • $syncMode',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: const Color(0xFF6B7280),
-                        ),
-                      ),
-                      if (serial != null && serial.isNotEmpty) ...[
-                        SizedBox(height: 4.h),
-                        Text(
-                          'SN: $serial',
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: const Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: 6.h),
-                      Text(
-                        '${'lastSeen'.tr}: ${(lastSeen != null && lastSeen.isNotEmpty) ? lastSeen : 'lastSeenNever'.tr}',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
-                          color: (lastSeen != null && lastSeen.isNotEmpty)
-                              ? const Color(0xFF059669)
-                              : const Color(0xFFDC2626),
-                        ),
-                      ),
-                      if (lastSync != null && lastSync.isNotEmpty) ...[
-                        SizedBox(height: 2.h),
-                        Text(
-                          '${'lastSync'.tr}: $lastSync',
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: const Color(0xFF6B7280),
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: 10.h),
-                      if (syncMode == 'push') ...[
-                        Container(
-                          width: double.infinity,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 10.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(10.r),
-                            border: Border.all(color: const Color(0xFFBFDBFE)),
-                          ),
-                          child: Text(
-                            'fingerprintPushModeHint'.tr,
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: const Color(0xFF1E40AF),
-                              height: 1.35,
-                            ),
-                          ),
-                        ),
-                      ] else
-                        Obx(() {
-                          final busy = _busyDeviceId.value == id;
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: busy || id <= 0
-                                      ? null
-                                      : () => _testConnection(id),
-                                  icon: busy
-                                      ? SizedBox(
-                                          width: 16.w,
-                                          height: 16.w,
-                                          child: const CircularProgressIndicator(
-                                              strokeWidth: 2),
-                                        )
-                                      : const Icon(Icons.wifi_tethering_outlined),
-                                  label: const Text('اختبار الاتصال'),
-                                ),
-                              ),
-                              SizedBox(width: 8.w),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: busy || id <= 0
-                                      ? null
-                                      : () => _syncUsers(id),
-                                  icon: const Icon(Icons.people_outline),
-                                  label: const Text('مزامنة المستخدمين'),
-                                ),
-                              ),
-                              SizedBox(width: 8.w),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed:
-                                      busy || id <= 0 ? null : () => _syncLogs(id),
-                                  icon: const Icon(Icons.receipt_long_outlined),
-                                  label: const Text('مزامنة السجلات'),
-                                ),
-                              ),
-                            ],
-                          );
-                        }),
                     ],
                   ),
                 ),
+                IconButton(
+                  tooltip: 'edit'.tr,
+                  onPressed: deviceId > 0 ? onEdit : null,
+                  icon: Icon(Icons.edit_outlined, color: textSecondary),
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: borderColor),
+          Padding(
+            padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 0),
+            child: Column(
+              children: [
+                _InfoRow(
+                  icon: Icons.lan_outlined,
+                  label: 'IP / Port',
+                  value: '${ip ?? '—'}:${port ?? '—'}',
+                  textSecondary: textSecondary,
+                ),
+                if (serial != null && serial.isNotEmpty)
+                  _InfoRow(
+                    icon: Icons.tag_outlined,
+                    label: 'SN',
+                    value: serial,
+                    textSecondary: textSecondary,
+                  ),
+                _InfoRow(
+                  icon: Icons.access_time_rounded,
+                  label: 'lastSeen'.tr,
+                  value: (lastSeen != null && lastSeen.isNotEmpty)
+                      ? formatApiDateTime12(lastSeen)
+                      : 'lastSeenNever'.tr,
+                  valueColor: (lastSeen != null && lastSeen.isNotEmpty)
+                      ? const Color(0xFF059669)
+                      : const Color(0xFFDC2626),
+                  textSecondary: textSecondary,
+                ),
+                if (lastSync != null && lastSync.isNotEmpty)
+                  _InfoRow(
+                    icon: Icons.sync_rounded,
+                    label: 'lastSync'.tr,
+                    value: formatApiDateTime12(lastSync),
+                    textSecondary: textSecondary,
+                  ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(14.w, 10.h, 14.w, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _StatChip(
+                    icon: Icons.people_outline_rounded,
+                    label: 'usersCount'.tr,
+                    value: usersCount,
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: _StatChip(
+                    icon: Icons.receipt_long_outlined,
+                    label: 'fingerprintLogsCount'.tr,
+                    value: logsCount,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(14.w),
+            child: Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: [
+                _ActionChip(
+                  icon: Icons.badge_outlined,
+                  label: 'fingerprintDeviceUsers'.tr,
+                  onTap: deviceId > 0 ? onUsers : null,
+                ),
+                _ActionChip(
+                  icon: Icons.history_rounded,
+                  label: 'fingerprintActivityLog'.tr,
+                  onTap: deviceId > 0 ? onLogs : null,
+                ),
+              ],
+            ),
+          ),
+          if (syncMode == 'push')
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        size: 18.sp, color: const Color(0xFF2563EB)),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'fingerprintPushModeHint'.tr,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: const Color(0xFF1E40AF),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
-          separatorBuilder: (_, __) => SizedBox(height: 10.h),
-          itemCount: _devices.length,
+            )
+          else
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: busy || deviceId <= 0 ? null : onTest,
+                      icon: busy
+                          ? SizedBox(
+                              width: 16.w,
+                              height: 16.w,
+                              child: const CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.wifi_tethering_rounded, size: 18),
+                      label: Text('testConnection'.tr),
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: busy || deviceId <= 0 ? null : onSyncUsers,
+                          icon: const Icon(Icons.people_outline_rounded, size: 18),
+                          label: Text('syncUsers'.tr),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: busy || deviceId <= 0 ? null : onSyncLogs,
+                          icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                          label: Text('syncLogs'.tr),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.textSecondary,
+    this.valueColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color textSecondary;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 6.h),
+      child: Row(
+        children: [
+          Icon(icon, size: 15.sp, color: textSecondary),
+          SizedBox(width: 8.w),
+          Text(
+            '$label: ',
+            style: TextStyle(fontSize: 11.sp, color: textSecondary),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+                color: valueColor ?? textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16.sp, color: const Color(0xFF6B7280)),
+          SizedBox(width: 6.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 10.sp, color: const Color(0xFF9CA3AF)),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF111827),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF3F4F6),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16.sp, color: const Color(0xFF374151)),
+              SizedBox(width: 6.w),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF374151),
+                ),
+              ),
+            ],
+          ),
         ),
-        );
-      }),
+      ),
     );
   }
 }

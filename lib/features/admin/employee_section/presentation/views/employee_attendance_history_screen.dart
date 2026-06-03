@@ -31,6 +31,45 @@ class EmployeeAttendanceHistoryScreen
           overflow: TextOverflow.ellipsis,
         ),
       ),
+      floatingActionButton: Obx(() {
+        if (!controller.canManualCheckoutToday) {
+          return const SizedBox.shrink();
+        }
+        final loading = controller.isCheckoutLoading.value;
+        return FloatingActionButton.extended(
+          onPressed: loading
+              ? null
+              : () async {
+                  final ok = await Get.dialog<bool>(
+                    AlertDialog(
+                      title: Text('manualCheckout'.tr),
+                      content: Text('manualCheckoutConfirm'.tr),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Get.back(result: false),
+                          child: Text('cancel'.tr),
+                        ),
+                        TextButton(
+                          onPressed: () => Get.back(result: true),
+                          child: Text('confirm'.tr),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (ok == true) {
+                    await controller.manualCheckout();
+                  }
+                },
+          icon: loading
+              ? SizedBox(
+                  width: 20.w,
+                  height: 20.w,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.logout),
+          label: Text('manualCheckout'.tr),
+        );
+      }),
       body: Column(
         children: [
           // ── منتقي السنة والشهر ──

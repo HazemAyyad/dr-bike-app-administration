@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/dio_consumer.dart';
+import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../employee_section/data/models/employee_model.dart';
@@ -169,19 +170,23 @@ class _FingerprintDeviceUsersScreenState
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final pageBg = isDark ? AppColors.darkColor : const Color(0xFFF5F5F5);
+    final cardBg = isDark ? const Color(0xFF1F2937) : Colors.white;
+    final borderColor =
+        isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF111827);
+    final textSecondary =
+        isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
 
     return Scaffold(
       backgroundColor: pageBg,
-      appBar: AppBar(
+      appBar: CustomAppBar(
+        title: 'fingerprintDeviceUsers',
         backgroundColor: pageBg,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(_deviceName.isNotEmpty ? _deviceName : 'fingerprintDeviceUsers'.tr),
         actions: [
           IconButton(
             onPressed: _load,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             tooltip: 'refresh'.tr,
           ),
         ],
@@ -197,6 +202,8 @@ class _FingerprintDeviceUsersScreenState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Icon(Icons.error_outline, size: 40.sp, color: Colors.red.shade400),
+                  SizedBox(height: 12.h),
                   Text(_error.value, textAlign: TextAlign.center),
                   SizedBox(height: 12.h),
                   OutlinedButton.icon(
@@ -212,174 +219,214 @@ class _FingerprintDeviceUsersScreenState
 
         final rows = _filtered;
 
-        return Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-              child: Row(
-                children: [
-                  Expanded(child: _StatCard(title: 'الإجمالي', value: '$_total')),
-                  SizedBox(width: 8.w),
-                  Expanded(child: _StatCard(title: 'مربوط', value: '$_linked')),
-                  SizedBox(width: 8.w),
-                  Expanded(child: _StatCard(title: 'غير مربوط', value: '$_unlinked')),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w),
-              child: TextField(
-                onChanged: (v) => _query.value = v,
-                decoration: InputDecoration(
-                  hintText: 'search'.tr,
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
+        return RefreshIndicator(
+          onRefresh: _load,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_deviceName.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 4.h),
+                          child: Text(
+                            _deviceName,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w800,
+                              color: textPrimary,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        'fingerprintDeviceUsersDesc'.tr,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SummaryTile(
+                              label: 'total'.tr,
+                              value: '$_total',
+                              color: const Color(0xFF2563EB),
+                              bg: const Color(0xFFEFF6FF),
+                              icon: Icons.grid_view_rounded,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: _SummaryTile(
+                              label: 'fingerprintLinked'.tr,
+                              value: '$_linked',
+                              color: const Color(0xFF059669),
+                              bg: const Color(0xFFECFDF5),
+                              icon: Icons.link_rounded,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: _SummaryTile(
+                              label: 'fingerprintUnlinked'.tr,
+                              value: '$_unlinked',
+                              color: const Color(0xFF6B7280),
+                              bg: const Color(0xFFF3F4F6),
+                              icon: Icons.link_off_rounded,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+                      TextField(
+                        onChanged: (v) => _query.value = v,
+                        decoration: InputDecoration(
+                          hintText: 'search'.tr,
+                          prefixIcon: const Icon(Icons.search_rounded),
+                          filled: true,
+                          fillColor: cardBg,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 10.h,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Obx(() {
+                        final f = _filter.value;
+                        return Wrap(
+                          spacing: 8.w,
+                          runSpacing: 8.h,
+                          children: [
+                            _FilterChip(
+                              label: 'all'.tr,
+                              selected: f == 'all',
+                              onTap: () => _filter.value = 'all',
+                            ),
+                            _FilterChip(
+                              label: 'fingerprintLinked'.tr,
+                              selected: f == 'linked',
+                              onTap: () => _filter.value = 'linked',
+                            ),
+                            _FilterChip(
+                              label: 'fingerprintUnlinked'.tr,
+                              selected: f == 'unlinked',
+                              onTap: () => _filter.value = 'unlinked',
+                            ),
+                          ],
+                        );
+                      }),
+                      SizedBox(height: 12.h),
+                    ],
                   ),
                 ),
               ),
-            ),
-            SizedBox(height: 8.h),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w),
-              child: Obx(() {
-                final f = _filter.value;
-                return Row(
-                  children: [
-                    _Chip(
-                      label: 'الكل',
-                      selected: f == 'all',
-                      onTap: () => _filter.value = 'all',
+              if (rows.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.badge_outlined, size: 48.sp, color: textSecondary),
+                        SizedBox(height: 8.h),
+                        Text('noData'.tr, style: TextStyle(color: textSecondary)),
+                      ],
                     ),
-                    SizedBox(width: 8.w),
-                    _Chip(
-                      label: 'مربوط',
-                      selected: f == 'linked',
-                      onTap: () => _filter.value = 'linked',
-                    ),
-                    SizedBox(width: 8.w),
-                    _Chip(
-                      label: 'غير مربوط',
-                      selected: f == 'unlinked',
-                      onTap: () => _filter.value = 'unlinked',
-                    ),
-                  ],
-                );
-              }),
-            ),
-            SizedBox(height: 8.h),
-            Expanded(
-              child: rows.isEmpty
-                  ? Center(child: Text('noData'.tr))
-                  : ListView.separated(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-                      itemBuilder: (_, i) {
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, i) {
                         final u = rows[i];
-                        final id = u['device_user_id']?.toString() ?? '';
-                        final name = u['name']?.toString() ?? '';
-                        final emp = u['linked_employee_name']?.toString();
-                        final linked = u['status']?.toString() == 'linked';
-                        return Container(
-                          padding: EdgeInsets.all(12.w),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14.r),
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      '$id • $name',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 13.sp,
-                                        fontWeight: FontWeight.w800,
-                                        color: const Color(0xFF111827),
-                                      ),
-                                    ),
-                                  ),
-                                  _StatusBadge(linked: linked),
-                                ],
-                              ),
-                              SizedBox(height: 6.h),
-                              Text(
-                                emp == null || emp.isEmpty ? 'غير مربوط' : emp,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: const Color(0xFF6B7280),
-                                ),
-                              ),
-                              SizedBox(height: 10.h),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: () => _link(id),
-                                      child: Text(linked ? 'تغيير الربط' : 'ربط بموظف'),
-                                    ),
-                                  ),
-                                  SizedBox(width: 8.w),
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      onPressed: linked ? () => _unlink(id) : null,
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.red.shade700,
-                                      ),
-                                      child: const Text('فك الربط'),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 10.h),
+                          child: _UserCard(
+                            user: u,
+                            cardBg: cardBg,
+                            borderColor: borderColor,
+                            textPrimary: textPrimary,
+                            textSecondary: textSecondary,
+                            onLink: () => _link(u['device_user_id']?.toString() ?? ''),
+                            onUnlink: () => _unlink(u['device_user_id']?.toString() ?? ''),
                           ),
                         );
                       },
-                      separatorBuilder: (_, __) => SizedBox(height: 10.h),
-                      itemCount: rows.length,
+                      childCount: rows.length,
                     ),
-            ),
-          ],
+                  ),
+                ),
+            ],
+          ),
         );
       }),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({required this.title, required this.value});
-  final String title;
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.bg,
+    required this.icon,
+  });
+
+  final String label;
   final String value;
+  final Color color;
+  final Color bg;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: bg,
         borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(icon, size: 18.sp, color: color),
+          SizedBox(height: 6.h),
           Text(
-            title,
-            style: TextStyle(fontSize: 11.sp, color: const Color(0xFF6B7280)),
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
           ),
-          SizedBox(height: 4.h),
           Text(
             value,
             style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF111827),
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w900,
+              color: color,
             ),
           ),
         ],
@@ -388,31 +435,216 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({required this.label, required this.selected, required this.onTap});
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
+    return Material(
+      color: selected ? AppColors.primaryColor : Colors.white,
       borderRadius: BorderRadius.circular(999),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w700,
-            color: selected ? Colors.white : const Color(0xFF111827),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? AppColors.primaryColor : const Color(0xFFE5E7EB),
+            ),
           ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : const Color(0xFF374151),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserCard extends StatelessWidget {
+  const _UserCard({
+    required this.user,
+    required this.cardBg,
+    required this.borderColor,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.onLink,
+    required this.onUnlink,
+  });
+
+  final Map<String, dynamic> user;
+  final Color cardBg;
+  final Color borderColor;
+  final Color textPrimary;
+  final Color textSecondary;
+  final VoidCallback onLink;
+  final VoidCallback onUnlink;
+
+  @override
+  Widget build(BuildContext context) {
+    final id = user['device_user_id']?.toString() ?? '';
+    final name = user['name']?.toString().trim() ?? '';
+    final emp = user['linked_employee_name']?.toString().trim();
+    final linked = user['status']?.toString() == 'linked';
+    final statusColor =
+        linked ? const Color(0xFF059669) : const Color(0xFF9CA3AF);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 5.w,
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadiusDirectional.horizontal(
+                  start: Radius.circular(16.r),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(14.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 44.w,
+                          height: 44.w,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Text(
+                            id,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name.isNotEmpty ? name : 'PIN $id',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              if (name.isNotEmpty)
+                                Padding(
+                                  padding: EdgeInsets.only(top: 2.h),
+                                  child: Text(
+                                    'PIN: $id',
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      color: textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              SizedBox(height: 6.h),
+                              Row(
+                                children: [
+                                  Icon(
+                                    linked ? Icons.link_rounded : Icons.link_off_rounded,
+                                    size: 14.sp,
+                                    color: statusColor,
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  Expanded(
+                                    child: Text(
+                                      linked && emp != null && emp.isNotEmpty
+                                          ? '${'fingerprintLinkedWith'.tr}: $emp'
+                                          : 'fingerprintUnlinked'.tr,
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w600,
+                                        color: linked ? statusColor : textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        _StatusBadge(linked: linked),
+                      ],
+                    ),
+                    SizedBox(height: 12.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: onLink,
+                            icon: Icon(
+                              linked ? Icons.swap_horiz_rounded : Icons.person_add_alt_1_rounded,
+                              size: 18,
+                            ),
+                            label: Text(
+                              linked ? 'changeLink'.tr : 'linkToEmployee'.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: linked ? onUnlink : null,
+                            icon: const Icon(Icons.link_off_rounded, size: 18),
+                            label: Text('unlinkEmployee'.tr),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red.shade700,
+                              side: BorderSide(color: Colors.red.shade200),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -426,7 +658,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = linked ? const Color(0xFF059669) : const Color(0xFF6B7280);
-    final text = linked ? 'مربوط' : 'غير مربوط';
+    final text = linked ? 'fingerprintLinked'.tr : 'fingerprintUnlinked'.tr;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
@@ -504,7 +736,7 @@ class _EmployeePickerSheetState extends State<_EmployeePickerSheet> {
             children: [
               Expanded(
                 child: Text(
-                  'اختر موظف',
+                  'selectEmployee'.tr,
                   style: TextStyle(
                     fontSize: 15.sp,
                     fontWeight: FontWeight.w800,
@@ -546,8 +778,23 @@ class _EmployeePickerSheetState extends State<_EmployeePickerSheet> {
                           borderRadius: BorderRadius.circular(12.r),
                           side: const BorderSide(color: Color(0xFFE5E7EB)),
                         ),
-                        title: Text(title),
+                        leading: CircleAvatar(
+                          backgroundColor: const Color(0xFFEFF6FF),
+                          child: Text(
+                            '${e.id}',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                         subtitle: Text('#${e.id}'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
                         onTap: () => Navigator.pop(context, e),
                       );
                     },

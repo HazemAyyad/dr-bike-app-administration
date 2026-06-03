@@ -141,6 +141,7 @@ class EndPoints {
       'admin/attendance-devices/$id/sync-logs';
   static String attendanceDeviceUsers(int id) => 'admin/attendance-devices/$id/users';
   static String attendanceDeviceLogs(int id) => 'admin/attendance-devices/$id/logs';
+  static const String fingerprintActivityLog = 'admin/fingerprint/activity-log';
   static const String workingTimes = 'working/times';
   static const String financialDues = 'financial/dues';
   static const String employeeFinancialDetails =
@@ -151,6 +152,8 @@ class EndPoints {
   static const String qrGeneration = 'qr-generation';
   static const String qrHistory = 'qr-history';
   static const String employeeAttendanceHistory = 'employee/attendance/history';
+  static String adminEmployeeManualCheckout(String employeeId) =>
+      'admin/employees/$employeeId/attendance/manual-checkout';
   static const String employeeAttendanceReports = 'employee-attendance/reports';
   static const String editEmployee = 'edit/employee';
   static const String deleteEmployee = 'delete/employee';
