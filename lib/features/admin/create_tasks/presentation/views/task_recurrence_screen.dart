@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/haptic_helper.dart';
+import '../../../../../core/helpers/scroll_date_picker_sheet.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/helpers/task_nav_debug.dart';
@@ -12,7 +13,7 @@ import '../../../employee_tasks/presentation/widgets/task_operational_shared.dar
 import '../controllers/create_task_controller.dart';
 
 /// Compact recurrence settings (RTL Arabic, type-specific duration units).
-class TaskRecurrenceScreen extends GetView<CreateTaskController> {
+class TaskRecurrenceScreen extends StatefulWidget {
   const TaskRecurrenceScreen({Key? key}) : super(key: key);
 
   static const weekdays = [
@@ -25,9 +26,15 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
     'friday',
   ];
 
-  static const _types = ['noRepeat', 'daily', 'weekly', 'monthly', 'yearly'];
-  static const _ordinals = ['first', 'second', 'third', 'fourth', 'last'];
-  static const _monthNames = [
+  static const recurrenceTypes = [
+    'noRepeat',
+    'daily',
+    'weekly',
+    'monthly',
+    'yearly',
+  ];
+  static const ordinals = ['first', 'second', 'third', 'fourth', 'last'];
+  static const monthNames = [
     'monthJan',
     'monthFeb',
     'monthMar',
@@ -43,6 +50,22 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
   ];
 
   @override
+  State<TaskRecurrenceScreen> createState() => _TaskRecurrenceScreenState();
+}
+
+class _TaskRecurrenceScreenState extends State<TaskRecurrenceScreen> {
+  CreateTaskController get controller => Get.find<CreateTaskController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      controller.updateRecurrenceSummary();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     TaskNavDebug.log(
       'TaskRecurrenceScreen.build',
@@ -54,9 +77,6 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
       backgroundColor: AppColors.operationalSurface,
       appBar: const CustomAppBar(title: 'recurrenceSettings'),
       body: Obx(() {
-        if (controller.recurrenceSummary.value.isEmpty) {
-          controller.updateRecurrenceSummary();
-        }
         return ListView(
           padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 88.h),
           children: [
@@ -67,11 +87,17 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
               child: Column(
                 children: [
                   Row(
-                    children: _types.take(3).map(_typeChip).toList(),
+                    children: TaskRecurrenceScreen.recurrenceTypes
+                        .take(3)
+                        .map(_typeChip)
+                        .toList(),
                   ),
                   SizedBox(height: 6.h),
                   Row(
-                    children: _types.skip(3).map(_typeChip).toList(),
+                    children: TaskRecurrenceScreen.recurrenceTypes
+                        .skip(3)
+                        .map(_typeChip)
+                        .toList(),
                   ),
                 ],
               ),
@@ -83,10 +109,10 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
                 compact: true,
                 margin: EdgeInsets.zero,
                 child: _WeekdayDragRow(
-                  weekdays: weekdays,
+                  weekdays: TaskRecurrenceScreen.weekdays,
                   selected: controller.selectedDaysList.toList(),
                   onToggle: controller.toggleDay,
-                  onDragSelect: controller.addWeekdayWhileDragging,
+                  onDragApply: controller.applyWeekdayWhileDragging,
                 ),
               ),
             ],
@@ -177,12 +203,14 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
   }
 
   Future<void> _pickRecurrenceEndDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: controller.recurrenceEndDate.value,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-      locale: Get.locale,
+    final now = DateTime.now();
+    final picked = await ScrollDatePickerSheet.show(
+      context,
+      initial: controller.recurrenceEndDate.value.isBefore(now)
+          ? now
+          : controller.recurrenceEndDate.value,
+      title: 'endDate',
+      minimumDate: now,
     );
     if (picked != null) {
       controller.recurrenceEndDate.value = picked;
@@ -191,7 +219,10 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
   }
 
   Widget _typeChip(String type) {
-    final selected = controller.selectedDays.value == type;
+    final current = controller.selectedDays.value;
+    final selected = type == 'noRepeat'
+        ? current.isEmpty || current == 'noRepeat'
+        : current == type;
     return Expanded(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 3.w),
@@ -307,7 +338,7 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
       child: Wrap(
         spacing: 6.w,
         runSpacing: 6.h,
-        children: _ordinals.map((o) {
+        children: TaskRecurrenceScreen.ordinals.map((o) {
           final sel = controller.weekdayOrdinal.value == o;
           return _miniChip(
             label: o.tr,
@@ -394,7 +425,10 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
             final m = i + 1;
             return DropdownMenuItem(
               value: m,
-              child: Text(_monthNames[i].tr, style: TextStyle(fontSize: 12.sp)),
+              child: Text(
+                TaskRecurrenceScreen.monthNames[i].tr,
+                style: TextStyle(fontSize: 12.sp),
+              ),
             );
           }),
           onChanged: (v) {
@@ -476,36 +510,69 @@ class TaskRecurrenceScreen extends GetView<CreateTaskController> {
   }
 }
 
-class _WeekdayDragRow extends StatelessWidget {
+class _WeekdayDragRow extends StatefulWidget {
   const _WeekdayDragRow({
     required this.weekdays,
     required this.selected,
     required this.onToggle,
-    required this.onDragSelect,
+    required this.onDragApply,
   });
 
   final List<String> weekdays;
   final List<String> selected;
   final void Function(String) onToggle;
-  final void Function(String) onDragSelect;
+  final void Function(String day, bool select) onDragApply;
+
+  @override
+  State<_WeekdayDragRow> createState() => _WeekdayDragRowState();
+}
+
+class _WeekdayDragRowState extends State<_WeekdayDragRow> {
+  bool _dragShouldSelect = true;
+
+  void _applyAt(
+    BuildContext context,
+    double dx,
+    double width, {
+    bool start = false,
+  }) {
+    if (width <= 0) return;
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final adjustedDx = isRtl ? width - dx : dx;
+    final index = (adjustedDx / width * widget.weekdays.length)
+        .floor()
+        .clamp(0, widget.weekdays.length - 1);
+    final day = widget.weekdays[index];
+
+    if (start) {
+      _dragShouldSelect = !widget.selected.contains(day);
+    }
+
+    widget.onDragApply(day, _dragShouldSelect);
+  }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         return GestureDetector(
-          onHorizontalDragStart: (d) =>
-              _selectAt(context, d.localPosition.dx, constraints.maxWidth),
-          onHorizontalDragUpdate: (d) =>
-              _selectAt(context, d.localPosition.dx, constraints.maxWidth),
+          behavior: HitTestBehavior.opaque,
+          onPanStart: (d) => _applyAt(
+            context,
+            d.localPosition.dx,
+            constraints.maxWidth,
+            start: true,
+          ),
+          onPanUpdate: (d) =>
+              _applyAt(context, d.localPosition.dx, constraints.maxWidth),
           child: Row(
-            children: weekdays.map((day) {
-              final isOn = selected.contains(day);
+            children: widget.weekdays.map((day) {
+              final isOn = widget.selected.contains(day);
               return Expanded(
                 child: GestureDetector(
                   onTap: () {
                     HapticHelper.selection();
-                    onToggle(day);
+                    widget.onToggle(day);
                   },
                   behavior: HitTestBehavior.opaque,
                   child: Container(
@@ -539,16 +606,6 @@ class _WeekdayDragRow extends StatelessWidget {
         );
       },
     );
-  }
-
-  void _selectAt(BuildContext context, double dx, double width) {
-    if (width <= 0) return;
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
-    final adjustedDx = isRtl ? width - dx : dx;
-    final index = (adjustedDx / width * weekdays.length)
-        .floor()
-        .clamp(0, weekdays.length - 1);
-    onDragSelect(weekdays[index]);
   }
 
   String _short(String day) {

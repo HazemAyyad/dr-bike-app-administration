@@ -15,8 +15,25 @@ import '../widgets/employee_operational_task_card.dart';
 import '../widgets/employee_tasks_view_mode_bar.dart';
 import '../widgets/impersonation_exit_button.dart';
 
-class TasksScreen extends GetView<EmployeeDashbordController> {
+class TasksScreen extends StatefulWidget {
   const TasksScreen({Key? key}) : super(key: key);
+
+  @override
+  State<TasksScreen> createState() => _TasksScreenState();
+}
+
+class _TasksScreenState extends State<TasksScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Get.find<EmployeeDashbordController>().prepareTasksScreenIfNeeded();
+    });
+  }
+
+  EmployeeDashbordController get controller =>
+      Get.find<EmployeeDashbordController>();
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +67,7 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
               child: Obx(() {
                 controller.tasksViewMode.value;
+                controller.tasksFilterEpoch.value;
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -96,6 +114,7 @@ class TasksScreen extends GetView<EmployeeDashbordController> {
             ),
           ),
           Obx(() {
+            controller.tasksFilterEpoch.value;
             if (controller.isLoading.value) {
               return const SliverFillRemaining(
                 child: Center(

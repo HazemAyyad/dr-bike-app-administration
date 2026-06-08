@@ -131,7 +131,7 @@ class TaskDetailsModel extends TaskDetailsEntity {
       employeeVideos: employeeMedia.videos,
       audio: parseAudioFromApi(asNullableString(json[ApiKey.audio])),
       subTasks: mapList(
-        json[ApiKey.sub_tasks],
+        json[ApiKey.sub_tasks] ?? json['subtasks'],
         (Map<String, dynamic> m) => SubTaskModel.fromJson(m),
       ),
       timeline: json['timeline'] is List
@@ -224,6 +224,7 @@ class SubTaskModel extends SubTaskEntity {
     required String status,
     List<String>? adminImg,
     List<String>? adminVideos,
+    String? adminAudio,
     required bool isForcedToUploadImg,
     String proofMediaType = ProofMediaType.none,
     List<String>? employeeImg,
@@ -237,6 +238,7 @@ class SubTaskModel extends SubTaskEntity {
           status: status,
           adminImg: adminImg,
           adminVideos: adminVideos,
+          adminAudio: adminAudio,
           isForcedToUploadImg: isForcedToUploadImg,
           proofMediaType: proofMediaType,
           employeeImg: employeeImg,
@@ -246,7 +248,7 @@ class SubTaskModel extends SubTaskEntity {
         );
 
   factory SubTaskModel.fromJson(Map<String, dynamic> json) {
-    final adminMedia = parseTaskMediaFromApi(json[ApiKey.admin_img]);
+    final adminMedia = parseSubtaskAdminMediaFromApi(json[ApiKey.admin_img]);
     final employeeMedia = parseTaskMediaFromApi(json[ApiKey.employee_img]);
 
     return SubTaskModel(
@@ -261,6 +263,7 @@ class SubTaskModel extends SubTaskEntity {
       ),
       adminImg: adminMedia.images,
       adminVideos: adminMedia.videos,
+      adminAudio: adminMedia.audio,
       employeeImg: employeeMedia.images,
       employeeVideos: employeeMedia.videos,
       completedByEmployeeId: json['completed_by_employee_id'] != null

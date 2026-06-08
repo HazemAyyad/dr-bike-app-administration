@@ -89,6 +89,7 @@ class SubTaskEntity {
   final String status;
   final List<String>? adminImg;
   final List<String>? adminVideos;
+  final String? adminAudio;
   final bool isForcedToUploadImg;
   final String proofMediaType;
   final List<String>? employeeImg;
@@ -103,6 +104,7 @@ class SubTaskEntity {
     required this.status,
     this.adminImg,
     this.adminVideos,
+    this.adminAudio,
     required this.isForcedToUploadImg,
     this.proofMediaType = 'none',
     this.employeeImg,

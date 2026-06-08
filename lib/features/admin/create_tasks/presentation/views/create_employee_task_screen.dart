@@ -64,23 +64,12 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                             minLines: 2,
                             maxLines: 6,
                           ),
-                          SizedBox(height: 6.h),
-                          CustomTextField(
-                            label: 'taskDescription',
-                            hintText: 'taskDescriptionExample',
-                            controller: controller.taskDescriptionController,
-                            keyboardType: TextInputType.multiline,
-                            textInputAction: TextInputAction.newline,
-                            minLines: 2,
-                            maxLines: 8,
-                            validator: (_) => null,
-                          ),
-                          if (_isSpecialTask) ...[
+                          if (!_isSpecialTask) ...[
                             SizedBox(height: 6.h),
                             CustomTextField(
-                              label: 'taskNotes',
+                              label: 'taskDescription',
                               hintText: 'taskDescriptionExample',
-                              controller: controller.taskNotesController,
+                              controller: controller.taskDescriptionController,
                               keyboardType: TextInputType.multiline,
                               textInputAction: TextInputAction.newline,
                               minLines: 2,
@@ -133,12 +122,14 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                             label: 'startDate',
                             isStart: true,
                           ),
-                          SizedBox(height: 8.h),
-                          const TaskDateTimeField(
-                            compact: true,
-                            label: 'endDate',
-                            isStart: false,
-                          ),
+                          if (!_isSpecialTask) ...[
+                            SizedBox(height: 8.h),
+                            const TaskDateTimeField(
+                              compact: true,
+                              label: 'endDate',
+                              isStart: false,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -205,12 +196,13 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                       title: 'taskReminder',
                       child: TaskReminderSection(compact: true),
                     ),
-                    const TaskFormSectionCard(
+                    TaskFormSectionCard(
                       compact: _compact,
                       title: 'subTasks',
-                      child: InlineSubtaskBuilder(),
+                      child: InlineSubtaskBuilder(isSpecialTask: _isSpecialTask),
                     ),
-                    TaskFormSectionCard(
+                    if (!_isSpecialTask)
+                      TaskFormSectionCard(
                       compact: _compact,
                       title: 'attachments',
                       child: Column(
@@ -307,19 +299,17 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                               onChanged: controller.setMainProofMediaType,
                             ),
                           ),
-                          if (!_isSpecialTask) ...[
-                            CustomCheckBox(
-                              title: 'requireAdminReview',
-                              value: controller.requireAdminReview,
-                              onChanged: (v) =>
-                                  controller.requireAdminReview.value = v!,
-                            ),
-                            CustomCheckBox(
-                              title: 'hideTask',
-                              value: controller.hideTask,
-                              onChanged: (v) => controller.hideTask.value = v!,
-                            ),
-                          ],
+                          CustomCheckBox(
+                            title: 'requireAdminReview',
+                            value: controller.requireAdminReview,
+                            onChanged: (v) =>
+                                controller.requireAdminReview.value = v!,
+                          ),
+                          CustomCheckBox(
+                            title: 'hideTask',
+                            value: controller.hideTask,
+                            onChanged: (v) => controller.hideTask.value = v!,
+                          ),
                         ],
                       ),
                     ),

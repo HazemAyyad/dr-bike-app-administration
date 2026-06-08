@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -15,6 +14,7 @@ class ProductManagementWidget extends GetView<ProductManagementController> {
     Key? key,
     required this.productName,
     required this.productImage,
+    this.productImageUrls = const [],
     required this.currentStep,
     required this.rating,
     this.isEdit = false,
@@ -25,6 +25,7 @@ class ProductManagementWidget extends GetView<ProductManagementController> {
   final String currentStep;
   final String productName;
   final String productImage;
+  final List<String> productImageUrls;
   final double rating;
   final bool isEdit;
   final String stageLabel;
@@ -33,8 +34,12 @@ class ProductManagementWidget extends GetView<ProductManagementController> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme.bodyMedium!;
-    final imageUrl = ShowNetImage.getThumbnailPhoto(productImage);
-    final originalImageUrl = ShowNetImage.getPhoto(productImage);
+    final imageCandidates = productImageUrls.isNotEmpty
+        ? productImageUrls
+        : (productImage.isNotEmpty ? [productImage] : <String>[]);
+    final originalImageUrl = imageCandidates.isNotEmpty
+        ? ShowNetImage.getPhoto(imageCandidates.first)
+        : ShowNetImage.getPhoto(productImage);
 
     return Container(
       height: stageLabel.isEmpty ? 35.h : 44.h,
@@ -132,28 +137,12 @@ class ProductManagementWidget extends GetView<ProductManagementController> {
                   },
                 );
               },
-              child: CachedNetworkImage(
-                cacheManager: CacheManager(
-                  Config(
-                    'imagesCache',
-                    stalePeriod: const Duration(days: 7),
-                    maxNrOfCacheObjects: 100,
-                  ),
-                ),
-                imageBuilder: (context, imageProvider) => Container(
-                  height: 27.h,
-                  width: 36.w,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4.r),
-                    image: DecorationImage(
-                      image: imageProvider,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.medium,
-                    ),
-                  ),
-                ),
-                imageUrl: imageUrl,
-                placeholder: (context, url) => Container(
+              child: ProductPriorityImage(
+                imageUrls: imageCandidates,
+                width: 36.w,
+                height: 27.h,
+                borderRadius: BorderRadius.circular(4.r),
+                placeholder: Container(
                   height: 27.h,
                   width: 36.w,
                   decoration: BoxDecoration(
@@ -161,7 +150,7 @@ class ProductManagementWidget extends GetView<ProductManagementController> {
                     borderRadius: BorderRadius.circular(4.r),
                   ),
                 ),
-                errorWidget: (context, url, error) => Container(
+                missingPlaceholder: Container(
                   height: 27.h,
                   width: 36.w,
                   alignment: Alignment.center,

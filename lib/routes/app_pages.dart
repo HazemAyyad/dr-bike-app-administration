@@ -51,6 +51,7 @@ import '../features/admin/checks/presentation/views/outgoing_checks_screen.dart'
 import '../features/admin/counters/presentation/binding/counters_binding.dart';
 import '../features/admin/counters/presentation/views/counters_screen.dart';
 import '../features/admin/create_tasks/presentation/binding/create_task_binding.dart';
+import '../features/admin/create_tasks/presentation/binding/task_recurrence_binding.dart';
 import '../features/admin/create_tasks/presentation/views/create_task_entry_screen.dart';
 import '../features/admin/create_tasks/presentation/views/task_recurrence_screen.dart';
 import '../features/admin/employee_tasks/presentation/views/employee_task_performance_screen.dart';
@@ -77,6 +78,9 @@ import '../features/admin/general_settings/presentation/views/attendance_setting
 import '../features/admin/general_settings/presentation/views/banks_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/contact_categories_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
+import '../features/admin/general_settings/presentation/views/product_size_options_settings_screen.dart';
+import '../features/admin/general_settings/presentation/views/stock_inventory_settings_screen.dart';
+import '../features/admin/general_settings/presentation/views/store_sections_settings_screen.dart';
 import '../features/admin/attendance_devices/presentation/views/attendance_devices_screen.dart';
 import '../features/admin/fingerprint_device_users/presentation/views/fingerprint_device_logs_screen.dart';
 import '../features/admin/fingerprint_device_users/presentation/views/fingerprint_device_users_screen.dart';
@@ -325,7 +329,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.TASKRECURRENCE,
       page: () => const TaskRecurrenceScreen(),
-      binding: CreateTaskBinding(),
+      binding: TaskRecurrenceBinding(),
       transition: _transitionFade,
     ),
     GetPage(
@@ -473,6 +477,23 @@ class AppPages {
     GetPage(
       name: AppRoutes.GENERALSETTINGSSCREEN,
       page: () => const GeneralSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.STOCKINVENTORYSETTINGSSCREEN,
+      page: () => const StockInventorySettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.PRODUCTSIZEOPTIONSSETTINGSSCREEN,
+      page: () => const ProductSizeOptionsSettingsScreen(),
+      binding: StockBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.STORESECTIONSSETTINGSSCREEN,
+      page: () => const StoreSectionsSettingsScreen(),
+      binding: StockBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(
@@ -660,6 +681,12 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.NEWCHECKSCREEN,
+      page: () => const NewCheckScreen(),
+      binding: ChecksBinding(),
+      transition: _transitionDownToUp,
+    ),
+    GetPage(
+      name: AppRoutes.EDITCHECKSCREEN,
       page: () => const NewCheckScreen(),
       binding: ChecksBinding(),
       transition: _transitionDownToUp,

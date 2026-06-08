@@ -2,9 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/product_image_utils.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../../sales/domain/usecases/get_all_products_usecase.dart';
 import '../../data/models/product_development_model.dart';
+import '../../data/models/product_management_list_item.dart';
 import '../../domain/usecases/create_product_development_usecase.dart';
 import '../../domain/usecases/delete_product_development_usecase.dart';
 import '../../domain/usecases/get_product_developments_usecase.dart';
@@ -24,37 +26,19 @@ class ProductManagementController extends GetxController {
   });
 
   final formKey = GlobalKey<FormState>();
-
   final TextEditingController searchController = TextEditingController();
-
   final TextEditingController productIdController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  RxInt currentTab = 0.obs;
-
-  final tabs = [
-    'products',
-    'productInDevelopment',
-    'archive',
-  ].obs;
-
-  void changeTab(int index) {
-    currentTab.value = index;
-    update();
-  }
-
-  /// ✅ القيم المراقبة
   final RxInt selectedStep = 1.obs;
   final RxInt selectedStep2 = 0.obs;
 
-  /// ✅ خطوات المرحلة الأولى
   final List<Map<int, String>> timeLineSteps = [
     {1: 'purchase_anywhere'},
     {2: 'purchase_second_hand'},
     {3: 'purchase_first_hand'},
   ];
 
-  /// ✅ خطوات المرحلة الثانية
   final List<Map<int, String>> timeLineSteps2 = [
     {4: 'local_supplier'},
     {5: 'import'},
@@ -62,126 +46,243 @@ class ProductManagementController extends GetxController {
     {7: 'our_factory'},
   ];
 
-  /// ✅ إجمالي الخطوات
   int get totalSteps => timeLineSteps.length + timeLineSteps2.length;
 
-  /// ✅ الخطوة الحالية عالميًا
   int get currentGlobalStep {
     if (selectedStep2.value == 0) {
-      return selectedStep.value; // لسه في المرحلة الأولى
+      return selectedStep.value;
+    }
+    return timeLineSteps.length + selectedStep2.value;
+  }
+
+  bool get canGoPrevious => currentGlobalStep > 1;
+
+  String get nextButtonLabel {
+    if (!isEdit.value) return 'next'.tr;
+    if (currentStep >= totalSteps) return 'developmentFinal'.tr;
+    return 'next'.tr;
+  }
+
+  void _setGlobalStep(int globalStep) {
+    if (globalStep <= timeLineSteps.length) {
+      selectedStep.value = globalStep;
+      selectedStep2.value = 0;
     } else {
-      return timeLineSteps.length + selectedStep2.value; // دخل المرحلة الثانية
+      selectedStep2.value = globalStep - timeLineSteps.length;
+      selectedStep.value = timeLineSteps.length;
     }
   }
 
-  /// ✅ الخطوة التالية
-  void nextStep() {
-    if (selectedStep2.value == 0) {
-      // لسه في المرحلة الأولى
-      if (selectedStep.value < timeLineSteps.length) {
-        createProduct();
-        selectedStep.value++;
-      } else {
-        // خلص المرحلة الأولى → يدخل على التانية
-        createProduct();
-        selectedStep2.value = 1;
-        selectedStep.value = timeLineSteps.length;
-      }
-    } else {
-      // المرحلة التانية
-      if (selectedStep2.value < timeLineSteps2.length) {
-        createProduct();
-        selectedStep2.value++;
-      } else {
-        // خلص الكل → رجّعه للبداية
-        createProduct();
-        selectedStep.value = 1;
-        selectedStep2.value = 0;
-      }
+  Future<void> nextStep() async {
+    if (!isEdit.value) {
+      await _createDevelopment();
+      return;
     }
-    update();
+
+    if (currentGlobalStep >= totalSteps) {
+      await _saveAndUpdateStep(
+        totalSteps,
+        refreshList: true,
+        closeOnSuccess: true,
+      );
+      return;
+    }
+
+    final targetStep = currentGlobalStep + 1;
+    _setGlobalStep(targetStep);
+    await _saveAndUpdateStep(
+      targetStep,
+      refreshList: true,
+      closeOnSuccess: targetStep >= totalSteps,
+    );
   }
 
-  /// ✅ الخطوة السابقة
-  void prevStep() {
-    if (selectedStep2.value > 0) {
-      if (selectedStep2.value == 1) {
-        selectedStep2.value = 0;
-        selectedStep.value = timeLineSteps.length;
-      } else {
-        selectedStep2.value--;
-      }
-    } else {
-      if (selectedStep.value > 1) {
-        selectedStep.value--;
-      }
-    }
-    update();
-  }
+  Future<void> prevStep() async {
+    if (!canGoPrevious) return;
 
-  /// ✅ تغيير الخطوة يدويًا
-  void changeSelected(int step, {bool isSecond = false}) {
-    if (isSecond) {
-      if (selectedStep.value == timeLineSteps.length) {
-        selectedStep2.value = step;
-      }
+    final targetStep = currentGlobalStep - 1;
+    _setGlobalStep(targetStep);
+
+    if (isEdit.value) {
+      await _saveAndUpdateStep(targetStep, refreshList: true);
     } else {
-      selectedStep.value = step;
-      if (step < timeLineSteps.length) {
-        selectedStep2.value = 0;
-      }
+      update();
     }
-    update();
   }
 
   final RxBool isLoading = false.obs;
   final RxBool isProductsLoading = false.obs;
 
-  // Product Management
-  void getProductManagement() async {
+  Future<void> getProductManagement() async {
     ProductManagementServes().productManagement.isEmpty
         ? isLoading(true)
         : null;
     final result = await getProductDevelopmentsUsecase.call();
     ProductManagementServes().productManagement.assignAll(result);
-    searchProductManagement.assignAll(_sortByStarsDesc(
-      ProductManagementServes()
-          .productManagement
-          .where((element) => element.currentStep != '7'),
-    ));
-    searcharchiveProductManagement.assignAll(_sortByStarsDesc(
-      ProductManagementServes()
-          .productManagement
-          .where((element) => element.currentStep == '7'),
-    ));
+    _refreshDisplayedProducts();
     isLoading(false);
     update();
   }
 
-  List<ProductDevelopmentModel> searchProductManagement = [];
-  List<ProductDevelopmentModel> searcharchiveProductManagement = [];
+  List<ProductManagementListItem> displayedProducts = [];
 
-  List<ProductDevelopmentModel> _sortByStarsDesc(
-    Iterable<ProductDevelopmentModel> items,
-  ) {
-    return items.toList()
-      ..sort((a, b) {
-        final byStep = (int.tryParse(b.currentStep) ?? 0)
-            .compareTo(int.tryParse(a.currentStep) ?? 0);
-        if (byStep != 0) return byStep;
-        return b.id.compareTo(a.id);
-      });
+  final RxBool sortDescending = true.obs;
+  final RxInt statusFilter = 0.obs;
+  final RxInt stageFilter = 0.obs;
+  final RxString searchQuery = ''.obs;
+  final Rx<DateTime?> filterDateFrom = Rx<DateTime?>(null);
+  final Rx<DateTime?> filterDateTo = Rx<DateTime?>(null);
+
+  static const int statusAll = 0;
+  static const int statusInDevelopment = 1;
+  static const int statusFinal = 2;
+
+  void _refreshDisplayedProducts() {
+    applyFilters();
+  }
+
+  void applyFilters() {
+    final devMap = <String, ProductDevelopmentModel>{
+      for (final dev in ProductManagementServes().productManagement)
+        dev.productId: dev,
+    };
+
+    var items = products
+        .map(
+          (product) => ProductManagementListItem(
+            product: product,
+            development: devMap[product.id],
+          ),
+        )
+        .toList();
+
+    final query = searchQuery.value.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      items = items
+          .where(
+            (item) => item.productName.toLowerCase().contains(query),
+          )
+          .toList();
+    }
+
+    switch (statusFilter.value) {
+      case statusInDevelopment:
+        items = items
+            .where((item) => item.hasDevelopment && item.stepValue < 7)
+            .toList();
+        break;
+      case statusFinal:
+        items = items
+            .where((item) => item.hasDevelopment && item.stepValue == 7)
+            .toList();
+        break;
+    }
+
+    if (stageFilter.value > 0) {
+      final stepValue = stageFilter.value;
+      items = items.where((item) => item.stepValue == stepValue).toList();
+    }
+
+    if (filterDateFrom.value != null || filterDateTo.value != null) {
+      items = items.where((item) {
+        if (!item.hasDevelopment) return false;
+        final date = _parseDevelopmentDate(item.developmentDate);
+        if (date == null) return false;
+        if (filterDateFrom.value != null &&
+            date.isBefore(_dateOnly(filterDateFrom.value!))) {
+          return false;
+        }
+        if (filterDateTo.value != null &&
+            date.isAfter(_dateOnly(filterDateTo.value!))) {
+          return false;
+        }
+        return true;
+      }).toList();
+    }
+
+    items.sort((a, b) {
+      final byStep = sortDescending.value
+          ? b.stepValue.compareTo(a.stepValue)
+          : a.stepValue.compareTo(b.stepValue);
+      if (byStep != 0) return byStep;
+      return sortDescending.value
+          ? b.productName.compareTo(a.productName)
+          : a.productName.compareTo(b.productName);
+    });
+
+    displayedProducts = items;
+    update();
+  }
+
+  DateTime? _parseDevelopmentDate(String? value) {
+    if (value == null || value.isEmpty) return null;
+    return DateTime.tryParse(value);
+  }
+
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  void onSearchChanged(String value) {
+    searchQuery.value = value;
+    applyFilters();
+  }
+
+  void clearSearch() {
+    searchController.clear();
+    searchQuery.value = '';
+    applyFilters();
+  }
+
+  void toggleSortOrder() {
+    sortDescending.value = !sortDescending.value;
+    applyFilters();
+  }
+
+  void applyFilterSettings({
+    required int status,
+    required int stage,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  }) {
+    statusFilter.value = status;
+    stageFilter.value = stage;
+    filterDateFrom.value = dateFrom;
+    filterDateTo.value = dateTo;
+    applyFilters();
+  }
+
+  void clearFilters() {
+    statusFilter.value = statusAll;
+    stageFilter.value = 0;
+    filterDateFrom.value = null;
+    filterDateTo.value = null;
+    applyFilters();
+  }
+
+  bool get hasActiveFilters =>
+      statusFilter.value != statusAll ||
+      stageFilter.value != 0 ||
+      filterDateFrom.value != null ||
+      filterDateTo.value != null;
+
+  int get activeFilterCount {
+    var count = 0;
+    if (statusFilter.value != statusAll) count++;
+    if (stageFilter.value != 0) count++;
+    if (filterDateFrom.value != null) count++;
+    if (filterDateTo.value != null) count++;
+    return count;
   }
 
   ProductDevelopmentModel? developmentForProduct(String productId) {
     return ProductManagementServes().productManagement.firstWhereOrNull(
-          (element) =>
-              element.productId == productId && element.currentStep != '7',
+          (element) => element.productId == productId,
         );
   }
 
   String stepTitle(String currentStep) {
     final step = int.tryParse(currentStep) ?? 0;
+    if (step == 0) return '';
     for (final item in [...timeLineSteps, ...timeLineSteps2]) {
       if (item.containsKey(step)) {
         return item[step]!.tr;
@@ -190,55 +291,9 @@ class ProductManagementController extends GetxController {
     return '';
   }
 
-  void searchBar(String value) {
-    if (value.isNotEmpty) {
-      searchProducts.assignAll(
-        products
-            .where(
-              (element) =>
-                  element.nameAr.toLowerCase().contains(value.toLowerCase()),
-            )
-            .toList(),
-      );
-      searchProductManagement.assignAll(ProductManagementServes()
-          .productManagement
-          .where((element) => element.currentStep != '7')
-          .where(
-            (element) =>
-                element.productName.toLowerCase().contains(value.toLowerCase()),
-          )
-          .toList()
-        ..sort((a, b) => (int.tryParse(b.currentStep) ?? 0)
-            .compareTo(int.tryParse(a.currentStep) ?? 0)));
-      searcharchiveProductManagement.assignAll(ProductManagementServes()
-          .productManagement
-          .where((element) => element.currentStep == '7')
-          .where(
-            (element) =>
-                element.productName.toLowerCase().contains(value.toLowerCase()),
-          )
-          .toList()
-        ..sort((a, b) => (int.tryParse(b.currentStep) ?? 0)
-            .compareTo(int.tryParse(a.currentStep) ?? 0)));
-    } else {
-      searchProductManagement.assignAll(_sortByStarsDesc(
-        ProductManagementServes()
-            .productManagement
-            .where((element) => element.currentStep != '7'),
-      ));
-      searcharchiveProductManagement.assignAll(_sortByStarsDesc(
-        ProductManagementServes()
-            .productManagement
-            .where((element) => element.currentStep == '7'),
-      ));
-      searchProducts.assignAll(products);
-    }
-    update();
-  }
-
   final List<ProductModel> products = [];
-  final List<ProductModel> searchProducts = [];
-  void getAllProducts() async {
+
+  Future<void> getAllProducts() async {
     if (products.isEmpty) {
       isProductsLoading(true);
       update();
@@ -246,7 +301,7 @@ class ProductManagementController extends GetxController {
     try {
       final result = await getAllProductsUsecase.call();
       products.assignAll(result);
-      searchProducts.assignAll(result);
+      _refreshDisplayedProducts();
     } finally {
       isProductsLoading(false);
       update();
@@ -254,6 +309,7 @@ class ProductManagementController extends GetxController {
   }
 
   ProductModel? selectedProduct;
+
   void selectProductForDevelopment(ProductModel product) {
     final development = developmentForProduct(product.id);
     isEdit(development != null);
@@ -261,26 +317,41 @@ class ProductManagementController extends GetxController {
     productIdController.text = development?.id.toString() ?? product.id;
     descriptionController.text = development?.description ?? '';
     productName = product.nameAr;
-    productImage = development?.productImage.isNotEmpty == true
-        ? development!.productImage
-        : product.imageUrl;
+    _setProductImages(
+      productId: product.id,
+      devImage: development?.productImage,
+      product: product,
+    );
     description = development?.description ?? '';
     currentStep = int.tryParse(development?.currentStep ?? '') ?? 0;
     if (development == null) {
-      selectedStep.value = 1;
-      selectedStep2.value = 0;
-    } else if (currentStep < timeLineSteps.length) {
-      selectedStep.value = currentStep + 1;
-      selectedStep2.value = 0;
+      _setGlobalStep(1);
     } else {
-      selectedStep2.value = currentStep - timeLineSteps.length + 1;
-      selectedStep.value = timeLineSteps.length + 1;
+      _setGlobalStep(currentStep);
     }
     update();
   }
 
   void editDevelopment(ProductDevelopmentModel product) {
     editProduct(id: product.id.toString(), isEditing: true);
+  }
+
+  void openListItem(ProductManagementListItem item) {
+    if (item.hasDevelopment) {
+      editProduct(id: item.developmentId.toString(), isEditing: true);
+    } else {
+      selectProductForDevelopment(item.product);
+    }
+  }
+
+  void _showSuccessMessage(String message) {
+    final context = Get.context;
+    if (context == null) return;
+    Helpers.showCustomDialogSuccess(
+      context: context,
+      title: 'success'.tr,
+      message: message,
+    );
   }
 
   void deleteDevelopment(String productDevelopmentId) async {
@@ -301,18 +372,8 @@ class ProductManagementController extends GetxController {
         ProductManagementServes().productManagement.removeWhere(
               (element) => element.id.toString() == productDevelopmentId,
             );
-        searchProductManagement.removeWhere(
-          (element) => element.id.toString() == productDevelopmentId,
-        );
-        searcharchiveProductManagement.removeWhere(
-          (element) => element.id.toString() == productDevelopmentId,
-        );
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
-        );
+        _refreshDisplayedProducts();
+        _showSuccessMessage('productDevelopmentDeletedSuccessfully'.tr);
         getProductManagement();
       },
     );
@@ -320,13 +381,15 @@ class ProductManagementController extends GetxController {
     update();
   }
 
-  // create product
-  void createProduct() async {
+  Future<void> _createDevelopment() async {
     isLoading(true);
+    update();
+
+    final productId = selectedProduct?.id ?? productIdController.text;
     final result = await createProductDevelopmentUsecase.call(
-      productId: productIdController.text,
+      productId: productId,
       description: descriptionController.text,
-      step: isEdit.value ? (currentStep + 1).toString() : '',
+      step: '',
     );
 
     result.fold(
@@ -349,23 +412,74 @@ class ProductManagementController extends GetxController {
           Helpers.showCustomDialogError(
             context: Get.context!,
             title: 'error'.tr,
-            message: failure.data['message'],
+            message: failure.data['message'] ?? failure.errMessage,
           );
         }
       },
-      (success) {
-        productIdController.clear();
-        descriptionController.clear();
-        getProductManagement();
-        Get.back();
-        Get.snackbar(
-          'success'.tr,
-          success,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(milliseconds: 1500),
-        );
+      (success) async {
+        final developmentId = success.developmentId;
+        isEdit(true);
+        currentStep = 1;
+        _setGlobalStep(1);
+        if (developmentId != null) {
+          productIdController.text = developmentId;
+        } else {
+          await getProductManagement();
+          final created = developmentForProduct(productId);
+          if (created != null) {
+            productIdController.text = created.id.toString();
+          }
+        }
+        description = descriptionController.text;
+        await getProductManagement();
+        _showSuccessMessage('productDevelopmentCreatedSuccessfully'.tr);
       },
     );
+
+    isLoading(false);
+    update();
+  }
+
+  Future<void> _saveAndUpdateStep(
+    int step, {
+    bool refreshList = true,
+    bool closeOnSuccess = false,
+  }) async {
+    if (!isEdit.value || step < 1) return;
+
+    isLoading(true);
+    update();
+
+    final result = await createProductDevelopmentUsecase.call(
+      productId: productIdController.text,
+      description: descriptionController.text,
+      step: step.toString(),
+    );
+
+    await result.fold(
+      (failure) async {
+        Helpers.showCustomDialogError(
+          context: Get.context!,
+          title: 'error'.tr,
+          message: failure.data?['message'] ?? failure.errMessage,
+        );
+      },
+      (success) async {
+        currentStep = step;
+        description = descriptionController.text;
+        if (refreshList) {
+          await getProductManagement();
+        }
+        if (closeOnSuccess) {
+          Future.delayed(
+            const Duration(milliseconds: 650),
+            Get.back,
+          );
+        }
+        _showSuccessMessage('productDevelopmentUpdatedSuccessfully'.tr);
+      },
+    );
+
     isLoading(false);
     update();
   }
@@ -373,47 +487,54 @@ class ProductManagementController extends GetxController {
   final RxBool isEdit = false.obs;
   String productName = '';
   String productImage = '';
+  List<String> productImageUrls = [];
   String description = '';
   int currentStep = 0;
+
+  void _setProductImages({
+    required String productId,
+    String? devImage,
+    ProductModel? product,
+  }) {
+    if (ProductImageUtils.isValidUrl(devImage)) {
+      productImageUrls = [devImage!.trim()];
+      productImage = devImage.trim();
+      return;
+    }
+
+    final resolvedProduct = product ??
+        products.firstWhereOrNull((p) => p.id == productId) ??
+        selectedProduct;
+    productImageUrls = resolvedProduct?.allImageUrlsInPriority ?? [];
+    productImage = resolvedProduct?.preferredImageUrl ?? '';
+  }
+
   void editProduct({required String id, required bool isEditing}) {
     if (isEditing) {
       isEdit(true);
-      productIdController.text = id;
-      productName = ProductManagementServes()
-          .productManagement
-          .where((f) => f.id.toString() == id)
-          .first
-          .productName
-          .toString();
-      productImage = ProductManagementServes()
-          .productManagement
-          .where((f) => f.id.toString() == id)
-          .first
-          .productImage
-          .toString();
       final product = ProductManagementServes()
           .productManagement
           .firstWhere((f) => f.id.toString() == id);
+      productIdController.text = id;
+      productName = product.productName;
+      _setProductImages(
+        productId: product.productId,
+        devImage: product.productImage,
+      );
       description = product.description;
-      final currentStep = int.tryParse(product.currentStep) ?? 1;
-      this.currentStep = currentStep;
-      if (currentStep < timeLineSteps.length) {
-        selectedStep.value = currentStep + 1;
-        selectedStep2.value = 0;
-      } else {
-        selectedStep2.value = currentStep - timeLineSteps.length + 1;
-        selectedStep.value =
-            timeLineSteps.length + 1; // يوقف الأولى عند آخر خطوة
-      }
+      descriptionController.text = product.description;
+      currentStep = int.tryParse(product.currentStep) ?? 1;
+      _setGlobalStep(currentStep);
     } else {
       isEdit(false);
       selectedProduct = null;
       productIdController.clear();
       descriptionController.clear();
-      selectedStep.value = 1;
-      selectedStep2.value = 0;
+      _setGlobalStep(1);
       productName = '';
       productImage = '';
+      productImageUrls = [];
+      description = '';
       currentStep = 0;
     }
     update();
@@ -423,12 +544,6 @@ class ProductManagementController extends GetxController {
   void onInit() {
     getProductManagement();
     getAllProducts();
-    searchProductManagement.assignAll(ProductManagementServes()
-        .productManagement
-        .where((element) => element.currentStep != '7'));
-    searcharchiveProductManagement.assignAll(ProductManagementServes()
-        .productManagement
-        .where((element) => element.currentStep == '7'));
     super.onInit();
   }
 }

@@ -13,12 +13,14 @@ class ChangeTaskCompletedUasecase {
     required int taskId,
     bool isOccurrence = false,
     int? occurrenceId,
+    String? taskDate,
   }) {
     return employeeDashbordRepository.changeEmployeeTaskToCompleted(
       isSubTask: isSubTask,
       taskId: taskId,
       isOccurrence: isOccurrence,
       occurrenceId: occurrenceId,
+      taskDate: taskDate,
     );
   }
 }

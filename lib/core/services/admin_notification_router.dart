@@ -36,6 +36,8 @@ class AdminNotificationRouter {
           }
           break;
         case 'check_due_reminder':
+        case 'check_cashed':
+        case 'check_returned':
           if (_openChecks(raw)) {
             return;
           }

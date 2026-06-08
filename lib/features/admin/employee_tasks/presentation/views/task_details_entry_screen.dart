@@ -22,6 +22,7 @@ class TaskDetailsEntryScreen extends StatefulWidget {
 class _TaskDetailsEntryScreenState extends State<TaskDetailsEntryScreen> {
   String? _taskId;
   String? _occurrenceId;
+  String? _taskDate;
   bool _loadStarted = false;
 
   @override
@@ -32,6 +33,7 @@ class _TaskDetailsEntryScreenState extends State<TaskDetailsEntryScreen> {
         : <String, dynamic>{};
     _taskId = args['taskId']?.toString();
     _occurrenceId = args['occurrence_id']?.toString();
+    _taskDate = args['task_date']?.toString();
     _startLoad();
   }
 
@@ -60,6 +62,7 @@ class _TaskDetailsEntryScreenState extends State<TaskDetailsEntryScreen> {
       await c.getTaskDetails(
         taskId: _taskId ?? '',
         occurrenceId: _occurrenceId,
+        taskDate: _taskDate,
       );
     } catch (e, st) {
       TaskDetailsDebug.parseError(e, st);
@@ -79,12 +82,10 @@ class _TaskDetailsEntryScreenState extends State<TaskDetailsEntryScreen> {
   bool _detailsMatchRequest(TaskDetailsModel? data) {
     if (data == null) return false;
     if (_occurrenceId != null && _occurrenceId!.isNotEmpty) {
-      return data.occurrenceId?.toString() == _occurrenceId ||
-          data.taskId.toString() == _occurrenceId;
+      return data.occurrenceId?.toString() == _occurrenceId;
     }
     if (_taskId != null && _taskId!.isNotEmpty) {
-      return data.taskId.toString() == _taskId ||
-          data.occurrenceId?.toString() == _taskId;
+      return data.taskId.toString() == _taskId;
     }
     return false;
   }

@@ -64,8 +64,14 @@ class CheckDetails extends GetView<ChecksController> {
                     size: 30,
                   ),
                   onPressed: () {
-                    controller.isEdit.value = true;
-                    controller.getCeckData(check: check, isOutgoing: type);
+                    Get.back();
+                    Future.microtask(() {
+                      controller.isEdit.value = true;
+                      controller.getCeckData(
+                        check: check,
+                        isOutgoing: !type,
+                      );
+                    });
                   },
                 ),
               ],

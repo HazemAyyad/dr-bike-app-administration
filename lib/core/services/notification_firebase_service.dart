@@ -31,29 +31,90 @@ const String kDrBikeAdminNotificationChannelName = 'Dr Bike Notifications';
 /// Must match Laravel [FirebaseService::EMPLOYEE_TASK_CHANNEL_ID] and res/raw/task_sos_alert.
 const String kDrBikeTaskNotificationChannelId = 'dr_bike_task_notifications';
 const String kDrBikeTaskNotificationChannelName = 'Dr Bike Task Alerts';
+
+/// Must match Laravel [FirebaseService::ADMIN_LOGIN_CHANNEL_ID].
+const String kDrBikeAdminLoginChannelId = 'dr_bike_admin_login_alerts';
+const String kDrBikeAdminLoginChannelName = 'تسجيل دخول الموظفين';
+
+/// Must match Laravel [FirebaseService::ADMIN_ATTENDANCE_CHANNEL_ID] (logout).
+const String kDrBikeAdminAttendanceChannelId = 'dr_bike_admin_attendance_alerts';
+const String kDrBikeAdminAttendanceChannelName = 'تنبيهات خروج الموظفين';
+
+/// Must match Laravel [FirebaseService::TASK_SUCCESS_CHANNEL_ID] and res/raw/task_success.
+const String kDrBikeTaskSuccessChannelId = 'dr_bike_task_success_notifications';
+const String kDrBikeTaskSuccessChannelName = 'إنجاز المهام';
+
 const String kTaskSosSoundResource = 'task_sos_alert';
 const String kTaskSosSoundIos = 'task_sos_alert.mp3';
+const String kTaskSuccessSoundResource = 'task_success';
+const String kTaskSuccessSoundIos = 'task_success.wav';
+const String kAdminLoginMotivateSoundResource = 'admin_login_motivate';
+const String kAdminLoginMotivateSoundIos = 'admin_login_motivate.wav';
 
 /// SOS-style alert for employee task push notifications.
 final Int64List kTaskSosVibrationPattern =
     Int64List.fromList([0, 400, 200, 400, 200, 600]);
 
-/// Employee task-related FCM types (custom urgent sound).
-const Set<String> kEmployeeTaskNotificationTypes = {
+/// Gentle vibration for task completion.
+final Int64List kTaskSuccessVibrationPattern =
+    Int64List.fromList([0, 100, 60, 140]);
+
+/// Energetic vibration for admin login (motivational).
+final Int64List kAdminLoginMotivateVibrationPattern =
+    Int64List.fromList([0, 180, 90, 180, 90, 280]);
+
+/// Urgent employee task FCM types (SOS tone).
+const Set<String> kEmployeeTaskUrgentNotificationTypes = {
   'employee_task_assigned',
-  'employee_task_approved',
   'employee_task_rejected',
-  'employee_task_co_subtask_done',
-  'employee_task_co_main_done',
-  'employee_task_co_main_completed',
   'employee_task_scheduled_reminder',
   'employee_daily_tasks',
   'employee_hourly_reminder',
-  'employee_daily_tasks_complete',
+  'employee_operational_reminder',
 };
 
-bool isEmployeeTaskNotificationType(String? type) =>
-    type != null && kEmployeeTaskNotificationTypes.contains(type);
+/// Task completion / success FCM types.
+const Set<String> kTaskSuccessNotificationTypes = {
+  'employee_task_approved',
+  'employee_task_co_subtask_done',
+  'employee_task_co_main_done',
+  'employee_task_co_main_completed',
+  'employee_daily_tasks_complete',
+  'employee_task_completed',
+  'employee_task_submitted',
+  'employee_subtask_completed',
+};
+
+/// Admin login FCM types (motivational loud tone).
+const Set<String> kAdminLoginNotificationTypes = {
+  'employee_login',
+};
+
+/// Admin logout FCM types (alarm sound).
+const Set<String> kAdminLogoutNotificationTypes = {
+  'employee_logout',
+  'employee_logout_pending_tasks',
+};
+
+bool isEmployeeTaskUrgentNotificationType(String? type) =>
+    type != null && kEmployeeTaskUrgentNotificationTypes.contains(type);
+
+bool isTaskSuccessNotificationType(String? type) =>
+    type != null && kTaskSuccessNotificationTypes.contains(type);
+
+bool isAdminLoginNotificationType(String? type) =>
+    type != null && kAdminLoginNotificationTypes.contains(type);
+
+bool isAdminLogoutNotificationType(String? type) =>
+    type != null && kAdminLogoutNotificationTypes.contains(type);
+
+enum _TrayAlertStyle {
+  normal,
+  employeeTaskUrgent,
+  taskSuccess,
+  adminLogin,
+  adminLogout,
+}
 
 /// google-services.json (android/app) — compare with [DefaultFirebaseOptions.android.projectId].
 const String kGoogleServicesProjectIdHint = 'drbike-7fa3a';
@@ -460,9 +521,51 @@ class NotificationFirebaseService {
     );
     await androidPlugin?.createNotificationChannel(taskChannel);
 
+    final attendanceChannel = AndroidNotificationChannel(
+      kDrBikeAdminAttendanceChannelId,
+      kDrBikeAdminAttendanceChannelName,
+      description: 'تنبيهات خروج الموظفين (صوت إنذار)',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(kTaskSosSoundResource),
+      enableVibration: true,
+      vibrationPattern: kTaskSosVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(attendanceChannel);
+
+    final adminLoginChannel = AndroidNotificationChannel(
+      kDrBikeAdminLoginChannelId,
+      kDrBikeAdminLoginChannelName,
+      description: 'صوت تحفيزي عالي عند تسجيل دخول الموظف',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(
+        kAdminLoginMotivateSoundResource,
+      ),
+      enableVibration: true,
+      vibrationPattern: kAdminLoginMotivateVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(adminLoginChannel);
+
+    final taskSuccessChannel = AndroidNotificationChannel(
+      kDrBikeTaskSuccessChannelId,
+      kDrBikeTaskSuccessChannelName,
+      description: 'صوت نجاح عند إتمام المهام',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(kTaskSuccessSoundResource),
+      enableVibration: true,
+      vibrationPattern: kTaskSuccessVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(taskSuccessChannel);
+
     debugPrint(
       '[FCM] Android channels: admin=$kDrBikeAdminNotificationChannelId '
-      'task=$kDrBikeTaskNotificationChannelId (sound=$kTaskSosSoundResource)',
+      'task=$kDrBikeTaskNotificationChannelId login=$kDrBikeAdminLoginChannelId '
+      'logout=$kDrBikeAdminAttendanceChannelId success=$kDrBikeTaskSuccessChannelId',
     );
 
     const initializationSettingsAndroid =
@@ -541,20 +644,26 @@ class NotificationFirebaseService {
 
   Future<void> showForegroundNotification(RemoteMessage message) async {
     final type = message.data['type']?.toString() ?? '';
-    final isTaskAlert = isEmployeeTaskNotificationType(type);
-
-    if (isTaskAlert) {
-      await _showTrayNotification(message, urgentTask: true);
-      _refreshNotificationBadge();
-      return;
+    final _TrayAlertStyle style;
+    if (isAdminLoginNotificationType(type)) {
+      style = _TrayAlertStyle.adminLogin;
+    } else if (isAdminLogoutNotificationType(type)) {
+      style = _TrayAlertStyle.adminLogout;
+    } else if (isTaskSuccessNotificationType(type)) {
+      style = _TrayAlertStyle.taskSuccess;
+    } else if (isEmployeeTaskUrgentNotificationType(type)) {
+      style = _TrayAlertStyle.employeeTaskUrgent;
+    } else {
+      style = _TrayAlertStyle.normal;
     }
 
-    await _showTrayNotification(message, urgentTask: false);
+    await _showTrayNotification(message, style: style);
+    _refreshNotificationBadge();
   }
 
   Future<void> _showTrayNotification(
     RemoteMessage message, {
-    required bool urgentTask,
+    required _TrayAlertStyle style,
   }) async {
     await setupFlutterNotifications();
 
@@ -569,49 +678,127 @@ class NotificationFirebaseService {
       return;
     }
 
-    final androidDetails = urgentTask
-        ? AndroidNotificationDetails(
-            kDrBikeTaskNotificationChannelId,
-            kDrBikeTaskNotificationChannelName,
-            channelDescription: 'Urgent employee task alerts',
-            icon: 'ic_notification',
-            importance: Importance.max,
-            priority: Priority.max,
-            playSound: true,
-            sound: const RawResourceAndroidNotificationSound(
-              kTaskSosSoundResource,
-            ),
-            enableVibration: true,
-            vibrationPattern: kTaskSosVibrationPattern,
-            visibility: NotificationVisibility.public,
-            color: AppColors.primaryColor,
-            styleInformation: BigTextStyleInformation(
-              body,
-              contentTitle: title,
-            ),
-          )
-        : AndroidNotificationDetails(
-            kDrBikeAdminNotificationChannelId,
-            kDrBikeAdminNotificationChannelName,
-            channelDescription: 'DoctorBike admin alerts',
-            icon: 'ic_notification',
-            importance: Importance.max,
-            priority: Priority.max,
-            playSound: true,
-            enableVibration: true,
-            visibility: NotificationVisibility.public,
-            color: AppColors.primaryColor,
-            styleInformation: BigTextStyleInformation(
-              body,
-              contentTitle: title,
-            ),
-          );
+    final AndroidNotificationDetails androidDetails;
+    if (style == _TrayAlertStyle.employeeTaskUrgent) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeTaskNotificationChannelId,
+        kDrBikeTaskNotificationChannelName,
+        channelDescription: 'Urgent employee task alerts',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kTaskSosSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kTaskSosVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.taskSuccess) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeTaskSuccessChannelId,
+        kDrBikeTaskSuccessChannelName,
+        channelDescription: 'صوت نجاح عند إتمام المهام',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kTaskSuccessSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kTaskSuccessVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.adminLogin) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeAdminLoginChannelId,
+        kDrBikeAdminLoginChannelName,
+        channelDescription: 'صوت تحفيزي عند تسجيل دخول الموظف',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kAdminLoginMotivateSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kAdminLoginMotivateVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.adminLogout) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeAdminAttendanceChannelId,
+        kDrBikeAdminAttendanceChannelName,
+        channelDescription: 'تنبيهات خروج الموظفين',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kTaskSosSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kTaskSosVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeAdminNotificationChannelId,
+        kDrBikeAdminNotificationChannelName,
+        channelDescription: 'DoctorBike admin alerts',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        enableVibration: true,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    }
+
+    final String? iosSound;
+    if (style == _TrayAlertStyle.taskSuccess) {
+      iosSound = kTaskSuccessSoundIos;
+    } else if (style == _TrayAlertStyle.adminLogin) {
+      iosSound = kAdminLoginMotivateSoundIos;
+    } else if (style == _TrayAlertStyle.employeeTaskUrgent ||
+        style == _TrayAlertStyle.adminLogout) {
+      iosSound = kTaskSosSoundIos;
+    } else {
+      iosSound = null;
+    }
 
     final iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
-      sound: urgentTask ? kTaskSosSoundIos : null,
+      sound: iosSound,
     );
 
     final payload = jsonEncode(_payloadFromMessage(message));

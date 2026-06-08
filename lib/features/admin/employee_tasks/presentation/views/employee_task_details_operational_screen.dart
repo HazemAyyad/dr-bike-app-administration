@@ -15,6 +15,10 @@ import '../widgets/task_operational_shared.dart';
 import '../widgets/task_status_badge.dart';
 import '../widgets/task_assignees_section.dart';
 import '../widgets/task_timeline_section.dart';
+import '../widgets/subtask_voice_note_icon.dart';
+import '../widgets/subtask_voice_note_tile.dart';
+import '../../../../../core/helpers/audio_helper.dart';
+import '../../../../../core/helpers/proof_media_type.dart';
 
 /// Admin/manager task details — compact layout.
 class EmployeeTaskDetailsOperationalScreen
@@ -114,8 +118,10 @@ class EmployeeTaskDetailsOperationalScreen
                         ),
                       ),
                     ],
-                    TaskSectionTitle('employeeProofSection', compact: _compact),
-                    _ProofGallery(data: data),
+                    if (_showsEmployeeProofSection(data)) ...[
+                      TaskSectionTitle('employeeProofSection', compact: _compact),
+                      _ProofGallery(data: data),
+                    ],
                     if (data.timeline.isNotEmpty) ...[
                       SizedBox(height: 4.h),
                       TaskTimelineSection(
@@ -465,11 +471,11 @@ class OperationalChecklist extends StatelessWidget {
       children: data.subTasks.map((sub) {
         final done = sub.status == 'completed';
         final needsProof = sub.isForcedToUploadImg;
-        final hasProof = (sub.employeeImg?.isNotEmpty ?? false) ||
-            (sub.employeeVideos?.isNotEmpty ?? false);
         final hasAdminMedia = (sub.adminImg?.isNotEmpty ?? false) ||
-            (sub.adminVideos?.isNotEmpty ?? false);
-        final showProofMedia = hasProof;
+            (sub.adminVideos?.isNotEmpty ?? false) ||
+            hasPlayableAudio(sub.adminAudio);
+        final hasEmployeeProof = (sub.employeeImg?.isNotEmpty ?? false) ||
+            (sub.employeeVideos?.isNotEmpty ?? false);
         return GestureDetector(
           onTap: interactive && !done ? () => onSubtaskTap?.call(sub) : null,
           child: Container(
@@ -528,10 +534,11 @@ class OperationalChecklist extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (needsProof && !done) ...[
+                      if (needsProof && !done && !hasEmployeeProof) ...[
                         SizedBox(height: 2.h),
                         Text(
-                          'subtaskProofRequired'.tr,
+                          ProofMediaType.subtaskRequiredHintKey(sub.proofMediaType)
+                              .tr,
                           style: TextStyle(
                             fontSize: compact ? 9.sp : 10.sp,
                             fontWeight: FontWeight.w600,
@@ -541,15 +548,60 @@ class OperationalChecklist extends StatelessWidget {
                       ],
                       if (hasAdminMedia) ...[
                         SizedBox(height: 6.h),
-                        TaskMediaThumbnailRow(
-                          images: sub.adminImg ?? [],
-                          videos: sub.adminVideos ?? [],
-                          thumbHeight: compact ? 48 : 56,
-                          thumbWidth: compact ? 48 : 56,
+                        Text(
+                          'subtaskAdminMaterialsForEmployee'.tr,
+                          style: TextStyle(
+                            fontSize: compact ? 9.sp : 10.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.customGreyColor5,
+                          ),
                         ),
+                        SizedBox(height: 4.h),
+                        if (compact)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: TaskMediaThumbnailRow(
+                                  images: sub.adminImg ?? [],
+                                  videos: sub.adminVideos ?? [],
+                                  thumbHeight: 40,
+                                  thumbWidth: 40,
+                                ),
+                              ),
+                              if (hasPlayableAudio(sub.adminAudio)) ...[
+                                SizedBox(width: 8.w),
+                                SubtaskVoiceNoteIcon(
+                                  url: sub.adminAudio!,
+                                  size: 40,
+                                ),
+                              ],
+                            ],
+                          )
+                        else ...[
+                          TaskMediaThumbnailRow(
+                            images: sub.adminImg ?? [],
+                            videos: sub.adminVideos ?? [],
+                            thumbHeight: 56,
+                            thumbWidth: 56,
+                          ),
+                          if (hasPlayableAudio(sub.adminAudio)) ...[
+                            SizedBox(height: 6.h),
+                            SubtaskVoiceNoteTile(url: sub.adminAudio!),
+                          ],
+                        ],
                       ],
-                      if (showProofMedia) ...[
+                      if (hasEmployeeProof) ...[
                         SizedBox(height: 6.h),
+                        Text(
+                          'subtaskEmployeeProofTitle'.tr,
+                          style: TextStyle(
+                            fontSize: compact ? 9.sp : 10.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.operationalPurple,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
                         TaskMediaThumbnailRow(
                           images: sub.employeeImg ?? [],
                           videos: sub.employeeVideos ?? [],
@@ -563,15 +615,16 @@ class OperationalChecklist extends StatelessWidget {
                 if (needsProof) ...[
                   SizedBox(width: 6.w),
                   Tooltip(
-                    message: done && hasProof
+                    message: done && hasEmployeeProof
                         ? 'subtaskProofUploaded'.tr
-                        : 'subtaskProofRequired'.tr,
+                        : ProofMediaType.subtaskRequiredHintKey(sub.proofMediaType)
+                            .tr,
                     child: Icon(
-                      done && hasProof
+                      done && hasEmployeeProof
                           ? Icons.verified_outlined
                           : Icons.camera_alt_outlined,
                       size: compact ? 16.sp : 20.sp,
-                      color: done && hasProof
+                      color: done && hasEmployeeProof
                           ? AppColors.customGreen1
                           : AppColors.operationalPurple,
                     ),
@@ -584,4 +637,10 @@ class OperationalChecklist extends StatelessWidget {
       }).toList(),
     );
   }
+}
+
+bool _showsEmployeeProofSection(TaskDetailsModel data) {
+  if (data.isForcedToUploadImg) return true;
+  return (data.employeeImg?.isNotEmpty ?? false) ||
+      (data.employeeVideos?.isNotEmpty ?? false);
 }

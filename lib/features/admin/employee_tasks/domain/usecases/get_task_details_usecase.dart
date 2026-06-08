@@ -8,10 +8,12 @@ class GetTaskDetailsUsecase {
   Future<dynamic> call({
     required String taskId,
     String? occurrenceId,
+    String? taskDate,
   }) {
     return employeeTasksRepository.getTaskDetails(
       taskId: taskId,
       occurrenceId: occurrenceId,
+      taskDate: taskDate,
     );
   }
 }

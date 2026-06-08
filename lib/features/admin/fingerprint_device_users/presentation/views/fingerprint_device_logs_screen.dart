@@ -21,6 +21,8 @@ class _FingerprintDeviceLogsScreenState extends State<FingerprintDeviceLogsScree
   final RxBool _loading = true.obs;
   final RxString _error = ''.obs;
   final RxList<Map<String, dynamic>> _days = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> _allDaysFromApi = <Map<String, dynamic>>[].obs;
+  final RxString _logViewMode = 'attendance'.obs;
   final RxInt _totalScans = 0.obs;
   final RxInt _totalIn = 0.obs;
   final RxInt _totalOut = 0.obs;
@@ -44,37 +46,26 @@ class _FingerprintDeviceLogsScreenState extends State<FingerprintDeviceLogsScree
     _load();
   }
 
-  bool _isOperlogCodePin(String pin) {
-    final n = int.tryParse(pin.trim());
-    if (n == null) return false;
-    return n >= 0 && n <= 100;
-  }
-
-  bool _isDisplayableScan(Map<String, dynamic> scan) {
+  bool _isAttendanceViewScan(Map<String, dynamic> scan) {
     final pin = scan['device_user_id']?.toString().trim() ?? '';
-    if (!_isValidAttendancePin(pin)) return false;
-
+    final kind = scan['raw_kind']?.toString().toLowerCase() ?? '';
     final err = scan['processing_error']?.toString().toLowerCase() ?? '';
-    if (err.contains('oplog') || err.contains('operlog')) return false;
 
-    final processing = scan['processing_status']?.toString().toLowerCase() ?? '';
-    if (processing == 'ignored' && err.contains('operlog')) return false;
-
-    final emp = scan['employee_name']?.toString().trim() ?? '';
-    if (processing == 'processed' || emp.isNotEmpty) return true;
-
-    if (_isOperlogCodePin(pin)) return false;
-
-    return true;
-  }
-
-  bool _isValidAttendancePin(String? pin) {
-    final p = pin?.trim() ?? '';
-    if (p.isEmpty) return false;
-    if (RegExp(r'oplog|operlog|^user$|^fp$', caseSensitive: false).hasMatch(p)) {
+    if (kind == 'oplog' || kind == 'operlog') return false;
+    if (err.contains('operlog_not_attendance')) return false;
+    if (RegExp(r'^oplog|^operlog|^user$|^fp$|^raw$', caseSensitive: false).hasMatch(pin)) {
       return false;
     }
-    return RegExp(r'^[1-9][0-9]{0,7}$').hasMatch(p);
+    if (RegExp(r'oplog|operlog', caseSensitive: false).hasMatch(pin)) {
+      return false;
+    }
+
+    return RegExp(r'^[1-9][0-9]{0,7}$').hasMatch(pin);
+  }
+
+  bool _passesViewFilter(Map<String, dynamic> scan) {
+    if (_logViewMode.value == 'all') return true;
+    return _isAttendanceViewScan(scan);
   }
 
   List<Map<String, dynamic>> _filterDays(List<dynamic> rawDays) {
@@ -87,13 +78,25 @@ class _FingerprintDeviceLogsScreenState extends State<FingerprintDeviceLogsScree
       final scans = scansRaw
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
-          .where((s) => _isDisplayableScan(s))
+          .where((s) => _passesViewFilter(s))
           .toList();
       if (scans.isEmpty) continue;
       day['scans'] = scans;
       out.add(day);
     }
     return out;
+  }
+
+  void _applyViewToDays() {
+    final filtered = _filterDays(_allDaysFromApi);
+    _days.assignAll(filtered);
+    _applyTotals(filtered);
+  }
+
+  void _setLogViewMode(String mode) {
+    if (_logViewMode.value == mode) return;
+    _logViewMode.value = mode;
+    _applyViewToDays();
   }
 
   void _applyTotals(List<Map<String, dynamic>> days) {
@@ -147,10 +150,12 @@ class _FingerprintDeviceLogsScreenState extends State<FingerprintDeviceLogsScree
       if (data is Map && data['status']?.toString() == 'success') {
         final list = data['days'];
         if (list is List) {
-          final filtered = _filterDays(list);
-          _days.assignAll(filtered);
-          _applyTotals(filtered);
+          _allDaysFromApi.assignAll(
+            list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)),
+          );
+          _applyViewToDays();
         } else {
+          _allDaysFromApi.clear();
           _days.clear();
           _totalScans.value = 0;
           _totalIn.value = 0;
@@ -307,6 +312,26 @@ class _FingerprintDeviceLogsScreenState extends State<FingerprintDeviceLogsScree
                       height: 1.4,
                     ),
                   ),
+                  SizedBox(height: 10.h),
+                  Obx(() => Row(
+                        children: [
+                          Expanded(
+                            child: _ViewModeChip(
+                              label: 'fingerprintLogViewAttendance'.tr,
+                              selected: _logViewMode.value == 'attendance',
+                              onTap: () => _setLogViewMode('attendance'),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: _ViewModeChip(
+                              label: 'fingerprintLogViewAll'.tr,
+                              selected: _logViewMode.value == 'all',
+                              onTap: () => _setLogViewMode('all'),
+                            ),
+                          ),
+                        ],
+                      )),
                 ],
               ),
             ),
@@ -438,6 +463,48 @@ class _FingerprintDeviceLogsScreenState extends State<FingerprintDeviceLogsScree
   }
 }
 
+class _ViewModeChip extends StatelessWidget {
+  const _ViewModeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: selected ? const Color(0xFFEEF2FF) : const Color(0xFFF9FAFB),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: selected ? const Color(0xFF6366F1) : const Color(0xFFE5E7EB),
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+              color: selected ? const Color(0xFF4338CA) : const Color(0xFF6B7280),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SummaryChip extends StatelessWidget {
   const _SummaryChip({
     required this.label,
@@ -556,7 +623,8 @@ class _ScanTile extends StatelessWidget {
     final pin = scan['device_user_id']?.toString() ?? '—';
     final emp = scan['employee_name']?.toString();
     final deviceName = scan['device_name']?.toString();
-    final scanAt = scan['scan_time']?.toString();
+    final deviceAt = scan['device_at']?.toString() ?? scan['scan_time']?.toString();
+    final serverAt = scan['server_at']?.toString() ?? scan['server_received_at']?.toString();
     final action = scan['action']?.toString();
     final color = actionColor(action);
     final bg = actionBg(action);
@@ -596,19 +664,55 @@ class _ScanTile extends StatelessWidget {
                   children: [
                     Container(
                       width: 58.w,
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
+                      padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
                       decoration: BoxDecoration(
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(12.r),
                       ),
-                      child: Text(
-                        formatTimeOnly12(scanAt),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF2563EB),
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'deviceTimeShort'.tr,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 8.sp,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            formatTimeOnly12(deviceAt),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                          if (serverAt != null && serverAt.isNotEmpty) ...[
+                            SizedBox(height: 4.h),
+                            Text(
+                              'serverTimeShort'.tr,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 8.sp,
+                                fontWeight: FontWeight.w700,
+                                color: textSecondary,
+                              ),
+                            ),
+                            Text(
+                              formatTimeOnly12(serverAt),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 9.5.sp,
+                                fontWeight: FontWeight.w700,
+                                color: textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     SizedBox(width: 10.w),

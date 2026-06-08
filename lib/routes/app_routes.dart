@@ -72,6 +72,7 @@ class AppRoutes {
   static const OUTGOINGCHECKSSCREEN = '/OutgoingChecksScreen';
   static const INCOMINGCHECKSSCREEN = '/IncomingChecksScreen';
   static const NEWCHECKSCREEN = '/NewCheckScreen';
+  static const EDITCHECKSCREEN = '/EditCheckScreen';
   static const CHECKNOTIFICATIONRULESSCREEN = '/CheckNotificationRulesScreen';
 
   // Profile Screen
@@ -144,6 +145,10 @@ class AppRoutes {
 
   // General Settings (admin)
   static const GENERALSETTINGSSCREEN = '/GeneralSettingsScreen';
+  static const STOCKINVENTORYSETTINGSSCREEN = '/StockInventorySettingsScreen';
+  static const PRODUCTSIZEOPTIONSSETTINGSSCREEN =
+      '/ProductSizeOptionsSettingsScreen';
+  static const STORESECTIONSSETTINGSSCREEN = '/StoreSectionsSettingsScreen';
   static const BANKSSETTINGSSCREEN = '/BanksSettingsScreen';
   static const CONTACTCATEGORIESSETTINGSSCREEN =
       '/ContactCategoriesSettingsScreen';

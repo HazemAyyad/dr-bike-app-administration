@@ -15,6 +15,9 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../stock/data/models/offer_package_model.dart';
+import '../../../stock/data/datasources/stock_datasource.dart';
+import '../../../stock/data/models/store_section_model.dart';
+import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../stock/presentation/controllers/offer_packages_controller.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/instant_sales_model.dart';
@@ -356,6 +359,60 @@ class SalesController extends GetxController
   final RxBool productsLoading = false.obs;
   final RxInt productsListVersion = 0.obs;
 
+  final RxList<StoreSectionModel> pickerStoreSections =
+      <StoreSectionModel>[].obs;
+  final RxnString pickerLocationSectionId = RxnString();
+  final RxnString pickerLocationShelf = RxnString();
+
+  StockDatasource get _stockDatasource {
+    AppDependencyRegistry.ensureStock();
+    return Get.find<StockDatasource>();
+  }
+
+  Future<void> ensurePickerStoreSectionsLoaded({bool force = false}) async {
+    if (!force && pickerStoreSections.isNotEmpty) return;
+    try {
+      final list = await _stockDatasource.getStoreSections();
+      pickerStoreSections.assignAll(list);
+    } catch (_) {}
+  }
+
+  bool productMatchesPickerLocation(ProductModel product) {
+    final sectionId = pickerLocationSectionId.value;
+    if (sectionId == null || sectionId.isEmpty) return true;
+    if ((product.storeSectionId ?? '').trim() != sectionId.trim()) {
+      return false;
+    }
+    final shelf = pickerLocationShelf.value?.trim() ?? '';
+    if (shelf.isEmpty) return true;
+    return (product.shelfNumber ?? '').trim() == shelf;
+  }
+
+  Future<List<String>> loadPickerSectionShelves(String sectionId) =>
+      _stockDatasource.getSectionShelves(sectionId: sectionId);
+
+  Future<void> applyPickerLocationFilter({
+    String? sectionId,
+    String? shelfNumber,
+  }) async {
+    pickerLocationSectionId.value = sectionId;
+    pickerLocationShelf.value = shelfNumber;
+    _bumpProductsList();
+    update();
+  }
+
+  Future<void> clearPickerLocationFilter() async {
+    pickerLocationSectionId.value = null;
+    pickerLocationShelf.value = null;
+    _bumpProductsList();
+    update();
+  }
+
+  void clearPickerLocationFilterOnReset() {
+    pickerLocationSectionId.value = null;
+    pickerLocationShelf.value = null;
+  }
+
   void bumpCartRevision() => cartRevision.value++;
 
   void _bumpProductsList() => productsListVersion.value++;
@@ -452,8 +509,23 @@ class SalesController extends GetxController
 
   List<ProductModel> get filteredProductsForPicker {
     final q = instantSaleProductSearch.value.trim().toLowerCase();
-    if (q.isEmpty) return products;
-    return products.where((p) => p.nameAr.toLowerCase().contains(q)).toList();
+    final sectionId = pickerLocationSectionId.value;
+
+    var list = products;
+    if (sectionId != null && sectionId.isNotEmpty) {
+      list = list.where(productMatchesPickerLocation).toList();
+    }
+
+    if (q.isEmpty) return list;
+    return list.where((p) {
+      if (p.nameAr.toLowerCase().contains(q)) return true;
+      final code = p.productCode?.toLowerCase() ?? '';
+      if (code.contains(q)) return true;
+      final section = p.storeSectionName?.toLowerCase() ?? '';
+      if (section.contains(q)) return true;
+      final shelfNum = p.shelfNumber?.toLowerCase() ?? '';
+      return shelfNum.contains(q);
+    }).toList();
   }
 
   List<OfferPackageModel> get filteredPackagesForPicker {
@@ -465,8 +537,14 @@ class SalesController extends GetxController
     return sellable.where((p) => p.name.toLowerCase().contains(q)).toList();
   }
 
-  int get pickerGridItemCount =>
-      filteredPackagesForPicker.length + filteredProductsForPicker.length;
+  int get pickerGridItemCount {
+    final hasLocationFilter =
+        pickerLocationSectionId.value != null &&
+            pickerLocationSectionId.value!.isNotEmpty;
+    final packages =
+        hasLocationFilter ? 0 : filteredPackagesForPicker.length;
+    return packages + filteredProductsForPicker.length;
+  }
 
   bool get canContinueFromPicker =>
       (isPackageSale.value && selectedPackageId.value != null) ||
@@ -748,6 +826,7 @@ class SalesController extends GetxController
     isPackageSale.value = false;
     selectedPackageId.value = null;
     packageLineTotal.value = 0;
+    clearPickerLocationFilterOnReset();
     clearCartLines(deferDispose: false);
     for (final e in items) {
       e.quantityController.clear();

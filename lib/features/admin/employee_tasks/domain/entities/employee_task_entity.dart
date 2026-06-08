@@ -18,12 +18,16 @@ class EmployeeTaskEntity {
   final int points;
   final int progress;
   final bool proofRequired;
+  final String taskRecurrence;
+  final List<String> taskRecurrenceTime;
+  final int? templateId;
 
   EmployeeTaskEntity({
     required this.taskId,
     this.occurrenceId,
     this.parentId,
     this.source = 'legacy',
+    this.templateId,
     required this.taskName,
     required this.employeeId,
     required this.employeeName,
@@ -39,8 +43,12 @@ class EmployeeTaskEntity {
     this.points = 0,
     this.progress = 0,
     this.proofRequired = false,
+    this.taskRecurrence = 'noRepeat',
+    this.taskRecurrenceTime = const [],
   });
 
   bool get isRepeatedCopy =>
       parentId != null && parentId!.isNotEmpty && parentId != '0';
+
+  bool get isOccurrence => source == 'occurrence';
 }

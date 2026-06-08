@@ -217,6 +217,7 @@ class EndPoints {
   static const String employeeTaskSubmit = 'employee/task/submit';
   static const String employeeTaskApprove = 'employee/task/approve';
   static const String employeeTaskReject = 'employee/task/reject';
+  static const String employeeTaskReopen = 'employee/task/reopen';
   static const String employeeTaskTimeline = 'employee/task/timeline';
   static const String employeeTaskPerformance = 'employee/task/performance';
   // special tasks
@@ -297,6 +298,7 @@ class EndPoints {
   static const String previewImportProductsCsv = 'products/import-csv/preview';
   static const String importProductsCsv = 'products/import-csv';
   static const String productSizeOptions = 'get/product/size-options';
+  static const String stockSizeOptionPresets = 'stock/size-option-presets';
   static const String getUnarchivedCloseouts = 'get/unarchived/closeouts';
   static const String getAllCombinations = 'get/all/combinations';
   static const String getProductDetails = 'get/product/details';
@@ -313,6 +315,18 @@ class EndPoints {
   static const String productTagsAttach = 'product/tags/attach';
   static const String productTagsDetach = 'product/tags/detach';
   static const String productsByTag = 'products/by/tag';
+  static const String storeSectionsList = 'store/sections';
+  static const String storeSectionsCreate = 'store/sections';
+  static const String storeSectionsUpdate = 'store/sections/update';
+  static const String storeSectionsDeactivate = 'store/sections/deactivate';
+  static const String storeSectionsDelete = 'store/sections/delete';
+  static const String storeSectionShelves = 'store/sections/shelves';
+  static const String storeSectionShelvesCreate = 'store/sections/shelves';
+  static const String storeSectionShelvesUpdate = 'store/sections/shelves/update';
+  static const String storeSectionShelvesDelete = 'store/sections/shelves/delete';
+  static const String productsByLocation = 'products/by/location';
+  static const String productsLocationMove = 'products/location/move';
+  static const String productsLocationSwap = 'products/location/swap';
   static const String addCombination = 'add/combination';
 
   static const String offerPackages = 'offer/packages';

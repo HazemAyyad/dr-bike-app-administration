@@ -299,6 +299,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         descriptionKey: 'adminFabOptionsSettingDesc',
         onTap: _editAdminFabOptions,
       ),
+      _SettingsItem(
+        icon: Icons.inventory_2_outlined,
+        iconColor: const Color(0xFF0369A1),
+        titleKey: 'stockInventorySettings',
+        descriptionKey: 'stockInventorySettingsDesc',
+        onTap: () => Get.toNamed(AppRoutes.STOCKINVENTORYSETTINGSSCREEN),
+      ),
     ];
 
     return Scaffold(

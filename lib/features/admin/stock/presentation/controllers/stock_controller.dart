@@ -1,7 +1,8 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:doctorbike/core/helpers/sweet_success_dialog.dart';
+import '../../../../../core/helpers/app_navigation.dart';
+import '../../../../../core/helpers/sweet_success_dialog.dart';
 import 'package:doctorbike/routes/app_routes.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -13,14 +14,17 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/server_validation_messages.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
-import '../../data/models/product_tag_model.dart';
+import '../../data/models/store_section_model.dart';
+import '../../domain/stock_location_interactor.dart';
 import '../../domain/stock_product_filters.dart';
-import '../../domain/stock_tags_interactor.dart';
+import '../widgets/product_location_action_sheet.dart';
+import '../widgets/product_location_confirm_screen.dart';
 import '../../domain/usecases/add_combination_usecase.dart';
 import '../../domain/usecases/get_all_stock_usecase.dart';
 import '../../domain/usecases/get_archived_usecase.dart';
@@ -31,6 +35,7 @@ import '../../domain/usecases/get_product_size_options_usecase.dart';
 import '../../domain/usecases/move_to_archive_usecase.dart';
 import '../../domain/usecases/save_product_full_usecase.dart';
 import '../../domain/usecases/search_products_usecase.dart';
+import 'offer_packages_controller.dart';
 
 class StockController extends GetxController with GetTickerProviderStateMixin {
   final GetAllStockUsecase getAllStockUsecase;
@@ -43,7 +48,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final AddCombinationUsecase addCombinationUsecase;
   final SaveProductFullUsecase saveProductFullUsecase;
   final GetProductSizeOptionsUsecase getProductSizeOptionsUsecase;
-  final StockTagsInteractor stockTagsInteractor;
+  final StockLocationInteractor stockLocationInteractor;
   final StockDatasource stockDatasource;
 
   StockController({
@@ -57,7 +62,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     required this.addCombinationUsecase,
     required this.saveProductFullUsecase,
     required this.getProductSizeOptionsUsecase,
-    required this.stockTagsInteractor,
+    required this.stockLocationInteractor,
     required this.stockDatasource,
   });
 
@@ -88,6 +93,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController minSalePriceController = TextEditingController();
   final TextEditingController listPriceController = TextEditingController();
   final TextEditingController rotationDateController = TextEditingController();
+
+  final TextEditingController shelfNumberController = TextEditingController();
+  final RxString editProductShelfNumber = ''.obs;
 
   final RxBool isForcedSale = false.obs;
   final RxBool isShowProduct = true.obs;
@@ -121,17 +129,35 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final showScrollToTopButton = false.obs;
   final RxBool isProductsCsvBusy = false.obs;
 
-  final tabs =
-      ['products', 'clearance', 'productComposition', 'productTagsTab'].obs;
+  final tabs = [
+    'products',
+    'clearance',
+    'productComposition',
+    'storeLocationTab',
+    'offerPackages',
+  ].obs;
 
   final currentTab = 0.obs;
 
   void changeTab(int index) {
+    if (index != currentTab.value) {
+      exitLocationSelection();
+    }
     currentTab.value = index;
     if (index == 3) {
-      Future<void>(() async => ensureTagsLoaded());
-      if (selectedTagFilterId.value != null) {
-        Future<void>(() async => selectTagFilter(selectedTagFilterId.value));
+      Future<void>(() async => ensureStoreSectionsLoaded());
+      if (selectedLocationSectionId.value != null) {
+        Future<void>(() async => selectLocationFilter(
+              selectedLocationSectionId.value,
+              shelf: selectedLocationShelf.value,
+            ));
+      }
+    } else if (index == 4) {
+      if (Get.isRegistered<OfferPackagesController>()) {
+        final packagesCtrl = Get.find<OfferPackagesController>();
+        if (packagesCtrl.packages.isEmpty) {
+          Future<void>(() async => packagesCtrl.loadPackages());
+        }
       }
     } else {
       final needsLoad = (index == 0 && allProducts.isEmpty) ||
@@ -145,123 +171,522 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
-  final RxList<ProductTagModel> catalogTags = <ProductTagModel>[].obs;
-  final RxList<String> selectedTagIds = <String>[].obs;
-  final RxList<AllStockProductsModel> tagFilterProducts =
+  final RxList<StoreSectionModel> storeSections = <StoreSectionModel>[].obs;
+  final RxnString selectedProductStoreSectionId = RxnString();
+  final RxList<AllStockProductsModel> locationFilterProducts =
       <AllStockProductsModel>[].obs;
-  final RxnString selectedTagFilterId = RxnString();
-  final RxBool tagProductsLoadingMore = false.obs;
-  int tagProductsPage = 1;
-  int tagProductsLastPage = 1;
+  final RxnString selectedLocationSectionId = RxnString();
+  final RxnString selectedLocationShelf = RxnString();
+  final RxList<String> sectionShelves = <String>[].obs;
+  final RxBool locationProductsLoadingMore = false.obs;
+  int locationProductsPage = 1;
+  int locationProductsLastPage = 1;
 
-  Future<void> refreshCatalogTags() async {
+  final RxBool locationSelectionActive = false.obs;
+  final RxList<String> selectedProductIds = <String>[].obs;
+  final RxList<String> swapGroupAIds = <String>[].obs;
+  final RxList<String> swapGroupBIds = <String>[].obs;
+  final RxBool pickingSwapGroupB = false.obs;
+  final RxBool isLocationActionBusy = false.obs;
+
+  bool get canPickProductLocation =>
+      currentTab.value == 0 || currentTab.value == 3;
+
+  bool get canExecuteSwap =>
+      swapGroupAIds.isNotEmpty && swapGroupBIds.isNotEmpty;
+
+  bool isProductSelected(String productId) =>
+      swapGroupAIds.contains(productId) ||
+      swapGroupBIds.contains(productId);
+
+  bool isProductInSwapGroupA(String productId) =>
+      swapGroupAIds.contains(productId);
+
+  bool isProductInSwapGroupB(String productId) =>
+      swapGroupBIds.contains(productId);
+
+  void _syncSelectedProductIds() {
+    selectedProductIds.assignAll([...swapGroupAIds, ...swapGroupBIds]);
+  }
+
+  void toggleProductSelection(String productId) {
+    if (swapGroupAIds.contains(productId)) {
+      swapGroupAIds.remove(productId);
+      _syncSelectedProductIds();
+      if (selectedProductIds.isEmpty) {
+        exitLocationSelection();
+      }
+      return;
+    }
+    if (swapGroupBIds.contains(productId)) {
+      swapGroupBIds.remove(productId);
+      _syncSelectedProductIds();
+      if (selectedProductIds.isEmpty) {
+        exitLocationSelection();
+      }
+      return;
+    }
+    locationSelectionActive.value = true;
+    if (pickingSwapGroupB.value) {
+      swapGroupBIds.add(productId);
+    } else {
+      swapGroupAIds.add(productId);
+    }
+    _syncSelectedProductIds();
+  }
+
+  void startLocationSelection(String productId) {
+    if (!canPickProductLocation) return;
+    locationSelectionActive.value = true;
+    if (!isProductSelected(productId)) {
+      swapGroupAIds.add(productId);
+      _syncSelectedProductIds();
+    }
+  }
+
+  void startSwapGroupBPicking() {
+    pickingSwapGroupB.value = true;
+  }
+
+  void exitLocationSelection() {
+    locationSelectionActive.value = false;
+    selectedProductIds.clear();
+    swapGroupAIds.clear();
+    swapGroupBIds.clear();
+    pickingSwapGroupB.value = false;
+  }
+
+  Future<void> showLocationActionSheetForProduct(
+    BuildContext context,
+    AllStockProductsModel product,
+  ) async {
+    if (!canPickProductLocation) return;
+    startLocationSelection(product.productId);
+    final action = await showProductLocationActionSheet(context);
+    if (!context.mounted) return;
+    if (action == null) {
+      Get.snackbar(
+        'locationMultiSelectHintTitle'.tr,
+        'locationMultiSelectHint'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.secondaryColor,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+    if (action == ProductLocationAction.move) {
+      await openMoveSelectedDialog(context);
+    } else if (action == ProductLocationAction.swap) {
+      if (swapGroupAIds.isEmpty) return;
+      startSwapGroupBPicking();
+      Get.snackbar(
+        'swapProductLocation'.tr,
+        'swapPickGroupB'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.secondaryColor,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
+  List<AllStockProductsModel> _productsByIds(List<String> ids) {
+    final byId = <String, AllStockProductsModel>{};
+    for (final p in allProducts) {
+      byId[p.productId] = p;
+    }
+    for (final p in locationFilterProducts) {
+      byId[p.productId] = p;
+    }
+    return ids.map((id) => byId[id]).whereType<AllStockProductsModel>().toList();
+  }
+
+  List<AllStockProductsModel> getSelectedProductsList() =>
+      _productsByIds(selectedProductIds);
+
+  String _sectionNameById(String sectionId) {
+    for (final s in storeSections) {
+      if (s.id == sectionId) return s.name;
+    }
+    return sectionId;
+  }
+
+  Future<void> openMoveSelectedDialog(BuildContext context) async {
+    if (selectedProductIds.isEmpty) return;
+    await ensureStoreSectionsLoaded();
+    if (!context.mounted) return;
+    final activeSections =
+        storeSections.where((s) => s.isActive).toList(growable: false);
+    if (activeSections.isEmpty) {
+      Get.snackbar(
+        'error'.tr,
+        'noData'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    final picked = await showProductLocationMoveDialog(
+      context: context,
+      sections: activeSections,
+      loadShelves: (id) => stockLocationInteractor.loadShelves(sectionId: id),
+    );
+    if (!context.mounted || picked == null) return;
+    final products = getSelectedProductsList();
+    final confirmed = await showProductLocationMoveConfirm(
+      context,
+      products: products,
+      targetSectionName: _sectionNameById(picked.sectionId),
+      targetShelf: picked.shelfNumber,
+    );
+    if (!context.mounted || !confirmed) return;
+    final shelf = picked.shelfNumber?.trim() ?? '';
+    if (shelf.isEmpty) return;
+    await executeMoveSelectedProducts(
+      sectionId: picked.sectionId,
+      shelfNumber: shelf,
+    );
+  }
+
+  Future<void> executeMoveSelectedProducts({
+    required String sectionId,
+    required String shelfNumber,
+  }) async {
+    if (selectedProductIds.isEmpty) return;
+    final shelf = shelfNumber.trim();
+    if (shelf.isEmpty) return;
+    final ids = selectedProductIds
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .toList();
+    if (ids.isEmpty) return;
     try {
-      final list = await stockTagsInteractor.loadTags(includeInactive: true);
-      catalogTags.assignAll(list);
+      isLocationActionBusy.value = true;
+      await stockLocationInteractor.moveProducts(
+        productIds: ids,
+        sectionId: sectionId,
+        shelfNumber: shelf,
+      );
+      Get.snackbar(
+        'success'.tr,
+        'productsLocationMoved'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      exitLocationSelection();
+      await refreshAfterStoreSectionsChanged();
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLocationActionBusy.value = false;
+    }
+  }
+
+  Future<void> executeSwapSelectedProducts({BuildContext? context}) async {
+    if (!canExecuteSwap) {
+      Get.snackbar(
+        'error'.tr,
+        'swapNeedsTwoGroups'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    final idsA = swapGroupAIds
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .toList();
+    final idsB = swapGroupBIds
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .toList();
+    if (idsA.isEmpty || idsB.isEmpty) return;
+
+    final ctx = context ?? Get.context;
+    if (ctx == null) return;
+    final groupA = _productsByIds(swapGroupAIds);
+    final groupB = _productsByIds(swapGroupBIds);
+    await ensureStoreSectionsLoaded();
+    if (!ctx.mounted) return;
+    final activeSections =
+        storeSections.where((s) => s.isActive).toList(growable: false);
+    if (activeSections.isEmpty) {
+      Get.snackbar(
+        'error'.tr,
+        'noData'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    final swapTargets = await showSwapGroupTargetsDialog(
+      context: ctx,
+      sections: activeSections,
+      loadShelves: (id) => stockLocationInteractor.loadShelves(sectionId: id),
+    );
+    if (!ctx.mounted ||
+        swapTargets == null ||
+        swapTargets.groupA == null ||
+        swapTargets.groupB == null) {
+      return;
+    }
+
+    final confirmed = await showProductLocationSwapConfirm(
+      ctx,
+      groupA: groupA,
+      groupB: groupB,
+      targets: swapTargets,
+    );
+    if (!ctx.mounted || !confirmed) return;
+
+    try {
+      isLocationActionBusy.value = true;
+      await stockLocationInteractor.swapProductGroups(
+        groupA: idsA,
+        groupB: idsB,
+        groupATarget: swapTargets.groupA!,
+        groupBTarget: swapTargets.groupB!,
+      );
+      Get.snackbar(
+        'success'.tr,
+        'productsLocationSwapped'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      exitLocationSelection();
+      await refreshAfterStoreSectionsChanged();
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLocationActionBusy.value = false;
+    }
+  }
+
+  String? get selectedProductSectionName {
+    final id = selectedProductStoreSectionId.value;
+    if (id == null || id.isEmpty) return null;
+    for (final s in storeSections) {
+      if (s.id == id) return s.name;
+    }
+    return null;
+  }
+
+  Future<void> refreshStoreSections() async {
+    try {
+      final list =
+          await stockLocationInteractor.loadSections(includeInactive: true);
+      storeSections.assignAll(list);
       update();
     } catch (_) {}
   }
 
-  Future<void> ensureTagsLoaded() async {
-    if (catalogTags.isEmpty) {
-      await refreshCatalogTags();
+  /// Reload sections, product list, and location tab after section CRUD.
+  Future<void> refreshAfterStoreSectionsChanged() async {
+    final filterSectionId = productListFilters.value.storeSectionId;
+    final locationSectionId = selectedLocationSectionId.value;
+    final editSectionId = selectedProductStoreSectionId.value;
+
+    await refreshStoreSections();
+
+    final sectionIds = storeSections.map((s) => s.id).toSet();
+
+    if (editSectionId != null && !sectionIds.contains(editSectionId)) {
+      selectedProductStoreSectionId.value = null;
+      shelfNumberController.clear();
+      editProductShelfNumber.value = '';
+      final p = productDetails.value;
+      if (p != null) {
+        p.storeSectionId = null;
+        p.storeSectionName = null;
+        p.shelfNumber = null;
+        productDetails.refresh();
+      }
+    } else if (editSectionId != null) {
+      final p = productDetails.value;
+      if (p != null) {
+        p.storeSectionName = selectedProductSectionName;
+        productDetails.refresh();
+      }
+    }
+
+    if (filterSectionId != null && !sectionIds.contains(filterSectionId)) {
+      productListFilters.value = productListFilters.value.copyWith(
+        clearStoreSectionId: true,
+        clearShelfNumber: true,
+      );
+      selectedLocationSectionId.value = null;
+      selectedLocationShelf.value = null;
+    }
+
+    await reloadProductsList();
+
+    if (locationSectionId != null && !sectionIds.contains(locationSectionId)) {
+      selectedLocationSectionId.value = null;
+      selectedLocationShelf.value = null;
+      locationFilterProducts.clear();
+      sectionShelves.clear();
+    } else if (selectedLocationSectionId.value != null) {
+      await selectLocationFilter(
+        selectedLocationSectionId.value,
+        shelf: selectedLocationShelf.value,
+      );
+    }
+
+    update();
+  }
+
+  Future<void> reloadProductsList() async {
+    _productsPage = 1;
+    _hasMoreProducts = true;
+    allProducts.clear();
+    final filters = productListFilters.value.hasActiveFilters
+        ? productListFilters.value
+        : null;
+    final showLoader = currentTab.value == 0;
+    try {
+      if (showLoader) {
+        isLoading(true);
+        update();
+      }
+      final result = await getAllStockUsecase.call(
+        page: 1,
+        ifCombinations: false,
+        ifCloseouts: false,
+        filters: filters,
+      );
+      _mergeStockItems(allProducts, result);
+      _productsPage = 2;
+      _hasMoreProducts = result.isNotEmpty;
+    } on ServerFailure {
+      // Snackbar already shown in StockImplement.
+    } on NoConnectionFailure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      if (showLoader) {
+        isLoading(false);
+      }
+      update();
     }
   }
 
-  Future<void> selectTagFilter(String? filterTagId) async {
-    selectedTagFilterId.value = filterTagId;
-    tagFilterProducts.clear();
-    tagProductsPage = 1;
-    tagProductsLastPage = 1;
-    if (filterTagId == null || filterTagId.isEmpty) {
+  Future<void> ensureStoreSectionsLoaded() async {
+    if (storeSections.isEmpty) {
+      await refreshStoreSections();
+    }
+  }
+
+  Future<void> selectLocationFilter(String? sectionId, {String? shelf}) async {
+    selectedLocationSectionId.value = sectionId;
+    selectedLocationShelf.value = shelf;
+    locationFilterProducts.clear();
+    locationProductsPage = 1;
+    locationProductsLastPage = 1;
+    sectionShelves.clear();
+    if (sectionId == null || sectionId.isEmpty) {
       update();
       return;
     }
     isLoading(true);
     update();
     try {
-      final res = await stockTagsInteractor.loadProductsByTag(
-        tagId: filterTagId,
+      final shelves = await stockLocationInteractor.loadShelves(
+        sectionId: sectionId,
+      );
+      sectionShelves.assignAll(shelves);
+      final res = await stockLocationInteractor.loadProductsByLocation(
+        sectionId: sectionId,
+        shelfNumber: shelf,
         page: 1,
       );
-      tagFilterProducts.assignAll(res.products);
-      tagProductsPage = res.currentPage;
-      tagProductsLastPage = res.lastPage;
+      locationFilterProducts.assignAll(res.products);
+      locationProductsPage = res.currentPage;
+      locationProductsLastPage = res.lastPage;
     } catch (_) {
-      tagFilterProducts.clear();
+      locationFilterProducts.clear();
     } finally {
       isLoading(false);
       update();
     }
   }
 
-  Future<void> loadMoreTagFilterProducts() async {
-    final tid = selectedTagFilterId.value;
-    if (tid == null || tid.isEmpty || tagProductsLoadingMore.value) {
+  Future<void> selectLocationShelf(String? shelf) async {
+    final sectionId = selectedLocationSectionId.value;
+    if (sectionId == null || sectionId.isEmpty) return;
+    await selectLocationFilter(sectionId, shelf: shelf);
+  }
+
+  Future<void> loadMoreLocationFilterProducts() async {
+    final sectionId = selectedLocationSectionId.value;
+    if (sectionId == null ||
+        sectionId.isEmpty ||
+        locationProductsLoadingMore.value) {
       return;
     }
-    if (tagProductsPage >= tagProductsLastPage) {
+    if (locationProductsPage >= locationProductsLastPage) {
       return;
     }
-    tagProductsLoadingMore.value = true;
+    locationProductsLoadingMore.value = true;
     update();
     try {
-      final next = tagProductsPage + 1;
-      final res = await stockTagsInteractor.loadProductsByTag(
-        tagId: tid,
+      final next = locationProductsPage + 1;
+      final res = await stockLocationInteractor.loadProductsByLocation(
+        sectionId: sectionId,
+        shelfNumber: selectedLocationShelf.value,
         page: next,
       );
       for (final p in res.products) {
-        if (!tagFilterProducts.any((x) => x.productId == p.productId)) {
-          tagFilterProducts.add(p);
+        if (!locationFilterProducts.any((x) => x.productId == p.productId)) {
+          locationFilterProducts.add(p);
         }
       }
-      tagProductsPage = res.currentPage;
-      tagProductsLastPage = res.lastPage;
+      locationProductsPage = res.currentPage;
+      locationProductsLastPage = res.lastPage;
     } catch (_) {
     } finally {
-      tagProductsLoadingMore.value = false;
+      locationProductsLoadingMore.value = false;
       update();
     }
   }
 
-  void toggleProductTagSelection(String id) {
-    if (selectedTagIds.contains(id)) {
-      selectedTagIds.remove(id);
-    } else {
-      selectedTagIds.add(id);
-    }
+  void setProductStoreSection(String? sectionId) {
+    selectedProductStoreSectionId.value = sectionId;
     update();
   }
 
-  Future<void> createCatalogTag({
-    required String name,
-    required String color,
-  }) async {
-    final tag = await stockTagsInteractor.createTag(name: name, color: color);
-    catalogTags.add(tag);
-    selectedTagIds.add(tag.id);
+  Future<void> createStoreSection({required String name}) async {
+    final section = await stockLocationInteractor.createSection(name: name);
+    storeSections.add(section);
+    selectedProductStoreSectionId.value = section.id;
     update();
   }
 
-  Future<void> deactivateCatalogTag(String id) async {
-    await stockTagsInteractor.deactivateTag(id);
-    await refreshCatalogTags();
-    selectedTagIds.remove(id);
-    if (selectedTagFilterId.value == id) {
-      await selectTagFilter(null);
-    }
-    update();
-  }
-
-  Future<void> updateCatalogTag({
-    required String id,
-    String? name,
-    String? color,
-  }) async {
-    await stockTagsInteractor.updateTag(id: id, name: name, color: color);
-    await refreshCatalogTags();
-    update();
+  Future<void> deactivateStoreSection(String id) async {
+    await stockLocationInteractor.deactivateSection(id);
+    await refreshAfterStoreSectionsChanged();
   }
 
   void _resetEditMediaState() {
@@ -612,6 +1037,80 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  int get productStockTotal {
+    final v = int.tryParse(stockController.text.trim());
+    return v == null || v < 0 ? 0 : v;
+  }
+
+  int totalSizeColorQuantity({
+    int? excludeSizeIdx,
+    int? excludeColorIdx,
+  }) {
+    var sum = 0;
+    for (var i = 0; i < items.length; i++) {
+      final sz = items[i];
+      for (var j = 0; j < sz.colors.length; j++) {
+        if (excludeSizeIdx == i && excludeColorIdx == j) {
+          continue;
+        }
+        final q = int.tryParse(sz.colors[j].quantityController.text.trim());
+        if (q != null && q > 0) {
+          sum += q;
+        }
+      }
+    }
+    return sum;
+  }
+
+  /// Returns localized error message key suffix or null if valid.
+  String? validateSizeColorQuantity(
+    String qty, {
+    int? excludeSizeIdx,
+    int? excludeColorIdx,
+  }) {
+    final parsed = int.tryParse(qty.trim());
+    if (parsed == null || parsed < 0) {
+      return 'sizeColorQtyInvalid';
+    }
+    final stock = productStockTotal;
+    if (parsed > stock) {
+      return 'sizeColorQtyExceedsStock';
+    }
+    final others = totalSizeColorQuantity(
+      excludeSizeIdx: excludeSizeIdx,
+      excludeColorIdx: excludeColorIdx,
+    );
+    if (others + parsed > stock) {
+      return 'sizeColorTotalExceedsStock';
+    }
+    return null;
+  }
+
+  String? validateAllSizeColorQuantities() {
+    if (items.isEmpty) {
+      return null;
+    }
+    final stock = productStockTotal;
+    final total = totalSizeColorQuantity();
+    if (total > stock) {
+      return 'sizeColorTotalExceedsStock';
+    }
+    for (var i = 0; i < items.length; i++) {
+      for (var j = 0; j < items[i].colors.length; j++) {
+        final q = items[i].colors[j].quantityController.text.trim();
+        final err = validateSizeColorQuantity(
+          q,
+          excludeSizeIdx: i,
+          excludeColorIdx: j,
+        );
+        if (err != null) {
+          return err;
+        }
+      }
+    }
+    return null;
+  }
+
   /// Flat list of size+color entries for table display.
   List<SizeColorEntry> get flatSizeColorEntries {
     final result = <SizeColorEntry>[];
@@ -672,11 +1171,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.ADDCOMBINATIONSCREEN,
     },
-    {
-      'title': 'offerPackages',
-      'icon': AssetsManager.invoiceIcon,
-      'route': AppRoutes.OFFERPACKAGESSCREEN,
-    },
   ];
 
   final RxBool isLoading = false.obs;
@@ -708,10 +1202,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (!scrollController.hasClients) {
       return;
     }
-    if (currentTab.value == 3) {
-      if (scrollController.position.pixels >=
-          scrollController.position.maxScrollExtent - 120) {
-        Future<void>(() async => loadMoreTagFilterProducts());
+    if (currentTab.value == 3 || currentTab.value == 4) {
+      if (currentTab.value == 3 &&
+          scrollController.position.pixels >=
+              scrollController.position.maxScrollExtent - 120) {
+        Future<void>(() async => loadMoreLocationFilterProducts());
       }
       return;
     }
@@ -810,12 +1305,62 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     await getAllProducts();
   }
 
+  Future<void> applyStoreLocationFilterFromFab({
+    String? sectionId,
+    String? shelfNumber,
+  }) async {
+    if (currentTab.value != 0) {
+      currentTab.value = 0;
+    }
+    final base = productListFilters.value;
+    final filters = StockProductFilters(
+      search: base.search,
+      categoryId: base.categoryId,
+      subCategoryId: base.subCategoryId,
+      storeSectionId: sectionId,
+      shelfNumber: shelfNumber,
+      dateFrom: base.dateFrom,
+      dateTo: base.dateTo,
+      sortBy: base.sortBy,
+      sortDirection: base.sortDirection,
+    );
+    selectedLocationSectionId.value = sectionId;
+    selectedLocationShelf.value = shelfNumber;
+    await applyProductFilters(filters);
+  }
+
+  Future<void> clearStoreLocationFilterFromFab() async {
+    final base = productListFilters.value;
+    selectedLocationSectionId.value = null;
+    selectedLocationShelf.value = null;
+    await applyProductFilters(
+      StockProductFilters(
+        search: base.search,
+        categoryId: base.categoryId,
+        subCategoryId: base.subCategoryId,
+        dateFrom: base.dateFrom,
+        dateTo: base.dateTo,
+        sortBy: base.sortBy,
+        sortDirection: base.sortDirection,
+      ),
+    );
+  }
+
   Future<void> pullToRefresh() async {
     _resetPaginationForCurrentTab();
+    if (currentTab.value == 4) {
+      if (Get.isRegistered<OfferPackagesController>()) {
+        await Get.find<OfferPackagesController>().pullToRefresh();
+      }
+      return;
+    }
     if (currentTab.value == 3) {
-      await ensureTagsLoaded();
-      if (selectedTagFilterId.value != null) {
-        await selectTagFilter(selectedTagFilterId.value);
+      await ensureStoreSectionsLoaded();
+      if (selectedLocationSectionId.value != null) {
+        await selectLocationFilter(
+          selectedLocationSectionId.value,
+          shelf: selectedLocationShelf.value,
+        );
       }
       return;
     }
@@ -1088,7 +1633,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   // Get stock list for the active tab only (avoids 3× API calls and rate limits).
   Future<void> getAllProducts({bool isRefresh = false}) async {
     final tab = currentTab.value;
-    if (tab == 3) {
+    if (tab == 3 || tab == 4) {
       isLoading(false);
       isLoadingMore(false);
       return;
@@ -1375,14 +1920,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     isMoreSalesProduct.value = false;
     clearPendingMedia();
     _resetEditMediaState();
-    selectedTagIds.clear();
+    selectedProductStoreSectionId.value = null;
+    shelfNumberController.clear();
+    editProductShelfNumber.value = '';
     for (final el in items) {
       el.onClose();
     }
     items.clear();
     isForcedSale.value = false;
     loadProductSizeOptions(productId: null);
-    Future<void>(() async => ensureTagsLoaded());
+    Future<void>(() async => ensureStoreSectionsLoaded());
     update();
   }
 
@@ -1395,13 +1942,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       await getCategories();
     }
 
-    selectedTagIds.clear();
-    final pts = p.productTags;
-    if (pts != null) {
-      for (final t in pts) {
-        selectedTagIds.add(t.id);
-      }
-    }
+    selectedProductStoreSectionId.value = p.storeSectionId;
+    shelfNumberController.text = p.shelfNumber ?? '';
+    editProductShelfNumber.value = p.shelfNumber ?? '';
     editingProductId.value = p.id;
     saveScopeFull.value = false;
     productNameController.text = p.nameAr;
@@ -1442,6 +1985,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     retailPricesController.text = p.normailPrice?.toString() ?? '';
     wholesalePricesController.text = p.wholesalePrice?.toString() ?? '';
     purchasePriceController.clear();
+    if (p.purchasePrices != null && p.purchasePrices!.isNotEmpty) {
+      final cost = p.purchasePrices!.first.price?.trim();
+      if (cost != null && cost.isNotEmpty && cost != '0' && cost != 'null') {
+        purchasePriceController.text = cost;
+      }
+    }
     discountPercentageController.text = p.discount?.toString() ?? '0';
     manufactureYearController.text = p.manufactureYear?.toString() ?? '0';
     modelController.text = p.model ?? '';
@@ -1501,7 +2050,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
     isForcedSale.value = p.isSoldWithPaper == '1' || p.isSoldWithPaper == 1;
     loadProductSizeOptions(productId: p.id);
-    Future<void>(() async => ensureTagsLoaded());
+    Future<void>(() async => ensureStoreSectionsLoaded());
     update();
     return true;
   }
@@ -1606,6 +2155,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (listPriceController.text.trim().isNotEmpty) {
       addField('price', listPriceController.text.trim());
     }
+    if (purchasePriceController.text.trim().isNotEmpty) {
+      addField('purchase_price', purchasePriceController.text.trim());
+    }
     if (rotationDateController.text.trim().isNotEmpty) {
       addField('rotation_date', rotationDateController.text.trim());
     }
@@ -1635,11 +2187,13 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       }
     }
 
-    for (final tid in selectedTagIds) {
-      if (tid.trim().isNotEmpty) {
-        form.fields.add(MapEntry('tag_ids[]', tid.trim()));
-      }
+    final sectionId = selectedProductStoreSectionId.value;
+    if (sectionId != null && sectionId.trim().isNotEmpty) {
+      addField('store_section_id', sectionId.trim());
+    } else {
+      addField('store_section_id', '');
     }
+    addField('shelf_number', shelfNumberController.text.trim());
 
     var sizeIndex = 0;
     for (final sz in items) {
@@ -1747,6 +2301,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
+    final sizeQtyErr = validateAllSizeColorQuantities();
+    if (sizeQtyErr != null) {
+      Get.snackbar('error'.tr, sizeQtyErr.tr, snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
     if (selectedSubCategoryIds.isNotEmpty) {
       final knownIds = allSubCategories.map((s) => s.id).toSet();
       for (final id in selectedSubCategoryIds) {
@@ -1800,10 +2360,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
       update();
 
-      Get.back();
-      if (wasEdit && editedId != null) {
-        await getProductDetails(productId: editedId);
-        await getCategories();
+      if (wasEdit) {
+        Get.back();
+        if (editedId != null) {
+          await getProductDetails(productId: editedId);
+          await getCategories();
+        }
+      } else {
+        AppNavigation.popToRoute(AppRoutes.STOCKSCREEN);
       }
 
       final createMessage = buf.toString().trim();
@@ -1908,6 +2472,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     minSalePriceController.dispose();
     listPriceController.dispose();
     rotationDateController.dispose();
+    shelfNumberController.dispose();
     closeoutsMinimumSaleController.dispose();
     super.onClose();
   }

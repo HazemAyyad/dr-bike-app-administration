@@ -17,9 +17,13 @@ import '../../presentation/controllers/stock_controller.dart';
 import '../models/all_stock_products_model.dart';
 import '../models/product_details_model.dart';
 import '../models/product_tag_model.dart';
+import '../../domain/product_location_utils.dart';
 import '../../domain/stock_product_filters.dart';
 import '../models/offer_package_model.dart';
 import '../models/products_by_tag_result.dart';
+import '../models/products_by_location_result.dart';
+import '../models/store_section_model.dart';
+import '../models/store_section_shelf_model.dart';
 
 class StockDatasource {
   final ApiConsumer api;
@@ -156,6 +160,65 @@ class StockDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<String>> getSizeOptionPresets() async {
+    try {
+      final response = await api.get(EndPoints.stockSizeOptionPresets);
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        return [];
+      }
+      final list = raw['sizes'];
+      if (list is! List) return [];
+      return list.map((e) => e.toString().trim()).where((s) => s.isNotEmpty).toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<String>> saveSizeOptionPresets(List<String> sizes) async {
+    try {
+      final response = await api.put(
+        EndPoints.stockSizeOptionPresets,
+        data: {'sizes': sizes},
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw is Map
+                ? (raw['message'] ?? 'Unknown error')
+                : 'Unknown error',
+            status: 500,
+            data: raw is Map ? raw : {},
+          ),
+        );
+      }
+      final list = raw['sizes'];
+      if (list is! List) return sizes;
+      return list.map((e) => e.toString().trim()).where((s) => s.isNotEmpty).toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
         ),
       );
     }
@@ -737,6 +800,458 @@ class StockDatasource {
         EndPoints.productTagsDeactivate,
         data: {'tag_id': id},
       );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<StoreSectionModel>> getStoreSections({
+    bool includeInactive = false,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.storeSectionsList,
+        queryParameters: {
+          if (includeInactive) 'include_inactive': '1',
+        },
+      );
+      return mapListFromResponseKey(
+        response.data,
+        'sections',
+        (Map<String, dynamic> m) => StoreSectionModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<String>> getSectionShelves({required String sectionId}) async {
+    try {
+      final response = await api.get(
+        EndPoints.storeSectionShelves,
+        queryParameters: {'section_id': sectionId},
+      );
+      final raw = response.data;
+      if (raw is! Map) return [];
+      final shelves = raw['shelves'];
+      if (shelves is! List) return [];
+      return shelves.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<StoreSectionShelfModel>> getSectionShelvesDetailed({
+    required String sectionId,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.storeSectionShelves,
+        queryParameters: {
+          'section_id': sectionId,
+          'detailed': '1',
+        },
+      );
+      return mapListFromResponseKey(
+        response.data,
+        'shelves',
+        (Map<String, dynamic> m) => StoreSectionShelfModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<StoreSectionShelfModel> createSectionShelf({
+    required String sectionId,
+    required String shelfNumber,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.storeSectionShelvesCreate,
+        data: {
+          'section_id': int.parse(sectionId),
+          'shelf_number': shelfNumber.trim(),
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['shelf'] is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      return StoreSectionShelfModel.fromJson(
+        Map<String, dynamic>.from(raw['shelf'] as Map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<StoreSectionShelfModel> updateSectionShelf({
+    required String shelfId,
+    required String shelfNumber,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.storeSectionShelvesUpdate,
+        data: {
+          'shelf_id': int.parse(shelfId),
+          'shelf_number': shelfNumber.trim(),
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['shelf'] is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      return StoreSectionShelfModel.fromJson(
+        Map<String, dynamic>.from(raw['shelf'] as Map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteSectionShelf({required String shelfId}) async {
+    try {
+      await api.post(
+        EndPoints.storeSectionShelvesDelete,
+        data: {'shelf_id': int.parse(shelfId)},
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<ProductsByLocationResult> getProductsByLocation({
+    required String sectionId,
+    String? shelfNumber,
+    required int page,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.productsByLocation,
+        queryParameters: {
+          'section_id': sectionId,
+          if (shelfNumber != null && shelfNumber.isNotEmpty)
+            'shelf_number': shelfNumber,
+          'page': page,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: 'Invalid response',
+            status: 500,
+            data: {},
+          ),
+        );
+      }
+      final map = Map<String, dynamic>.from(raw);
+      StoreSectionModel? section;
+      final sectionMap = map['section'];
+      if (sectionMap is Map) {
+        section = StoreSectionModel.fromJson(Map<String, dynamic>.from(sectionMap));
+      }
+      final products = mapListFromResponseKey(
+        map,
+        'products',
+        (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
+      );
+      final p = map['pagination'];
+      final pg = p is Map ? Map<String, dynamic>.from(p) : <String, dynamic>{};
+      return ProductsByLocationResult(
+        section: section,
+        products: products,
+        currentPage: asInt(pg['current_page'], 1),
+        lastPage: asInt(pg['last_page'], 1),
+        total: asInt(pg['total'], products.length),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<StoreSectionModel> createStoreSection({
+    required String name,
+    String? description,
+    int sortOrder = 0,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.storeSectionsCreate,
+        data: {
+          'name': name,
+          if (description != null && description.trim().isNotEmpty)
+            'description': description.trim(),
+          'sort_order': sortOrder,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      final sectionMap = raw['section'];
+      if (sectionMap is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      return StoreSectionModel.fromJson(Map<String, dynamic>.from(sectionMap));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<void> deactivateStoreSection({required String id}) async {
+    try {
+      await api.post(
+        EndPoints.storeSectionsDeactivate,
+        data: {'section_id': id},
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<StoreSectionModel> updateStoreSection({
+    required String id,
+    String? name,
+    String? description,
+    int? sortOrder,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.storeSectionsUpdate,
+        data: {
+          'section_id': id,
+          if (name != null) 'name': name,
+          if (description != null) 'description': description,
+          if (sortOrder != null) 'sort_order': sortOrder,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      final sectionMap = raw['section'];
+      if (sectionMap is! Map) {
+        throw ServerException(
+          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+        );
+      }
+      return StoreSectionModel.fromJson(Map<String, dynamic>.from(sectionMap));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteStoreSection({required String id}) async {
+    try {
+      await api.post(
+        EndPoints.storeSectionsDelete,
+        data: {'section_id': id},
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<int> moveProductsLocation({
+    required List<int> productIds,
+    required String sectionId,
+    required String shelfNumber,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productsLocationMove,
+        data: {
+          'product_ids': productIds,
+          'store_section_id': int.parse(sectionId),
+          'shelf_number': shelfNumber.trim(),
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw is Map
+                ? (raw['message']?.toString() ?? 'Unknown error')
+                : 'Unknown error',
+            status: 500,
+            data: raw is Map ? Map<String, dynamic>.from(raw) : {},
+          ),
+        );
+      }
+      return raw['updated'] is int
+          ? raw['updated'] as int
+          : int.tryParse('${raw['updated']}') ?? productIds.length;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<int> swapProductsLocation({
+    required List<int> groupA,
+    required List<int> groupB,
+    required SwapGroupLocationTarget groupATarget,
+    required SwapGroupLocationTarget groupBTarget,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productsLocationSwap,
+        data: {
+          'group_a': groupA,
+          'group_b': groupB,
+          'group_a_target': {
+            'store_section_id': int.parse(groupATarget.sectionId),
+            'shelf_number': groupATarget.shelfNumber!.trim(),
+          },
+          'group_b_target': {
+            'store_section_id': int.parse(groupBTarget.sectionId),
+            'shelf_number': groupBTarget.shelfNumber!.trim(),
+          },
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw is Map
+                ? (raw['message']?.toString() ?? 'Unknown error')
+                : 'Unknown error',
+            status: 500,
+            data: raw is Map ? Map<String, dynamic>.from(raw) : {},
+          ),
+        );
+      }
+      return raw['swapped'] is int
+          ? raw['swapped'] as int
+          : int.tryParse('${raw['swapped']}') ?? groupA.length + groupB.length;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

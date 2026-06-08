@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/proof_media_type.dart';
+import 'package:doctorbike/core/helpers/task_recurrence_rules.dart';
 
 class DashbordEmployeeDetailsModel {
   final int id;
@@ -16,6 +17,7 @@ class DashbordEmployeeDetailsModel {
   final User user;
   final List<Task> tasks;
   final TodayTasksSummary todayTasksSummary;
+  final List<String> weeklyDaysOff;
 
   DashbordEmployeeDetailsModel({
     required this.id,
@@ -32,6 +34,7 @@ class DashbordEmployeeDetailsModel {
     required this.user,
     required this.tasks,
     this.todayTasksSummary = const TodayTasksSummary(),
+    this.weeklyDaysOff = const [],
   });
 
   factory DashbordEmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -58,6 +61,7 @@ class DashbordEmployeeDetailsModel {
       todayTasksSummary: TodayTasksSummary.fromJson(
         asMap(json['today_tasks_summary']),
       ),
+      weeklyDaysOff: asStringList(json['weekly_days_off']),
     );
   }
 }
@@ -82,12 +86,32 @@ class TodayTasksSummary {
   }
 
   /// Fallback when API has not deployed [today_tasks_summary] yet.
-  factory TodayTasksSummary.fromTasks(List<Task> tasks) {
+  factory TodayTasksSummary.fromTasks(
+    List<Task> tasks, {
+    List<String> weeklyDaysOff = const [],
+  }) {
     final now = DateTime.now();
     final todayTasks = tasks.where((t) {
-      return t.startTime.year == now.year &&
-          t.startTime.month == now.month &&
-          t.startTime.day == now.day;
+      if (TaskRecurrenceRules.sameDay(t.startTime, now)) {
+        if (t.taskRecurrence == 'daily' &&
+            !TaskRecurrenceRules.isEmployeeWorkingDay(now, weeklyDaysOff)) {
+          return false;
+        }
+        return true;
+      }
+      return TaskRecurrenceRules.shouldExpand(
+            source: t.source,
+            parentId: t.parentId,
+            recurrence: t.taskRecurrence,
+          ) &&
+          TaskRecurrenceRules.matchesRecurrenceOnDate(
+            taskStart: t.startTime,
+            recurrence: t.taskRecurrence,
+            recurrenceTimes: t.taskRecurrenceTime,
+            day: now,
+            taskEnd: t.endTime,
+            weeklyDaysOff: weeklyDaysOff,
+          );
     }).toList();
     if (todayTasks.isEmpty) {
       return const TodayTasksSummary();
@@ -95,13 +119,26 @@ class TodayTasksSummary {
     final completed = todayTasks
         .where((t) => t.status == 'completed' || t.status == 'waiting_review')
         .length;
-    final progressSum =
-        todayTasks.fold<int>(0, (s, t) => s + t.displayProgress);
+    final progressSum = todayTasks.fold<int>(0, (s, t) {
+      return s + _summaryProgress(t, now);
+    });
     return TodayTasksSummary(
       total: todayTasks.length,
       completed: completed,
       progressPercent: (progressSum / todayTasks.length).round(),
     );
+  }
+
+  static int _summaryProgress(Task task, DateTime day) {
+    if (TaskRecurrenceRules.isRecurringParent(
+          source: task.source,
+          parentId: task.parentId,
+          recurrence: task.taskRecurrence,
+        ) &&
+        !TaskRecurrenceRules.sameDay(task.startTime, day)) {
+      return 0;
+    }
+    return task.displayProgress;
   }
 }
 
@@ -153,6 +190,10 @@ class Task {
   final int? completedByEmployeeId;
   final String? completedByName;
   final bool canExecute;
+  final String? parentId;
+  final String taskRecurrence;
+  final List<String> taskRecurrenceTime;
+  final int? templateId;
 
   Task({
     required this.id,
@@ -172,12 +213,21 @@ class Task {
     this.completedByEmployeeId,
     this.completedByName,
     this.canExecute = true,
+    this.parentId,
+    this.taskRecurrence = 'noRepeat',
+    this.taskRecurrenceTime = const [],
+    this.templateId,
   });
+
+  bool get isRepeatedCopy => TaskRecurrenceRules.isRepeatedCopy(parentId);
 
   bool get isOccurrence => source == 'occurrence';
 
-  /// API [progress] or estimate from status when subtasks count unknown.
+  /// Prefer API [progress] when the task has subtasks; otherwise estimate from status.
   int get displayProgress {
+    if (hasSubTasks || subTasksCount > 0) {
+      return progress.clamp(0, 100);
+    }
     if (progress > 0) return progress.clamp(0, 100);
     if (status == 'completed') return 100;
     if (status == 'waiting_review') return 90;
@@ -186,6 +236,11 @@ class Task {
   }
 
   factory Task.fromJson(Map<String, dynamic> json) {
+    final trt = json['task_recurrence_time'];
+    final List<String> recurrenceTimes = trt is List
+        ? trt.map((e) => e.toString()).toList()
+        : const [];
+
     return Task(
       id: asInt(json['id']),
       taskId:
@@ -212,6 +267,99 @@ class Task {
       completedByName: asNullableString(json['completed_by_name']),
       canExecute:
           json['can_execute'] == null ? true : asBool(json['can_execute']),
+      parentId: asNullableString(json['parent_id']),
+      taskRecurrence: asString(json['task_recurrence'], 'noRepeat'),
+      taskRecurrenceTime: recurrenceTimes,
+      templateId: json['template_id'] != null ? asInt(json['template_id']) : null,
     );
   }
+
+  Task copyWithDisplayDate(DateTime day) {
+    final start = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      startTime.hour,
+      startTime.minute,
+      startTime.second,
+      startTime.millisecond,
+      startTime.microsecond,
+    );
+    var end = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      endTime.hour,
+      endTime.minute,
+      endTime.second,
+      endTime.millisecond,
+      endTime.microsecond,
+    );
+    if (!end.isAfter(start)) {
+      end = end.add(const Duration(days: 1));
+    }
+    return Task(
+      id: id,
+      taskId: taskId,
+      employeeId: employeeId,
+      name: name,
+      startTime: start,
+      endTime: end,
+      status: status,
+      isForcedToUploadImg: isForcedToUploadImg,
+      proofMediaType: proofMediaType,
+      occurrenceId: occurrenceId,
+      source: source,
+      hasSubTasks: hasSubTasks,
+      subTasksCount: subTasksCount,
+      progress: progress,
+      completedByEmployeeId: completedByEmployeeId,
+      completedByName: completedByName,
+      canExecute: canExecute,
+      parentId: parentId,
+      taskRecurrence: taskRecurrence,
+      taskRecurrenceTime: taskRecurrenceTime,
+      templateId: templateId,
+    );
+  }
+
+  /// Calendar-day view for legacy recurring parents (fresh instance per day).
+  Task virtualDayInstance(DateTime day) {
+    final displayed = copyWithDisplayDate(day);
+    final isAnchorDay = TaskRecurrenceRules.sameDay(startTime, day);
+    final isRecurringParent = TaskRecurrenceRules.isRecurringParent(
+      source: source,
+      parentId: parentId,
+      recurrence: taskRecurrence,
+    );
+    if (!isRecurringParent || isAnchorDay) {
+      return displayed;
+    }
+    return Task(
+      id: displayed.id,
+      taskId: displayed.taskId,
+      employeeId: displayed.employeeId,
+      name: displayed.name,
+      startTime: displayed.startTime,
+      endTime: displayed.endTime,
+      status: 'ongoing',
+      isForcedToUploadImg: displayed.isForcedToUploadImg,
+      proofMediaType: displayed.proofMediaType,
+      occurrenceId: displayed.occurrenceId,
+      source: displayed.source,
+      hasSubTasks: displayed.hasSubTasks,
+      subTasksCount: displayed.subTasksCount,
+      progress: 0,
+      completedByEmployeeId: null,
+      completedByName: null,
+      canExecute: true,
+      parentId: displayed.parentId,
+      taskRecurrence: displayed.taskRecurrence,
+      taskRecurrenceTime: displayed.taskRecurrenceTime,
+      templateId: displayed.templateId,
+    );
+  }
+
+  String get calendarDayKey =>
+      TaskRecurrenceRules.dateKeyFrom(startTime);
 }

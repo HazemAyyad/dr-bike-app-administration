@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
-import '../../../../../core/helpers/custom_upload_button.dart';
+import 'subtask_admin_media_picker.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/create_task_controller.dart';
@@ -151,10 +151,7 @@ class SubTaskFormSheet extends StatelessWidget {
                         fillColor: fieldFill,
                       ),
                       SizedBox(height: 12.h),
-                      UploadImageButton(
-                        selectedFile: controller.subTaskFile,
-                        title: 'uploadImage',
-                      ),
+                      const SubtaskAdminMediaPicker(),
                       if (title == 'createNewEmployeeTask' ||
                           title == 'editEmployeeTask') ...[
                         SizedBox(height: 8.h),

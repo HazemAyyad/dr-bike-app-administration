@@ -17,7 +17,8 @@ import '../widgets/purchase_price_widget.dart';
 import '../widgets/show_wholesale_prices.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/product_details_model.dart';
-import '../widgets/product_tag_chip.dart';
+import '../widgets/product_location_badge.dart';
+import '../widgets/product_screen_shared_widgets.dart';
 
 class _ProductDetailsHero extends StatelessWidget {
   const _ProductDetailsHero({required this.product});
@@ -26,24 +27,13 @@ class _ProductDetailsHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final meta = _ProductCategoryMeta.from(product);
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: AdminUiColors.cardBackground(context),
-        borderRadius: BorderRadius.circular(15.r),
-        border: Border.all(
-          color: cs.primary.withValues(alpha: 0.12),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    final locationCodeLabel = ProductLocationLabel.withProductCode(
+      sectionName: product.storeSectionName,
+      shelfNumber: product.shelfNumber,
+      productCode: product.productCode,
+    );
+    return ProductHeroCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -53,104 +43,24 @@ class _ProductDetailsHero extends StatelessWidget {
             spacing: 6.w,
             runSpacing: 6.h,
             children: [
-              if ((product.productCode ?? '').trim().isNotEmpty)
-                _ProductMetaChip(
+              if (locationCodeLabel != null)
+                ProductMetaChip(
                   icon: Icons.qr_code_2,
-                  text: product.productCode!,
+                  text: locationCodeLabel,
                 ),
               if (meta.mainName.isNotEmpty)
-                _ProductMetaChip(
+                ProductMetaChip(
                   icon: Icons.account_tree_outlined,
                   text: meta.mainName,
                 ),
               for (final sub in meta.subNames)
-                _ProductMetaChip(
+                ProductMetaChip(
                   icon: Icons.label_outline,
                   text: sub,
                 ),
             ],
           ),
-          if (product.productTags != null && product.productTags!.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.only(top: 8.h),
-              child: _PrettyTagsRow(product: product),
-            ),
         ],
-      ),
-    );
-  }
-}
-
-class _ProductMetaChip extends StatelessWidget {
-  const _ProductMetaChip({
-    required this.icon,
-    required this.text,
-  });
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: AdminUiColors.subtleOverlay(context),
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 15.sp,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          SizedBox(width: 6.w),
-          Flexible(
-            child: Text(
-              text.trim().isEmpty ? '—' : text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11.sp,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrettyTagsRow extends StatelessWidget {
-  const _PrettyTagsRow({required this.product});
-
-  final ProductDetailsModel product;
-
-  @override
-  Widget build(BuildContext context) {
-    final tags = product.productTags ?? [];
-    if (tags.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: EdgeInsets.all(8.w),
-      decoration: BoxDecoration(
-        color: AdminUiColors.subtleOverlay(context),
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Wrap(
-        spacing: 7.w,
-        runSpacing: 7.h,
-        children: tags
-            .map(
-              (t) => ProductTagChip(
-                name: t.name,
-                colorHex: t.color,
-              ),
-            )
-            .toList(),
       ),
     );
   }
@@ -191,55 +101,46 @@ class _ProductCategoryMeta {
   }
 }
 
-class _ProductOverviewGrid extends StatefulWidget {
+class _ProductOverviewGrid extends StatelessWidget {
   const _ProductOverviewGrid({required this.product});
 
   final ProductDetailsModel product;
 
   @override
-  State<_ProductOverviewGrid> createState() => _ProductOverviewGridState();
-}
-
-class _ProductOverviewGridState extends State<_ProductOverviewGrid> {
-  bool expanded = false;
-
-  bool get _isAdmin => userType.toLowerCase() == 'admin';
-
-  @override
   Widget build(BuildContext context) {
-    final product = widget.product;
+    final isAdmin = userType.toLowerCase() == 'admin';
     final cost =
         product.purchasePrices != null && product.purchasePrices!.isNotEmpty
             ? product.purchasePrices!.first.price.toString()
             : '—';
     final items = [
-      _MetricData(Icons.inventory_2_outlined, 'stock'.tr,
+      ProductMetricData(Icons.inventory_2_outlined, 'stock'.tr,
           product.stock?.toString() ?? '0'),
-      _MetricData(Icons.warning_amber_rounded, 'minimumStock'.tr,
+      ProductMetricData(Icons.warning_amber_rounded, 'minimumStock'.tr,
           product.minStock?.toString() ?? '—'),
-      _MetricData(Icons.sell_outlined, 'retailPrice'.tr,
+      ProductMetricData(Icons.sell_outlined, 'retailPrice'.tr,
           product.normailPrice?.toString() ?? '—'),
-      _MetricData(Icons.storefront_outlined, 'wholesalePriceField'.tr,
+      ProductMetricData(Icons.storefront_outlined, 'wholesalePriceField'.tr,
           product.wholesalePrice?.toString() ?? '—',
           onTap: () => Get.dialog(ShowWholesalePrices(product: product))),
-      _MetricData(
+      ProductMetricData(
           Icons.percent, 'discountPercentage'.tr, '${product.discount ?? 0}%'),
-      _MetricData(Icons.price_change_outlined, 'minimumSalePrice'.tr,
+      ProductMetricData(Icons.price_change_outlined, 'minimumSalePrice'.tr,
           product.minSalePrice?.toString() ?? '—'),
-      if (_isAdmin)
-        _MetricData(Icons.shopping_bag_outlined, 'ThePurchase'.tr, cost,
+      if (isAdmin)
+        ProductMetricData(Icons.shopping_bag_outlined, 'ThePurchase'.tr, cost,
             onTap: () => Get.dialog(ShowPurchasePrice(product: product))),
-      _MetricData(Icons.price_check_outlined, 'listPriceField'.tr,
+      ProductMetricData(Icons.price_check_outlined, 'listPriceField'.tr,
           product.price?.toString() ?? '—'),
-      _MetricData(Icons.two_wheeler_outlined, 'productModel'.tr,
+      ProductMetricData(Icons.two_wheeler_outlined, 'productModel'.tr,
           product.model?.toString() ?? '—'),
-      _MetricData(Icons.calendar_month_outlined, 'manufactureYear'.tr,
+      ProductMetricData(Icons.calendar_month_outlined, 'manufactureYear'.tr,
           product.manufactureYear?.toString() ?? '—'),
-      _MetricData(Icons.star_rate_rounded, 'rateLabel'.tr,
+      ProductMetricData(Icons.star_rate_rounded, 'rateLabel'.tr,
           product.rate?.toString() ?? '—'),
-      _MetricData(Icons.update_rounded, 'rotationDateField'.tr,
+      ProductMetricData(Icons.update_rounded, 'rotationDateField'.tr,
           product.rotationDate?.toString() ?? '—'),
-      _MetricData(
+      ProductMetricData(
         product.isSoldWithPaper == 1 || product.isSoldWithPaper == '1'
             ? Icons.menu_book_rounded
             : Icons.menu_book_outlined,
@@ -250,137 +151,7 @@ class _ProductOverviewGridState extends State<_ProductOverviewGrid> {
         trailingIcon: Icons.gavel_rounded,
       ),
     ];
-    final visibleItems = expanded ? items : items.take(4).toList();
-
-    return Column(
-      children: [
-        GridView.builder(
-          itemCount: visibleItems.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8.w,
-            mainAxisSpacing: 8.h,
-            childAspectRatio: 2.85,
-          ),
-          itemBuilder: (context, index) =>
-              _MetricCard(data: visibleItems[index]),
-        ),
-        if (items.length > 4)
-          TextButton.icon(
-            onPressed: () => setState(() => expanded = !expanded),
-            icon: Icon(
-              expanded
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              size: 19.sp,
-            ),
-            label: Text(expanded ? 'عرض أقل' : 'عرض المزيد'),
-          ),
-      ],
-    );
-  }
-}
-
-class _MetricData {
-  const _MetricData(this.icon, this.label, this.value,
-      {this.onTap, this.trailingIcon});
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final VoidCallback? onTap;
-  final IconData? trailingIcon;
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.data});
-
-  final _MetricData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final child = Container(
-      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: AdminUiColors.cardBackground(context),
-        borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 28.w,
-            height: 28.w,
-            decoration: BoxDecoration(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              data.icon,
-              size: 15.sp,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          SizedBox(width: 7.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  data.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.58),
-                      ),
-                ),
-                SizedBox(height: 3.h),
-                Text(
-                  data.value.trim().isEmpty ? '—' : data.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12.sp,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          if (data.onTap != null)
-            Icon(
-              Icons.open_in_new,
-              size: 13.sp,
-              color: Theme.of(context).colorScheme.primary,
-            )
-          else if (data.trailingIcon != null)
-            Icon(
-              data.trailingIcon,
-              size: 14.sp,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-        ],
-      ),
-    );
-
-    if (data.onTap == null) return child;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14.r),
-        onTap: data.onTap,
-        child: child,
-      ),
-    );
+    return ProductOverviewMetricGrid(items: items);
   }
 }
 
@@ -766,7 +537,7 @@ class _SizeColorDetailsTableState extends State<_SizeColorDetailsTable> {
     }
 
     if (rows.isEmpty) {
-      return _CollapsibleShell(
+      return ProductCollapsibleSection(
         icon: Icons.straighten,
         title: 'productDetailsSectionSizes'.tr,
         countText: '0',
@@ -791,7 +562,7 @@ class _SizeColorDetailsTableState extends State<_SizeColorDetailsTable> {
       grouped[row.size.trim().isEmpty ? '—' : row.size]!.add(row.color);
     }
 
-    return _CollapsibleShell(
+    return ProductCollapsibleSection(
       icon: Icons.straighten,
       title: 'productDetailsSectionSizes'.tr,
       countText: '${grouped.length} / ${rows.length}',
@@ -807,87 +578,6 @@ class _SizeColorDetailsTableState extends State<_SizeColorDetailsTable> {
               ),
             )
             .toList(),
-      ),
-    );
-  }
-}
-
-class _CollapsibleShell extends StatelessWidget {
-  const _CollapsibleShell({
-    required this.icon,
-    required this.title,
-    required this.countText,
-    required this.expanded,
-    required this.child,
-    this.onToggle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String countText;
-  final bool expanded;
-  final Widget child;
-  final VoidCallback? onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: AdminUiColors.cardBackground(context),
-        borderRadius: BorderRadius.circular(16.r),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                size: 20.sp,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                decoration: BoxDecoration(
-                  color: AdminUiColors.subtleOverlay(context),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  countText,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ),
-              SizedBox(width: 6.w),
-              if (onToggle != null)
-                TextButton.icon(
-                  onPressed: onToggle,
-                  icon: Icon(
-                    expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    size: 19.sp,
-                  ),
-                  label: Text(expanded ? 'إخفاء' : 'عرض'),
-                ),
-            ],
-          ),
-          if (expanded || onToggle == null) ...[
-            SizedBox(height: 10.h),
-            child,
-          ],
-        ],
       ),
     );
   }
@@ -990,8 +680,8 @@ class _ColorSizeLine extends StatelessWidget {
                   ),
             ),
           ),
-          _MiniStat(label: 'quantity'.tr, value: color.stock ?? '0'),
-          _MiniStat(label: 'price'.tr, value: color.normailPrice ?? '—'),
+          ProductMiniStat(label: 'quantity'.tr, value: color.stock ?? '0'),
+          ProductMiniStat(label: 'price'.tr, value: color.normailPrice ?? '—'),
           IconButton(
             tooltip: 'اللغات الاخرى',
             icon: Icon(
@@ -1001,45 +691,6 @@ class _ColorSizeLine extends StatelessWidget {
             ),
             visualDensity: VisualDensity.compact,
             onPressed: () => onTranslate(color),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 54.w,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.58),
-                ),
-          ),
-          SizedBox(height: 2.h),
-          Text(
-            value.trim().isEmpty ? '—' : value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
           ),
         ],
       ),

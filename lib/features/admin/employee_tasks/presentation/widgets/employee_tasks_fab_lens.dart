@@ -17,7 +17,7 @@ import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../../employee_section/presentation/controllers/employee_service.dart';
 import '../controllers/employee_tasks_controller.dart';
 
-/// Long-press FAB: employees radiate from the button; drag angle to pick any employee.
+/// Long-press FAB: employees on stacked quarter-arc rows; swipe for more pages.
 class EmployeeTasksCreateFab extends StatefulWidget {
   const EmployeeTasksCreateFab({Key? key}) : super(key: key);
 
@@ -36,13 +36,50 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
   /// -1 = clear filter (center), 0..n-1 = employee index.
   int _highlightIndex = -1;
   Offset? _anchorCenter;
+  bool _fabOnLeft = false;
+  int _segmentPage = 0;
+  double _pageDragAccum = 0;
 
-  static const double _innerRadius = 78;
-  static const double _outerRadius = 128;
   static const double _centerHit = 34;
-  static const double _minPickRadius = 50;
+  static const double _minPickRadius = 44;
+  static const double _pageSwipeThreshold = 52;
+  static const double _arcSweep = math.pi / 2;
+
+  /// Each arc gets a capacity based on its length (radius × 90°).
+  static final List<_ArcRowConfig> _arcRows = _buildArcRows();
+
+  static List<_ArcRowConfig> _buildArcRows() {
+    const baseRadius = 72.0;
+    const radiusStep = 46.0;
+    const arcCount = 6;
+    const minBubble = 32.0;
+    const gap = 7.0;
+    const slotPitch = minBubble + gap;
+
+    return List.generate(arcCount, (i) {
+      final radius = baseRadius + i * radiusStep;
+      final arcLength = radius * math.pi / 2;
+      final capacity = math.max(2, (arcLength / slotPitch).floor());
+      return _ArcRowConfig(capacity: capacity, radius: radius);
+    });
+  }
+
+  int get _employeesPerPage =>
+      _arcRows.fold(0, (sum, row) => sum + row.capacity);
 
   List<EmployeeEntity> get _employees => _employeeService.employeeList;
+
+  int get _pageCount {
+    if (_employees.isEmpty) return 1;
+    return ((_employees.length + _employeesPerPage - 1) ~/ _employeesPerPage);
+  }
+
+  List<EmployeeEntity> get _currentPageEmployees {
+    if (_employees.isEmpty) return const [];
+    final start = _segmentPage * _employeesPerPage;
+    final end = math.min(start + _employeesPerPage, _employees.length);
+    return _employees.sublist(start, end);
+  }
 
   @override
   void dispose() {
@@ -50,10 +87,25 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
     super.dispose();
   }
 
-  Offset? _readFabCenter() {
+  Offset? _readFabCenter([BuildContext? overlayContext]) {
     final box = _fabKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return null;
-    return box.localToGlobal(box.size.center(Offset.zero));
+
+    final global = box.localToGlobal(box.size.center(Offset.zero));
+    if (overlayContext == null) return global;
+
+    final overlayBox = overlayContext.findRenderObject() as RenderBox?;
+    if (overlayBox == null) return global;
+    return overlayBox.globalToLocal(global);
+  }
+
+  void _syncAnchor(BuildContext overlayContext) {
+    final center = _readFabCenter(overlayContext);
+    if (center == null) return;
+
+    _anchorCenter = center;
+    final screenW = MediaQuery.sizeOf(overlayContext).width;
+    _fabOnLeft = center.dx < screenW * 0.5;
   }
 
   GetAllEmployeeUsecase _employeeUsecase() {
@@ -85,6 +137,8 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
   Future<void> _openLens() async {
     HapticHelper.selection();
     _highlightIndex = -1;
+    _segmentPage = 0;
+    _pageDragAccum = 0;
     _anchorCenter = _readFabCenter();
     _overlay = OverlayEntry(builder: _buildOverlay);
     Overlay.of(context).insert(_overlay!);
@@ -135,47 +189,157 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
     _overlay?.markNeedsBuild();
   }
 
-  /// Pick employee by finger angle around FAB (works for 12+ without tiny hit targets).
-  int _indexFromPointer(Offset global) {
-    final center = _anchorCenter ?? _readFabCenter();
+  void _handlePageSwipe(double deltaX) {
+    if (_pageCount <= 1) return;
+
+    _pageDragAccum += deltaX;
+    if (_pageDragAccum >= _pageSwipeThreshold) {
+      if (_segmentPage < _pageCount - 1) {
+        _segmentPage++;
+        HapticHelper.selection();
+      }
+      _pageDragAccum = 0;
+      _overlay?.markNeedsBuild();
+      return;
+    }
+    if (_pageDragAccum <= -_pageSwipeThreshold) {
+      if (_segmentPage > 0) {
+        _segmentPage--;
+        HapticHelper.selection();
+      }
+      _pageDragAccum = 0;
+      _overlay?.markNeedsBuild();
+    }
+  }
+
+  List<_ArcSlot> _layoutSlots(int count) {
+    if (count <= 0) return const [];
+
+    final slots = <_ArcSlot>[];
+    var local = 0;
+    for (var row = 0; row < _arcRows.length && local < count; row++) {
+      final inRow = math.min(_arcRows[row].capacity, count - local);
+      for (var slot = 0; slot < inRow; slot++) {
+        slots.add(
+          _ArcSlot(
+            localIndex: local,
+            row: row,
+            slotInRow: slot,
+            rowCount: inRow,
+          ),
+        );
+        local++;
+      }
+    }
+    return slots;
+  }
+
+  List<int> _activeRows(int count) {
+    return _layoutSlots(count).map((s) => s.row).toSet().toList()..sort();
+  }
+
+  double _radiusForRow(int row) =>
+      _arcRows[row.clamp(0, _arcRows.length - 1)].radius;
+
+  double _arcStartAngle() => _fabOnLeft ? -math.pi / 2 : -math.pi;
+
+  double _arcEndAngle() => _fabOnLeft ? 0.0 : -math.pi / 2;
+
+  bool _angleInArc(double angle) {
+    const margin = 0.22;
+    final start = _arcStartAngle();
+    final end = _arcEndAngle();
+    return angle >= (start - margin) && angle <= (end + margin);
+  }
+
+  double _angleForSlot(int index, int total) {
+    final t = total <= 1 ? 0.5 : (index + 0.5) / total;
+    final start = _arcStartAngle();
+    return start + t * _arcSweep;
+  }
+
+  int _localIndexFromAngle(double angle, int total) {
+    final start = _arcStartAngle();
+    final t = ((angle - start) / _arcSweep).clamp(0.0, 0.999999);
+    return (t * total).floor().clamp(0, total - 1);
+  }
+
+  double _bubbleAvatarSize({required int rowCount}) {
+    if (rowCount >= 9) return 32;
+    if (rowCount >= 7) return 36;
+    if (rowCount >= 5) return 40;
+    if (rowCount >= 3) return 44;
+    return 48;
+  }
+
+  int? _rowFromDistance(double distance, int pageCount) {
+    final rows = _activeRows(pageCount);
+    if (rows.isEmpty) return null;
+
+    for (var i = 0; i < rows.length; i++) {
+      final row = rows[i];
+      final radius = _radiusForRow(row);
+      final inner = i == 0
+          ? _minPickRadius
+          : (_radiusForRow(rows[i - 1]) + radius) / 2;
+      final outer = i == rows.length - 1
+          ? radius + 36
+          : (radius + _radiusForRow(rows[i + 1])) / 2;
+      if (distance >= inner && distance < outer) return row;
+    }
+
+    int? bestRow;
+    var bestDiff = double.infinity;
+    for (final row in rows) {
+      final diff = (distance - _radiusForRow(row)).abs();
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestRow = row;
+      }
+    }
+    return bestRow;
+  }
+
+  int _indexFromPointer(Offset global, BuildContext overlayContext) {
+    _syncAnchor(overlayContext);
+    final center = _anchorCenter;
     if (center == null) return -1;
 
     final delta = global - center;
     if (delta.distance <= _centerHit) return -1;
     if (delta.distance < _minPickRadius) return _highlightIndex;
 
-    final employees = _employees;
-    if (employees.isEmpty) return -1;
+    final pageEmployees = _currentPageEmployees;
+    if (pageEmployees.isEmpty) return -1;
 
-    var angle = math.atan2(delta.dy, delta.dx) + math.pi / 2;
-    if (angle < 0) angle += 2 * math.pi;
+    final angle = math.atan2(delta.dy, delta.dx);
+    if (!_angleInArc(angle)) return _highlightIndex;
 
-    final n = employees.length;
-    var index = (angle / (2 * math.pi) * n).floor();
-    if (index >= n) index = n - 1;
-    if (index < 0) index = 0;
-    return index;
+    final row = _rowFromDistance(delta.distance, pageEmployees.length);
+    if (row == null) return _highlightIndex;
+
+    final rowSlots = _layoutSlots(pageEmployees.length)
+        .where((s) => s.row == row)
+        .toList()
+      ..sort((a, b) => a.slotInRow.compareTo(b.slotInRow));
+    if (rowSlots.isEmpty) return _highlightIndex;
+
+    final slotInRow = _localIndexFromAngle(angle, rowSlots.length);
+    return _segmentPage * _employeesPerPage +
+        rowSlots[slotInRow.clamp(0, rowSlots.length - 1)].localIndex;
   }
 
-  Offset _bubblePosition(int index, int total, Offset center) {
-    if (total <= 8) {
-      final angle = -math.pi / 2 + (2 * math.pi * index / total);
-      return center +
-          Offset(
-              math.cos(angle) * _innerRadius, math.sin(angle) * _innerRadius);
-    }
-    final innerCount = (total / 2).ceil();
-    if (index < innerCount) {
-      final angle = -math.pi / 2 + (2 * math.pi * index / innerCount);
-      return center +
-          Offset(
-              math.cos(angle) * _innerRadius, math.sin(angle) * _innerRadius);
-    }
-    final outerIndex = index - innerCount;
-    final outerCount = total - innerCount;
-    final angle = -math.pi / 2 + (2 * math.pi * outerIndex / outerCount);
+  Offset _slotPosition(_ArcSlot slot, Offset center) {
+    final angle = _angleForSlot(slot.slotInRow, slot.rowCount);
+    final radius = _radiusForRow(slot.row);
     return center +
-        Offset(math.cos(angle) * _outerRadius, math.sin(angle) * _outerRadius);
+        Offset(math.cos(angle) * radius, math.sin(angle) * radius);
+  }
+
+  String? _highlightedEmployeeName() {
+    if (_highlightIndex < 0 || _employees.isEmpty) return null;
+    final i = _highlightIndex.clamp(0, _employees.length - 1);
+    return _employees[i].employeeName;
   }
 
   void _onCreateTask() {
@@ -192,18 +356,31 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
   }
 
   Widget _buildOverlay(BuildContext context) {
-    final anchor = _anchorCenter ?? _readFabCenter();
+    _syncAnchor(context);
+    final anchor = _anchorCenter;
     final employees = _employees;
+    final pageEmployees = _currentPageEmployees;
     final clearSelected = _highlightIndex < 0;
-    final n = employees.length;
+    final totalEmployees = employees.length;
+    final pageCount = _pageCount;
+    final onPage = pageEmployees.length;
+    final slots = _layoutSlots(onPage);
+    final guideRadii = _activeRows(onPage).map(_radiusForRow).toList();
+    final maxArcRadius =
+        guideRadii.isEmpty ? 180.0 : guideRadii.reduce(math.max);
+    final highlightedName = _highlightedEmployeeName();
 
     return Material(
       color: Colors.transparent,
       child: Listener(
         behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) {
+          _pageDragAccum = 0;
+          _syncAnchor(context);
+        },
         onPointerMove: (e) {
-          _anchorCenter ??= _readFabCenter();
-          _setHighlight(_indexFromPointer(e.position));
+          _handlePageSwipe(e.delta.dx);
+          _setHighlight(_indexFromPointer(e.position, context));
         },
         onPointerUp: (_) => _removeOverlay(applySelection: true),
         onPointerCancel: (_) => _removeOverlay(applySelection: true),
@@ -215,7 +392,30 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
                 child: Container(color: Colors.black.withValues(alpha: 0.45)),
               ),
             ),
+            if (!_loadingEmployees && highlightedName != null)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Center(
+                    child: _CenterSelectionBanner(
+                      name: highlightedName,
+                      index: _highlightIndex + 1,
+                      total: totalEmployees,
+                      pageCount: pageCount,
+                      currentPage: _segmentPage,
+                    ),
+                  ),
+                ),
+              ),
             if (anchor != null) ...[
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _QuarterArcGuidePainter(
+                    center: anchor,
+                    fabOnLeft: _fabOnLeft,
+                    radii: guideRadii,
+                  ),
+                ),
+              ),
               if (_loadingEmployees)
                 Positioned(
                   left: anchor.dx - 18,
@@ -229,41 +429,70 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
                     ),
                   ),
                 ),
-              if (!_loadingEmployees && n > 0)
-                ...List.generate(n, (i) {
-                  final pos = _bubblePosition(i, n, anchor);
-                  final emp = employees[i];
-                  final selected = i == _highlightIndex;
+              if (!_loadingEmployees && onPage > 0)
+                ...slots.map((slot) {
+                  final globalIndex =
+                      _segmentPage * _employeesPerPage + slot.localIndex;
+                  final pos = _slotPosition(slot, anchor);
+                  final emp = pageEmployees[slot.localIndex];
+                  final selected = globalIndex == _highlightIndex;
+                  final avatarSize =
+                      _bubbleAvatarSize(rowCount: slot.rowCount);
                   return Positioned(
-                    left: pos.dx - 24,
-                    top: pos.dy - 24,
+                    left: pos.dx - avatarSize / 2,
+                    top: pos.dy - avatarSize / 2,
                     child: Transform.scale(
-                      scale: selected ? 1.22 : 0.92,
+                      scale: selected ? 1.16 : 0.94,
                       child: _EmployeeBubble(
-                        name: emp.employeeName,
                         imageUrl: emp.employeeImg,
                         selected: selected,
-                        compact: n > 8,
+                        avatarSize: avatarSize,
                       ),
                     ),
                   );
                 }),
-              if (!_loadingEmployees && _highlightIndex >= 0 && n > 0)
+              if (!_loadingEmployees &&
+                  _highlightIndex < 0 &&
+                  pageCount > 1 &&
+                  onPage > 0)
                 Positioned(
-                  left: anchor.dx - 70,
-                  top: anchor.dy - 150,
-                  width: 140,
-                  child: Text(
-                    '${_highlightIndex + 1}/$n',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      shadows: const [
-                        Shadow(color: Colors.black54, blurRadius: 6),
-                      ],
-                    ),
+                  left: _fabOnLeft ? anchor.dx + 8 : anchor.dx - 168,
+                  top: anchor.dy - maxArcRadius - 48,
+                  width: 160,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(pageCount, (i) {
+                          final active = i == _segmentPage;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: active ? 16 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.35),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          );
+                        }),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'اسحب يمين/يسار للمزيد',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w600,
+                          shadows: const [
+                            Shadow(color: Colors.black54, blurRadius: 4),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               Positioned(
@@ -328,6 +557,152 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
   }
 }
 
+class _CenterSelectionBanner extends StatelessWidget {
+  const _CenterSelectionBanner({
+    required this.name,
+    required this.index,
+    required this.total,
+    required this.pageCount,
+    required this.currentPage,
+  });
+
+  final String name;
+  final int index;
+  final int total;
+  final int pageCount;
+  final int currentPage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 32.w),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+            ),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            '$index / $total',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (pageCount > 1) ...[
+            SizedBox(height: 8.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(pageCount, (i) {
+                final active = i == currentPage;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: active ? 16 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: active
+                        ? AppColors.secondaryColor
+                        : Colors.white.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ArcRowConfig {
+  const _ArcRowConfig({required this.capacity, required this.radius});
+
+  final int capacity;
+  final double radius;
+}
+
+class _ArcSlot {
+  const _ArcSlot({
+    required this.localIndex,
+    required this.row,
+    required this.slotInRow,
+    required this.rowCount,
+  });
+
+  final int localIndex;
+  final int row;
+  final int slotInRow;
+  final int rowCount;
+}
+
+class _QuarterArcGuidePainter extends CustomPainter {
+  const _QuarterArcGuidePainter({
+    required this.center,
+    required this.fabOnLeft,
+    required this.radii,
+  });
+
+  final Offset center;
+  final bool fabOnLeft;
+  final List<double> radii;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (radii.isEmpty) return;
+
+    final startAngle = fabOnLeft ? -math.pi / 2 : -math.pi;
+    const sweep = math.pi / 2;
+
+    for (final radius in radii) {
+      final rect = Rect.fromCircle(center: center, radius: radius);
+
+      final fillPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.07)
+        ..style = PaintingStyle.fill;
+      canvas.drawArc(rect, startAngle, sweep, true, fillPaint);
+
+      final strokePaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4;
+      canvas.drawArc(rect, startAngle, sweep, false, strokePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _QuarterArcGuidePainter oldDelegate) {
+    return oldDelegate.center != center ||
+        oldDelegate.fabOnLeft != fabOnLeft ||
+        oldDelegate.radii != radii;
+  }
+}
+
 class _CenterClearBubble extends StatelessWidget {
   const _CenterClearBubble({required this.selected});
 
@@ -363,73 +738,48 @@ class _CenterClearBubble extends StatelessWidget {
 
 class _EmployeeBubble extends StatelessWidget {
   const _EmployeeBubble({
-    required this.name,
     required this.imageUrl,
     required this.selected,
-    this.compact = false,
+    required this.avatarSize,
   });
 
-  final String name;
   final String imageUrl;
   final bool selected;
-  final bool compact;
+  final double avatarSize;
 
   @override
   Widget build(BuildContext context) {
     final url = ShowNetImage.getThumbnailPhoto(imageUrl);
-    final size = compact ? 44.0 : 52.0;
+    final compact = avatarSize <= 40;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: selected ? AppColors.secondaryColor : Colors.white,
-              width: selected ? 3 : 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: ClipOval(
-            child: url.isNotEmpty
-                ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover)
-                : ColoredBox(
-                    color: AppColors.operationalNavy.withValues(alpha: 0.15),
-                    child: Icon(
-                      Icons.person,
-                      size: compact ? 20 : 24,
-                      color: AppColors.operationalNavy,
-                    ),
-                  ),
-          ),
+    return Container(
+      width: avatarSize,
+      height: avatarSize,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: selected ? AppColors.secondaryColor : Colors.white,
+          width: selected ? 3 : 1.5,
         ),
-        if (selected) ...[
-          const SizedBox(height: 3),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: compact ? 64 : 76),
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: compact ? 9.sp : 10.sp,
-                fontWeight: FontWeight.w700,
-                shadows: const [Shadow(color: Colors.black54, blurRadius: 4)],
-              ),
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 8,
           ),
         ],
-      ],
+      ),
+      child: ClipOval(
+        child: url.isNotEmpty
+            ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover)
+            : ColoredBox(
+                color: AppColors.operationalNavy.withValues(alpha: 0.15),
+                child: Icon(
+                  Icons.person,
+                  size: compact ? 20 : 24,
+                  color: AppColors.operationalNavy,
+                ),
+              ),
+      ),
     );
   }
 }

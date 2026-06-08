@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/camera_capture_helper.dart';
+import '../../../../../core/helpers/proof_media_type.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/helpers/task_nav_debug.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -112,8 +113,10 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
                         onSubtaskTap: (sub) => _onSubtaskTap(context, sub),
                       ),
                     ),
-                    TaskSectionTitle('proofUploadSection', compact: true),
-                    _ProofSection(data: data),
+                    if (_showsMainProofSection(data, controller)) ...[
+                      TaskSectionTitle('proofUploadSection', compact: true),
+                      _ProofSection(data: data),
+                    ],
                     SizedBox(height: 64.h),
                   ],
                 ),
@@ -390,7 +393,7 @@ class _ProofSection extends GetView<EmployeeTasksController> {
             Padding(
               padding: EdgeInsets.only(bottom: 4.h),
               child: Text(
-                'proofRequiredHint'.tr,
+                ProofMediaType.mainRequiredHintKey(data.proofMediaType).tr,
                 style: TextStyle(
                   fontSize: 10.sp,
                   color: AppColors.operationalPurple,
@@ -432,12 +435,23 @@ class _ProofSection extends GetView<EmployeeTasksController> {
               ),
             );
           }),
-          SizedBox(height: 8.h),
-          _AddProofTile(onTap: () => _pickCameraProof(context)),
+          if (data.isForcedToUploadImg) ...[
+            SizedBox(height: 8.h),
+            _AddProofTile(onTap: () => _pickCameraProof(context)),
+          ],
         ],
       ),
     );
   }
+}
+
+bool _showsMainProofSection(
+  TaskDetailsModel data,
+  EmployeeTasksController controller,
+) {
+  if (data.isForcedToUploadImg) return true;
+  return controller.taskHasEmployeeImage(data) ||
+      controller.selectedFile.isNotEmpty;
 }
 
 class _AddProofTile extends StatelessWidget {

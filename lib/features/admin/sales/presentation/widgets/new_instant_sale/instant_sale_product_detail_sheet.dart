@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../stock/presentation/widgets/product_location_badge.dart';
 import '../../../data/models/product_model.dart';
 import '../../utils/product_image_viewer.dart';
 import '../../utils/sales_amount_format.dart';
@@ -34,6 +35,11 @@ class _ProductDetailSheet extends StatelessWidget {
     final priceLabel = product.unitPrice > 0
         ? SalesAmountFormat.displayShekel(product.unitPrice)
         : 'instantSaleNoRetailPrice'.tr;
+    final locationCodeLabel = ProductLocationLabel.withProductCode(
+      sectionName: product.storeSectionName,
+      shelfNumber: product.shelfNumber,
+      productCode: product.displayProductCode,
+    );
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -91,6 +97,10 @@ class _ProductDetailSheet extends StatelessWidget {
                 height: 1.35,
               ),
             ),
+            if (locationCodeLabel != null) ...[
+              SizedBox(height: 6.h),
+              _row('productCode'.tr, locationCodeLabel),
+            ],
             SizedBox(height: 10.h),
             _row('stock'.tr, '$stock'),
             _row('price'.tr, priceLabel),

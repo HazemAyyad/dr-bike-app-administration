@@ -84,6 +84,7 @@ class EmployeeDashbordImplement implements EmployeeDashbordRepository {
     required int taskId,
     bool isOccurrence = false,
     int? occurrenceId,
+    String? taskDate,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -95,6 +96,7 @@ class EmployeeDashbordImplement implements EmployeeDashbordRepository {
         taskId: taskId,
         isOccurrence: isOccurrence,
         occurrenceId: occurrenceId,
+        taskDate: taskDate,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

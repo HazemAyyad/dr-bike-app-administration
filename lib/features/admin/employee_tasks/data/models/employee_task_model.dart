@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/task_recurrence_rules.dart';
 import 'package:doctorbike/core/helpers/audio_helper.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 
@@ -26,6 +27,9 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     int points = 0,
     int progress = 0,
     bool proofRequired = false,
+    String taskRecurrence = 'noRepeat',
+    List<String> taskRecurrenceTime = const [],
+    int? templateId,
   }) : super(
           taskId: taskId,
           occurrenceId: occurrenceId,
@@ -46,9 +50,17 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
           points: points,
           progress: progress,
           proofRequired: proofRequired,
+          taskRecurrence: taskRecurrence,
+          taskRecurrenceTime: taskRecurrenceTime,
+          templateId: templateId,
         );
 
   factory EmployeeTaskModel.fromJson(Map<String, dynamic> json) {
+    final trt = json[ApiKey.task_recurrence_time];
+    final List<String> recurrenceTimes = trt is List
+        ? trt.map((e) => e.toString()).toList()
+        : const [];
+
     return EmployeeTaskModel(
       taskId: asInt(json[ApiKey.task_id]),
       occurrenceId:
@@ -73,6 +85,97 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       points: asInt(json['points']),
       progress: asInt(json['progress']),
       proofRequired: asBool(json['is_forced_to_upload_img']),
+      taskRecurrence: asString(json[ApiKey.task_recurrence], 'noRepeat'),
+      taskRecurrenceTime: recurrenceTimes,
+      templateId: json['template_id'] != null ? asInt(json['template_id']) : null,
+    );
+  }
+
+  EmployeeTaskModel copyWithDisplayDate(DateTime day) {
+    final start = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      startTime.hour,
+      startTime.minute,
+      startTime.second,
+      startTime.millisecond,
+      startTime.microsecond,
+    );
+    var end = DateTime(
+      day.year,
+      day.month,
+      day.day,
+      endTime.hour,
+      endTime.minute,
+      endTime.second,
+      endTime.millisecond,
+      endTime.microsecond,
+    );
+    if (!end.isAfter(start)) {
+      end = end.add(const Duration(days: 1));
+    }
+    return EmployeeTaskModel(
+      taskId: taskId,
+      occurrenceId: occurrenceId,
+      parentId: parentId,
+      source: source,
+      taskName: taskName,
+      employeeId: employeeId,
+      employeeName: employeeName,
+      startTime: start,
+      endTime: end,
+      isCanceled: isCanceled,
+      employeeImg: employeeImg,
+      employeePhoto: employeePhoto,
+      adminImg: adminImg,
+      audio: audio,
+      status: status,
+      priority: priority,
+      points: points,
+      progress: progress,
+      proofRequired: proofRequired,
+      taskRecurrence: taskRecurrence,
+      taskRecurrenceTime: taskRecurrenceTime,
+      templateId: templateId,
+    );
+  }
+
+  /// Fresh calendar-day row for legacy recurring parents (not the anchor day).
+  EmployeeTaskModel virtualDayInstance(DateTime day) {
+    final displayed = copyWithDisplayDate(day);
+    final isAnchorDay = TaskRecurrenceRules.sameDay(startTime, day);
+    final isRecurringParent = TaskRecurrenceRules.isRecurringParent(
+      source: source,
+      parentId: parentId,
+      recurrence: taskRecurrence,
+    );
+    if (!isRecurringParent || isAnchorDay) {
+      return displayed;
+    }
+    return EmployeeTaskModel(
+      taskId: taskId,
+      occurrenceId: occurrenceId,
+      parentId: parentId,
+      source: source,
+      taskName: taskName,
+      employeeId: employeeId,
+      employeeName: employeeName,
+      startTime: displayed.startTime,
+      endTime: displayed.endTime,
+      isCanceled: isCanceled,
+      employeeImg: null,
+      employeePhoto: employeePhoto,
+      adminImg: adminImg,
+      audio: audio,
+      status: 'pending',
+      priority: priority,
+      points: points,
+      progress: 0,
+      proofRequired: proofRequired,
+      taskRecurrence: taskRecurrence,
+      taskRecurrenceTime: taskRecurrenceTime,
+      templateId: templateId,
     );
   }
 

@@ -18,8 +18,11 @@ class CreateTaskBinding extends Bindings {
     if (!Get.isRegistered<EmployeeService>()) {
       Get.put(EmployeeService(), permanent: true);
     }
-    Get.lazyPut(
-      () => CreateTaskController(
+    if (Get.isRegistered<CreateTaskController>()) {
+      Get.delete<CreateTaskController>(force: true);
+    }
+    Get.put(
+      CreateTaskController(
         createTaskUsecase: CreateTaskUsecase(
           employeeTasksRepository: Get.find<CreateEmployeeTasksImplement>(),
         ),
@@ -34,6 +37,7 @@ class CreateTaskBinding extends Bindings {
         specialTasksService: Get.find<SpecialTasksService>(),
         employeeTaskService: Get.find<EmployeeTaskService>(),
       ),
+      permanent: false,
     );
   }
 }

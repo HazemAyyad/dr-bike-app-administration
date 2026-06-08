@@ -18,6 +18,8 @@
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		E5BC215AE5A1ED12F19782CE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA55CA697D4C02CCD77CB9AE /* GoogleService-Info.plist */; };
 		F1A2B3C41CF9000F007C117E /* task_sos_alert.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = F1A2B3C31CF9000F007C117E /* task_sos_alert.mp3 */; };
+		F2B3C4D51CF9000F007C117F /* task_success.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2B3C4D41CF9000F007C117F /* task_success.wav */; };
+		F3C4D5E61CF9000F007C1180 /* admin_login_motivate.wav in Resources */ = {isa = PBXBuildFile; fileRef = F3C4D5E51CF9000F007C1180 /* admin_login_motivate.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,6 +72,8 @@
 		EF49DBC67CC959BCAEBADC0C /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		FD00DB8E5CEF2531D576B20F /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1A2B3C31CF9000F007C117E /* task_sos_alert.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = task_sos_alert.mp3; sourceTree = "<group>"; };
+		F2B3C4D41CF9000F007C117F /* task_success.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = task_success.wav; sourceTree = "<group>"; };
+		F3C4D5E51CF9000F007C1180 /* admin_login_motivate.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = admin_login_motivate.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -168,6 +172,8 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				F1A2B3C31CF9000F007C117E /* task_sos_alert.mp3 */,
+				F2B3C4D41CF9000F007C117F /* task_success.wav */,
+				F3C4D5E51CF9000F007C1180 /* admin_login_motivate.wav */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -274,6 +280,8 @@
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				E5BC215AE5A1ED12F19782CE /* GoogleService-Info.plist in Resources */,
 				F1A2B3C41CF9000F007C117E /* task_sos_alert.mp3 in Resources */,
+				F2B3C4D51CF9000F007C117F /* task_success.wav in Resources */,
+				F3C4D5E61CF9000F007C1180 /* admin_login_motivate.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

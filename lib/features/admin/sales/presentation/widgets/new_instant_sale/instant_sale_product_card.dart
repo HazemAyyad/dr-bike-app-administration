@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../stock/presentation/widgets/product_location_badge.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/product_model.dart';
@@ -29,6 +30,11 @@ class InstantSaleProductCard extends StatelessWidget {
     final priceLabel = product.unitPrice > 0
         ? SalesAmountFormat.displayShekel(product.unitPrice)
         : 'instantSaleNoRetailPrice'.tr;
+    final locationCodeLabel = ProductLocationLabel.withProductCode(
+      sectionName: product.storeSectionName,
+      shelfNumber: product.shelfNumber,
+      productCode: product.displayProductCode,
+    );
 
     return Obx(() {
       final _ = controller.cartRevision.value;
@@ -53,7 +59,7 @@ class InstantSaleProductCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                flex: 5,
+                flex: 4,
                 child: InkWell(
                   onTap: outOfStock
                       ? null
@@ -81,9 +87,37 @@ class InstantSaleProductCard extends StatelessWidget {
                         right: 3.w,
                         child: _StockBadge(stock: stock),
                       ),
-                      if (inCart)
+                      if (locationCodeLabel != null)
                         Positioned(
                           top: 3.h,
+                          left: 3.w,
+                          right: 3.w,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 3.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.62),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: Text(
+                              locationCodeLabel,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 6.5.sp,
+                                fontWeight: FontWeight.w600,
+                                height: 1.05,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (inCart)
+                        Positioned(
+                          top: locationCodeLabel != null ? 22.h : 3.h,
                           left: 3.w,
                           child: Container(
                             padding: EdgeInsets.symmetric(
@@ -124,7 +158,7 @@ class InstantSaleProductCard extends StatelessWidget {
                         children: [
                           Text(
                             product.nameAr,
-                            maxLines: 3,
+                            maxLines: 2,
                             softWrap: true,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -133,6 +167,21 @@ class InstantSaleProductCard extends StatelessWidget {
                               height: 1.15,
                             ),
                           ),
+                          if (locationCodeLabel != null) ...[
+                            SizedBox(height: 2.h),
+                            Text(
+                              locationCodeLabel,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 7.sp,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
                           SizedBox(height: 2.h),
                           Text(
                             priceLabel,

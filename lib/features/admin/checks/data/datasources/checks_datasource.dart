@@ -321,6 +321,8 @@ class ChecksDatasource {
     required DateTime dueDate,
     required String checkId,
     required String bankName,
+    String? total,
+    String? currency,
     XFile? frontImage,
     XFile? backImage,
     required String notes,
@@ -345,6 +347,8 @@ class ChecksDatasource {
         data: {
           if (isInComing) 'incoming_check_id': outgoingCheckId,
           if (!isInComing) 'outgoing_check_id': outgoingCheckId,
+          if (!isInComing && total != null) 'total': total,
+          if (!isInComing && currency != null) 'currency': currency,
           'due_date': dueDate,
           'check_id': checkId,
           'bank_name': bankName,

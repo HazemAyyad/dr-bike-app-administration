@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/product_image_utils.dart';
 
 import 'product_tag_model.dart';
 
@@ -11,11 +12,15 @@ class AllStockProductsModel {
   final String productMinSalePrice;
   final double normailPrice;
   final String image;
-  final String viewImage;
-  final String normalImage;
+  final List<String> viewImageUrls;
+  final List<String> normalImageUrls;
+  final List<String> image3dUrls;
   final String numberOfUsedProducts;
   final String productCode;
   final List<ProductTagModel> tags;
+  final String? storeSectionId;
+  final String? storeSectionName;
+  final String? shelfNumber;
 
   AllStockProductsModel({
     required this.closeoutId,
@@ -26,11 +31,15 @@ class AllStockProductsModel {
     required this.productMinSalePrice,
     this.normailPrice = 0,
     required this.image,
-    this.viewImage = '',
-    this.normalImage = '',
+    this.viewImageUrls = const [],
+    this.normalImageUrls = const [],
+    this.image3dUrls = const [],
     required this.numberOfUsedProducts,
     this.productCode = '',
     this.tags = const [],
+    this.storeSectionId,
+    this.storeSectionName,
+    this.shelfNumber,
   });
 
   factory AllStockProductsModel.fromJson(Map<String, dynamic> json) {
@@ -52,11 +61,18 @@ class AllStockProductsModel {
         json['product_normail_price'] ?? json['normail_price'],
       ),
       image: asString(json['product_image']),
-      viewImage: _firstImage(json['product_viewImages']),
-      normalImage: _firstImage(json['product_normalImages']),
+      viewImageUrls:
+          ProductImageUtils.allValidUrlsFromList(json['product_viewImages']),
+      normalImageUrls:
+          ProductImageUtils.allValidUrlsFromList(json['product_normalImages']),
+      image3dUrls:
+          ProductImageUtils.allValidUrlsFromList(json['product_image3d']),
       numberOfUsedProducts: asString(json['number_of_used_products'], '0'),
       productCode: asString(json['product_code']),
       tags: tags,
+      storeSectionId: asNullableString(json['store_section_id']),
+      storeSectionName: asNullableString(json['store_section_name']),
+      shelfNumber: asNullableString(json['shelf_number']),
     );
   }
 
@@ -69,18 +85,29 @@ class AllStockProductsModel {
       'product_stock': stock,
       'product_min_sale_price': productMinSalePrice,
       'product_image': image,
-      'product_viewImages': viewImage.isEmpty ? [] : [viewImage],
-      'product_normalImages': normalImage.isEmpty ? [] : [normalImage],
+      'product_viewImages': viewImageUrls,
+      'product_normalImages': normalImageUrls,
+      'product_image3d': image3dUrls,
       'number_of_used_products': numberOfUsedProducts,
       'product_code': productCode,
       'tags': tags.map((e) => e.toJson()).toList(),
+      'store_section_id': storeSectionId,
+      'store_section_name': storeSectionName,
+      'shelf_number': shelfNumber,
     };
   }
 
-  static String _firstImage(dynamic value) {
-    if (value is List && value.isNotEmpty) {
-      return asString(value.first);
-    }
-    return asString(value);
-  }
+  List<String> get allImageUrlsInPriority => ProductImageUtils.allValidUrlsInPriority(
+        viewImages: viewImageUrls,
+        normalImages: normalImageUrls,
+        image3d: image3dUrls,
+        fallbackImage: image,
+      );
+
+  String get preferredImageUrl => ProductImageUtils.preferredFromLists(
+        viewImages: viewImageUrls,
+        normalImages: normalImageUrls,
+        image3d: image3dUrls,
+        fallbackImage: image,
+      );
 }

@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../../core/helpers/camera_capture_helper.dart';
 import '../../../../../core/helpers/task_details_debug.dart';
+import '../../../../../core/helpers/task_recurrence_rules.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../routes/app_routes.dart';
@@ -25,6 +26,7 @@ import '../../domain/usecases/employee_tasks_usecase.dart';
 import '../../domain/usecases/get_task_details_usecase.dart';
 import '../../domain/usecases/upload_task_image_usecase.dart';
 import '../models/employee_task_list_row.dart';
+import '../helpers/recurring_task_expander.dart';
 import 'employee_task_service.dart';
 
 class EmployeeTasksController extends GetxController {
@@ -59,23 +61,81 @@ class EmployeeTasksController extends GetxController {
 
   int get archiveTabIndex => _isAdminViewer ? 3 : 2;
 
+  int get completedTabIndex => _isAdminViewer ? 2 : 1;
+
+  bool get isCompletedTab => currentTab.value == completedTabIndex;
+
   RxBool isLoading = false.obs;
+
+  bool _ongoingLoaded = false;
+  bool _completedTabLoaded = false;
+  bool _canceledTabLoaded = false;
 
   final RxList<File> selectedFile = <File>[].obs;
   final RxList<File> selectedSubFile = <File>[].obs;
   final Map<int, List<File>> subTaskPendingImages = {};
 
-  void changeTab(int index) {
+  Future<void> changeTab(int index) async {
+    if (currentTab.value == index && _isTabDataReady(index)) {
+      rebuildFlatList();
+      scrollToToday();
+      update(['tasksList', 'periodBar']);
+      return;
+    }
+
     currentTab.value = index;
-    rebuildFlatList();
-    scrollToToday();
-    update(['tasksList', 'periodBar']);
+    isLoading(true);
+    update(['tasksList']);
+
+    try {
+      await _ensureTabDataLoaded(index);
+      applyFiltersForTab(index);
+    } finally {
+      isLoading(false);
+      rebuildFlatList();
+      scrollToToday();
+      update(['tasksList', 'periodBar']);
+    }
+  }
+
+  bool _isTabDataReady(int index) {
+    if (_isAdminViewer && (index == 0 || index == 1)) {
+      return _ongoingLoaded;
+    }
+    if (!_isAdminViewer && index == 0) {
+      return _ongoingLoaded;
+    }
+    if (index == completedTabIndex) {
+      return _completedTabLoaded;
+    }
+    if (index == archiveTabIndex) {
+      return _canceledTabLoaded;
+    }
+    return false;
+  }
+
+  Future<void> _ensureTabDataLoaded(int index) async {
+    if (_isAdminViewer && (index == 0 || index == 1)) {
+      await _loadOngoingTab();
+      return;
+    }
+    if (!_isAdminViewer && index == 0) {
+      await _loadOngoingTab();
+      return;
+    }
+    if (index == completedTabIndex) {
+      await _loadCompletedTab();
+      return;
+    }
+    if (index == archiveTabIndex) {
+      await _loadCanceledTab();
+    }
   }
 
   void setTasksViewMode(String mode) {
     tasksViewMode.value = mode;
     syncPeriodBounds(anchor: DateTime.now());
-    applyAllFilters();
+    applyFiltersForTab(currentTab.value);
     scrollToToday();
     update(['tasksList', 'periodBar', 'viewMode']);
   }
@@ -155,8 +215,7 @@ class EmployeeTasksController extends GetxController {
   String get listUiKey =>
       '${tasksViewMode.value}_${currentTab.value}_${listEpoch.value}_${startDate.millisecondsSinceEpoch}';
 
-  static String dateKeyFrom(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  static String dateKeyFrom(DateTime d) => TaskRecurrenceRules.dateKeyFrom(d);
 
   Map<String, List<EmployeeTaskModel>> sortByDate(
       Map<String, List<EmployeeTaskModel>> source) {
@@ -206,24 +265,48 @@ class EmployeeTasksController extends GetxController {
     employeeTaskService.ongoingEmployeeTasks.clear();
     employeeTaskService.completedEmployeeTasks.clear();
     employeeTaskService.canceledEmployeeTasks.clear();
+    ongoingTasksFilter = {};
+    awaitingReviewTasksFilter = {};
+    completedTasksFilter = {};
+    canceledTasksFilter = {};
+    _ongoingLoaded = false;
+    _completedTabLoaded = false;
+    _canceledTabLoaded = false;
 
-    final lists = await Future.wait([
-      employeeTasksUsecase.call(page: 0),
-      employeeTasksUsecase.call(page: 1),
-      employeeTasksUsecase.call(page: 2),
-    ]);
-
-    _mergeTaskList(employeeTaskService.ongoingEmployeeTasks, lists[0]);
-    _mergeTaskList(employeeTaskService.completedEmployeeTasks, lists[1]);
-    _mergeTaskList(employeeTaskService.canceledEmployeeTasks, lists[2]);
-
-    applyAllFilters();
-
-    isLoading(false);
-    if (scrollToTodayb) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => scrollToToday());
+    try {
+      await _ensureTabDataLoaded(currentTab.value);
+      applyFiltersForTab(currentTab.value);
+    } finally {
+      isLoading(false);
+      if (scrollToTodayb) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => scrollToToday());
+      }
+      update(['tasksList', 'periodBar']);
     }
-    update(['tasksList', 'periodBar']);
+  }
+
+  Future<void> _loadOngoingTab() async {
+    if (_ongoingLoaded) return;
+    final list = await employeeTasksUsecase.call(page: 0);
+    employeeTaskService.ongoingEmployeeTasks.clear();
+    _mergeTaskList(employeeTaskService.ongoingEmployeeTasks, list);
+    _ongoingLoaded = true;
+  }
+
+  Future<void> _loadCompletedTab() async {
+    if (_completedTabLoaded) return;
+    final list = await employeeTasksUsecase.call(page: 1);
+    employeeTaskService.completedEmployeeTasks.clear();
+    _mergeTaskList(employeeTaskService.completedEmployeeTasks, list);
+    _completedTabLoaded = true;
+  }
+
+  Future<void> _loadCanceledTab() async {
+    if (_canceledTabLoaded) return;
+    final list = await employeeTasksUsecase.call(page: 2);
+    employeeTaskService.canceledEmployeeTasks.clear();
+    _mergeTaskList(employeeTaskService.canceledEmployeeTasks, list);
+    _canceledTabLoaded = true;
   }
 
   // filter tasks
@@ -311,17 +394,21 @@ class EmployeeTasksController extends GetxController {
     if (fromDateController.text.isEmpty &&
         toDateController.text.isEmpty &&
         employeeNameController.text.isEmpty) {
-      applyAllFilters();
+      applyFiltersForTab(currentTab.value);
       return;
     }
-    ongoingTasksFilter =
-        filterByRange(filterTasks(employeeTaskService.ongoingEmployeeTasks));
-    completedTasksFilter =
-        filterByRange(filterTasks(employeeTaskService.completedEmployeeTasks));
-    canceledTasksFilter =
-        filterByRange(filterTasks(employeeTaskService.canceledEmployeeTasks));
-    rebuildFlatList();
+    applyFiltersForTab(currentTab.value);
     update(['tasksList', 'periodBar']);
+  }
+
+  Map<String, List<EmployeeTaskModel>> _expandForCurrentView(
+    Map<String, List<EmployeeTaskModel>> source,
+  ) {
+    return RecurringTaskExpander.expand(
+      source: source,
+      rangeStart: startDate,
+      rangeEnd: endDate,
+    );
   }
 
   Map<String, List<EmployeeTaskModel>> _applyNameAndRange(
@@ -331,29 +418,78 @@ class EmployeeTasksController extends GetxController {
     final withName = employeeNameController.text.trim().isEmpty
         ? sorted
         : filterTasks(sorted);
-    return filterByRange(withName);
+    return filterByRange(_expandForCurrentView(withName));
+  }
+
+  void applyFiltersForTab(int tabIndex) {
+    if (_isAdminViewer) {
+      switch (tabIndex) {
+        case 0:
+          if (_ongoingLoaded) {
+            final ongoingSorted =
+                sortByDate(employeeTaskService.ongoingEmployeeTasks);
+            ongoingTasksFilter = _applyNameAndRange(
+              _filterMapByStatus(ongoingSorted, exclude: ['waiting_review']),
+            );
+          }
+          break;
+        case 1:
+          if (_ongoingLoaded) {
+            final ongoingSorted =
+                sortByDate(employeeTaskService.ongoingEmployeeTasks);
+            awaitingReviewTasksFilter = _applyNameAndRange(
+              _filterMapByStatus(ongoingSorted, only: ['waiting_review']),
+            );
+          }
+          break;
+        case 2:
+          if (_completedTabLoaded) {
+            completedTasksFilter = _applyNameAndRange(
+              employeeTaskService.completedEmployeeTasks,
+            );
+          }
+          break;
+        case 3:
+          if (_canceledTabLoaded) {
+            canceledTasksFilter = _applyNameAndRange(
+              employeeTaskService.canceledEmployeeTasks,
+            );
+          }
+          break;
+      }
+    } else {
+      switch (tabIndex) {
+        case 0:
+          if (_ongoingLoaded) {
+            ongoingTasksFilter = _applyNameAndRange(
+              sortByDate(employeeTaskService.ongoingEmployeeTasks),
+            );
+          }
+          break;
+        case 1:
+          if (_completedTabLoaded) {
+            completedTasksFilter = _applyNameAndRange(
+              employeeTaskService.completedEmployeeTasks,
+            );
+          }
+          break;
+        case 2:
+          if (_canceledTabLoaded) {
+            canceledTasksFilter = _applyNameAndRange(
+              employeeTaskService.canceledEmployeeTasks,
+            );
+          }
+          break;
+      }
+    }
+
+    if (tabIndex == currentTab.value) {
+      rebuildFlatList();
+    }
   }
 
   void applyAllFilters() {
-    final ongoingSorted = sortByDate(employeeTaskService.ongoingEmployeeTasks);
-    if (_isAdminViewer) {
-      ongoingTasksFilter = _applyNameAndRange(
-        _filterMapByStatus(ongoingSorted, exclude: ['waiting_review']),
-      );
-      awaitingReviewTasksFilter = _applyNameAndRange(
-        _filterMapByStatus(ongoingSorted, only: ['waiting_review']),
-      );
-    } else {
-      ongoingTasksFilter = _applyNameAndRange(ongoingSorted);
-      awaitingReviewTasksFilter = {};
-    }
-    completedTasksFilter = _applyNameAndRange(
-      employeeTaskService.completedEmployeeTasks,
-    );
-    canceledTasksFilter = _applyNameAndRange(
-      employeeTaskService.canceledEmployeeTasks,
-    );
-    rebuildFlatList();
+    applyFiltersForTab(currentTab.value);
   }
 
   // cancel employee task
@@ -747,23 +883,39 @@ class EmployeeTasksController extends GetxController {
   /// Set when details are loaded with [occurrenceId] (v2 occurrence tasks).
   String? lastLoadedOccurrenceId;
 
+  /// Calendar day for legacy recurring task details (yyyy-MM-dd).
+  String? lastLoadedTaskDate;
+
   // task details
   Future<void> getTaskDetails({
     required String taskId,
     String? occurrenceId,
+    String? taskDate,
     bool showFullScreenLoader = true,
   }) async {
     if (showFullScreenLoader) {
       employeeTaskService.taskDetails.value = null;
     }
-    lastLoadedOccurrenceId =
-        occurrenceId != null && occurrenceId.isNotEmpty ? occurrenceId : null;
+    if (occurrenceId != null && occurrenceId.isNotEmpty) {
+      lastLoadedOccurrenceId = occurrenceId;
+      lastLoadedTaskDate = null;
+    } else {
+      lastLoadedOccurrenceId = null;
+      if (taskDate != null && taskDate.isNotEmpty) {
+        lastLoadedTaskDate = taskDate;
+      }
+    }
+    final effectiveTaskDate =
+        (occurrenceId == null || occurrenceId.isEmpty)
+            ? (taskDate ?? lastLoadedTaskDate)
+            : null;
     isTaskDetailsLoading.value = true;
     TaskDetailsDebug.request(taskId: taskId, occurrenceId: occurrenceId);
     try {
       final result = await getTaskDetailsUsecase.call(
         taskId: taskId,
         occurrenceId: occurrenceId,
+        taskDate: effectiveTaskDate,
       );
       TaskDetailsDebug.apiResult(
         result: result,
@@ -779,8 +931,27 @@ class EmployeeTasksController extends GetxController {
         employeeTaskService.taskDetails.value = null;
         return;
       }
-      employeeTaskService.taskDetails.value =
-          TaskDetailsModel.fromJson(Map<String, dynamic>.from(raw));
+      final model = TaskDetailsModel.fromJson(
+        Map<String, dynamic>.from(raw),
+      );
+      employeeTaskService.taskDetails.value = model;
+      TaskDetailsDebug.modelLoaded(
+        source: 'getTaskDetails',
+        taskId: model.taskId,
+        occurrenceId: model.occurrenceId,
+        name: model.taskName,
+        subTasks: model.subTasks
+            .map(
+              (s) => {
+                'id': s.id.toString(),
+                'name': s.name,
+                'status': s.status,
+              },
+            )
+            .toList(),
+        cachedNote:
+            'req taskId=$taskId occ=${occurrenceId ?? "-"} | rx cleared before load=${showFullScreenLoader}',
+      );
     } catch (e, st) {
       TaskDetailsDebug.parseError(e, st);
       employeeTaskService.taskDetails.value = null;
@@ -790,19 +961,54 @@ class EmployeeTasksController extends GetxController {
     }
   }
 
+  /// Prefer the DB child row when opening a recurring legacy instance for a given day.
+  EmployeeTaskModel resolveTaskForInteraction(EmployeeTaskModel task) {
+    if (task.isOccurrence || task.isRepeatedCopy) return task;
+    if (!RecurringTaskExpander.shouldExpand(task)) return task;
+
+    final flat = <EmployeeTaskModel>[
+      ...employeeTaskService.ongoingEmployeeTasks.values.expand((e) => e),
+      ...employeeTaskService.completedEmployeeTasks.values.expand((e) => e),
+      ...employeeTaskService.canceledEmployeeTasks.values.expand((e) => e),
+    ];
+    final parentKey = '${task.taskId}';
+    for (final row in flat) {
+      if (row.parentId == parentKey &&
+          row.startTime.year == task.startTime.year &&
+          row.startTime.month == task.startTime.month &&
+          row.startTime.day == task.startTime.day) {
+        return row;
+      }
+    }
+    return task;
+  }
+
   /// Load details then open screen — avoids showing the previous task.
   Future<void> openTaskDetails(EmployeeTaskModel task) async {
-    final taskId = task.taskId.toString();
-    final occurrenceId = task.occurrenceId?.toString();
+    final actionTask = resolveTaskForInteraction(task);
+    final taskId = actionTask.taskId.toString();
+    final occurrenceId = actionTask.isOccurrence
+        ? actionTask.occurrenceId?.toString()
+        : null;
+    final taskDate = occurrenceId == null
+        ? dateKeyFrom(actionTask.startTime)
+        : null;
     TaskDetailsDebug.tap(
       source: 'EmployeeTasksController.openTaskDetails',
-      taskId: taskId,
-      occurrenceId: occurrenceId,
+      taskId: task.taskId.toString(),
+      occurrenceId: task.occurrenceId?.toString(),
+      listSource: task.source,
       taskName: task.taskName,
-      status: task.status,
+      status: actionTask.status,
+      resolvedTaskId: taskId,
+      resolvedOccurrenceId: occurrenceId,
     );
     try {
-      await getTaskDetails(taskId: taskId, occurrenceId: occurrenceId);
+      await getTaskDetails(
+        taskId: taskId,
+        occurrenceId: occurrenceId,
+        taskDate: taskDate,
+      );
     } catch (e) {
       TaskDetailsDebug.fail('openTaskDetails_exception', detail: e.toString());
       Get.snackbar(
@@ -837,6 +1043,7 @@ class EmployeeTasksController extends GetxController {
         'taskId': taskId,
         if (occurrenceId != null && occurrenceId.isNotEmpty)
           'occurrence_id': occurrenceId,
+        if (taskDate != null && taskDate.isNotEmpty) 'task_date': taskDate,
         if (Get.isRegistered<EmployeeDashbordController>())
           'EmployeeDashbordController': Get.find<EmployeeDashbordController>(),
       },
@@ -951,7 +1158,7 @@ class EmployeeTasksController extends GetxController {
   }
 
   void filterDataByDateRange() {
-    applyAllFilters();
+    applyFiltersForTab(currentTab.value);
     update(['tasksList', 'periodBar']);
   }
 
@@ -977,7 +1184,7 @@ class EmployeeTasksController extends GetxController {
         endDate = startDate.add(const Duration(days: 6));
         break;
     }
-    applyAllFilters();
+    applyFiltersForTab(currentTab.value);
     scrollToToday();
     update(['tasksList', 'periodBar']);
   }
@@ -1104,6 +1311,41 @@ class EmployeeTasksController extends GetxController {
         await getTaskDetails(taskId: taskId, occurrenceId: occ);
         getEmployeeTasks();
         Get.snackbar('success'.tr, '${res['message'] ?? 'taskRejected'.tr}');
+        return true;
+      }
+      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      return false;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<bool> reopenCompletedTask({
+    required String taskId,
+    int? occurrenceId,
+    String? notes,
+  }) async {
+    final occ = occurrenceId?.toString();
+    final isOccurrence = occ != null && occ.isNotEmpty;
+
+    isLoading(true);
+    try {
+      final res = await _taskDs.taskWorkflowPost(
+        EndPoints.employeeTaskReopen,
+        taskId: isOccurrence ? null : taskId,
+        occurrenceId: isOccurrence ? occ : null,
+        adminNotes: () {
+          final trimmed = notes?.trim();
+          return trimmed == null || trimmed.isEmpty ? null : trimmed;
+        }(),
+      );
+      if (res['status'] == 'success') {
+        getEmployeeTasks();
+        Get.back();
+        Get.snackbar('success'.tr, '${res['message'] ?? 'reopenTaskSuccess'.tr}');
         return true;
       }
       Get.snackbar('error'.tr, '${res['message'] ?? ''}');

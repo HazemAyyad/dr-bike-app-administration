@@ -85,18 +85,21 @@ List<T> mapList<T>(
 }
 
 /// تواريخ API: غالباً ISO string؛ نادراً timestamp رقمي.
+/// Timestamps with `Z` are converted to local time so calendar days match Palestine.
 DateTime parseApiDateTime(dynamic value, [DateTime? fallback]) {
   final fb = fallback ?? DateTime.now();
   if (value == null) return fb;
   if (value is String) {
     final d = DateTime.tryParse(value);
-    return d ?? fb;
+    if (d == null) return fb;
+    return d.isUtc ? d.toLocal() : d;
   }
   if (value is int) {
     if (value < 2000000000) {
-      return DateTime.fromMillisecondsSinceEpoch(value * 1000);
+      return DateTime.fromMillisecondsSinceEpoch(value * 1000, isUtc: true)
+          .toLocal();
     }
-    return DateTime.fromMillisecondsSinceEpoch(value);
+    return DateTime.fromMillisecondsSinceEpoch(value, isUtc: true).toLocal();
   }
   return fb;
 }

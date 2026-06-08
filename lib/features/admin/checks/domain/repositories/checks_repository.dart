@@ -55,6 +55,8 @@ abstract class ChecksRepository {
     required DateTime dueDate,
     required String checkId,
     required String bankName,
+    String? total,
+    String? currency,
     XFile? frontImage,
     XFile? backImage,
     required String notes,

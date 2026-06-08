@@ -125,6 +125,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
   Future<dynamic> getTaskDetails({
     required String taskId,
     String? occurrenceId,
+    String? taskDate,
   }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
@@ -133,6 +134,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
       final result = await employeeTasksDataSource.getTaskDetails(
         taskId: taskId,
         occurrenceId: occurrenceId,
+        taskDate: taskDate,
       );
       return result;
     } on ServerException catch (e) {

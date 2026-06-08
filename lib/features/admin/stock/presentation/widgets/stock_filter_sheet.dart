@@ -21,7 +21,8 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
 
   String? categoryId;
   String? subCategoryId;
-  String? tagId;
+  String? storeSectionId;
+  String? shelfNumber;
   DateTime? dateFrom;
   DateTime? dateTo;
   String sortKey = 'latest';
@@ -32,7 +33,8 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
     final f = controller.productListFilters.value;
     categoryId = f.categoryId;
     subCategoryId = f.subCategoryId;
-    tagId = f.tagId;
+    storeSectionId = f.storeSectionId;
+    shelfNumber = f.shelfNumber;
     dateFrom = f.dateFrom;
     dateTo = f.dateTo;
     if (f.sortBy == 'name') {
@@ -45,7 +47,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
     if (controller.mainCategories.isEmpty) {
       controller.getCategories();
     }
-    controller.ensureTagsLoaded();
+    controller.ensureStoreSectionsLoaded();
   }
 
   List<ProductModel> get _subcategoriesForCategory {
@@ -67,7 +69,8 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
     return StockProductFilters(
       categoryId: categoryId,
       subCategoryId: subCategoryId,
-      tagId: tagId,
+      storeSectionId: storeSectionId,
+      shelfNumber: shelfNumber,
       dateFrom: dateFrom,
       dateTo: dateTo,
       sortBy: sortBy,
@@ -146,20 +149,41 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
             SizedBox(height: 12.h),
             GetBuilder<StockController>(
               builder: (_) => _dropdown<String?>(
-                label: 'productTagsTab'.tr,
-                value: tagId,
+                label: 'storeSection'.tr,
+                value: storeSectionId,
                 items: [
                   DropdownMenuItem<String?>(value: null, child: Text('all'.tr)),
-                  ...controller.catalogTags.map(
-                    (t) => DropdownMenuItem(
-                      value: t.id,
-                      child: Text(t.name),
+                  ...controller.storeSections
+                      .where((s) => s.isActive)
+                      .map(
+                    (s) => DropdownMenuItem(
+                      value: s.id,
+                      child: Text(s.name),
                     ),
                   ),
                 ],
-                onChanged: (v) => setState(() => tagId = v),
+                onChanged: (v) => setState(() {
+                  storeSectionId = v;
+                  shelfNumber = null;
+                }),
               ),
             ),
+            if (storeSectionId != null && storeSectionId!.isNotEmpty) ...[
+              SizedBox(height: 12.h),
+              TextField(
+                decoration: InputDecoration(
+                  labelText: 'shelfNumber'.tr,
+                  filled: true,
+                  fillColor: ThemeService.isDark.value
+                      ? AppColors.customGreyColor
+                      : AppColors.whiteColor2,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                onChanged: (v) => setState(() => shelfNumber = v.trim()),
+              ),
+            ],
             SizedBox(height: 12.h),
             Row(
               children: [

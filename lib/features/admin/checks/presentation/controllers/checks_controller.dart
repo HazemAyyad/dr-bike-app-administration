@@ -259,6 +259,21 @@ class ChecksController extends GetxController
     return DateTime(date.year, date.month + months, date.day);
   }
 
+  /// يولّد رقم شيك متسلسلاً من الرقم الأساسي (مثلاً 1001 → 1002، 1003…).
+  String sequentialCheckNumber(String base, int index) {
+    final trimmed = base.trim();
+    if (trimmed.isEmpty) return '';
+    if (index == 0) return trimmed;
+    final match = RegExp(r'^(.*?)(\d+)$').firstMatch(trimmed);
+    if (match != null) {
+      final prefix = match.group(1)!;
+      final digits = match.group(2)!;
+      final next = int.parse(digits) + index;
+      return '$prefix${next.toString().padLeft(digits.length, '0')}';
+    }
+    return '$trimmed-${index + 1}';
+  }
+
   void generateIncomingBatchRows() {
     final count = int.tryParse(incomingBatchCountController.text.trim()) ?? 0;
     if (count < 1) {
@@ -280,7 +295,7 @@ class ChecksController extends GetxController
           total: checkValueController.text,
           dueDate: _addMonths(selectedDay.value, index),
           currency: defaultCurrency,
-          checkId: count == 1 ? checkNumberController.text : '',
+          checkId: sequentialCheckNumber(checkNumberController.text, index),
           bankName: bankNameController.text,
           notes: notesController.text,
         ),
@@ -607,6 +622,8 @@ class ChecksController extends GetxController
       row.dispose();
     }
     incomingBatchRows.clear();
+    editBeneficiaryName = '';
+    editBeneficiaryIsCustomer = true;
   }
 
   final RxnString selectedValue = RxnString();
@@ -615,18 +632,67 @@ class ChecksController extends GetxController
   final Rx<XFile?> editCheckBackImage = Rx<XFile?>(null);
 
   String? checkId;
+  String editBeneficiaryName = '';
+  bool editBeneficiaryIsCustomer = true;
+
+  void _setEditBeneficiaryFromCheck(CheckModel check) {
+    editBeneficiaryName = '';
+    editBeneficiaryIsCustomer = true;
+    selectedValue.value = null;
+
+    if (check.customer != null) {
+      selectedValue.value = check.customer!.id.toString();
+      selectedCustomersSellers.value = true;
+      editBeneficiaryIsCustomer = true;
+      editBeneficiaryName = check.customer!.name;
+      return;
+    }
+    if (check.seller != null) {
+      selectedValue.value = check.seller!.id.toString();
+      selectedCustomersSellers.value = false;
+      editBeneficiaryIsCustomer = false;
+      editBeneficiaryName = check.seller!.name;
+      return;
+    }
+    if (check.fromCustomer != null) {
+      selectedValue.value = check.fromCustomer!.id.toString();
+      selectedCustomersSellers.value = true;
+      editBeneficiaryIsCustomer = true;
+      editBeneficiaryName = check.fromCustomer!.name;
+      return;
+    }
+    if (check.fromSeller != null) {
+      selectedValue.value = check.fromSeller!.id.toString();
+      selectedCustomersSellers.value = false;
+      editBeneficiaryIsCustomer = false;
+      editBeneficiaryName = check.fromSeller!.name;
+      return;
+    }
+    if (check.toCustomer != null) {
+      selectedValue.value = check.toCustomer!.id.toString();
+      selectedCustomersSellers.value = true;
+      editBeneficiaryIsCustomer = true;
+      editBeneficiaryName = check.toCustomer!.name;
+      return;
+    }
+    if (check.toSeller != null) {
+      selectedValue.value = check.toSeller!.id.toString();
+      selectedCustomersSellers.value = false;
+      editBeneficiaryIsCustomer = false;
+      editBeneficiaryName = check.toSeller!.name;
+    }
+  }
 
   void getCeckData({CheckModel? check, required bool isOutgoing}) {
     isInComing = !isOutgoing;
     if (isEdit.value) {
-      Get.toNamed(
-        AppRoutes.NEWCHECKSCREEN,
-        arguments: {'isNewCheck': isOutgoing},
-      );
       checkId = check!.id.toString();
       checkValueController.text = check.total.toString();
-      currencyController.text =
-          currency.where((element) => element.tr == check.currency).first;
+      final currencyMatches =
+          currency.where((element) => element.tr == check.currency);
+      currencyController.text = currencyMatches.isEmpty
+          ? check.currency
+          : currencyMatches.first;
       checkNumberController.text = check.checkId;
       bankNameController.text = check.bankName;
       editCheckFrontImage.value =
@@ -635,16 +701,17 @@ class ChecksController extends GetxController
           check.backImage != null ? XFile(check.backImage!) : null;
       selectedDay.value = check.dueDate;
       isCalendarVisible.value = false;
-      selectedValue.value = check.fromCustomer != null
-          ? check.fromCustomer!.id.toString()
-          : check.fromSeller?.id.toString();
-      selectedCustomersSellers.value = check.fromCustomer == null;
+      _setEditBeneficiaryFromCheck(check);
       notesController.text = check.notes ?? '';
       receivedDay.value = check.createdAt;
       for (final row in incomingBatchRows) {
         row.dispose();
       }
       incomingBatchRows.clear();
+      Get.toNamed(
+        AppRoutes.NEWCHECKSCREEN,
+        arguments: {'isNewCheck': isOutgoing, 'isEdit': true},
+      );
     } else {
       Get.toNamed(
         AppRoutes.NEWCHECKSCREEN,
@@ -654,6 +721,8 @@ class ChecksController extends GetxController
       // false = تاجر (seller) هو الافتراضي
       selectedCustomersSellers.value = false;
       checkId = null;
+      editBeneficiaryName = '';
+      editBeneficiaryIsCustomer = true;
       checkValueController.clear();
       currencyController.clear();
       checkNumberController.clear();
@@ -688,6 +757,8 @@ class ChecksController extends GetxController
         dueDate: selectedDay.value,
         checkId: checkNumberController.text,
         bankName: bankNameController.text,
+        total: isInComing ? null : checkValueController.text,
+        currency: isInComing ? null : currencyController.text.tr,
         frontImage: checkFrontImage.value != null
             ? XFile(checkFrontImage.value!.path)
             : editCheckFrontImage.value != null

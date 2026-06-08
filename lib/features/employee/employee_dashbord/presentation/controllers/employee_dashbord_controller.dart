@@ -26,6 +26,8 @@ import '../../../../admin/employee_tasks/domain/usecases/upload_task_image_useca
 import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks_controller.dart';
 import '../../../../../core/helpers/camera_capture_helper.dart';
 import '../../../../admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
+import '../../../../../core/helpers/task_recurrence_rules.dart';
+import '../helpers/employee_recurring_task_expander.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../../domain/usecases/change_task_completed_uasecase.dart';
 import '../../domain/usecases/get_employee_data_usecase.dart';
@@ -217,8 +219,29 @@ class EmployeeDashbordController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
-    scrollToToday();
+    if (_tasksScreenPrepared) {
+      scrollToToday();
+    }
     update();
+  }
+
+  /// Builds expanded task maps when the employee opens the tasks screen.
+  Future<void> prepareTasksScreenIfNeeded() async {
+    if (_tasksScreenPrepared) return;
+    _tasksScreenPrepared = true;
+    isLoading(true);
+    update();
+    try {
+      if (employeeData.value == null) {
+        await getEmployeeData(scrollToTodayb: false);
+      } else {
+        syncPeriodBounds();
+        _rebuildTasksMaps();
+      }
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 
   List<Map<String, String>> employeeAddList = [
@@ -235,6 +258,8 @@ class EmployeeDashbordController extends GetxController
   ];
 
   final RxBool isLoading = false.obs;
+
+  bool _tasksScreenPrepared = false;
 
 // Request Over Time Or Loan
   void requestOverTimeOrLoan({
@@ -334,32 +359,35 @@ class EmployeeDashbordController extends GetxController
     changeTaskToCompleted(
       context: context,
       isSubTask: false,
-      taskId: task.id,
+      taskId: resolveTaskForInteraction(task).id,
       task: task,
     );
   }
 
   /// Load the correct task, then open details (avoids showing a previous task).
   Future<void> openTaskDetails(Task task) async {
+    final actionTask = resolveTaskForInteraction(task);
     if (!Get.isRegistered<EmployeeTasksController>()) {
       EmployeeTasksBinding().dependencies();
     }
     final tasksCtrl = Get.find<EmployeeTasksController>();
     final occurrenceId =
-        task.isOccurrence ? (task.occurrenceId ?? task.id).toString() : null;
+        actionTask.isOccurrence ? (actionTask.occurrenceId ?? actionTask.id).toString() : null;
+    final taskDate = occurrenceId == null ? _taskDateParam(actionTask) : null;
 
     TaskDetailsDebug.tap(
       source: 'EmployeeDashbordController.openTaskDetails',
-      taskId: task.taskId.toString(),
+      taskId: actionTask.taskId.toString(),
       occurrenceId: occurrenceId,
-      taskName: task.name,
-      status: task.status,
+      taskName: actionTask.name,
+      status: actionTask.status,
     );
 
     try {
       await tasksCtrl.getTaskDetails(
-        taskId: task.taskId.toString(),
+        taskId: actionTask.taskId.toString(),
         occurrenceId: occurrenceId,
+        taskDate: taskDate,
       );
     } catch (e) {
       TaskDetailsDebug.fail('openTaskDetails_exception', detail: e.toString());
@@ -390,9 +418,10 @@ class EmployeeDashbordController extends GetxController
     await Get.toNamed(
       AppRoutes.TASKDETAILS,
       arguments: {
-        'taskId': task.taskId.toString(),
+        'taskId': actionTask.taskId.toString(),
         if (occurrenceId != null && occurrenceId.isNotEmpty)
           'occurrence_id': occurrenceId,
+        if (taskDate != null && taskDate.isNotEmpty) 'task_date': taskDate,
         'EmployeeDashbordController': this,
       },
     );
@@ -404,6 +433,26 @@ class EmployeeDashbordController extends GetxController
     return task.occurrenceId ?? task.id;
   }
 
+  String _taskDateParam(Task task) => TaskRecurrenceRules.dateKeyFrom(task.startTime);
+
+  Task resolveTaskForInteraction(Task task) {
+    if (task.isOccurrence || task.isRepeatedCopy) return task;
+    if (!TaskRecurrenceRules.shouldExpand(
+      source: task.source,
+      parentId: task.parentId,
+      recurrence: task.taskRecurrence,
+    )) {
+      return task;
+    }
+    final day = TaskRecurrenceRules.dayStart(task.startTime);
+    final child = EmployeeRecurringTaskExpander.findChildForDay(
+      _allTasksRaw,
+      task.taskId,
+      day,
+    );
+    return child ?? task;
+  }
+
   /// Mark task or subtask complete (legacy row or v2 occurrence).
   Future<void> changeTaskToCompleted({
     required BuildContext context,
@@ -413,19 +462,21 @@ class EmployeeDashbordController extends GetxController
     String? reloadOccurrenceId,
     Task? task,
   }) async {
-    final isOccurrence = task?.isOccurrence ?? false;
-    final occurrenceId = _occurrenceIdFor(task);
+    final actionTask = task == null ? null : resolveTaskForInteraction(task);
+    final isOccurrence = actionTask?.isOccurrence ?? false;
+    final occurrenceId = _occurrenceIdFor(actionTask);
     final isOccurrenceSubtask = isSubTask &&
         reloadOccurrenceId != null &&
         reloadOccurrenceId.isNotEmpty;
-    completingTaskId.value = isSubTask ? taskId : (task?.id ?? taskId);
+    completingTaskId.value = isSubTask ? taskId : (actionTask?.id ?? taskId);
     isTaskLoading(true);
     try {
       final result = await changeTaskCompletedUasecase.call(
         isSubTask: isSubTask,
-        taskId: taskId,
+        taskId: isSubTask ? taskId : (actionTask?.id ?? taskId),
         isOccurrence: isOccurrence || isOccurrenceSubtask,
         occurrenceId: isSubTask ? null : occurrenceId,
+        taskDate: actionTask == null ? null : _taskDateParam(actionTask),
       );
       await result.fold(
         (failure) async {
@@ -489,13 +540,42 @@ class EmployeeDashbordController extends GetxController
   final RxBool remindersLoading = false.obs;
   final Map<String, List<Task>> tasksData = {};
   final Map<String, List<Task>> tasksDataFilter = {};
+  final List<Task> _allTasksRaw = [];
+  final RxInt tasksFilterEpoch = 0.obs;
+
+  void _rebuildTasksMaps() {
+    tasksData.clear();
+    final raw = <String, List<Task>>{};
+    for (final task in _allTasksRaw) {
+      final dateKey = dateKeyFrom(task.startTime);
+      raw.putIfAbsent(dateKey, () => []);
+      if (!raw[dateKey]!.any((t) => t.id == task.id)) {
+        raw[dateKey]!.add(task);
+      }
+    }
+    tasksData.addAll(
+      EmployeeRecurringTaskExpander.expand(
+        source: raw,
+        rangeStart: startDate,
+        rangeEnd: endDate,
+        weeklyDaysOff: employeeData.value?.weeklyDaysOff ?? const [],
+      ),
+    );
+    tasksDataFilter
+      ..clear()
+      ..addAll(filterByRange(tasksData));
+    tasksFilterEpoch.value++;
+  }
 
   Future<void> getEmployeeData({bool scrollToTodayb = true}) async {
     employeeData.value != null ? isLoading(false) : isLoading(true);
     final result = await getEmployeeDataUsecase.call();
     final summary = result.todayTasksSummary.total > 0
         ? result.todayTasksSummary
-        : TodayTasksSummary.fromTasks(result.tasks);
+        : TodayTasksSummary.fromTasks(
+            result.tasks,
+            weeklyDaysOff: result.weeklyDaysOff,
+          );
     employeeData.value = DashbordEmployeeDetailsModel(
       id: result.id,
       userId: result.userId,
@@ -511,20 +591,16 @@ class EmployeeDashbordController extends GetxController
       user: result.user,
       tasks: result.tasks,
       todayTasksSummary: summary,
+      weeklyDaysOff: result.weeklyDaysOff,
     );
     isLoading(false);
-    tasksData.clear();
-    tasksDataFilter.clear();
-    for (var task in employeeData.value!.tasks) {
-      String dateKey =
-          "${task.startTime.year}-${task.startTime.month.toString().padLeft(2, '0')}-${task.startTime.day.toString().padLeft(2, '0')}";
-      tasksData.putIfAbsent(dateKey, () => []);
-      if (!tasksData[dateKey]!.any((t) => t.id == task.id)) {
-        tasksData[dateKey]!.add(task);
-      }
+    _allTasksRaw
+      ..clear()
+      ..addAll(employeeData.value!.tasks);
+    if (_tasksScreenPrepared) {
+      syncPeriodBounds();
+      _rebuildTasksMaps();
     }
-    syncPeriodBounds();
-    tasksDataFilter.assignAll(filterByRange(tasksData));
     update();
     refreshTodayAttendance();
     loadDashboardReminders();
@@ -617,8 +693,7 @@ class EmployeeDashbordController extends GetxController
   DateTime startDate = DateTime.now();
   DateTime endDate = DateTime.now();
 
-  static String dateKeyFrom(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  static String dateKeyFrom(DateTime d) => TaskRecurrenceRules.dateKeyFrom(d);
 
   String get periodLabel {
     if (tasksViewMode.value == tasksViewDaily) {
@@ -695,15 +770,17 @@ class EmployeeDashbordController extends GetxController
   }
 
   void filterDataByDateRange() {
-    tasksDataFilter.assignAll(filterByRange(tasksData));
+    _rebuildTasksMaps();
     update();
   }
 
   void setTasksViewMode(String mode) {
     tasksViewMode.value = mode;
     syncPeriodBounds(anchor: DateTime.now());
-    filterDataByDateRange();
-    scrollToToday();
+    if (_tasksScreenPrepared) {
+      filterDataByDateRange();
+      scrollToToday();
+    }
     update();
   }
 
@@ -729,7 +806,9 @@ class EmployeeDashbordController extends GetxController
         endDate = startDate.add(const Duration(days: 6));
         break;
     }
-    filterDataByDateRange();
+    if (_tasksScreenPrepared) {
+      filterDataByDateRange();
+    }
     update();
   }
 

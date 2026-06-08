@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../data/models/product_development_model.dart';
 import '../repositories/product_management_repository.dart';
 
 class CreateProductDevelopmentUsecase {
@@ -8,7 +9,7 @@ class CreateProductDevelopmentUsecase {
 
   CreateProductDevelopmentUsecase({required this.productManagementRepository});
 
-  Future<Either<Failure, String>> call({
+  Future<Either<Failure, ProductDevelopmentActionResult>> call({
     required String productId,
     required String description,
     required String step,

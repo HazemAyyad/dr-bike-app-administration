@@ -1,5 +1,5 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
-import 'package:doctorbike/core/helpers/custom_calendar.dart';
+import 'package:doctorbike/core/helpers/scroll_date_picker_sheet.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:doctorbike/features/admin/special_tasks/data/models/special_task_model.dart';
@@ -13,7 +13,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../employee_tasks/presentation/widgets/task_status_badge.dart';
 import '../controllers/special_tasks_controller.dart';
 
 class TasksList extends GetView<SpecialTasksController> {
@@ -205,9 +204,7 @@ class TasksList extends GetView<SpecialTasksController> {
                 if (controller.currentTab.value == 0)
                   Obx(
                     () => controller.transferTask.value
-                        ? CustomCalendar(
-                            isVisible: controller.transferTask,
-                            onTap: () {},
+                        ? _TransferDateField(
                             selectedDay: controller.selectedDay,
                           )
                         : const SizedBox.shrink(),
@@ -252,6 +249,82 @@ class TasksList extends GetView<SpecialTasksController> {
   }
 }
 
+class _TransferDateField extends StatelessWidget {
+  const _TransferDateField({required this.selectedDay});
+
+  final Rx<DateTime> selectedDay;
+
+  Future<void> _pick(BuildContext context) async {
+    final picked = await ScrollDatePickerSheet.show(
+      context,
+      initial: selectedDay.value,
+      title: 'date',
+      minimumDate: DateTime.now(),
+    );
+    if (picked != null) {
+      selectedDay.value = picked;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Obx(
+        () => Material(
+          color: AppColors.whiteColor,
+          borderRadius: BorderRadius.circular(8.r),
+          child: InkWell(
+            onTap: () => _pick(context),
+            borderRadius: BorderRadius.circular(8.r),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(color: AppColors.operationalCardBorder),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 18.sp,
+                    color: AppColors.primaryColor,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'date'.tr,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: AppColors.customGreyColor5,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          showData(selectedDay.value),
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.operationalNavy,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SpecialTaskCard extends StatelessWidget {
   const _SpecialTaskCard({
     required this.task,
@@ -274,16 +347,16 @@ class _SpecialTaskCard extends StatelessWidget {
     final isDark = ThemeService.isDark.value;
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 6.h),
+      padding: EdgeInsets.only(bottom: archived ? 4.h : 2.h),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           onLongPress: onLongPress,
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(10.r),
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 3.h),
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 1.h),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
             decoration: BoxDecoration(
               color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(12.r),
@@ -354,31 +427,19 @@ class _SpecialTaskCard extends StatelessWidget {
                               _TimeLeftLabel(endTime: task.endDate),
                             ],
                           ),
-                          SizedBox(height: 2.h),
+                          SizedBox(height: 1.h),
                           Text(
                             '${'dueDate'.tr}: ${showDateTime12(task.endDate)}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 10.5.sp,
-                              height: 1.2,
+                              fontSize: 10.sp,
+                              height: 1.15,
                               color: AppColors.customGreyColor5,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 6.h),
-                Row(
-                  children: [
-                    TaskStatusBadge(status: task.status, compact: true),
-                    const Spacer(),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.customGreyColor5,
-                      size: 18.sp,
                     ),
                   ],
                 ),
@@ -408,7 +469,7 @@ class _DayHeader extends StatelessWidget {
     final isToday = date == todayKey;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(0, isFirst ? 4.h : 8.h, 0, 4.h),
+      padding: EdgeInsets.fromLTRB(0, isFirst ? 2.h : 4.h, 0, 2.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

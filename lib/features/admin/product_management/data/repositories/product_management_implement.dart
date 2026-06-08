@@ -29,7 +29,8 @@ class ProductManagementImplement implements ProductManagementRepository {
   }
 
   @override
-  Future<Either<Failure, String>> createProductDevelopment({
+  Future<Either<Failure, ProductDevelopmentActionResult>>
+      createProductDevelopment({
     required String productId,
     required String description,
     required String step,
@@ -44,7 +45,7 @@ class ProductManagementImplement implements ProductManagementRepository {
         step: step,
       );
       if (result['status'] == 'success') {
-        return Right(result['message']);
+        return Right(ProductDevelopmentActionResult.fromJson(result));
       }
       return Left(
         ValidationFailure(

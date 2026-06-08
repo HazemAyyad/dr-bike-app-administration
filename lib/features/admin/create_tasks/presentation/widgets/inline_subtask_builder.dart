@@ -7,10 +7,14 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/helpers/proof_media_type.dart';
 import '../controllers/create_task_controller.dart';
 import 'proof_media_type_selector.dart';
+import 'subtask_admin_media_picker.dart';
 
 /// Operational subtask list with reorder, image requirement, and bonus points.
 class InlineSubtaskBuilder extends GetView<CreateTaskController> {
-  const InlineSubtaskBuilder({Key? key}) : super(key: key);
+  const InlineSubtaskBuilder({Key? key, this.isSpecialTask = false})
+      : super(key: key);
+
+  final bool isSpecialTask;
 
   @override
   Widget build(BuildContext context) {
@@ -18,8 +22,8 @@ class InlineSubtaskBuilder extends GetView<CreateTaskController> {
       () => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _AddSubtaskRow(),
-          SizedBox(height: 12.h),
+          _AddSubtaskRow(isSpecialTask: isSpecialTask),
+          SizedBox(height: isSpecialTask ? 6.h : 12.h),
           ReorderableListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -27,6 +31,14 @@ class InlineSubtaskBuilder extends GetView<CreateTaskController> {
             onReorder: controller.reorderSubTasks,
             itemBuilder: (context, index) {
               final task = controller.subTasks[index] as Map;
+              if (isSpecialTask) {
+                return _SimpleSubtaskCard(
+                  key: ValueKey('subtask_${index}_${task['subTaskId'] ?? index}'),
+                  index: index,
+                  title: task['subTaskName']?.toString() ?? '',
+                  onDelete: () => controller.subTasks.removeAt(index),
+                );
+              }
               return _SubtaskCard(
                 key: ValueKey('subtask_${index}_${task['subTaskId'] ?? index}'),
                 index: index,
@@ -223,7 +235,59 @@ class _BonusPointsDialogState extends State<_BonusPointsDialog> {
   }
 }
 
-class _AddSubtaskRow extends GetView<CreateTaskController> {
+class _AddSubtaskRow extends StatefulWidget {
+  const _AddSubtaskRow({this.isSpecialTask = false});
+
+  final bool isSpecialTask;
+
+  @override
+  State<_AddSubtaskRow> createState() => _AddSubtaskRowState();
+}
+
+class _AddSubtaskRowState extends State<_AddSubtaskRow> {
+  final _nameCtrl = TextEditingController();
+  CreateTaskController get controller => Get.find<CreateTaskController>();
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
+      Get.snackbar(
+        'info'.tr,
+        'fillSubtaskNameFirst'.tr,
+        backgroundColor: AppColors.customOrange3,
+        colorText: AppColors.whiteColor,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: EdgeInsets.all(12.w),
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+    if (widget.isSpecialTask) {
+      controller.addSubTask(nameOverride: name);
+      _nameCtrl.clear();
+      return;
+    }
+    controller.prepareNewSubTask();
+    controller.subTaskNameController.text = name;
+    _nameCtrl.clear();
+    Get.bottomSheet(
+      const _SubtaskEditorSheet(),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _openEditor() => _submit();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -237,7 +301,7 @@ class _AddSubtaskRow extends GetView<CreateTaskController> {
         children: [
           Expanded(
             child: TextField(
-              controller: controller.subTaskNameController,
+              controller: _nameCtrl,
               decoration: InputDecoration(
                 hintText: 'addSubTaskPlaceholder'.tr,
                 border: InputBorder.none,
@@ -246,14 +310,14 @@ class _AddSubtaskRow extends GetView<CreateTaskController> {
                   fontSize: 14.sp,
                 ),
               ),
-              onSubmitted: (_) => _addQuick(),
+              onSubmitted: (_) => _openEditor(),
             ),
           ),
           Material(
             color: AppColors.operationalPurple,
             borderRadius: BorderRadius.circular(12.r),
             child: InkWell(
-              onTap: _addQuick,
+              onTap: _openEditor,
               borderRadius: BorderRadius.circular(12.r),
               child: SizedBox(
                 width: 44.w,
@@ -265,23 +329,6 @@ class _AddSubtaskRow extends GetView<CreateTaskController> {
         ],
       ),
     );
-  }
-
-  void _addQuick() {
-    if (controller.subTaskNameController.text.trim().isEmpty) {
-      Get.snackbar(
-        'info'.tr,
-        'fillSubtaskNameFirst'.tr,
-        backgroundColor: AppColors.customOrange3,
-        colorText: AppColors.whiteColor,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: EdgeInsets.all(12.w),
-        duration: const Duration(seconds: 2),
-      );
-      return;
-    }
-    controller.addSubTask();
-    controller.clearSubTaskForm();
   }
 }
 
@@ -299,12 +346,13 @@ class _SubtaskEditorSheet extends GetView<CreateTaskController> {
         16.w,
         16.h + MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            editIndex == null ? 'addSubTask'.tr : 'editSubTask'.tr,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              editIndex == null ? 'addSubTask'.tr : 'editSubTask'.tr,
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.w800,
@@ -322,6 +370,8 @@ class _SubtaskEditorSheet extends GetView<CreateTaskController> {
             ),
           ),
           SizedBox(height: 8.h),
+          const SubtaskAdminMediaPicker(),
+          SizedBox(height: 12.h),
           Obx(
             () => ProofMediaTypeSelector(
               value: controller.subTaskProofMediaType.value,
@@ -365,7 +415,8 @@ class _SubtaskEditorSheet extends GetView<CreateTaskController> {
             ),
             child: Text('save'.tr),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -513,6 +564,67 @@ class _SubtaskCard extends StatelessWidget {
     if (value == ProofMediaType.image) return ProofMediaType.video;
     if (value == ProofMediaType.video) return ProofMediaType.both;
     return ProofMediaType.none;
+  }
+}
+
+class _SimpleSubtaskCard extends StatelessWidget {
+  const _SimpleSubtaskCard({
+    Key? key,
+    required this.index,
+    required this.title,
+    required this.onDelete,
+  }) : super(key: key);
+
+  final int index;
+  final String title;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: key,
+      margin: EdgeInsets.only(bottom: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: AppColors.operationalCardBorder),
+      ),
+      child: Row(
+        children: [
+          ReorderableDragStartListener(
+            index: index,
+            child: Icon(
+              Icons.drag_handle,
+              color: AppColors.customGreyColor5,
+              size: 18.sp,
+            ),
+          ),
+          SizedBox(width: 6.w),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13.sp,
+                color: AppColors.operationalNavy,
+                height: 1.15,
+              ),
+            ),
+          ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.w),
+            icon: const Icon(Icons.delete_outline, size: 18),
+            onPressed: onDelete,
+            color: Colors.red.shade400,
+          ),
+        ],
+      ),
+    );
   }
 }
 

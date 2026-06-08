@@ -3,6 +3,7 @@ import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/custom_tab_bar.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
+import 'package:doctorbike/core/helpers/scroll_date_picker_sheet.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
 import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:doctorbike/core/services/theme_service.dart';
@@ -101,12 +102,10 @@ class _EmployeeRemindersScreenState extends State<EmployeeRemindersScreen> {
 
   Future<void> _pickScheduledDate(
       BuildContext context, StateSetter setSheet) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: scheduledAt,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      locale: Get.locale,
+    final picked = await ScrollDatePickerSheet.show(
+      context,
+      initial: scheduledAt,
+      title: 'date',
     );
     if (picked == null) return;
     setState(() {

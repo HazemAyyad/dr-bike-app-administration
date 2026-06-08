@@ -11,7 +11,74 @@ import '../../../../../../core/databases/api/end_points.dart';
 import '../../../../../../core/errors/error_model.dart';
 import '../../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
+import '../../../../../core/helpers/audio_helper.dart';
+import '../../../../../core/helpers/task_details_debug.dart';
+import '../../../../../core/helpers/task_media_paths.dart';
 import '../../presentation/helpers/recurrence_config_helper.dart';
+
+bool _isAudioPath(String path) => isAudioMediaPath(path);
+
+MediaType? _uploadContentType(String path) {
+  final lower = path.toLowerCase();
+  if (lower.endsWith('.m4a')) return MediaType('audio', 'mp4');
+  if (lower.endsWith('.aac')) return MediaType('audio', 'aac');
+  if (lower.endsWith('.mp3')) return MediaType('audio', 'mpeg');
+  if (lower.endsWith('.wav')) return MediaType('audio', 'wav');
+  if (lower.endsWith('.mp4') || lower.endsWith('.mov')) {
+    return MediaType('video', 'mp4');
+  }
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+    return MediaType('image', 'jpeg');
+  }
+  if (lower.endsWith('.png')) return MediaType('image', 'png');
+  return null;
+}
+
+Future<MultipartFile> _multipartFromPath(String path) async {
+  final filename = path.split(RegExp(r'[/\\]')).last;
+  final type = _uploadContentType(path);
+  return MultipartFile.fromFile(
+    path,
+    filename: filename,
+    contentType: type,
+  );
+}
+
+Future<void> _appendSubtaskAdminUploads({
+  required Map<String, dynamic> target,
+  required int subIndex,
+  required List<String> localPaths,
+  String? audioPath,
+}) async {
+  var fileIndex = 0;
+  final seen = <String>{};
+
+  Future<void> addPath(String path) async {
+    if (path.isEmpty || seen.contains(path)) return;
+    seen.add(path);
+    final key =
+        'sub_employee_tasks[$subIndex][admin_subtask__img][$fileIndex]';
+    if (_isAudioPath(path)) {
+      target[key] = await _multipartFromPath(path);
+    } else {
+      final file = localFileIsVideo(path)
+          ? XFile(path)
+          : await compressImage(XFile(path));
+      target[key] = await _multipartFromPath(file.path);
+    }
+    fileIndex++;
+  }
+
+  for (final path in localPaths) {
+    await addPath(path);
+  }
+
+  if (audioPath != null &&
+      audioPath.isNotEmpty &&
+      !audioPath.startsWith('http')) {
+    await addPath(audioPath);
+  }
+}
 
 class CreateEmployeeTasksDatasource {
   final ApiConsumer api;
@@ -90,24 +157,45 @@ class CreateEmployeeTasksDatasource {
               localPaths.add(s);
             }
           }
-          for (final path in localPaths) {
-            final compressedImg = await compressImage(XFile(path));
-            subEmployeeTasksMap[
-                    'sub_employee_tasks[$i][admin_subtask__img][]'] =
-                await MultipartFile.fromFile(
-              compressedImg.path,
-              filename: compressedImg.path.split('/').last,
+          await _appendSubtaskAdminUploads(
+            target: subEmployeeTasksMap,
+            subIndex: i,
+            localPaths: localPaths,
+            audioPath: task['subTaskAudio']?.toString(),
+          );
+        } else {
+          final audioPath = task['subTaskAudio']?.toString() ?? '';
+          if (audioPath.isNotEmpty && !audioPath.startsWith('http')) {
+            await _appendSubtaskAdminUploads(
+              target: subEmployeeTasksMap,
+              subIndex: i,
+              localPaths: const [],
+              audioPath: audioPath,
             );
           }
         }
       }
       final configMap = recurrenceConfig ?? <String, dynamic>{};
       final isEdit = employeeTaskId != 0;
-      final multiAssign = employeeIds.length > 1;
-      final useV2 = !multiAssign &&
-          (isEdit
-              ? (templateId != null && templateId > 0)
-              : taskRecurrence != 'noRepeat' && taskRecurrence.isNotEmpty);
+      final useV2 = isEdit
+          ? (templateId != null && templateId > 0)
+          : taskRecurrence != 'noRepeat' && taskRecurrence.isNotEmpty;
+
+      final subNames = <String>[];
+      for (var i = 0; i < subEmployeeTasks.length; i++) {
+        final t = subEmployeeTasks[i];
+        if (t is Map && t['subTaskName'] != null) {
+          subNames.add(t['subTaskName'].toString());
+        }
+      }
+
+      TaskDetailsDebug.createTask(
+        subtasksSent: subEmployeeTasks.length,
+        subtaskNames: subNames,
+        assigneeCount: employeeIds.length,
+        useV2: useV2,
+        response: 'pending…',
+      );
 
       final response = await api.post(
         isEdit ? EndPoints.editEmployeeTask : EndPoints.createEmployeeTask,
@@ -160,6 +248,13 @@ class CreateEmployeeTasksDatasource {
         isFormData: true,
       );
       final data = response.data;
+      TaskDetailsDebug.createTask(
+        subtasksSent: subEmployeeTasks.length,
+        subtaskNames: subNames,
+        assigneeCount: employeeIds.length,
+        useV2: useV2,
+        response: data,
+      );
       return data;
     } on DioException catch (e) {
       final data = e.response?.data;

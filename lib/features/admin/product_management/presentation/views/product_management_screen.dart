@@ -9,30 +9,75 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/product_development_model.dart';
 import '../controllers/product_management_controller.dart';
+import '../widgets/product_management_filter_sheet.dart';
+import '../widgets/product_management_toolbar.dart';
 import '../widgets/product_management_widget.dart';
 
 class ProductManagementScreen extends GetView<ProductManagementController> {
   const ProductManagementScreen({Key? key}) : super(key: key);
 
+  void _openFilterSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const ProductManagementFilterSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme.bodyMedium!;
-
     return Scaffold(
       appBar: CustomAppBar(
         title: 'productManagement',
         action: false,
         actions: [
-          IconButton(
-            highlightColor: Colors.transparent,
-            icon: Icon(
-              Icons.calendar_today_outlined,
-              size: 22.sp,
-              color: ThemeService.isDark.value
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
-            ),
-            onPressed: () {},
+          GetBuilder<ProductManagementController>(
+            builder: (controller) {
+              final count = controller.activeFilterCount;
+              return IconButton(
+                highlightColor: Colors.transparent,
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      Icons.tune_rounded,
+                      size: 22.sp,
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                    ),
+                    if (count > 0)
+                      Positioned(
+                        top: -2,
+                        left: -2,
+                        child: Container(
+                          padding: EdgeInsets.all(4.w),
+                          decoration: const BoxDecoration(
+                            color: AppColors.secondaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: BoxConstraints(
+                            minWidth: 14.w,
+                            minHeight: 14.w,
+                          ),
+                          child: Text(
+                            '$count',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.whiteColor,
+                              fontSize: 8.sp,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                onPressed: () => _openFilterSheet(context),
+              );
+            },
           ),
           SizedBox(width: 10.w),
         ],
@@ -42,58 +87,18 @@ class ProductManagementScreen extends GetView<ProductManagementController> {
           SliverToBoxAdapter(
             child: SizedBox(height: 12.h),
           ),
-          SliverToBoxAdapter(
-            child: Center(
-              child: _ProductManagementTabs(
-                controller: controller,
-                textTheme: textTheme,
-              ),
-            ),
+          const SliverToBoxAdapter(
+            child: ProductManagementToolbar(),
           ),
-          SliverToBoxAdapter(child: SizedBox(height: 16.h)),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 47.w),
-              child: _SearchField(
-                onChanged: controller.searchBar,
-                textTheme: textTheme,
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+          SliverToBoxAdapter(child: SizedBox(height: 8.h)),
           GetBuilder<ProductManagementController>(
             builder: (controller) {
-              if (controller.currentTab.value == 0 &&
-                  controller.isProductsLoading.value &&
-                  controller.searchProducts.isEmpty) {
+              if ((controller.isLoading.value ||
+                      controller.isProductsLoading.value) &&
+                  controller.displayedProducts.isEmpty) {
                 return const _ProductManagementSkeletonList();
               }
-              if (controller.currentTab.value == 1 &&
-                  controller.isLoading.value) {
-                return const _ProductManagementSkeletonList();
-              }
-              if (controller.currentTab.value == 2 &&
-                  controller.isLoading.value) {
-                return const _ProductManagementSkeletonList();
-              }
-              if (controller.currentTab.value == 0 &&
-                  controller.searchProducts.isEmpty) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: ShowNoData(),
-                  ),
-                );
-              }
-              if (controller.currentTab.value == 1 &&
-                  controller.searchProductManagement.isEmpty) {
-                return const SliverFillRemaining(
-                  child: Center(
-                    child: ShowNoData(),
-                  ),
-                );
-              }
-              if (controller.currentTab.value == 2 &&
-                  controller.searcharchiveProductManagement.isEmpty) {
+              if (controller.displayedProducts.isEmpty) {
                 return const SliverFillRemaining(
                   child: Center(
                     child: ShowNoData(),
@@ -103,70 +108,31 @@ class ProductManagementScreen extends GetView<ProductManagementController> {
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                    final tab = controller.currentTab.value;
-                    final stockProduct =
-                        tab == 0 ? controller.searchProducts[index] : null;
-                    final productDevelopment = tab == 1
-                        ? controller.searchProductManagement[index]
-                        : tab == 2
-                            ? controller.searcharchiveProductManagement[index]
-                            : null;
-                    final stockDevelopment = tab == 0 && stockProduct != null
-                        ? controller.developmentForProduct(stockProduct.id)
-                        : null;
-                    final displayStep = productDevelopment?.currentStep ??
-                        stockDevelopment?.currentStep ??
-                        (tab == 0 ? '0' : '4');
+                    final item = controller.displayedProducts[index];
+                    final displayStep = item.displayStep;
                     return GestureDetector(
                       onTap: () {
-                        if (tab == 2) {
-                          return;
-                        }
-                        if (tab == 1) {
-                          controller.editProduct(
-                            id: productDevelopment!.id.toString(),
-                            isEditing: true,
-                          );
-                          Get.toNamed(AppRoutes.ADDPRODUCTMANAGEMENTSCREEN);
-                        } else {
-                          controller.selectProductForDevelopment(stockProduct!);
-                          Get.toNamed(AppRoutes.ADDPRODUCTMANAGEMENTSCREEN);
-                        }
+                        controller.openListItem(item);
+                        Get.toNamed(AppRoutes.ADDPRODUCTMANAGEMENTSCREEN);
                       },
-                      onLongPress: tab == 1
+                      onLongPress: item.hasDevelopment
                           ? () => _showDevelopmentActions(
                                 context,
                                 controller,
-                                productDevelopment!,
+                                item.development!,
                               )
                           : null,
                       child: ProductManagementWidget(
                         currentStep: displayStep,
                         rating: double.tryParse(displayStep) ?? 0,
-                        productImage: productDevelopment?.productImage ??
-                            stockProduct?.imageUrl ??
-                            '',
-                        productName: productDevelopment?.productName ??
-                            stockProduct?.nameAr ??
-                            '',
-                        stageLabel: productDevelopment == null
-                            ? ''
-                            : controller
-                                .stepTitle(productDevelopment.currentStep),
-                        onHistoryTap: tab == 1
-                            ? () => _showDevelopmentHistory(
-                                  context,
-                                  productDevelopment!,
-                                )
-                            : null,
+                        productImage: item.productImage,
+                        productImageUrls: item.productImageUrls,
+                        productName: item.productName,
+                        stageLabel: controller.stepTitle(displayStep),
                       ),
                     );
                   },
-                  childCount: controller.currentTab.value == 0
-                      ? controller.searchProducts.length
-                      : controller.currentTab.value == 1
-                          ? controller.searchProductManagement.length
-                          : controller.searcharchiveProductManagement.length,
+                  childCount: controller.displayedProducts.length,
                 ),
               );
             },
@@ -281,81 +247,6 @@ void _confirmDeleteDevelopment(
   );
 }
 
-void _showDevelopmentHistory(
-  BuildContext context,
-  ProductDevelopmentModel product,
-) {
-  Get.bottomSheet(
-    SafeArea(
-      child: Container(
-        constraints: BoxConstraints(maxHeight: 0.72.sh),
-        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 18.h),
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'productDevelopmentLog'.tr,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: ThemeService.isDark.value
-                        ? AppColors.whiteColor
-                        : AppColors.secondaryColor,
-                  ),
-            ),
-            SizedBox(height: 12.h),
-            if (product.activityLogs.isEmpty)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 18.h),
-                child: Text(
-                  'noData'.tr,
-                  textAlign: TextAlign.center,
-                ),
-              )
-            else
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: product.activityLogs.length,
-                  separatorBuilder: (_, __) => Divider(height: 16.h),
-                  itemBuilder: (context, index) {
-                    final log = product.activityLogs[index];
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        Icons.history_rounded,
-                        color: AppColors.primaryColor,
-                        size: 22.sp,
-                      ),
-                      title: Text(
-                        log.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        '${log.userName} • ${log.createdAt}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    ),
-    isScrollControlled: true,
-  );
-}
-
 class _ProductManagementSkeletonList extends StatelessWidget {
   const _ProductManagementSkeletonList();
 
@@ -437,129 +328,6 @@ class _SkeletonBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(4.r),
-      ),
-    );
-  }
-}
-
-class _ProductManagementTabs extends StatelessWidget {
-  const _ProductManagementTabs({
-    required this.controller,
-    required this.textTheme,
-  });
-
-  final ProductManagementController controller;
-  final TextStyle textTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return GetBuilder<ProductManagementController>(
-      builder: (_) => Container(
-        padding: EdgeInsets.all(4.w),
-        width: 300.w,
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(28.r),
-        ),
-        child: Row(
-          children: List.generate(controller.tabs.length, (index) {
-            final selected = controller.currentTab.value == index;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => controller.changeTab(index),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  height: 38.h,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected ? AppColors.whiteColor : Colors.transparent,
-                    borderRadius: BorderRadius.circular(24.r),
-                    boxShadow: selected
-                        ? [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(24),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Text(
-                    controller.tabs[index].tr,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.copyWith(
-                      color: selected
-                          ? AppColors.secondaryColor
-                          : AppColors.customGreyColor5,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.onChanged,
-    required this.textTheme,
-  });
-
-  final ValueChanged<String> onChanged;
-  final TextStyle textTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48.h,
-      child: TextField(
-        textAlign: TextAlign.right,
-        onChanged: onChanged,
-        style: textTheme.copyWith(
-          fontSize: 15.sp,
-          color: ThemeService.isDark.value
-              ? AppColors.whiteColor
-              : AppColors.secondaryColor,
-        ),
-        decoration: InputDecoration(
-          hintText: 'search'.tr,
-          hintStyle: textTheme.copyWith(
-            color: AppColors.customGreyColor5,
-            fontSize: 15.sp,
-            fontWeight: FontWeight.w400,
-          ),
-          suffixIcon: Icon(
-            Icons.search,
-            color: AppColors.secondaryColor,
-            size: 25.sp,
-          ),
-          filled: true,
-          fillColor: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          contentPadding: EdgeInsets.symmetric(horizontal: 18.w),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28.r),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28.r),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(28.r),
-            borderSide: BorderSide.none,
-          ),
-        ),
       ),
     );
   }

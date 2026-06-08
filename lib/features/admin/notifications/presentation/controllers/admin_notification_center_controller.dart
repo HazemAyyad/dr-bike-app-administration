@@ -30,6 +30,8 @@ class AdminNotificationCenterController extends GetxController {
       'labelKey': 'notifFilterLogoutPending',
     },
     {'id': 'check_due_reminder', 'labelKey': 'notifFilterChecks'},
+    {'id': 'check_cashed', 'labelKey': 'notifFilterCheckCashed'},
+    {'id': 'check_returned', 'labelKey': 'notifFilterCheckReturned'},
   ];
 
   @override

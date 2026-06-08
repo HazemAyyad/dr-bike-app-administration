@@ -45,7 +45,8 @@ class ProductManagementDatasource {
           if (step.isEmpty) 'product_id': productId,
           if (step.isEmpty) 'description': description,
           if (step.isNotEmpty) 'step': step,
-          if (step.isNotEmpty) 'product_development_id': productId
+          if (step.isNotEmpty) 'product_development_id': productId,
+          if (step.isNotEmpty) 'description': description,
         }),
       );
       return response.data;

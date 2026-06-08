@@ -86,3 +86,48 @@ TaskMediaPaths parseTaskMediaFromApi(dynamic raw) {
 bool localFileIsVideo(String path) {
   return isVideoMediaPath(path);
 }
+
+/// Admin subtask attachments: images, videos, and optional voice note in [admin_img].
+class SubtaskAdminMedia {
+  const SubtaskAdminMedia({
+    this.images = const [],
+    this.videos = const [],
+    this.audio,
+  });
+
+  final List<String> images;
+  final List<String> videos;
+  final String? audio;
+
+  bool get isEmpty =>
+      images.isEmpty && videos.isEmpty && !hasPlayableAudio(audio);
+}
+
+SubtaskAdminMedia parseSubtaskAdminMediaFromApi(dynamic raw) {
+  final images = <String>[];
+  final videos = <String>[];
+  String? audio;
+
+  for (final path in _collectRawPaths(raw)) {
+    final uri = resolveTaskMediaUri(path);
+    if (uri.isEmpty) continue;
+    if (isAudioMediaPath(path) || isAudioMediaPath(uri)) {
+      if (audio == null || audio!.isEmpty) audio = uri;
+      continue;
+    }
+    if (isVideoMediaPath(path) || isVideoMediaPath(uri)) {
+      videos.add(uri);
+      continue;
+    }
+    final img = ShowNetImage.getPhoto(path);
+    if (img != AssetsManager.noImageNet) {
+      images.add(img);
+    } else if (uri.startsWith('http://') || uri.startsWith('https://')) {
+      images.add(uri);
+    } else if (uri.isNotEmpty && !isNoMediaPlaceholder(uri)) {
+      images.add(uri);
+    }
+  }
+
+  return SubtaskAdminMedia(images: images, videos: videos, audio: audio);
+}

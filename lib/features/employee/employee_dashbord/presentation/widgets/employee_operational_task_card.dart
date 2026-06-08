@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
+import '../../../../../core/helpers/task_source_debug_badge.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -152,6 +153,19 @@ class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
                             ),
                           ),
                       ],
+                    ),
+                    TaskSourceDebugBadge(
+                      label: TaskSourceDebug.label(
+                        source: task.source,
+                        taskId: task.taskId,
+                        occurrenceId: task.occurrenceId,
+                        templateId: task.templateId,
+                        parentId: task.parentId,
+                        isVirtualDay: task.status == 'ongoing' &&
+                            task.isRepeatedCopy == false &&
+                            task.isOccurrence == false &&
+                            task.taskRecurrence != 'noRepeat',
+                      ),
                     ),
                     if (blockedByOther &&
                         task.completedByName != null &&
@@ -303,6 +317,8 @@ class _TimeLeftChip extends StatelessWidget {
     String label;
     if (diff.inSeconds <= 0) {
       label = 'overdue'.tr;
+    } else if (diff.inDays >= 1) {
+      label = '${diff.inDays} ${'days'.tr}';
     } else if (diff.inHours >= 1) {
       label = '${diff.inHours} ${'hours'.tr}';
     } else {

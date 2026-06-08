@@ -21,5 +21,6 @@ abstract class EmployeeDashbordRepository {
     required int taskId,
     bool isOccurrence = false,
     int? occurrenceId,
+    String? taskDate,
   });
 }

@@ -7,13 +7,7 @@ import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../controllers/stock_controller.dart';
 
-/// Modal for adding or editing a single size+color entry.
-///
-/// Usage — add:
-///   SizeColorEntryDialog.show(controller);
-///
-/// Usage — edit:
-///   SizeColorEntryDialog.show(controller, sizeIdx: i, colorIdx: j);
+/// Modal for adding or editing a single size+color entry (Arabic color name only).
 class SizeColorEntryDialog extends StatefulWidget {
   const SizeColorEntryDialog({
     Key? key,
@@ -23,8 +17,6 @@ class SizeColorEntryDialog extends StatefulWidget {
   }) : super(key: key);
 
   final StockController controller;
-
-  /// If both are non-null we are editing an existing entry.
   final int? sizeIdx;
   final int? colorIdx;
 
@@ -49,8 +41,6 @@ class SizeColorEntryDialog extends StatefulWidget {
 
 class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   late final TextEditingController _colorArCtrl;
-  late final TextEditingController _colorEnCtrl;
-  late final TextEditingController _colorAbbrCtrl;
   late final TextEditingController _qtyCtrl;
   late final TextEditingController _priceCtrl;
   late final TextEditingController _wholesaleCtrl;
@@ -69,24 +59,15 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       final sz = c.items[widget.sizeIdx!];
       final col = sz.colors[widget.colorIdx!];
       _selectedSize = sz.sizeController.text.trim();
-      _colorArCtrl =
-          TextEditingController(text: col.colorController.text);
-      _colorEnCtrl =
-          TextEditingController(text: col.colorEnController.text);
-      _colorAbbrCtrl =
-          TextEditingController(text: col.colorAbbrController.text);
-      _qtyCtrl =
-          TextEditingController(text: col.quantityController.text);
-      _priceCtrl =
-          TextEditingController(text: col.priceController.text);
+      _colorArCtrl = TextEditingController(text: col.colorController.text);
+      _qtyCtrl = TextEditingController(text: col.quantityController.text);
+      _priceCtrl = TextEditingController(text: col.priceController.text);
       _wholesaleCtrl =
           TextEditingController(text: col.wholesalePriceController.text);
       _discountCtrl =
           TextEditingController(text: col.discountController.text);
     } else {
       _colorArCtrl = TextEditingController();
-      _colorEnCtrl = TextEditingController();
-      _colorAbbrCtrl = TextEditingController();
       _qtyCtrl = TextEditingController();
       _priceCtrl = TextEditingController();
       _wholesaleCtrl = TextEditingController();
@@ -97,8 +78,6 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   @override
   void dispose() {
     _colorArCtrl.dispose();
-    _colorEnCtrl.dispose();
-    _colorAbbrCtrl.dispose();
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
     _wholesaleCtrl.dispose();
@@ -133,14 +112,28 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       return;
     }
 
+    final qtyErr = c.validateSizeColorQuantity(
+      qty,
+      excludeSizeIdx: isEdit ? widget.sizeIdx : null,
+      excludeColorIdx: isEdit ? widget.colorIdx : null,
+    );
+    if (qtyErr != null) {
+      Get.snackbar(
+        'error'.tr,
+        qtyErr.trParams({'stock': '${c.productStockTotal}'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     if (isEdit) {
       c.updateSizeColorEntry(
         sizeIdx: widget.sizeIdx!,
         colorIdx: widget.colorIdx!,
         size: size,
         colorAr: colorAr,
-        colorEn: _colorEnCtrl.text.trim(),
-        colorAbbr: _colorAbbrCtrl.text.trim(),
+        colorEn: '',
+        colorAbbr: '',
         qty: qty,
         price: price,
         wholesalePrice: _wholesaleCtrl.text.trim(),
@@ -150,8 +143,8 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       c.addSizeColorEntry(
         size: size,
         colorAr: colorAr,
-        colorEn: _colorEnCtrl.text.trim(),
-        colorAbbr: _colorAbbrCtrl.text.trim(),
+        colorEn: '',
+        colorAbbr: '',
         qty: qty,
         price: price,
         wholesalePrice: _wholesaleCtrl.text.trim(),
@@ -170,15 +163,12 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
       opts.insert(0, _selectedSize!);
     }
 
-    // Resolve current value safely for the dropdown.
     final String? dropdownValue =
         (_selectedSize?.isNotEmpty ?? false) && opts.contains(_selectedSize)
             ? _selectedSize
             : null;
 
     return Dialog(
-      // Match the Add Product card background so the modal feels part of the
-      // same design system (white in light, surface in dark).
       backgroundColor: AdminUiColors.cardBackground(context),
       insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
       shape: RoundedRectangleBorder(
@@ -192,7 +182,6 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── title ─────────────────────────────────────────────────
               Text(
                 isEdit ? 'editSizeColor'.tr : 'addSizeColor'.tr,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
@@ -201,8 +190,6 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                     ),
               ),
               SizedBox(height: 16.h),
-
-              // ── size dropdown — same CustomDropdownField used in the form
               CustomDropdownField(
                 label: 'size',
                 hint: 'sizeSelectHint',
@@ -212,33 +199,35 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                 isRequired: true,
               ),
               SizedBox(height: 12.h),
-
-              // ── color Ar ──────────────────────────────────────────────
               CustomTextField(
                 label: 'color',
                 hintText: 'color',
                 controller: _colorArCtrl,
                 isRequired: true,
               ),
-              SizedBox(height: 12.h),
-
-              // ── color En ──────────────────────────────────────────────
-              CustomTextField(
-                label: 'colorEnglish',
-                hintText: 'colorEnglish',
-                controller: _colorEnCtrl,
+              Builder(
+                builder: (context) {
+                  final stock = c.productStockTotal;
+                  final used = c.totalSizeColorQuantity(
+                    excludeSizeIdx: isEdit ? widget.sizeIdx : null,
+                    excludeColorIdx: isEdit ? widget.colorIdx : null,
+                  );
+                  final remaining = (stock - used).clamp(0, stock);
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 8.h),
+                    child: Text(
+                      'sizeColorQtyHint'.trParams({
+                        'stock': '$stock',
+                        'remaining': '$remaining',
+                      }),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).hintColor,
+                            fontSize: 11.sp,
+                          ),
+                    ),
+                  );
+                },
               ),
-              SizedBox(height: 12.h),
-
-              // ── color Abbr (Hebrew) ───────────────────────────────────
-              CustomTextField(
-                label: 'colorHebrew',
-                hintText: 'colorHebrew',
-                controller: _colorAbbrCtrl,
-              ),
-              SizedBox(height: 12.h),
-
-              // ── qty + price ───────────────────────────────────────────
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -258,15 +247,14 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                       hintText: 'price',
                       controller: _priceCtrl,
                       keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                        decimal: true,
+                      ),
                       isRequired: true,
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 12.h),
-
-              // ── wholesale + discount ──────────────────────────────────
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -276,7 +264,8 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                       hintText: 'wholesalePriceField',
                       controller: _wholesaleCtrl,
                       keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                        decimal: true,
+                      ),
                     ),
                   ),
                   SizedBox(width: 10.w),
@@ -286,14 +275,13 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                       hintText: 'discountPercentage',
                       controller: _discountCtrl,
                       keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                        decimal: true,
+                      ),
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 24.h),
-
-              // ── buttons ───────────────────────────────────────────────
               Row(
                 children: [
                   Expanded(

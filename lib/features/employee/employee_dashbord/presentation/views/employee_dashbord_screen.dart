@@ -159,32 +159,34 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                   ],
                                 ),
                                 SizedBox(height: 8.h),
-                                if (controller.employeeData.value!.tasks
-                                    .where(isDashboardTask)
-                                    .isEmpty)
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        'لا يوجد مهمات'.tr,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium!
-                                            .copyWith(
-                                              fontSize: 14.sp,
-                                              fontWeight: FontWeight.w400,
-                                              color: ThemeService.isDark.value
-                                                  ? AppColors.customGreyColor7
-                                                  : AppColors.customGreyColor4,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
                                 ...() {
-                                  final dashboardTasks = controller
-                                      .employeeData.value!.tasks
-                                      .where(isDashboardTask)
-                                      .toList();
+                                  final dashboardTasks = dashboardTasksForToday(
+                                    controller.employeeData.value!.tasks,
+                                    weeklyDaysOff:
+                                        controller.employeeData.value!.weeklyDaysOff,
+                                  );
+                                  if (dashboardTasks.isEmpty) {
+                                    return [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'لا يوجد مهمات'.tr,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium!
+                                                .copyWith(
+                                                  fontSize: 14.sp,
+                                                  fontWeight: FontWeight.w400,
+                                                  color: ThemeService.isDark.value
+                                                      ? AppColors.customGreyColor7
+                                                      : AppColors.customGreyColor4,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ];
+                                  }
                                   return [
                                     ...dashboardTasks.take(5).map(
                                         (e) => EmployeeDashbordTasks(task: e)),

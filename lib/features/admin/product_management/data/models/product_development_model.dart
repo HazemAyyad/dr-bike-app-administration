@@ -8,6 +8,8 @@ class ProductDevelopmentModel {
   final String description;
   final String currentStep;
   final double rate;
+  final String createdAt;
+  final String updatedAt;
   final List<ProductDevelopmentActivityLogModel> activityLogs;
 
   ProductDevelopmentModel({
@@ -18,6 +20,8 @@ class ProductDevelopmentModel {
     required this.description,
     required this.currentStep,
     required this.rate,
+    required this.createdAt,
+    required this.updatedAt,
     required this.activityLogs,
   });
 
@@ -31,6 +35,8 @@ class ProductDevelopmentModel {
       description: asString(j['description']),
       currentStep: asString(j['current_step']),
       rate: asDouble(j['rate'] ?? 0),
+      createdAt: asString(j['created_at']),
+      updatedAt: asString(j['updated_at']),
       activityLogs: mapList(
         j['activity_logs'],
         (Map<String, dynamic> m) =>
@@ -48,6 +54,8 @@ class ProductDevelopmentModel {
       'description': description,
       'current_step': currentStep,
       'rate': rate,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
       'activity_logs': activityLogs.map((e) => e.toJson()).toList(),
     };
   }
@@ -89,5 +97,23 @@ class ProductDevelopmentActivityLogModel {
       'user_name': userName,
       'created_at': createdAt,
     };
+  }
+}
+
+class ProductDevelopmentActionResult {
+  final String message;
+  final String? developmentId;
+
+  const ProductDevelopmentActionResult({
+    required this.message,
+    this.developmentId,
+  });
+
+  factory ProductDevelopmentActionResult.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return ProductDevelopmentActionResult(
+      message: asString(j['message']),
+      developmentId: j['product_development_id']?.toString(),
+    );
   }
 }

@@ -35,6 +35,7 @@ abstract class EmployeeTasksRepository {
   Future<dynamic> getTaskDetails({
     required String taskId,
     String? occurrenceId,
+    String? taskDate,
   });
 
   Future<dynamic> uplodeTaskImage({

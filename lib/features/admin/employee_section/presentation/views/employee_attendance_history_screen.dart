@@ -81,7 +81,29 @@ class EmployeeAttendanceHistoryScreen
                 return const Center(child: CircularProgressIndicator());
               }
               final data = controller.result.value;
-              if (data == null || data.days.isEmpty) {
+              if (data == null) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.event_busy,
+                          size: 64.sp, color: Colors.grey.shade400),
+                      SizedBox(height: 12.h),
+                      Text(
+                        'noData'.tr,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyLarge
+                            ?.copyWith(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              final hasContent = data.days.isNotEmpty ||
+                  data.monthlySummary != null ||
+                  controller.isViewingCurrentMonth;
+              if (!hasContent) {
                 return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -105,6 +127,7 @@ class EmployeeAttendanceHistoryScreen
                 employee: head,
                 monthlySummary: data.monthlySummary,
                 days: data.days,
+                showTodaySummary: controller.isViewingCurrentMonth,
               );
             }),
           ),

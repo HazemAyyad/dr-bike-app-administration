@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:doctorbike/core/helpers/product_image_utils.dart';
 
 class ProductModel {
   final String id;
@@ -9,9 +10,17 @@ class ProductModel {
   final double wholesalePrice;
   final double rate;
   final String imageUrl;
+  final List<String> viewImageUrls;
+  final List<String> normalImageUrls;
+  final List<String> image3dUrls;
 
   /// Parent main category id when this row is a subcategory (from API).
   final String? mainCategoryId;
+
+  final String? productCode;
+  final String? storeSectionId;
+  final String? storeSectionName;
+  final String? shelfNumber;
 
   const ProductModel({
     required this.id,
@@ -22,8 +31,36 @@ class ProductModel {
     this.wholesalePrice = 0,
     this.rate = 0,
     this.imageUrl = '',
+    this.viewImageUrls = const [],
+    this.normalImageUrls = const [],
+    this.image3dUrls = const [],
     this.mainCategoryId,
+    this.productCode,
+    this.storeSectionId,
+    this.storeSectionName,
+    this.shelfNumber,
   });
+
+  String get preferredImageUrl => ProductImageUtils.preferredFromLists(
+        viewImages: viewImageUrls,
+        normalImages: normalImageUrls,
+        image3d: image3dUrls,
+        fallbackImage: imageUrl,
+      );
+
+  List<String> get allImageUrlsInPriority => ProductImageUtils.allValidUrlsInPriority(
+        viewImages: viewImageUrls,
+        normalImages: normalImageUrls,
+        image3d: image3dUrls,
+        fallbackImage: imageUrl,
+      );
+
+  /// Product code for display; falls back to numeric id when code is missing.
+  String get displayProductCode {
+    final code = productCode?.trim() ?? '';
+    if (code.isNotEmpty) return code;
+    return id.trim();
+  }
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
@@ -55,7 +92,19 @@ class ProductModel {
         j['product_image'] ?? j['image'] ?? j['imageUrl'],
         '',
       ),
+      viewImageUrls:
+          ProductImageUtils.allValidUrlsFromList(j['product_viewImages']),
+      normalImageUrls:
+          ProductImageUtils.allValidUrlsFromList(j['product_normalImages']),
+      image3dUrls:
+          ProductImageUtils.allValidUrlsFromList(j['product_image3d']),
       mainCategoryId: mainCatRaw == null ? null : asString(mainCatRaw),
+      productCode: asNullableString(
+        j['product_code'] ?? j['productCode'] ?? j['code'],
+      ),
+      storeSectionId: asNullableString(j['store_section_id']),
+      storeSectionName: asNullableString(j['store_section_name']),
+      shelfNumber: asNullableString(j['shelf_number']),
     );
   }
 
@@ -65,7 +114,14 @@ class ProductModel {
     return <dynamic>[];
   }
 
-  ProductModel copyWith({double? unitPrice, double? wholesalePrice}) {
+  ProductModel copyWith({
+    double? unitPrice,
+    double? wholesalePrice,
+    String? productCode,
+    String? storeSectionId,
+    String? storeSectionName,
+    String? shelfNumber,
+  }) {
     return ProductModel(
       id: id,
       nameAr: nameAr,
@@ -75,7 +131,14 @@ class ProductModel {
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       rate: rate,
       imageUrl: imageUrl,
+      viewImageUrls: viewImageUrls,
+      normalImageUrls: normalImageUrls,
+      image3dUrls: image3dUrls,
       mainCategoryId: mainCategoryId,
+      productCode: productCode ?? this.productCode,
+      storeSectionId: storeSectionId ?? this.storeSectionId,
+      storeSectionName: storeSectionName ?? this.storeSectionName,
+      shelfNumber: shelfNumber ?? this.shelfNumber,
     );
   }
 
@@ -88,7 +151,14 @@ class ProductModel {
       'normail_price': unitPrice,
       'rate': rate,
       'product_image': imageUrl,
+      'product_viewImages': viewImageUrls,
+      'product_normalImages': normalImageUrls,
+      'product_image3d': image3dUrls,
       if (mainCategoryId != null) 'mainCategoryId': mainCategoryId,
+      if (productCode != null) 'product_code': productCode,
+      if (storeSectionId != null) 'store_section_id': storeSectionId,
+      if (storeSectionName != null) 'store_section_name': storeSectionName,
+      if (shelfNumber != null) 'shelf_number': shelfNumber,
     };
   }
 }

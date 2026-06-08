@@ -5,8 +5,10 @@ import '../../../../../core/helpers/haptic_helper.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/helpers/audio_helper.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/helpers/task_details_debug.dart';
 import '../../../../../core/helpers/proof_media_type.dart';
 import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/helpers/showtime.dart';
@@ -21,7 +23,9 @@ import '../../domain/usecases/create_task_usecase.dart';
 import '../../../employee_tasks/domain/entities/task_details_entiny.dart';
 import '../../../employee_tasks/presentation/controllers/employee_tasks_controller.dart';
 import '../../../employee_tasks/presentation/helpers/recurrence_arabic_summary.dart';
+import '../../../../../routes/app_routes.dart';
 import '../helpers/recurrence_config_helper.dart';
+import '../../../../../core/helpers/scroll_date_picker_sheet.dart';
 import '../widgets/horizontal_time_picker_sheet.dart';
 
 class CreateTaskController extends GetxController {
@@ -63,12 +67,13 @@ class CreateTaskController extends GetxController {
 
   /// Multi-select (operational avatar row).
   void toggleEmployee(String id) {
-    if (selectedEmployeeIds.contains(id)) {
-      selectedEmployeeIds.remove(id);
+    final next = List<String>.from(selectedEmployeeIds);
+    if (next.contains(id)) {
+      next.remove(id);
     } else {
-      selectedEmployeeIds.add(id);
+      next.add(id);
     }
-    selectedEmployeeIds.refresh();
+    selectedEmployeeIds.assignAll(next);
     if (selectedEmployeeIds.isEmpty) {
       selectedEmployeeId.value = '';
       employeeIdConroller.clear();
@@ -92,15 +97,71 @@ class CreateTaskController extends GetxController {
 
   // المهام الفرعية
   RxList subTasks = [].obs;
+  final RxList<String> subTaskMediaPaths = <String>[].obs;
+  final RxString subTaskAdminAudio = ''.obs;
   final Rxn<int> editingSubTaskIndex = Rxn<int>();
+  bool _closed = false;
+  bool _loadingEmployees = false;
 
   void prepareNewSubTask() {
     subTaskNameController.clear();
     subTaskDescriptionController.clear();
     subTaskFile.value = null;
+    subTaskMediaPaths.clear();
+    subTaskAdminAudio.value = '';
     requireSubTasImage.value = false;
     subTaskProofMediaType.value = ProofMediaType.none;
     editingSubTaskIndex.value = null;
+  }
+
+  void addSubTaskMediaPath(String path) {
+    if (path.isEmpty) return;
+    if (!subTaskMediaPaths.contains(path)) {
+      subTaskMediaPaths.add(path);
+    }
+    subTaskFile.value = XFile(path);
+  }
+
+  void clearSubTaskMedia() {
+    subTaskMediaPaths.clear();
+    subTaskFile.value = null;
+  }
+
+  void _loadSubTaskMediaFromMap(Map task) {
+    subTaskMediaPaths.clear();
+    subTaskAdminAudio.value = '';
+    final raw = task['subTaskImage'];
+    final paths = <String>[];
+    if (raw is List) {
+      for (final e in raw) {
+        final s = e.toString();
+        if (s.isNotEmpty) paths.add(s);
+      }
+    } else if (raw is String && raw.isNotEmpty) {
+      paths.add(raw);
+    }
+    for (final p in paths) {
+      if (isAudioMediaPath(p)) {
+        if (subTaskAdminAudio.value.isEmpty) {
+          subTaskAdminAudio.value = parseAudioFromApi(p) ?? p;
+        }
+      } else {
+        subTaskMediaPaths.add(p);
+      }
+    }
+    final audio = task['subTaskAudio']?.toString();
+    if (audio != null && audio.isNotEmpty) {
+      subTaskAdminAudio.value = parseAudioFromApi(audio) ?? audio;
+    }
+    if (subTaskMediaPaths.isNotEmpty) {
+      final firstLocal = subTaskMediaPaths
+          .where((p) => !p.startsWith('http'))
+          .cast<String>()
+          .toList();
+      if (firstLocal.isNotEmpty) {
+        subTaskFile.value = XFile(firstLocal.first);
+      }
+    }
   }
 
   void startEditSubTask(int index) {
@@ -108,17 +169,7 @@ class CreateTaskController extends GetxController {
     subTaskNameController.text = task['subTaskName']?.toString() ?? '';
     subTaskDescriptionController.text =
         task['subTaskdescription']?.toString() ?? '';
-    final img = task['subTaskImage'];
-    String? localPath;
-    if (img is List && img.isNotEmpty) {
-      final first = img.first.toString();
-      if (first.isNotEmpty && !first.startsWith('http')) {
-        localPath = first;
-      }
-    } else if (img is String && img.isNotEmpty && !img.startsWith('http')) {
-      localPath = img;
-    }
-    subTaskFile.value = localPath != null ? XFile(localPath) : null;
+    _loadSubTaskMediaFromMap(task);
     requireSubTasImage.value = task['imageIsRequired'] == true;
     subTaskProofMediaType.value = ProofMediaType.normalize(
       task['proofMediaType']?.toString(),
@@ -140,6 +191,8 @@ class CreateTaskController extends GetxController {
     subTaskNameController.clear();
     subTaskDescriptionController.clear();
     subTaskFile.value = null;
+    subTaskMediaPaths.clear();
+    subTaskAdminAudio.value = '';
     requireSubTasImage.value = false;
     subTaskProofMediaType.value = ProofMediaType.none;
     subtaskBonusEnabled.value = false;
@@ -148,18 +201,25 @@ class CreateTaskController extends GetxController {
   }
 
   // دالة لإضافة أو تحديث مهمة فرعية
-  void addSubTask() {
-    if (subTaskNameController.text.isEmpty) return;
+  void addSubTask({String? nameOverride, String? descriptionOverride}) {
+    final name = (nameOverride ?? subTaskNameController.text).trim();
+    if (name.isEmpty) return;
 
     final data = <String, dynamic>{
-      'subTaskName': subTaskNameController.text,
-      'subTaskdescription': subTaskDescriptionController.text,
+      'subTaskName': name,
+      'subTaskdescription':
+          descriptionOverride ?? subTaskDescriptionController.text,
       'imageIsRequired': subTaskProofMediaType.value != ProofMediaType.none,
       'proofMediaType': subTaskProofMediaType.value,
       'bonusPoints': subtaskBonusEnabled.value ? subtaskBonusPoints.value : 0,
     };
-    if (subTaskFile.value != null) {
-      data['subTaskImage'] = subTaskFile.value!.path;
+    if (subTaskMediaPaths.isNotEmpty) {
+      data['subTaskImage'] = subTaskMediaPaths.toList();
+    } else if (subTaskFile.value != null) {
+      data['subTaskImage'] = [subTaskFile.value!.path];
+    }
+    if (subTaskAdminAudio.value.isNotEmpty) {
+      data['subTaskAudio'] = subTaskAdminAudio.value;
     }
 
     final editIndex = editingSubTaskIndex.value;
@@ -171,6 +231,9 @@ class CreateTaskController extends GetxController {
       if (!data.containsKey('subTaskImage') &&
           existing['subTaskImage'] != null) {
         data['subTaskImage'] = existing['subTaskImage'];
+      }
+      if (!data.containsKey('subTaskAudio') && existing['subTaskAudio'] != null) {
+        data['subTaskAudio'] = existing['subTaskAudio'];
       }
       subTasks[editIndex] = data;
     } else {
@@ -260,13 +323,31 @@ class CreateTaskController extends GetxController {
     }
   }
 
+  /// Private tasks: end = Friday of start week at midnight (00:00).
+  void _initSpecialTaskDefaultEndDate() {
+    _mergeStartDateTime();
+    final startDay = DateTime(
+      startDate.value.year,
+      startDate.value.month,
+      startDate.value.day,
+    );
+    final daysUntilFriday =
+        (DateTime.friday - startDay.weekday + 7) % 7;
+    var friday = startDay.add(Duration(days: daysUntilFriday));
+    var end = DateTime(friday.year, friday.month, friday.day);
+    if (!end.isAfter(startDate.value)) {
+      friday = friday.add(const Duration(days: 7));
+      end = DateTime(friday.year, friday.month, friday.day);
+    }
+    endDate.value = end;
+    endTime.value = const TimeOfDay(hour: 0, minute: 0);
+  }
+
   Future<void> pickStartDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: startDate.value,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      locale: Get.locale,
+    final picked = await ScrollDatePickerSheet.show(
+      context,
+      initial: startDate.value,
+      title: 'startDate',
     );
     if (picked != null) {
       startDate.value = DateTime(
@@ -276,17 +357,19 @@ class CreateTaskController extends GetxController {
         startTime.value.hour,
         startTime.value.minute,
       );
-      _mergeStartDateTime();
+      if (isSpecialTaskFlow) {
+        _initSpecialTaskDefaultEndDate();
+      } else {
+        _mergeStartDateTime();
+      }
     }
   }
 
   Future<void> pickEndDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: endDate.value,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      locale: Get.locale,
+    final picked = await ScrollDatePickerSheet.show(
+      context,
+      initial: endDate.value,
+      title: 'endDate',
     );
     if (picked != null) {
       endDate.value = DateTime(
@@ -308,7 +391,9 @@ class CreateTaskController extends GetxController {
     if (picked != null) {
       startTime.value = picked;
       _mergeStartDateTime();
-      if (!endDate.value.isAfter(startDate.value)) {
+      if (isSpecialTaskFlow) {
+        _initSpecialTaskDefaultEndDate();
+      } else if (!endDate.value.isAfter(startDate.value)) {
         _ensureEndAfterStart(autoFix: true);
       }
     }
@@ -399,9 +484,14 @@ class CreateTaskController extends GetxController {
     updateRecurrenceSummary();
   }
 
-  void addWeekdayWhileDragging(String day) {
-    if (!selectedDaysList.contains(day)) {
-      selectedDaysList.add(day);
+  void applyWeekdayWhileDragging(String day, bool select) {
+    if (select) {
+      if (!selectedDaysList.contains(day)) {
+        selectedDaysList.add(day);
+        _selectionHaptic();
+        updateRecurrenceSummary();
+      }
+    } else if (selectedDaysList.remove(day)) {
       _selectionHaptic();
       updateRecurrenceSummary();
     }
@@ -539,6 +629,9 @@ class CreateTaskController extends GetxController {
         return;
       }
       isLoding(true);
+      if (!isEdit) {
+        employeeTaskService.taskDetails.value = null;
+      }
       final details = isEdit ? employeeTaskService.taskDetails.value : null;
       final templateId = details?.templateId;
       final occurrenceId = details?.occurrenceId;
@@ -581,6 +674,8 @@ class CreateTaskController extends GetxController {
           );
         },
         (success) {
+          employeeTaskService.taskDetails.value = null;
+          TaskDetailsDebug.clearTraces();
           Get.find<EmployeeTasksController>().getEmployeeTasks();
           if (isEdit && details != null) {
             Get.find<EmployeeTasksController>().getTaskDetails(
@@ -592,8 +687,11 @@ class CreateTaskController extends GetxController {
           Future.delayed(
             const Duration(milliseconds: 650),
             () {
-              Get.back();
-              Get.back();
+              if (isEdit) {
+                AppNavigation.popToRoute(AppRoutes.TASKDETAILS);
+              } else {
+                AppNavigation.popToRoute(AppRoutes.EMPLOYEETASKSSCREEN);
+              }
             },
           );
           Helpers.showCustomDialogSuccess(
@@ -610,6 +708,7 @@ class CreateTaskController extends GetxController {
   // دالة لإنشاء المهمة خاصة
   void createSpecialTask(BuildContext context, {int specialTaskId = 0}) async {
     if (formKey.currentState!.validate()) {
+      _initSpecialTaskDefaultEndDate();
       _mergeStartDateTime();
       _mergeEndDateTime();
       if (!_ensureEndAfterStart()) {
@@ -684,8 +783,11 @@ class CreateTaskController extends GetxController {
           Future.delayed(
             const Duration(milliseconds: 650),
             () {
-              Get.back();
-              Get.back();
+              if (isEdit) {
+                AppNavigation.popToRoute(AppRoutes.SPECIALTASKDETAILSSCREEN);
+              } else {
+                AppNavigation.popToRoute(AppRoutes.PRIVATETASKSSCREEN);
+              }
             },
           );
           Helpers.showCustomDialogSuccess(
@@ -708,21 +810,46 @@ class CreateTaskController extends GetxController {
   }
 
   //Get Employee
-  Future<void> getEmployee() async {
+  Future<void> getEmployee({bool force = false}) async {
+    if (!force && employeeService.employeeList.isNotEmpty) return;
+    if (_loadingEmployees) return;
+    _loadingEmployees = true;
     try {
-      final result = await getAllEmployeeUsecase.call();
-      employeeService.employeeList.assignAll(result);
-    } catch (e) {
-      Get.snackbar(
-        'error'.tr,
-        'failedToLoadEmployees'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Object? lastError;
+      for (var attempt = 0; attempt < 2; attempt++) {
+        if (_closed) return;
+        try {
+          final result = await getAllEmployeeUsecase.call();
+          if (result.isNotEmpty) {
+            employeeService.employeeList.assignAll(result);
+            return;
+          }
+        } catch (e) {
+          lastError = e;
+          if (attempt == 0) {
+            await Future<void>.delayed(const Duration(milliseconds: 500));
+            continue;
+          }
+        }
+      }
+      if (!_closed &&
+          employeeService.employeeList.isEmpty &&
+          lastError != null) {
+        Get.snackbar(
+          'error'.tr,
+          'failedToLoadEmployees'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } finally {
+      _loadingEmployees = false;
     }
   }
 
-  final bool isEdit = Get.arguments['isEdit'];
-  final String title = Get.arguments['title'];
+  final bool isEdit = Get.arguments?['isEdit'] == true;
+  final String title = Get.arguments?['title']?.toString() ?? '';
+  bool get isSpecialTaskFlow =>
+      title == 'addNewPravateTask' || title == 'editSpecialTask';
 
   void updateSpecialTask() {
     final data = specialTasksService.specialTaskDetails.value!;
@@ -812,11 +939,17 @@ class CreateTaskController extends GetxController {
     selectedEmployeeId.value = selectedEmployeeIds.first;
     employeeIdConroller.text = selectedEmployeeIds.first;
     for (var element in data.subTasks) {
+      final media = <String>[
+        ...?element.adminImg,
+        ...?element.adminVideos,
+      ];
       subTasks.add({
         'subTaskId': element.id,
         'subTaskName': element.name,
         'subTaskdescription': element.description,
-        'subTaskImage': element.adminImg,
+        'subTaskImage': media,
+        if (element.adminAudio != null && element.adminAudio!.isNotEmpty)
+          'subTaskAudio': element.adminAudio,
         'imageIsRequired': element.isForcedToUploadImg,
         'proofMediaType': element.proofMediaType,
       });
@@ -859,10 +992,16 @@ class CreateTaskController extends GetxController {
     employeeIdConroller.clear();
     subTasks.clear();
     for (var element in data.subTasks) {
+      final media = <String>[
+        ...?element.adminImg,
+        ...?element.adminVideos,
+      ];
       subTasks.add({
         'subTaskName': element.name,
         'subTaskdescription': element.description,
-        'subTaskImage': element.adminImg,
+        'subTaskImage': media,
+        if (element.adminAudio != null && element.adminAudio!.isNotEmpty)
+          'subTaskAudio': element.adminAudio,
         'imageIsRequired': element.isForcedToUploadImg,
         'proofMediaType': element.proofMediaType,
       });
@@ -902,7 +1041,17 @@ class CreateTaskController extends GetxController {
       cloneEmployeeTask();
     } else if (title == 'createNewEmployeeTask' ||
         title == 'addNewPravateTask') {
-      _initDefaultEndAfterStart();
+      employeeTaskService.taskDetails.value = null;
+      subTasks.clear();
+      TaskDetailsDebug.clearTraces();
+      if (selectedDays.value.isEmpty) {
+        selectedDays.value = 'noRepeat';
+      }
+      if (title == 'addNewPravateTask') {
+        _initSpecialTaskDefaultEndDate();
+      } else {
+        _initDefaultEndAfterStart();
+      }
     }
     if (title == 'createNewEmployeeTask' ||
         title == 'editEmployeeTask' ||
@@ -914,6 +1063,7 @@ class CreateTaskController extends GetxController {
 
   @override
   void onClose() {
+    _closed = true;
     taskNameController.dispose();
     taskDescriptionController.dispose();
     taskNotesController.dispose();

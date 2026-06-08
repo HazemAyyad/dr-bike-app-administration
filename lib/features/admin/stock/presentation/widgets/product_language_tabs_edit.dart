@@ -1,128 +1,64 @@
-import 'package:doctorbike/core/helpers/admin_ui_colors.dart';
-import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/admin_ui_colors.dart';
+import '../../../../../core/helpers/outline_input_style.dart';
 import '../controllers/stock_controller.dart';
 
-/// Name + description fields grouped by language (Arabic / English / Hebrew).
-/// Indexed content (no [TabBarView]) so section height follows fields — no forced tall area.
-class ProductLanguageTabsEdit extends StatefulWidget {
-  const ProductLanguageTabsEdit({Key? key, required this.controller})
+/// Compact Arabic name + description (primary fields on add/edit product).
+class ProductArabicFieldsEdit extends StatelessWidget {
+  const ProductArabicFieldsEdit({Key? key, required this.controller})
       : super(key: key);
 
   final StockController controller;
 
-  @override
-  State<ProductLanguageTabsEdit> createState() =>
-      _ProductLanguageTabsEditState();
-}
-
-class _ProductLanguageTabsEditState extends State<ProductLanguageTabsEdit>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  static EdgeInsetsGeometry _densePadding(BuildContext context) =>
+      EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h);
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final unselectedTab =
-        isDark ? Colors.grey.shade400 : Colors.grey.shade600;
-    final c = widget.controller;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TabBar(
-          controller: _tabController,
-          labelColor: cs.primary,
-          unselectedLabelColor: unselectedTab,
-          indicatorColor: cs.primary,
-          indicatorWeight: 3,
-          labelStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-          unselectedLabelStyle:
-              Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: unselectedTab,
-                  ),
-          tabs: [
-            Tab(text: 'langArabic'.tr),
-            Tab(text: 'langEnglish'.tr),
-            Tab(text: 'langHebrew'.tr),
-          ],
-        ),
-        SizedBox(height: 16.h),
-        _langColumnForIndex(context, c, _tabController.index),
-      ],
-    );
-  }
+    final c = controller;
+    final labelStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+        );
 
-  Widget _langColumnForIndex(
-    BuildContext context,
-    StockController c,
-    int index,
-  ) {
-    switch (index) {
-      case 0:
-        return _langColumn(
-          context,
-          nameController: c.productNameController,
-          descController: c.productDetailsController,
-        );
-      case 1:
-        return _langColumn(
-          context,
-          nameController: c.nameEngController,
-          descController: c.descriptionEngController,
-        );
-      default:
-        return _langColumn(
-          context,
-          nameController: c.nameAbreeController,
-          descController: c.descriptionAbreeController,
-        );
+    InputDecoration fieldDecoration(String label) {
+      return OutlineInputStyle.merge(
+        context,
+        labelText: label,
+        hintText: label,
+      ).copyWith(
+        isDense: true,
+        contentPadding: _densePadding(context),
+        labelStyle: labelStyle,
+      );
     }
-  }
 
-  Widget _langColumn(
-    BuildContext context, {
-    required TextEditingController nameController,
-    required TextEditingController descController,
-  }) {
+    final fieldStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w600,
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        CustomTextField(
-          label: 'productName',
-          hintText: 'productName',
-          controller: nameController,
+        TextField(
+          controller: c.productNameController,
+          style: fieldStyle?.copyWith(fontWeight: FontWeight.w800),
+          textInputAction: TextInputAction.next,
+          decoration: fieldDecoration('productName'.tr),
         ),
-        SizedBox(height: 16.h),
-        CustomTextField(
-          label: 'productDetails',
-          hintText: 'productDetails',
-          controller: descController,
-          minLines: 3,
-          maxLines: 8,
+        SizedBox(height: 8.h),
+        TextField(
+          controller: c.productDetailsController,
+          style: fieldStyle,
+          minLines: 2,
+          maxLines: 3,
+          textInputAction: TextInputAction.done,
+          decoration: fieldDecoration('productDetails'.tr),
         ),
       ],
     );
@@ -168,4 +104,17 @@ class EditProductSectionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Kept for any legacy import; redirects to Arabic-only compact fields.
+@Deprecated('Use ProductArabicFieldsEdit')
+class ProductLanguageTabsEdit extends StatelessWidget {
+  const ProductLanguageTabsEdit({Key? key, required this.controller})
+      : super(key: key);
+
+  final StockController controller;
+
+  @override
+  Widget build(BuildContext context) =>
+      ProductArabicFieldsEdit(controller: controller);
 }

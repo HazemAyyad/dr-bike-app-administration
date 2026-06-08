@@ -8,7 +8,7 @@ import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/repositories/stock_implement.dart';
-import '../../../stock/domain/stock_tags_interactor.dart';
+import '../../../stock/domain/stock_location_interactor.dart';
 import '../../../stock/domain/usecases/add_combination_usecase.dart';
 import '../../../stock/domain/usecases/get_all_stock_usecase.dart';
 import '../../../stock/domain/usecases/get_archived_usecase.dart';
@@ -45,9 +45,9 @@ class ExpensesBinding extends Bindings {
         ),
       ),
     );
-    if (!Get.isRegistered<StockTagsInteractor>()) {
-      Get.lazyPut<StockTagsInteractor>(
-        () => StockTagsInteractor(Get.find<StockDatasource>()),
+    if (!Get.isRegistered<StockLocationInteractor>()) {
+      Get.lazyPut<StockLocationInteractor>(
+        () => StockLocationInteractor(Get.find<StockDatasource>()),
         fenix: true,
       );
     }
@@ -84,7 +84,7 @@ class ExpensesBinding extends Bindings {
           getProductSizeOptionsUsecase: GetProductSizeOptionsUsecase(
             stockRepository: Get.find<StockImplement>(),
           ),
-          stockTagsInteractor: Get.find<StockTagsInteractor>(),
+          stockLocationInteractor: Get.find<StockLocationInteractor>(),
           stockDatasource: Get.find<StockDatasource>(),
         ),
         fenix: true,

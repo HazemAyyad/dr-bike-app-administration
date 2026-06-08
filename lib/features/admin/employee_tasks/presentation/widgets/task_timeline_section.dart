@@ -132,6 +132,8 @@ class _TimelineTile extends StatelessWidget {
         return 'timelineApproved';
       case 'task_rejected':
         return 'timelineRejected';
+      case 'task_reopened':
+        return 'timelineReopened';
       case 'task_overdue':
         return 'timelineOverdue';
       case 'subtask_completed':

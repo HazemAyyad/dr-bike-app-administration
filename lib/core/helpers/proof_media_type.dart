@@ -17,4 +17,32 @@ class ProofMediaType {
 
   static bool isRequired(String value) =>
       normalize(value, required: true) != none;
+
+  /// Translation key for a single subtask proof requirement line.
+  static String subtaskRequiredHintKey(String? value) {
+    switch (normalize(value, required: true)) {
+      case image:
+        return 'subtaskProofRequiredImage';
+      case video:
+        return 'subtaskProofRequiredVideo';
+      case both:
+        return 'subtaskProofRequired';
+      default:
+        return 'subtaskProofRequired';
+    }
+  }
+
+  /// Translation key for main-task proof hint (photo / video / either).
+  static String mainRequiredHintKey(String? value) {
+    switch (normalize(value, required: true)) {
+      case image:
+        return 'proofRequiredHintImage';
+      case video:
+        return 'proofRequiredHintVideo';
+      case both:
+        return 'proofRequiredHintEither';
+      default:
+        return 'proofRequiredHint';
+    }
+  }
 }

@@ -198,6 +198,7 @@ class EmployeeTasksDatasource {
   Future<dynamic> getTaskDetails({
     required String taskId,
     String? occurrenceId,
+    String? taskDate,
   }) async {
     try {
       final Map<String, dynamic> body = {};
@@ -205,6 +206,9 @@ class EmployeeTasksDatasource {
         body['occurrence_id'] = occurrenceId;
       } else if (taskId.isNotEmpty) {
         body['employee_task_id'] = taskId;
+      }
+      if (taskDate != null && taskDate.isNotEmpty) {
+        body['task_date'] = taskDate;
       }
       final response = await api.post(
         EndPoints.showEmployeeTask,
@@ -214,6 +218,8 @@ class EmployeeTasksDatasource {
       TaskDetailsDebug.httpResponse(
         statusCode: response.statusCode,
         data: data,
+        taskId: taskId,
+        occurrenceId: occurrenceId,
       );
       return data;
     } on DioException catch (e) {
@@ -294,6 +300,7 @@ class EmployeeTasksDatasource {
     String? occurrenceId,
     String? rejectionNotes,
     String? employeeNotes,
+    String? adminNotes,
   }) async {
     try {
       final response = await api.post(
@@ -305,6 +312,7 @@ class EmployeeTasksDatasource {
             'employee_task_id': taskId,
           if (rejectionNotes != null) 'rejection_notes': rejectionNotes,
           if (employeeNotes != null) 'employee_notes': employeeNotes,
+          if (adminNotes != null) 'admin_notes': adminNotes,
         },
       );
       return Map<String, dynamic>.from(response.data as Map);

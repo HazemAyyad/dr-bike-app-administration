@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../widgets/stock_products_fab.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
+import '../controllers/offer_packages_controller.dart';
 import '../controllers/stock_controller.dart';
 import '../widgets/archive_dialog.dart';
 import '../widgets/stock_search_bar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../widgets/grid_view_items.dart';
+import '../widgets/stock_product_selection_bar.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class StockScreen extends GetView<StockController> {
@@ -23,39 +25,17 @@ class StockScreen extends GetView<StockController> {
       appBar: CustomAppBar(
         title: 'stock',
         actions: [
-          if (userType == 'admin') ...[
-            Obx(
-              () => IconButton(
-                icon: controller.isProductsCsvBusy.value
-                    ? SizedBox(
-                        width: 20.w,
-                        height: 20.w,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.file_download_outlined),
-                tooltip: 'exportProducts'.tr,
-                onPressed: controller.isProductsCsvBusy.value
-                    ? null
-                    : controller.exportProductsCsv,
-              ),
-            ),
-            Obx(
-              () => IconButton(
-                icon: const Icon(Icons.file_upload_outlined),
-                tooltip: 'importProducts'.tr,
-                onPressed: controller.isProductsCsvBusy.value
-                    ? null
-                    : controller.importProductsCsv,
-              ),
-            ),
-          ],
           IconButton(
-            icon: const Icon(Icons.local_offer_outlined),
-            tooltip: 'offerPackages'.tr,
-            onPressed: () => Get.toNamed(AppRoutes.OFFERPACKAGESSCREEN),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'stockInventorySettings'.tr,
+            onPressed: () async {
+              await Get.toNamed(AppRoutes.STOCKINVENTORYSETTINGSSCREEN);
+              await controller.refreshAfterStoreSectionsChanged();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.archive_outlined),
+            tooltip: 'archive'.tr,
             onPressed: () {
               controller.getArchived();
               Get.dialog(const ArchiveDialog());
@@ -83,7 +63,8 @@ class StockScreen extends GetView<StockController> {
                 ),
                 SliverToBoxAdapter(
                   child: Obx(() {
-                    if (controller.currentTab.value == 3) {
+                    final tab = controller.currentTab.value;
+                    if (tab == 3 || tab == 4) {
                       return const SizedBox.shrink();
                     }
                     return Padding(
@@ -129,23 +110,37 @@ class StockScreen extends GetView<StockController> {
           ),
         ],
       ),
-      floatingActionButton: CustomFloatingActionButton(
-        isAddMenuOpen: controller.isAddMenuOpen,
-        onTap: controller.toggleAddMenu,
-        sizeAnimation: controller.sizeAnimation,
-        opacityAnimation: controller.opacityAnimation,
-        addList: controller.addList,
-        customWidget: BuildAddMenuItem(
-          title: 'addProduct',
-          iconAsset: AssetsManager.invoiceIcon,
-          route: '',
-          onTap: () {
-            controller.toggleAddMenu();
-            controller.prepareCreateProduct();
-            Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
-          },
-        ),
-      ),
+      bottomNavigationBar: const StockProductSelectionBar(),
+      floatingActionButton: Obx(() {
+        if (controller.currentTab.value == 4) {
+          return FloatingActionButton(
+            onPressed: () {
+              Get.find<OfferPackagesController>().prepareCreate();
+              Get.toNamed(AppRoutes.ADDEDITOFFERPACKAGESCREEN);
+            },
+            backgroundColor: AppColors.secondaryColor,
+            foregroundColor: Colors.white,
+            elevation: 2,
+            child: const Icon(Icons.add),
+          );
+        }
+        return StockProductsFab(
+          isAddMenuOpen: controller.isAddMenuOpen,
+          onTap: controller.toggleAddMenu,
+          sizeAnimation: controller.sizeAnimation,
+          opacityAnimation: controller.opacityAnimation,
+          customWidget: BuildAddMenuItem(
+            title: 'addProduct',
+            iconAsset: AssetsManager.invoiceIcon,
+            route: '',
+            onTap: () {
+              controller.toggleAddMenu();
+              controller.prepareCreateProduct();
+              Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
+            },
+          ),
+        );
+      }),
     );
   }
 }

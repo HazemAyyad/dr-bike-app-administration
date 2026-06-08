@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../services/banks_service.dart';
+import '../utils/app_colors.dart';
 import 'custom_text_field.dart';
 
 class BankNameField extends StatefulWidget {
@@ -14,12 +15,17 @@ class BankNameField extends StatefulWidget {
     required this.focusNode,
     this.onSubmitted,
     this.isRequired = true,
+    this.plainStyle = false,
+    this.decoration,
   }) : super(key: key);
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback? onSubmitted;
   final bool isRequired;
+  /// نفس شكل [_PlainTextField] في شاشة قبض الشيكات.
+  final bool plainStyle;
+  final InputDecoration? decoration;
 
   @override
   State<BankNameField> createState() => _BankNameFieldState();
@@ -164,19 +170,55 @@ class _BankNameFieldState extends State<BankNameField> {
     widget.onSubmitted?.call();
   }
 
+  InputDecoration _plainBankDecoration() {
+    return widget.decoration ??
+        InputDecoration(
+          labelText: 'bankName'.tr,
+          hintText: 'bankNameExample'.tr,
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 11.h),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: AppColors.primaryColor, width: 1.4),
+          ),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,
-      child: CustomTextField(
-        label: 'bankName',
-        hintText: 'bankNameExample',
-        controller: widget.controller,
-        focusNode: widget.focusNode,
-        textInputAction: TextInputAction.next,
-        isRequired: widget.isRequired,
-        onFieldSubmitted: _handleSubmit,
-      ),
+      child: widget.plainStyle
+          ? TextFormField(
+              controller: widget.controller,
+              focusNode: widget.focusNode,
+              textInputAction: TextInputAction.next,
+              decoration: _plainBankDecoration(),
+              validator: widget.isRequired
+                  ? (v) =>
+                      v == null || v.trim().isEmpty ? 'bankName'.tr : null
+                  : null,
+              onFieldSubmitted: _handleSubmit,
+            )
+          : CustomTextField(
+              label: 'bankName',
+              hintText: 'bankNameExample',
+              controller: widget.controller,
+              focusNode: widget.focusNode,
+              textInputAction: TextInputAction.next,
+              isRequired: widget.isRequired,
+              onFieldSubmitted: _handleSubmit,
+            ),
     );
   }
 }

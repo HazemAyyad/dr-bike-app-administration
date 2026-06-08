@@ -15,7 +15,8 @@ class EmployeeSelectorField extends GetView<CreateTaskController> {
   Widget build(BuildContext context) {
     return Obx(() {
       final employees = controller.employeeService.employeeList;
-      final selectedCount = controller.selectedEmployeeIds.length;
+      final selectedIds = controller.selectedEmployeeIds.toList();
+      final selectedCount = selectedIds.length;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,8 +65,7 @@ class EmployeeSelectorField extends GetView<CreateTaskController> {
                 itemBuilder: (context, index) {
                   final emp = employees[index];
                   final id = emp.id.toString();
-                  final selected =
-                      controller.selectedEmployeeIds.contains(id);
+                  final selected = selectedIds.contains(id);
                   return _EmployeeAvatarTile(
                     name: emp.employeeName,
                     imageUrl: emp.employeeImg,

@@ -7,6 +7,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import 'product_card.dart';
+import 'stock_product_grid_layout.dart';
 
 class SearchWidget extends GetView<StockController> {
   const SearchWidget({
@@ -106,21 +107,23 @@ class SearchWidget extends GetView<StockController> {
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             final product = controller.searchProducts[index];
-                            return BuildProductCard(
-                              product: product,
-                              isCloseouts: isCloseouts,
-                              newComposition: newComposition,
-                              productIdController: productIdController,
-                              productNameController: productNameController,
+                            return Align(
+                              alignment: Alignment.topCenter,
+                              child: BuildProductCard(
+                                product: product,
+                                isCloseouts: isCloseouts,
+                                newComposition: newComposition,
+                                productIdController: productIdController,
+                                productNameController: productNameController,
+                              ),
                             );
                           },
                           childCount: controller.searchProducts.length,
                         ),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 10.w,
-                          mainAxisSpacing: 10.h,
-                          childAspectRatio: 0.73,
+                        gridDelegate:
+                            StockProductGridLayout.delegate(
+                          aspectRatio:
+                              StockProductGridLayout.aspectRatioForTab(0),
                         ),
                       ),
                     );

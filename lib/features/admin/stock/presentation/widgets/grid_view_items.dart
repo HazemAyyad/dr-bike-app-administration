@@ -5,16 +5,23 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../controllers/stock_controller.dart';
 import 'product_card.dart';
-import 'stock_tags_tab.dart';
+import 'stock_product_grid_layout.dart';
+import 'stock_location_tab.dart';
+import 'stock_offer_packages_tab.dart';
 
 class GridViewItems extends GetView<StockController> {
   const GridViewItems({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      if (controller.currentTab.value == 4) {
+        return const SliverToBoxAdapter(
+          child: StockOfferPackagesTab(),
+        );
+      }
       if (controller.currentTab.value == 3) {
         return const SliverToBoxAdapter(
-          child: StockTagsTab(),
+          child: StockLocationTab(),
         );
       }
 
@@ -48,25 +55,26 @@ class GridViewItems extends GetView<StockController> {
                         ? controller.allClearances
                         : controller.allCombinations;
 
-                final aspectRatio = controller.currentTab.value == 0
-                    ? 0.73
-                    : 0.68;
+                final aspectRatio =
+                    StockProductGridLayout.aspectRatioForTab(
+                        controller.currentTab.value);
 
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 10.w,
-                    mainAxisSpacing: 10.h,
-                    childAspectRatio: aspectRatio,
+                  gridDelegate:
+                      StockProductGridLayout.delegate(
+                    aspectRatio: aspectRatio,
                   ),
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     final product = items[index];
-                    return BuildProductCard(
-                      product: product,
-                      isCloseouts: false,
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: BuildProductCard(
+                        product: product,
+                        isCloseouts: false,
+                      ),
                     );
                   },
                 );

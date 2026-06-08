@@ -112,6 +112,7 @@ class EmployeeDashbordDatasource {
     required int taskId,
     bool isOccurrence = false,
     int? occurrenceId,
+    String? taskDate,
   }) async {
     try {
       final String endpoint;
@@ -128,7 +129,10 @@ class EmployeeDashbordDatasource {
         data = {'occurrence_id': occurrenceId};
       } else {
         endpoint = EndPoints.changeEmployeeTaskToCompleted;
-        data = {'employee_task_id': taskId};
+        data = {
+          'employee_task_id': taskId,
+          if (taskDate != null && taskDate.isNotEmpty) 'task_date': taskDate,
+        };
       }
 
       final response = await api.post(endpoint, data: data);

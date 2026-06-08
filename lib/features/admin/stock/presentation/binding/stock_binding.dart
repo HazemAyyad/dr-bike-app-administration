@@ -13,7 +13,8 @@ import '../../domain/usecases/get_product_size_options_usecase.dart';
 import '../../domain/usecases/move_to_archive_usecase.dart';
 import '../../domain/usecases/save_product_full_usecase.dart';
 import '../../domain/usecases/search_products_usecase.dart';
-import '../../domain/stock_tags_interactor.dart';
+import '../../domain/stock_location_interactor.dart';
+import '../controllers/offer_packages_controller.dart';
 import '../controllers/stock_controller.dart';
 
 class StockBinding extends Bindings {
@@ -21,9 +22,20 @@ class StockBinding extends Bindings {
   void dependencies() {
     AppDependencyRegistry.ensureStock();
 
-    if (!Get.isRegistered<StockTagsInteractor>()) {
-      Get.lazyPut<StockTagsInteractor>(
-        () => StockTagsInteractor(Get.find<StockDatasource>()),
+    if (!Get.isRegistered<OfferPackagesController>()) {
+      Get.lazyPut<OfferPackagesController>(
+        () => OfferPackagesController(
+          stockDatasource: Get.find<StockDatasource>(),
+          searchProductsUsecase: SearchProductsUsecase(
+            stockRepository: Get.find<StockImplement>(),
+          ),
+        ),
+      );
+    }
+
+    if (!Get.isRegistered<StockLocationInteractor>()) {
+      Get.lazyPut<StockLocationInteractor>(
+        () => StockLocationInteractor(Get.find<StockDatasource>()),
       );
     }
     if (!Get.isRegistered<StockController>()) {
@@ -59,7 +71,7 @@ class StockBinding extends Bindings {
           getProductSizeOptionsUsecase: GetProductSizeOptionsUsecase(
             stockRepository: Get.find<StockImplement>(),
           ),
-          stockTagsInteractor: Get.find<StockTagsInteractor>(),
+          stockLocationInteractor: Get.find<StockLocationInteractor>(),
           stockDatasource: Get.find<StockDatasource>(),
         ),
       );

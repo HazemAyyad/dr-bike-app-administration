@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../stock/data/models/offer_package_model.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../widgets/new_instant_sale/instant_sale_package_card.dart';
+import '../widgets/sales_location_filter_fab.dart';
 import '../widgets/new_instant_sale/instant_sale_product_card.dart';
 
 /// شاشة اختيار المنتجات (سلة) قبل إتمام البيع الفوري.
@@ -39,6 +41,7 @@ class _InstantSaleProductPickerScreenState
       controller.getAllProducts();
     }
     controller.loadOfferPackagesForSale();
+    controller.ensurePickerStoreSectionsLoaded();
   }
 
   @override
@@ -59,106 +62,142 @@ class _InstantSaleProductPickerScreenState
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'instantSaleSearchProductsAndPackages'.tr,
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12.w,
-                  vertical: 10.h,
+          Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'instantSaleSearchProductsAndPackages'.tr,
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 10.h,
+                    ),
+                  ),
+                  onChanged: (v) =>
+                      controller.instantSaleProductSearch.value = v,
                 ),
               ),
-              onChanged: (v) => controller.instantSaleProductSearch.value = v,
-            ),
-          ),
-          Expanded(
-            child: Obx(() {
-              final _ = controller.productsListVersion.value;
-              final saving = controller.savingProductPrice.value;
-              final loading = controller.productsLoading.value;
+              Expanded(
+                child: Obx(() {
+                  final _ = controller.productsListVersion.value;
+                  final locationFilter =
+                      controller.pickerLocationSectionId.value;
+                  final saving = controller.savingProductPrice.value;
+                  final loading = controller.productsLoading.value;
 
-              if (loading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+                  if (loading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-              final packages = controller.filteredPackagesForPicker;
-              final products = controller.filteredProductsForPicker;
-              final total = controller.pickerGridItemCount;
+                  final hasLocationFilter = locationFilter != null &&
+                      locationFilter.isNotEmpty;
+                  final packages = hasLocationFilter
+                      ? <OfferPackageModel>[]
+                      : controller.filteredPackagesForPicker;
+                  final products = controller.filteredProductsForPicker;
+                  final total = packages.length + products.length;
 
-              if (total == 0) {
-                return Center(
-                  child: Text(
-                    'noData'.tr,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                );
-              }
-
-              return Stack(
-                children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final hGap = 6.w;
-                      final vGap = 6.h;
-                      final padH = 10.w;
-                      final gridW = constraints.maxWidth - padH * 2;
-                      final gridH = constraints.maxHeight;
-                      final cellW = (gridW - hGap * (_visibleColumns - 1)) /
-                          _visibleColumns;
-                      final cellH = (gridH - vGap * (_rows - 1)) / _rows;
-                      final aspectRatio = cellH / cellW;
-
-                      return GridView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.symmetric(horizontal: padH),
-                        gridDelegate:
-                            SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: _rows,
-                          mainAxisSpacing: hGap,
-                          crossAxisSpacing: vGap,
-                          childAspectRatio: aspectRatio,
-                        ),
-                        itemCount: total,
-                        itemBuilder: (_, i) {
-                          if (i < packages.length) {
-                            final pkg = packages[i];
-                            return InstantSalePackageCard(
-                              key: ValueKey('picker_pkg_${pkg.id}'),
-                              package: pkg,
-                            );
-                          }
-                          final product = products[i - packages.length];
-                          return InstantSaleProductCard(
-                            key: ValueKey('picker_${product.id}'),
-                            product: product,
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  if (saving)
-                    Positioned.fill(
-                      child: ColoredBox(
-                        color: Colors.white.withValues(alpha: 0.65),
-                        child: const Center(
-                          child: CircularProgressIndicator(),
+                  if (total == 0) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24.w),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              hasLocationFilter
+                                  ? 'noProductsInLocation'.tr
+                                  : 'noData'.tr,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            if (hasLocationFilter) ...[
+                              SizedBox(height: 12.h),
+                              TextButton.icon(
+                                onPressed: controller.clearPickerLocationFilter,
+                                icon: const Icon(Icons.filter_alt_off_outlined),
+                                label: Text('clearFilters'.tr),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ),
-                ],
-              );
-            }),
+                    );
+                  }
+
+                  return Stack(
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final hGap = 6.w;
+                          final vGap = 6.h;
+                          final padH = 10.w;
+                          final gridW = constraints.maxWidth - padH * 2;
+                          final gridH = constraints.maxHeight;
+                          final cellW =
+                              (gridW - hGap * (_visibleColumns - 1)) /
+                                  _visibleColumns;
+                          final cellH = (gridH - vGap * (_rows - 1)) / _rows;
+                          final aspectRatio = cellH / cellW;
+
+                          return GridView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: EdgeInsets.symmetric(horizontal: padH),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: _rows,
+                              mainAxisSpacing: hGap,
+                              crossAxisSpacing: vGap,
+                              childAspectRatio: aspectRatio,
+                            ),
+                            itemCount: total,
+                            itemBuilder: (_, i) {
+                              if (i < packages.length) {
+                                final pkg = packages[i];
+                                return InstantSalePackageCard(
+                                  key: ValueKey('picker_pkg_${pkg.id}'),
+                                  package: pkg,
+                                );
+                              }
+                              final product = products[i - packages.length];
+                              return InstantSaleProductCard(
+                                key: ValueKey('picker_${product.id}'),
+                                product: product,
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      if (saving)
+                        Positioned.fill(
+                          child: ColoredBox(
+                            color: Colors.white.withValues(alpha: 0.65),
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                }),
+              ),
+            ],
+          ),
+          Positioned(
+            right: 16.w,
+            bottom: 12.h,
+            child: const SalesLocationFilterFab(),
           ),
         ],
       ),
@@ -306,7 +345,7 @@ class _CartAppBarButton extends StatelessWidget {
     final controller = Get.find<SalesController>();
     return Obx(() {
       final _ = controller.cartRevision.value;
-      final __ = controller.selectedPackageId.value;
+      controller.selectedPackageId.value;
       final n = controller.pickerSelectionCount;
       final packageOnly = controller.hasSelectedPackage && n == 1;
       return IconButton(

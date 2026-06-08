@@ -3,7 +3,8 @@ class StockProductFilters {
     this.search,
     this.categoryId,
     this.subCategoryId,
-    this.tagId,
+    this.storeSectionId,
+    this.shelfNumber,
     this.dateFrom,
     this.dateTo,
     this.sortBy = 'created_at',
@@ -13,7 +14,8 @@ class StockProductFilters {
   final String? search;
   final String? categoryId;
   final String? subCategoryId;
-  final String? tagId;
+  final String? storeSectionId;
+  final String? shelfNumber;
   final DateTime? dateFrom;
   final DateTime? dateTo;
   final String sortBy;
@@ -25,7 +27,8 @@ class StockProductFilters {
       (search != null && search!.trim().isNotEmpty) ||
       (categoryId != null && categoryId!.isNotEmpty) ||
       (subCategoryId != null && subCategoryId!.isNotEmpty) ||
-      (tagId != null && tagId!.isNotEmpty) ||
+      (storeSectionId != null && storeSectionId!.isNotEmpty) ||
+      (shelfNumber != null && shelfNumber!.isNotEmpty) ||
       dateFrom != null ||
       dateTo != null ||
       sortBy != 'created_at' ||
@@ -36,7 +39,8 @@ class StockProductFilters {
     var n = 0;
     if (categoryId != null && categoryId!.isNotEmpty) n++;
     if (subCategoryId != null && subCategoryId!.isNotEmpty) n++;
-    if (tagId != null && tagId!.isNotEmpty) n++;
+    if (storeSectionId != null && storeSectionId!.isNotEmpty) n++;
+    if (shelfNumber != null && shelfNumber!.isNotEmpty) n++;
     if (dateFrom != null) n++;
     if (dateTo != null) n++;
     if (sortBy != 'created_at') n++;
@@ -48,7 +52,8 @@ class StockProductFilters {
     String? search,
     String? categoryId,
     String? subCategoryId,
-    String? tagId,
+    String? storeSectionId,
+    String? shelfNumber,
     DateTime? dateFrom,
     DateTime? dateTo,
     String? sortBy,
@@ -56,7 +61,8 @@ class StockProductFilters {
     bool clearSearch = false,
     bool clearCategoryId = false,
     bool clearSubCategoryId = false,
-    bool clearTagId = false,
+    bool clearStoreSectionId = false,
+    bool clearShelfNumber = false,
     bool clearDateFrom = false,
     bool clearDateTo = false,
   }) {
@@ -65,7 +71,11 @@ class StockProductFilters {
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
       subCategoryId:
           clearSubCategoryId ? null : (subCategoryId ?? this.subCategoryId),
-      tagId: clearTagId ? null : (tagId ?? this.tagId),
+      storeSectionId: clearStoreSectionId
+          ? null
+          : (storeSectionId ?? this.storeSectionId),
+      shelfNumber:
+          clearShelfNumber ? null : (shelfNumber ?? this.shelfNumber),
       dateFrom: clearDateFrom ? null : (dateFrom ?? this.dateFrom),
       dateTo: clearDateTo ? null : (dateTo ?? this.dateTo),
       sortBy: sortBy ?? this.sortBy,
@@ -88,7 +98,12 @@ class StockProductFilters {
     if (subCategoryId != null && subCategoryId!.isNotEmpty) {
       params['sub_category_id'] = subCategoryId;
     }
-    if (tagId != null && tagId!.isNotEmpty) params['tag_id'] = tagId;
+    if (storeSectionId != null && storeSectionId!.isNotEmpty) {
+      params['store_section_id'] = storeSectionId;
+    }
+    if (shelfNumber != null && shelfNumber!.isNotEmpty) {
+      params['shelf_number'] = shelfNumber;
+    }
     if (dateFrom != null) {
       params['date_from'] = formatDate(dateFrom!);
     }

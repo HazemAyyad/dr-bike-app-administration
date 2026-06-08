@@ -10,6 +10,20 @@ import '../controllers/my_attendance_history_controller.dart';
 class MyAttendanceHistoryScreen extends GetView<MyAttendanceHistoryController> {
   const MyAttendanceHistoryScreen({Key? key}) : super(key: key);
 
+  bool _rangeIncludesToday(MyAttendanceHistoryController c) {
+    final now = DateTime.now();
+    final from = DateTime(c.fromDate.year, c.fromDate.month, c.fromDate.day);
+    final to = DateTime(
+      c.toDate.year,
+      c.toDate.month,
+      c.toDate.day,
+      23,
+      59,
+      59,
+    );
+    return !now.isBefore(from) && !now.isAfter(to);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,13 +45,21 @@ class MyAttendanceHistoryScreen extends GetView<MyAttendanceHistoryController> {
           return const Center(child: CircularProgressIndicator());
         }
         final data = controller.result.value;
-        if (data == null || data.days.isEmpty) {
+        if (data == null) {
+          return Center(child: Text('noData'.tr));
+        }
+        final includesToday = _rangeIncludesToday(controller);
+        final hasContent = data.days.isNotEmpty ||
+            data.monthlySummary != null ||
+            includesToday;
+        if (!hasContent) {
           return Center(child: Text('noData'.tr));
         }
         return AttendanceHistoryBody(
           employee: data.employee,
           monthlySummary: data.monthlySummary,
           days: data.days,
+          showTodaySummary: includesToday,
           headerExtra: Padding(
             padding: EdgeInsets.only(bottom: 12.h),
             child: Text(

@@ -33,17 +33,25 @@ class EmployeeAttendanceHead {
 
 class EmployeeAttendanceScanRow {
   final DateTime at;
+  final DateTime? serverAt;
+  final String? source;
   final String direction;
 
   const EmployeeAttendanceScanRow({
     required this.at,
+    required this.serverAt,
+    required this.source,
     required this.direction,
   });
 
   factory EmployeeAttendanceScanRow.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
     return EmployeeAttendanceScanRow(
-      at: parseApiDateTime(j['at']),
+      at: parseApiDateTime(j['device_at'] ?? j['at']),
+      serverAt: j['server_at'] == null
+          ? null
+          : parseApiDateTime(j['server_at']),
+      source: asNullableString(j['source']),
       direction: asString(j['direction']),
     );
   }
@@ -52,12 +60,16 @@ class EmployeeAttendanceScanRow {
 class EmployeeAttendanceSegmentRow {
   final DateTime? checkInAt;
   final DateTime? checkOutAt;
+  final DateTime? checkInServerAt;
+  final DateTime? checkOutServerAt;
   final int? workedMinutes;
   final bool open;
 
   const EmployeeAttendanceSegmentRow({
     required this.checkInAt,
     required this.checkOutAt,
+    required this.checkInServerAt,
+    required this.checkOutServerAt,
     required this.workedMinutes,
     required this.open,
   });
@@ -69,6 +81,12 @@ class EmployeeAttendanceSegmentRow {
           j['check_in_at'] == null ? null : parseApiDateTime(j['check_in_at']),
       checkOutAt:
           j['check_out_at'] == null ? null : parseApiDateTime(j['check_out_at']),
+      checkInServerAt: j['check_in_server_at'] == null
+          ? null
+          : parseApiDateTime(j['check_in_server_at']),
+      checkOutServerAt: j['check_out_server_at'] == null
+          ? null
+          : parseApiDateTime(j['check_out_server_at']),
       workedMinutes: j['worked_minutes'] == null
           ? null
           : asInt(j['worked_minutes']),
@@ -81,7 +99,11 @@ class EmployeeAttendanceDay {
   final String date;
   final String? source; // qr|fingerprint|manual (nullable for backward compatibility)
   final DateTime? firstCheckIn;
+  final DateTime? firstCheckInServer;
+  final String? firstCheckInSource;
   final DateTime? lastCheckOut;
+  final DateTime? lastCheckOutServer;
+  final String? lastCheckOutSource;
   final bool currentlyIn;
   final int workedMinutes;
   final int awayMinutes;
@@ -104,7 +126,11 @@ class EmployeeAttendanceDay {
     required this.date,
     required this.source,
     required this.firstCheckIn,
+    required this.firstCheckInServer,
+    required this.firstCheckInSource,
     required this.lastCheckOut,
+    required this.lastCheckOutServer,
+    required this.lastCheckOutSource,
     required this.currentlyIn,
     required this.workedMinutes,
     required this.awayMinutes,
@@ -136,9 +162,17 @@ class EmployeeAttendanceDay {
       firstCheckIn: j['first_check_in'] == null
           ? null
           : parseApiDateTime(j['first_check_in']),
+      firstCheckInServer: j['first_check_in_server'] == null
+          ? null
+          : parseApiDateTime(j['first_check_in_server']),
+      firstCheckInSource: asNullableString(j['first_check_in_source']),
       lastCheckOut: j['last_check_out'] == null
           ? null
           : parseApiDateTime(j['last_check_out']),
+      lastCheckOutServer: j['last_check_out_server'] == null
+          ? null
+          : parseApiDateTime(j['last_check_out_server']),
+      lastCheckOutSource: asNullableString(j['last_check_out_source']),
       currentlyIn: asBool(j['currently_in']),
       workedMinutes: asInt(j['worked_minutes']),
       awayMinutes: asInt(j['away_minutes']),
