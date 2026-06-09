@@ -8,6 +8,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../domain/stock_product_filters.dart';
 import '../controllers/stock_controller.dart';
+import 'section_shelf_picker_field.dart';
 
 class StockFilterSheet extends StatefulWidget {
   const StockFilterSheet({Key? key}) : super(key: key);
@@ -18,6 +19,7 @@ class StockFilterSheet extends StatefulWidget {
 
 class _StockFilterSheetState extends State<StockFilterSheet> {
   final StockController controller = Get.find<StockController>();
+  final TextEditingController _shelfCtrl = TextEditingController();
 
   String? categoryId;
   String? subCategoryId;
@@ -35,6 +37,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
     subCategoryId = f.subCategoryId;
     storeSectionId = f.storeSectionId;
     shelfNumber = f.shelfNumber;
+    _shelfCtrl.text = shelfNumber ?? '';
     dateFrom = f.dateFrom;
     dateTo = f.dateTo;
     if (f.sortBy == 'name') {
@@ -48,6 +51,12 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
       controller.getCategories();
     }
     controller.ensureStoreSectionsLoaded();
+  }
+
+  @override
+  void dispose() {
+    _shelfCtrl.dispose();
+    super.dispose();
   }
 
   List<ProductModel> get _subcategoriesForCategory {
@@ -165,23 +174,18 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
                 onChanged: (v) => setState(() {
                   storeSectionId = v;
                   shelfNumber = null;
+                  _shelfCtrl.clear();
                 }),
               ),
             ),
             if (storeSectionId != null && storeSectionId!.isNotEmpty) ...[
               SizedBox(height: 12.h),
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'shelfNumber'.tr,
-                  filled: true,
-                  fillColor: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-                onChanged: (v) => setState(() => shelfNumber = v.trim()),
+              SectionShelfPickerField(
+                sectionId: storeSectionId,
+                controller: _shelfCtrl,
+                required: false,
+                label: 'shelfNumber'.tr,
+                onChanged: (v) => setState(() => shelfNumber = v),
               ),
             ],
             SizedBox(height: 12.h),

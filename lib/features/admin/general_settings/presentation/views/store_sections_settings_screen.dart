@@ -147,85 +147,72 @@ class _StoreSectionsSettingsScreenState
                   ),
                 )
               : ListView.separated(
-                  padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 88.h),
+                  padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 88.h),
                   itemCount: _sections.length,
-                  separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                  separatorBuilder: (_, __) => SizedBox(height: 6.h),
                   itemBuilder: (context, index) {
                     final section = _sections[index];
                     final desc = section.description?.trim() ?? '';
                     return Material(
                       color: AdminUiColors.cardBackground(context),
-                      borderRadius: BorderRadius.circular(14.r),
+                      borderRadius: BorderRadius.circular(12.r),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(14.r),
+                        borderRadius: BorderRadius.circular(12.r),
                         onTap: () => Get.to(
                           () => SectionShelvesSettingsScreen(section: section),
                         ),
                         child: Padding(
-                          padding: EdgeInsets.all(14.w),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 8.h,
+                          ),
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                width: 44.w,
-                                height: 44.w,
+                                width: 32.w,
+                                height: 32.w,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF0369A1)
                                       .withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(12.r),
+                                  borderRadius: BorderRadius.circular(8.r),
                                 ),
                                 child: Icon(
                                   Icons.place_outlined,
                                   color: const Color(0xFF0369A1),
-                                  size: 22.sp,
+                                  size: 17.sp,
                                 ),
                               ),
-                              SizedBox(width: 12.w),
+                              SizedBox(width: 10.w),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
                                       section.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontSize: 15.sp,
+                                        fontSize: 13.5.sp,
                                         fontWeight: FontWeight.w700,
+                                        height: 1.2,
                                       ),
                                     ),
-                                    if (desc.isNotEmpty) ...[
-                                      SizedBox(height: 4.h),
-                                      Text(
-                                        desc,
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.65),
-                                          height: 1.35,
-                                        ),
-                                      ),
-                                    ] else ...[
-                                      SizedBox(height: 4.h),
-                                      Text(
-                                        'storeSectionNoDescription'.tr,
-                                        style: TextStyle(
-                                          fontSize: 12.sp,
-                                          color: Theme.of(context).hintColor,
-                                        ),
-                                      ),
-                                    ],
-                                    SizedBox(height: 6.h),
-                                    Row(
+                                    SizedBox(height: 3.h),
+                                    Wrap(
+                                      spacing: 4.w,
+                                      runSpacing: 2.h,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
                                       children: [
                                         _SectionStatChip(
                                           icon: Icons.inventory_2_outlined,
-                                          label: 'sectionStatProducts'.trParams({
+                                          label:
+                                              'sectionStatProducts'.trParams({
                                             'count':
                                                 section.productCount.toString(),
                                           }),
                                         ),
-                                        SizedBox(width: 6.w),
                                         _SectionStatChip(
                                           icon: Icons.view_week_outlined,
                                           label: 'sectionStatShelves'.trParams({
@@ -233,44 +220,56 @@ class _StoreSectionsSettingsScreenState
                                                 section.shelfCount.toString(),
                                           }),
                                         ),
+                                        if (!section.isActive)
+                                          Text(
+                                            'inactive'.tr,
+                                            style: TextStyle(
+                                              fontSize: 10.sp,
+                                              color: Colors.orange.shade700,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
                                       ],
                                     ),
-                                    if (!section.isActive) ...[
-                                      SizedBox(height: 4.h),
+                                    if (desc.isNotEmpty) ...[
+                                      SizedBox(height: 2.h),
                                       Text(
-                                        'inactive'.tr,
+                                        desc,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           fontSize: 11.sp,
-                                          color: Colors.orange.shade700,
-                                          fontWeight: FontWeight.w600,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.55),
+                                          height: 1.2,
                                         ),
                                       ),
                                     ],
                                   ],
                                 ),
                               ),
-                              IconButton(
+                              _SectionActionIcon(
                                 tooltip: 'manageShelves'.tr,
+                                icon: Icons.view_week_outlined,
                                 onPressed: () => Get.to(
                                   () => SectionShelvesSettingsScreen(
                                     section: section,
                                   ),
                                 ),
-                                icon: const Icon(Icons.view_week_outlined),
                               ),
-                              IconButton(
+                              _SectionActionIcon(
                                 tooltip: 'edit'.tr,
+                                icon: Icons.edit_outlined,
                                 onPressed: () =>
                                     _showSectionDialog(section: section),
-                                icon: const Icon(Icons.edit_outlined),
                               ),
-                              IconButton(
+                              _SectionActionIcon(
                                 tooltip: 'delete'.tr,
+                                icon: Icons.delete_outline,
+                                color: Colors.red.shade700,
                                 onPressed: () => _confirmDelete(section),
-                                icon: Icon(
-                                  Icons.delete_outline,
-                                  color: Colors.red.shade700,
-                                ),
                               ),
                             ],
                           ),
@@ -279,6 +278,33 @@ class _StoreSectionsSettingsScreenState
                     );
                   },
                 ),
+    );
+  }
+}
+
+class _SectionActionIcon extends StatelessWidget {
+  const _SectionActionIcon({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+    this.color,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.w),
+      iconSize: 18.sp,
+      icon: Icon(icon, color: color),
     );
   }
 }
@@ -295,22 +321,23 @@ class _SectionStatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
       decoration: BoxDecoration(
         color: const Color(0xFF0369A1).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(6.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13.sp, color: const Color(0xFF0369A1)),
-          SizedBox(width: 4.w),
+          Icon(icon, size: 11.sp, color: const Color(0xFF0369A1)),
+          SizedBox(width: 3.w),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10.sp,
+              fontSize: 9.sp,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF0369A1),
+              height: 1.1,
             ),
           ),
         ],

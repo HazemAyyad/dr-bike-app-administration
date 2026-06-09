@@ -275,12 +275,32 @@ class _ShelfFormDialogState extends State<_ShelfFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final dialogBg = Theme.of(context).brightness == Brightness.dark
+        ? AdminUiColors.cardBackground(context)
+        : Colors.grey.shade100;
+    final actionBg = Theme.of(context).brightness == Brightness.dark
+        ? Colors.grey.shade700
+        : Colors.grey.shade300;
+
     return AlertDialog(
-      backgroundColor: AdminUiColors.cardBackground(context),
-      title: Text(widget.title),
+      backgroundColor: dialogBg,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14.r),
+        side: BorderSide.none,
+      ),
+      title: Text(
+        widget.title,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: onSurface,
+            ),
+      ),
       content: TextField(
         controller: _numberCtrl,
         autofocus: true,
+        style: TextStyle(color: onSurface),
         decoration: OutlineInputStyle.merge(
           context,
           labelText: 'shelfNumberRequired'.tr,
@@ -289,10 +309,16 @@ class _ShelfFormDialogState extends State<_ShelfFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Get.back(),
+          style: TextButton.styleFrom(foregroundColor: onSurface),
           child: Text('cancel'.tr),
         ),
         FilledButton(
           onPressed: () => Get.back(result: _numberCtrl.text),
+          style: FilledButton.styleFrom(
+            backgroundColor: actionBg,
+            foregroundColor: onSurface,
+            elevation: 0,
+          ),
           child: Text('save'.tr),
         ),
       ],

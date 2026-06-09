@@ -8,6 +8,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import 'product_location_badge.dart';
+import 'section_shelf_picker_field.dart';
 
 Future<void> showCreateStoreSectionDialog() async {
   final controller = Get.find<StockController>();
@@ -202,15 +203,14 @@ Future<void> showStoreLocationPickerSheet(BuildContext context) async {
                 onChanged: controller.setProductStoreSection,
               ),
               SizedBox(height: 12.h),
-              TextField(
+              SectionShelfPickerField(
+                sectionId: controller.selectedProductStoreSectionId.value,
                 controller: controller.shelfNumberController,
-                decoration: OutlineInputStyle.merge(
-                  context,
-                  labelText: 'shelfNumber'.tr,
-                  hintText: 'shelfNumberExample'.tr,
-                ),
+                useOutlineStyle: true,
+                required: false,
+                label: 'shelfNumber'.tr,
                 onChanged: (v) {
-                  controller.editProductShelfNumber.value = v;
+                  controller.editProductShelfNumber.value = v ?? '';
                   controller.update();
                 },
               ),

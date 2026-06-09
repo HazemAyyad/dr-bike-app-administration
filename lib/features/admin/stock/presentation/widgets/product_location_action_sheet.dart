@@ -6,6 +6,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/store_section_model.dart';
 import '../../domain/product_location_utils.dart';
 import 'product_location_modal_shell.dart';
+import 'section_shelf_picker_field.dart';
 
 enum ProductLocationAction { move, swap }
 
@@ -106,9 +107,7 @@ Widget _sectionShelfPicker({
   required ValueChanged<String?> onSectionChanged,
   required TextEditingController shelfCtrl,
   required List<StoreSectionModel> sections,
-  required List<String> existingShelves,
-  required bool loadingShelves,
-  VoidCallback? onShelfChanged,
+  ValueChanged<String?>? onShelfChanged,
 }) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,45 +135,11 @@ Widget _sectionShelfPicker({
         onChanged: onSectionChanged,
       ),
       SizedBox(height: 10.h),
-      if (loadingShelves)
-        const Center(child: CircularProgressIndicator(strokeWidth: 2))
-      else if (existingShelves.isNotEmpty) ...[
-        Text(
-          'selectTargetShelf'.tr,
-          style: TextStyle(fontSize: 11.sp, color: AppColors.customGreyColor5),
-        ),
-        SizedBox(height: 6.h),
-        Wrap(
-          spacing: 6.w,
-          runSpacing: 6.h,
-          children: existingShelves
-              .map(
-                (s) => ActionChip(
-                  label: Text(s, style: TextStyle(color: AppColors.operationalNavy, fontSize: 11.sp)),
-                  backgroundColor: AppColors.whiteColor,
-                  side: const BorderSide(color: AppColors.operationalCardBorder),
-                  onPressed: () {
-                    shelfCtrl.text = s;
-                    onShelfChanged?.call();
-                  },
-                ),
-              )
-              .toList(),
-        ),
-        SizedBox(height: 8.h),
-      ],
-      TextField(
+      SectionShelfPickerField(
+        sectionId: selectedSectionId,
         controller: shelfCtrl,
-        onChanged: (_) => onShelfChanged?.call(),
-        style: TextStyle(color: AppColors.operationalNavy, fontSize: 13.sp),
-        decoration: InputDecoration(
-          labelText: 'shelfNumberRequired'.tr,
-          labelStyle: TextStyle(color: AppColors.customGreyColor5, fontSize: 12.sp),
-          border: const OutlineInputBorder(),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: AppColors.operationalCardBorder),
-          ),
-        ),
+        onChanged: onShelfChanged,
+        required: true,
       ),
     ],
   );
@@ -183,14 +148,12 @@ Widget _sectionShelfPicker({
 Future<ProductLocationMoveTarget?> showProductLocationMoveDialog({
   required BuildContext context,
   required List<StoreSectionModel> sections,
-  required Future<List<String>> Function(String sectionId) loadShelves,
 }) {
   return showDialog<ProductLocationMoveTarget>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => _ProductLocationMoveDialog(
       sections: sections,
-      loadShelves: loadShelves,
     ),
   );
 }
@@ -198,14 +161,12 @@ Future<ProductLocationMoveTarget?> showProductLocationMoveDialog({
 Future<SwapGroupTargets?> showSwapGroupTargetsDialog({
   required BuildContext context,
   required List<StoreSectionModel> sections,
-  required Future<List<String>> Function(String sectionId) loadShelves,
 }) async {
   return showDialog<SwapGroupTargets>(
     context: context,
     barrierDismissible: false,
     builder: (ctx) => _SwapGroupTargetsDialog(
       sections: sections,
-      loadShelves: loadShelves,
     ),
   );
 }
@@ -213,11 +174,9 @@ Future<SwapGroupTargets?> showSwapGroupTargetsDialog({
 class _ProductLocationMoveDialog extends StatefulWidget {
   const _ProductLocationMoveDialog({
     required this.sections,
-    required this.loadShelves,
   });
 
   final List<StoreSectionModel> sections;
-  final Future<List<String>> Function(String sectionId) loadShelves;
 
   @override
   State<_ProductLocationMoveDialog> createState() =>
@@ -227,49 +186,22 @@ class _ProductLocationMoveDialog extends StatefulWidget {
 class _ProductLocationMoveDialogState extends State<_ProductLocationMoveDialog> {
   String? _selectedSectionId;
   final _shelfCtrl = TextEditingController();
-  List<String> _existingShelves = [];
-  bool _loadingShelves = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _shelfCtrl.addListener(_refreshForm);
-  }
 
   @override
   void dispose() {
-    _shelfCtrl.removeListener(_refreshForm);
     _shelfCtrl.dispose();
     super.dispose();
   }
 
-  void _refreshForm() {
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _onSectionChanged(String? id) async {
+  void _onSectionChanged(String? id) {
     setState(() {
       _selectedSectionId = id;
-      _existingShelves = [];
-      _loadingShelves = id != null && id.isNotEmpty;
+      _shelfCtrl.clear();
     });
-    if (id == null || id.isEmpty) {
-      setState(() => _loadingShelves = false);
-      return;
-    }
-    try {
-      final shelves = await widget.loadShelves(id);
-      if (mounted) {
-        setState(() {
-          _existingShelves = shelves;
-          _loadingShelves = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _loadingShelves = false);
-      }
-    }
+  }
+
+  void _onShelfChanged(String? _) {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -301,9 +233,7 @@ class _ProductLocationMoveDialogState extends State<_ProductLocationMoveDialog> 
             onSectionChanged: _onSectionChanged,
             shelfCtrl: _shelfCtrl,
             sections: widget.sections,
-            existingShelves: _existingShelves,
-            loadingShelves: _loadingShelves,
-            onShelfChanged: _refreshForm,
+            onShelfChanged: _onShelfChanged,
           ),
         ],
       ),
@@ -314,11 +244,9 @@ class _ProductLocationMoveDialogState extends State<_ProductLocationMoveDialog> 
 class _SwapGroupTargetsDialog extends StatefulWidget {
   const _SwapGroupTargetsDialog({
     required this.sections,
-    required this.loadShelves,
   });
 
   final List<StoreSectionModel> sections;
-  final Future<List<String>> Function(String sectionId) loadShelves;
 
   @override
   State<_SwapGroupTargetsDialog> createState() => _SwapGroupTargetsDialogState();
@@ -329,28 +257,15 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
   String? _sectionIdB;
   final _shelfCtrlA = TextEditingController();
   final _shelfCtrlB = TextEditingController();
-  List<String> _shelvesA = [];
-  List<String> _shelvesB = [];
-  bool _loadingA = false;
-  bool _loadingB = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _shelfCtrlA.addListener(_refreshForm);
-    _shelfCtrlB.addListener(_refreshForm);
-  }
 
   @override
   void dispose() {
-    _shelfCtrlA.removeListener(_refreshForm);
-    _shelfCtrlB.removeListener(_refreshForm);
     _shelfCtrlA.dispose();
     _shelfCtrlB.dispose();
     super.dispose();
   }
 
-  void _refreshForm() {
+  void _onShelfChanged(String? _) {
     if (mounted) setState(() {});
   }
 
@@ -362,44 +277,18 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
     return id;
   }
 
-  Future<void> _loadShelvesFor(bool isA, String? id) async {
+  void _onSectionAChanged(String? id) {
     setState(() {
-      if (isA) {
-        _loadingA = id != null && id.isNotEmpty;
-        _shelvesA = [];
-      } else {
-        _loadingB = id != null && id.isNotEmpty;
-        _shelvesB = [];
-      }
+      _sectionIdA = id;
+      _shelfCtrlA.clear();
     });
-    if (id == null || id.isEmpty) {
-      setState(() {
-        if (isA) _loadingA = false;
-        if (!isA) _loadingB = false;
-      });
-      return;
-    }
-    try {
-      final shelves = await widget.loadShelves(id);
-      if (mounted) {
-        setState(() {
-          if (isA) {
-            _shelvesA = shelves;
-            _loadingA = false;
-          } else {
-            _shelvesB = shelves;
-            _loadingB = false;
-          }
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          if (isA) _loadingA = false;
-          if (!isA) _loadingB = false;
-        });
-      }
-    }
+  }
+
+  void _onSectionBChanged(String? id) {
+    setState(() {
+      _sectionIdB = id;
+      _shelfCtrlB.clear();
+    });
   }
 
   @override
@@ -458,15 +347,10 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
           SizedBox(height: 8.h),
           _sectionShelfPicker(
             selectedSectionId: _sectionIdA,
-            onSectionChanged: (id) {
-              setState(() => _sectionIdA = id);
-              _loadShelvesFor(true, id);
-            },
+            onSectionChanged: _onSectionAChanged,
             shelfCtrl: _shelfCtrlA,
             sections: widget.sections,
-            existingShelves: _shelvesA,
-            loadingShelves: _loadingA,
-            onShelfChanged: _refreshForm,
+            onShelfChanged: _onShelfChanged,
           ),
           SizedBox(height: 16.h),
           Text(
@@ -480,15 +364,10 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
           SizedBox(height: 8.h),
           _sectionShelfPicker(
             selectedSectionId: _sectionIdB,
-            onSectionChanged: (id) {
-              setState(() => _sectionIdB = id);
-              _loadShelvesFor(false, id);
-            },
+            onSectionChanged: _onSectionBChanged,
             shelfCtrl: _shelfCtrlB,
             sections: widget.sections,
-            existingShelves: _shelvesB,
-            loadingShelves: _loadingB,
-            onShelfChanged: _refreshForm,
+            onShelfChanged: _onShelfChanged,
           ),
         ],
       ),

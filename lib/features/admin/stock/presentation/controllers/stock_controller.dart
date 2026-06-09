@@ -331,7 +331,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final picked = await showProductLocationMoveDialog(
       context: context,
       sections: activeSections,
-      loadShelves: (id) => stockLocationInteractor.loadShelves(sectionId: id),
     );
     if (!context.mounted || picked == null) return;
     final products = getSelectedProductsList();
@@ -433,7 +432,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final swapTargets = await showSwapGroupTargetsDialog(
       context: ctx,
       sections: activeSections,
-      loadShelves: (id) => stockLocationInteractor.loadShelves(sectionId: id),
     );
     if (!ctx.mounted ||
         swapTargets == null ||
