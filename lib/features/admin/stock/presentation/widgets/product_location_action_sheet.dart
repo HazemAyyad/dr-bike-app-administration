@@ -6,7 +6,6 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/store_section_model.dart';
 import '../../domain/product_location_utils.dart';
 import 'product_location_modal_shell.dart';
-import 'section_shelf_picker_field.dart';
 
 enum ProductLocationAction { move, swap }
 
@@ -95,53 +94,37 @@ Future<ProductLocationAction?> showProductLocationActionSheet(
 class ProductLocationMoveTarget {
   const ProductLocationMoveTarget({
     required this.sectionId,
-    this.shelfNumber,
   });
 
   final String sectionId;
-  final String? shelfNumber;
 }
 
-Widget _sectionShelfPicker({
+Widget _sectionPicker({
   required String? selectedSectionId,
   required ValueChanged<String?> onSectionChanged,
-  required TextEditingController shelfCtrl,
   required List<StoreSectionModel> sections,
-  ValueChanged<String?>? onShelfChanged,
 }) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      DropdownButtonFormField<String>(
-        value: selectedSectionId,
-        decoration: InputDecoration(
-          labelText: 'selectTargetSection'.tr,
-          labelStyle: TextStyle(color: AppColors.customGreyColor5, fontSize: 12.sp),
-          border: const OutlineInputBorder(),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: AppColors.operationalCardBorder),
+  return DropdownButtonFormField<String>(
+    value: selectedSectionId,
+    decoration: InputDecoration(
+      labelText: 'selectTargetSection'.tr,
+      labelStyle: TextStyle(color: AppColors.customGreyColor5, fontSize: 12.sp),
+      border: const OutlineInputBorder(),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: AppColors.operationalCardBorder),
+      ),
+    ),
+    style: TextStyle(color: AppColors.operationalNavy, fontSize: 13.sp),
+    dropdownColor: AppColors.whiteColor,
+    items: sections
+        .map(
+          (s) => DropdownMenuItem<String>(
+            value: s.id,
+            child: Text(s.name, style: TextStyle(color: AppColors.operationalNavy)),
           ),
-        ),
-        style: TextStyle(color: AppColors.operationalNavy, fontSize: 13.sp),
-        dropdownColor: AppColors.whiteColor,
-        items: sections
-            .map(
-              (s) => DropdownMenuItem<String>(
-                value: s.id,
-                child: Text(s.name, style: TextStyle(color: AppColors.operationalNavy)),
-              ),
-            )
-            .toList(),
-        onChanged: onSectionChanged,
-      ),
-      SizedBox(height: 10.h),
-      SectionShelfPickerField(
-        sectionId: selectedSectionId,
-        controller: shelfCtrl,
-        onChanged: onShelfChanged,
-        required: true,
-      ),
-    ],
+        )
+        .toList(),
+    onChanged: onSectionChanged,
   );
 }
 
@@ -185,31 +168,15 @@ class _ProductLocationMoveDialog extends StatefulWidget {
 
 class _ProductLocationMoveDialogState extends State<_ProductLocationMoveDialog> {
   String? _selectedSectionId;
-  final _shelfCtrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _shelfCtrl.dispose();
-    super.dispose();
-  }
 
   void _onSectionChanged(String? id) {
-    setState(() {
-      _selectedSectionId = id;
-      _shelfCtrl.clear();
-    });
-  }
-
-  void _onShelfChanged(String? _) {
-    if (mounted) setState(() {});
+    setState(() => _selectedSectionId = id);
   }
 
   @override
   Widget build(BuildContext context) {
-    final shelf = _shelfCtrl.text.trim();
-    final canSubmit = _selectedSectionId != null &&
-        _selectedSectionId!.isNotEmpty &&
-        shelf.isNotEmpty;
+    final canSubmit =
+        _selectedSectionId != null && _selectedSectionId!.isNotEmpty;
 
     return ProductLocationModalShell(
       title: 'moveProductsTitle'.tr,
@@ -219,21 +186,16 @@ class _ProductLocationMoveDialogState extends State<_ProductLocationMoveDialog> 
       onConfirm: () {
         Navigator.pop(
           context,
-          ProductLocationMoveTarget(
-            sectionId: _selectedSectionId!,
-            shelfNumber: shelf,
-          ),
+          ProductLocationMoveTarget(sectionId: _selectedSectionId!),
         );
       },
       body: ListView(
         padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 12.h),
         children: [
-          _sectionShelfPicker(
+          _sectionPicker(
             selectedSectionId: _selectedSectionId,
             onSectionChanged: _onSectionChanged,
-            shelfCtrl: _shelfCtrl,
             sections: widget.sections,
-            onShelfChanged: _onShelfChanged,
           ),
         ],
       ),
@@ -255,19 +217,6 @@ class _SwapGroupTargetsDialog extends StatefulWidget {
 class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
   String? _sectionIdA;
   String? _sectionIdB;
-  final _shelfCtrlA = TextEditingController();
-  final _shelfCtrlB = TextEditingController();
-
-  @override
-  void dispose() {
-    _shelfCtrlA.dispose();
-    _shelfCtrlB.dispose();
-    super.dispose();
-  }
-
-  void _onShelfChanged(String? _) {
-    if (mounted) setState(() {});
-  }
 
   String _nameFor(String? id) {
     if (id == null) return '';
@@ -278,29 +227,19 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
   }
 
   void _onSectionAChanged(String? id) {
-    setState(() {
-      _sectionIdA = id;
-      _shelfCtrlA.clear();
-    });
+    setState(() => _sectionIdA = id);
   }
 
   void _onSectionBChanged(String? id) {
-    setState(() {
-      _sectionIdB = id;
-      _shelfCtrlB.clear();
-    });
+    setState(() => _sectionIdB = id);
   }
 
   @override
   Widget build(BuildContext context) {
-    final shelfA = _shelfCtrlA.text.trim();
-    final shelfB = _shelfCtrlB.text.trim();
     final canSubmit = _sectionIdA != null &&
         _sectionIdA!.isNotEmpty &&
-        shelfA.isNotEmpty &&
         _sectionIdB != null &&
-        _sectionIdB!.isNotEmpty &&
-        shelfB.isNotEmpty;
+        _sectionIdB!.isNotEmpty;
 
     return ProductLocationModalShell(
       title: 'swapAssignTargetsTitle'.tr,
@@ -314,12 +253,10 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
             groupA: SwapGroupLocationTarget(
               sectionId: _sectionIdA!,
               sectionName: _nameFor(_sectionIdA),
-              shelfNumber: shelfA,
             ),
             groupB: SwapGroupLocationTarget(
               sectionId: _sectionIdB!,
               sectionName: _nameFor(_sectionIdB),
-              shelfNumber: shelfB,
             ),
           ),
         );
@@ -345,12 +282,10 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
             ),
           ),
           SizedBox(height: 8.h),
-          _sectionShelfPicker(
+          _sectionPicker(
             selectedSectionId: _sectionIdA,
             onSectionChanged: _onSectionAChanged,
-            shelfCtrl: _shelfCtrlA,
             sections: widget.sections,
-            onShelfChanged: _onShelfChanged,
           ),
           SizedBox(height: 16.h),
           Text(
@@ -362,12 +297,10 @@ class _SwapGroupTargetsDialogState extends State<_SwapGroupTargetsDialog> {
             ),
           ),
           SizedBox(height: 8.h),
-          _sectionShelfPicker(
+          _sectionPicker(
             selectedSectionId: _sectionIdB,
             onSectionChanged: _onSectionBChanged,
-            shelfCtrl: _shelfCtrlB,
             sections: widget.sections,
-            onShelfChanged: _onShelfChanged,
           ),
         ],
       ),

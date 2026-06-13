@@ -4,15 +4,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ProductLocationLabel {
   ProductLocationLabel._();
 
-  /// "اسم القسم - رقم الرف - رقم المنتج" (only non-empty parts, joined by " - ").
+  /// "اسم القسم - رقم المنتج" (only non-empty parts, joined by " - ").
   static String? withProductCode({
     String? sectionName,
-    String? shelfNumber,
     String? productCode,
   }) {
     final parts = <String>[
       if ((sectionName?.trim() ?? '').isNotEmpty) sectionName!.trim(),
-      if ((shelfNumber?.trim() ?? '').isNotEmpty) shelfNumber!.trim(),
       if ((productCode?.trim() ?? '').isNotEmpty) productCode!.trim(),
     ];
     if (parts.isEmpty) {
@@ -26,13 +24,11 @@ class ProductLocationBadge extends StatelessWidget {
   const ProductLocationBadge({
     Key? key,
     this.sectionName,
-    this.shelfNumber,
     this.productCode,
     this.dense = true,
   }) : super(key: key);
 
   final String? sectionName;
-  final String? shelfNumber;
   final String? productCode;
   final bool dense;
 
@@ -40,7 +36,6 @@ class ProductLocationBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final label = ProductLocationLabel.withProductCode(
       sectionName: sectionName,
-      shelfNumber: shelfNumber,
       productCode: productCode,
     );
     if (label == null || label.isEmpty) {

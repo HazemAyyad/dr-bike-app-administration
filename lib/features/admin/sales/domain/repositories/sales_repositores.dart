@@ -9,6 +9,7 @@ import '../../data/models/invoice_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/product_price_update_result.dart';
 import '../../data/models/profit_sale_model.dart';
+import '../../data/models/suspended_instant_sale_model.dart';
 
 abstract class SalesRepository {
   Future<Either<Failure, String>> addProfitSales({
@@ -77,4 +78,28 @@ abstract class SalesRepository {
   });
 
   Future<InvoiceModel> getInvoice({required String invoiceId});
+
+  Future<List<SuspendedInstantSaleModel>> getSuspendedInstantSales({
+    String? search,
+    int? createdByUserId,
+  });
+
+  Future<int> getSuspendedInstantSalesCount();
+
+  Future<SuspendedInstantSaleModel> getSuspendedInstantSale({required int id});
+
+  Future<Either<Failure, String>> suspendInstantSale({
+    required String currentStep,
+    required Map<String, dynamic> payload,
+    int? suspendedInstantSaleId,
+  });
+
+  Future<Either<Failure, String>> completeSuspendedInstantSale({
+    required int suspendedInstantSaleId,
+    Map<String, dynamic>? payload,
+  });
+
+  Future<Either<Failure, String>> cancelSuspendedInstantSale({
+    required int suspendedInstantSaleId,
+  });
 }

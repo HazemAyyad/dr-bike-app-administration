@@ -11,6 +11,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
     required DateTime endDate,
     required bool isCanceled,
     required String status,
+    int progress = 0,
   }) : super(
           id: id,
           name: name,
@@ -18,6 +19,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
           endDate: endDate,
           isCanceled: isCanceled,
           status: status,
+          progress: progress,
         );
 
   factory SpecialTaskModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
       endDate: parseApiDateTime(j[ApiKey.end_date]),
       isCanceled: asBool(j[ApiKey.is_canceled]),
       status: asString(j[ApiKey.status]),
+      progress: asInt(j['progress']),
     );
   }
 
@@ -40,6 +43,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
       ApiKey.end_date: endDate.toIso8601String(),
       ApiKey.is_canceled: isCanceled ? '1' : '0',
       ApiKey.status: status,
+      'progress': progress,
     };
   }
 }

@@ -34,6 +34,11 @@ class InstantSalePaymentSection extends StatelessWidget {
             color: AppColors.primaryColor,
           ),
         ),
+        SizedBox(height: 4.h),
+        Text(
+          'salesPartnerOptionalHint'.tr,
+          style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
+        ),
         SizedBox(height: 10.h),
         Obx(
           () {
@@ -67,6 +72,7 @@ class InstantSalePaymentSection extends StatelessWidget {
                 child: CustomDropdownFieldWithSearch(
                   tital: controller.partnerDropdownTitle,
                   hint: controller.partnerDropdownHint,
+                  isRequired: false,
                   items: controller.selectedCustomersSellers.value
                       ? controller.allCustomersList
                       : controller.allSellersList,
@@ -76,6 +82,7 @@ class InstantSalePaymentSection extends StatelessWidget {
                       value is SellerModel ? value : null,
                     );
                   },
+                  validator: (_) => null,
                   itemAsString: (item) => item.name,
                   compareFn: (a, b) => a.id == b.id,
                 ),
@@ -93,36 +100,70 @@ class InstantSalePaymentSection extends StatelessWidget {
         ),
         SizedBox(height: 12.h),
         Obx(
-          () => Row(
-            children: [
-              Expanded(
-                child: CustomDropdownFieldWithSearch(
-                  tital: 'boxName'.tr,
-                  hint: 'boxNameExample',
-                  isRequired: true,
-                  items: controller.shownBoxes,
-                  value: controller.selectedBox.value,
-                  onChanged: (value) {
-                    controller.onBoxSelected(
-                      value is ShownBoxesModel ? value : null,
-                    );
-                  },
-                  itemAsString: (item) => item.boxName,
-                  compareFn: (a, b) => a.boxId == b.boxId,
+          () {
+            if (controller.useDailySalesBox.value) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 10.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Text(
+                      '${'salesDailyBox'.tr}: ${controller.dailySalesBoxLabel.value}',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  CustomTextField(
+                    label: 'cashValue',
+                    hintText: 'totalExample',
+                    controller: controller.cashValueController,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => sales.refreshInstantSalePaymentSummary(),
+                  ),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                Expanded(
+                  child: CustomDropdownFieldWithSearch(
+                    tital: 'boxName'.tr,
+                    hint: 'boxNameExample',
+                    isRequired: true,
+                    items: controller.selectableBoxes,
+                    value: controller.selectedBox.value,
+                    onChanged: (value) {
+                      controller.onBoxSelected(
+                        value is ShownBoxesModel ? value : null,
+                      );
+                    },
+                    itemAsString: (item) => item.boxName,
+                    compareFn: (a, b) => a.boxId == b.boxId,
+                  ),
                 ),
-              ),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: CustomTextField(
-                  label: 'cashValue',
-                  hintText: 'totalExample',
-                  controller: controller.cashValueController,
-                  keyboardType: TextInputType.number,
-                  onChanged: (_) => sales.refreshInstantSalePaymentSummary(),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: CustomTextField(
+                    label: 'cashValue',
+                    hintText: 'totalExample',
+                    controller: controller.cashValueController,
+                    keyboardType: TextInputType.number,
+                    onChanged: (_) => sales.refreshInstantSalePaymentSummary(),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
         ),
         const InstantSalePaymentSummary(),
       ],

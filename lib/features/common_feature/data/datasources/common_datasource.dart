@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../core/databases/api/api_consumer.dart';
 import '../../../../core/databases/api/end_points.dart';
@@ -15,32 +16,84 @@ class CommonDatasource {
 
   Future<Map<String, dynamic>> userProfile({
     required String name,
+    required String email,
     required String phone,
     required String subPhone,
     required String city,
     required String address,
   }) async {
+    final payload = {
+      'name': name,
+      'email': email,
+      'phone': phone.isEmpty ? null : phone,
+      'sub_phone': subPhone.isEmpty ? null : subPhone,
+      'city': city.isEmpty ? null : city,
+      'address': address.isEmpty ? null : address,
+    };
+
+    if (kDebugMode) {
+      debugPrint('[ProfileUpdate] POST ${EndPoints.updateProfile}');
+      debugPrint('[ProfileUpdate] payload: $payload');
+    }
+
     try {
       final response = await api.post(
         EndPoints.updateProfile,
-        data: {
-          'name': name,
-          'phone': phone,
-          'sub_phone': subPhone,
-          'city': city,
-          'address': address,
-        },
+        data: payload,
       );
-      return response.data;
+
+      if (kDebugMode) {
+        debugPrint(
+          '[ProfileUpdate] HTTP ${response.statusCode} response: ${response.data}',
+        );
+      }
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+
+      final raw = {'status': 'error', 'message': data?.toString() ?? 'Invalid response'};
+      if (kDebugMode) {
+        debugPrint('[ProfileUpdate] non-map response: $raw');
+      }
+      return raw;
     } on DioException catch (e) {
       final data = e.response?.data;
+      final statusCode = e.response?.statusCode;
+
+      if (kDebugMode) {
+        debugPrint('[ProfileUpdate] DioException status=$statusCode');
+        debugPrint('[ProfileUpdate] DioException type=${e.type} message=${e.message}');
+        debugPrint('[ProfileUpdate] DioException response data: $data');
+      }
+
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage: data is Map && data['message'] != null
+              ? data['message'].toString()
+              : (e.message ?? 'Unknown error'),
+          status: data is Map && data['status'] != null
+              ? data['status']
+              : (statusCode ?? 500),
+          data: data is Map
+              ? Map<String, dynamic>.from(data)
+              : {
+                  'status': 'error',
+                  'message': data?.toString() ?? e.message,
+                  'http_status': statusCode,
+                },
         ),
       );
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[ProfileUpdate] unexpected error: $e');
+        debugPrint('[ProfileUpdate] stack: $st');
+      }
+      rethrow;
     }
   }
 

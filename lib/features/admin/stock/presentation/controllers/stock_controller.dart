@@ -94,9 +94,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final TextEditingController listPriceController = TextEditingController();
   final TextEditingController rotationDateController = TextEditingController();
 
-  final TextEditingController shelfNumberController = TextEditingController();
-  final RxString editProductShelfNumber = ''.obs;
-
   final RxBool isForcedSale = false.obs;
   final RxBool isShowProduct = true.obs;
   final RxBool isNewItemProduct = true.obs;
@@ -149,7 +146,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (selectedLocationSectionId.value != null) {
         Future<void>(() async => selectLocationFilter(
               selectedLocationSectionId.value,
-              shelf: selectedLocationShelf.value,
             ));
       }
     } else if (index == 4) {
@@ -176,8 +172,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxList<AllStockProductsModel> locationFilterProducts =
       <AllStockProductsModel>[].obs;
   final RxnString selectedLocationSectionId = RxnString();
-  final RxnString selectedLocationShelf = RxnString();
-  final RxList<String> sectionShelves = <String>[].obs;
   final RxBool locationProductsLoadingMore = false.obs;
   int locationProductsPage = 1;
   int locationProductsLastPage = 1;
@@ -338,24 +332,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       context,
       products: products,
       targetSectionName: _sectionNameById(picked.sectionId),
-      targetShelf: picked.shelfNumber,
     );
     if (!context.mounted || !confirmed) return;
-    final shelf = picked.shelfNumber?.trim() ?? '';
-    if (shelf.isEmpty) return;
-    await executeMoveSelectedProducts(
-      sectionId: picked.sectionId,
-      shelfNumber: shelf,
-    );
+    await executeMoveSelectedProducts(sectionId: picked.sectionId);
   }
 
   Future<void> executeMoveSelectedProducts({
     required String sectionId,
-    required String shelfNumber,
   }) async {
     if (selectedProductIds.isEmpty) return;
-    final shelf = shelfNumber.trim();
-    if (shelf.isEmpty) return;
     final ids = selectedProductIds
         .map((id) => int.tryParse(id))
         .whereType<int>()
@@ -366,7 +351,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       await stockLocationInteractor.moveProducts(
         productIds: ids,
         sectionId: sectionId,
-        shelfNumber: shelf,
       );
       Get.snackbar(
         'success'.tr,
@@ -508,13 +492,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
     if (editSectionId != null && !sectionIds.contains(editSectionId)) {
       selectedProductStoreSectionId.value = null;
-      shelfNumberController.clear();
-      editProductShelfNumber.value = '';
       final p = productDetails.value;
       if (p != null) {
         p.storeSectionId = null;
         p.storeSectionName = null;
-        p.shelfNumber = null;
         productDetails.refresh();
       }
     } else if (editSectionId != null) {
@@ -528,24 +509,17 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (filterSectionId != null && !sectionIds.contains(filterSectionId)) {
       productListFilters.value = productListFilters.value.copyWith(
         clearStoreSectionId: true,
-        clearShelfNumber: true,
       );
       selectedLocationSectionId.value = null;
-      selectedLocationShelf.value = null;
     }
 
     await reloadProductsList();
 
     if (locationSectionId != null && !sectionIds.contains(locationSectionId)) {
       selectedLocationSectionId.value = null;
-      selectedLocationShelf.value = null;
       locationFilterProducts.clear();
-      sectionShelves.clear();
     } else if (selectedLocationSectionId.value != null) {
-      await selectLocationFilter(
-        selectedLocationSectionId.value,
-        shelf: selectedLocationShelf.value,
-      );
+      await selectLocationFilter(selectedLocationSectionId.value);
     }
 
     update();
@@ -597,13 +571,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
-  Future<void> selectLocationFilter(String? sectionId, {String? shelf}) async {
+  Future<void> selectLocationFilter(String? sectionId) async {
     selectedLocationSectionId.value = sectionId;
-    selectedLocationShelf.value = shelf;
     locationFilterProducts.clear();
     locationProductsPage = 1;
     locationProductsLastPage = 1;
-    sectionShelves.clear();
     if (sectionId == null || sectionId.isEmpty) {
       update();
       return;
@@ -611,13 +583,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     isLoading(true);
     update();
     try {
-      final shelves = await stockLocationInteractor.loadShelves(
-        sectionId: sectionId,
-      );
-      sectionShelves.assignAll(shelves);
       final res = await stockLocationInteractor.loadProductsByLocation(
         sectionId: sectionId,
-        shelfNumber: shelf,
         page: 1,
       );
       locationFilterProducts.assignAll(res.products);
@@ -629,12 +596,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       isLoading(false);
       update();
     }
-  }
-
-  Future<void> selectLocationShelf(String? shelf) async {
-    final sectionId = selectedLocationSectionId.value;
-    if (sectionId == null || sectionId.isEmpty) return;
-    await selectLocationFilter(sectionId, shelf: shelf);
   }
 
   Future<void> loadMoreLocationFilterProducts() async {
@@ -653,7 +614,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       final next = locationProductsPage + 1;
       final res = await stockLocationInteractor.loadProductsByLocation(
         sectionId: sectionId,
-        shelfNumber: selectedLocationShelf.value,
         page: next,
       );
       for (final p in res.products) {
@@ -1305,7 +1265,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> applyStoreLocationFilterFromFab({
     String? sectionId,
-    String? shelfNumber,
   }) async {
     if (currentTab.value != 0) {
       currentTab.value = 0;
@@ -1316,21 +1275,18 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       categoryId: base.categoryId,
       subCategoryId: base.subCategoryId,
       storeSectionId: sectionId,
-      shelfNumber: shelfNumber,
       dateFrom: base.dateFrom,
       dateTo: base.dateTo,
       sortBy: base.sortBy,
       sortDirection: base.sortDirection,
     );
     selectedLocationSectionId.value = sectionId;
-    selectedLocationShelf.value = shelfNumber;
     await applyProductFilters(filters);
   }
 
   Future<void> clearStoreLocationFilterFromFab() async {
     final base = productListFilters.value;
     selectedLocationSectionId.value = null;
-    selectedLocationShelf.value = null;
     await applyProductFilters(
       StockProductFilters(
         search: base.search,
@@ -1355,10 +1311,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (currentTab.value == 3) {
       await ensureStoreSectionsLoaded();
       if (selectedLocationSectionId.value != null) {
-        await selectLocationFilter(
-          selectedLocationSectionId.value,
-          shelf: selectedLocationShelf.value,
-        );
+        await selectLocationFilter(selectedLocationSectionId.value);
       }
       return;
     }
@@ -1919,8 +1872,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     clearPendingMedia();
     _resetEditMediaState();
     selectedProductStoreSectionId.value = null;
-    shelfNumberController.clear();
-    editProductShelfNumber.value = '';
     for (final el in items) {
       el.onClose();
     }
@@ -1941,8 +1892,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
 
     selectedProductStoreSectionId.value = p.storeSectionId;
-    shelfNumberController.text = p.shelfNumber ?? '';
-    editProductShelfNumber.value = p.shelfNumber ?? '';
     editingProductId.value = p.id;
     saveScopeFull.value = false;
     productNameController.text = p.nameAr;
@@ -2191,7 +2140,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     } else {
       addField('store_section_id', '');
     }
-    addField('shelf_number', shelfNumberController.text.trim());
 
     var sizeIndex = 0;
     for (final sz in items) {
@@ -2470,7 +2418,6 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     minSalePriceController.dispose();
     listPriceController.dispose();
     rotationDateController.dispose();
-    shelfNumberController.dispose();
     closeoutsMinimumSaleController.dispose();
     super.onClose();
   }

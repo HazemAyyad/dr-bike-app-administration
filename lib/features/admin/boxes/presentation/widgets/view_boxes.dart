@@ -61,13 +61,6 @@ class VeiwBoxes extends GetView<BoxesController> {
                 onTap: controller.currentTab.value == 1
                     ? null
                     : () {
-                        controller.getboxDetails(
-                          box is ShownBoxesModel
-                              ? box.boxId.toString()
-                              : box is BoxLogModel
-                                  ? box.id.toString()
-                                  : '',
-                        );
                         Get.toNamed(
                           AppRoutes.EDITBOXESSCREEN,
                           arguments: box is ShownBoxesModel
@@ -121,9 +114,10 @@ class VeiwBoxes extends GetView<BoxesController> {
                       controller.currentTab.value == 0
                           ? BoxesWidget(box: box as ShownBoxesModel)
                           : controller.currentTab.value == 1
-                              ? Flexible(
-                                  child:
-                                      MovementsWidget(box: box as BoxLogModel),
+                              ? Expanded(
+                                  child: MovementsWidget(
+                                    box: box as BoxLogModel,
+                                  ),
                                 )
                               : ArchiveWidget(box: box as ShownBoxesModel)
                     ],

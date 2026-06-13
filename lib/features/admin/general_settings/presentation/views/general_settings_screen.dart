@@ -120,6 +120,174 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _editSalesDailySettings() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final service = AppSettingsService.instance;
+    final varianceCtrl = TextEditingController(
+      text: service.salesDailyVarianceAlertThreshold.value
+          .toStringAsFixed(0),
+    );
+    final shekelCtrl = TextEditingController(
+      text: '${service.salesDailyMaxFloat['شيكل']?.toStringAsFixed(0) ?? '500'}',
+    );
+    final dollarCtrl = TextEditingController(
+      text: '${service.salesDailyMaxFloat['دولار']?.toStringAsFixed(0) ?? '200'}',
+    );
+    final dinarCtrl = TextEditingController(
+      text: '${service.salesDailyMaxFloat['دينار']?.toStringAsFixed(0) ?? '200'}',
+    );
+
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+    const actionBg = Color(0xFFE5E7EB);
+
+    if (!mounted) return;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          'salesDailySettingsTitle'.tr,
+          style: const TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: varianceCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'salesDailyVarianceAlertSetting'.tr,
+                  labelStyle: const TextStyle(color: textSecondary),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: shekelCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'salesDailyMaxFloatShekel'.tr,
+                  labelStyle: const TextStyle(color: textSecondary),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: dollarCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'salesDailyMaxFloatDollar'.tr,
+                  labelStyle: const TextStyle(color: textSecondary),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: dinarCtrl,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'salesDailyMaxFloatDinar'.tr,
+                  labelStyle: const TextStyle(color: textSecondary),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'cancel'.tr,
+              style: const TextStyle(color: textSecondary),
+            ),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: actionBg,
+              foregroundColor: textPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('save'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (saved != true || !mounted) {
+      varianceCtrl.dispose();
+      shekelCtrl.dispose();
+      dollarCtrl.dispose();
+      dinarCtrl.dispose();
+      return;
+    }
+
+    final variance = double.tryParse(varianceCtrl.text.trim()) ??
+        service.salesDailyVarianceAlertThreshold.value;
+    final maxFloat = <String, double>{
+      'شيكل': double.tryParse(shekelCtrl.text.trim()) ??
+          service.salesDailyMaxFloat['شيكل'] ??
+          500,
+      'دولار': double.tryParse(dollarCtrl.text.trim()) ??
+          service.salesDailyMaxFloat['دولار'] ??
+          200,
+      'دينار': double.tryParse(dinarCtrl.text.trim()) ??
+          service.salesDailyMaxFloat['دينار'] ??
+          200,
+    };
+    varianceCtrl.dispose();
+    shekelCtrl.dispose();
+    dollarCtrl.dispose();
+    dinarCtrl.dispose();
+
+    final ok = await service.updateSalesDailySettings(
+      varianceAlertThreshold: variance < 0 ? 0 : variance,
+      maxFloat: maxFloat,
+    );
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
+  }
+
   Future<void> _editAdminFabOptions() async {
     await AppSettingsService.instance.ensureLoaded(force: true);
     final service = AppSettingsService.instance;
@@ -284,6 +452,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         titleKey: 'subtaskBonusDefaultSetting',
         descriptionKey: 'subtaskBonusDefaultSettingDesc',
         onTap: _editSubtaskBonusDefault,
+      ),
+      _SettingsItem(
+        icon: Icons.point_of_sale_outlined,
+        iconColor: const Color(0xFFBE123C),
+        titleKey: 'salesDailySettingsTitle',
+        descriptionKey: 'salesDailySettingsDesc',
+        onTap: _editSalesDailySettings,
       ),
       _SettingsItem(
         icon: Icons.emoji_events_outlined,

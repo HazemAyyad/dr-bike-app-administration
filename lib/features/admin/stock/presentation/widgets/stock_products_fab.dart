@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -11,8 +10,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/store_section_model.dart';
 import '../controllers/stock_controller.dart';
-
-enum _StockLensPhase { sections, shelves }
 
 /// Products FAB: tap = add menu; long-press = quarter-arc location filter.
 class StockProductsFab extends StatefulWidget {
@@ -42,16 +39,11 @@ class _StockProductsFabState extends State<StockProductsFab> {
   OverlayEntry? _overlay;
   bool _loading = false;
 
-  _StockLensPhase _phase = _StockLensPhase.sections;
   int _highlightIndex = -1;
   Offset? _anchorCenter;
   bool _fabOnLeft = false;
   int _segmentPage = 0;
   double _pageDragAccum = 0;
-  bool _shelfGestureActive = false;
-
-  StoreSectionModel? _activeSection;
-  List<String> _shelves = const [];
 
   static const double _centerHit = 34;
   static const double _minPickRadius = 44;
@@ -82,10 +74,8 @@ class _StockProductsFabState extends State<StockProductsFab> {
   int get _itemsPerPage =>
       _arcRows.fold(0, (sum, row) => sum + row.capacity);
 
-  List<dynamic> get _currentPageItems {
-    final source = _phase == _StockLensPhase.sections
-        ? _activeSections
-        : _shelves;
+  List<StoreSectionModel> get _currentPageItems {
+    final source = _activeSections;
     if (source.isEmpty) return const [];
     final start = _segmentPage * _itemsPerPage;
     final end = math.min(start + _itemsPerPage, source.length);
@@ -93,9 +83,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
   }
 
   int get _pageCount {
-    final total = _phase == _StockLensPhase.sections
-        ? _activeSections.length
-        : _shelves.length;
+    final total = _activeSections.length;
     if (total <= 0) return 1;
     return ((total + _itemsPerPage - 1) ~/ _itemsPerPage);
   }
@@ -146,16 +134,12 @@ class _StockProductsFabState extends State<StockProductsFab> {
       widget.onTap?.call();
     }
     HapticHelper.selection();
-    _phase = _StockLensPhase.sections;
     _highlightIndex = -1;
     _segmentPage = 0;
     _pageDragAccum = 0;
-    _shelfGestureActive = false;
-    _activeSection = null;
-    _shelves = const [];
     _anchorCenter = _readFabCenter();
     _overlay = OverlayEntry(builder: _buildOverlay);
-    Overlay.of(context).insert(_overlay!);
+    Overlay.of(context, rootOverlay: true).insert(_overlay!);
     await _loadSections();
     _overlay?.markNeedsBuild();
   }
@@ -164,64 +148,22 @@ class _StockProductsFabState extends State<StockProductsFab> {
     if (_overlay == null) return;
     _overlay?.remove();
     _overlay = null;
+    _anchorCenter = null;
     if (applySelection) {
       _commitCurrentSelection();
     }
-    _anchorCenter = null;
-    _shelfGestureActive = false;
-  }
-
-  Future<void> _enterShelfPhase(StoreSectionModel section) async {
-    _phase = _StockLensPhase.shelves;
-    _activeSection = section;
-    _highlightIndex = -1;
-    _segmentPage = 0;
-    _pageDragAccum = 0;
-    _shelfGestureActive = false;
-    setState(() => _loading = true);
-    _overlay?.markNeedsBuild();
-    try {
-      _shelves = await _stock.stockLocationInteractor.loadShelves(
-        sectionId: section.id,
-      );
-      await _stock.applyStoreLocationFilterFromFab(sectionId: section.id);
-    } catch (_) {
-      _shelves = const [];
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-        _overlay?.markNeedsBuild();
-      }
-    }
+    if (mounted) setState(() {});
   }
 
   void _commitCurrentSelection() {
-    if (_phase == _StockLensPhase.sections) {
-      if (_highlightIndex < 0) {
-        _stock.clearStoreLocationFilterFromFab();
-      } else {
-        final sections = _activeSections;
-        if (sections.isNotEmpty) {
-          final i = _highlightIndex.clamp(0, sections.length - 1);
-          _stock.applyStoreLocationFilterFromFab(
-            sectionId: sections[i].id,
-          );
-        }
-      }
-      return;
-    }
-
-    final sectionId = _activeSection?.id;
-    if (sectionId == null) return;
-
     if (_highlightIndex < 0) {
-      _stock.applyStoreLocationFilterFromFab(sectionId: sectionId);
-    } else if (_shelves.isNotEmpty) {
-      final i = _highlightIndex.clamp(0, _shelves.length - 1);
-      _stock.applyStoreLocationFilterFromFab(
-        sectionId: sectionId,
-        shelfNumber: _shelves[i],
-      );
+      _stock.clearStoreLocationFilterFromFab();
+    } else {
+      final sections = _activeSections;
+      if (sections.isNotEmpty) {
+        final i = _highlightIndex.clamp(0, sections.length - 1);
+        _stock.applyStoreLocationFilterFromFab(sectionId: sections[i].id);
+      }
     }
   }
 
@@ -234,33 +176,9 @@ class _StockProductsFabState extends State<StockProductsFab> {
   }
 
   void _schedulePreview() {
-    SchedulerBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || _overlay == null) return;
-      if (_phase == _StockLensPhase.sections) {
-        if (_highlightIndex < 0) {
-          await _stock.clearStoreLocationFilterFromFab();
-        } else {
-          final sections = _activeSections;
-          if (sections.isEmpty) return;
-          final i = _highlightIndex.clamp(0, sections.length - 1);
-          await _stock.applyStoreLocationFilterFromFab(
-            sectionId: sections[i].id,
-          );
-        }
-      } else {
-        final sectionId = _activeSection?.id;
-        if (sectionId == null) return;
-        if (_highlightIndex < 0) {
-          await _stock.applyStoreLocationFilterFromFab(sectionId: sectionId);
-        } else if (_shelves.isNotEmpty) {
-          final i = _highlightIndex.clamp(0, _shelves.length - 1);
-          await _stock.applyStoreLocationFilterFromFab(
-            sectionId: sectionId,
-            shelfNumber: _shelves[i],
-          );
-        }
-      }
-    });
+    // Apply filter only when the lens closes — not while dragging (avoids
+    // rebuilding the FAB/parent and leaving a stuck overlay).
+    _overlay?.markNeedsBuild();
   }
 
   void _handlePageSwipe(double deltaX) {
@@ -408,37 +326,13 @@ class _StockProductsFabState extends State<StockProductsFab> {
   }
 
   String? _centerBannerLabel() {
-    if (_phase == _StockLensPhase.sections) {
-      if (_highlightIndex < 0) return null;
-      final sections = _activeSections;
-      if (sections.isEmpty) return null;
-      return sections[_highlightIndex.clamp(0, sections.length - 1)].name;
-    }
-    if (_highlightIndex < 0) {
-      return _activeSection?.name;
-    }
-    if (_shelves.isEmpty) return _activeSection?.name;
-    return '${_activeSection?.name ?? ''} - ${_shelves[_highlightIndex.clamp(0, _shelves.length - 1)]}';
+    if (_highlightIndex < 0) return null;
+    final sections = _activeSections;
+    if (sections.isEmpty) return null;
+    return sections[_highlightIndex.clamp(0, sections.length - 1)].name;
   }
 
   void _onPointerUp() {
-    if (_phase == _StockLensPhase.sections) {
-      if (_highlightIndex < 0) {
-        _removeOverlay(applySelection: true);
-        return;
-      }
-      final sections = _activeSections;
-      if (sections.isEmpty) {
-        _removeOverlay(applySelection: true);
-        return;
-      }
-      final section =
-          sections[_highlightIndex.clamp(0, sections.length - 1)];
-      _enterShelfPhase(section);
-      return;
-    }
-
-    if (!_shelfGestureActive) return;
     _removeOverlay(applySelection: true);
   }
 
@@ -452,9 +346,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
     final maxArcRadius =
         guideRadii.isEmpty ? 180.0 : guideRadii.reduce(math.max);
     final bannerLabel = _centerBannerLabel();
-    final totalCount = _phase == _StockLensPhase.sections
-        ? _activeSections.length
-        : _shelves.length;
+    final totalCount = _activeSections.length;
     final clearSelected = _highlightIndex < 0;
 
     return Material(
@@ -464,12 +356,8 @@ class _StockProductsFabState extends State<StockProductsFab> {
         onPointerDown: (_) {
           _pageDragAccum = 0;
           _syncAnchor(context);
-          if (_phase == _StockLensPhase.shelves) {
-            _shelfGestureActive = true;
-          }
         },
         onPointerMove: (e) {
-          if (_phase == _StockLensPhase.shelves && !_shelfGestureActive) return;
           _handlePageSwipe(e.delta.dx);
           _setHighlight(_indexFromPointer(e.position, context));
         },
@@ -489,9 +377,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
                   child: Center(
                     child: _CenterSelectionBanner(
                       title: bannerLabel,
-                      subtitle: _phase == _StockLensPhase.sections
-                          ? 'storeLocationFabChooseSection'.tr
-                          : 'storeLocationFabChooseShelf'.tr,
+                      subtitle: 'storeLocationFabChooseSection'.tr,
                       index: _highlightIndex + 1,
                       total: totalCount,
                       pageCount: _pageCount,
@@ -536,27 +422,15 @@ class _StockProductsFabState extends State<StockProductsFab> {
                     top: pos.dy - bubbleSize / 2,
                     child: Transform.scale(
                       scale: selected ? 1.16 : 0.94,
-                      child: _phase == _StockLensPhase.sections
-                          ? _SectionBubble(
-                              name: (_currentPageItems[slot.localIndex]
-                                      as StoreSectionModel)
-                                  .name,
-                              selected: selected,
-                              size: bubbleSize,
-                            )
-                          : _ShelfBubble(
-                              label: _currentPageItems[slot.localIndex]
-                                  as String,
-                              selected: selected,
-                              size: bubbleSize,
-                            ),
+                      child: _SectionBubble(
+                        name: _currentPageItems[slot.localIndex].name,
+                        selected: selected,
+                        size: bubbleSize,
+                      ),
                     ),
                   );
                 }),
-              if (!_loading &&
-                  _pageCount > 1 &&
-                  onPage > 0 &&
-                  _phase == _StockLensPhase.sections)
+              if (!_loading && _pageCount > 1 && onPage > 0)
                 Positioned(
                   left: _fabOnLeft ? anchor.dx + 8 : anchor.dx - 168,
                   top: anchor.dy - maxArcRadius - 48,
@@ -597,24 +471,6 @@ class _StockProductsFabState extends State<StockProductsFab> {
                     ],
                   ),
                 ),
-              if (_phase == _StockLensPhase.shelves && !_loading)
-                Positioned(
-                  left: _fabOnLeft ? anchor.dx + 8 : anchor.dx - 168,
-                  top: anchor.dy - maxArcRadius - 36,
-                  width: 160,
-                  child: Text(
-                    'storeLocationFabChooseShelf'.tr,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w700,
-                      shadows: const [
-                        Shadow(color: Colors.black54, blurRadius: 4),
-                      ],
-                    ),
-                  ),
-                ),
               Positioned(
                 left: anchor.dx - 28,
                 top: anchor.dy - 28,
@@ -644,30 +500,13 @@ class _StockProductsFabState extends State<StockProductsFab> {
                 ),
               ),
             ],
-            if (!_loading &&
-                _phase == _StockLensPhase.sections &&
-                _activeSections.isEmpty &&
-                anchor != null)
+            if (!_loading && _activeSections.isEmpty && anchor != null)
               Positioned(
                 left: anchor.dx - 80,
                 top: anchor.dy - 120,
                 width: 160,
                 child: Text(
                   'noStoreSectionsYet'.tr,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                ),
-              ),
-            if (!_loading &&
-                _phase == _StockLensPhase.shelves &&
-                _shelves.isEmpty &&
-                anchor != null)
-              Positioned(
-                left: anchor.dx - 90,
-                top: anchor.dy - maxArcRadius - 20,
-                width: 180,
-                child: Text(
-                  'noShelvesInSection'.tr,
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
@@ -899,49 +738,6 @@ class _SectionBubble extends StatelessWidget {
           color: AppColors.secondaryColor,
           fontWeight: FontWeight.w800,
           fontSize: size * 0.38,
-        ),
-      ),
-    );
-  }
-}
-
-class _ShelfBubble extends StatelessWidget {
-  const _ShelfBubble({
-    required this.label,
-    required this.selected,
-    required this.size,
-  });
-
-  final String label;
-  final bool selected;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: selected ? AppColors.secondaryColor : Colors.white,
-        border: Border.all(
-          color: selected ? AppColors.secondaryColor : Colors.white,
-          width: selected ? 3 : 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 8),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: selected ? Colors.white : AppColors.secondaryColor,
-          fontWeight: FontWeight.w800,
-          fontSize: size * 0.28,
         ),
       ),
     );

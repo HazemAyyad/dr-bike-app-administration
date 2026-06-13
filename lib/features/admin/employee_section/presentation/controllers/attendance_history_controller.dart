@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 
+import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../data/datasources/employee_datasource.dart';
@@ -25,17 +28,46 @@ class AttendanceHistoryController extends GetxController {
   final Rx<int> selectedYear  = DateTime.now().year.obs;
   final Rx<int> selectedMonth = DateTime.now().month.obs;
 
+  Timer? _liveRefreshTimer;
+
+  String get _todayDateKey {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  bool get _shouldLiveRefresh {
+    if (!isViewingCurrentMonth || employeeId.isEmpty) return false;
+    final data = result.value;
+    if (data == null) return false;
+    if (data.employee.currentlyInToday) return true;
+    for (final d in data.days) {
+      if (d.date == _todayDateKey && d.currentlyIn) return true;
+    }
+    return false;
+  }
+
   @override
   void onInit() {
     super.onInit();
     load();
+    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (_shouldLiveRefresh) {
+        load(silent: true);
+      }
+    });
+  }
+
+  @override
+  void onClose() {
+    _liveRefreshTimer?.cancel();
+    super.onClose();
   }
 
   /// تحميل البيانات بناءً على الشهر والسنة المختارَيْن
-  Future<void> load() async {
+  Future<void> load({bool silent = false}) async {
     if (employeeId.isEmpty) return;
     try {
-      isLoading.value = true;
+      if (!silent) isLoading.value = true;
 
       final from = DateTime(selectedYear.value, selectedMonth.value, 1);
       // آخر يوم في الشهر
@@ -53,7 +85,7 @@ class AttendanceHistoryController extends GetxController {
       result.value = null;
       Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
-      isLoading.value = false;
+      if (!silent) isLoading.value = false;
     }
   }
 
@@ -124,13 +156,7 @@ class AttendanceHistoryController extends GetxController {
     load();
   }
 
-  static String formatMinutes(int m) {
-    if (m <= 0) return '0 ${'minutesShort'.tr}';
-    final h = m ~/ 60;
-    final min = m % 60;
-    if (h == 0) return '$min ${'minutesShort'.tr}';
-    return '$h ${'hoursShort'.tr} $min ${'minutesShort'.tr}';
-  }
+  static String formatMinutes(int m) => formatWorkedDurationMinutes(m);
 
   /// قائمة السنوات المتاحة (5 سنوات للوراء)
   List<int> get availableYears {

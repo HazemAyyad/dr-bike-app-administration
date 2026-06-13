@@ -119,11 +119,19 @@ import '../features/admin/projects/presentation/views/create_project_screen.dart
 import '../features/admin/projects/presentation/views/project_details_screeen.dart';
 import '../features/admin/projects/presentation/views/project_screen.dart';
 import '../features/admin/sales/presentation/binding/sales_binding.dart';
+import '../features/admin/sales/presentation/binding/suspended_invoices_binding.dart';
+import '../features/admin/sales/presentation/views/suspended_invoices_screen.dart';
 import '../features/admin/sales/presentation/views/new_cash_profit_screen.dart';
 import '../features/admin/sales/presentation/views/instant_sale_product_picker_screen.dart';
 import '../features/admin/sales/presentation/views/new_instant_sale_screen.dart';
 import '../features/admin/sales/presentation/views/bill_details_screen.dart'
     as instant_sale_bill;
+import '../features/admin/sales/presentation/views/sales_daily_admin_screen.dart';
+import '../features/admin/sales/presentation/views/sales_daily_close_screen.dart';
+import '../features/admin/sales/presentation/views/sales_daily_history_screen.dart';
+import '../features/admin/sales/presentation/views/sales_daily_session_detail_screen.dart';
+import '../features/admin/sales/presentation/controllers/sales_daily_admin_controller.dart';
+import '../features/admin/sales/presentation/controllers/sales_daily_history_controller.dart';
 import '../features/admin/sales/presentation/views/sales_screen.dart';
 import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
 import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
@@ -633,6 +641,12 @@ class AppPages {
       transition: _transitionFadeIn,
     ),
     GetPage(
+      name: AppRoutes.SUSPENDEDINVOICESSCREEN,
+      page: () => const SuspendedInvoicesScreen(),
+      binding: SuspendedInvoicesBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
       name: AppRoutes.INSTANTSALEPRODUCTPICKER,
       page: () => const InstantSaleProductPickerScreen(),
       transition: Get.locale == const Locale('ar')
@@ -658,6 +672,26 @@ class AppPages {
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.SALESDAILYCLOSESCREEN,
+      page: () => const SalesDailyCloseScreen(),
+      binding: SalesBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.SALESDAILYADMINSCREEN,
+      page: () => const SalesDailyAdminScreen(),
+      binding: SalesDailyAdminBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.SALESDAILYHISTORYSCREEN,
+      page: () => const SalesDailyHistoryScreen(),
+      binding: SalesDailyHistoryBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.SALESDAILYSESSIONDETAILSCREEN,
+      page: () => const SalesDailySessionDetailScreen(),
+      binding: SalesBinding(),
     ),
 
     // Checks

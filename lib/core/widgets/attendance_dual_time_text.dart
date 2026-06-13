@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 
+import '../helpers/showtime.dart';
 import '../utils/app_colors.dart';
 
 /// Shows device + server timestamps for fingerprint attendance; single time otherwise.
@@ -31,9 +31,10 @@ class AttendanceDualTimeText extends StatelessWidget {
   static bool showDual(String? source, DateTime? serverAt) =>
       source == 'fingerprint' && serverAt != null;
 
+  /// Device/server clock time — 12-hour with ص/م (Arabic) or AM/PM (English).
   static String formatHm(DateTime? dt) {
     if (dt == null) return '';
-    return DateFormat('HH:mm').format(dt.toLocal());
+    return formatTimeOnly12(dt);
   }
 
   @override

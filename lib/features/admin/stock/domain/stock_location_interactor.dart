@@ -13,17 +13,12 @@ class StockLocationInteractor {
   }) =>
       _ds.getStoreSections(includeInactive: includeInactive);
 
-  Future<List<String>> loadShelves({required String sectionId}) =>
-      _ds.getSectionShelves(sectionId: sectionId);
-
   Future<ProductsByLocationResult> loadProductsByLocation({
     required String sectionId,
-    String? shelfNumber,
     required int page,
   }) =>
       _ds.getProductsByLocation(
         sectionId: sectionId,
-        shelfNumber: shelfNumber,
         page: page,
       );
 
@@ -39,12 +34,10 @@ class StockLocationInteractor {
   Future<int> moveProducts({
     required List<int> productIds,
     required String sectionId,
-    required String shelfNumber,
   }) =>
       _ds.moveProductsLocation(
         productIds: productIds,
         sectionId: sectionId,
-        shelfNumber: shelfNumber,
       );
 
   Future<int> swapProductGroups({

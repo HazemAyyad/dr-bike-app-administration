@@ -14,30 +14,37 @@ class ArchiveWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
 
-    return Row(
-      // crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          box.boxName,
-          style: textStyle.copyWith(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w700,
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor3
-                : Colors.black.withValues(alpha: 0.5),
-          ),
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                box.boxName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle.copyWith(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor3
+                      : Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              'غير ظاهر',
+              style: textStyle.copyWith(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w400,
+                color: Colors.red,
+              ),
+            ),
+          ],
         ),
-        SizedBox(width: 50.w),
-        Text(
-          'غير ظاهر',
-          style: textStyle.copyWith(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w400,
-            color: Colors.red,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

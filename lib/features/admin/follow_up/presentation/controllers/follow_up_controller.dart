@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../routes/app_routes.dart';
@@ -103,10 +104,7 @@ class FollowUpController extends GetxController {
       selectedStep.value += 1;
       update();
     } else if (selectedStep.value == timeLineSteps.length) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        Get.back();
-      });
-      addFollowUp(step: selectedStep.value);
+      addFollowUp(step: selectedStep.value, finishEdit: true);
       update();
     }
   }
@@ -265,7 +263,7 @@ class FollowUpController extends GetxController {
   }
 
   // add follow up
-  void addFollowUp({int step = 0}) async {
+  void addFollowUp({int step = 0, bool finishEdit = false}) async {
     isLoading(true);
     String status = 'initial';
     if (step == 1) {
@@ -315,7 +313,7 @@ class FollowUpController extends GetxController {
         if (!isEdite.value) {
           customerAndSellerIdController.clear();
           itemIdController.clear();
-          Get.back();
+          AppNavigation.popToRoute(AppRoutes.CURRENTFOLLOWUPSCREEN);
           Get.snackbar(
             'success'.tr,
             success,
@@ -324,6 +322,9 @@ class FollowUpController extends GetxController {
           );
           selectedStep.value = 1;
           return;
+        }
+        if (finishEdit) {
+          AppNavigation.popToRoute(AppRoutes.CURRENTFOLLOWUPSCREEN);
         }
         Get.snackbar(
           'success'.tr,

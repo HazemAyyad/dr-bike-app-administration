@@ -37,6 +37,11 @@ class _NewCashProfitScreenState extends State<NewCashProfitScreen> {
   void initState() {
     super.initState();
     _ensurePaymentController();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await controller.loadDailySession();
+      controller.applyDailyBoxToPayment(payment);
+    });
   }
 
   void _ensurePaymentController() {
@@ -179,6 +184,11 @@ class _ProfitSalePaymentSection extends StatelessWidget {
                 color: AppColors.primaryColor,
               ),
         ),
+        SizedBox(height: 4.h),
+        Text(
+          'salesPartnerOptionalHint'.tr,
+          style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
+        ),
         SizedBox(height: 10.h),
         Obx(
           () => Row(
@@ -209,6 +219,7 @@ class _ProfitSalePaymentSection extends StatelessWidget {
                 child: CustomDropdownFieldWithSearch(
                   tital: controller.partnerDropdownTitle,
                   hint: controller.partnerDropdownHint,
+                  isRequired: false,
                   items: controller.selectedCustomersSellers.value
                       ? controller.allCustomersList
                       : controller.allSellersList,
@@ -242,7 +253,11 @@ class _ProfitSalePaymentSection extends StatelessWidget {
                   tital: 'boxName'.tr,
                   hint: 'boxNameExample',
                   isRequired: false,
-                  items: controller.shownBoxes,
+                  items: controller.useDailySalesBox.value
+                      ? controller.selectableBoxes
+                      : sales.dailyBoxesForProfitPicker.isNotEmpty
+                          ? sales.dailyBoxesForProfitPicker
+                          : controller.shownBoxes,
                   value: controller.selectedBox.value,
                   onChanged: (value) {
                     controller.onBoxSelected(

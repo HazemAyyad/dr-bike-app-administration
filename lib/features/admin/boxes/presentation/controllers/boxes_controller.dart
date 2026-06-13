@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/models/all_boxes_logs_model.dart';
 import '../../data/models/get_shown_boxes_model.dart';
@@ -115,10 +117,8 @@ class BoxesController extends GetxController {
   String boxDetailsId = '0';
   // get box details
   void getboxDetails(String boxId) async {
-    final sameBox = boxDetailsId == boxId;
-    if (!sameBox) {
-      isLoading(true);
-    }
+    isLoading(true);
+    update();
     boxDetailsId = boxId;
     final boxDetails = await boxDetailsUesecase.call(boxId: boxId);
 
@@ -133,6 +133,13 @@ class BoxesController extends GetxController {
   }
 
   final RxBool isAddBoxLoading = false.obs;
+
+  void _popToBoxesScreen() {
+    Future.delayed(
+      const Duration(milliseconds: 650),
+      () => AppNavigation.popToRoute(AppRoutes.BOXESSCREEN),
+    );
+  }
 
   // transfer box
   void transferBoxBalance(BuildContext context, String boxId) async {
@@ -157,15 +164,8 @@ class BoxesController extends GetxController {
         (success) {
           Get.back();
           getAllBoxes();
-          // transferFromBoxIdController.clear();
           transferToBoxIdController.clear();
           createStartBalanceController.clear();
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-            },
-          );
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
@@ -218,20 +218,14 @@ class BoxesController extends GetxController {
         },
         (success) {
           getAllBoxes();
+          createBoxNameController.clear();
+          createStartBalanceController.clear();
+          currencyController.clear();
+          _popToBoxesScreen();
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
             message: success,
-          );
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-              Get.back();
-              createBoxNameController.clear();
-              createStartBalanceController.clear();
-              currencyController.clear();
-            },
           );
         },
       );
@@ -266,12 +260,6 @@ class BoxesController extends GetxController {
           getAllBoxes();
           addBalanceValueController.clear();
           addBalanceNoteController.clear();
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-            },
-          );
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
@@ -318,20 +306,8 @@ class BoxesController extends GetxController {
               );
       },
       (success) {
-        Get.back();
         getAllBoxes();
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            Get.back();
-            boxDetailsId = '0';
-            addBalanceValueController.clear();
-            editCurrencyController.clear();
-            editBoxNameController.clear();
-            editStartBalanceController.clear();
-            editAppearController.clear();
-          },
-        );
+        _popToBoxesScreen();
         isDelete
             ? Get.snackbar(
                 'success'.tr,

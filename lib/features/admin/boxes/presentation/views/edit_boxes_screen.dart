@@ -10,13 +10,39 @@ import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import '../controllers/boxes_controller.dart';
 import '../widgets/task_details_transfer.dart';
 
-class EditBoxesScreen extends GetView<BoxesController> {
+class EditBoxesScreen extends StatefulWidget {
   const EditBoxesScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final String boxId = Get.arguments;
+  State<EditBoxesScreen> createState() => _EditBoxesScreenState();
+}
 
+class _EditBoxesScreenState extends State<EditBoxesScreen> {
+  late final BoxesController controller;
+  late final String boxId;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<BoxesController>();
+    boxId = Get.arguments as String;
+    controller.getboxDetails(boxId);
+  }
+
+  String? _appearDropdownValue(String raw) {
+    return controller.appears.contains(raw) ? raw : null;
+  }
+
+  String? _currencyDropdownValue(String raw) {
+    if (raw.isEmpty) return null;
+    for (final element in controller.currency) {
+      if (element.tr == raw) return element;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(title: 'editBox'.tr, action: false),
       body: GetBuilder<BoxesController>(
@@ -48,29 +74,38 @@ class EditBoxesScreen extends GetView<BoxesController> {
                         CustomDropdownField(
                           label: 'appear',
                           hint: 'visible',
-                          value: controller.editAppearController.text,
+                          value: _appearDropdownValue(
+                            controller.editAppearController.text,
+                          ),
                           items: controller.appears,
                           onChanged: (value) {
                             controller.editAppearController.text = value!;
                           },
                         ),
                         SizedBox(height: 10.h),
-                        CustomDropdownField(
-                          label: 'currencyy'.tr,
-                          hint: 'currency'.tr,
-                          value: controller.editCurrencyController.text.isEmpty
-                              ? null
-                              : controller.currency.firstWhere(
-                                  (element) =>
-                                      element.tr ==
-                                      controller.editCurrencyController.text,
-                                ),
-                          onChanged: (value) {
-                            controller.editCurrencyController.text = value!;
-                          },
-                          items: controller.currency,
-                          isEnabled: false,
-                        ),
+                        if (_currencyDropdownValue(
+                              controller.editCurrencyController.text,
+                            ) !=
+                            null)
+                          CustomDropdownField(
+                            label: 'currencyy'.tr,
+                            hint: 'currency'.tr,
+                            value: _currencyDropdownValue(
+                              controller.editCurrencyController.text,
+                            ),
+                            onChanged: (value) {
+                              controller.editCurrencyController.text = value!;
+                            },
+                            items: controller.currency,
+                            isEnabled: false,
+                          )
+                        else
+                          CustomTextField(
+                            label: 'currencyy'.tr,
+                            hintText: 'currency'.tr,
+                            controller: controller.editCurrencyController,
+                            enabled: false,
+                          ),
                         SizedBox(height: 30.h),
                         AppButton(
                           isSafeArea: false,

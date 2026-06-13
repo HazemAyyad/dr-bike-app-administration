@@ -846,6 +846,34 @@ class NotificationFirebaseService {
     }
   }
 
+  void _handleEmployeeSalesDailyForeground(Map<String, dynamic> data) {
+    if (userType != 'employee') return;
+
+    final type = data['type']?.toString() ?? '';
+    switch (type) {
+      case EmployeeNotificationRouter.typeReopenApproved:
+        EmployeeNotificationRouter.openSalesAndRefreshDailySession(
+          successMessage: 'salesDailyReopenApproved'.tr,
+        );
+        break;
+      case EmployeeNotificationRouter.typeReopenRejected:
+        EmployeeNotificationRouter.openSalesAndRefreshDailySession(
+          infoMessage: 'salesDailyReopenRejected'.tr,
+        );
+        break;
+      case EmployeeNotificationRouter.typeClosingApproved:
+        EmployeeNotificationRouter.openSalesAndRefreshDailySession(
+          infoMessage: 'salesDailyDayClosed'.tr,
+        );
+        break;
+      case EmployeeNotificationRouter.typeClosingRejected:
+        EmployeeNotificationRouter.openSalesAndRefreshDailySession(
+          infoMessage: 'salesDailyClosingRejected'.tr,
+        );
+        break;
+    }
+  }
+
   Future<void> _setupMessageHandler() async {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint(
@@ -854,6 +882,7 @@ class NotificationFirebaseService {
       );
       await showForegroundNotification(message);
       _refreshNotificationBadge();
+      _handleEmployeeSalesDailyForeground(_payloadFromMessage(message));
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);

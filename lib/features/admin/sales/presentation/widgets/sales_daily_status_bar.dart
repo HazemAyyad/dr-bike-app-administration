@@ -1,0 +1,157 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+
+import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
+import '../../data/models/daily_session_model.dart';
+import '../controllers/sales_controller.dart';
+import 'sales_skeleton_widgets.dart';
+
+class SalesDailyStatusBar extends GetView<SalesController> {
+  const SalesDailyStatusBar({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.isDailySessionLoading.value) {
+        return const SalesDailyStatusBarSkeleton();
+      }
+
+      final payload = controller.dailySessionPayload.value;
+      if (payload == null) {
+        return const SizedBox.shrink();
+      }
+
+      final session = payload.session;
+      final status = session?.status ?? 'open';
+      final color = _statusColor(status, payload);
+      final label = _statusLabel(status, payload);
+
+      return GestureDetector(
+        onTap: () => Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN),
+        child: Container(
+        margin: EdgeInsets.fromLTRB(24.w, 0, 24.w, 8.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.account_balance_wallet_outlined, color: color, size: 20.sp),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                  if (session != null)
+                    Text(
+                      '${'salesDailyBusinessDate'.tr}: ${session.businessDate}',
+                      style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
+                    ),
+                  _shekelSummary(payload),
+                ],
+              ),
+            ),
+            if (payload.canRequestClosing)
+              TextButton(
+                onPressed: () => Get.toNamed(AppRoutes.SALESDAILYCLOSESCREEN),
+                child: Text('salesDailyCloseDay'.tr),
+              ),
+            if (payload.canRequestReopen)
+              TextButton(
+                onPressed: () => _showReopenDialog(context),
+                child: Text('salesDailyRequestReopen'.tr),
+              ),
+            Icon(Icons.chevron_left, color: color, size: 20.sp),
+          ],
+        ),
+      ),
+      );
+    });
+  }
+
+  Widget _shekelSummary(DailySessionPayload payload) {
+    final row = payload.rowForCurrency('شيكل');
+    if (row == null) return const SizedBox.shrink();
+    return Text(
+      '${'salesDailySystemBalance'.tr}: ${row.systemBalance.toStringAsFixed(0)} ${row.currency}',
+      style: TextStyle(fontSize: 11.sp),
+    );
+  }
+
+  Color _statusColor(String status, DailySessionPayload payload) {
+    if (payload.isBlockingPreviousDay) return Colors.red;
+    if (status == 'closing_requested') return Colors.orange;
+    if (status == 'closed') return Colors.grey;
+    return AppColors.primaryColor;
+  }
+
+  String _statusLabel(String status, DailySessionPayload payload) {
+    if (payload.isBlockingPreviousDay) {
+      return 'salesDailyPreviousDayOpen'.tr;
+    }
+    if (payload.isReopenPending) {
+      return 'salesDailyReopenPending'.tr;
+    }
+    switch (status) {
+      case 'closing_requested':
+        return 'salesDailyClosingPending'.tr;
+      case 'closed':
+        return 'salesDailyDayClosed'.tr;
+      default:
+        return 'salesDailyDayOpen'.tr;
+    }
+  }
+
+  Future<void> _showReopenDialog(BuildContext context) async {
+    final reasonCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('salesDailyRequestReopen'.tr),
+        content: TextField(
+          controller: reasonCtrl,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'salesDailyReopenReasonHint'.tr,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('salesDailySubmitReopen'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final reason = reasonCtrl.text.trim();
+    if (reason.isEmpty) {
+      Get.snackbar('error'.tr, 'salesDailyReopenReasonRequired'.tr);
+      return;
+    }
+    try {
+      await controller.requestDailyReopen(reason: reason);
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+    } finally {
+      reasonCtrl.dispose();
+    }
+  }
+}

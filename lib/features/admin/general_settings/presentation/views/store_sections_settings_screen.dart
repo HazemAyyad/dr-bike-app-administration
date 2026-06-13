@@ -8,7 +8,6 @@ import '../../../../../core/helpers/outline_input_style.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
 import '../../../stock/presentation/controllers/stock_controller.dart';
-import 'section_shelves_settings_screen.dart';
 
 class StoreSectionsSettingsScreen extends StatefulWidget {
   const StoreSectionsSettingsScreen({Key? key}) : super(key: key);
@@ -156,12 +155,7 @@ class _StoreSectionsSettingsScreenState
                     return Material(
                       color: AdminUiColors.cardBackground(context),
                       borderRadius: BorderRadius.circular(12.r),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12.r),
-                        onTap: () => Get.to(
-                          () => SectionShelvesSettingsScreen(section: section),
-                        ),
-                        child: Padding(
+                      child: Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: 10.w,
                             vertical: 8.h,
@@ -213,13 +207,6 @@ class _StoreSectionsSettingsScreenState
                                                 section.productCount.toString(),
                                           }),
                                         ),
-                                        _SectionStatChip(
-                                          icon: Icons.view_week_outlined,
-                                          label: 'sectionStatShelves'.trParams({
-                                            'count':
-                                                section.shelfCount.toString(),
-                                          }),
-                                        ),
                                         if (!section.isActive)
                                           Text(
                                             'inactive'.tr,
@@ -251,15 +238,6 @@ class _StoreSectionsSettingsScreenState
                                 ),
                               ),
                               _SectionActionIcon(
-                                tooltip: 'manageShelves'.tr,
-                                icon: Icons.view_week_outlined,
-                                onPressed: () => Get.to(
-                                  () => SectionShelvesSettingsScreen(
-                                    section: section,
-                                  ),
-                                ),
-                              ),
-                              _SectionActionIcon(
                                 tooltip: 'edit'.tr,
                                 icon: Icons.edit_outlined,
                                 onPressed: () =>
@@ -274,7 +252,6 @@ class _StoreSectionsSettingsScreenState
                             ],
                           ),
                         ),
-                      ),
                     );
                   },
                 ),

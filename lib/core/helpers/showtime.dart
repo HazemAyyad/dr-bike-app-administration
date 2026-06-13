@@ -91,6 +91,14 @@ String formatTimeOnly12(dynamic date) {
   return DateFormat('hh:mm a', _localeTag()).format(_parseDate(date));
 }
 
+/// Worked duration — always hours + minutes (e.g. `2 س 30 د`).
+String formatWorkedDurationMinutes(int minutes) {
+  final m = minutes < 0 ? 0 : minutes;
+  final h = m ~/ 60;
+  final min = m % 60;
+  return '$h ${'hoursShort'.tr} $min ${'minutesShort'.tr}';
+}
+
 String formatDayHeader(dynamic date) {
   final dt = _parseDate(date);
   final now = DateTime.now();

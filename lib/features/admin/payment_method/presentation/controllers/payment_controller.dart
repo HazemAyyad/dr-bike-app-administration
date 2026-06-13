@@ -44,6 +44,34 @@ class PaymentController extends GetxController {
   bool forInstantSale = false;
   String? instantSaleBoxLogNote;
 
+  /// Daily sales drawer — box is fixed (not chosen from main boxes list).
+  final RxBool useDailySalesBox = false.obs;
+  final RxString dailySalesBoxLabel = ''.obs;
+  final RxString dailySalesCurrency = 'شيكل'.obs;
+
+  void applyDailySalesBox({
+    required int boxId,
+    required String boxName,
+    String currency = 'شيكل',
+  }) {
+    useDailySalesBox.value = true;
+    dailySalesBoxLabel.value = boxName;
+    dailySalesCurrency.value = currency;
+    boxIdController.text = boxId.toString();
+    selectedBox.value = ShownBoxesModel(
+      boxId: boxId,
+      boxName: boxName,
+      totalBalance: 0,
+      isShown: false,
+      currency: currency,
+    );
+  }
+
+  void clearDailySalesBox() {
+    useDailySalesBox.value = false;
+    dailySalesBoxLabel.value = '';
+  }
+
   final List<String> paymentMethods = [
     'check',
     'deb',
@@ -78,6 +106,16 @@ class PaymentController extends GetxController {
     } else {
       partnerIdController.clear();
     }
+  }
+
+  /// After restoring partner id from suspended sale payload.
+  void restorePartnerSelectionFromId() {
+    final id = partnerIdController.text.trim();
+    if (id.isEmpty) return;
+    final list =
+        selectedCustomersSellers.value ? allCustomersList : allSellersList;
+    selectedPartner.value =
+        list.firstWhereOrNull((e) => e.id.toString() == id);
   }
 
   String get partnerDropdownTitle =>
@@ -220,12 +258,16 @@ class PaymentController extends GetxController {
         .replaceAll('،', '')
         .trim();
 
+    final hasPartner = id.isNotEmpty;
+
     return {
       'success': true,
-      'buyer_type': isCustomer ? 'customer' : 'seller',
-      'buyer_id': isCustomer ? id : null,
-      if (!isCustomer && id.isNotEmpty) 'seller_id': id,
-      'buyer_name': name ?? '',
+      'buyer_type': hasPartner
+          ? (isCustomer ? 'customer' : 'seller')
+          : 'unknown',
+      if (hasPartner && isCustomer) 'buyer_id': id,
+      if (hasPartner && !isCustomer) 'seller_id': id,
+      if (name != null && name.isNotEmpty) 'buyer_name': name,
       if (boxId.isNotEmpty) 'payment_box_id': boxId,
       if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
       if (boxId.isNotEmpty) 'payment_box_value': cashRaw.isEmpty ? '0' : cashRaw,
@@ -343,7 +385,7 @@ class PaymentController extends GetxController {
     required String type,
     required bool popOnSuccess,
   }) async {
-    if (partnerIdController.text.trim().isEmpty) {
+    if (!forInstantSale && partnerIdController.text.trim().isEmpty) {
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
@@ -466,9 +508,17 @@ class PaymentController extends GetxController {
     }
   }
 
+  List<ShownBoxesModel> get selectableBoxes {
+    if (useDailySalesBox.value && selectedBox.value != null) {
+      return [selectedBox.value!];
+    }
+    return shownBoxes;
+  }
+
   void clearPaymentForm() => _clearPaymentForm();
 
   void _clearPaymentForm() {
+    clearDailySalesBox();
     partnerIdController.clear();
     selectedPartner.value = null;
     boxIdController.clear();

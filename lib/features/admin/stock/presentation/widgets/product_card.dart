@@ -42,7 +42,6 @@ class BuildProductCard extends GetView<StockController> {
 
     final locationCodeLabel = ProductLocationLabel.withProductCode(
       sectionName: product.storeSectionName,
-      shelfNumber: product.shelfNumber,
       productCode: product.productCode,
     );
     final metaStyle = Theme.of(context).textTheme.bodySmall!.copyWith(

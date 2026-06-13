@@ -43,6 +43,12 @@ class BoxesScreen extends GetView<BoxesController> {
               padding: EdgeInsets.symmetric(horizontal: 50.w),
               child: SearchBar(
                 shadowColor: WidgetStateProperty.all(Colors.transparent),
+                textStyle: WidgetStateProperty.all(
+                  const TextStyle(fontSize: 16),
+                ),
+                hintStyle: WidgetStateProperty.all(
+                  const TextStyle(fontSize: 16),
+                ),
                 leading: const Icon(
                   Icons.search,
                 ),

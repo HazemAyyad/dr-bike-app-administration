@@ -41,7 +41,6 @@ class ProductDetailsModel {
   String? categoryName;
   String? storeSectionId;
   String? storeSectionName;
-  String? shelfNumber;
   /// Flat list from API `sub_categories` when present.
   List<String>? subCategoryIds;
   List<ProductSubCategory>? productSubCategories;
@@ -93,7 +92,6 @@ class ProductDetailsModel {
     this.categoryName,
     this.storeSectionId,
     this.storeSectionName,
-    this.shelfNumber,
     this.subCategoryIds,
     this.productSubCategories,
     this.purchasePrices,
@@ -189,7 +187,6 @@ class ProductDetailsModel {
       categoryName: asNullableString(j['category_name']),
       storeSectionId: asNullableString(j['store_section_id']),
       storeSectionName: asNullableString(j['store_section_name']),
-      shelfNumber: asNullableString(j['shelf_number']),
       subCategoryIds: _parseSubCategoryIdList(j['sub_categories']),
       productSubCategories: j['product_subCategories'] == null
           ? null

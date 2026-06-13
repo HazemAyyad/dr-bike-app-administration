@@ -345,6 +345,8 @@ class _SpecialTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
+    final progress = task.progress.clamp(0, 100);
+    final showProgress = progress > 0 && task.status != 'completed';
 
     return Padding(
       padding: EdgeInsets.only(bottom: archived ? 4.h : 2.h),
@@ -443,6 +445,32 @@ class _SpecialTaskCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (showProgress) ...[
+                  SizedBox(height: 6.h),
+                  Row(
+                    children: [
+                      const Spacer(),
+                      Text(
+                        '$progress%',
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.operationalPurple,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4.h),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4.r),
+                    child: LinearProgressIndicator(
+                      value: progress / 100,
+                      minHeight: 3.h,
+                      backgroundColor: AppColors.operationalSurface,
+                      color: AppColors.operationalPurple,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

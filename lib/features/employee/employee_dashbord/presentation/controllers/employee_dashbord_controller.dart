@@ -55,9 +55,9 @@ class EmployeeDashbordController extends GetxController
   final RxBool todayAttendanceLoading = false.obs;
   final Rxn<EmployeeAttendanceDay> todayAttendance = Rxn();
 
-  Future<void> refreshTodayAttendance() async {
+  Future<void> refreshTodayAttendance({bool silent = false}) async {
     try {
-      todayAttendanceLoading.value = true;
+      if (!silent) todayAttendanceLoading.value = true;
       final now = DateTime.now();
       final start = DateTime(now.year, now.month, now.day);
       final res = await getMyAttendanceHistoryUsecase.call(
@@ -78,8 +78,19 @@ class EmployeeDashbordController extends GetxController
     } catch (_) {
       todayAttendance.value = null;
     } finally {
-      todayAttendanceLoading.value = false;
+      if (!silent) todayAttendanceLoading.value = false;
     }
+  }
+
+  Timer? _attendanceLiveTimer;
+
+  void _startAttendanceLiveRefresh() {
+    _attendanceLiveTimer?.cancel();
+    _attendanceLiveTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (todayAttendance.value?.currentlyIn == true) {
+        refreshTodayAttendance(silent: true);
+      }
+    });
   }
 
   bool isStartWork = false;
@@ -856,6 +867,7 @@ class EmployeeDashbordController extends GetxController
     syncPeriodBounds();
     _loadStartTime();
     getEmployeeData(scrollToTodayb: false);
+    _startAttendanceLiveRefresh();
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -877,6 +889,7 @@ class EmployeeDashbordController extends GetxController
 
   @override
   void onClose() {
+    _attendanceLiveTimer?.cancel();
     animController.dispose();
     opacityAnimation.isDismissed;
     sizeAnimation.isDismissed;

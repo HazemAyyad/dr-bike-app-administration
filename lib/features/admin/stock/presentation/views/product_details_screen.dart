@@ -30,7 +30,6 @@ class _ProductDetailsHero extends StatelessWidget {
     final meta = _ProductCategoryMeta.from(product);
     final locationCodeLabel = ProductLocationLabel.withProductCode(
       sectionName: product.storeSectionName,
-      shelfNumber: product.shelfNumber,
       productCode: product.productCode,
     );
     return ProductHeroCard(

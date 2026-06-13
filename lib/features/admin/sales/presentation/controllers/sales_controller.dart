@@ -20,9 +20,11 @@ import '../../../stock/data/models/store_section_model.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../stock/presentation/controllers/offer_packages_controller.dart';
 import '../../data/datasources/sales_datasources.dart';
+import '../../data/models/daily_session_model.dart';
 import '../../data/models/instant_sales_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/models/ongoing_project_model.dart';
+import '../../data/models/suspended_instant_sale_model.dart';
 import '../../data/repositories/sales_implement.dart';
 import '../../domain/usecases/add_profit_sale.dart';
 import '../../domain/usecases/get_all_products_usecase.dart';
@@ -33,6 +35,7 @@ import '../models/instant_sale_cart_line.dart';
 import '../utils/box_log_note_format.dart';
 import '../utils/instant_sale_display.dart';
 import '../utils/sales_amount_format.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../widgets/instant_sale_action_dialog.dart';
 import '../widgets/instant_sale_actions_sheet.dart';
@@ -309,6 +312,9 @@ class SalesController extends GetxController
 
   final currentTab = 0.obs;
 
+  final Rxn<DailySessionPayload> dailySessionPayload = Rxn<DailySessionPayload>();
+  final isDailySessionLoading = false.obs;
+
   /// Bumped when sales lists change so [Obx] on [SalesScreen] rebuilds.
   final salesListRevision = 0.obs;
 
@@ -323,6 +329,118 @@ class SalesController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
+  }
+
+  bool get canCreateSales => dailySessionPayload.value?.allowsSales ?? true;
+
+  Future<void> loadDailySession() async {
+    isDailySessionLoading(true);
+    try {
+      final ds = Get.find<SalesDatasource>();
+      dailySessionPayload.value = await ds.getDailySessionCurrent();
+    } catch (_) {
+      dailySessionPayload.value = null;
+    } finally {
+      isDailySessionLoading(false);
+    }
+  }
+
+  bool get hasInstantSalesData =>
+      salesService.instantSalesTasks.isNotEmpty;
+
+  bool get hasProfitSalesData =>
+      salesService.filterProfitSalesTasks.isNotEmpty;
+
+  void applyDailyBoxToPayment(
+    PaymentController payment, {
+    String currency = 'شيكل',
+  }) {
+    final row = dailySessionPayload.value?.rowForCurrency(currency);
+    if (row == null) return;
+    payment.applyDailySalesBox(
+      boxId: row.dailyBoxId,
+      boxName: row.dailyBoxName,
+      currency: row.currency,
+    );
+  }
+
+  List<ShownBoxesModel> get dailyBoxesForProfitPicker {
+    final payload = dailySessionPayload.value;
+    if (payload == null) return [];
+    return payload.currencies
+        .map(
+          (row) => ShownBoxesModel(
+            boxId: row.dailyBoxId,
+            boxName: row.dailyBoxName,
+            totalBalance: row.boxBalance,
+            isShown: false,
+            currency: row.currency,
+          ),
+        )
+        .toList();
+  }
+
+  bool showSalesBlockedMessage() {
+    final payload = dailySessionPayload.value;
+    if (payload == null || payload.allowsSales) return false;
+
+    final message = payload.isBlockingPreviousDay
+        ? 'salesDailyPreviousDayOpen'.tr
+        : payload.isClosingRequested
+            ? 'salesDailyClosingPending'.tr
+            : payload.isReopenPending
+                ? 'salesDailyReopenPending'.tr
+                : 'salesDailyDayClosed'.tr;
+    Get.snackbar('error'.tr, message, backgroundColor: Colors.red);
+    return true;
+  }
+
+  Future<void> requestDailyReopen({required String reason}) async {
+    final ds = Get.find<SalesDatasource>();
+    final message = await ds.requestDailyReopen(reason: reason);
+    await loadDailySession();
+    final overlayContext = Get.overlayContext ?? Get.context;
+    if (overlayContext != null) {
+      Helpers.showCustomDialogSuccess(
+        context: overlayContext,
+        title: 'success'.tr,
+        message: message,
+        autoCloseAfter: const Duration(seconds: 2),
+      );
+    }
+  }
+
+  Future<String> submitDailyClosing({
+    required List<Map<String, dynamic>> cashCounts,
+    String? lateCloseReason,
+    int? sessionId,
+  }) async {
+    final ds = Get.find<SalesDatasource>();
+    final message = await ds.requestDailyClosing(
+      cashCounts: cashCounts,
+      lateCloseReason: lateCloseReason,
+      sessionId: sessionId,
+    );
+    await loadDailySession();
+    return message;
+  }
+
+  Future<void> requestSaleCancellation({
+    required String saleType,
+    required String saleId,
+    required String reason,
+  }) async {
+    final ds = Get.find<SalesDatasource>();
+    await ds.requestSalesCancellation(
+      saleType: saleType,
+      saleId: saleId,
+      reason: reason,
+    );
+    Helpers.showCustomDialogSuccess(
+      context: Get.context!,
+      title: 'success'.tr,
+      message: 'salesDailyCancelRequested'.tr,
+    );
   }
 
   void setInstantSalesPackageFilter(int mode) {
@@ -362,7 +480,6 @@ class SalesController extends GetxController
   final RxList<StoreSectionModel> pickerStoreSections =
       <StoreSectionModel>[].obs;
   final RxnString pickerLocationSectionId = RxnString();
-  final RxnString pickerLocationShelf = RxnString();
 
   StockDatasource get _stockDatasource {
     AppDependencyRegistry.ensureStock();
@@ -380,37 +497,25 @@ class SalesController extends GetxController
   bool productMatchesPickerLocation(ProductModel product) {
     final sectionId = pickerLocationSectionId.value;
     if (sectionId == null || sectionId.isEmpty) return true;
-    if ((product.storeSectionId ?? '').trim() != sectionId.trim()) {
-      return false;
-    }
-    final shelf = pickerLocationShelf.value?.trim() ?? '';
-    if (shelf.isEmpty) return true;
-    return (product.shelfNumber ?? '').trim() == shelf;
+    return (product.storeSectionId ?? '').trim() == sectionId.trim();
   }
-
-  Future<List<String>> loadPickerSectionShelves(String sectionId) =>
-      _stockDatasource.getSectionShelves(sectionId: sectionId);
 
   Future<void> applyPickerLocationFilter({
     String? sectionId,
-    String? shelfNumber,
   }) async {
     pickerLocationSectionId.value = sectionId;
-    pickerLocationShelf.value = shelfNumber;
     _bumpProductsList();
     update();
   }
 
   Future<void> clearPickerLocationFilter() async {
     pickerLocationSectionId.value = null;
-    pickerLocationShelf.value = null;
     _bumpProductsList();
     update();
   }
 
   void clearPickerLocationFilterOnReset() {
     pickerLocationSectionId.value = null;
-    pickerLocationShelf.value = null;
   }
 
   void bumpCartRevision() => cartRevision.value++;
@@ -522,9 +627,7 @@ class SalesController extends GetxController
       final code = p.productCode?.toLowerCase() ?? '';
       if (code.contains(q)) return true;
       final section = p.storeSectionName?.toLowerCase() ?? '';
-      if (section.contains(q)) return true;
-      final shelfNum = p.shelfNumber?.toLowerCase() ?? '';
-      return shelfNum.contains(q);
+      return section.contains(q);
     }).toList();
   }
 
@@ -720,7 +823,9 @@ class SalesController extends GetxController
     bumpCartRevision();
   }
 
-  void openInstantSaleCheckout() {
+  void openInstantSaleCheckout({bool fromResume = false}) {
+    if (!fromResume && showSalesBlockedMessage()) return;
+
     final hasPackage = hasSelectedPackage;
     final hasProducts = cartLines.isNotEmpty;
 
@@ -765,7 +870,374 @@ class SalesController extends GetxController
     Get.toNamed(AppRoutes.INSTANTSALEPRODUCTPICKER);
   }
 
-  void startNewInstantSaleFlow() {
+  final RxInt suspendedInvoicesCount = 0.obs;
+  final RxnInt activeSuspendedSaleId = RxnInt();
+
+  String? get activeSuspendedReferenceCode => activeSuspendedSaleId.value == null
+      ? null
+      : 'ع-${activeSuspendedSaleId.value}';
+
+  Future<void> loadSuspendedInvoicesCount() async {
+    try {
+      suspendedInvoicesCount.value =
+          await Get.find<SalesImplement>().getSuspendedInstantSalesCount();
+    } catch (_) {
+      suspendedInvoicesCount.value = 0;
+    }
+  }
+
+  void clearActiveSuspendedSale() {
+    activeSuspendedSaleId.value = null;
+  }
+
+  Map<String, dynamic> buildInstantSaleSuspendPayload() {
+    final hasPackage = hasSelectedPackage;
+    if (cartLines.isNotEmpty && !hasPackage) {
+      syncCartToItems();
+    }
+
+    final List<Map<String, dynamic>> otherProductsList;
+    if (hasPackage) {
+      otherProductsList = buildCartOtherProductsPayload();
+    } else if (items.length > 1) {
+      otherProductsList = items.skip(1).map((item) {
+        final map = <String, dynamic>{
+          'product_id': item.selectedItem.value,
+          'cost': item.priceController.text,
+          'quantity': item.quantityController.text,
+          'type': item.selectedCustomersSellers.value ? 'project' : 'normal',
+        };
+        final projectId = item.selectedValue.value;
+        if (projectId != null && projectId.isNotEmpty) {
+          map['project_id'] = projectId;
+        }
+        return map;
+      }).toList();
+    } else {
+      otherProductsList = [];
+    }
+
+    final map = <String, dynamic>{
+      'discount':
+          discountController.text.isEmpty ? '0' : discountController.text,
+      'total_cost': totalCost.value.toString(),
+      'notes': instantSaleNotesText,
+      'additional_notes': instantSaleNotesPayload(),
+      'type': items.first.selectedCustomersSellers.value ? 'project' : 'normal',
+      'buyer_type': _paymentBuyerType,
+    };
+
+    final projectId = items.first.selectedValue.value;
+    if (items.first.selectedCustomersSellers.value &&
+        projectId != null &&
+        projectId.isNotEmpty) {
+      map['project_id'] = projectId;
+    }
+    if (_paymentBuyerId != null && _paymentBuyerId!.isNotEmpty) {
+      map['buyer_id'] = _paymentBuyerId;
+    }
+    if (_paymentSellerId != null && _paymentSellerId!.isNotEmpty) {
+      map['seller_id'] = _paymentSellerId;
+    }
+    if (_paymentBuyerName != null && _paymentBuyerName!.isNotEmpty) {
+      map['buyer_name'] = _paymentBuyerName;
+    }
+    if (_paymentBoxId != null && _paymentBoxId!.isNotEmpty) {
+      map['payment_box_id'] = _paymentBoxId;
+      map['payment_box_name'] = _paymentBoxName;
+      map['payment_box_value'] = _paymentBoxValue ?? '0';
+    }
+
+    if (hasPackage) {
+      map['offer_package_id'] = selectedPackageId.value;
+      map['quantity'] = items.first.quantityController.text;
+      map['cost'] = items.first.priceController.text;
+      if (otherProductsList.isNotEmpty) {
+        map['other_products'] = otherProductsList;
+      }
+    } else if (items.isNotEmpty &&
+        items.first.selectedItem.value.toString().isNotEmpty) {
+      map['product_id'] = items.first.selectedItem.value;
+      map['quantity'] = items.first.quantityController.text;
+      map['cost'] = items.first.priceController.text;
+      if (otherProductsList.isNotEmpty) {
+        map['other_products'] = otherProductsList;
+      }
+    }
+
+    _mergeLiveCheckoutPaymentIntoPayload(map);
+
+    return map;
+  }
+
+  /// Reads payment form on checkout screen (before submit) into suspend payload.
+  void _mergeLiveCheckoutPaymentIntoPayload(Map<String, dynamic> map) {
+    final payment = _instantSalePayment;
+    if (payment == null) return;
+
+    final live = payment.buildInstantSaleBuyerPayload();
+
+    final buyerType = live['buyer_type']?.toString();
+    if (buyerType != null && buyerType.isNotEmpty) {
+      map['buyer_type'] = buyerType;
+    }
+
+    final buyerId = live['buyer_id']?.toString();
+    if (buyerId != null && buyerId.isNotEmpty) {
+      map['buyer_id'] = buyerId;
+      map.remove('seller_id');
+    }
+
+    final sellerId = live['seller_id']?.toString();
+    if (sellerId != null && sellerId.isNotEmpty) {
+      map['seller_id'] = sellerId;
+      map.remove('buyer_id');
+    }
+
+    final buyerName = live['buyer_name']?.toString();
+    if (buyerName != null && buyerName.isNotEmpty) {
+      map['buyer_name'] = buyerName;
+    }
+
+    final boxId = live['payment_box_id']?.toString();
+    if (boxId != null && boxId.isNotEmpty) {
+      map['payment_box_id'] = boxId;
+      final boxName = live['payment_box_name']?.toString();
+      if (boxName != null && boxName.isNotEmpty) {
+        map['payment_box_name'] = boxName;
+      }
+      final cash = live['payment_box_value']?.toString() ?? '0';
+      map['payment_box_value'] = cash.replaceAll(',', '').replaceAll('،', '');
+    }
+
+    applyBuyerFromPayment(live);
+  }
+
+  Future<bool> suspendInstantSale(
+    BuildContext context, {
+    required String currentStep,
+  }) async {
+    if (showSalesBlockedMessage()) return false;
+
+    if (!canContinueFromPicker) {
+      Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
+          backgroundColor: Colors.red);
+      return false;
+    }
+
+    isLoading(true);
+    try {
+      final payload = buildInstantSaleSuspendPayload();
+      final result = await Get.find<SalesImplement>().suspendInstantSale(
+        currentStep: currentStep,
+        payload: payload,
+        suspendedInstantSaleId: activeSuspendedSaleId.value,
+      );
+
+      return await result.fold(
+        (failure) async {
+          Helpers.showCustomDialogError(
+            context: context,
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
+          return false;
+        },
+        (message) async {
+          await _leaveInstantSaleFlow();
+          clearActiveSuspendedSale();
+          resetInstantSaleForm();
+          await loadSuspendedInvoicesCount();
+          Helpers.showCustomDialogSuccess(
+            context: Get.context ?? context,
+            title: 'success'.tr,
+            message: message,
+          );
+          return true;
+        },
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<bool> resumeSuspendedInstantSale(
+    SuspendedInstantSaleModel sale,
+  ) async {
+    try {
+      activeSuspendedSaleId.value = sale.id;
+      resetInstantSaleForm(renewFormKey: true);
+      await loadOfferPackagesForSale();
+      if (products.isEmpty) {
+        final list = await getAllProductsUsecase.call();
+        products
+          ..clear()
+          ..addAll(list);
+      }
+      await hydrateFromSuspendedPayload(sale.payload);
+
+      if (Get.currentRoute == AppRoutes.SUSPENDEDINVOICESSCREEN) {
+        Get.back();
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+
+      if (sale.isCheckoutStep) {
+        openInstantSaleCheckout(fromResume: true);
+      } else {
+        await Get.toNamed(AppRoutes.INSTANTSALEPRODUCTPICKER);
+      }
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+  }
+
+  Future<void> hydrateFromSuspendedPayload(Map<String, dynamic> payload) async {
+    discountController.text = payload['discount']?.toString() ?? '0';
+
+    clearInstantSaleNotes(dispose: true);
+    final additionalNotes = payload['additional_notes'];
+    if (additionalNotes is List) {
+      for (final raw in additionalNotes) {
+        if (raw is Map) {
+          addInstantSaleNoteLine();
+          final idx = instantSaleNotes.length - 1;
+          instantSaleNotes[idx].text.text = raw['text']?.toString() ?? '';
+          instantSaleNotes[idx].amount.text =
+              raw['amount']?.toString() ?? '0';
+        }
+      }
+    }
+
+    final offerPackageId = payload['offer_package_id'];
+    if (offerPackageId != null && '$offerPackageId'.isNotEmpty) {
+      isPackageSale.value = true;
+      selectedPackageId.value = int.tryParse('$offerPackageId');
+      items.first.quantityController.text =
+          payload['quantity']?.toString() ?? '1';
+      items.first.priceController.text = payload['cost']?.toString() ?? '';
+      final pkg = selectedOfferPackage;
+      if (pkg == null && offerPackagesForSale.isNotEmpty) {
+        final match = offerPackagesForSale
+            .firstWhereOrNull((p) => p.id == selectedPackageId.value);
+        if (match != null) {
+          items.first.priceController.text = _formatUnitPrice(match.price);
+        }
+      }
+    } else {
+      isPackageSale.value = false;
+      selectedPackageId.value = null;
+    }
+
+    final lineMaps = <Map<String, dynamic>>[];
+    if (offerPackageId == null && payload['product_id'] != null) {
+      lineMaps.add({
+        'product_id': payload['product_id'],
+        'quantity': payload['quantity'] ?? '1',
+        'cost': payload['cost'] ?? '0',
+        'type': payload['type'] ?? 'normal',
+        'project_id': payload['project_id'],
+      });
+    }
+    final otherProducts = payload['other_products'];
+    if (otherProducts is List) {
+      for (final raw in otherProducts) {
+        if (raw is Map) {
+          lineMaps.add(Map<String, dynamic>.from(raw));
+        }
+      }
+    }
+
+    clearCartLines(deferDispose: false);
+    for (final line in lineMaps) {
+      final productId = line['product_id']?.toString() ?? '';
+      if (productId.isEmpty) continue;
+
+      ProductModel product = products.firstWhereOrNull((p) => p.id == productId) ??
+          ProductModel(
+            id: productId,
+            nameAr: 'منتج',
+            stock: '999',
+            projects: const [],
+          );
+
+      addCartLine(
+        InstantSaleCartLine.fromProduct(
+          product,
+          quantity: line['quantity']?.toString(),
+          unitPrice: line['cost']?.toString(),
+          projectSale: line['type']?.toString() == 'project',
+          projectId: line['project_id']?.toString(),
+        ),
+      );
+    }
+
+    if (!hasSelectedPackage && lineMaps.isNotEmpty) {
+      syncCartToItems();
+      final first = lineMaps.first;
+      items.first.selectedCustomersSellers.value =
+          first['type']?.toString() == 'project';
+      final projectId = first['project_id']?.toString();
+      if (projectId != null && projectId.isNotEmpty) {
+        items.first.selectedValue.value = projectId;
+      }
+    } else if (payload['type']?.toString() == 'project') {
+      items.first.selectedCustomersSellers.value = true;
+      final projectId = payload['project_id']?.toString();
+      if (projectId != null && projectId.isNotEmpty) {
+        items.first.selectedValue.value = projectId;
+      }
+    }
+
+    applyBuyerFromPayment({
+      'buyer_type': payload['buyer_type'] ?? 'unknown',
+      'buyer_id': payload['buyer_id'],
+      'seller_id': payload['seller_id'],
+      'buyer_name': payload['buyer_name'],
+      'payment_box_id': payload['payment_box_id'],
+      'payment_box_name': payload['payment_box_name'],
+      'payment_box_value': payload['payment_box_value'],
+    });
+
+    calculateGrandTotal();
+    bumpCartRevision();
+  }
+
+  void applySuspendedPaymentToController(PaymentController payment) {
+    if (_paymentBoxId != null && _paymentBoxId!.isNotEmpty) {
+      payment.boxIdController.text = _paymentBoxId!;
+      if (_paymentBoxValue != null && _paymentBoxValue!.isNotEmpty) {
+        payment.cashValueController.text =
+            SalesAmountFormat.display(double.tryParse(_paymentBoxValue!) ?? 0);
+      }
+    }
+    final buyerId = _paymentBuyerId;
+    final sellerId = _paymentSellerId;
+    if (buyerId != null && buyerId.isNotEmpty) {
+      payment.selectedCustomersSellers.value = true;
+      payment.partnerIdController.text = buyerId;
+    } else if (sellerId != null && sellerId.isNotEmpty) {
+      payment.selectedCustomersSellers.value = false;
+      payment.partnerIdController.text = sellerId;
+    } else if (_paymentBuyerName != null &&
+        _paymentBuyerName!.isNotEmpty &&
+        _paymentBuyerName != '-') {
+      payment.selectedCustomersSellers.value =
+          _paymentBuyerType == 'customer' || _paymentBuyerType == 'trader';
+    }
+    payment.restorePartnerSelectionFromId();
+    refreshInstantSalePaymentSummary();
+  }
+
+  Future<void> startNewInstantSaleFlow() async {
+    if (showSalesBlockedMessage()) return;
+    clearActiveSuspendedSale();
     resetInstantSaleForm();
     isPackageSale.value = false;
     openInstantSaleProductPicker();
@@ -1347,8 +1819,84 @@ class SalesController extends GetxController
     }
   }
 
+  Future<void> completeActiveSuspendedInstantSale(BuildContext context) async {
+    final suspendedId = activeSuspendedSaleId.value;
+    if (suspendedId == null) return;
+
+    isLoading(true);
+    try {
+      final payload = buildInstantSaleSuspendPayload();
+      final result = await Get.find<SalesImplement>().completeSuspendedInstantSale(
+        suspendedInstantSaleId: suspendedId,
+        payload: payload,
+      );
+
+      await result.fold(
+        (failure) async {
+          String errorMessages = failure.errMessage;
+          final errors = failure.data?['errors'] as Map<String, dynamic>?;
+          if (errors != null) {
+            errors.forEach((key, value) {
+              for (final msg in value) {
+                errorMessages += '\n- $key: $msg';
+              }
+            });
+          }
+          Helpers.showCustomDialogError(
+            context: context,
+            title: failure.errMessage,
+            message: errorMessages,
+          );
+        },
+        (success) async {
+          FocusManager.instance.primaryFocus?.unfocus();
+
+          while (Get.isBottomSheetOpen == true) {
+            Get.back();
+          }
+
+          await _leaveInstantSaleFlow();
+          await Future<void>.delayed(const Duration(milliseconds: 350));
+
+          if (!isClosed) {
+            _instantSalePayment?.clearPaymentForm();
+            _releaseInstantSalePaymentController();
+            clearActiveSuspendedSale();
+            resetInstantSaleForm();
+          }
+
+          await loadSuspendedInvoicesCount();
+          await refreshAllSalesData(showLoading: false);
+
+          if (!isClosed) {
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (isClosed) return;
+              await loadOfferPackagesForSale();
+              getAllProducts();
+              final dialogContext = Get.overlayContext ?? Get.context;
+              if (dialogContext != null && dialogContext.mounted) {
+                Helpers.showCustomDialogSuccess(
+                  context: dialogContext,
+                  title: 'success'.tr,
+                  message: success,
+                );
+              }
+            });
+          }
+        },
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
   // add instant sale
   Future<void> addInstantSale(BuildContext context) async {
+    if (activeSuspendedSaleId.value != null) {
+      await completeActiveSuspendedInstantSale(context);
+      return;
+    }
+
     isLoading(true);
     try {
       final result = await addInstantSalesUsecase.call(
@@ -1463,6 +2011,8 @@ class SalesController extends GetxController
       fetchProfitSales(clearCache: true, showLoading: showLoading),
       loadOfferPackagesForSale(),
       refreshOfferPackagesInventoryIfOpen(),
+      loadDailySession(),
+      loadSuspendedInvoicesCount(),
     ]);
     notifySalesListChanged();
   }
@@ -1757,6 +2307,16 @@ class SalesController extends GetxController
       );
       await result.fold(
         (failure) async {
+          final msg = failure.errMessage;
+          if (msg.contains('sales_daily_cancel_request_required') ||
+              msg.contains('أرسل طلب إلغاء')) {
+            await _promptCancellationRequest(
+              context,
+              saleType: 'instant',
+              saleId: sale.id.toString(),
+            );
+            return;
+          }
           Helpers.showCustomDialogError(
             context: context,
             title: 'error'.tr,
@@ -1770,6 +2330,48 @@ class SalesController extends GetxController
     } finally {
       isLoading(false);
     }
+  }
+
+  Future<void> _promptCancellationRequest(
+    BuildContext context, {
+    required String saleType,
+    required String saleId,
+  }) async {
+    final reasonCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('salesDailyCancelRequestTitle'.tr),
+        content: TextField(
+          controller: reasonCtrl,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'salesDailyCancelReasonHint'.tr,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('submit'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      reasonCtrl.dispose();
+      return;
+    }
+    final reason = reasonCtrl.text;
+    reasonCtrl.dispose();
+    await requestSaleCancellation(
+      saleType: saleType,
+      saleId: saleId,
+      reason: reason,
+    );
   }
 
   Future<void> confirmCancelProfitSale(
@@ -1795,6 +2397,16 @@ class SalesController extends GetxController
       );
       await result.fold(
         (failure) async {
+          final msg = failure.errMessage;
+          if (msg.contains('sales_daily_cancel_request_required') ||
+              msg.contains('أرسل طلب إلغاء')) {
+            await _promptCancellationRequest(
+              context,
+              saleType: 'profit',
+              saleId: sale.id.toString(),
+            );
+            return;
+          }
           final serverError = failure.data?['error']?.toString();
           Helpers.showCustomDialogError(
             context: context,
@@ -1924,6 +2536,8 @@ class SalesController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    loadDailySession();
+    loadSuspendedInvoicesCount();
     getInstantSales();
     getProfitSales(loding: false);
     getOngoingProjects();

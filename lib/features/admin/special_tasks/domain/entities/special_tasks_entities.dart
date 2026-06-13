@@ -5,6 +5,7 @@ class SpecialTaskEntity {
   final DateTime endDate;
   final bool isCanceled;
   final String status;
+  final int progress;
 
   SpecialTaskEntity({
     required this.id,
@@ -13,5 +14,6 @@ class SpecialTaskEntity {
     required this.endDate,
     required this.isCanceled,
     required this.status,
+    this.progress = 0,
   });
 }

@@ -68,6 +68,8 @@ class MovementsWidget extends StatelessWidget {
                 box.fromBox != null
                     ? Text(
                         "${'from'.tr} : ${box.fromBox!.name} ${'to'.tr} : ${box.toBox?.name ?? ''}",
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: textStyle.copyWith(
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w400,
@@ -95,8 +97,9 @@ class MovementsWidget extends StatelessWidget {
           ),
         ),
         Container(
-          width: 60.w,
+          constraints: BoxConstraints(minWidth: 56.w, maxWidth: 72.w),
           height: 70.h,
+          padding: EdgeInsets.symmetric(horizontal: 4.w),
           decoration: BoxDecoration(
             color: box.type == 'transfer'
                 ? AppColors.customOrange3
@@ -116,13 +119,16 @@ class MovementsWidget extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                NumberFormat('#,###').format(box.value),
-                textAlign: TextAlign.center,
-                style: textStyle.copyWith(
-                  fontSize: 17.sp,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  NumberFormat('#,###').format(box.value),
+                  textAlign: TextAlign.center,
+                  style: textStyle.copyWith(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],

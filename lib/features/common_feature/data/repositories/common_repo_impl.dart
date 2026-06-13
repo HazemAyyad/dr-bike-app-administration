@@ -16,6 +16,7 @@ class CommonImplement implements CommonRepository {
   @override
   Future<Either<Failure, bool>> userProfile({
     required String name,
+    required String email,
     required String phone,
     required String subPhone,
     required String city,
@@ -27,20 +28,24 @@ class CommonImplement implements CommonRepository {
     try {
       final result = await commonDatasource.userProfile(
         name: name,
+        email: email,
         phone: phone,
         subPhone: subPhone,
         city: city,
         address: address,
       );
-      if (result['status'] == 'success') {
+      if (result is Map && result['status'] == 'success') {
         return const Right(true);
       }
-      return Left(
-        ValidationFailure(
-          result['message'] ?? 'Unknown error',
-          result,
-        ),
-      );
+      if (result is Map) {
+        return Left(
+          ValidationFailure(
+            result['message']?.toString() ?? 'Unknown error',
+            result,
+          ),
+        );
+      }
+      return Left(ValidationFailure('Unknown error', {}));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:doctorbike/features/admin/sales/data/models/instant_sales_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/product_price_update_result.dart';
 import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
+import 'package:doctorbike/features/admin/sales/data/models/suspended_instant_sale_model.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,6 +16,7 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../stock/data/models/offer_package_model.dart';
+import '../models/daily_session_model.dart';
 import '../models/invoice_model.dart';
 import '../models/product_model.dart';
 
@@ -436,6 +438,266 @@ class SalesDatasource {
     }
   }
 
+  Future<DailySessionPayload> getDailySessionCurrent() async {
+    final response = await api.get(EndPoints.salesDailySessionCurrent);
+    final raw = response.data['daily_session'];
+    if (raw is! Map) {
+      return const DailySessionPayload();
+    }
+    return DailySessionPayload.fromJson(Map<String, dynamic>.from(raw));
+  }
+
+  Future<DailyTodayOverviewModel> getDailySessionsTodayOverview() async {
+    final response = await api.get(EndPoints.salesDailySessionsTodayOverview);
+    final raw = response.data['overview'];
+    if (raw is! Map) {
+      return const DailyTodayOverviewModel(businessDate: '');
+    }
+    return DailyTodayOverviewModel.fromJson(Map<String, dynamic>.from(raw));
+  }
+
+  Future<List<DailySessionSummaryModel>> getDailySessionsHistory({
+    String? fromDate,
+    String? toDate,
+    String? status,
+    int page = 1,
+  }) async {
+    final response = await api.get(
+      EndPoints.salesDailySessions,
+      queryParameters: {
+        if (fromDate != null && fromDate.isNotEmpty) 'from_date': fromDate,
+        if (toDate != null && toDate.isNotEmpty) 'to_date': toDate,
+        if (status != null && status.isNotEmpty) 'status': status,
+        'page': page,
+        'per_page': 30,
+      },
+    );
+    return mapListFromResponseKey(
+      response.data,
+      'sessions',
+      (Map<String, dynamic> m) => DailySessionSummaryModel.fromJson(m),
+    );
+  }
+
+  Future<DailySessionDetailModel> getDailySessionDetail(int sessionId) async {
+    final response = await api.get(EndPoints.salesDailySessionDetail(sessionId));
+    final raw = response.data['session_detail'];
+    if (raw is! Map) {
+      throw ServerException(
+        ErrorModel(
+          errorMessage: 'Invalid session detail response',
+          status: 500,
+          data: const {},
+        ),
+      );
+    }
+    return DailySessionDetailModel.fromJson(Map<String, dynamic>.from(raw));
+  }
+
+  Future<DailySessionPayload> getDailySessionClosePayload(int sessionId) async {
+    final response = await api.get(
+      EndPoints.salesDailySessionClosePayload(sessionId),
+    );
+    final raw = response.data['daily_session'];
+    if (raw is! Map) {
+      throw ServerException(
+        ErrorModel(
+          errorMessage: 'Invalid close payload response',
+          status: 500,
+          data: const {},
+        ),
+      );
+    }
+    return DailySessionPayload.fromJson(Map<String, dynamic>.from(raw));
+  }
+
+  Future<String> requestDailyClosing({
+    required List<Map<String, dynamic>> cashCounts,
+    String? lateCloseReason,
+    int? sessionId,
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailyClosingRequest,
+      data: {
+        'cash_counts': cashCounts,
+        if (lateCloseReason != null && lateCloseReason.trim().isNotEmpty)
+          'late_close_reason': lateCloseReason.trim(),
+        if (sessionId != null) 'session_id': sessionId,
+      },
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  Future<List<DailyClosingRequestModel>> getPendingDailyClosing() async {
+    final response = await api.get(EndPoints.salesDailyClosingPending);
+    return mapListFromResponseKey(
+      response.data,
+      'closing_requests',
+      (Map<String, dynamic> m) => DailyClosingRequestModel.fromJson(m),
+    );
+  }
+
+  Future<String> approveDailyClosing({
+    required int closingRequestId,
+    required List<Map<String, dynamic>> transfers,
+    String? reviewNotes,
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailyClosingApprove,
+      data: {
+        'closing_request_id': closingRequestId,
+        'transfers': transfers,
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'review_notes': reviewNotes.trim(),
+      },
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  Future<String> rejectDailyClosing({
+    required int closingRequestId,
+    String? reviewNotes,
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailyClosingReject,
+      data: {
+        'closing_request_id': closingRequestId,
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'review_notes': reviewNotes.trim(),
+      },
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  Future<String> requestDailyReopen({required String reason}) async {
+    final response = await api.post(
+      EndPoints.salesDailyReopenRequest,
+      data: {'reason': reason.trim()},
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  Future<List<DailyReopenRequestModel>> getPendingDailyReopen() async {
+    final response = await api.get(EndPoints.salesDailyReopenPending);
+    return mapListFromResponseKey(
+      response.data,
+      'reopen_requests',
+      (Map<String, dynamic> m) => DailyReopenRequestModel.fromJson(m),
+    );
+  }
+
+  Future<String> approveDailyReopen({
+    required int reopenRequestId,
+    String? reviewNotes,
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailyReopenApprove,
+      data: {
+        'reopen_request_id': reopenRequestId,
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'review_notes': reviewNotes.trim(),
+      },
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  Future<String> rejectDailyReopen({
+    required int reopenRequestId,
+    String? reviewNotes,
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailyReopenReject,
+      data: {
+        'reopen_request_id': reopenRequestId,
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'review_notes': reviewNotes.trim(),
+      },
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  String _messageFromResponse(dynamic data) {
+    if (data is! Map) {
+      return 'OK';
+    }
+    final map = Map<String, dynamic>.from(data);
+    if (map['status'] == 'error') {
+      final validation = _validationMessage(map);
+      throw ServerException(
+        ErrorModel(
+          errorMessage: validation.isNotEmpty
+              ? validation
+              : asString(map['message'], 'Unknown error'),
+          status: 500,
+          data: map,
+        ),
+      );
+    }
+    return asString(map['message'], 'OK');
+  }
+
+  String _validationMessage(Map<String, dynamic> map) {
+    final raw = map['errors'];
+    if (raw is! Map) return '';
+    final parts = <String>[];
+    raw.forEach((key, value) {
+      if (value is List) {
+        for (final item in value) {
+          final text = '$item'.trim();
+          if (text.isNotEmpty) parts.add(text);
+        }
+      } else {
+        final text = '$value'.trim();
+        if (text.isNotEmpty) parts.add(text);
+      }
+    });
+    return parts.join('\n');
+  }
+
+  Future<void> requestSalesCancellation({
+    required String saleType,
+    required String saleId,
+    required String reason,
+  }) async {
+    await api.post(
+      EndPoints.salesCancellationRequest,
+      data: {
+        'sale_type': saleType,
+        'sale_id': saleId,
+        'reason': reason,
+      },
+    );
+  }
+
+  Future<List<SalesCancellationRequestModel>> getPendingCancellations() async {
+    final response = await api.get(EndPoints.salesCancellationPending);
+    return mapListFromResponseKey(
+      response.data,
+      'cancellation_requests',
+      (Map<String, dynamic> m) => SalesCancellationRequestModel.fromJson(m),
+    );
+  }
+
+  Future<void> approveSalesCancellation(int requestId, {String? notes}) async {
+    await api.post(
+      EndPoints.salesCancellationApprove,
+      data: {
+        'cancellation_request_id': requestId,
+        if (notes != null && notes.trim().isNotEmpty) 'review_notes': notes,
+      },
+    );
+  }
+
+  Future<void> rejectSalesCancellation(int requestId, {String? notes}) async {
+    await api.post(
+      EndPoints.salesCancellationReject,
+      data: {
+        'cancellation_request_id': requestId,
+        if (notes != null && notes.trim().isNotEmpty) 'review_notes': notes,
+      },
+    );
+  }
+
   // get Invoice
   Future<InvoiceModel> getInvoice({required String invoiceId}) async {
     try {
@@ -468,6 +730,151 @@ class SalesDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<SuspendedInstantSaleModel>> getSuspendedInstantSales({
+    String? search,
+    int? createdByUserId,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.suspendedInstantSales,
+        queryParameters: {
+          if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+          if (createdByUserId != null) 'created_by_user_id': createdByUserId,
+        },
+      );
+      final raw = response.data['suspended_instant_sales'];
+      if (raw is! List) return [];
+      return raw
+          .map((e) => SuspendedInstantSaleModel.fromJson(
+                Map<String, dynamic>.from(e as Map),
+              ))
+          .toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<int> getSuspendedInstantSalesCount() async {
+    try {
+      final response = await api.get(EndPoints.suspendedInstantSalesCount);
+      return asInt(response.data['suspended_count']);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<SuspendedInstantSaleModel> getSuspendedInstantSale({
+    required int id,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.suspendedInstantSale,
+        queryParameters: {'suspended_instant_sale_id': id},
+      );
+      final raw = response.data['suspended_instant_sale'];
+      return SuspendedInstantSaleModel.fromJson(
+        Map<String, dynamic>.from(raw as Map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> suspendInstantSale({
+    required String currentStep,
+    required Map<String, dynamic> payload,
+    int? suspendedInstantSaleId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.suspendedInstantSale,
+        data: {
+          'current_step': currentStep,
+          'payload': payload,
+          if (suspendedInstantSaleId != null)
+            'suspended_instant_sale_id': suspendedInstantSaleId,
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> completeSuspendedInstantSale({
+    required int suspendedInstantSaleId,
+    Map<String, dynamic>? payload,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.suspendedInstantSaleComplete,
+        data: {
+          'suspended_instant_sale_id': suspendedInstantSaleId,
+          if (payload != null) 'payload': payload,
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelSuspendedInstantSale({
+    required int suspendedInstantSaleId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.suspendedInstantSaleCancel,
+        data: {'suspended_instant_sale_id': suspendedInstantSaleId},
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data ?? {},
         ),
       );
     }

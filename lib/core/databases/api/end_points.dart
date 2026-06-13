@@ -320,10 +320,6 @@ class EndPoints {
   static const String storeSectionsUpdate = 'store/sections/update';
   static const String storeSectionsDeactivate = 'store/sections/deactivate';
   static const String storeSectionsDelete = 'store/sections/delete';
-  static const String storeSectionShelves = 'store/sections/shelves';
-  static const String storeSectionShelvesCreate = 'store/sections/shelves';
-  static const String storeSectionShelvesUpdate = 'store/sections/shelves/update';
-  static const String storeSectionShelvesDelete = 'store/sections/shelves/delete';
   static const String productsByLocation = 'products/by/location';
   static const String productsLocationMove = 'products/location/move';
   static const String productsLocationSwap = 'products/location/swap';
@@ -356,6 +352,36 @@ class EndPoints {
   static const String editInstantSale = 'edit/instant/sale';
   static const String cancelInstantSale = 'cancel/instant/sale';
   static const String allInstantSales = 'all/instant/sales';
+
+  static const String suspendedInstantSales = 'suspended/instant/sales';
+  static const String suspendedInstantSalesCount =
+      'suspended/instant/sales/count';
+  static const String suspendedInstantSale = 'suspended/instant/sale';
+  static const String suspendedInstantSaleComplete =
+      'suspended/instant/sale/complete';
+  static const String suspendedInstantSaleCancel =
+      'suspended/instant/sale/cancel';
+
+  static const String salesDailySessionCurrent = 'sales/daily-session/current';
+  static const String salesDailySessions = 'sales/daily-sessions';
+  static const String salesDailySessionsTodayOverview =
+      'sales/daily-sessions/today-overview';
+  static String salesDailySessionDetail(int sessionId) =>
+      'sales/daily-sessions/$sessionId';
+  static String salesDailySessionClosePayload(int sessionId) =>
+      'sales/daily-sessions/$sessionId/close-payload';
+  static const String salesDailyClosingRequest = 'sales/daily-closing/request';
+  static const String salesDailyClosingPending = 'sales/daily-closing/pending';
+  static const String salesDailyClosingApprove = 'sales/daily-closing/approve';
+  static const String salesDailyClosingReject = 'sales/daily-closing/reject';
+  static const String salesDailyReopenRequest = 'sales/daily-reopen/request';
+  static const String salesDailyReopenPending = 'sales/daily-reopen/pending';
+  static const String salesDailyReopenApprove = 'sales/daily-reopen/approve';
+  static const String salesDailyReopenReject = 'sales/daily-reopen/reject';
+  static const String salesCancellationRequest = 'sales/cancellation/request';
+  static const String salesCancellationPending = 'sales/cancellation/pending';
+  static const String salesCancellationApprove = 'sales/cancellation/approve';
+  static const String salesCancellationReject = 'sales/cancellation/reject';
 
   // general data list
   static const String createPerson = 'create/person';

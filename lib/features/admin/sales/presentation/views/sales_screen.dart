@@ -8,12 +8,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_floating_action_button.dart';
+import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../routes/app_routes.dart';
+import '../widgets/sales_daily_status_bar.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../controllers/sales_controller.dart';
 import '../widgets/profit_sale_card.dart';
 import '../widgets/profit_sales_toolbar.dart';
 import '../widgets/sales_invoices_toolbar.dart';
+import '../widgets/sales_skeleton_widgets.dart';
 
 class SalesScreen extends GetView<SalesController> {
   const SalesScreen({Key? key}) : super(key: key);
@@ -24,6 +28,42 @@ class SalesScreen extends GetView<SalesController> {
       appBar: CustomAppBar(
         title: 'sales',
         action: false,
+        actions: [
+          Obx(
+            () {
+              final count = controller.suspendedInvoicesCount.value;
+              return IconButton(
+                tooltip: 'suspendedInvoices'.tr,
+                icon: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  child: const Icon(Icons.pause_circle_outline),
+                ),
+                onPressed: () async {
+                  await Get.toNamed(AppRoutes.SUSPENDEDINVOICESSCREEN);
+                  await controller.loadSuspendedInvoicesCount();
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            onPressed: () => Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN),
+          ),
+          if (userType == 'admin')
+            IconButton(
+              icon: const Icon(Icons.pending_actions_outlined),
+              onPressed: () async {
+                await Get.toNamed(AppRoutes.SALESDAILYADMINSCREEN);
+                await controller.loadDailySession();
+              },
+            ),
+          IconButton(
+            icon: const Icon(Icons.calendar_today_outlined),
+            onPressed: () => controller.filterLists(true),
+          ),
+          SizedBox(width: 10.w),
+        ],
         onPressedFilter: () {
           controller.filterLists(true);
         },
@@ -37,6 +77,9 @@ class SalesScreen extends GetView<SalesController> {
             child: CustomScrollView(
               physics: kRefreshableScrollPhysics,
               slivers: [
+                const SliverToBoxAdapter(
+                  child: SalesDailyStatusBar(),
+                ),
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
@@ -74,10 +117,13 @@ class SalesScreen extends GetView<SalesController> {
                       if (controller.currentTab.value == 0) {
                         controller.instantSalesPackageFilter.value;
                       }
-                      if (controller.isLoading.value) {
-                        return const SliverFillRemaining(
-                          hasScrollBody: true,
-                          child: Center(child: CircularProgressIndicator()),
+                      final showListSkeleton = controller.isLoading.value &&
+                          (controller.currentTab.value == 0
+                              ? !controller.hasInstantSalesData
+                              : !controller.hasProfitSalesData);
+                      if (showListSkeleton) {
+                        return SliverToBoxAdapter(
+                          child: const SalesInvoicesListSkeleton(),
                         );
                       }
                       if (controller.currentTab.value == 0) {

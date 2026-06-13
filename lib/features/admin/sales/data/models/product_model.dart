@@ -20,7 +20,6 @@ class ProductModel {
   final String? productCode;
   final String? storeSectionId;
   final String? storeSectionName;
-  final String? shelfNumber;
 
   const ProductModel({
     required this.id,
@@ -38,7 +37,6 @@ class ProductModel {
     this.productCode,
     this.storeSectionId,
     this.storeSectionName,
-    this.shelfNumber,
   });
 
   String get preferredImageUrl => ProductImageUtils.preferredFromLists(
@@ -104,7 +102,6 @@ class ProductModel {
       ),
       storeSectionId: asNullableString(j['store_section_id']),
       storeSectionName: asNullableString(j['store_section_name']),
-      shelfNumber: asNullableString(j['shelf_number']),
     );
   }
 
@@ -120,7 +117,6 @@ class ProductModel {
     String? productCode,
     String? storeSectionId,
     String? storeSectionName,
-    String? shelfNumber,
   }) {
     return ProductModel(
       id: id,
@@ -138,7 +134,6 @@ class ProductModel {
       productCode: productCode ?? this.productCode,
       storeSectionId: storeSectionId ?? this.storeSectionId,
       storeSectionName: storeSectionName ?? this.storeSectionName,
-      shelfNumber: shelfNumber ?? this.shelfNumber,
     );
   }
 
@@ -158,7 +153,6 @@ class ProductModel {
       if (productCode != null) 'product_code': productCode,
       if (storeSectionId != null) 'store_section_id': storeSectionId,
       if (storeSectionName != null) 'store_section_name': storeSectionName,
-      if (shelfNumber != null) 'shelf_number': shelfNumber,
     };
   }
 }

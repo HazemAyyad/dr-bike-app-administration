@@ -46,12 +46,8 @@ class EditProductHero extends StatelessWidget {
               final p = controller.productDetails.value;
               final sectionName = controller.selectedProductSectionName ??
                   p?.storeSectionName;
-              final shelf = controller.editProductShelfNumber.value.trim().isNotEmpty
-                  ? controller.editProductShelfNumber.value.trim()
-                  : (p?.shelfNumber?.trim() ?? '');
               final locationCodeLabel = ProductLocationLabel.withProductCode(
                 sectionName: sectionName,
-                shelfNumber: shelf.isEmpty ? null : shelf,
                 productCode: p?.productCode,
               );
               if (locationCodeLabel != null && locationCodeLabel.isNotEmpty) {

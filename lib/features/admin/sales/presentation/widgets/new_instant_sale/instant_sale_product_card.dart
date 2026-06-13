@@ -32,7 +32,6 @@ class InstantSaleProductCard extends StatelessWidget {
         : 'instantSaleNoRetailPrice'.tr;
     final locationCodeLabel = ProductLocationLabel.withProductCode(
       sectionName: product.storeSectionName,
-      shelfNumber: product.shelfNumber,
       productCode: product.displayProductCode,
     );
 

@@ -14,6 +14,9 @@ class AppSettingsService {
 
   static const _cacheKey = 'app_settings_subtask_bonus_default';
   static const _fabCacheKey = 'app_settings_admin_fab_options';
+  static const _salesVarianceCacheKey =
+      'app_settings_sales_daily_variance_alert_threshold';
+  static const _salesMaxFloatCacheKey = 'app_settings_sales_daily_max_float';
   static const defaultAdminFabOptions = <String>{
     'newInvoice',
     'newEmployee',
@@ -27,6 +30,12 @@ class AppSettingsService {
 
   final RxInt subtaskBonusDefault = 5.obs;
   final RxSet<String> adminFabOptions = <String>{...defaultAdminFabOptions}.obs;
+  final RxDouble salesDailyVarianceAlertThreshold = 50.0.obs;
+  final RxMap<String, double> salesDailyMaxFloat = <String, double>{
+    'شيكل': 500,
+    'دولار': 200,
+    'دينار': 200,
+  }.obs;
   bool _loaded = false;
 
   ApiConsumer? get _api =>
@@ -43,6 +52,15 @@ class AppSettingsService {
     final cachedFab = FinalClasses.getStorage.read(_fabCacheKey);
     if (cachedFab != null) {
       adminFabOptions.assignAll(_decodeFabOptions(cachedFab.toString()));
+    }
+    final cachedVariance = FinalClasses.getStorage.read(_salesVarianceCacheKey);
+    if (cachedVariance != null) {
+      final v = double.tryParse(cachedVariance.toString());
+      if (v != null && v >= 0) salesDailyVarianceAlertThreshold.value = v;
+    }
+    final cachedMaxFloat = FinalClasses.getStorage.read(_salesMaxFloatCacheKey);
+    if (cachedMaxFloat is Map) {
+      _applyMaxFloatMap(cachedMaxFloat);
     }
 
     final api = _api;
@@ -70,6 +88,21 @@ class AppSettingsService {
             adminFabOptions.assignAll(options);
             await FinalClasses.getStorage.write(_fabCacheKey, fabRaw);
           }
+          final variance = double.tryParse(
+            settings['sales_daily_variance_alert_threshold']?.toString() ?? '',
+          );
+          if (variance != null && variance >= 0) {
+            salesDailyVarianceAlertThreshold.value = variance;
+            await FinalClasses.getStorage.write(
+              _salesVarianceCacheKey,
+              variance,
+            );
+          }
+          final maxFloat = settings['sales_daily_max_float'];
+          if (maxFloat is Map) {
+            _applyMaxFloatMap(maxFloat);
+            await FinalClasses.getStorage.write(_salesMaxFloatCacheKey, maxFloat);
+          }
         }
       }
       _loaded = true;
@@ -95,6 +128,47 @@ class AppSettingsService {
       }
     } catch (_) {}
     return false;
+  }
+
+  Future<bool> updateSalesDailySettings({
+    required double varianceAlertThreshold,
+    required Map<String, double> maxFloat,
+  }) async {
+    final api = _api;
+    if (api == null) return false;
+
+    try {
+      final response = await api.put(
+        EndPoints.appSettings,
+        data: {
+          'employee_task_subtask_bonus_default': subtaskBonusDefault.value,
+          'sales_daily_variance_alert_threshold': varianceAlertThreshold,
+          'sales_daily_max_float': maxFloat,
+        },
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        salesDailyVarianceAlertThreshold.value = varianceAlertThreshold;
+        salesDailyMaxFloat.assignAll(maxFloat);
+        await FinalClasses.getStorage.write(
+          _salesVarianceCacheKey,
+          varianceAlertThreshold,
+        );
+        await FinalClasses.getStorage.write(_salesMaxFloatCacheKey, maxFloat);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  void _applyMaxFloatMap(Map<dynamic, dynamic> raw) {
+    for (final entry in raw.entries) {
+      final key = entry.key.toString();
+      final value = double.tryParse(entry.value.toString());
+      if (value != null && value >= 0) {
+        salesDailyMaxFloat[key] = value;
+      }
+    }
   }
 
   Future<bool> updateAdminFabOptions(Set<String> options) async {

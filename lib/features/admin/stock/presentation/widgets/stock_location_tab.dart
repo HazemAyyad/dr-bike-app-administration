@@ -17,8 +17,6 @@ class StockLocationTab extends GetView<StockController> {
           .where((s) => s.isActive)
           .toList(growable: false);
       final selectedSectionId = controller.selectedLocationSectionId.value;
-      final selectedShelf = controller.selectedLocationShelf.value;
-      final shelves = controller.sectionShelves.toList(growable: false);
 
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -82,40 +80,6 @@ class StockLocationTab extends GetView<StockController> {
                 ],
               ),
             ),
-            if (selectedSectionId != null && selectedSectionId.isNotEmpty) ...[
-              SizedBox(height: 12.h),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(right: 8.w),
-                      child: FilterChip(
-                        label: Text('allShelves'.tr),
-                        selected: selectedShelf == null || selectedShelf.isEmpty,
-                        onSelected: (_) => controller.selectLocationShelf(null),
-                      ),
-                    ),
-                    ...shelves.map(
-                      (shelf) => Padding(
-                        padding: EdgeInsets.only(right: 8.w),
-                        child: FilterChip(
-                          label: Text('${'shelfNumber'.tr} $shelf'),
-                          selected: selectedShelf == shelf,
-                          onSelected: (_) {
-                            if (selectedShelf == shelf) {
-                              controller.selectLocationShelf(null);
-                            } else {
-                              controller.selectLocationShelf(shelf);
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
             SizedBox(height: 16.h),
             if (selectedSectionId == null || selectedSectionId.isEmpty)
               Padding(

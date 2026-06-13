@@ -11,7 +11,6 @@ import 'product_location_modal_shell.dart';
 String? _locationLabel(AllStockProductsModel product) {
   return ProductLocationLabel.withProductCode(
     sectionName: product.storeSectionName,
-    shelfNumber: product.shelfNumber,
     productCode: product.productCode,
   );
 }
@@ -70,11 +69,9 @@ Future<bool> showProductLocationMoveConfirm(
   BuildContext context, {
   required List<AllStockProductsModel> products,
   required String targetSectionName,
-  String? targetShelf,
 }) async {
   final targetLabel = ProductLocationLabel.withProductCode(
     sectionName: targetSectionName,
-    shelfNumber: targetShelf,
   );
   final targetText = _locationOrUnset(targetLabel);
 

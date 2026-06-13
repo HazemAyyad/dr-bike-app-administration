@@ -66,6 +66,7 @@ class AppRoutes {
   static const INSTANTSALEPRODUCTPICKER = '/InstantSaleProductPicker';
   static const NEWINSTANTSALESCREEN = '/NewInstantSaleScreen';
   static const NEWCASHPROFITSCREEN = '/NewCashProfitScreen';
+  static const SUSPENDEDINVOICESSCREEN = '/SuspendedInvoicesScreen';
 
   // Checks
   static const CHECKSSCREEN = '/ChecksScreen';
@@ -125,6 +126,10 @@ class AppRoutes {
 
   /// تفاصيل فاتورة البيع الفوري (منفصل عن فواتير المشتريات).
   static const INSTANTSALEBILLDETAILSSCREEN = '/InstantSaleBillDetailsScreen';
+  static const SALESDAILYCLOSESCREEN = '/SalesDailyCloseScreen';
+  static const SALESDAILYADMINSCREEN = '/SalesDailyAdminScreen';
+  static const SALESDAILYHISTORYSCREEN = '/SalesDailyHistoryScreen';
+  static const SALESDAILYSESSIONDETAILSCREEN = '/SalesDailySessionDetailScreen';
   // purchase orders
   static const PURCHASEORDERSSCREEN = '/PurchaseOrdersScreen';
   // return purchases

@@ -15,88 +15,68 @@ class BuildPersonalDetails extends GetView<PersonalDetailsController> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(height: 10.h),
-          // الاسم
-          CustomTextField(
-            label: 'name',
-            hintText: controller.nameController.text,
-            controller: controller.nameController,
-            // labelTextstyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            //       color: ThemeService.isDark.value
-            //           ? Colors.white
-            //           : AppColors.secondaryColor,
-            //       fontSize: 15.sp,
-            //       fontWeight: FontWeight.w700,
-            //     ),
-          ),
-          SizedBox(height: 20.h),
-          // البريد الإلكتروني
-          CustomTextField(
-            label: 'email',
-            enabled: false,
-            hintText: controller.emailController.text,
-            controller: controller.emailController,
-            // labelTextstyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            //       color: ThemeService.isDark.value
-            //           ? Colors.white
-            //           : AppColors.secondaryColor,
-            //       fontSize: 15.sp,
-            //       fontWeight: FontWeight.w700,
-            //     ),
-            keyboardType: TextInputType.emailAddress,
-            validator: (value) =>
-                Validators.validateEmail(value, Get.locale!.languageCode),
-          ),
-          SizedBox(height: 20.h),
-          // رقم الجوال
-          GetBuilder<PersonalDetailsController>(
-            builder: (controller) {
-              return Column(
-                children: [
-                  CustomPhoneField(
-                    label: 'phoneNumber',
-                    controller: controller.phoneController,
-                    hintText: controller.phoneController.text,
-                  ),
-                  SizedBox(height: 20.h),
-                  // رقم الجوال البديل
-                  CustomPhoneField(
-                    label: 'alternatePhone',
-                    controller: controller.subPhoneController,
-                    hintText: controller.subPhoneController.text,
-                  ),
-                ],
-              );
-            },
-          ),
+    return GetBuilder<PersonalDetailsController>(
+      builder: (controller) {
+        if (controller.isLoading.value && !controller.isProfileLoaded.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          SizedBox(height: 10.h),
-          // المدينة
-          dropdownButton(controller),
-          SizedBox(height: 10.h),
-          // العنوان
-          addressField(controller),
-          SizedBox(height: 10.h),
-          // زر حفظ
-          AppButton(
-            isLoading: controller.isLoading,
-            text: 'save',
-            textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white,
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(height: 10.h),
+              CustomTextField(
+                label: 'name',
+                hintText: 'name'.tr,
+                controller: controller.nameController,
+              ),
+              SizedBox(height: 16.h),
+              CustomTextField(
+                label: 'email',
+                hintText: 'email'.tr,
+                controller: controller.emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) =>
+                    Validators.validateEmail(value, Get.locale!.languageCode),
+              ),
+              SizedBox(height: 16.h),
+              CustomPhoneField(
+                label: 'phoneNumber',
+                controller: controller.phoneController,
+                hintText: 'phoneNumber'.tr,
+                isRequired: !controller.isAdmin,
+              ),
+              SizedBox(height: 16.h),
+              if (!controller.isAdmin) ...[
+                CustomPhoneField(
+                  label: 'alternatePhone',
+                  controller: controller.subPhoneController,
+                  hintText: 'alternatePhone'.tr,
                 ),
-            onPressed: () {
-              controller.updateUserProfile(context);
-            },
-            height: 48.h,
+                SizedBox(height: 10.h),
+              ],
+              dropdownButton(controller),
+              SizedBox(height: 10.h),
+              addressField(controller),
+              SizedBox(height: 10.h),
+              AppButton(
+                isLoading: controller.isLoading,
+                text: 'save',
+                textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white,
+                    ),
+                onPressed: () {
+                  controller.updateUserProfile(context);
+                },
+                height: 48.h,
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

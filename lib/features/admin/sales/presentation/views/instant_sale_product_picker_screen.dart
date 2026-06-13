@@ -303,6 +303,26 @@ class _InstantSaleProductPickerScreenState
                     ],
                   ),
                 ),
+                SizedBox(width: 8.w),
+                SizedBox(
+                  height: 46.h,
+                  child: OutlinedButton(
+                    onPressed: canContinue
+                        ? () => controller.suspendInstantSale(
+                              context,
+                              currentStep: 'product_picker',
+                            )
+                        : null,
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                    child: Icon(Icons.pause_circle_outline, size: 22.sp),
+                  ),
+                ),
+                SizedBox(width: 8.w),
                 SizedBox(
                   height: 46.h,
                   child: ElevatedButton(

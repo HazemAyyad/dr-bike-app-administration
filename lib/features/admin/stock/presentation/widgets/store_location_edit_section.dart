@@ -8,7 +8,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import 'product_location_badge.dart';
-import 'section_shelf_picker_field.dart';
 
 Future<void> showCreateStoreSectionDialog() async {
   final controller = Get.find<StockController>();
@@ -87,13 +86,11 @@ class StoreLocationPickerTile extends GetView<StockController> {
     final cs = Theme.of(context).colorScheme;
     return Obx(() {
       final sectionName = controller.selectedProductSectionName;
-      final shelf = controller.editProductShelfNumber.value.trim();
       final productCode = controller.editingProductId.value != null
           ? controller.productDetails.value?.productCode
           : null;
       final subtitle = ProductLocationLabel.withProductCode(
             sectionName: sectionName,
-            shelfNumber: shelf.isEmpty ? null : shelf,
             productCode: productCode,
           ) ??
           'selectStoreLocationHint'.tr;
@@ -201,18 +198,6 @@ Future<void> showStoreLocationPickerSheet(BuildContext context) async {
                   ),
                 ],
                 onChanged: controller.setProductStoreSection,
-              ),
-              SizedBox(height: 12.h),
-              SectionShelfPickerField(
-                sectionId: controller.selectedProductStoreSectionId.value,
-                controller: controller.shelfNumberController,
-                useOutlineStyle: true,
-                required: false,
-                label: 'shelfNumber'.tr,
-                onChanged: (v) {
-                  controller.editProductShelfNumber.value = v ?? '';
-                  controller.update();
-                },
               ),
               SizedBox(height: 12.h),
               FilledButton.icon(

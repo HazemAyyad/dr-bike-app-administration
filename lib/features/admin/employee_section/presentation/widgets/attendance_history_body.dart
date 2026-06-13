@@ -264,7 +264,9 @@ class _TodayShiftSummaryCard extends StatelessWidget {
                   icon: Icons.timelapse_rounded,
                   label: 'todayWorkedShort'.tr,
                   value: AttendanceHistoryController.formatMinutes(worked),
-                  accent: AppColors.operationalNavy,
+                  accent: day?.currentlyIn == true
+                      ? AppColors.customGreen1
+                      : AppColors.operationalNavy,
                 ),
               ),
               SizedBox(width: 6.w),
@@ -515,7 +517,7 @@ class _CompactAttendanceDayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final primaryText = isDark ? Colors.white : AppColors.operationalNavy;
-    final hasDetails = day.segments.isNotEmpty || day.scans.isNotEmpty;
+    final hasDetails = day.segments.isNotEmpty;
 
     return Container(
       margin: EdgeInsets.only(bottom: 6.h),
@@ -739,37 +741,6 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  if (day.scans.isNotEmpty) ...[
-                    SizedBox(height: 4.h),
-                    _DetailSectionTitle('scansLogTitle'.tr),
-                    ...day.scans.map((row) {
-                      final dir = row.direction == 'in'
-                          ? 'scanDirectionIn'.tr
-                          : 'scanDirectionOut'.tr;
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: 4.h),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              dir,
-                              style: TextStyle(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.operationalNavy,
-                              ),
-                            ),
-                            AttendanceDualTimeText(
-                              deviceAt: row.at,
-                              serverAt: row.serverAt,
-                              source: row.source,
-                              compact: true,
-                            ),
                           ],
                         ),
                       );

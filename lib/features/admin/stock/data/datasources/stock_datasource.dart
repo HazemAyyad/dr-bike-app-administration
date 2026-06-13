@@ -23,8 +23,6 @@ import '../models/offer_package_model.dart';
 import '../models/products_by_tag_result.dart';
 import '../models/products_by_location_result.dart';
 import '../models/store_section_model.dart';
-import '../models/store_section_shelf_model.dart';
-
 class StockDatasource {
   final ApiConsumer api;
 
@@ -843,154 +841,8 @@ class StockDatasource {
     }
   }
 
-  Future<List<String>> getSectionShelves({required String sectionId}) async {
-    try {
-      final response = await api.get(
-        EndPoints.storeSectionShelves,
-        queryParameters: {'section_id': sectionId},
-      );
-      final raw = response.data;
-      if (raw is! Map) return [];
-      final shelves = raw['shelves'];
-      if (shelves is! List) return [];
-      return shelves.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data is Map
-              ? (data['message'] ?? 'Unknown error')
-              : 'Unknown error',
-          status: data is Map ? (data['status'] ?? 500) : 500,
-          data: data is Map ? data : {},
-        ),
-      );
-    }
-  }
-
-  Future<List<StoreSectionShelfModel>> getSectionShelvesDetailed({
-    required String sectionId,
-  }) async {
-    try {
-      final response = await api.get(
-        EndPoints.storeSectionShelves,
-        queryParameters: {
-          'section_id': sectionId,
-          'detailed': '1',
-        },
-      );
-      return mapListFromResponseKey(
-        response.data,
-        'shelves',
-        (Map<String, dynamic> m) => StoreSectionShelfModel.fromJson(m),
-      );
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data is Map
-              ? (data['message'] ?? 'Unknown error')
-              : 'Unknown error',
-          status: data is Map ? (data['status'] ?? 500) : 500,
-          data: data is Map ? data : {},
-        ),
-      );
-    }
-  }
-
-  Future<StoreSectionShelfModel> createSectionShelf({
-    required String sectionId,
-    required String shelfNumber,
-  }) async {
-    try {
-      final response = await api.post(
-        EndPoints.storeSectionShelvesCreate,
-        data: {
-          'section_id': int.parse(sectionId),
-          'shelf_number': shelfNumber.trim(),
-        },
-      );
-      final raw = response.data;
-      if (raw is! Map || raw['shelf'] is! Map) {
-        throw ServerException(
-          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
-        );
-      }
-      return StoreSectionShelfModel.fromJson(
-        Map<String, dynamic>.from(raw['shelf'] as Map),
-      );
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data is Map
-              ? (data['message'] ?? 'Unknown error')
-              : 'Unknown error',
-          status: data is Map ? (data['status'] ?? 500) : 500,
-          data: data is Map ? data : {},
-        ),
-      );
-    }
-  }
-
-  Future<StoreSectionShelfModel> updateSectionShelf({
-    required String shelfId,
-    required String shelfNumber,
-  }) async {
-    try {
-      final response = await api.post(
-        EndPoints.storeSectionShelvesUpdate,
-        data: {
-          'shelf_id': int.parse(shelfId),
-          'shelf_number': shelfNumber.trim(),
-        },
-      );
-      final raw = response.data;
-      if (raw is! Map || raw['shelf'] is! Map) {
-        throw ServerException(
-          ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
-        );
-      }
-      return StoreSectionShelfModel.fromJson(
-        Map<String, dynamic>.from(raw['shelf'] as Map),
-      );
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data is Map
-              ? (data['message'] ?? 'Unknown error')
-              : 'Unknown error',
-          status: data is Map ? (data['status'] ?? 500) : 500,
-          data: data is Map ? data : {},
-        ),
-      );
-    }
-  }
-
-  Future<void> deleteSectionShelf({required String shelfId}) async {
-    try {
-      await api.post(
-        EndPoints.storeSectionShelvesDelete,
-        data: {'shelf_id': int.parse(shelfId)},
-      );
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data is Map
-              ? (data['message'] ?? 'Unknown error')
-              : 'Unknown error',
-          status: data is Map ? (data['status'] ?? 500) : 500,
-          data: data is Map ? data : {},
-        ),
-      );
-    }
-  }
-
   Future<ProductsByLocationResult> getProductsByLocation({
     required String sectionId,
-    String? shelfNumber,
     required int page,
   }) async {
     try {
@@ -998,8 +850,6 @@ class StockDatasource {
         EndPoints.productsByLocation,
         queryParameters: {
           'section_id': sectionId,
-          if (shelfNumber != null && shelfNumber.isNotEmpty)
-            'shelf_number': shelfNumber,
           'page': page,
         },
       );
@@ -1175,7 +1025,6 @@ class StockDatasource {
   Future<int> moveProductsLocation({
     required List<int> productIds,
     required String sectionId,
-    required String shelfNumber,
   }) async {
     try {
       final response = await api.post(
@@ -1183,7 +1032,6 @@ class StockDatasource {
         data: {
           'product_ids': productIds,
           'store_section_id': int.parse(sectionId),
-          'shelf_number': shelfNumber.trim(),
         },
       );
       final raw = response.data;
@@ -1229,11 +1077,9 @@ class StockDatasource {
           'group_b': groupB,
           'group_a_target': {
             'store_section_id': int.parse(groupATarget.sectionId),
-            'shelf_number': groupATarget.shelfNumber!.trim(),
           },
           'group_b_target': {
             'store_section_id': int.parse(groupBTarget.sectionId),
-            'shelf_number': groupBTarget.shelfNumber!.trim(),
           },
         },
       );

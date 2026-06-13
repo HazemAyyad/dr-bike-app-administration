@@ -15,31 +15,43 @@ class BoxesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     TextStyle textStyle = Theme.of(context).textTheme.bodyMedium!;
 
-    return Flexible(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Text(
-            box.boxName,
-            style: textStyle.copyWith(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-              color: ThemeService.isDark.value
-                  ? AppColors.customGreyColor3
-                  : Colors.black.withValues(alpha: 0.5),
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                box.boxName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle.copyWith(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor3
+                      : Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
             ),
-          ),
-          Text(
-            "${NumberFormat('#,###').format(box.totalBalance)} ${box.currency}",
-            style: textStyle.copyWith(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-              color: ThemeService.isDark.value
-                  ? AppColors.customGreyColor3
-                  : Colors.black.withValues(alpha: 0.5),
+            SizedBox(width: 8.w),
+            Flexible(
+              child: Text(
+                "${NumberFormat('#,###').format(box.totalBalance)} ${box.currency}",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: textStyle.copyWith(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeService.isDark.value
+                      ? AppColors.customGreyColor3
+                      : Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

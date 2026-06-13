@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -498,24 +499,8 @@ class ChecksController extends GetxController
           getNotCashed();
           getArchive();
 
-          checkValueController.clear();
-          currencyController.clear();
-          checkNumberController.clear();
-          bankNameController.clear();
-          notesController.clear();
-          checkFrontImage.value = null;
-          checkBackImage.value = null;
-          selectedDay.value = DateTime.now();
-          isCalendarVisible.value = false;
-          checkFrontImage.value = null;
-          checkBackImage.value = null;
-          Get.back();
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-            },
-          );
+          resetCheckFormFields();
+          _popToChecksListScreen();
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,
@@ -526,6 +511,29 @@ class ChecksController extends GetxController
     }
     isLoading(false);
     update();
+  }
+
+  void resetCheckFormFields() {
+    checkValueController.clear();
+    currencyController.clear();
+    checkNumberController.clear();
+    bankNameController.clear();
+    notesController.clear();
+    checkFrontImage.value = null;
+    checkBackImage.value = null;
+    selectedDay.value = DateTime.now();
+    isCalendarVisible.value = false;
+  }
+
+  void _popToChecksListScreen() {
+    Future.delayed(
+      const Duration(milliseconds: 650),
+      () => AppNavigation.popToRoute(
+        isInComing
+            ? AppRoutes.INCOMINGCHECKSSCREEN
+            : AppRoutes.OUTGOINGCHECKSSCREEN,
+      ),
+    );
   }
 
   void addIncomingChecksBatch({
@@ -590,10 +598,7 @@ class ChecksController extends GetxController
         getNotCashed();
         getArchive();
         resetCheckForm();
-        Get.back();
-        Future.delayed(const Duration(milliseconds: 1000), () {
-          Get.back();
-        });
+        _popToChecksListScreen();
         Helpers.showCustomDialogSuccess(
           context: context,
           title: 'success'.tr,
@@ -798,22 +803,8 @@ class ChecksController extends GetxController
           getNotCashed();
           getArchive();
 
-          checkValueController.clear();
-          currencyController.clear();
-          checkNumberController.clear();
-          bankNameController.clear();
-          checkFrontImage.value = null;
-          checkBackImage.value = null;
-          selectedDay.value = DateTime.now();
-          isCalendarVisible.value = false;
-          Get.back();
-          Get.back();
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () {
-              Get.back();
-            },
-          );
+          resetCheckFormFields();
+          _popToChecksListScreen();
           Helpers.showCustomDialogSuccess(
             context: context,
             title: 'success'.tr,

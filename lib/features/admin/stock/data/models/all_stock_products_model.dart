@@ -20,7 +20,6 @@ class AllStockProductsModel {
   final List<ProductTagModel> tags;
   final String? storeSectionId;
   final String? storeSectionName;
-  final String? shelfNumber;
 
   AllStockProductsModel({
     required this.closeoutId,
@@ -39,7 +38,6 @@ class AllStockProductsModel {
     this.tags = const [],
     this.storeSectionId,
     this.storeSectionName,
-    this.shelfNumber,
   });
 
   factory AllStockProductsModel.fromJson(Map<String, dynamic> json) {
@@ -72,7 +70,6 @@ class AllStockProductsModel {
       tags: tags,
       storeSectionId: asNullableString(json['store_section_id']),
       storeSectionName: asNullableString(json['store_section_name']),
-      shelfNumber: asNullableString(json['shelf_number']),
     );
   }
 
@@ -93,7 +90,6 @@ class AllStockProductsModel {
       'tags': tags.map((e) => e.toJson()).toList(),
       'store_section_id': storeSectionId,
       'store_section_name': storeSectionName,
-      'shelf_number': shelfNumber,
     };
   }
 

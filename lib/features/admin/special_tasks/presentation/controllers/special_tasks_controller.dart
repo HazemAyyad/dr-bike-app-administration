@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/app_navigation.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../data/models/special_task_model.dart';
 import '../../domain/usecases/cancel_special_task_usecase.dart';
 import '../../domain/usecases/completed_special_tasks_usecase.dart';
@@ -299,6 +301,13 @@ class SpecialTasksController extends GetxController {
   // تحديث المهمة الخاصة
   void makeSubsSpecialTaskCompleted(
       BuildContext context, String subTaskId, String specialTaskId) async {
+    final details = specialTasksService.specialTaskDetails.value;
+    final pendingSubtasks = details?.subTasks
+            .where((s) => s.status != 'completed')
+            .length ??
+        0;
+    final isLastSubtask = pendingSubtasks <= 1;
+
     isLoading(true);
     update();
 
@@ -328,17 +337,20 @@ class SpecialTasksController extends GetxController {
           );
         }
       },
-      (success) {
-        getSpecialTasksDetails(specialTaskId: specialTaskId);
+      (success) async {
+        Get.back();
+        await getSpecialTasksDetails(specialTaskId: specialTaskId);
         getSpecialTasks();
 
-        Future.delayed(
-          const Duration(seconds: 1),
-          () {
-            Get.back();
-            Get.back();
-          },
-        );
+        if (isLastSubtask) {
+          Future.delayed(
+            const Duration(milliseconds: 650),
+            () {
+              AppNavigation.popToRoute(AppRoutes.PRIVATETASKSSCREEN);
+            },
+          );
+        }
+
         Helpers.showCustomDialogSuccess(
           context: context,
           title: 'success'.tr,

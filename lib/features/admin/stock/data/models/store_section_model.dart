@@ -7,7 +7,6 @@ class StoreSectionModel {
   final int sortOrder;
   final bool isActive;
   final int productCount;
-  final int shelfCount;
 
   StoreSectionModel({
     required this.id,
@@ -16,7 +15,6 @@ class StoreSectionModel {
     this.sortOrder = 0,
     this.isActive = true,
     this.productCount = 0,
-    this.shelfCount = 0,
   });
 
   factory StoreSectionModel.fromJson(Map<String, dynamic> json) {
@@ -33,7 +31,6 @@ class StoreSectionModel {
       sortOrder: asInt(j['sort_order'], 0),
       isActive: isActive,
       productCount: asInt(j['product_count'], 0),
-      shelfCount: asInt(j['shelf_count'], 0),
     );
   }
 
@@ -44,6 +41,5 @@ class StoreSectionModel {
         'sort_order': sortOrder,
         'is_active': isActive,
         'product_count': productCount,
-        'shelf_count': shelfCount,
       };
 }

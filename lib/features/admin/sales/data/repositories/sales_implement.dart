@@ -6,6 +6,7 @@ import 'package:doctorbike/features/admin/sales/data/models/invoice_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/product_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/product_price_update_result.dart';
 import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.dart';
+import 'package:doctorbike/features/admin/sales/data/models/suspended_instant_sale_model.dart';
 import 'package:doctorbike/features/admin/sales/domain/repositories/sales_repositores.dart';
 import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_controller.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
@@ -280,6 +281,125 @@ class SalesImplement implements SalesRepository {
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<List<SuspendedInstantSaleModel>> getSuspendedInstantSales({
+    String? search,
+    int? createdByUserId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await salesDatasource.getSuspendedInstantSales(
+        search: search,
+        createdByUserId: createdByUserId,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<int> getSuspendedInstantSalesCount() async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await salesDatasource.getSuspendedInstantSalesCount();
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<SuspendedInstantSaleModel> getSuspendedInstantSale({
+    required int id,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await salesDatasource.getSuspendedInstantSale(id: id);
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> suspendInstantSale({
+    required String currentStep,
+    required Map<String, dynamic> payload,
+    int? suspendedInstantSaleId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await salesDatasource.suspendInstantSale(
+        currentStep: currentStep,
+        payload: payload,
+        suspendedInstantSaleId: suspendedInstantSaleId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(ValidationFailure(
+        result['message'] ?? 'Unknown error',
+        result,
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> completeSuspendedInstantSale({
+    required int suspendedInstantSaleId,
+    Map<String, dynamic>? payload,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await salesDatasource.completeSuspendedInstantSale(
+        suspendedInstantSaleId: suspendedInstantSaleId,
+        payload: payload,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(ValidationFailure(
+        result['message'] ?? 'Unknown error',
+        result,
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> cancelSuspendedInstantSale({
+    required int suspendedInstantSaleId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await salesDatasource.cancelSuspendedInstantSale(
+        suspendedInstantSaleId: suspendedInstantSaleId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(ValidationFailure(
+        result['message'] ?? 'Unknown error',
+        result,
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }

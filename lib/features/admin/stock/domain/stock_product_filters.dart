@@ -4,7 +4,6 @@ class StockProductFilters {
     this.categoryId,
     this.subCategoryId,
     this.storeSectionId,
-    this.shelfNumber,
     this.dateFrom,
     this.dateTo,
     this.sortBy = 'created_at',
@@ -15,7 +14,6 @@ class StockProductFilters {
   final String? categoryId;
   final String? subCategoryId;
   final String? storeSectionId;
-  final String? shelfNumber;
   final DateTime? dateFrom;
   final DateTime? dateTo;
   final String sortBy;
@@ -28,7 +26,6 @@ class StockProductFilters {
       (categoryId != null && categoryId!.isNotEmpty) ||
       (subCategoryId != null && subCategoryId!.isNotEmpty) ||
       (storeSectionId != null && storeSectionId!.isNotEmpty) ||
-      (shelfNumber != null && shelfNumber!.isNotEmpty) ||
       dateFrom != null ||
       dateTo != null ||
       sortBy != 'created_at' ||
@@ -40,7 +37,6 @@ class StockProductFilters {
     if (categoryId != null && categoryId!.isNotEmpty) n++;
     if (subCategoryId != null && subCategoryId!.isNotEmpty) n++;
     if (storeSectionId != null && storeSectionId!.isNotEmpty) n++;
-    if (shelfNumber != null && shelfNumber!.isNotEmpty) n++;
     if (dateFrom != null) n++;
     if (dateTo != null) n++;
     if (sortBy != 'created_at') n++;
@@ -53,7 +49,6 @@ class StockProductFilters {
     String? categoryId,
     String? subCategoryId,
     String? storeSectionId,
-    String? shelfNumber,
     DateTime? dateFrom,
     DateTime? dateTo,
     String? sortBy,
@@ -62,7 +57,6 @@ class StockProductFilters {
     bool clearCategoryId = false,
     bool clearSubCategoryId = false,
     bool clearStoreSectionId = false,
-    bool clearShelfNumber = false,
     bool clearDateFrom = false,
     bool clearDateTo = false,
   }) {
@@ -74,8 +68,6 @@ class StockProductFilters {
       storeSectionId: clearStoreSectionId
           ? null
           : (storeSectionId ?? this.storeSectionId),
-      shelfNumber:
-          clearShelfNumber ? null : (shelfNumber ?? this.shelfNumber),
       dateFrom: clearDateFrom ? null : (dateFrom ?? this.dateFrom),
       dateTo: clearDateTo ? null : (dateTo ?? this.dateTo),
       sortBy: sortBy ?? this.sortBy,
@@ -100,9 +92,6 @@ class StockProductFilters {
     }
     if (storeSectionId != null && storeSectionId!.isNotEmpty) {
       params['store_section_id'] = storeSectionId;
-    }
-    if (shelfNumber != null && shelfNumber!.isNotEmpty) {
-      params['shelf_number'] = shelfNumber;
     }
     if (dateFrom != null) {
       params['date_from'] = formatDate(dateFrom!);

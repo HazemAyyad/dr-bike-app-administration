@@ -6,6 +6,7 @@ import '../../../auth/data/models/user_model.dart';
 abstract class CommonRepository {
   Future<Either<Failure, bool>> userProfile({
     required String name,
+    required String email,
     required String phone,
     required String subPhone,
     required String city,
