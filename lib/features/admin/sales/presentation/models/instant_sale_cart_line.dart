@@ -10,6 +10,10 @@ class InstantSaleCartLine {
   final String productName;
   final String imageUrl;
   final int stock;
+  final String? sizeColorId;
+  final String? sizeId;
+  final String? sizeLabel;
+  final String? colorLabel;
   final TextEditingController quantityController;
   final TextEditingController priceController;
   final RxBool isProjectSale;
@@ -19,11 +23,30 @@ class InstantSaleCartLine {
 
   bool get isDisposed => _disposed;
 
+  String get cartLineKey =>
+      sizeColorId != null && sizeColorId!.isNotEmpty
+          ? '$productId::$sizeColorId'
+          : productId;
+
+  String get displayName {
+    if (sizeLabel != null &&
+        sizeLabel!.isNotEmpty &&
+        colorLabel != null &&
+        colorLabel!.isNotEmpty) {
+      return '$productName — $sizeLabel / $colorLabel';
+    }
+    return productName;
+  }
+
   InstantSaleCartLine({
     required this.productId,
     required this.productName,
     required this.imageUrl,
     required this.stock,
+    this.sizeColorId,
+    this.sizeId,
+    this.sizeLabel,
+    this.colorLabel,
     String? initialQuantity,
     String? initialPrice,
     bool projectSale = false,
@@ -44,16 +67,31 @@ class InstantSaleCartLine {
     String? unitPrice,
     bool projectSale = false,
     String? projectId,
+    String? sizeColorId,
+    String? sizeId,
+    String? sizeLabel,
+    String? colorLabel,
+    int? variantStock,
+    String? variantImageUrl,
   }) {
     final price = unitPrice ??
         (product.unitPrice > 0
             ? _formatUnitPrice(product.unitPrice)
             : '');
+    final resolvedStock = variantStock ?? (int.tryParse(product.stock) ?? 0);
+    final resolvedImage = (variantImageUrl != null && variantImageUrl.isNotEmpty)
+        ? variantImageUrl
+        : product.imageUrl;
+
     return InstantSaleCartLine(
       productId: product.id,
       productName: product.nameAr,
-      imageUrl: product.imageUrl,
-      stock: int.tryParse(product.stock) ?? 0,
+      imageUrl: resolvedImage,
+      stock: resolvedStock,
+      sizeColorId: sizeColorId,
+      sizeId: sizeId,
+      sizeLabel: sizeLabel,
+      colorLabel: colorLabel,
       initialQuantity: quantity ?? '1',
       initialPrice: price,
       projectSale: projectSale,

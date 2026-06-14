@@ -107,7 +107,7 @@ class BillDetailsScreen extends GetView<SalesController> {
                       return ProudactDetailsWidget(
                         image: sub.productImage,
                         cost: sub.cost.toString(),
-                        product: sub.productName.toString(),
+                        product: sub.displayProductName,
                         quantity: sub.quantity.toString(),
                         subtotal: sub.subtotal,
                       );
@@ -137,7 +137,7 @@ class BillDetailsScreen extends GetView<SalesController> {
                       return ProudactDetailsWidget(
                         image: sub.productImage,
                         cost: sub.cost,
-                        product: sub.productName,
+                        product: sub.displayProductName,
                         quantity: sub.quantity,
                         subtotal: sub.subtotal,
                       );

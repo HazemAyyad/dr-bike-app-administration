@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -37,6 +38,8 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
   InvoiceModel? _invoice;
   var _loading = true;
   String? _error;
+  var _usingSaleFallback = false;
+  var _loadToken = 0;
 
   @override
   void initState() {
@@ -45,25 +48,36 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
   }
 
   Future<void> _loadInvoice() async {
+    final token = ++_loadToken;
     setState(() {
       _loading = true;
       _error = null;
+      _usingSaleFallback = false;
     });
     try {
       final controller = Get.find<SalesController>();
       final invoice = await controller.invoiceModelUsecase.call(
         invoiceId: widget.sale.id.toString(),
       );
-      if (!mounted) return;
+      if (!mounted || token != _loadToken) return;
       setState(() {
         _invoice = invoice;
         _loading = false;
+        _usingSaleFallback = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || token != _loadToken) return;
+      final message = e is ServerFailure
+          ? e.errMessage
+          : e is NoConnectionFailure
+              ? e.errMessage
+              : 'failed'.tr;
+      final canFallback = widget.sale.lineItems.isNotEmpty;
       setState(() {
-        _error = 'failed'.tr;
+        _invoice = null;
         _loading = false;
+        _error = message;
+        _usingSaleFallback = canFallback;
       });
     }
   }
@@ -126,6 +140,36 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
                 padding: EdgeInsets.symmetric(vertical: 32.h),
                 child: const Center(child: CircularProgressIndicator()),
               )
+            else if (_usingSaleFallback)
+              Flexible(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Text(
+                          'instantSaleInvoicePartialLoad'.tr,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(child: _buildSaleFallbackList(sale)),
+                  ],
+                ),
+              )
             else if (_error != null)
               Padding(
                 padding: EdgeInsets.all(24.w),
@@ -139,8 +183,13 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
                   ],
                 ),
               )
+            else if (_invoice != null)
+              Flexible(child: _buildLinesList(_invoice!, sale))
             else
-              Flexible(child: _buildLinesList(_invoice!, sale)),
+              Padding(
+                padding: EdgeInsets.all(24.w),
+                child: Text('noData'.tr, textAlign: TextAlign.center),
+              ),
             InstantSalePaymentTotalsFooter(
               total: _invoice != null
                   ? SalesAmountFormat.parse(_invoice!.totalCost)
@@ -178,6 +227,9 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
                     .toStringAsFixed(2),
                 isPackageComponent: false,
                 isAdditionalProduct: true,
+                sizeLabel: s.sizeLabel,
+                colorLabel: s.colorLabel,
+                variantLabel: s.variantLabel,
               ),
             )
             .toList();
@@ -202,7 +254,10 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
           rows.add(_LineRow(
             context: context,
             imageUrl: sub.productImage,
-            name: sub.productName,
+            name: sub.displayProductName,
+            productNameOnly: sub.productName,
+            sizeLabel: sub.sizeLabel,
+            colorLabel: sub.colorLabel,
             quantity: sub.quantity,
             unitPrice: sub.cost,
           ));
@@ -213,6 +268,9 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
         context: context,
         imageUrl: invoice.productImage,
         name: invoice.displayProductTitle,
+        productNameOnly: invoice.displayProductNameOnly,
+        sizeLabel: invoice.sizeLabel,
+        colorLabel: invoice.colorLabel,
         quantity: invoice.quantity,
         unitPrice: invoice.cost,
       ));
@@ -222,7 +280,10 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
         rows.add(_LineRow(
           context: context,
           imageUrl: sub.productImage,
-          name: sub.productName,
+          name: sub.displayProductName,
+          productNameOnly: sub.productName,
+          sizeLabel: sub.sizeLabel,
+          colorLabel: sub.colorLabel,
           quantity: sub.quantity,
           unitPrice: sub.cost,
         ));
@@ -235,6 +296,9 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
           context: context,
           imageUrl: '',
           name: line.name,
+          productNameOnly: line.name,
+          sizeLabel: line.sizeLabel,
+          colorLabel: line.colorLabel,
           quantity: line.quantity,
           unitPrice: line.unitCost,
           badge: line.isPackageHeader
@@ -289,6 +353,34 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
 
     return ListView(
       shrinkWrap: true,
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      children: rows,
+    );
+  }
+
+  Widget _buildSaleFallbackList(InstantSalesModel sale) {
+    final rows = <Widget>[];
+    for (final line in sale.lineItems) {
+      rows.add(_LineRow(
+        context: context,
+        imageUrl: '',
+        name: line.name,
+        productNameOnly: line.name,
+        sizeLabel: line.sizeLabel,
+        colorLabel: line.colorLabel,
+        quantity: line.quantity,
+        unitPrice: line.unitCost,
+        badge: line.isPackageHeader
+            ? 'instantSalePackageBadge'.tr
+            : line.isAdditionalProduct
+                ? 'instantSaleAdditionalProducts'.tr
+                : null,
+      ));
+    }
+    if (rows.isEmpty) {
+      return Center(child: Text('noData'.tr));
+    }
+    return ListView(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       children: rows,
     );
@@ -443,7 +535,10 @@ class _ModalPackageExpandableState extends State<_ModalPackageExpandable> {
                 child: _LineRow(
                   context: context,
                   imageUrl: sub.productImage,
-                  name: sub.productName,
+                  name: sub.displayProductName,
+                  productNameOnly: sub.productName,
+                  sizeLabel: sub.sizeLabel,
+                  colorLabel: sub.colorLabel,
                   quantity: sub.quantity,
                   unitPrice: sub.cost,
                   indent: true,
@@ -461,6 +556,9 @@ class _LineRow extends StatelessWidget {
   final BuildContext context;
   final String imageUrl;
   final String name;
+  final String? productNameOnly;
+  final String? sizeLabel;
+  final String? colorLabel;
   final String quantity;
   final String unitPrice;
   final String? badge;
@@ -470,6 +568,9 @@ class _LineRow extends StatelessWidget {
     required this.context,
     required this.imageUrl,
     required this.name,
+    this.productNameOnly,
+    this.sizeLabel,
+    this.colorLabel,
     required this.quantity,
     required this.unitPrice,
     this.badge,
@@ -480,6 +581,10 @@ class _LineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final qty = SalesAmountFormat.parse(quantity);
     final unit = SalesAmountFormat.parse(unitPrice);
+    final showVariant = hasProductVariant(
+      sizeLabel: sizeLabel,
+      colorLabel: colorLabel,
+    );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -509,7 +614,9 @@ class _LineRow extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  name,
+                  productNameOnly?.trim().isNotEmpty == true
+                      ? productNameOnly!.trim()
+                      : name,
                   softWrap: true,
                   style: TextStyle(
                     fontSize: 14.sp,
@@ -517,6 +624,23 @@ class _LineRow extends StatelessWidget {
                     height: 1.35,
                   ),
                 ),
+                if (showVariant) ...[
+                  SizedBox(height: 6.h),
+                  Wrap(
+                    spacing: 6.w,
+                    runSpacing: 4.h,
+                    children: [
+                      _VariantChip(
+                        label: 'size'.tr,
+                        value: variantDashOrValue(sizeLabel),
+                      ),
+                      _VariantChip(
+                        label: 'color'.tr,
+                        value: variantDashOrValue(colorLabel),
+                      ),
+                    ],
+                  ),
+                ],
                 SizedBox(height: 6.h),
                 Text(
                   '${'quantity'.tr}: ${SalesAmountFormat.display(qty)} · '
@@ -530,6 +654,35 @@ class _LineRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VariantChip extends StatelessWidget {
+  const _VariantChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: AppColors.primaryColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.primaryColor.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w700,
+          color: AppColors.primaryColor,
+        ),
       ),
     );
   }

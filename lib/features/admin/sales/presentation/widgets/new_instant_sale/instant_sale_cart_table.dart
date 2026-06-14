@@ -6,12 +6,14 @@ import 'package:get/get.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../data/utils/sale_variant_display.dart';
 import '../../controllers/sales_controller.dart';
 import '../../utils/product_image_viewer.dart';
 import '../../utils/sales_amount_format.dart';
+import 'instant_sale_cart_line_sheet.dart';
 import 'instant_sale_package_cart_row.dart';
 
-/// ملخص أصناف السلة (باكيج + منتجات).
+/// ملخص أصناف السلة (باكيج + منتجات) — جدول أفقي مع مقاس/لون.
 class InstantSaleCartTable extends GetView<SalesController> {
   const InstantSaleCartTable({
     Key? key,
@@ -51,120 +53,174 @@ class InstantSaleCartTable extends GetView<SalesController> {
         ),
         child: Column(
           children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-              decoration: BoxDecoration(
-                color: headerBg,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(7.r)),
-              ),
-              child: Row(
-                children: [
-                  _header('item', 4, start: true),
-                  _header('quantity', 2),
-                  _header('price', 2),
-                  _header('total', 2),
-                ],
-              ),
-            ),
             if (hasPackage)
               InstantSalePackageCartRow(
                 compact: true,
                 editable: editablePackageQty,
               ),
-            ...List.generate(productLines.length, (index) {
-              final line = productLines[index];
-              if (line.isDisposed) return const SizedBox.shrink();
-              final qty = line.quantityText;
-              final price = line.priceText;
-              final total = line.lineTotal.value;
-              final isLast = index == productLines.length - 1;
-
-              return Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.customGreyColor4 : Colors.white,
-                  border: isLast
-                      ? null
-                      : Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: MediaQuery.sizeOf(context).width - 32.w,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                child: Column(
                   children: [
-                    Expanded(
-                      flex: 4,
+                    Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        color: headerBg,
+                        borderRadius: hasPackage
+                            ? null
+                            : BorderRadius.vertical(top: Radius.circular(7.r)),
+                      ),
                       child: Row(
                         children: [
-                          _thumb(context, line.imageUrl),
-                          SizedBox(width: 6.w),
-                          Expanded(
-                            child: Text(
-                              line.productName,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w600,
-                                height: 1.2,
-                              ),
-                            ),
-                          ),
+                          _headerCell('item', 150),
+                          _headerCell('size', 72),
+                          _headerCell('color', 72),
+                          _headerCell('quantity', 56),
+                          _headerCell('price', 72),
+                          _headerCell('total', 72),
                         ],
                       ),
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        qty.isEmpty ? '—' : qty,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11.sp),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        price.isEmpty
-                            ? '—'
-                            : SalesAmountFormat.display(
-                                SalesAmountFormat.parse(price),
-                              ),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11.sp),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        SalesAmountFormat.display(total),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryColor,
+                    ...List.generate(productLines.length, (index) {
+                      final line = productLines[index];
+                      if (line.isDisposed) return const SizedBox.shrink();
+                      final qty = line.quantityText;
+                      final price = line.priceText;
+                      final total = line.lineTotal.value;
+                      final isLast = index == productLines.length - 1;
+
+                      return Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 6.h,
                         ),
-                      ),
-                    ),
+                        decoration: BoxDecoration(
+                          color:
+                              isDark ? AppColors.customGreyColor4 : Colors.white,
+                          border: isLast
+                              ? null
+                              : Border(
+                                  bottom: BorderSide(
+                                    color: Colors.grey.shade200,
+                                  ),
+                                ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 150.w,
+                              child: Row(
+                                children: [
+                                  _thumb(context, line.imageUrl),
+                                  SizedBox(width: 6.w),
+                                  Expanded(
+                                    child: InkWell(
+                                      onTap: () => showInstantSaleCartLineSheet(
+                                        context,
+                                        line,
+                                      ),
+                                      child: Text(
+                                        line.productName,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11.sp,
+                                          fontWeight: FontWeight.w700,
+                                          height: 1.2,
+                                          color: AppColors.primaryColor,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor:
+                                              AppColors.primaryColor
+                                                  .withValues(alpha: 0.45),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _dataCell(
+                              variantDashOrValue(line.sizeLabel),
+                              72,
+                            ),
+                            _dataCell(
+                              variantDashOrValue(line.colorLabel),
+                              72,
+                            ),
+                            _dataCell(
+                              qty.isEmpty ? '—' : qty,
+                              56,
+                              center: true,
+                            ),
+                            _dataCell(
+                              price.isEmpty
+                                  ? '—'
+                                  : SalesAmountFormat.display(
+                                      SalesAmountFormat.parse(price),
+                                    ),
+                              72,
+                              center: true,
+                            ),
+                            _dataCell(
+                              SalesAmountFormat.display(total),
+                              72,
+                              center: true,
+                              bold: true,
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ),
-              );
-            }),
+              ),
+            ),
           ],
         ),
       );
     });
   }
 
-  Widget _header(String key, int flex, {bool start = false}) {
-    return Expanded(
-      flex: flex,
+  Widget _headerCell(String key, double width) {
+    return SizedBox(
+      width: width.w,
       child: Text(
         key.tr,
-        textAlign: start ? TextAlign.start : TextAlign.center,
+        textAlign: TextAlign.center,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 10.sp,
           fontWeight: FontWeight.w700,
           color: AppColors.primaryColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _dataCell(
+    String value,
+    double width, {
+    bool center = false,
+    bool bold = false,
+  }) {
+    return SizedBox(
+      width: width.w,
+      child: Text(
+        value,
+        textAlign: center ? TextAlign.center : TextAlign.start,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 11.sp,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+          color: bold ? AppColors.primaryColor : null,
         ),
       ),
     );

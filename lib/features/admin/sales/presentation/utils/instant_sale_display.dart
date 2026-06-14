@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 
 import '../../data/models/instant_sales_model.dart';
 
+export '../../data/utils/sale_variant_display.dart';
+
 /// Calendar-day key for grouping sales on the same date.
 String instantSaleDateGroupKey(InstantSalesModel sale) {
   final local = (sale.createdAt ?? sale.date).toLocal();

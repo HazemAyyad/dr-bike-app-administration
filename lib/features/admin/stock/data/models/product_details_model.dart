@@ -389,6 +389,7 @@ class ColorSize {
   String? discount;
   String? stock;
   String? sizeId;
+  String? imageUrl;
 
   ColorSize({
     this.id,
@@ -400,6 +401,7 @@ class ColorSize {
     this.discount,
     this.stock,
     this.sizeId,
+    this.imageUrl,
   });
 
   factory ColorSize.fromJson(Map<String, dynamic> json) {
@@ -414,6 +416,7 @@ class ColorSize {
       discount: asString(j['discount'], '0'),
       stock: asString(j['stock'], '0'),
       sizeId: asString(j['sizeId'], '0'),
+      imageUrl: asNullableString(j['image_url'] ?? j['imageUrl']),
     );
   }
 
@@ -428,6 +431,7 @@ class ColorSize {
       'discount': discount,
       'stock': stock,
       'sizeId': sizeId,
+      'image_url': imageUrl,
     };
   }
 }

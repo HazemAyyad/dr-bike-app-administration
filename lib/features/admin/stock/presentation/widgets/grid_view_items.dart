@@ -8,6 +8,7 @@ import 'product_card.dart';
 import 'stock_product_grid_layout.dart';
 import 'stock_location_tab.dart';
 import 'stock_offer_packages_tab.dart';
+import 'stock_skeleton_widgets.dart';
 
 class GridViewItems extends GetView<StockController> {
   const GridViewItems({Key? key}) : super(key: key);
@@ -26,8 +27,12 @@ class GridViewItems extends GetView<StockController> {
       }
 
       if (controller.isLoading.value) {
-        return const SliverFillRemaining(
-          child: Center(child: CircularProgressIndicator()),
+        return SliverToBoxAdapter(
+          child: StockProductsGridSkeleton(
+            aspectRatio: StockProductGridLayout.aspectRatioForTab(
+              controller.currentTab.value,
+            ),
+          ),
         );
       }
 
@@ -81,7 +86,15 @@ class GridViewItems extends GetView<StockController> {
               }),
             ),
             if (controller.isLoadingMore.value)
-              const Center(child: CircularProgressIndicator()),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                child: StockProductsGridSkeleton(
+                  itemCount: 3,
+                  aspectRatio: StockProductGridLayout.aspectRatioForTab(
+                    controller.currentTab.value,
+                  ),
+                ),
+              ),
             SizedBox(height: 50.h),
           ],
         ),

@@ -1,10 +1,14 @@
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../controllers/stock_controller.dart';
 
 /// Modal for adding or editing a single size+color entry (Arabic color name only).
@@ -47,6 +51,8 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
   late final TextEditingController _discountCtrl;
 
   String? _selectedSize;
+  XFile? _pendingImage;
+  bool _clearImage = false;
 
   bool get isEdit => widget.sizeIdx != null && widget.colorIdx != null;
 
@@ -139,6 +145,10 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
         wholesalePrice: _wholesaleCtrl.text.trim(),
         discount: _discountCtrl.text.trim(),
       );
+      _applyImageToEntry(
+        sizeIdx: widget.sizeIdx!,
+        colorIdx: widget.colorIdx!,
+      );
     } else {
       c.addSizeColorEntry(
         size: size,
@@ -150,8 +160,72 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
         wholesalePrice: _wholesaleCtrl.text.trim(),
         discount: _discountCtrl.text.trim(),
       );
+      final indices = _findEntryIndices(size, colorAr);
+      if (indices != null) {
+        _applyImageToEntry(
+          sizeIdx: indices[0],
+          colorIdx: indices[1],
+        );
+      }
     }
     Get.back();
+  }
+
+  List<int>? _findEntryIndices(String size, String colorAr) {
+    for (var i = 0; i < c.items.length; i++) {
+      final sz = c.items[i];
+      if (sz.sizeController.text.trim() != size.trim()) continue;
+      for (var j = 0; j < sz.colors.length; j++) {
+        if (sz.colors[j].colorController.text.trim() == colorAr.trim()) {
+          return [i, j];
+        }
+      }
+    }
+    return null;
+  }
+
+  void _applyImageToEntry({required int sizeIdx, required int colorIdx}) {
+    if (_clearImage) {
+      c.clearSizeColorImage(sizeIdx, colorIdx);
+      return;
+    }
+    if (_pendingImage != null) {
+      c.items[sizeIdx].colors[colorIdx].pendingImage = _pendingImage;
+      c.items[sizeIdx].colors[colorIdx].clearImage = false;
+      c.update();
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+    setState(() {
+      _pendingImage = picked;
+      _clearImage = false;
+    });
+  }
+
+  void _removeImage() {
+    setState(() {
+      _pendingImage = null;
+      _clearImage = true;
+    });
+  }
+
+  bool get _hasImagePreview {
+    if (_pendingImage != null) return true;
+    if (_clearImage) return false;
+    if (!isEdit) return false;
+    final url = c.items[widget.sizeIdx!].colors[widget.colorIdx!].existingImageUrl;
+    return url != null && url.isNotEmpty;
+  }
+
+  String? get _existingImageUrl {
+    if (!isEdit || _clearImage) return null;
+    return c.items[widget.sizeIdx!].colors[widget.colorIdx!].existingImageUrl;
   }
 
   @override
@@ -190,20 +264,29 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                     ),
               ),
               SizedBox(height: 16.h),
-              CustomDropdownField(
-                label: 'size',
-                hint: 'sizeSelectHint',
-                items: opts,
-                value: dropdownValue,
-                onChanged: (v) => setState(() => _selectedSize = v),
-                isRequired: true,
-              ),
-              SizedBox(height: 12.h),
-              CustomTextField(
-                label: 'color',
-                hintText: 'color',
-                controller: _colorArCtrl,
-                isRequired: true,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: CustomDropdownField(
+                      label: 'size',
+                      hint: 'sizeSelectHint',
+                      items: opts,
+                      value: dropdownValue,
+                      onChanged: (v) => setState(() => _selectedSize = v),
+                      isRequired: true,
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: CustomTextField(
+                      label: 'color',
+                      hintText: 'color',
+                      controller: _colorArCtrl,
+                      isRequired: true,
+                    ),
+                  ),
+                ],
               ),
               Builder(
                 builder: (context) {
@@ -277,6 +360,74 @@ class _SizeColorEntryDialogState extends State<SizeColorEntryDialog> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              Text(
+                'addImage'.tr,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              SizedBox(height: 8.h),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: 72.w,
+                      height: 72.w,
+                      decoration: BoxDecoration(
+                        color: AdminUiColors.subtleOverlay(context),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: _pendingImage != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12.r),
+                              child: Image.file(
+                                File(_pendingImage!.path),
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : (_existingImageUrl != null &&
+                                  _existingImageUrl!.isNotEmpty)
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                  child: Image.network(
+                                    ShowNetImage.getPhoto(_existingImageUrl!),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Icon(
+                                      Icons.add_a_photo_outlined,
+                                      size: 24.sp,
+                                    ),
+                                  ),
+                                )
+                              : Icon(Icons.add_a_photo_outlined, size: 24.sp),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'sizeColorImageOptional'.tr,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).hintColor,
+                              ),
+                        ),
+                        if (_hasImagePreview) ...[
+                          SizedBox(height: 8.h),
+                          TextButton(
+                            onPressed: _removeImage,
+                            child: Text('removeImage'.tr),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

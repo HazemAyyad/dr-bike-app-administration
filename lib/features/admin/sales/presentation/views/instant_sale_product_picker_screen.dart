@@ -85,6 +85,43 @@ class _InstantSaleProductPickerScreenState
                       controller.instantSaleProductSearch.value = v,
                 ),
               ),
+              Obx(() {
+                final suspendedRef = controller.activeSuspendedReferenceCode;
+                if (suspendedRef != null) {
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${'suspendedInvoiceResuming'.tr}: $suspendedRef',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: const Color(0xFFE65100),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                final editRef = controller.activeEditInstantSaleReference;
+                if (editRef != null) {
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${'instantSaleEditing'.tr}: #$editRef',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: const Color(0xFF1565C0),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
               Expanded(
                 child: Obx(() {
                   final _ = controller.productsListVersion.value;
@@ -304,25 +341,27 @@ class _InstantSaleProductPickerScreenState
                   ),
                 ),
                 SizedBox(width: 8.w),
-                SizedBox(
-                  height: 46.h,
-                  child: OutlinedButton(
-                    onPressed: canContinue
-                        ? () => controller.suspendInstantSale(
-                              context,
-                              currentStep: 'product_picker',
-                            )
-                        : null,
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
+                if (!controller.isEditingInstantSale) ...[
+                  SizedBox(
+                    height: 46.h,
+                    child: OutlinedButton(
+                      onPressed: canContinue
+                          ? () => controller.suspendInstantSale(
+                                context,
+                                currentStep: 'product_picker',
+                              )
+                          : null,
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 12.w),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
                       ),
+                      child: Icon(Icons.pause_circle_outline, size: 22.sp),
                     ),
-                    child: Icon(Icons.pause_circle_outline, size: 22.sp),
                   ),
-                ),
-                SizedBox(width: 8.w),
+                  SizedBox(width: 8.w),
+                ],
                 SizedBox(
                   height: 46.h,
                   child: ElevatedButton(

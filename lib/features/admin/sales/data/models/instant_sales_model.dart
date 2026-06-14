@@ -1,8 +1,11 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
+import '../utils/sale_variant_display.dart';
+
 class InstantSalesModel {
   final int id;
   final String product;
+  final String? productBase;
   final String cost;
   final String totalCost;
   final String quantity;
@@ -31,10 +34,14 @@ class InstantSalesModel {
   final String? createdByName;
   final int? updatedBy;
   final String? updatedByName;
+  final String? sizeLabel;
+  final String? colorLabel;
+  final String? variantLabel;
 
   const InstantSalesModel({
     required this.id,
     required this.product,
+    this.productBase,
     required this.cost,
     required this.totalCost,
     required this.quantity,
@@ -63,6 +70,9 @@ class InstantSalesModel {
     this.createdByName,
     this.updatedBy,
     this.updatedByName,
+    this.sizeLabel,
+    this.colorLabel,
+    this.variantLabel,
   });
 
   bool get isCancelled => status == 'cancelled';
@@ -97,8 +107,21 @@ class InstantSalesModel {
 
   bool get isPackageOnlySale => compositionKind == 'package';
 
-  String get displayTitle =>
-      isPackageSale ? (packageName ?? product) : product;
+  String get displayTitle {
+    final base = isPackageSale
+        ? (packageName ?? product)
+        : (productBase?.trim().isNotEmpty == true ? productBase! : product);
+    return formatProductWithVariant(
+      productName: base,
+      sizeLabel: sizeLabel,
+      colorLabel: colorLabel,
+      variantLabel: variantLabel,
+    );
+  }
+
+  String get displayProductNameOnly => isPackageSale
+      ? (packageName ?? product)
+      : (productBase?.trim().isNotEmpty == true ? productBase! : product);
 
   String get invoiceNumber => '#$id';
 
@@ -146,24 +169,35 @@ class InstantSalesModel {
       ));
     } else {
       lines.add(InstantSaleLineItem(
-        name: product.isNotEmpty ? product : displayTitle,
+        name: formatProductWithVariant(
+          productName: product.isNotEmpty ? product : displayProductNameOnly,
+          sizeLabel: sizeLabel,
+          colorLabel: colorLabel,
+          variantLabel: variantLabel,
+        ),
         quantity: quantity,
         unitCost: cost,
+        sizeLabel: sizeLabel,
+        colorLabel: colorLabel,
       ));
     }
     for (final sub in packageComponentLines) {
       lines.add(InstantSaleLineItem(
-        name: sub.productName,
+        name: sub.displayProductName,
         quantity: sub.quantity,
         unitCost: sub.cost,
+        sizeLabel: sub.sizeLabel,
+        colorLabel: sub.colorLabel,
       ));
     }
     for (final sub in additionalProductLines) {
       lines.add(InstantSaleLineItem(
-        name: sub.productName,
+        name: sub.displayProductName,
         quantity: sub.quantity,
         unitCost: sub.cost,
         isAdditionalProduct: true,
+        sizeLabel: sub.sizeLabel,
+        colorLabel: sub.colorLabel,
       ));
     }
     return lines;
@@ -189,6 +223,7 @@ class InstantSalesModel {
     return InstantSalesModel(
       id: asInt(json['id']),
       product: asString(json['product']),
+      productBase: asNullableString(json['product_base']),
       cost: asString(json['cost'], '0'),
       totalCost: asString(json['total_cost'], '0'),
       quantity: asString(json['quantity'], '0'),
@@ -236,6 +271,9 @@ class InstantSalesModel {
           ? null
           : int.tryParse('${json['updated_by']}'),
       updatedByName: asNullableString(json['updated_by_name']),
+      sizeLabel: parseVariantSizeLabel(json),
+      colorLabel: parseVariantColorLabel(json),
+      variantLabel: asNullableString(json['variant_label']),
     );
   }
 
@@ -266,6 +304,8 @@ class InstantSaleLineItem {
   final String unitCost;
   final bool isPackageHeader;
   final bool isAdditionalProduct;
+  final String? sizeLabel;
+  final String? colorLabel;
 
   const InstantSaleLineItem({
     required this.name,
@@ -273,24 +313,34 @@ class InstantSaleLineItem {
     required this.unitCost,
     this.isPackageHeader = false,
     this.isAdditionalProduct = false,
+    this.sizeLabel,
+    this.colorLabel,
   });
 }
 
 class SubProductsModel {
   final int id;
   final String productName;
+  final String? productNameBase;
   final String cost;
   final String quantity;
   final bool isPackageComponent;
   final bool isAdditionalProduct;
+  final String? sizeLabel;
+  final String? colorLabel;
+  final String? variantLabel;
 
   const SubProductsModel({
     required this.id,
     required this.productName,
+    this.productNameBase,
     required this.cost,
     required this.quantity,
     this.isPackageComponent = false,
     this.isAdditionalProduct = false,
+    this.sizeLabel,
+    this.colorLabel,
+    this.variantLabel,
   });
 
   factory SubProductsModel.fromJson(Map<String, dynamic> json) {
@@ -303,12 +353,25 @@ class SubProductsModel {
     return SubProductsModel(
       id: asInt(json['id']),
       productName: asString(json['product_name']),
+      productNameBase: asNullableString(json['product_name_base']),
       cost: cost,
       quantity: asString(json['quantity'], '0'),
       isPackageComponent: !isAdditional,
       isAdditionalProduct: isAdditional,
+      sizeLabel: parseVariantSizeLabel(json),
+      colorLabel: parseVariantColorLabel(json),
+      variantLabel: asNullableString(json['variant_label']),
     );
   }
+
+  String get displayProductName => formatProductWithVariant(
+        productName: productNameBase?.trim().isNotEmpty == true
+            ? productNameBase!
+            : productName,
+        sizeLabel: sizeLabel,
+        colorLabel: colorLabel,
+        variantLabel: variantLabel,
+      );
 
   Map<String, dynamic> toJson() {
     return {

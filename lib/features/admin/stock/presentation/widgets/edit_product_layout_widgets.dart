@@ -374,7 +374,13 @@ class _EditSizeColorSectionState extends State<EditSizeColorSection> {
     final cs = Theme.of(context).colorScheme;
     return GetBuilder<StockController>(
       builder: (c) {
-        final rows = c.flatSizeColorEntries;
+        final rows = c.flatSizeColorEntries
+            .where(
+              (e) =>
+                  e.size.trim().isNotEmpty ||
+                  e.color.colorController.text.trim().isNotEmpty,
+            )
+            .toList();
         final grouped = <String, List<SizeColorEntry>>{};
         for (final entry in rows) {
           final key = entry.size.trim().isEmpty ? '—' : entry.size;
@@ -432,17 +438,19 @@ class _EditSizeColorSectionState extends State<EditSizeColorSection> {
               SizedBox(
                 width: double.infinity,
                 height: 44.h,
-                child: FilledButton.icon(
+                child: OutlinedButton.icon(
                   onPressed: () => SizeColorEntryDialog.show(c),
                   icon: Icon(Icons.add_rounded, size: 22.sp),
                   label: Text(
-                    'addSizeColorSection'.tr,
+                    'addSizeColor'.tr,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 14.sp,
                     ),
                   ),
-                  style: FilledButton.styleFrom(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: AdminUiColors.subtleOverlay(context),
+                    foregroundColor: cs.onSurface,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12.r),
                     ),
@@ -462,13 +470,7 @@ class _EditSizeColorSectionState extends State<EditSizeColorSection> {
                   ),
                 )
               else
-                ...grouped.entries.map(
-                  (e) => _EditSizeColorCard(
-                    size: e.key,
-                    entries: e.value,
-                    controller: c,
-                  ),
-                ),
+                _EditSizeColorDataTable(rows: rows, controller: c),
             ],
           ),
         );
@@ -477,145 +479,194 @@ class _EditSizeColorSectionState extends State<EditSizeColorSection> {
   }
 }
 
-class _EditSizeColorCard extends StatelessWidget {
-  const _EditSizeColorCard({
-    required this.size,
-    required this.entries,
+class _EditSizeColorDataTable extends StatelessWidget {
+  const _EditSizeColorDataTable({
+    required this.rows,
     required this.controller,
   });
 
-  final String size;
-  final List<SizeColorEntry> entries;
+  final List<SizeColorEntry> rows;
   final StockController controller;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.all(9.w),
-      decoration: BoxDecoration(
-        color: AdminUiColors.cardBackground(context),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.straighten,
-                size: 16.sp,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  '${'size'.tr}: $size',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                      ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingRowHeight: 36.h,
+        dataRowMinHeight: 44.h,
+        dataRowMaxHeight: 56.h,
+        columnSpacing: 14.w,
+        horizontalMargin: 8.w,
+        columns: [
+          DataColumn(
+            label: Text('addImage'.tr, style: _editSizeColorHeaderStyle(context)),
+          ),
+          DataColumn(
+            label: Text('size'.tr, style: _editSizeColorHeaderStyle(context)),
+          ),
+          DataColumn(
+            label: Text('color'.tr, style: _editSizeColorHeaderStyle(context)),
+          ),
+          DataColumn(
+            label: Text('quantity'.tr, style: _editSizeColorHeaderStyle(context)),
+          ),
+          DataColumn(
+            label: Text('price'.tr, style: _editSizeColorHeaderStyle(context)),
+          ),
+          DataColumn(
+            label: Text(
+              'wholesalePriceField'.tr,
+              style: _editSizeColorHeaderStyle(context),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'discountPercentage'.tr,
+              style: _editSizeColorHeaderStyle(context),
+            ),
+          ),
+          DataColumn(
+            label: Text('actions'.tr, style: _editSizeColorHeaderStyle(context)),
+          ),
+        ],
+        rows: rows.map((entry) {
+          final col = entry.color;
+          final imageUrl =
+              col.pendingImage != null ? null : col.existingImageUrl;
+          return DataRow(
+            cells: [
+              DataCell(
+                GestureDetector(
+                  onTap: () => controller.pickSizeColorImage(
+                    entry.sizeIdx,
+                    entry.colorIdx,
+                  ),
+                  child: Container(
+                    width: 36.w,
+                    height: 36.w,
+                    decoration: BoxDecoration(
+                      color: AdminUiColors.subtleOverlay(context),
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: col.pendingImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(8.r),
+                            child: Image.file(
+                              File(col.pendingImage!.path),
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : (imageUrl != null && imageUrl.isNotEmpty)
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8.r),
+                                child: Image.network(
+                                  ShowNetImage.getPhoto(imageUrl),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(
+                                    Icons.image_outlined,
+                                    size: 16.sp,
+                                  ),
+                                ),
+                              )
+                            : Icon(Icons.add_a_photo_outlined, size: 16.sp),
+                  ),
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: AdminUiColors.subtleOverlay(context),
-                  borderRadius: BorderRadius.circular(999),
+              DataCell(
+                Text(entry.size, style: _editSizeColorCellStyle(context)),
+              ),
+              DataCell(
+                Text(
+                  col.colorController.text.trim().isEmpty
+                      ? '—'
+                      : col.colorController.text.trim(),
+                  style: _editSizeColorCellStyle(context),
                 ),
-                child: Text(
-                  '${entries.length} ${'color'.tr}',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+              ),
+              DataCell(
+                Text(
+                  col.quantityController.text.trim().isEmpty
+                      ? '0'
+                      : col.quantityController.text.trim(),
+                  style: _editSizeColorCellStyle(context),
+                ),
+              ),
+              DataCell(
+                Text(
+                  col.priceController.text.trim().isEmpty
+                      ? '—'
+                      : col.priceController.text.trim(),
+                  style: _editSizeColorCellStyle(context),
+                ),
+              ),
+              DataCell(
+                Text(
+                  col.wholesalePriceController.text.trim().isEmpty
+                      ? '—'
+                      : col.wholesalePriceController.text.trim(),
+                  style: _editSizeColorCellStyle(context),
+                ),
+              ),
+              DataCell(
+                Text(
+                  col.discountController.text.trim().isEmpty
+                      ? '—'
+                      : col.discountController.text.trim(),
+                  style: _editSizeColorCellStyle(context),
+                ),
+              ),
+              DataCell(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InkWell(
+                      onTap: () => SizeColorEntryDialog.show(
+                        controller,
+                        sizeIdx: entry.sizeIdx,
+                        colorIdx: entry.colorIdx,
                       ),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        size: 18.sp,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    InkWell(
+                      onTap: () => controller.removeSizeColorEntry(
+                        entry.sizeIdx,
+                        entry.colorIdx,
+                      ),
+                      child: Icon(
+                        Icons.delete_outline,
+                        size: 18.sp,
+                        color: AppColors.redColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-          SizedBox(height: 7.h),
-          for (final entry in entries) ...[
-            _EditColorSizeLine(entry: entry, controller: controller),
-            if (entry != entries.last) SizedBox(height: 6.h),
-          ],
-        ],
+          );
+        }).toList(),
       ),
     );
   }
 }
 
-class _EditColorSizeLine extends StatelessWidget {
-  const _EditColorSizeLine({
-    required this.entry,
-    required this.controller,
-  });
+TextStyle _editSizeColorHeaderStyle(BuildContext context) =>
+    Theme.of(context).textTheme.labelSmall!.copyWith(
+          fontWeight: FontWeight.w800,
+          fontSize: 10.sp,
+        );
 
-  final SizeColorEntry entry;
-  final StockController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final col = entry.color;
-    final name = col.colorController.text.trim();
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
-      decoration: BoxDecoration(
-        color: AdminUiColors.subtleOverlay(context),
-        borderRadius: BorderRadius.circular(12.r),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              name.isEmpty ? '—' : name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-            ),
-          ),
-          ProductMiniStat(
-            label: 'quantity'.tr,
-            value: col.quantityController.text,
-          ),
-          ProductMiniStat(
-            label: 'price'.tr,
-            value: col.priceController.text,
-          ),
-          IconButton(
-            tooltip: 'edit'.tr,
-            icon: Icon(
-              Icons.edit_outlined,
-              size: 16.sp,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            visualDensity: VisualDensity.compact,
-            onPressed: () => SizeColorEntryDialog.show(
-              controller,
-              sizeIdx: entry.sizeIdx,
-              colorIdx: entry.colorIdx,
-            ),
-          ),
-          IconButton(
-            tooltip: 'delete'.tr,
-            icon: Icon(
-              Icons.delete_outline,
-              size: 16.sp,
-              color: AppColors.redColor,
-            ),
-            visualDensity: VisualDensity.compact,
-            onPressed: () => controller.removeSizeColorEntry(
-              entry.sizeIdx,
-              entry.colorIdx,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+TextStyle _editSizeColorCellStyle(BuildContext context) =>
+    Theme.of(context).textTheme.bodySmall!.copyWith(
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w600,
+        );
 
 class EditProductMediaSection extends StatelessWidget {
   const EditProductMediaSection({Key? key, required this.controller})

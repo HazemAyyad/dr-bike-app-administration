@@ -142,6 +142,7 @@ import '../features/admin/stock/presentation/views/offer_packages_screen.dart';
 import '../features/admin/stock/presentation/binding/offer_packages_binding.dart';
 import '../features/admin/stock/presentation/views/closeouts_screen.dart';
 import '../features/admin/stock/presentation/views/edit_product_screen.dart';
+import '../features/admin/stock/presentation/views/product_stock_movements_screen.dart';
 import '../features/admin/stock/presentation/views/product_details_screen.dart';
 import '../features/admin/categories/presentation/binding/category_management_binding.dart';
 import '../features/admin/categories/presentation/views/category_management_screen.dart';
@@ -780,6 +781,13 @@ class AppPages {
     GetPage(
       name: AppRoutes.PRODUCTDETAILSSCREEN,
       page: () => const ProductDetailsScreen(),
+      binding: StockBinding(),
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
+    ),
+    GetPage(
+      name: AppRoutes.PRODUCTSTOCKMOVEMENTSSCREEN,
+      page: () => const ProductStockMovementsScreen(),
       binding: StockBinding(),
       transition: _transitionNo,
       transitionDuration: Duration.zero,

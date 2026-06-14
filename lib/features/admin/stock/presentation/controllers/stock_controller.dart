@@ -20,6 +20,7 @@ import '../../../sales/data/models/product_model.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
+import '../../data/models/product_stock_movement_model.dart';
 import '../../data/models/store_section_model.dart';
 import '../../domain/stock_location_interactor.dart';
 import '../../domain/stock_product_filters.dart';
@@ -914,6 +915,36 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  void addEmptySizeColorRow() {
+    final sz = SizedModel();
+    sz.colors.add(ColorModel());
+    items.add(sz);
+    update();
+  }
+
+  Future<void> pickSizeColorImage(int sizeIdx, int colorIdx) async {
+    if (sizeIdx < 0 || sizeIdx >= items.length) return;
+    final colors = items[sizeIdx].colors;
+    if (colorIdx < 0 || colorIdx >= colors.length) return;
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+    colors[colorIdx].pendingImage = picked;
+    update();
+  }
+
+  void clearSizeColorImage(int sizeIdx, int colorIdx) {
+    if (sizeIdx < 0 || sizeIdx >= items.length) return;
+    final colors = items[sizeIdx].colors;
+    if (colorIdx < 0 || colorIdx >= colors.length) return;
+    colors[colorIdx].pendingImage = null;
+    colors[colorIdx].existingImageUrl = null;
+    colors[colorIdx].clearImage = true;
+    update();
+  }
+
   /// Add a new color entry under an existing or new size block.
   void addSizeColorEntry({
     required String size,
@@ -1652,6 +1683,87 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     update();
   }
 
+  Future<bool> adjustProductStock({
+    required String productId,
+    String? sizeColorId,
+    required int quantity,
+    String? note,
+  }) async {
+    try {
+      await stockDatasource.adjustProductStock(
+        productId: productId,
+        sizeColorId: sizeColorId,
+        quantity: quantity,
+        note: note,
+      );
+      await getProductDetails(productId: productId);
+      Get.snackbar(
+        'success'.tr,
+        'productUpdatedSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.secondaryColor,
+        colorText: Colors.white,
+      );
+      return true;
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.redColor,
+        colorText: Colors.white,
+      );
+      return false;
+    } catch (_) {
+      Get.snackbar(
+        'error'.tr,
+        'somethingWrong'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.redColor,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+  }
+
+  Future<StockMovementsPageResult?> loadStockMovements({
+    required String productId,
+    int page = 1,
+    int perPage = 50,
+    String? dateFrom,
+    String? dateTo,
+    String? type,
+  }) async {
+    try {
+      return await stockDatasource.getProductStockMovements(
+        productId: productId,
+        page: page,
+        perPage: perPage,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        type: type,
+      );
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.redColor,
+        colorText: Colors.white,
+      );
+      return null;
+    } catch (_) {
+      Get.snackbar(
+        'error'.tr,
+        'somethingWrong'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.redColor,
+        colorText: Colors.white,
+      );
+      return null;
+    }
+  }
+
   // get product
   List<AllStockProductsModel> archived = [];
   void getArchived() async {
@@ -1987,6 +2099,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
               colorJson.wholesalePrice ?? '';
           colorModel.discountController.text = colorJson.discount ?? '';
           colorModel.quantityController.text = colorJson.stock ?? '';
+          colorModel.existingImageUrl = colorJson.imageUrl;
           sizeModel.colors.add(colorModel);
         }
         if (sizeModel.colors.isEmpty) {
@@ -2193,6 +2306,18 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         final cid = c.dbColorId;
         if (cid != null && cid.isNotEmpty && cid != '0') {
           addField('sizes[$sizeIndex][color_sizes][$j][id]', cid);
+        }
+        final pendingImg = c.pendingImage;
+        if (pendingImg != null) {
+          final bytes = await pendingImg.readAsBytes();
+          form.files.add(
+            MapEntry(
+              'sizes[$sizeIndex][color_sizes][$j][image]',
+              MultipartFile.fromBytes(bytes, filename: pendingImg.name),
+            ),
+          );
+        } else if (c.clearImage) {
+          addField('sizes[$sizeIndex][color_sizes][$j][delete_image]', '1');
         }
       }
       sizeIndex++;
@@ -2449,6 +2574,9 @@ class ColorModel {
       TextEditingController();
   final TextEditingController discountController = TextEditingController();
   String? dbColorId;
+  String? existingImageUrl;
+  XFile? pendingImage;
+  bool clearImage = false;
 
   void onClose() {
     colorController.dispose();

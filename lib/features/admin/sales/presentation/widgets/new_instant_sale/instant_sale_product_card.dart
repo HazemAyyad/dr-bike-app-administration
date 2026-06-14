@@ -62,7 +62,10 @@ class InstantSaleProductCard extends StatelessWidget {
                 child: InkWell(
                   onTap: outOfStock
                       ? null
-                      : () => controller.toggleProductInCart(product),
+                      : () => controller.toggleProductInCart(
+                            product,
+                            context: context,
+                          ),
                   onLongPress: () =>
                       showInstantSaleProductDetailSheet(context, product),
                   child: Stack(
@@ -210,7 +213,10 @@ class InstantSaleProductCard extends StatelessWidget {
                                 )
                             : null,
                         onIncrement: stock > 0
-                            ? () => controller.incrementProductInCart(product)
+                            ? () => controller.incrementProductInCart(
+                                  product,
+                                  context: context,
+                                )
                             : null,
                       ),
                     ),

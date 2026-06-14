@@ -297,22 +297,42 @@ class SalesDatasource {
     String? paymentBoxValue,
     String? offerPackageId,
     List<Map<String, dynamic>>? cartOtherProducts,
+    String? instantSaleId,
   }) async {
     try {
-      final otherProductsList =
-          (offerPackageId != null && offerPackageId.isNotEmpty)
-              ? (cartOtherProducts ?? <Map<String, dynamic>>[])
-              : otherProducts
-                  .skip(1)
-                  .map((item) => {
-                        'product_id': item.selectedItem.value,
-                        'cost': item.priceController.text,
-                        'quantity': item.quantityController.text,
-                        'type': item.selectedCustomersSellers.value
-                            ? 'project'
-                            : 'normal',
-                      })
-                  .toList();
+      String resolvedProductId = productId;
+      String resolvedQuantity = quantity;
+      String resolvedCost = cost;
+      String? resolvedSizeColorId;
+      String? resolvedSizeId;
+
+      late final List<Map<String, dynamic>> otherProductsList;
+
+      if (offerPackageId != null && offerPackageId.isNotEmpty) {
+        otherProductsList = cartOtherProducts ?? <Map<String, dynamic>>[];
+      } else if (cartOtherProducts != null && cartOtherProducts.isNotEmpty) {
+        final main = cartOtherProducts.first;
+        resolvedProductId = main['product_id']?.toString() ?? productId;
+        resolvedQuantity = main['quantity']?.toString() ?? quantity;
+        resolvedCost = main['cost']?.toString() ?? cost;
+        resolvedSizeColorId = main['size_color_id']?.toString();
+        resolvedSizeId = main['size_id']?.toString();
+        otherProductsList = cartOtherProducts.length > 1
+            ? cartOtherProducts.skip(1).toList()
+            : <Map<String, dynamic>>[];
+      } else {
+        otherProductsList = otherProducts
+            .skip(1)
+            .map((item) => {
+                  'product_id': item.selectedItem.value,
+                  'cost': item.priceController.text,
+                  'quantity': item.quantityController.text,
+                  'type': item.selectedCustomersSellers.value
+                      ? 'project'
+                      : 'normal',
+                })
+            .toList();
+      }
       final additionalNotesMap = <String, dynamic>{};
       for (var i = 0; i < additionalNotes.length; i++) {
         final note = additionalNotes[i];
@@ -322,15 +342,49 @@ class SalesDatasource {
             note['amount']?.toString() ?? '0';
       }
 
+      final otherProductsMap = <String, dynamic>{};
+      for (var i = 0; i < otherProductsList.length; i++) {
+        final row = otherProductsList[i];
+        otherProductsMap['other_products[$i][product_id]'] =
+            row['product_id']?.toString() ?? '';
+        otherProductsMap['other_products[$i][cost]'] =
+            row['cost']?.toString() ?? '0';
+        otherProductsMap['other_products[$i][quantity]'] =
+            row['quantity']?.toString() ?? '1';
+        otherProductsMap['other_products[$i][type]'] =
+            row['type']?.toString() ?? 'normal';
+        if (row['project_id'] != null && row['project_id'].toString().isNotEmpty) {
+          otherProductsMap['other_products[$i][project_id]'] =
+              row['project_id'].toString();
+        }
+        if (row['size_color_id'] != null &&
+            row['size_color_id'].toString().isNotEmpty) {
+          otherProductsMap['other_products[$i][size_color_id]'] =
+              row['size_color_id'].toString();
+        }
+        if (row['size_id'] != null && row['size_id'].toString().isNotEmpty) {
+          otherProductsMap['other_products[$i][size_id]'] =
+              row['size_id'].toString();
+        }
+      }
+
       final response = await api.post(
-        EndPoints.createInstantSale,
+        instantSaleId != null && instantSaleId.isNotEmpty
+            ? EndPoints.editInstantSale
+            : EndPoints.createInstantSale,
         data: {
+          if (instantSaleId != null && instantSaleId.isNotEmpty)
+            'instant_sale_id': instantSaleId,
           if (offerPackageId != null && offerPackageId.isNotEmpty)
             'offer_package_id': offerPackageId
           else
-            'product_id': productId,
-          'quantity': quantity,
-          'cost': cost,
+            'product_id': resolvedProductId,
+          'quantity': resolvedQuantity,
+          'cost': resolvedCost,
+          if (resolvedSizeColorId != null && resolvedSizeColorId.isNotEmpty)
+            'size_color_id': resolvedSizeColorId,
+          if (resolvedSizeId != null && resolvedSizeId.isNotEmpty)
+            'size_id': resolvedSizeId,
           'discount': discount,
           'total_cost': totalCost,
           'notes': note,
@@ -348,7 +402,7 @@ class SalesDatasource {
             'payment_box_name': paymentBoxName,
           if (paymentBoxId != null && paymentBoxId.isNotEmpty)
             'payment_box_value': paymentBoxValue ?? '0',
-          'other_products': otherProductsList,
+          ...otherProductsMap,
         },
         isFormData: true,
       );
@@ -701,28 +755,71 @@ class SalesDatasource {
   // get Invoice
   Future<InvoiceModel> getInvoice({required String invoiceId}) async {
     try {
-      final response = await api.post(EndPoints.getInstantSaleInvoice,
-          data: {'instant_sale_id': invoiceId});
+      final parsedId = int.tryParse(invoiceId.trim());
+      final response = await api.post(
+        EndPoints.getInstantSaleInvoice,
+        data: {
+          'instant_sale_id': parsedId ?? invoiceId.trim(),
+        },
+      );
+      final body = response.data;
       assert(() {
         // ignore: avoid_print
-        print('[InvoiceDetails] ${response.data}');
+        print('[InvoiceDetails] $body');
         return true;
       }());
-      final raw = response.data['instant_sale_invoice'];
-      if (raw == null) {
+
+      if (body is! Map) {
         throw ServerException(
           ErrorModel(
-            errorMessage:
-                response.data['message']?.toString() ?? 'Unknown error',
+            errorMessage: 'Invalid response',
             status: 500,
             data: {},
           ),
         );
       }
-      final Map<String, dynamic> invoiceMap = raw is Map<String, dynamic>
-          ? raw
-          : Map<String, dynamic>.from(raw as Map);
-      return InvoiceModel.fromJson(invoiceMap);
+
+      final map = Map<String, dynamic>.from(body);
+      if (map['status']?.toString() == 'error') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: map['message']?.toString() ?? 'Unknown error',
+            status: 500,
+            data: map,
+          ),
+        );
+      }
+
+      final raw = map['instant_sale_invoice'];
+      if (raw == null) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: map['message']?.toString() ?? 'Unknown error',
+            status: 500,
+            data: map,
+          ),
+        );
+      }
+
+      try {
+        final invoiceMap = raw is Map<String, dynamic>
+            ? raw
+            : Map<String, dynamic>.from(raw as Map);
+        return InvoiceModel.fromJson(invoiceMap);
+      } catch (e, st) {
+        assert(() {
+          // ignore: avoid_print
+          print('[InvoiceDetails] parse error: $e\n$st');
+          return true;
+        }());
+        throw ServerException(
+          ErrorModel(
+            errorMessage: 'Invalid invoice data',
+            status: 500,
+            data: {'parse_error': e.toString()},
+          ),
+        );
+      }
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

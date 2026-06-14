@@ -170,7 +170,7 @@ class _InvoicePackageExpandableLineState
                   dense: true,
                   image: sub.productImage,
                   cost: sub.cost,
-                  product: sub.productName,
+                  product: sub.displayProductName,
                   quantity: sub.quantity,
                   subtotal: sub.subtotal,
                 ),

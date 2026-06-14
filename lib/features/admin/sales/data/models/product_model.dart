@@ -1,6 +1,8 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/product_image_utils.dart';
 
+import 'product_variant_model.dart';
+
 class ProductModel {
   final String id;
   final String nameAr;
@@ -20,6 +22,8 @@ class ProductModel {
   final String? productCode;
   final String? storeSectionId;
   final String? storeSectionName;
+  final bool hasVariants;
+  final List<ProductSizeVariant> sizes;
 
   const ProductModel({
     required this.id,
@@ -37,6 +41,8 @@ class ProductModel {
     this.productCode,
     this.storeSectionId,
     this.storeSectionName,
+    this.hasVariants = false,
+    this.sizes = const [],
   });
 
   String get preferredImageUrl => ProductImageUtils.preferredFromLists(
@@ -102,6 +108,10 @@ class ProductModel {
       ),
       storeSectionId: asNullableString(j['store_section_id']),
       storeSectionName: asNullableString(j['store_section_name']),
+      hasVariants: j['has_variants'] == true || j['hasVariants'] == true,
+      sizes: j['sizes'] == null
+          ? const []
+          : mapList(j['sizes'], (m) => ProductSizeVariant.fromJson(m)),
     );
   }
 

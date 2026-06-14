@@ -1,8 +1,11 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 
+import '../utils/sale_variant_display.dart';
+
 class InvoiceModel {
   final int id;
   final String product;
+  final String? productBase;
   final String productImage;
   final String cost;
   final String quantity;
@@ -39,10 +42,22 @@ class InvoiceModel {
   final bool isPackageSale;
   final String? packageName;
   final String saleType;
+  final String? sizeLabel;
+  final String? colorLabel;
+  final String? variantLabel;
+  final String? sizeColorId;
+  final String? sizeId;
+  final String? productId;
+  final int? offerPackageId;
+  final String? projectId;
+  final String? lineType;
+  final String? paymentBoxId;
+  final int? sellerId;
 
   InvoiceModel({
     required this.id,
     required this.product,
+    this.productBase,
     required this.productImage,
     required this.cost,
     required this.quantity,
@@ -77,6 +92,17 @@ class InvoiceModel {
     this.isPackageSale = false,
     this.packageName,
     this.saleType = 'product',
+    this.sizeLabel,
+    this.colorLabel,
+    this.variantLabel,
+    this.sizeColorId,
+    this.sizeId,
+    this.productId,
+    this.offerPackageId,
+    this.projectId,
+    this.lineType,
+    this.paymentBoxId,
+    this.sellerId,
   });
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
@@ -139,6 +165,7 @@ class InvoiceModel {
     return InvoiceModel(
       id: asInt(json['id']),
       product: asString(json['product']),
+      productBase: asNullableString(json['product_base']),
       productImage: asString(json['product_image']),
       cost: asString(json['cost'], '0'),
       quantity: asString(json['quantity'], '0'),
@@ -182,11 +209,43 @@ class InvoiceModel {
           json['sale_type'] == 'package',
       packageName: asNullableString(json['package_name']),
       saleType: asString(json['sale_type'], 'product'),
+      sizeLabel: parseVariantSizeLabel(json),
+      colorLabel: parseVariantColorLabel(json),
+      variantLabel: asNullableString(json['variant_label']),
+      sizeColorId: asNullableString(json['size_color_id']),
+      sizeId: asNullableString(json['size_id']),
+      productId: asNullableString(json['product_id']?.toString()),
+      offerPackageId: json['offer_package_id'] == null
+          ? null
+          : (json['offer_package_id'] is int
+              ? json['offer_package_id'] as int
+              : int.tryParse('${json['offer_package_id']}')),
+      projectId: asNullableString(json['project_id']?.toString()),
+      lineType: asNullableString(json['type']),
+      paymentBoxId: asNullableString(json['payment_box_id']?.toString()),
+      sellerId: json['seller_id'] == null
+          ? null
+          : (json['seller_id'] is int
+              ? json['seller_id'] as int
+              : int.tryParse('${json['seller_id']}')),
     );
   }
 
-  String get displayProductTitle =>
-      isPackageSale ? (packageName ?? product) : product;
+  String get displayProductTitle {
+    final base = isPackageSale
+        ? (packageName ?? product)
+        : (productBase?.trim().isNotEmpty == true ? productBase! : product);
+    return formatProductWithVariant(
+      productName: base,
+      sizeLabel: sizeLabel,
+      colorLabel: colorLabel,
+      variantLabel: variantLabel,
+    );
+  }
+
+  String get displayProductNameOnly => isPackageSale
+      ? (packageName ?? product)
+      : (productBase?.trim().isNotEmpty == true ? productBase! : product);
 
   String get displayTraderName =>
       buyerName.trim().isNotEmpty && buyerName != '-'
@@ -301,22 +360,40 @@ class InvoiceAdditionalNote {
 class SubProductModel {
   final int id;
   final String productName;
+  final String? productNameBase;
   final String productImage;
   final String cost;
   final String quantity;
   final String subtotal;
   final bool isPackageComponent;
   final bool isAdditionalProduct;
+  final String? sizeLabel;
+  final String? colorLabel;
+  final String? variantLabel;
+  final String? productId;
+  final String? sizeColorId;
+  final String? sizeId;
+  final String? lineType;
+  final String? projectId;
 
   SubProductModel({
     required this.id,
     required this.productName,
+    this.productNameBase,
     required this.productImage,
     required this.cost,
     required this.quantity,
     required this.subtotal,
     this.isPackageComponent = false,
     this.isAdditionalProduct = false,
+    this.sizeLabel,
+    this.colorLabel,
+    this.variantLabel,
+    this.productId,
+    this.sizeColorId,
+    this.sizeId,
+    this.lineType,
+    this.projectId,
   });
 
   factory SubProductModel.fromJson(Map<String, dynamic> json) {
@@ -337,14 +414,32 @@ class SubProductModel {
     return SubProductModel(
       id: asInt(json['id']),
       productName: asString(json['product_name'], '-'),
+      productNameBase: asNullableString(json['product_name_base']),
       productImage: asString(json['product_image'], 'no image'),
       cost: cost,
       quantity: qty,
       subtotal: lineSubtotal,
       isPackageComponent: isComponent,
       isAdditionalProduct: isAdditional,
+      sizeLabel: parseVariantSizeLabel(json),
+      colorLabel: parseVariantColorLabel(json),
+      variantLabel: asNullableString(json['variant_label']),
+      productId: asNullableString(json['product_id']?.toString()),
+      sizeColorId: asNullableString(json['size_color_id']?.toString()),
+      sizeId: asNullableString(json['size_id']?.toString()),
+      lineType: asNullableString(json['type']),
+      projectId: asNullableString(json['project_id']?.toString()),
     );
   }
+
+  String get displayProductName => formatProductWithVariant(
+        productName: productNameBase?.trim().isNotEmpty == true
+            ? productNameBase!
+            : productName,
+        sizeLabel: sizeLabel,
+        colorLabel: colorLabel,
+        variantLabel: variantLabel,
+      );
 
   Map<String, dynamic> toJson() {
     return {

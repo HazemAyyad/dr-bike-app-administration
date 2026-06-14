@@ -334,6 +334,8 @@ class EndPoints {
   /// نفس حقول صفحة اختبار Laravel: multipart + save_scope
   static const String createProductFull = 'create/product';
   static const String updateProductFull = 'update/product/full';
+  static const String productStockAdjust = 'product/stock/adjust';
+  static const String productStockMovements = 'product/stock/movements';
 
   // sales
   static const String allProducts = 'all/products';

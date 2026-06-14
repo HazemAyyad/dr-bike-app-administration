@@ -104,111 +104,199 @@ class InstantSaleActionDialog {
     );
   }
 
-  static Future<bool?> showEdit({
+  static Future<InstantSaleEditResult?> showEdit({
     required BuildContext context,
-    required TextEditingController costCtrl,
-    required TextEditingController qtyCtrl,
-    required TextEditingController totalCtrl,
-    required TextEditingController paidCtrl,
-    required TextEditingController notesCtrl,
+    required String initialCost,
+    required String initialQuantity,
+    required String initialTotal,
+    required String initialPaid,
+    required String initialNotes,
   }) {
+    return showDialog<InstantSaleEditResult>(
+      context: context,
+      barrierColor: const Color(0xFFD9D9D9).withOpacity(0.55),
+      builder: (ctx) => _InstantSaleEditDialog(
+        initialCost: initialCost,
+        initialQuantity: initialQuantity,
+        initialTotal: initialTotal,
+        initialPaid: initialPaid,
+        initialNotes: initialNotes,
+      ),
+    );
+  }
+}
+
+class InstantSaleEditResult {
+  const InstantSaleEditResult({
+    required this.cost,
+    required this.quantity,
+    required this.totalCost,
+    required this.paid,
+    required this.notes,
+  });
+
+  final String cost;
+  final String quantity;
+  final String totalCost;
+  final String paid;
+  final String notes;
+}
+
+class _InstantSaleEditDialog extends StatefulWidget {
+  const _InstantSaleEditDialog({
+    required this.initialCost,
+    required this.initialQuantity,
+    required this.initialTotal,
+    required this.initialPaid,
+    required this.initialNotes,
+  });
+
+  final String initialCost;
+  final String initialQuantity;
+  final String initialTotal;
+  final String initialPaid;
+  final String initialNotes;
+
+  @override
+  State<_InstantSaleEditDialog> createState() => _InstantSaleEditDialogState();
+}
+
+class _InstantSaleEditDialogState extends State<_InstantSaleEditDialog> {
+  late final TextEditingController costCtrl;
+  late final TextEditingController qtyCtrl;
+  late final TextEditingController totalCtrl;
+  late final TextEditingController paidCtrl;
+  late final TextEditingController notesCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    costCtrl = TextEditingController(text: widget.initialCost);
+    qtyCtrl = TextEditingController(text: widget.initialQuantity);
+    totalCtrl = TextEditingController(text: widget.initialTotal);
+    paidCtrl = TextEditingController(text: widget.initialPaid);
+    notesCtrl = TextEditingController(text: widget.initialNotes);
+  }
+
+  @override
+  void dispose() {
+    costCtrl.dispose();
+    qtyCtrl.dispose();
+    totalCtrl.dispose();
+    paidCtrl.dispose();
+    notesCtrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    Navigator.of(context).pop(
+      InstantSaleEditResult(
+        cost: costCtrl.text.trim(),
+        quantity: qtyCtrl.text.trim(),
+        totalCost: totalCtrl.text.trim(),
+        paid: paidCtrl.text.trim(),
+        notes: notesCtrl.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final bg = _dialogBg(isDark);
+    final bg = InstantSaleActionDialog._dialogBg(isDark);
     final fieldStyle = TextStyle(
-      color: _titleColor(isDark),
+      color: InstantSaleActionDialog._titleColor(isDark),
       fontSize: 14.sp,
     );
 
-    return showDialog<bool>(
-      context: context,
-      barrierColor: const Color(0xFFD9D9D9).withOpacity(0.55),
-      builder: (ctx) => Dialog(
-        backgroundColor: bg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-        insetPadding: EdgeInsets.symmetric(horizontal: 20.w),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 12.h),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'editInstantSale'.tr,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: _titleColor(isDark),
+    return Dialog(
+      backgroundColor: bg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      insetPadding: EdgeInsets.symmetric(horizontal: 20.w),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 12.h),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'editInstantSale'.tr,
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: InstantSaleActionDialog._titleColor(isDark),
+                ),
+              ),
+              SizedBox(height: 14.h),
+              TextField(
+                controller: costCtrl,
+                keyboardType: TextInputType.number,
+                style: fieldStyle,
+                decoration: InstantSaleActionDialog._fieldDecoration('price'.tr),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: qtyCtrl,
+                keyboardType: TextInputType.number,
+                style: fieldStyle,
+                decoration:
+                    InstantSaleActionDialog._fieldDecoration('quantity'.tr),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: totalCtrl,
+                keyboardType: TextInputType.number,
+                style: fieldStyle,
+                decoration: InstantSaleActionDialog._fieldDecoration('total'.tr),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: paidCtrl,
+                keyboardType: TextInputType.number,
+                style: fieldStyle,
+                decoration:
+                    InstantSaleActionDialog._fieldDecoration('paidAmount'.tr),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: notesCtrl,
+                style: fieldStyle,
+                decoration: InstantSaleActionDialog._fieldDecoration('notes'.tr),
+              ),
+              SizedBox(height: 18.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'cancel'.tr,
+                        style: TextStyle(
+                          color: InstantSaleActionDialog._bodyColor(isDark),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                SizedBox(height: 14.h),
-                TextField(
-                  controller: costCtrl,
-                  keyboardType: TextInputType.number,
-                  style: fieldStyle,
-                  decoration: _fieldDecoration('price'.tr),
-                ),
-                SizedBox(height: 10.h),
-                TextField(
-                  controller: qtyCtrl,
-                  keyboardType: TextInputType.number,
-                  style: fieldStyle,
-                  decoration: _fieldDecoration('quantity'.tr),
-                ),
-                SizedBox(height: 10.h),
-                TextField(
-                  controller: totalCtrl,
-                  keyboardType: TextInputType.number,
-                  style: fieldStyle,
-                  decoration: _fieldDecoration('total'.tr),
-                ),
-                SizedBox(height: 10.h),
-                TextField(
-                  controller: paidCtrl,
-                  keyboardType: TextInputType.number,
-                  style: fieldStyle,
-                  decoration: _fieldDecoration('paidAmount'.tr),
-                ),
-                SizedBox(height: 10.h),
-                TextField(
-                  controller: notesCtrl,
-                  style: fieldStyle,
-                  decoration: _fieldDecoration('notes'.tr),
-                ),
-                SizedBox(height: 18.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: Text(
-                          'cancel'.tr,
-                          style: TextStyle(
-                            color: _bodyColor(isDark),
-                            fontWeight: FontWeight.w600,
-                          ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.r),
                         ),
                       ),
+                      onPressed: _save,
+                      child: Text('save'.tr),
                     ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12.h),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.r),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: Text('save'.tr),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

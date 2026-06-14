@@ -60,6 +60,7 @@ abstract class SalesRepository {
     String? paymentBoxValue,
     String? offerPackageId,
     List<Map<String, dynamic>>? cartOtherProducts,
+    String? instantSaleId,
   });
 
   Future<Either<Failure, String>> cancelInstantSale(

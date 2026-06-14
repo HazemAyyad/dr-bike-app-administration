@@ -209,7 +209,7 @@ class _CartLineEditor extends StatelessWidget {
               SizedBox(width: 6.w),
               Expanded(
                 child: Text(
-                  line.productName,
+                  line.displayName,
                   style: TextStyle(
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w600,

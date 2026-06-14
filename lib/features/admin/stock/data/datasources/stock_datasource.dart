@@ -22,6 +22,7 @@ import '../../domain/stock_product_filters.dart';
 import '../models/offer_package_model.dart';
 import '../models/products_by_tag_result.dart';
 import '../models/products_by_location_result.dart';
+import '../models/product_stock_movement_model.dart';
 import '../models/store_section_model.dart';
 class StockDatasource {
   final ApiConsumer api;
@@ -1049,6 +1050,97 @@ class StockDatasource {
       return raw['updated'] is int
           ? raw['updated'] as int
           : int.tryParse('${raw['updated']}') ?? productIds.length;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<int> adjustProductStock({
+    required String productId,
+    String? sizeColorId,
+    required int quantity,
+    String? note,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productStockAdjust,
+        data: {
+          'product_id': productId,
+          if (sizeColorId != null && sizeColorId.isNotEmpty)
+            'size_color_id': sizeColorId,
+          'quantity': quantity,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw is Map
+                ? (raw['message']?.toString() ?? 'Unknown error')
+                : 'Unknown error',
+            status: 422,
+            data: raw is Map ? Map<String, dynamic>.from(raw) : {},
+          ),
+        );
+      }
+      return asInt(raw['product_stock']);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<StockMovementsPageResult> getProductStockMovements({
+    required String productId,
+    int page = 1,
+    int perPage = 50,
+    String? dateFrom,
+    String? dateTo,
+    String? type,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productStockMovements,
+        data: {
+          'product_id': productId,
+          'page': page,
+          'per_page': perPage,
+          if (dateFrom != null && dateFrom.isNotEmpty) 'date_from': dateFrom,
+          if (dateTo != null && dateTo.isNotEmpty) 'date_to': dateTo,
+          if (type != null && type.isNotEmpty) 'type': type,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw is Map
+                ? (raw['message']?.toString() ?? 'Unknown error')
+                : 'Unknown error',
+            status: 500,
+            data: raw is Map ? Map<String, dynamic>.from(raw) : {},
+          ),
+        );
+      }
+      return StockMovementsPageResult.fromJson(Map<String, dynamic>.from(raw));
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

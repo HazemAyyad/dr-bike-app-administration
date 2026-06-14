@@ -156,7 +156,8 @@ class SalesImplement implements SalesRepository {
       String? paymentBoxName,
       String? paymentBoxValue,
       String? offerPackageId,
-      List<Map<String, dynamic>>? cartOtherProducts}) async {
+      List<Map<String, dynamic>>? cartOtherProducts,
+      String? instantSaleId}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -181,6 +182,7 @@ class SalesImplement implements SalesRepository {
         paymentBoxValue: paymentBoxValue,
         offerPackageId: offerPackageId,
         cartOtherProducts: cartOtherProducts,
+        instantSaleId: instantSaleId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

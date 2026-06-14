@@ -46,7 +46,8 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
       controller.syncCartToItems();
       controller.syncPaymentCashFromTotal();
       controller.refreshInstantSalePaymentSummary();
-      if (controller.activeSuspendedSaleId.value != null &&
+      if ((controller.activeSuspendedSaleId.value != null ||
+              controller.activeEditInstantSaleId.value != null) &&
           Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
         final payment =
             Get.find<PaymentController>(tag: kInstantSalePaymentTag);
@@ -60,7 +61,8 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
     if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
       final existing = Get.find<PaymentController>(tag: kInstantSalePaymentTag);
       existing.forInstantSale = true;
-      if (controller.activeSuspendedSaleId.value == null) {
+      if (controller.activeSuspendedSaleId.value == null &&
+          controller.activeEditInstantSaleId.value == null) {
         existing.clearPaymentForm();
       }
       return;
@@ -176,28 +178,48 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
                 SizedBox(height: 20.h),
                 Obx(
                   () {
-                    final ref = controller.activeSuspendedReferenceCode;
-                    if (ref == null) return const SizedBox.shrink();
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 10.h),
-                      child: Text(
-                        '${'suspendedInvoiceResuming'.tr}: $ref',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: const Color(0xFFE65100),
-                          fontWeight: FontWeight.w600,
+                    final suspendedRef = controller.activeSuspendedReferenceCode;
+                    if (suspendedRef != null) {
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 10.h),
+                        child: Text(
+                          '${'suspendedInvoiceResuming'.tr}: $suspendedRef',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: const Color(0xFFE65100),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    }
+                    final editRef = controller.activeEditInstantSaleReference;
+                    if (editRef != null) {
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 10.h),
+                        child: Text(
+                          '${'instantSaleEditing'.tr}: #$editRef',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: const Color(0xFF1565C0),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => controller.suspendInstantSale(
-                    context,
-                    currentStep: 'checkout',
-                  ),
-                  icon: const Icon(Icons.pause_circle_outline),
-                  label: Text('suspendInvoice'.tr),
+                Obx(
+                  () => controller.isEditingInstantSale
+                      ? const SizedBox.shrink()
+                      : OutlinedButton.icon(
+                          onPressed: () => controller.suspendInstantSale(
+                            context,
+                            currentStep: 'checkout',
+                          ),
+                          icon: const Icon(Icons.pause_circle_outline),
+                          label: Text('suspendInvoice'.tr),
+                        ),
                 ),
                 SizedBox(height: 12.h),
                 AppButton(
