@@ -20,6 +20,9 @@ import '../../../stock/data/models/store_section_model.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../stock/presentation/controllers/offer_packages_controller.dart';
 import '../../data/datasources/sales_datasources.dart';
+import '../../../checks/data/models/check_model.dart';
+import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
+import '../../data/models/customer_product_price_history_model.dart';
 import '../../data/models/daily_session_model.dart';
 import '../../data/models/instant_sales_model.dart';
 import '../../data/models/invoice_model.dart';
@@ -27,6 +30,7 @@ import '../../data/models/ongoing_project_model.dart';
 import '../../data/models/suspended_instant_sale_model.dart';
 import '../../data/repositories/sales_implement.dart';
 import '../../domain/usecases/add_profit_sale.dart';
+import '../../domain/usecases/get_customer_product_price_history_usecase.dart';
 import '../../domain/usecases/get_all_products_usecase.dart';
 import '../../domain/usecases/get_profit_sales_usecase.dart';
 import '../../domain/usecases/update_product_retail_price_usecase.dart';
@@ -41,6 +45,7 @@ import '../widgets/instant_sale_action_dialog.dart';
 import '../widgets/instant_sale_actions_sheet.dart';
 import '../widgets/new_instant_sale/sales_variant_picker_sheet.dart';
 import '../widgets/new_instant_sale/instant_sale_price_dialog.dart';
+import '../widgets/new_instant_sale/instant_sale_quantity_dialog.dart';
 import 'sales_service.dart';
 
 /// GetX tag for payment fields on the new instant sale screen.
@@ -56,6 +61,9 @@ class SalesController extends GetxController
   final UpdateProductRetailPriceUsecase updateProductRetailPriceUsecase;
   final AddInstantSalesUsecase addInstantSalesUsecase;
   final InvoiceModelUsecase invoiceModelUsecase;
+  final GetCustomerProductPriceHistoryUsecase
+      getCustomerProductPriceHistoryUsecase;
+  final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final SalesService salesService;
 
   SalesController({
@@ -67,6 +75,8 @@ class SalesController extends GetxController
     required this.updateProductRetailPriceUsecase,
     required this.addInstantSalesUsecase,
     required this.invoiceModelUsecase,
+    required this.getCustomerProductPriceHistoryUsecase,
+    required this.allCustomersSellersUsecase,
   });
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -476,6 +486,8 @@ class SalesController extends GetxController
   final RxInt cartRevision = 0.obs;
   final RxString instantSaleProductSearch = ''.obs;
   final RxBool productsLoading = false.obs;
+  final RxBool instantSalePickerSearchLoading = false.obs;
+  Timer? _instantSalePickerSearchDebounce;
   final RxInt productsListVersion = 0.obs;
 
   final RxList<StoreSectionModel> pickerStoreSections =
@@ -545,9 +557,9 @@ class SalesController extends GetxController
 
   final RxBool savingProductPrice = false.obs;
 
-  /// إذا لا يوجد سعر مفرق — نافذة إدخال ثم حفظ في المنتج.
-  Future<ProductModel?> ensureProductRetailPrice(ProductModel product) async {
-    if (product.unitPrice > 0) return product;
+  /// يتأكد أن المفرق والجملة معرّفان قبل إضافة المنتج للسلة.
+  Future<ProductModel?> ensureProductPricesForPicker(ProductModel product) async {
+    if (product.unitPrice > 0 && product.wholesalePrice > 0) return product;
 
     final dialogResult = await showInstantSalePriceDialog(product);
     if (dialogResult == null) return null;
@@ -578,7 +590,7 @@ class SalesController extends GetxController
         );
         Get.snackbar(
           'success'.tr,
-          'instantSaleRetailPriceSaved'.tr,
+          'instantSaleProductPricesSaved'.tr,
           snackPosition: SnackPosition.BOTTOM,
         );
         return productById(product.id) ??
@@ -615,8 +627,87 @@ class SalesController extends GetxController
     return i >= 0 ? i : null;
   }
 
+  void onInstantSaleProductSearchChanged(String value) {
+    instantSaleProductSearch.value = value;
+    _instantSalePickerSearchDebounce?.cancel();
+
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      instantSalePickerSearchLoading(false);
+      _bumpProductsList();
+      return;
+    }
+
+    instantSalePickerSearchLoading(true);
+    _instantSalePickerSearchDebounce = Timer(
+      const Duration(milliseconds: 180),
+      () {
+        instantSalePickerSearchLoading(false);
+        _bumpProductsList();
+      },
+    );
+  }
+
+  String _normalizePickerSearchText(String raw) {
+    var s = raw.trim().toLowerCase();
+    s = s.replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '');
+    s = s.replaceAll(RegExp(r'[أإآ]'), 'ا');
+    s = s.replaceAll('ى', 'ي');
+    return s;
+  }
+
+  bool _pickerSearchMatches(String query, String haystack) {
+    if (query.isEmpty) return true;
+    final h = _normalizePickerSearchText(haystack);
+    final q = _normalizePickerSearchText(query);
+    if (h.isEmpty) return false;
+    if (h.contains(q)) return true;
+
+    var hi = 0;
+    for (var i = 0; i < q.length; i++) {
+      final c = q[i];
+      var found = false;
+      while (hi < h.length) {
+        if (h[hi] == c) {
+          found = true;
+          hi++;
+          break;
+        }
+        hi++;
+      }
+      if (!found) return false;
+    }
+    return true;
+  }
+
+  bool productMatchesPickerSearch(ProductModel product, String query) {
+    if (query.isEmpty) return true;
+
+    final fields = <String>[
+      product.nameAr,
+      product.displayProductCode,
+      product.id,
+      product.storeSectionName ?? '',
+    ];
+    for (final size in product.sizes) {
+      fields.add(size.size);
+      for (final color in size.colorSizes) {
+        fields.add(color.colorAr);
+        if (color.colorEn != null) fields.add(color.colorEn!);
+        if (color.colorAbbr != null) fields.add(color.colorAbbr!);
+      }
+    }
+
+    return fields.any((field) => _pickerSearchMatches(query, field));
+  }
+
+  bool packageMatchesPickerSearch(OfferPackageModel package, String query) {
+    if (query.isEmpty) return true;
+    return _pickerSearchMatches(query, package.name);
+  }
+
   List<ProductModel> get filteredProductsForPicker {
-    final q = instantSaleProductSearch.value.trim().toLowerCase();
+    final q = instantSaleProductSearch.value.trim();
     final sectionId = pickerLocationSectionId.value;
 
     var list = products;
@@ -625,22 +716,16 @@ class SalesController extends GetxController
     }
 
     if (q.isEmpty) return list;
-    return list.where((p) {
-      if (p.nameAr.toLowerCase().contains(q)) return true;
-      final code = p.productCode?.toLowerCase() ?? '';
-      if (code.contains(q)) return true;
-      final section = p.storeSectionName?.toLowerCase() ?? '';
-      return section.contains(q);
-    }).toList();
+    return list.where((p) => productMatchesPickerSearch(p, q)).toList();
   }
 
   List<OfferPackageModel> get filteredPackagesForPicker {
-    final q = instantSaleProductSearch.value.trim().toLowerCase();
+    final q = instantSaleProductSearch.value.trim();
     final sellable = offerPackagesForSale.where(
       (p) => p.isActive && p.maxSellableQuantity > 0,
     );
     if (q.isEmpty) return sellable.toList();
-    return sellable.where((p) => p.name.toLowerCase().contains(q)).toList();
+    return sellable.where((p) => packageMatchesPickerSearch(p, q)).toList();
   }
 
   int get pickerGridItemCount {
@@ -794,7 +879,7 @@ class SalesController extends GetxController
     final ctx = context ?? Get.context;
     if (ctx == null) return;
 
-    final resolved = await ensureProductRetailPrice(product);
+    final resolved = await ensureProductPricesForPicker(product);
     if (resolved == null) return;
 
     final pick = await showSalesVariantPickerSheet(
@@ -826,11 +911,12 @@ class SalesController extends GetxController
       InstantSaleCartLine.fromProduct(
         resolved,
         quantity: pick.quantity.toString(),
-        unitPrice: pick.unitPrice > 0
-            ? (pick.unitPrice == pick.unitPrice.roundToDouble()
-                ? pick.unitPrice.toInt().toString()
-                : pick.unitPrice.toStringAsFixed(2))
-            : null,
+        unitPrice: await resolveDefaultUnitPrice(
+          resolved,
+          sizeColorId: pick.variant.id,
+          variantRetailPrice: pick.variant.normailPrice,
+          variantWholesalePrice: pick.variant.wholesalePrice,
+        ),
         sizeColorId: pick.variant.id,
         sizeId: pick.size.id,
         sizeLabel: pick.size.size,
@@ -843,7 +929,7 @@ class SalesController extends GetxController
   }
 
   Future<void> _addProductToCartOnce(ProductModel product) async {
-    final resolved = await ensureProductRetailPrice(product);
+    final resolved = await ensureProductPricesForPicker(product);
     if (resolved == null) return;
 
     final stock = int.tryParse(resolved.stock) ?? 0;
@@ -852,7 +938,10 @@ class SalesController extends GetxController
           backgroundColor: Colors.red);
       return;
     }
-    addCartLine(InstantSaleCartLine.fromProduct(resolved));
+    final unitPrice = await resolveDefaultUnitPrice(resolved);
+    addCartLine(
+      InstantSaleCartLine.fromProduct(resolved, unitPrice: unitPrice),
+    );
     bumpCartRevision();
   }
 
@@ -1428,6 +1517,8 @@ class SalesController extends GetxController
       buyerPayload['buyer_id'] = invoice.buyerId;
     }
     applyBuyerFromPayment(buyerPayload);
+    await ensurePickerPartnersLoaded();
+    syncPickerPartnerFromPayment();
 
     calculateGrandTotal();
     bumpCartRevision();
@@ -1554,6 +1645,13 @@ class SalesController extends GetxController
     } else {
       _paymentBoxValue = null;
     }
+    _syncPickerPartnerObservables();
+    syncPickerPartnerFromPayment();
+  }
+
+  void _syncPickerPartnerObservables() {
+    pickerBuyerIdRx.value = _paymentBuyerId;
+    pickerSellerIdRx.value = _paymentSellerId;
   }
 
   void _clearPaymentBuyer() {
@@ -1564,6 +1662,328 @@ class SalesController extends GetxController
     _paymentBoxId = null;
     _paymentBoxName = null;
     _paymentBoxValue = null;
+    pickerSelectedPartner.value = null;
+    _syncPickerPartnerObservables();
+  }
+
+  // --- Picker partner (optional buyer at product selection) ---
+
+  final RxBool pickerPartnerIsCustomer = true.obs;
+  final Rxn<SellerModel> pickerSelectedPartner = Rxn<SellerModel>();
+  final RxnString pickerBuyerIdRx = RxnString();
+  final RxnString pickerSellerIdRx = RxnString();
+  final RxList<SellerModel> pickerCustomersList = <SellerModel>[].obs;
+  final RxList<SellerModel> pickerSellersList = <SellerModel>[].obs;
+  final RxBool pickerPartnersLoading = false.obs;
+
+  bool get hasPickerPartner {
+    final buyerId = pickerBuyerIdRx.value;
+    final sellerId = pickerSellerIdRx.value;
+    return (buyerId != null && buyerId.isNotEmpty) ||
+        (sellerId != null && sellerId.isNotEmpty);
+  }
+
+  String? get pickerPersonType {
+    if (_paymentSellerId != null && _paymentSellerId!.isNotEmpty) {
+      return 'seller';
+    }
+    if (_paymentBuyerId != null && _paymentBuyerId!.isNotEmpty) {
+      return 'customer';
+    }
+    return null;
+  }
+
+  String? get pickerPersonId => _paymentSellerId ?? _paymentBuyerId;
+
+  Future<void> ensurePickerPartnersLoaded() async {
+    if (pickerCustomersList.isNotEmpty && pickerSellersList.isNotEmpty) {
+      return;
+    }
+    pickerPartnersLoading(true);
+    try {
+      final customers = await allCustomersSellersUsecase.call(
+        endPoint: EndPoints.all_customers,
+      );
+      pickerCustomersList.assignAll(customers);
+      final sellers = await allCustomersSellersUsecase.call(
+        endPoint: EndPoints.all_sellers,
+      );
+      pickerSellersList.assignAll(sellers);
+    } finally {
+      pickerPartnersLoading(false);
+    }
+  }
+
+  void setPickerPartnerTab({required bool isCustomer}) {
+    pickerPartnerIsCustomer.value = isCustomer;
+    pickerSelectedPartner.value = null;
+    _clearPaymentBuyer();
+    refreshCartPricesForPartner().then((_) => bumpCartRevision());
+  }
+
+  Future<void> onPickerPartnerSelected(SellerModel? partner) async {
+    if (partner == null) {
+      await clearPickerPartner();
+      return;
+    }
+    pickerSelectedPartner.value = partner;
+    final isCustomer = pickerPartnerIsCustomer.value;
+    if (isCustomer) {
+      applyBuyerFromPayment({
+        'buyer_type': 'customer',
+        'buyer_id': partner.id.toString(),
+        'buyer_name': partner.name,
+      });
+    } else {
+      applyBuyerFromPayment({
+        'buyer_type': 'seller',
+        'seller_id': partner.id.toString(),
+        'buyer_name': partner.name,
+      });
+    }
+    await refreshCartPricesForPartner();
+    bumpCartRevision();
+  }
+
+  Future<void> clearPickerPartner() async {
+    pickerSelectedPartner.value = null;
+    _clearPaymentBuyer();
+    await refreshCartPricesForPartner();
+    bumpCartRevision();
+  }
+
+  void syncPickerPartnerFromPayment() {
+    if (_paymentSellerId != null) {
+      pickerPartnerIsCustomer.value = false;
+      final match = pickerSellersList.firstWhereOrNull(
+        (e) => e.id.toString() == _paymentSellerId,
+      );
+      pickerSelectedPartner.value = match;
+      return;
+    }
+    if (_paymentBuyerId != null) {
+      pickerPartnerIsCustomer.value = true;
+      final match = pickerCustomersList.firstWhereOrNull(
+        (e) => e.id.toString() == _paymentBuyerId,
+      );
+      pickerSelectedPartner.value = match;
+      return;
+    }
+    pickerSelectedPartner.value = null;
+  }
+
+  Future<CustomerProductPriceHistory?> fetchLinePriceHistory({
+    required String productId,
+    String? sizeColorId,
+    int limit = 5,
+  }) async {
+    try {
+      if (hasPickerPartner) {
+        return await getCustomerProductPriceHistoryUsecase.call(
+          personType: pickerPersonType,
+          personId: pickerPersonId,
+          productId: productId,
+          sizeColorId: sizeColorId,
+          limit: limit,
+        );
+      }
+      return await getCustomerProductPriceHistoryUsecase.call(
+        productId: productId,
+        sizeColorId: sizeColorId,
+        limit: limit,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get isWholesalePartner =>
+      hasPickerPartner && pickerPersonType == 'seller';
+
+  double catalogUnitPriceForProduct(
+    ProductModel product, {
+    double? variantRetailPrice,
+    double? variantWholesalePrice,
+  }) {
+    if (isWholesalePartner) {
+      final wholesale = (variantWholesalePrice != null && variantWholesalePrice > 0)
+          ? variantWholesalePrice
+          : product.wholesalePrice;
+      return wholesale > 0 ? wholesale : 0;
+    }
+    final retail = (variantRetailPrice != null && variantRetailPrice > 0)
+        ? variantRetailPrice
+        : product.unitPrice;
+    return retail > 0 ? retail : 0;
+  }
+
+  String displayPriceLabelForProduct(
+    ProductModel product, {
+    String? cartLinePrice,
+    double? variantRetailPrice,
+    double? variantWholesalePrice,
+  }) {
+    if (cartLinePrice != null && cartLinePrice.trim().isNotEmpty) {
+      final parsed = SalesAmountFormat.parse(cartLinePrice);
+      if (parsed > 0) return SalesAmountFormat.displayShekel(parsed);
+    }
+    final unit = catalogUnitPriceForProduct(
+      product,
+      variantRetailPrice: variantRetailPrice,
+      variantWholesalePrice: variantWholesalePrice,
+    );
+    if (unit > 0) return SalesAmountFormat.displayShekel(unit);
+    return isWholesalePartner
+        ? 'instantSaleNoWholesalePrice'.tr
+        : 'instantSaleNoRetailPrice'.tr;
+  }
+
+  double? variantRetailPriceForLine({
+    required ProductModel product,
+    String? sizeColorId,
+  }) {
+    if (sizeColorId == null || sizeColorId.isEmpty) return null;
+    for (final size in product.sizes) {
+      for (final color in size.colorSizes) {
+        if (color.id == sizeColorId) return color.normailPrice;
+      }
+    }
+    return null;
+  }
+
+  double? variantWholesalePriceForLine({
+    required ProductModel product,
+    String? sizeColorId,
+  }) {
+    if (sizeColorId == null || sizeColorId.isEmpty) return null;
+    for (final size in product.sizes) {
+      for (final color in size.colorSizes) {
+        if (color.id == sizeColorId) return color.wholesalePrice;
+      }
+    }
+    return null;
+  }
+
+  Future<void> refreshCartPricesForPartner() async {
+    if (cartLines.isEmpty) return;
+    for (final line in cartLines) {
+      if (line.isDisposed) continue;
+      final product = productById(line.productId);
+      if (product == null) continue;
+      final price = await resolveDefaultUnitPrice(
+        product,
+        sizeColorId: line.sizeColorId,
+        variantRetailPrice: variantRetailPriceForLine(
+          product: product,
+          sizeColorId: line.sizeColorId,
+        ),
+        variantWholesalePrice: variantWholesalePriceForLine(
+          product: product,
+          sizeColorId: line.sizeColorId,
+        ),
+      );
+      if (price != null && price.isNotEmpty) {
+        line.priceController.text = price;
+        line.recalculateTotal();
+      }
+    }
+    calculateGrandTotal();
+    syncCartToItems();
+    bumpCartRevision();
+  }
+
+  Future<void> promptProductQuantity(
+    BuildContext context,
+    ProductModel product,
+  ) async {
+    if (product.hasVariants && product.sizes.isNotEmpty) return;
+
+    final resolved = productById(product.id) ?? product;
+    final stock = int.tryParse(resolved.stock) ?? 0;
+    if (stock < 1) {
+      Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
+          backgroundColor: Colors.red);
+      return;
+    }
+
+    final idx = cartLines.indexWhere((l) => l.productId == product.id);
+    final current = idx >= 0
+        ? (int.tryParse(cartLines[idx].quantityText) ?? 1)
+        : 1;
+
+    final result = await showInstantSaleQuantityDialog(
+      context,
+      initialQuantity: current,
+      maxQuantity: stock,
+    );
+    if (result == null) return;
+
+    if (idx < 0) {
+      final priced = await ensureProductPricesForPicker(resolved);
+      if (priced == null) return;
+
+      final unitPrice = await resolveDefaultUnitPrice(priced);
+      addCartLine(
+        InstantSaleCartLine.fromProduct(
+          priced,
+          quantity: result.toString(),
+          unitPrice: unitPrice,
+        ),
+      );
+      bumpCartRevision();
+      return;
+    }
+
+    setCartLineQuantity(idx, result);
+  }
+
+  void setProductCartQuantity(String productId, int qty) {
+    final idx = cartLines.indexWhere((l) => l.productId == productId);
+    if (idx < 0) return;
+    setCartLineQuantity(idx, qty);
+  }
+
+  Future<String?> resolveDefaultUnitPrice(
+    ProductModel product, {
+    String? sizeColorId,
+    double? variantRetailPrice,
+    double? variantWholesalePrice,
+  }) async {
+    final hasPartner = hasPickerPartner;
+    final isSeller = hasPartner && pickerPersonType == 'seller';
+
+    if (!hasPartner) {
+      if (product.unitPrice > 0) return _formatUnitPrice(product.unitPrice);
+      return null;
+    }
+
+    try {
+      final history = await fetchLinePriceHistory(
+        productId: product.id,
+        sizeColorId: sizeColorId,
+        limit: 1,
+      );
+      final last = history?.lastPrice;
+      if (last != null && last > 0) {
+        return _formatUnitPrice(last);
+      }
+    } catch (_) {
+      // fall through to catalog price
+    }
+
+    if (isSeller) {
+      final wholesale = (variantWholesalePrice != null && variantWholesalePrice > 0)
+          ? variantWholesalePrice
+          : product.wholesalePrice;
+      if (wholesale > 0) return _formatUnitPrice(wholesale);
+      return null;
+    } else {
+      final retail = (variantRetailPrice != null && variantRetailPrice > 0)
+          ? variantRetailPrice
+          : product.unitPrice;
+      if (retail > 0) return _formatUnitPrice(retail);
+      return null;
+    }
   }
 
   void resetInstantSaleForm({bool renewFormKey = true}) {
@@ -1587,6 +2007,7 @@ class SalesController extends GetxController
     }
     totalCost.value = 0.0;
     instantSalePaidAmount.value = 0;
+    pickerPartnerIsCustomer.value = true;
     _clearPaymentBuyer();
     if (renewFormKey) {
       _renewInstantSaleFormKey();
@@ -1616,6 +2037,20 @@ class SalesController extends GetxController
     cartLines.add(line);
     calculateGrandTotal();
     bumpCartRevision();
+  }
+
+  void setCartLinePrice(int index, String price) {
+    if (index < 0 || index >= cartLines.length) return;
+    final line = cartLines[index];
+    line.priceController.text = price;
+    line.recalculateTotal();
+    calculateGrandTotal();
+    syncCartToItems();
+    bumpCartRevision();
+  }
+
+  void applyHistoricalPriceToCartLine(int index, double price) {
+    setCartLinePrice(index, _formatUnitPrice(price));
   }
 
   void updateCartLine(int index, InstantSaleCartLine line) {
@@ -2471,6 +2906,7 @@ class SalesController extends GetxController
       ..clear()
       ..addAll(result);
     productsLoading(false);
+    _bumpProductsList();
   }
 
   /// Note sent with payment receive so box history matches cancel wording.
@@ -2763,6 +3199,7 @@ class SalesController extends GetxController
     clearInstantSaleNotes(dispose: true);
     _instantSalesSearchDebounce?.cancel();
     _profitSalesSearchDebounce?.cancel();
+    _instantSalePickerSearchDebounce?.cancel();
     super.onClose();
   }
 

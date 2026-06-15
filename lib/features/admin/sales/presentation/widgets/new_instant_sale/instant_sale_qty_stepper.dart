@@ -10,6 +10,7 @@ class InstantSaleQtyStepper extends StatelessWidget {
     required this.quantity,
     required this.onDecrement,
     required this.onIncrement,
+    this.onQuantityTap,
     this.canDecrement = true,
     this.canIncrement = true,
     this.compact = false,
@@ -18,6 +19,7 @@ class InstantSaleQtyStepper extends StatelessWidget {
   final int quantity;
   final VoidCallback? onDecrement;
   final VoidCallback? onIncrement;
+  final VoidCallback? onQuantityTap;
   final bool canDecrement;
   final bool canIncrement;
   final bool compact;
@@ -28,7 +30,45 @@ class InstantSaleQtyStepper extends StatelessWidget {
     final icon = compact ? 13.sp : 16.sp;
     final qtyFont = compact ? 10.sp : 13.sp;
     final gap = compact ? 2.w : 6.w;
-    final qtyWidth = compact ? 18.w : 28.w;
+    final qtyWidth = compact ? 34.w : 40.w;
+
+    final qtyWidget = onQuantityTap != null
+        ? Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onQuantityTap,
+              borderRadius: BorderRadius.circular(4.r),
+              child: SizedBox(
+                width: qtyWidth,
+                child: Text(
+                  '$quantity',
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  style: TextStyle(
+                    fontSize: qtyFont,
+                    fontWeight: FontWeight.w700,
+                    decoration: TextDecoration.underline,
+                    decorationColor:
+                        AppColors.primaryColor.withValues(alpha: 0.45),
+                  ),
+                ),
+              ),
+            ),
+          )
+        : SizedBox(
+            width: qtyWidth,
+            child: Text(
+              '$quantity',
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              style: TextStyle(
+                fontSize: qtyFont,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          );
 
     final row = Row(
       mainAxisSize: MainAxisSize.min,
@@ -42,19 +82,7 @@ class InstantSaleQtyStepper extends StatelessWidget {
           onTap: onDecrement,
         ),
         SizedBox(width: gap),
-        SizedBox(
-          width: qtyWidth,
-          child: Text(
-            '$quantity',
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.clip,
-            style: TextStyle(
-              fontSize: qtyFont,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        qtyWidget,
         SizedBox(width: gap),
         _StepBtn(
           size: btn,

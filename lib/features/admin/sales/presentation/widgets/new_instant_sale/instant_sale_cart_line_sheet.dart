@@ -10,6 +10,7 @@ import '../../../data/utils/sale_variant_display.dart';
 import '../../models/instant_sale_cart_line.dart';
 import '../../utils/product_image_viewer.dart';
 import '../../utils/sales_amount_format.dart';
+import 'instant_sale_price_history_sheet.dart';
 
 void showInstantSaleCartLineSheet(
   BuildContext context,
@@ -143,6 +144,8 @@ class _InstantSaleCartLineSheet extends StatelessWidget {
                 label: 'stock'.tr,
                 value: '${line.stock}',
               ),
+              SizedBox(height: 12.h),
+              InstantSalePriceHistoryButton(line: line),
             ],
           ),
         ),

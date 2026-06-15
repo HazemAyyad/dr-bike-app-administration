@@ -4,7 +4,10 @@ import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sale
 import 'package:get/get.dart';
 
 import '../../data/repositories/sales_implement.dart';
+import '../../../checks/data/repositories/checks_implement.dart';
+import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../domain/usecases/add_instant_sales_usecase.dart';
+import '../../domain/usecases/get_customer_product_price_history_usecase.dart';
 import '../../domain/usecases/get_all_products_usecase.dart';
 import '../../domain/usecases/get_profit_sales_usecase.dart';
 import '../../domain/usecases/update_product_retail_price_usecase.dart';
@@ -16,6 +19,7 @@ class SalesBinding extends Bindings {
   @override
   void dependencies() {
     AppDependencyRegistry.ensureSales();
+    AppDependencyRegistry.ensureChecks();
 
     Get.lazyPut(
       () => SalesController(
@@ -40,6 +44,13 @@ class SalesBinding extends Bindings {
         ),
         invoiceModelUsecase: InvoiceModelUsecase(
           salesRepository: Get.find<SalesImplement>(),
+        ),
+        getCustomerProductPriceHistoryUsecase:
+            GetCustomerProductPriceHistoryUsecase(
+          salesRepository: Get.find<SalesImplement>(),
+        ),
+        allCustomersSellersUsecase: AllCustomersSellersUsecase(
+          checksRepository: Get.find<ChecksImplement>(),
         ),
       ),
     );

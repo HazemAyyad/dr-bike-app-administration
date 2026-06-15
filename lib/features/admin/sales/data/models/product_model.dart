@@ -11,6 +11,7 @@ class ProductModel {
   final double unitPrice;
   final double wholesalePrice;
   final double rate;
+  final double purchaseCost;
   final String imageUrl;
   final List<String> viewImageUrls;
   final List<String> normalImageUrls;
@@ -33,6 +34,7 @@ class ProductModel {
     this.unitPrice = 0,
     this.wholesalePrice = 0,
     this.rate = 0,
+    this.purchaseCost = 0,
     this.imageUrl = '',
     this.viewImageUrls = const [],
     this.normalImageUrls = const [],
@@ -92,6 +94,7 @@ class ProductModel {
         j['wholesale_price'] ?? j['wholesalePrice'] ?? 0,
       ),
       rate: asDouble(j['rate'] ?? 0),
+      purchaseCost: asDouble(j['purchase_cost'] ?? j['purchaseCost'] ?? 0),
       imageUrl: asString(
         j['product_image'] ?? j['image'] ?? j['imageUrl'],
         '',
@@ -124,6 +127,7 @@ class ProductModel {
   ProductModel copyWith({
     double? unitPrice,
     double? wholesalePrice,
+    double? purchaseCost,
     String? productCode,
     String? storeSectionId,
     String? storeSectionName,
@@ -136,6 +140,7 @@ class ProductModel {
       unitPrice: unitPrice ?? this.unitPrice,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       rate: rate,
+      purchaseCost: purchaseCost ?? this.purchaseCost,
       imageUrl: imageUrl,
       viewImageUrls: viewImageUrls,
       normalImageUrls: normalImageUrls,

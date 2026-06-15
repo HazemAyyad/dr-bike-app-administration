@@ -4,6 +4,7 @@ import 'package:doctorbike/features/admin/sales/presentation/controllers/sales_c
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../data/models/customer_product_price_history_model.dart';
 import '../../data/models/instant_sales_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../../data/models/product_model.dart';
@@ -102,5 +103,13 @@ abstract class SalesRepository {
 
   Future<Either<Failure, String>> cancelSuspendedInstantSale({
     required int suspendedInstantSaleId,
+  });
+
+  Future<CustomerProductPriceHistory> getCustomerProductPriceHistory({
+    String? personType,
+    String? personId,
+    required String productId,
+    String? sizeColorId,
+    int limit = 5,
   });
 }

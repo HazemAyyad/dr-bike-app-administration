@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -8,10 +9,12 @@ import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/utils/sale_variant_display.dart';
 import '../../controllers/sales_controller.dart';
+import '../../models/instant_sale_cart_line.dart';
 import '../../utils/product_image_viewer.dart';
 import '../../utils/sales_amount_format.dart';
 import 'instant_sale_cart_line_sheet.dart';
 import 'instant_sale_package_cart_row.dart';
+import 'instant_sale_price_history_sheet.dart';
 
 /// ملخص أصناف السلة (باكيج + منتجات) — جدول أفقي مع مقاس/لون.
 class InstantSaleCartTable extends GetView<SalesController> {
@@ -81,7 +84,7 @@ class InstantSaleCartTable extends GetView<SalesController> {
                           _headerCell('size', 72),
                           _headerCell('color', 72),
                           _headerCell('quantity', 56),
-                          _headerCell('price', 72),
+                          _headerCell('price', 108),
                           _headerCell('total', 72),
                         ],
                       ),
@@ -90,7 +93,6 @@ class InstantSaleCartTable extends GetView<SalesController> {
                       final line = productLines[index];
                       if (line.isDisposed) return const SizedBox.shrink();
                       final qty = line.quantityText;
-                      final price = line.priceText;
                       final total = line.lineTotal.value;
                       final isLast = index == productLines.length - 1;
 
@@ -158,14 +160,29 @@ class InstantSaleCartTable extends GetView<SalesController> {
                               56,
                               center: true,
                             ),
-                            _dataCell(
-                              price.isEmpty
-                                  ? '—'
-                                  : SalesAmountFormat.display(
-                                      SalesAmountFormat.parse(price),
+                            SizedBox(
+                              width: 108.w,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: _PriceField(
+                                      line: line,
+                                      onChanged: () {
+                                        line.recalculateTotal();
+                                        controller.calculateGrandTotal();
+                                        controller.syncCartToItems();
+                                        controller.bumpCartRevision();
+                                      },
                                     ),
-                              72,
-                              center: true,
+                                  ),
+                                  InstantSalePriceHistoryButton(
+                                    line: line,
+                                    cartLineIndex: index,
+                                    compact: true,
+                                    allowApply: true,
+                                  ),
+                                ],
+                              ),
                             ),
                             _dataCell(
                               SalesAmountFormat.display(total),
@@ -248,6 +265,42 @@ class InstantSaleCartTable extends GetView<SalesController> {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+}
+
+class _PriceField extends StatelessWidget {
+  const _PriceField({
+    required this.line,
+    required this.onChanged,
+  });
+
+  final InstantSaleCartLine line;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (line.isDisposed) return const SizedBox.shrink();
+
+    return SizedBox(
+      height: 32.h,
+      child: TextField(
+        controller: line.priceController,
+        textAlign: TextAlign.center,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+        ],
+        style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600),
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6.r),
+          ),
+        ),
+        onChanged: (_) => onChanged(),
       ),
     );
   }

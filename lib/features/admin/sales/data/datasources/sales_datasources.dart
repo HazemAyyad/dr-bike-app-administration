@@ -16,6 +16,7 @@ import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
 import '../../../stock/data/models/offer_package_model.dart';
+import '../models/customer_product_price_history_model.dart';
 import '../models/daily_session_model.dart';
 import '../models/invoice_model.dart';
 import '../models/product_model.dart';
@@ -251,6 +252,61 @@ class SalesDatasource {
         return ProductPriceUpdateResult(
           retail: asDouble(data['normail_price'] ?? normailPrice),
           wholesale: asDouble(data['wholesale_price'] ?? wholesalePrice ?? 0),
+        );
+      }
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<CustomerProductPriceHistory> getCustomerProductPriceHistory({
+    String? personType,
+    String? personId,
+    required String productId,
+    String? sizeColorId,
+    int limit = 5,
+  }) async {
+    try {
+      final query = <String, dynamic>{
+        'product_id': int.tryParse(productId) ?? productId,
+        'limit': limit,
+      };
+      if (personType != null &&
+          personType.isNotEmpty &&
+          personId != null &&
+          personId.isNotEmpty) {
+        query['person_type'] = personType;
+        query['person_id'] = int.tryParse(personId) ?? personId;
+      }
+      if (sizeColorId != null && sizeColorId.isNotEmpty) {
+        query['size_color_id'] = int.tryParse(sizeColorId) ?? sizeColorId;
+      }
+      final response = await api.get(
+        EndPoints.instantSaleCustomerProductPrices,
+        queryParameters: query,
+      );
+      final data = response.data;
+      if (data is Map && data['status'] == 'success') {
+        return CustomerProductPriceHistory.fromJson(
+          Map<String, dynamic>.from(data),
         );
       }
       throw ServerException(

@@ -46,13 +46,17 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
       controller.syncCartToItems();
       controller.syncPaymentCashFromTotal();
       controller.refreshInstantSalePaymentSummary();
-      if ((controller.activeSuspendedSaleId.value != null ||
-              controller.activeEditInstantSaleId.value != null) &&
-          Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
         final payment =
             Get.find<PaymentController>(tag: kInstantSalePaymentTag);
-        await payment.getAllCustomersAndSellers();
-        controller.applySuspendedPaymentToController(payment);
+        if (controller.activeSuspendedSaleId.value != null ||
+            controller.activeEditInstantSaleId.value != null) {
+          await payment.getAllCustomersAndSellers();
+          controller.applySuspendedPaymentToController(payment);
+        } else if (controller.hasPickerPartner) {
+          await payment.getAllCustomersAndSellers();
+          controller.applySuspendedPaymentToController(payment);
+        }
       }
     });
   }

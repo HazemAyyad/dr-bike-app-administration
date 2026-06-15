@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/core/connection/network_info.dart';
 import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
+import 'package:doctorbike/features/admin/sales/data/models/customer_product_price_history_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/instant_sales_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/invoice_model.dart';
 import 'package:doctorbike/features/admin/sales/data/models/product_model.dart';
@@ -402,6 +403,30 @@ class SalesImplement implements SalesRepository {
       ));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<CustomerProductPriceHistory> getCustomerProductPriceHistory({
+    String? personType,
+    String? personId,
+    required String productId,
+    String? sizeColorId,
+    int limit = 5,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await salesDatasource.getCustomerProductPriceHistory(
+        personType: personType,
+        personId: personId,
+        productId: productId,
+        sizeColorId: sizeColorId,
+        limit: limit,
+      );
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
     }
   }
 }

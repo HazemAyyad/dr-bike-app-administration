@@ -354,6 +354,8 @@ class EndPoints {
   static const String editInstantSale = 'edit/instant/sale';
   static const String cancelInstantSale = 'cancel/instant/sale';
   static const String allInstantSales = 'all/instant/sales';
+  static const String instantSaleCustomerProductPrices =
+      'instant/sale/customer-product-prices';
 
   static const String suspendedInstantSales = 'suspended/instant/sales';
   static const String suspendedInstantSalesCount =

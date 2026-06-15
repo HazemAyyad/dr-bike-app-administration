@@ -9,7 +9,9 @@ import '../controllers/sales_controller.dart';
 import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../widgets/new_instant_sale/instant_sale_package_card.dart';
 import '../widgets/sales_location_filter_fab.dart';
+import '../widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../widgets/new_instant_sale/instant_sale_product_card.dart';
+import '../widgets/new_instant_sale/instant_sale_product_picker_skeleton.dart';
 
 /// شاشة اختيار المنتجات (سلة) قبل إتمام البيع الفوري.
 class InstantSaleProductPickerScreen extends StatefulWidget {
@@ -25,7 +27,8 @@ class _InstantSaleProductPickerScreenState
   SalesController get controller => Get.find<SalesController>();
   final _searchController = TextEditingController();
 
-  static const int _rows = 4;
+  static const int _maxRows = 4;
+  static const int _minRows = 2;
   static const int _visibleColumns = 4;
 
   @override
@@ -42,6 +45,7 @@ class _InstantSaleProductPickerScreenState
     }
     controller.loadOfferPackagesForSale();
     controller.ensurePickerStoreSectionsLoaded();
+    controller.ensurePickerPartnersLoaded();
   }
 
   @override
@@ -57,6 +61,7 @@ class _InstantSaleProductPickerScreenState
         title: 'instantSalePickProducts',
         action: false,
         actions: [
+          const InstantSalePickerPartnerIcon(),
           _CartAppBarButton(
             onTap: () => showInstantSaleCartSheet(context),
           ),
@@ -81,8 +86,7 @@ class _InstantSaleProductPickerScreenState
                       vertical: 10.h,
                     ),
                   ),
-                  onChanged: (v) =>
-                      controller.instantSaleProductSearch.value = v,
+                  onChanged: controller.onInstantSaleProductSearchChanged,
                 ),
               ),
               Obx(() {
@@ -125,13 +129,20 @@ class _InstantSaleProductPickerScreenState
               Expanded(
                 child: Obx(() {
                   final _ = controller.productsListVersion.value;
+                  final searchQuery = controller.instantSaleProductSearch.value;
                   final locationFilter =
                       controller.pickerLocationSectionId.value;
                   final saving = controller.savingProductPrice.value;
                   final loading = controller.productsLoading.value;
+                  final searchLoading =
+                      controller.instantSalePickerSearchLoading.value;
 
                   if (loading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const InstantSaleProductPickerGridSkeleton();
+                  }
+
+                  if (searchLoading) {
+                    return const InstantSaleProductPickerGridSkeleton();
                   }
 
                   final hasLocationFilter = locationFilter != null &&
@@ -182,18 +193,25 @@ class _InstantSaleProductPickerScreenState
                           final padH = 10.w;
                           final gridW = constraints.maxWidth - padH * 2;
                           final gridH = constraints.maxHeight;
+                          final minCellH = 82.h;
+                          final rows = ((gridH + vGap) / (minCellH + vGap))
+                              .floor()
+                              .clamp(_minRows, _maxRows);
                           final cellW =
                               (gridW - hGap * (_visibleColumns - 1)) /
                                   _visibleColumns;
-                          final cellH = (gridH - vGap * (_rows - 1)) / _rows;
+                          final cellH = (gridH - vGap * (rows - 1)) / rows;
                           final aspectRatio = cellH / cellW;
 
                           return GridView.builder(
+                            key: ValueKey(
+                              'picker_grid_${searchQuery}_${controller.productsListVersion.value}',
+                            ),
                             scrollDirection: Axis.horizontal,
                             padding: EdgeInsets.symmetric(horizontal: padH),
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: _rows,
+                              crossAxisCount: rows,
                               mainAxisSpacing: hGap,
                               crossAxisSpacing: vGap,
                               childAspectRatio: aspectRatio,

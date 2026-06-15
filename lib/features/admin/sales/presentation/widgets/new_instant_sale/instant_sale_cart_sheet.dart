@@ -11,6 +11,7 @@ import '../../controllers/sales_controller.dart';
 import '../../models/instant_sale_cart_line.dart';
 import '../../utils/sales_amount_format.dart';
 import 'instant_sale_package_cart_row.dart';
+import 'instant_sale_price_history_sheet.dart';
 import 'instant_sale_qty_stepper.dart';
 
 Future<void> showInstantSaleCartSheet(BuildContext context) {
@@ -260,11 +261,19 @@ class _CartLineEditor extends StatelessWidget {
                   onChanged: (_) {
                     line.recalculateTotal();
                     controller.calculateGrandTotal();
+                    controller.syncCartToItems();
                     controller.bumpCartRevision();
                   },
                 ),
               ),
               SizedBox(width: 6.w),
+              InstantSalePriceHistoryButton(
+                line: line,
+                cartLineIndex: index,
+                compact: true,
+                allowApply: true,
+              ),
+              SizedBox(width: 4.w),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,

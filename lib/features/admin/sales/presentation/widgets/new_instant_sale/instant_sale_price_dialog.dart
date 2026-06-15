@@ -2,20 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/product_model.dart';
 import '../../utils/sales_amount_format.dart';
+import 'instant_sale_dialog_shell.dart';
 
 class InstantSalePriceDialogResult {
   final double retailPrice;
-  final double? wholesalePrice;
+  final double wholesalePrice;
 
   const InstantSalePriceDialogResult({
     required this.retailPrice,
-    this.wholesalePrice,
+    required this.wholesalePrice,
   });
 }
 
-/// Retail (+ optional wholesale) price entry for instant sale picker.
+/// Retail + wholesale price entry — both required before adding to cart.
 Future<InstantSalePriceDialogResult?> showInstantSalePriceDialog(
   ProductModel product,
 ) {
@@ -48,6 +50,9 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
     super.initState();
     _retailCtrl = TextEditingController();
     _wholesaleCtrl = TextEditingController();
+    if (widget.product.unitPrice > 0) {
+      _retailCtrl.text = _priceText(widget.product.unitPrice);
+    }
     if (widget.product.wholesalePrice > 0) {
       _wholesaleCtrl.text = _priceText(widget.product.wholesalePrice);
     }
@@ -68,14 +73,12 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
   void _onSave() {
     final retail = SalesAmountFormat.parse(_retailCtrl.text);
     if (retail <= 0) {
-      Get.snackbar('error'.tr, 'instantSalePriceRequired'.tr);
+      Get.snackbar('error'.tr, 'instantSaleRetailPriceRequired'.tr);
       return;
     }
-    final wholesaleRaw = _wholesaleCtrl.text.trim();
-    final wholesale =
-        wholesaleRaw.isEmpty ? null : SalesAmountFormat.parse(wholesaleRaw);
-    if (wholesale != null && wholesale <= 0) {
-      Get.snackbar('error'.tr, 'instantSaleWholesaleInvalid'.tr);
+    final wholesale = SalesAmountFormat.parse(_wholesaleCtrl.text.trim());
+    if (wholesale <= 0) {
+      Get.snackbar('error'.tr, 'instantSaleWholesalePriceRequired'.tr);
       return;
     }
     _close(
@@ -88,29 +91,35 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final missingRetail = widget.product.unitPrice <= 0;
+    final missingWholesale = widget.product.wholesalePrice <= 0;
 
-    return Dialog(
-      backgroundColor: Colors.grey.shade100,
-      surfaceTintColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 12.h + bottomInset),
+    return InstantSaleDialogShell(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 12.h),
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'instantSaleEnterRetailPrice'.tr,
+                'instantSaleEnterProductPrices'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
                   color: Colors.black87,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'instantSaleBothPricesRequiredHint'.tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.grey.shade700,
+                  height: 1.35,
                 ),
               ),
               SizedBox(height: 10.h),
@@ -131,14 +140,12 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  labelText: 'instantSaleRetailPriceLabel'.tr,
+                decoration: InstantSaleDialogShell.fieldDecoration(
+                  context,
+                  labelText: missingRetail
+                      ? '${'instantSaleRetailPriceLabel'.tr} *'
+                      : 'instantSaleRetailPriceLabel'.tr,
                   hintText: '0',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
                 ),
               ),
               SizedBox(height: 10.h),
@@ -148,14 +155,12 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
                     const TextInputType.numberWithOptions(decimal: true),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _onSave(),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.white,
-                  labelText: 'instantSaleWholesalePriceLabel'.tr,
-                  hintText: 'instantSaleWholesaleOptional'.tr,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
+                decoration: InstantSaleDialogShell.fieldDecoration(
+                  context,
+                  labelText: missingWholesale
+                      ? '${'instantSaleWholesalePriceLabel'.tr} *'
+                      : 'instantSaleWholesalePriceLabel'.tr,
+                  hintText: '0',
                 ),
               ),
               SizedBox(height: 16.h),
@@ -177,7 +182,7 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
                     child: ElevatedButton(
                       onPressed: _onSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade800,
+                        backgroundColor: AppColors.primaryColor,
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(vertical: 10.h),
                       ),

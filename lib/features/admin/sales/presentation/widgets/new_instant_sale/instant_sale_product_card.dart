@@ -8,7 +8,6 @@ import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/product_model.dart';
 import '../../controllers/sales_controller.dart';
-import '../../utils/sales_amount_format.dart';
 import 'instant_sale_product_detail_sheet.dart';
 import 'instant_sale_qty_stepper.dart';
 
@@ -27,9 +26,6 @@ class InstantSaleProductCard extends StatelessWidget {
     final hasImage = url.isNotEmpty && product.imageUrl != 'no image';
     final stock = int.tryParse(product.stock) ?? 0;
     final outOfStock = stock < 1;
-    final priceLabel = product.unitPrice > 0
-        ? SalesAmountFormat.displayShekel(product.unitPrice)
-        : 'instantSaleNoRetailPrice'.tr;
     final locationCodeLabel = ProductLocationLabel.withProductCode(
       sectionName: product.storeSectionName,
       productCode: product.displayProductCode,
@@ -37,8 +33,24 @@ class InstantSaleProductCard extends StatelessWidget {
 
     return Obx(() {
       final _ = controller.cartRevision.value;
+      final __ = controller.pickerBuyerIdRx.value;
+      final ___ = controller.pickerSellerIdRx.value;
+      final ____ = controller.pickerPartnerIsCustomer.value;
       final qty = controller.cartQtyForProduct(product.id);
       final inCart = qty > 0;
+      final simpleLineIdx = controller.cartLines.indexWhere(
+        (l) =>
+            l.productId == product.id &&
+            !l.isDisposed &&
+            (l.sizeColorId == null || l.sizeColorId!.isEmpty),
+      );
+      final linePrice = simpleLineIdx >= 0
+          ? controller.cartLines[simpleLineIdx].priceText
+          : null;
+      final priceLabel = controller.displayPriceLabelForProduct(
+        product,
+        cartLinePrice: linePrice,
+      );
 
       return Material(
         color: Colors.white,
@@ -58,7 +70,7 @@ class InstantSaleProductCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                flex: 4,
+                flex: 5,
                 child: InkWell(
                   onTap: outOfStock
                       ? null
@@ -105,7 +117,7 @@ class InstantSaleProductCard extends StatelessWidget {
                             ),
                             child: Text(
                               locationCodeLabel,
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
                               style: TextStyle(
@@ -119,7 +131,7 @@ class InstantSaleProductCard extends StatelessWidget {
                         ),
                       if (inCart)
                         Positioned(
-                          top: locationCodeLabel != null ? 22.h : 3.h,
+                          top: locationCodeLabel != null ? 18.h : 3.h,
                           left: 3.w,
                           child: Container(
                             padding: EdgeInsets.symmetric(
@@ -144,83 +156,100 @@ class InstantSaleProductCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(4.w, 3.h, 4.w, 4.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    InkWell(
-                      onTap: outOfStock
-                          ? null
-                          : () => controller.toggleProductInCart(product),
-                      onLongPress: () =>
-                          showInstantSaleProductDetailSheet(context, product),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            product.nameAr,
-                            maxLines: 2,
-                            softWrap: true,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 8.5.sp,
-                              fontWeight: FontWeight.w600,
-                              height: 1.15,
-                            ),
+              Expanded(
+                flex: 4,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(4.w, 2.h, 4.w, 2.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: outOfStock
+                              ? null
+                              : () => controller.toggleProductInCart(product),
+                          onLongPress: () => showInstantSaleProductDetailSheet(
+                            context,
+                            product,
                           ),
-                          if (locationCodeLabel != null) ...[
-                            SizedBox(height: 2.h),
-                            Text(
-                              locationCodeLabel,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 7.sp,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w500,
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
-                          SizedBox(height: 2.h),
-                          Text(
-                            priceLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 8.sp,
-                              color: outOfStock
-                                  ? Colors.grey.shade500
-                                  : AppColors.primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              return ClipRect(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.center,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: constraints.maxWidth,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Text(
+                                          product.nameAr,
+                                          maxLines: 2,
+                                          softWrap: true,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 8.sp,
+                                            fontWeight: FontWeight.w600,
+                                            height: 1.05,
+                                          ),
+                                        ),
+                                        Text(
+                                          priceLabel,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 7.sp,
+                                            color: outOfStock
+                                                ? Colors.grey.shade500
+                                                : AppColors.primaryColor,
+                                            fontWeight: FontWeight.w600,
+                                            height: 1.05,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 3.h),
-                    Center(
-                      child: InstantSaleQtyStepper(
-                        compact: true,
-                        quantity: qty,
-                        canDecrement: inCart,
-                        canIncrement: stock > 0,
-                        onDecrement: inCart
-                            ? () => controller.decrementProductInCart(
-                                  product.id,
-                                )
-                            : null,
-                        onIncrement: stock > 0
-                            ? () => controller.incrementProductInCart(
-                                  product,
-                                  context: context,
-                                )
-                            : null,
+                      SizedBox(
+                        height: 20.h,
+                        child: Center(
+                          child: InstantSaleQtyStepper(
+                            compact: true,
+                            quantity: qty,
+                            canDecrement: inCart,
+                            canIncrement: stock > 0,
+                            onQuantityTap: product.hasVariants
+                                ? null
+                                : () => controller.promptProductQuantity(
+                                      context,
+                                      product,
+                                    ),
+                            onDecrement: inCart
+                                ? () => controller.decrementProductInCart(
+                                      product.id,
+                                    )
+                                : null,
+                            onIncrement: stock > 0
+                                ? () => controller.incrementProductInCart(
+                                      product,
+                                      context: context,
+                                    )
+                                : null,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
