@@ -562,6 +562,15 @@ class SalesDatasource {
     return _messageFromResponse(response.data);
   }
 
+  Future<List<DailySessionSummaryModel>> getOpenDailySessions() async {
+    final response = await api.get(EndPoints.salesDailySessionsOpen);
+    return mapListFromResponseKey(
+      response.data,
+      'sessions',
+      (Map<String, dynamic> m) => DailySessionSummaryModel.fromJson(m),
+    );
+  }
+
   Future<DailyTodayOverviewModel> getDailySessionsTodayOverview() async {
     final response = await api.get(EndPoints.salesDailySessionsTodayOverview);
     final raw = response.data['overview'];
@@ -630,6 +639,8 @@ class SalesDatasource {
     required List<Map<String, dynamic>> cashCounts,
     String? lateCloseReason,
     int? sessionId,
+    List<Map<String, dynamic>>? transfers,
+    String? reviewNotes,
   }) async {
     final response = await api.post(
       EndPoints.salesDailyClosingRequest,
@@ -638,6 +649,9 @@ class SalesDatasource {
         if (lateCloseReason != null && lateCloseReason.trim().isNotEmpty)
           'late_close_reason': lateCloseReason.trim(),
         if (sessionId != null) 'session_id': sessionId,
+        if (transfers != null) 'transfers': transfers,
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'review_notes': reviewNotes.trim(),
       },
     );
     return _messageFromResponse(response.data);

@@ -11,6 +11,9 @@ class DailySessionPayload {
   final bool canRequestOpen;
   final bool blockedByOtherSession;
   final String? blockedByEmployeeName;
+  final bool canManageOtherSession;
+  final int? manageableSessionId;
+  final bool canFinalizeClosing;
 
   const DailySessionPayload({
     this.session,
@@ -23,6 +26,9 @@ class DailySessionPayload {
     this.canRequestOpen = false,
     this.blockedByOtherSession = false,
     this.blockedByEmployeeName,
+    this.canManageOtherSession = false,
+    this.manageableSessionId,
+    this.canFinalizeClosing = false,
   });
 
   bool get allowsSales => session?.allowsSales ?? false;
@@ -84,6 +90,13 @@ class DailySessionPayload {
       blockedByOtherSession: json['blocked_by_other_session'] == true ||
           json['blocked_by_other_session'] == 1,
       blockedByEmployeeName: asNullableString(json['blocked_by_employee_name']),
+      canManageOtherSession: json['can_manage_other_session'] == true ||
+          json['can_manage_other_session'] == 1,
+      manageableSessionId: json['manageable_session_id'] == null
+          ? null
+          : int.tryParse('${json['manageable_session_id']}'),
+      canFinalizeClosing: json['can_finalize_closing'] == true ||
+          json['can_finalize_closing'] == 1,
     );
   }
 }
@@ -356,6 +369,8 @@ class DailySessionSummaryModel {
   final int instantSalesCount;
   final int profitSalesCount;
   final List<DailyCurrencyRow> currencies;
+  final bool canClose;
+  final int? pendingClosingRequestId;
 
   const DailySessionSummaryModel({
     required this.id,
@@ -370,7 +385,12 @@ class DailySessionSummaryModel {
     this.instantSalesCount = 0,
     this.profitSalesCount = 0,
     this.currencies = const [],
+    this.canClose = false,
+    this.pendingClosingRequestId,
   });
+
+  bool get isOpen => status == 'open';
+  bool get isClosingRequested => status == 'closing_requested';
 
   factory DailySessionSummaryModel.fromJson(Map<String, dynamic> json) {
     return DailySessionSummaryModel(
@@ -392,6 +412,10 @@ class DailySessionSummaryModel {
         json['currencies'],
         (Map<String, dynamic> m) => DailyCurrencyRow.fromJson(m),
       ),
+      canClose: json['can_close'] == true || json['can_close'] == 1,
+      pendingClosingRequestId: json['pending_closing_request_id'] == null
+          ? null
+          : int.tryParse('${json['pending_closing_request_id']}'),
     );
   }
 }

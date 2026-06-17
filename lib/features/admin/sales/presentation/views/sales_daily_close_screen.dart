@@ -6,9 +6,13 @@ import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/custom_dropdown_field.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/daily_session_model.dart';
 import '../controllers/sales_controller.dart';
@@ -37,6 +41,11 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   DailySessionPayload? _adminPayload;
   int? _targetSessionId;
   final Set<String> _expandedCurrencies = {};
+  final Map<String, int?> _transferTargets = {};
+  List<ShownBoxesModel> _shownBoxes = [];
+  bool _loadingBoxes = false;
+
+  bool get _canFinalizeClosing => _payload?.canFinalizeClosing ?? false;
 
   bool get _isDark => ThemeService.isDark.value;
 
@@ -130,6 +139,27 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       _notes[row.currency] = TextEditingController();
     }
     _controllersReady = _physical.isNotEmpty;
+    if (_canFinalizeClosing) {
+      _loadShownBoxes();
+    }
+  }
+
+  Future<void> _loadShownBoxes() async {
+    setState(() => _loadingBoxes = true);
+    try {
+      AppDependencyRegistry.ensureBoxes();
+      final boxes = await GetShownBoxUsecase(
+        boxesRepository: Get.find<BoxesImplement>(),
+      ).call(screen: 0);
+      if (!mounted) return;
+      setState(() {
+        _shownBoxes = boxes;
+        _loadingBoxes = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingBoxes = false);
+    }
   }
 
   @override
@@ -272,8 +302,10 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
             ...payload.currencies.map(_currencySection),
             SizedBox(height: 24.h),
             AppButton(
-              text: 'salesDailySubmitClosing'.tr,
-              onPressed: _submitting ? null : _submit,
+              text: _canFinalizeClosing
+                  ? 'salesDailyFinalizeClosing'.tr
+                  : 'salesDailySubmitClosing'.tr,
+              onPressed: _submitting || _loadingBoxes ? null : _submit,
             ),
             SizedBox(height: 16.h),
           ],
@@ -664,12 +696,40 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
                         maxLines: 2,
                       ),
                     ],
+                    if (_canFinalizeClosing && transfer > 0) ...[
+                      SizedBox(height: 8.h),
+                      _transferPicker(row.currency, transfer),
+                    ],
                   ],
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _transferPicker(String currency, double transferAmount) {
+    final boxes =
+        _shownBoxes.where((box) => box.currency == currency).toList();
+    final selectedId = _transferTargets[currency];
+    ShownBoxesModel? selected;
+    if (selectedId != null) {
+      selected = boxes.firstWhereOrNull((box) => box.boxId == selectedId);
+    }
+
+    return CustomDropdownFieldWithSearch(
+      tital: 'boxName'.tr,
+      hint: 'boxNameExample',
+      items: boxes,
+      value: selected,
+      onChanged: (value) {
+        setState(() {
+          _transferTargets[currency] = (value as ShownBoxesModel?)?.boxId;
+        });
+      },
+      itemAsString: (item) => item.boxName,
+      compareFn: (a, b) => a.boxId == b.boxId,
     );
   }
 
@@ -812,6 +872,36 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
       );
     }
 
+    if (_canFinalizeClosing) {
+      for (final row in payload.currencies) {
+        final physical = _parse(_physical[row.currency]?.text);
+        final floatKeep = _parse(_float[row.currency]?.text);
+        final transfer =
+            (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
+        if (transfer > 0 && _transferTargets[row.currency] == null) {
+          Get.snackbar('error'.tr, 'salesDailyTransferTargetRequired'.tr);
+          return;
+        }
+      }
+    }
+
+    final transfers = <Map<String, dynamic>>[];
+    if (_canFinalizeClosing) {
+      for (final row in payload.currencies) {
+        final physical = _parse(_physical[row.currency]?.text);
+        final floatKeep = _parse(_float[row.currency]?.text);
+        final transfer =
+            (physical - floatKeep).clamp(0.0, double.infinity).toDouble();
+        if (transfer <= 0) continue;
+        final toBoxId = _transferTargets[row.currency];
+        if (toBoxId == null) continue;
+        transfers.add({
+          'currency': row.currency,
+          'to_box_id': toBoxId,
+        });
+      }
+    }
+
     setState(() => _submitting = true);
     try {
       final lateReason = payload.requiresLateCloseReason
@@ -821,6 +911,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
         cashCounts: counts,
         lateCloseReason: lateReason,
         sessionId: _targetSessionId ?? payload.session?.id,
+        transfers: _canFinalizeClosing ? transfers : null,
       );
       if (!mounted) return;
       Get.back();

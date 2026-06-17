@@ -70,6 +70,15 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                 ],
               ),
             ),
+            if (payload.canManageOtherSession &&
+                payload.manageableSessionId != null)
+              TextButton(
+                onPressed: () => Get.toNamed(
+                  AppRoutes.SALESDAILYCLOSESCREEN,
+                  arguments: payload.manageableSessionId,
+                ),
+                child: Text('salesDailyCloseDay'.tr),
+              ),
             if (payload.canRequestOpen)
               TextButton(
                 onPressed: () => _openDrawer(context),

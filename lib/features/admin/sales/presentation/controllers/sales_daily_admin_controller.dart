@@ -7,6 +7,7 @@ import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/datasources/sales_datasources.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../data/models/daily_session_model.dart';
 
 class SalesDailyAdminController extends GetxController {
@@ -20,6 +21,7 @@ class SalesDailyAdminController extends GetxController {
 
   final isLoading = false.obs;
   final isProcessing = false.obs;
+  final openSessions = <DailySessionSummaryModel>[].obs;
   final closingRequests = <DailyClosingRequestModel>[].obs;
   final reopenRequests = <DailyReopenRequestModel>[].obs;
   final cancellationRequests = <SalesCancellationRequestModel>[].obs;
@@ -36,6 +38,7 @@ class SalesDailyAdminController extends GetxController {
     try {
       final boxes = await getShownBoxUsecase.call(screen: 0);
       shownBoxes.assignAll(boxes);
+      openSessions.assignAll(await datasource.getOpenDailySessions());
       closingRequests.assignAll(await datasource.getPendingDailyClosing());
       reopenRequests.assignAll(await datasource.getPendingDailyReopen());
       cancellationRequests.assignAll(await datasource.getPendingCancellations());
@@ -189,6 +192,12 @@ class SalesDailyAdminController extends GetxController {
     } finally {
       isLoading(false);
     }
+  }
+  void openSessionClose(int sessionId) {
+    Get.toNamed(
+      AppRoutes.SALESDAILYCLOSESCREEN,
+      arguments: sessionId,
+    );
   }
 }
 

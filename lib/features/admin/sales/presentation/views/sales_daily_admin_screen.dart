@@ -16,7 +16,7 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: CustomAppBar(
           title: 'salesDailyAdminTitle',
@@ -25,6 +25,7 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
             labelColor: AppColors.primaryColor,
             isScrollable: true,
             tabs: [
+              Tab(text: 'salesDailyOpenDrawersTab'.tr),
               Tab(text: 'salesDailyClosingRequests'.tr),
               Tab(text: 'salesDailyReopenRequests'.tr),
               Tab(text: 'salesDailyCancelRequests'.tr),
@@ -37,12 +38,73 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
           }
           return TabBarView(
             children: [
+              _OpenSessionsList(controller: controller),
               _ClosingList(controller: controller),
               _ReopenList(controller: controller),
               _CancellationList(controller: controller),
             ],
           );
         }),
+      ),
+    );
+  }
+}
+
+import '../widgets/sales_skeleton_widgets.dart';
+
+class _OpenSessionsList extends StatelessWidget {
+  const _OpenSessionsList({required this.controller});
+
+  final SalesDailyAdminController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.openSessions.isEmpty) {
+      return Center(child: Text('noData'.tr));
+    }
+
+    return RefreshIndicator(
+      onRefresh: controller.loadAll,
+      child: ListView.separated(
+        padding: EdgeInsets.all(16.w),
+        itemCount: controller.openSessions.length,
+        separatorBuilder: (_, __) => SizedBox(height: 10.h),
+        itemBuilder: (context, index) {
+          final item = controller.openSessions[index];
+          return Card(
+            child: ListTile(
+              title: Text(item.employeeName ?? '—'),
+              subtitle: Text(
+                [
+                  item.businessDate,
+                  '${'instant_sales'.tr}: ${item.instantSalesCount}',
+                  '${'cashProfit'.tr}: ${item.profitSalesCount}',
+                  if (item.isClosingRequested) 'salesDailyClosingPending'.tr,
+                ].join('\n'),
+              ),
+              isThreeLine: true,
+              trailing: item.canClose
+                  ? TextButton(
+                      onPressed: () => controller.openSessionClose(item.id),
+                      child: Text('salesDailyCloseDay'.tr),
+                    )
+                  : const Icon(Icons.chevron_right),
+              onTap: () {
+                if (item.isClosingRequested &&
+                    item.pendingClosingRequestId != null) {
+                  final pending = controller.closingRequests.firstWhereOrNull(
+                    (r) => r.id == item.pendingClosingRequestId,
+                  );
+                  if (pending != null) {
+                    _ClosingList.showClosingSheet(context, controller, pending);
+                    return;
+                  }
+                }
+                controller.openSessionClose(item.id);
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -81,15 +143,16 @@ class _ClosingList extends StatelessWidget {
             ),
             isThreeLine: true,
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showClosingSheet(context, item),
+            onTap: () => _ClosingList.showClosingSheet(context, controller, item),
           ),
         );
       },
     );
   }
 
-  Future<void> _showClosingSheet(
+  static Future<void> showClosingSheet(
     BuildContext context,
+    SalesDailyAdminController controller,
     DailyClosingRequestModel item,
   ) async {
     final transfers = <String, int?>{};

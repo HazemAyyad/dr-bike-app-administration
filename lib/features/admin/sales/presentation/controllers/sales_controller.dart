@@ -448,12 +448,16 @@ class SalesController extends GetxController
     required List<Map<String, dynamic>> cashCounts,
     String? lateCloseReason,
     int? sessionId,
+    List<Map<String, dynamic>>? transfers,
+    String? reviewNotes,
   }) async {
     final ds = Get.find<SalesDatasource>();
     final message = await ds.requestDailyClosing(
       cashCounts: cashCounts,
       lateCloseReason: lateCloseReason,
       sessionId: sessionId,
+      transfers: transfers,
+      reviewNotes: reviewNotes,
     );
     await loadDailySession();
     return message;

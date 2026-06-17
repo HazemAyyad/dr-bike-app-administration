@@ -390,6 +390,7 @@ class EndPoints {
   static const String salesDailySessionCurrent = 'sales/daily-session/current';
   static const String salesDailySessionOpen = 'sales/daily-session/open';
   static const String salesDailySessions = 'sales/daily-sessions';
+  static const String salesDailySessionsOpen = 'sales/daily-sessions/open';
   static const String salesDailySessionsTodayOverview =
       'sales/daily-sessions/today-overview';
   static String salesDailySessionDetail(int sessionId) =>
