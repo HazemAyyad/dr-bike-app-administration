@@ -281,6 +281,81 @@ class _AttendanceSettingsScreenState extends State<AttendanceSettingsScreen> {
                   ],
                 ],
                 SizedBox(height: 24.h),
+                _SectionTitle(
+                  title: 'attendanceRulesSection'.tr,
+                  textColor: textSecondary,
+                ),
+                SizedBox(height: 10.h),
+                _SettingsCard(
+                  cardBg: cardBg,
+                  borderColor: borderColor,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'reverseCheckoutWindow'.tr,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'reverseCheckoutWindowDesc'.tr,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: textSecondary,
+                          height: 1.35,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Obx(
+                        () => _MinutesChips(
+                          values: const [0, 30, 60, 90, 120, 180],
+                          value: _s.reverseCheckoutWindowMinutes.value,
+                          onChanged: (v) =>
+                              _s.reverseCheckoutWindowMinutes.value = v,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                _SettingsCard(
+                  cardBg: cardBg,
+                  borderColor: borderColor,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'afterMidnightGraceHour'.tr,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'afterMidnightGraceHourDesc'.tr,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: textSecondary,
+                          height: 1.35,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Obx(
+                        () => _GraceHourChips(
+                          value: _s.afterMidnightGraceHour.value,
+                          onChanged: (v) => _s.afterMidnightGraceHour.value = v,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 24.h),
                 Obx(() {
                   final busy = _isSaving.value;
                   return SizedBox(
@@ -528,6 +603,84 @@ class _IntervalChips extends StatelessWidget {
             color: selected ? const Color(0xFF059669) : const Color(0xFFE5E7EB),
           ),
           onSelected: (_) => onChanged(mins),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _MinutesChips extends StatelessWidget {
+  const _MinutesChips({
+    required this.values,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final List<int> values;
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8.w,
+      runSpacing: 8.h,
+      children: values.map((mins) {
+        final selected = value == mins;
+        final label = mins == 0
+            ? 'reverseCheckoutWindowOff'.tr
+            : '±$mins ${'minutesLabel'.tr}';
+        return ChoiceChip(
+          label: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : const Color(0xFF374151),
+            ),
+          ),
+          selected: selected,
+          selectedColor: const Color(0xFFD97706),
+          backgroundColor: const Color(0xFFF3F4F6),
+          side: BorderSide(
+            color: selected ? const Color(0xFFD97706) : const Color(0xFFE5E7EB),
+          ),
+          onSelected: (_) => onChanged(mins),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _GraceHourChips extends StatelessWidget {
+  const _GraceHourChips({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8.w,
+      runSpacing: 8.h,
+      children: [2, 3, 4, 5, 6].map((hour) {
+        final selected = value == hour;
+        return ChoiceChip(
+          label: Text(
+            '$hour ${'amHourLabel'.tr}',
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : const Color(0xFF374151),
+            ),
+          ),
+          selected: selected,
+          selectedColor: const Color(0xFF2563EB),
+          backgroundColor: const Color(0xFFF3F4F6),
+          side: BorderSide(
+            color: selected ? const Color(0xFF2563EB) : const Color(0xFFE5E7EB),
+          ),
+          onSelected: (_) => onChanged(hour),
         );
       }).toList(),
     );

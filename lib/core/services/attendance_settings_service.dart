@@ -20,6 +20,8 @@ class AttendanceSettingsService {
   final RxInt syncIntervalMinutes = 5.obs;
   final RxBool autoCreateUnknownUsers = false.obs;
   final RxInt deduplicateMinutes = 2.obs;
+  final RxInt reverseCheckoutWindowMinutes = 60.obs;
+  final RxInt afterMidnightGraceHour = 4.obs;
 
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
@@ -54,6 +56,14 @@ class AttendanceSettingsService {
           autoCreateUnknownUsers.value =
               _asBool(s['fingerprint_auto_create_unknown_users'], false);
           deduplicateMinutes.value = _asInt(s['fingerprint_deduplicate_minutes'], 2);
+          reverseCheckoutWindowMinutes.value = _asInt(
+            s['fingerprint_reverse_checkout_window_minutes'],
+            60,
+          );
+          afterMidnightGraceHour.value = _asInt(
+            s['attendance_after_midnight_grace_hour'],
+            4,
+          );
         }
       }
       _loaded = true;
@@ -80,6 +90,9 @@ class AttendanceSettingsService {
           'fingerprint_sync_interval_minutes': syncIntervalMinutes.value,
           'fingerprint_auto_create_unknown_users': autoCreateUnknownUsers.value,
           'fingerprint_deduplicate_minutes': deduplicateMinutes.value,
+          'fingerprint_reverse_checkout_window_minutes':
+              reverseCheckoutWindowMinutes.value,
+          'attendance_after_midnight_grace_hour': afterMidnightGraceHour.value,
         },
       );
       final data = _responseData(response);
@@ -108,6 +121,14 @@ class AttendanceSettingsService {
           deduplicateMinutes.value = _asInt(
             s['fingerprint_deduplicate_minutes'],
             deduplicateMinutes.value,
+          );
+          reverseCheckoutWindowMinutes.value = _asInt(
+            s['fingerprint_reverse_checkout_window_minutes'],
+            reverseCheckoutWindowMinutes.value,
+          );
+          afterMidnightGraceHour.value = _asInt(
+            s['attendance_after_midnight_grace_hour'],
+            afterMidnightGraceHour.value,
           );
         }
         return true;

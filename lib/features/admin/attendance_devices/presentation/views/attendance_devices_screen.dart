@@ -189,6 +189,7 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
                                         'sync_mode': syncMode,
                                       };
                                       busy.value = true;
+                                      var closedSheet = false;
                                       try {
                                         if (isEdit && id > 0) {
                                           await _updateDevice(id, payload);
@@ -196,6 +197,7 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
                                           await _createDevice(payload);
                                         }
                                         if (!ctx.mounted) return;
+                                        closedSheet = true;
                                         Navigator.pop(ctx);
                                         Get.snackbar(
                                           'success'.tr,
@@ -213,7 +215,9 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
                                           snackPosition: SnackPosition.BOTTOM,
                                         );
                                       } finally {
-                                        busy.value = false;
+                                        if (!closedSheet) {
+                                          busy.value = false;
+                                        }
                                       }
                                     },
                               child: busy.value
@@ -350,16 +354,20 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
                               );
                               if (ok != true) return;
                               busy.value = true;
+                              var closedSheet = false;
                               try {
                                 await _deleteDevice(id);
                                 if (!ctx.mounted) return;
+                                closedSheet = true;
                                 Navigator.pop(ctx);
                                 await _load();
                               } catch (e) {
                                 Get.snackbar('error'.tr, e.toString(),
                                     snackPosition: SnackPosition.BOTTOM);
                               } finally {
-                                busy.value = false;
+                                if (!closedSheet) {
+                                  busy.value = false;
+                                }
                               }
                             },
                       icon: const Icon(Icons.delete_outline),
@@ -379,14 +387,14 @@ class _AttendanceDevicesScreenState extends State<AttendanceDevicesScreen> {
           },
         );
       },
-    );
-
-    nameCtrl.dispose();
-    modelCtrl.dispose();
-    serialCtrl.dispose();
-    ipCtrl.dispose();
-    portCtrl.dispose();
-    passCtrl.dispose();
+    ).whenComplete(() {
+      nameCtrl.dispose();
+      modelCtrl.dispose();
+      serialCtrl.dispose();
+      ipCtrl.dispose();
+      portCtrl.dispose();
+      passCtrl.dispose();
+    });
   }
 
   Future<void> _testConnection(int id) async {
