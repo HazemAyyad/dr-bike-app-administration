@@ -1389,6 +1389,15 @@ const Map<String, String> ar = {
   'shiplyIntegrationEnabled': 'تفعيل ربط Shiply',
   'shiplySandboxMode': 'وضع تجريبي (Sandbox)',
   'shiplySandboxModeDesc': 'عند التفعيل تُستخدم بيئة stage.shiplylogistics.com',
+  'salesOrderShiplyAddressTitle': 'عنوان التوصيل',
+  'salesOrderShiplyAddressSubtitle':
+      'اختر مدينة وقرية وشارع Shiply قبل التسليم لشركة التوصيل.',
+  'salesOrderShiplyCityRequired': 'يرجى اختيار مدينة Shiply',
+  'salesOrderShiplyVillageRequired': 'يرجى اختيار قرية Shiply',
+  'salesOrderStreetRequired': 'عنوان الشارع مطلوب',
+  'shiplyDeliveryFeeHint':
+      'رسوم التوصيل من Shiply عند اختيار القرية — يمكنك تعديلها',
+  'saveAndContinue': 'حفظ ومتابعة',
   'salesOrderCityHint': 'اختياري — يُحدَّد عادةً عند مرحلة التوصيل',
   'salesOrderCityRequired': 'يرجى اختيار مدينة التوصيل',
   'salesOrderPickGallery': 'صور وفيديو من المعرض',
@@ -2242,6 +2251,7 @@ const Map<String, String> ar = {
   'notifFilterChecks': 'شيكات تستحق قريباً',
   'notifFilterCheckCashed': 'صرف شيك صادر',
   'notifFilterCheckReturned': 'إرجاع شيك صادر',
+  'notifFilterShiplyHandover': 'تسليم شبلي',
   'notifFilterDailyTasks': 'مهام اليوم',
   'notifFilterHourlyReminder': 'تذكير كل ساعة',
   'notifFilterTasksComplete': 'إنجاز مهام اليوم',

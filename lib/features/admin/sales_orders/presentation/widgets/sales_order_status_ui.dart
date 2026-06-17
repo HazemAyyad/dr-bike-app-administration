@@ -24,7 +24,7 @@ class SalesOrderStatusUi {
       case 'confirmed':
         return const Color(0xFF2563EB);
       case 'ready':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFF2563EB);
       case 'with_delivery':
         return const Color(0xFFD97706);
       case 'delivered':
@@ -39,7 +39,7 @@ class SalesOrderStatusUi {
       case 'returned':
         return const Color(0xFFDC2626);
       case 'postponed':
-        return const Color(0xFF9333EA);
+        return const Color(0xFF6B7280);
       case 'canceled':
         return const Color(0xFF9CA3AF);
       default:

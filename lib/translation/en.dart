@@ -1322,6 +1322,15 @@ const Map<String, String> en = {
   'shiplyIntegrationEnabled': 'Enable Shiply integration',
   'shiplySandboxMode': 'Sandbox (test) mode',
   'shiplySandboxModeDesc': 'Uses stage.shiplylogistics.com when enabled',
+  'salesOrderShiplyAddressTitle': 'Delivery address',
+  'salesOrderShiplyAddressSubtitle':
+      'Select Shiply city, village, and street before handover.',
+  'salesOrderShiplyCityRequired': 'Please select a Shiply city',
+  'salesOrderShiplyVillageRequired': 'Please select a Shiply village',
+  'salesOrderStreetRequired': 'Street address is required',
+  'shiplyDeliveryFeeHint':
+      'Fee from Shiply when village is selected — you can adjust it',
+  'saveAndContinue': 'Save and continue',
   'salesOrderCityHint': 'Optional — usually set at delivery stage',
   'salesOrderCityRequired': 'Please select a delivery city',
   'salesOrderPickGallery': 'Photos & videos from gallery',
@@ -2180,6 +2189,7 @@ const Map<String, String> en = {
   'notifFilterChecks': 'Checks due soon',
   'notifFilterCheckCashed': 'Outgoing check cashed',
   'notifFilterCheckReturned': 'Outgoing check returned',
+  'notifFilterShiplyHandover': 'Shiply handover',
   'notifFilterDailyTasks': 'Daily tasks',
   'notifFilterHourlyReminder': 'Hourly reminder',
   'notifFilterTasksComplete': 'All tasks done',

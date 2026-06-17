@@ -332,8 +332,86 @@ class SalesOrdersController extends GetxController {
     selectedShiplyVillageId.value = null;
   }
 
-  void onShiplyVillageChanged(int? villageId) {
+  Future<void> onShiplyVillageChanged(
+    int? villageId, {
+    double parcelPrice = 0,
+  }) async {
     selectedShiplyVillageId.value = villageId;
+    if (villageId == null) return;
+    await _applyShiplyDeliveryFeeQuote(villageId, parcelPrice: parcelPrice);
+  }
+
+  Future<void> _applyShiplyDeliveryFeeQuote(
+    int villageId, {
+    double parcelPrice = 0,
+  }) async {
+    final result = await repository.calculateShiplyDeliveryFee(
+      villageId: villageId,
+      price: parcelPrice,
+    );
+    result.fold((_) {}, (fee) {
+      if (fee == null) return;
+      deliveryFeeController.text = fee.toStringAsFixed(0);
+      manualDeliveryFee.value = fee;
+    });
+  }
+
+  void preloadShiplyAddressFromOrder(SalesOrderDetailModel order) {
+    customerAddressController.text = order.customerAddress ?? '';
+    selectedShiplyCityId.value = order.shiplyCityId;
+    selectedShiplyVillageId.value = order.shiplyVillageId;
+    deliveryFeeController.text = order.customerDeliveryFee.toStringAsFixed(0);
+    manualDeliveryFee.value = order.customerDeliveryFee;
+  }
+
+  bool needsShiplyAddress(SalesOrderDetailModel order) {
+    return order.shiplyVillageId == null ||
+        (order.customerAddress ?? '').trim().isEmpty;
+  }
+
+  String? validateShiplyAddressForm() {
+    if (selectedShiplyCityId.value == null) {
+      return 'salesOrderShiplyCityRequired'.tr;
+    }
+    if (selectedShiplyVillageId.value == null) {
+      return 'salesOrderShiplyVillageRequired'.tr;
+    }
+    if (customerAddressController.text.trim().isEmpty) {
+      return 'salesOrderStreetRequired'.tr;
+    }
+    return null;
+  }
+
+  Map<String, dynamic> buildShiplyAddressPayload() {
+    onDeliveryFeeChanged();
+    return {
+      'customer_address': customerAddressController.text.trim(),
+      'shiply_city_id': selectedShiplyCityId.value,
+      'shiply_village_id': selectedShiplyVillageId.value,
+      'customer_delivery_fee': manualDeliveryFee.value,
+    };
+  }
+
+  Future<bool> saveShiplyAddressForOrder(int orderId) async {
+    final err = validateShiplyAddressForm();
+    if (err != null) {
+      Get.snackbar('error'.tr, err);
+      return false;
+    }
+    isSubmitting.value = true;
+    final result =
+        await repository.updateOrder(orderId, buildShiplyAddressPayload());
+    isSubmitting.value = false;
+    return result.fold(
+      (f) {
+        Get.snackbar('error'.tr, _humanizeFailure(f));
+        return false;
+      },
+      (order) {
+        detail.value = order;
+        return true;
+      },
+    );
   }
 
   void onDeliveryFeeChanged() {
@@ -435,13 +513,12 @@ class SalesOrdersController extends GetxController {
       'customer_name': customerName,
       'customer_phone': customerPhone,
       if (customerId != null) 'customer_id': customerId,
-      if (customerAddressController.text.trim().isNotEmpty)
-        'customer_address': customerAddressController.text.trim(),
+      'customer_address': customerAddressController.text.trim(),
       if (selectedShiplyCityId.value != null)
         'shiply_city_id': selectedShiplyCityId.value,
       if (selectedShiplyVillageId.value != null)
         'shiply_village_id': selectedShiplyVillageId.value,
-      if (deliveryFee > 0) 'customer_delivery_fee': deliveryFee,
+      'customer_delivery_fee': deliveryFee,
       'payment_type': paymentType,
       'payment_amount': paidAmount,
       if (paymentBoxId != null) 'payment_box_id': paymentBoxId,

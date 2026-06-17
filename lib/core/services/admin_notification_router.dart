@@ -48,6 +48,12 @@ class AdminNotificationRouter {
             return;
           }
           break;
+        case 'sales_order_shiply_handover':
+        case 'sales_order_status':
+          if (_openSalesOrder(raw)) {
+            return;
+          }
+          break;
         default:
           break;
       }
@@ -121,6 +127,25 @@ class AdminNotificationRouter {
       return true;
     } catch (e) {
       debugPrint('[NotificationRouter] employee screen unavailable: $e');
+      return false;
+    }
+  }
+
+  static bool _openSalesOrder(Map<String, dynamic> raw) {
+    try {
+      AppDependencyRegistry.ensureSalesOrders();
+      final orderId = int.tryParse(
+        raw['sales_order_id']?.toString() ??
+            raw['related_id']?.toString() ??
+            '',
+      );
+      if (orderId == null || orderId <= 0) {
+        return false;
+      }
+      Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN, arguments: orderId);
+      return true;
+    } catch (e) {
+      debugPrint('[NotificationRouter] sales order screen unavailable: $e');
       return false;
     }
   }

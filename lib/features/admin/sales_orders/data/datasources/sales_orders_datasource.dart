@@ -159,6 +159,23 @@ class SalesOrdersDatasource {
         .toList();
   }
 
+  Future<double?> fetchShiplyDeliveryFee({
+    required int villageId,
+    double price = 0,
+  }) async {
+    final raw = await api.post(
+      EndPoints.shiplyCalculateDeliveryFee,
+      data: {
+        'village_id': villageId,
+        if (price > 0) 'price': price,
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    final fees = response['fees'] as Map<String, dynamic>?;
+    return (fees?['delivery_cost'] as num?)?.toDouble();
+  }
+
   void _ensureSuccess(Map<String, dynamic> response) {
     if (response['status'] != 'success') {
       throw ServerException(

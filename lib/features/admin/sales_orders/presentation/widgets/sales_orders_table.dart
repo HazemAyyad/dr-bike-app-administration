@@ -139,7 +139,7 @@ class _OrdersTableHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = ThemeService.isDark.value
         ? AppColors.customGreyColor
-        : const Color(0xFFEEF4FF);
+        : SalesOrdersController.surfaceGray;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),

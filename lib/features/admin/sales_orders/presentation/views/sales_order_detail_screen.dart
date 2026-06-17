@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
+import '../widgets/sales_order_shiply_address_dialog.dart';
 import '../widgets/sales_order_status_ui.dart';
 
 class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
@@ -979,7 +980,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
         controller.markReady(orderId);
         break;
       case SalesOrderActionId.handover:
-        _showHandoverSheet(orderId);
+        _startHandover(order);
         break;
       case SalesOrderActionId.deliver:
         controller.deliver(orderId);
@@ -1133,6 +1134,28 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
           ? CachedNetworkImage(imageUrl: url, width: 36.w, height: 36.w, fit: BoxFit.cover)
           : _itemPlaceholder(size: 36),
     );
+  }
+
+  Future<void> _startHandover(SalesOrderDetailModel order) async {
+    if (controller.shiplyDeliveryCompany != null &&
+        controller.needsShiplyAddress(order)) {
+      if (controller.shiplyCities.isEmpty) {
+        await controller.loadLookups();
+      }
+      controller.preloadShiplyAddressFromOrder(order);
+      final parcelPrice = order.subtotal - order.discount;
+      final saved = await Get.dialog<bool>(
+        SalesOrderShiplyAddressDialog(
+          orderId: order.id,
+          controller: controller,
+          parcelPrice: parcelPrice > 0 ? parcelPrice : order.total,
+        ),
+        barrierDismissible: false,
+      );
+      if (saved != true) return;
+      await controller.loadDetail(order.id);
+    }
+    _showHandoverSheet(order.id);
   }
 
   void _showHandoverSheet(int orderId) {

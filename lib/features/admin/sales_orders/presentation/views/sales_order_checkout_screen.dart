@@ -188,7 +188,13 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   showHints: false,
                 ),
                 SizedBox(height: 16.h),
-                const SalesOrderShiplyAddressSection(),
+                Obx(() {
+                  final _ = sales.cartRevision.value;
+                  final parcelPrice = sales.totalCost.value;
+                  return SalesOrderShiplyAddressSection(
+                    parcelPriceForFee: parcelPrice,
+                  );
+                }),
                 SizedBox(height: 12.h),
                 const SalesOrderCheckoutTotals(),
                 SizedBox(height: 16.h),

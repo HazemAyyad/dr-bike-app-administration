@@ -387,6 +387,7 @@ class EndPoints {
   static const String cities = 'cities';
   static const String deliveryCompanies = 'delivery/companies';
   static const String shiplyAddressOptions = 'shiply/address-options';
+  static const String shiplyCalculateDeliveryFee = 'shiply/calculate-delivery-fee';
 
   static const String salesDailySessionCurrent = 'sales/daily-session/current';
   static const String salesDailySessionOpen = 'sales/daily-session/open';
