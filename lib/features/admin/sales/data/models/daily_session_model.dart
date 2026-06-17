@@ -505,6 +505,9 @@ class DailySessionSaleLogRow {
   final String? paymentBoxName;
   final String? notes;
   final bool isPackageSale;
+  final bool isFromSalesOrder;
+  final int? salesOrderId;
+  final String? salesOrderSerial;
 
   const DailySessionSaleLogRow({
     required this.id,
@@ -520,6 +523,9 @@ class DailySessionSaleLogRow {
     this.paymentBoxName,
     this.notes,
     this.isPackageSale = false,
+    this.isFromSalesOrder = false,
+    this.salesOrderId,
+    this.salesOrderSerial,
   });
 
   bool get isCancelled => status == 'cancelled';
@@ -542,6 +548,52 @@ class DailySessionSaleLogRow {
       notes: asNullableString(json['notes']),
       isPackageSale:
           json['is_package_sale'] == true || json['is_package_sale'] == 1,
+      isFromSalesOrder:
+          json['is_from_sales_order'] == true || json['is_from_sales_order'] == 1,
+      salesOrderId: json['sales_order_id'] as int?,
+      salesOrderSerial: asNullableString(json['sales_order_serial']),
+    );
+  }
+}
+
+class DailySessionOrderLogRow {
+  final int id;
+  final String? serialNumber;
+  final String status;
+  final String? customerName;
+  final double total;
+  final String paymentType;
+  final double paymentAmount;
+  final int? instantSaleId;
+  final bool deliveredToday;
+  final String? createdAt;
+
+  const DailySessionOrderLogRow({
+    required this.id,
+    this.serialNumber,
+    required this.status,
+    this.customerName,
+    this.total = 0,
+    this.paymentType = 'cash',
+    this.paymentAmount = 0,
+    this.instantSaleId,
+    this.deliveredToday = false,
+    this.createdAt,
+  });
+
+  factory DailySessionOrderLogRow.fromJson(Map<String, dynamic> json) {
+    return DailySessionOrderLogRow(
+      id: asInt(json['id']),
+      serialNumber: asNullableString(json['serial_number']),
+      status: asString(json['status'], 'unconfirmed'),
+      customerName: asNullableString(json['customer_name']),
+      total: asDouble(json['total']),
+      paymentType: asString(json['payment_type'], 'cash'),
+      paymentAmount: asDouble(json['payment_amount']),
+      instantSaleId: json['instant_sale_id'] as int?,
+      deliveredToday:
+          json['delivered_today'] == true || json['delivered_today'] == 1,
+      createdAt: asNullableString(json['created_at']),
     );
   }
 }
@@ -554,6 +606,8 @@ class DailySessionDetailModel {
   final List<DailySessionSaleLogRow> instantSales;
   final List<DailySessionSaleLogRow> profitSales;
   final List<DailyClosingHistoryModel> closingRequests;
+  final int salesOrdersCount;
+  final List<DailySessionOrderLogRow> salesOrders;
 
   const DailySessionDetailModel({
     required this.session,
@@ -563,6 +617,8 @@ class DailySessionDetailModel {
     this.instantSales = const [],
     this.profitSales = const [],
     this.closingRequests = const [],
+    this.salesOrdersCount = 0,
+    this.salesOrders = const [],
   });
 
   factory DailySessionDetailModel.fromJson(Map<String, dynamic> json) {
@@ -594,6 +650,11 @@ class DailySessionDetailModel {
       closingRequests: mapList(
         json['closing_requests'],
         (Map<String, dynamic> m) => DailyClosingHistoryModel.fromJson(m),
+      ),
+      salesOrdersCount: asInt(json['sales_orders_count']),
+      salesOrders: mapList(
+        json['sales_orders'],
+        (Map<String, dynamic> m) => DailySessionOrderLogRow.fromJson(m),
       ),
     );
   }

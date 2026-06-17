@@ -160,6 +160,9 @@ class BuildAddMenuItem extends StatelessWidget {
           if (item?['freshInstantSale'] == 'true') {
             args['freshInstantSale'] = true;
           }
+          if (item?['freshSalesOrder'] == 'true') {
+            args['freshSalesOrder'] = true;
+          }
           Get.toNamed(_route, arguments: args);
         }
         //  else {

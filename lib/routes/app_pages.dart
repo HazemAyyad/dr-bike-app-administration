@@ -133,6 +133,10 @@ import '../features/admin/sales/presentation/views/sales_daily_session_detail_sc
 import '../features/admin/sales/presentation/controllers/sales_daily_admin_controller.dart';
 import '../features/admin/sales/presentation/controllers/sales_daily_history_controller.dart';
 import '../features/admin/sales/presentation/views/sales_screen.dart';
+import '../features/admin/sales_orders/presentation/binding/sales_orders_binding.dart';
+import '../features/admin/sales_orders/presentation/views/sales_order_detail_screen.dart';
+import '../features/admin/sales_orders/presentation/views/sales_order_checkout_screen.dart';
+import '../features/admin/sales_orders/presentation/views/sales_order_product_picker_screen.dart';
 import '../features/admin/special_tasks/presentation/binding/special_tasks_binding.dart';
 import '../features/admin/special_tasks/presentation/views/special_task_details_screen.dart';
 import '../features/admin/special_tasks/presentation/views/special_tasks_screen.dart';
@@ -639,6 +643,24 @@ class AppPages {
       name: AppRoutes.SALESSCREEN,
       page: () => const SalesScreen(),
       binding: SalesBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESORDERDETAILSCREEN,
+      page: () => const SalesOrderDetailScreen(),
+      binding: SalesOrdersBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.NEWSALESORDERSCREEN,
+      page: () => const SalesOrderProductPickerScreen(),
+      binding: SalesOrdersBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.SALESORDERCHECKOUTSCREEN,
+      page: () => const SalesOrderCheckoutScreen(),
+      binding: SalesOrdersBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(

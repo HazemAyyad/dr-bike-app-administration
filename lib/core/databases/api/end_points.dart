@@ -366,6 +366,27 @@ class EndPoints {
   static const String suspendedInstantSaleCancel =
       'suspended/instant/sale/cancel';
 
+  static const String salesOrders = 'sales/orders';
+  static const String salesOrder = 'sales/order';
+  static const String salesOrderUpdate = 'sales/order/update';
+  static const String salesOrderConfirm = 'sales/order/confirm';
+  static const String salesOrderReady = 'sales/order/ready';
+  static const String salesOrderCancel = 'sales/order/cancel';
+  static const String salesOrderRevert = 'sales/order/revert';
+  static const String salesOrderPostpone = 'sales/order/postpone';
+  static const String salesOrderHandover = 'sales/order/handover';
+  static const String salesOrderDeliver = 'sales/order/deliver';
+  static const String salesOrderSettle = 'sales/order/settle';
+  static const String salesOrderArchive = 'sales/order/archive';
+  static const String salesOrderMedia = 'sales/order/media';
+  static const String salesOrderPartialDeliver = 'sales/order/partial-deliver';
+  static const String salesOrderFollowUp = 'sales/order/follow-up';
+  static const String salesOrderPartialReturn = 'sales/order/partial-return';
+  static const String salesOrderAlternativeReturn = 'sales/order/alternative-return';
+  static const String salesOrderStatement = 'sales/order/statement';
+  static const String cities = 'cities';
+  static const String deliveryCompanies = 'delivery/companies';
+
   static const String salesDailySessionCurrent = 'sales/daily-session/current';
   static const String salesDailySessions = 'sales/daily-sessions';
   static const String salesDailySessionsTodayOverview =

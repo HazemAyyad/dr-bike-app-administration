@@ -8,7 +8,14 @@ import '../../controllers/sales_controller.dart';
 import '../../utils/sales_amount_format.dart';
 
 class DiscountWidget extends GetView<SalesController> {
-  const DiscountWidget({Key? key}) : super(key: key);
+  const DiscountWidget({
+    Key? key,
+    this.showNotes = true,
+    this.showHints = true,
+  }) : super(key: key);
+
+  final bool showNotes;
+  final bool showHints;
 
   @override
   Widget build(BuildContext context) {
@@ -50,37 +57,41 @@ class DiscountWidget extends GetView<SalesController> {
           ],
         ),
         SizedBox(height: 10.h),
-        _InstantSaleNotesRepeater(),
-        SizedBox(height: 20.h),
-        Row(
-          children: [
-            Text(
-              'readItem'.tr,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: ThemeService.isDark.value
-                        ? AppColors.primaryColor
-                        : AppColors.secondaryColor,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w400,
-                  ),
-            )
-          ],
-        ),
-        SizedBox(height: 7.h),
-        Row(
-          children: [
-            Text(
-              'readQuantity'.tr,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    color: ThemeService.isDark.value
-                        ? AppColors.primaryColor
-                        : AppColors.secondaryColor,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w400,
-                  ),
-            )
-          ],
-        ),
+        if (showNotes) ...[
+          _InstantSaleNotesRepeater(),
+          SizedBox(height: 20.h),
+        ],
+        if (showHints) ...[
+          Row(
+            children: [
+              Text(
+                'readItem'.tr,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
+              )
+            ],
+          ),
+          SizedBox(height: 7.h),
+          Row(
+            children: [
+              Text(
+                'readQuantity'.tr,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
+              )
+            ],
+          ),
+        ],
       ],
     );
   }

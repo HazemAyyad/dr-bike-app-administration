@@ -14,12 +14,14 @@ class ErrorModel {
       return ErrorModel(
         errorMessage: "Unknown error occurred",
         status: 404,
+        data: null,
       );
     }
 
     return ErrorModel(
       errorMessage: json['message']?.toString() ?? "Unknown error",
-      status: json['status'] ?? 500,
+      status: (json['status'] is int) ? json['status'] as int : 500,
+      data: json['errors'] ?? json,
     );
   }
 

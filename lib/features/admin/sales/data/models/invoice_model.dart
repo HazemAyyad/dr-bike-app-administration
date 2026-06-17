@@ -53,6 +53,8 @@ class InvoiceModel {
   final String? lineType;
   final String? paymentBoxId;
   final int? sellerId;
+  final int? salesOrderId;
+  final String? salesOrderSerial;
 
   InvoiceModel({
     required this.id,
@@ -103,6 +105,8 @@ class InvoiceModel {
     this.lineType,
     this.paymentBoxId,
     this.sellerId,
+    this.salesOrderId,
+    this.salesOrderSerial,
   });
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
@@ -228,6 +232,12 @@ class InvoiceModel {
           : (json['seller_id'] is int
               ? json['seller_id'] as int
               : int.tryParse('${json['seller_id']}')),
+      salesOrderId: json['sales_order_id'] == null
+          ? null
+          : (json['sales_order_id'] is int
+              ? json['sales_order_id'] as int
+              : int.tryParse('${json['sales_order_id']}')),
+      salesOrderSerial: asNullableString(json['sales_order_serial']),
     );
   }
 

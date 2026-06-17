@@ -18,6 +18,9 @@ import '../widgets/profit_sale_card.dart';
 import '../widgets/profit_sales_toolbar.dart';
 import '../widgets/sales_invoices_toolbar.dart';
 import '../widgets/sales_skeleton_widgets.dart';
+import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
+import '../../../sales_orders/presentation/widgets/sales_orders_table.dart';
+import '../../../sales_orders/presentation/widgets/sales_orders_toolbar.dart';
 
 class SalesScreen extends GetView<SalesController> {
   const SalesScreen({Key? key}) : super(key: key);
@@ -73,7 +76,15 @@ class SalesScreen extends GetView<SalesController> {
       body: Stack(
         children: [
           AppPullToRefresh(
-            onRefresh: controller.refreshSales,
+            onRefresh: () async {
+              if (controller.currentTab.value == 2) {
+                if (Get.isRegistered<SalesOrdersController>()) {
+                  await Get.find<SalesOrdersController>().loadOrders();
+                }
+                return;
+              }
+              await controller.refreshSales();
+            },
             child: CustomScrollView(
               physics: kRefreshableScrollPhysics,
               slivers: [
@@ -96,6 +107,11 @@ class SalesScreen extends GetView<SalesController> {
                 ),
                 Obx(
                   () {
+                    if (controller.currentTab.value == 2) {
+                      return const SliverToBoxAdapter(
+                        child: SalesOrdersToolbar(),
+                      );
+                    }
                     final toolbar = controller.currentTab.value == 0
                         ? const SalesInvoicesToolbar()
                         : const ProfitSalesToolbar();
@@ -113,32 +129,52 @@ class SalesScreen extends GetView<SalesController> {
                   padding: EdgeInsets.symmetric(horizontal: 24.w),
                   sliver: Obx(
                     () {
+                      final tab = controller.currentTab.value;
+                      if (tab == 2) {
+                        if (Get.isRegistered<SalesOrdersController>()) {
+                          final ordersCtrl = Get.find<SalesOrdersController>();
+                          final ordersLoading = ordersCtrl.isLoading.value;
+                          final orderCount = ordersCtrl.orders.length;
+                          if (ordersLoading && orderCount == 0) {
+                            return const SliverFillRemaining(
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          if (orderCount == 0) {
+                            return const SliverFillRemaining(child: ShowNoData());
+                          }
+                        }
+                        return const SliverToBoxAdapter(
+                          child: SalesOrdersTable(),
+                        );
+                      }
+
                       final _ = controller.salesListRevision.value;
-                      if (controller.currentTab.value == 0) {
+                      if (tab == 0) {
                         controller.instantSalesPackageFilter.value;
                       }
                       final showListSkeleton = controller.isLoading.value &&
-                          (controller.currentTab.value == 0
+                          (tab == 0
                               ? !controller.hasInstantSalesData
                               : !controller.hasProfitSalesData);
                       if (showListSkeleton) {
-                        return SliverToBoxAdapter(
-                          child: const SalesInvoicesListSkeleton(),
+                        return const SliverToBoxAdapter(
+                          child: SalesInvoicesListSkeleton(),
                         );
                       }
-                      if (controller.currentTab.value == 0) {
+                      if (tab == 0) {
                         if (controller
                             .orderedInstantSalesGroupsFiltered.isEmpty) {
                           return const SliverFillRemaining(child: ShowNoData());
                         }
-                      } else if (controller.currentTab.value == 1) {
+                      } else if (tab == 1) {
                         if (controller
                             .salesService.filterProfitSalesTasks.isEmpty) {
                           return const SliverFillRemaining(child: ShowNoData());
                         }
                       }
                       return SliverToBoxAdapter(
-                        child: controller.currentTab.value == 0
+                        child: tab == 0
                             ? const InstantSalesTable()
                             : const ProfitSalesTable(),
                       );
@@ -167,7 +203,6 @@ class SalesScreen extends GetView<SalesController> {
               );
             },
           ),
-          // const AddList(),
         ],
       ),
       floatingActionButton: CustomFloatingActionButton(

@@ -8,6 +8,7 @@ import '../../../../../core/services/app_dependency_registry.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../data/models/daily_session_model.dart';
 import '../../../../../routes/app_routes.dart';
+import '../widgets/sales_daily_session_orders_log.dart';
 import '../widgets/sales_daily_session_sales_log.dart';
 import '../widgets/sales_daily_ui_widgets.dart';
 import '../widgets/sales_skeleton_widgets.dart';
@@ -130,6 +131,8 @@ class _SalesDailySessionDetailScreenState
         ],
         SalesDailySectionTitle(title: 'salesDailyBoxesSection'.tr),
         SalesDailyCurrencyTable(currencies: detail.currencies),
+        SalesDailySectionTitle(title: 'salesDailyOrdersSection'.tr),
+        SalesDailySessionOrdersLog(orders: detail.salesOrders),
         SalesDailySectionTitle(title: 'salesDailySalesLog'.tr),
         SalesDailySessionSalesLog(
           instantSales: detail.instantSales,

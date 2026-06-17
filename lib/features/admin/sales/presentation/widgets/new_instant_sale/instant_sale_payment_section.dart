@@ -13,10 +13,23 @@ import 'instant_sale_payment_summary.dart';
 
 /// Payment / قبض section embedded in the new instant sale screen.
 class InstantSalePaymentSection extends StatelessWidget {
-  const InstantSalePaymentSection({Key? key}) : super(key: key);
+  const InstantSalePaymentSection({
+    Key? key,
+    this.paymentTag = kInstantSalePaymentTag,
+    this.showHeader = true,
+    this.showPartner = true,
+    this.showDailyBoxInfo = true,
+    this.extraTotal = 0,
+  }) : super(key: key);
+
+  final String paymentTag;
+  final bool showHeader;
+  final bool showPartner;
+  final bool showDailyBoxInfo;
+  final double extraTotal;
 
   PaymentController get _payment =>
-      Get.find<PaymentController>(tag: kInstantSalePaymentTag);
+      Get.find<PaymentController>(tag: paymentTag);
 
   @override
   Widget build(BuildContext context) {
@@ -26,79 +39,83 @@ class InstantSalePaymentSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'paymentMethodReceive'.tr,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w700,
-            color: AppColors.primaryColor,
+        if (showHeader) ...[
+          Text(
+            'paymentMethodReceive'.tr,
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryColor,
+            ),
           ),
-        ),
-        SizedBox(height: 4.h),
-        Text(
-          'salesPartnerOptionalHint'.tr,
-          style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
-        ),
-        SizedBox(height: 10.h),
-        Obx(
-          () {
-            final isCustomer = controller.selectedCustomersSellers.value;
-            return Row(
+          SizedBox(height: 4.h),
+          Text(
+            'salesPartnerOptionalHint'.tr,
+            style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
+          ),
+          SizedBox(height: 10.h),
+        ],
+        if (showPartner) ...[
+          Obx(
+            () {
+              final isCustomer = controller.selectedCustomersSellers.value;
+              return Row(
+                children: [
+                  Expanded(
+                    child: _PartnerTabCheckbox(
+                      title: 'seller'.tr,
+                      selected: !isCustomer,
+                      onTap: () => controller.setPartnerTab(isCustomer: false),
+                    ),
+                  ),
+                  Expanded(
+                    child: _PartnerTabCheckbox(
+                      title: 'customer'.tr,
+                      selected: isCustomer,
+                      onTap: () => controller.setPartnerTab(isCustomer: true),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          SizedBox(height: 10.h),
+          Obx(
+            () => Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: _PartnerTabCheckbox(
-                    title: 'seller'.tr,
-                    selected: !isCustomer,
-                    onTap: () => controller.setPartnerTab(isCustomer: false),
+                  child: CustomDropdownFieldWithSearch(
+                    tital: controller.partnerDropdownTitle,
+                    hint: controller.partnerDropdownHint,
+                    isRequired: false,
+                    items: controller.selectedCustomersSellers.value
+                        ? controller.allCustomersList
+                        : controller.allSellersList,
+                    value: controller.selectedPartner.value,
+                    onChanged: (value) {
+                      controller.onPartnerSelected(
+                        value is SellerModel ? value : null,
+                      );
+                    },
+                    validator: (_) => null,
+                    itemAsString: (item) => item.name,
+                    compareFn: (a, b) => a.id == b.id,
                   ),
                 ),
-                Expanded(
-                  child: _PartnerTabCheckbox(
-                    title: 'customer'.tr,
-                    selected: isCustomer,
-                    onTap: () => controller.setPartnerTab(isCustomer: true),
+                IconButton(
+                  onPressed: () => controller.openAddPartnerScreen(),
+                  icon: Icon(
+                    Icons.add_circle_sharp,
+                    color: AppColors.primaryColor,
+                    size: 32.sp,
                   ),
                 ),
               ],
-            );
-          },
-        ),
-        SizedBox(height: 10.h),
-        Obx(
-          () => Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: CustomDropdownFieldWithSearch(
-                  tital: controller.partnerDropdownTitle,
-                  hint: controller.partnerDropdownHint,
-                  isRequired: false,
-                  items: controller.selectedCustomersSellers.value
-                      ? controller.allCustomersList
-                      : controller.allSellersList,
-                  value: controller.selectedPartner.value,
-                  onChanged: (value) {
-                    controller.onPartnerSelected(
-                      value is SellerModel ? value : null,
-                    );
-                  },
-                  validator: (_) => null,
-                  itemAsString: (item) => item.name,
-                  compareFn: (a, b) => a.id == b.id,
-                ),
-              ),
-              IconButton(
-                onPressed: () => controller.openAddPartnerScreen(),
-                icon: Icon(
-                  Icons.add_circle_sharp,
-                  color: AppColors.primaryColor,
-                  size: 32.sp,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-        SizedBox(height: 12.h),
+          SizedBox(height: 12.h),
+        ],
         Obx(
           () {
             if (controller.useDailySalesBox.value) {
@@ -114,13 +131,15 @@ class InstantSalePaymentSection extends StatelessWidget {
                       color: AppColors.primaryColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8.r),
                     ),
-                    child: Text(
-                      '${'salesDailyBox'.tr}: ${controller.dailySalesBoxLabel.value}',
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: showDailyBoxInfo
+                        ? Text(
+                            '${'salesDailyBox'.tr}: ${controller.dailySalesBoxLabel.value}',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
+                        : const SizedBox.shrink(),
                   ),
                   SizedBox(height: 10.h),
                   CustomTextField(
@@ -128,7 +147,8 @@ class InstantSalePaymentSection extends StatelessWidget {
                     hintText: 'totalExample',
                     controller: controller.cashValueController,
                     keyboardType: TextInputType.number,
-                    onChanged: (_) => sales.refreshInstantSalePaymentSummary(),
+                    onChanged: (_) =>
+                        sales.refreshInstantSalePaymentSummaryForTag(paymentTag),
                   ),
                 ],
               );
@@ -158,14 +178,15 @@ class InstantSalePaymentSection extends StatelessWidget {
                     hintText: 'totalExample',
                     controller: controller.cashValueController,
                     keyboardType: TextInputType.number,
-                    onChanged: (_) => sales.refreshInstantSalePaymentSummary(),
+                    onChanged: (_) =>
+                        sales.refreshInstantSalePaymentSummaryForTag(paymentTag),
                   ),
                 ),
               ],
             );
           },
         ),
-        const InstantSalePaymentSummary(),
+        InstantSalePaymentSummary(extraTotal: extraTotal),
       ],
     );
   }

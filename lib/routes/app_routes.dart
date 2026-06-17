@@ -63,6 +63,9 @@ class AppRoutes {
 
   // Sales
   static const SALESSCREEN = '/SalesScreen';
+  static const SALESORDERDETAILSCREEN = '/SalesOrderDetailScreen';
+  static const NEWSALESORDERSCREEN = '/NewSalesOrderScreen';
+  static const SALESORDERCHECKOUTSCREEN = '/SalesOrderCheckoutScreen';
   static const INSTANTSALEPRODUCTPICKER = '/InstantSaleProductPicker';
   static const NEWINSTANTSALESCREEN = '/NewInstantSaleScreen';
   static const NEWCASHPROFITSCREEN = '/NewCashProfitScreen';

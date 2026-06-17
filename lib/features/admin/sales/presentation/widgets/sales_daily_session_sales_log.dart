@@ -196,6 +196,27 @@ class _SaleRow extends StatelessWidget {
                             color: Colors.grey.shade600,
                           ),
                         ),
+                        if (sale.isFromSalesOrder) ...[
+                          SizedBox(width: 6.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 5.w,
+                              vertical: 1.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: Text(
+                              'salesOrders'.tr,
+                              style: TextStyle(
+                                fontSize: 8.sp,
+                                color: const Color(0xFF2563EB),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                         if (cancelled) ...[
                           SizedBox(width: 6.w),
                           Text(

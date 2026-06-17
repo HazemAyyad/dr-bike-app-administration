@@ -8,14 +8,20 @@ import '../../utils/sales_amount_format.dart';
 
 /// يعرض إجمالي الفاتورة والمدفوع والمتبقي أثناء إنشاء بيع فوري.
 class InstantSalePaymentSummary extends GetView<SalesController> {
-  const InstantSalePaymentSummary({Key? key}) : super(key: key);
+  const InstantSalePaymentSummary({
+    Key? key,
+    this.extraTotal = 0,
+  }) : super(key: key);
+
+  /// Useful for flows that add a fee outside `SalesController.totalCost` (e.g. sales orders delivery fee).
+  final double extraTotal;
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final total = controller.totalCost.value;
+      final total = controller.totalCost.value + extraTotal;
       final paid = controller.instantSalePaidAmount.value;
-      final remaining = controller.instantSaleRemainingAmount;
+      final remaining = (total - paid).clamp(0, double.infinity).toDouble();
 
       return Container(
         width: double.infinity,

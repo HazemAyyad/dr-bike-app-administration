@@ -167,7 +167,10 @@ class InstantSaleProductCard extends StatelessWidget {
                         child: InkWell(
                           onTap: outOfStock
                               ? null
-                              : () => controller.toggleProductInCart(product),
+                              : () => controller.toggleProductInCart(
+                                    product,
+                                    context: context,
+                                  ),
                           onLongPress: () => showInstantSaleProductDetailSheet(
                             context,
                             product,

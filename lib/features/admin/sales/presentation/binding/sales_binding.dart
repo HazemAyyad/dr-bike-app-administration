@@ -1,6 +1,8 @@
 import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/add_profit_sale.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sales_usecase.dart';
+import 'package:doctorbike/features/admin/sales_orders/data/repositories/sales_orders_implement.dart';
+import 'package:doctorbike/features/admin/sales_orders/presentation/controllers/sales_orders_controller.dart';
 import 'package:get/get.dart';
 
 import '../../data/repositories/sales_implement.dart';
@@ -20,6 +22,17 @@ class SalesBinding extends Bindings {
   void dependencies() {
     AppDependencyRegistry.ensureSales();
     AppDependencyRegistry.ensureChecks();
+    AppDependencyRegistry.ensureSalesOrders();
+
+    if (!Get.isRegistered<SalesOrdersController>() &&
+        !Get.isPrepared<SalesOrdersController>()) {
+      Get.lazyPut(
+        () => SalesOrdersController(
+          repository: Get.find<SalesOrdersImplement>(),
+        ),
+        fenix: true,
+      );
+    }
 
     Get.lazyPut(
       () => SalesController(

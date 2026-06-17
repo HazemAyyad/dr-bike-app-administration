@@ -104,7 +104,9 @@ class DioConsumer extends ApiConsumer {
           status: (data is Map && data['status'] != null)
               ? data['status']
               : statusCode,
-          data: (data is Map && data['data'] != null) ? data['data'] : {},
+          data: (data is Map)
+              ? (data['errors'] ?? data['data'] ?? data)
+              : {},
         ),
       );
     }
@@ -157,7 +159,9 @@ class DioConsumer extends ApiConsumer {
           status: (data is Map && data['status'] != null)
               ? data['status']
               : statusCode,
-          data: (data is Map && data['data'] != null) ? data['data'] : {},
+          data: (data is Map)
+              ? (data['errors'] ?? data['data'] ?? data)
+              : {},
         ),
       );
     }

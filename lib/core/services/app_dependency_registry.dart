@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:doctorbike/features/admin/general_data_list/presentation/controllers/general_data_serves.dart';
 import 'package:doctorbike/features/admin/sales/data/datasources/sales_datasources.dart';
+import 'package:doctorbike/features/admin/sales_orders/data/datasources/sales_orders_datasource.dart';
+import 'package:doctorbike/features/admin/sales_orders/data/repositories/sales_orders_implement.dart';
 import 'package:get/get.dart';
 
 import '../../features/admin/admin_dashbord/data/datasources/admin_dashboard_datasource.dart';
@@ -248,6 +250,19 @@ class AppDependencyRegistry {
       () => SalesImplement(
         networkInfo: Get.find<NetworkInfo>(),
         salesDatasource: Get.find<SalesDatasource>(),
+      ),
+    );
+  }
+
+  static void ensureSalesOrders() {
+    ensureNetworkAndApi();
+    _lazy<SalesOrdersDatasource>(
+      () => SalesOrdersDatasource(api: Get.find<DioConsumer>()),
+    );
+    _lazy<SalesOrdersImplement>(
+      () => SalesOrdersImplement(
+        networkInfo: Get.find<NetworkInfo>(),
+        datasource: Get.find<SalesOrdersDatasource>(),
       ),
     );
   }

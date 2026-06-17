@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -36,6 +37,13 @@ class BillDetailsScreen extends GetView<SalesController> {
 
           return CustomScrollView(
             slivers: [
+              if (invoice.salesOrderId != null)
+                SliverToBoxAdapter(
+                  child: _SalesOrderLinkCard(
+                    orderId: invoice.salesOrderId!,
+                    serial: invoice.salesOrderSerial,
+                  ),
+                ),
               SliverToBoxAdapter(
                 child: _InvoiceHeaderCard(
                   invoiceNumber: _dash(invoice.invoiceNumber),
@@ -404,6 +412,73 @@ class _InvoiceTotalsSection extends StatelessWidget {
                 ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SalesOrderLinkCard extends StatelessWidget {
+  const _SalesOrderLinkCard({
+    required this.orderId,
+    this.serial,
+  });
+
+  final int orderId;
+  final String? serial;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 0),
+      child: Material(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(10.r),
+        child: InkWell(
+          onTap: () => Get.toNamed(
+            AppRoutes.SALESORDERDETAILSCREEN,
+            arguments: orderId,
+          ),
+          borderRadius: BorderRadius.circular(10.r),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: const Color(0xFF93C5FD)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.receipt_long_outlined,
+                    size: 20.sp, color: const Color(0xFF2563EB)),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'salesOrderLinkedInvoice'.tr,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: const Color(0xFF1D4ED8),
+                        ),
+                      ),
+                      Text(
+                        serial ?? '#$orderId',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E3A8A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_left,
+                    color: const Color(0xFF2563EB), size: 22.sp),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

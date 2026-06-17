@@ -19,6 +19,7 @@ import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../stock/presentation/controllers/offer_packages_controller.dart';
+import '../../../sales_orders/data/models/sales_order_model.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
@@ -50,6 +51,7 @@ import 'sales_service.dart';
 
 /// GetX tag for payment fields on the new instant sale screen.
 const String kInstantSalePaymentTag = 'instant_sale_payment';
+const String kSalesOrderPaymentTag = 'sales_order_payment';
 const String kProfitSalePaymentTag = 'profit_sale_payment';
 
 class SalesController extends GetxController
@@ -329,7 +331,7 @@ class SalesController extends GetxController
   /// Bumped when sales lists change so [Obx] on [SalesScreen] rebuilds.
   final salesListRevision = 0.obs;
 
-  List<String> tabs = ['spotSale', 'cashProfit'];
+  List<String> tabs = ['spotSale', 'cashProfit', 'salesOrders'];
 
   /// 0 = all, 1 = package only, 2 = mixed, 3 = regular products.
   final instantSalesPackageFilter = 0.obs;
@@ -879,8 +881,15 @@ class SalesController extends GetxController
     final ctx = context ?? Get.context;
     if (ctx == null) return;
 
-    final resolved = await ensureProductPricesForPicker(product);
-    if (resolved == null) return;
+    var resolved = productById(product.id) ?? product;
+    final priced = await ensureProductPricesForPicker(resolved);
+    if (priced == null) return;
+    resolved = productById(product.id) ?? priced;
+
+    if (!resolved.hasVariants || resolved.sizes.isEmpty) {
+      await _addProductToCartOnce(resolved);
+      return;
+    }
 
     final pick = await showSalesVariantPickerSheet(
       context: ctx,
@@ -1030,6 +1039,29 @@ class SalesController extends GetxController
     }
 
     Get.toNamed(AppRoutes.NEWINSTANTSALESCREEN);
+  }
+
+  void openSalesOrderCheckout() {
+    final hasProducts = cartLines.where((l) => !l.isDisposed).isNotEmpty;
+
+    if (!hasProducts) {
+      Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
+          backgroundColor: Colors.red);
+      return;
+    }
+
+    for (final line in cartLines) {
+      if (line.isDisposed) continue;
+      final qty = int.tryParse(line.quantityText) ?? 0;
+      if (qty > line.stock) {
+        Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
+            backgroundColor: Colors.red);
+        return;
+      }
+    }
+
+    syncCartToItems();
+    Get.toNamed(AppRoutes.SALESORDERCHECKOUTSCREEN);
   }
 
   void openInstantSaleProductPicker() {
@@ -1421,6 +1453,51 @@ class SalesController extends GetxController
     );
   }
 
+  Future<void> hydrateFromSalesOrder(SalesOrderDetailModel order) async {
+    clearActiveSuspendedSale();
+    clearActiveEditInstantSale();
+    resetInstantSaleForm();
+
+    if (products.isEmpty) {
+      getAllProducts();
+    }
+    await ensurePickerPartnersLoaded();
+
+    discountController.text = SalesAmountFormat.display(order.discount);
+
+    applyBuyerFromPayment({
+      'buyer_type': order.customerId != null ? 'customer' : 'unknown',
+      if (order.customerId != null) 'buyer_id': order.customerId.toString(),
+      'buyer_name': order.customerName,
+      if (order.paymentBoxId != null)
+        'payment_box_id': order.paymentBoxId.toString(),
+      if (order.paymentAmount > 0)
+        'payment_box_value': order.paymentAmount.toString(),
+    });
+
+    resolvePartnerFromOrderSnapshot(
+      customerId: order.customerId,
+      name: order.customerName,
+      phone: order.customerPhone,
+    );
+
+    clearCartLines(deferDispose: false);
+    for (final item in order.items) {
+      _addHydratedCartLine({
+        'product_id': item.productId.toString(),
+        'quantity': item.quantity.toString(),
+        'cost': item.unitPrice.toString(),
+        'product_name': item.productName,
+        'size_id': item.sizeId?.toString(),
+        'size_color_id': item.sizeColorId?.toString(),
+        'size_label': item.sizeLabel,
+        'color_label': item.colorLabel,
+      });
+    }
+    calculateGrandTotal();
+    bumpCartRevision();
+  }
+
   Future<void> hydrateFromInvoice(InvoiceModel invoice) async {
     discountController.text = invoice.discount;
 
@@ -1683,6 +1760,13 @@ class SalesController extends GetxController
         (sellerId != null && sellerId.isNotEmpty);
   }
 
+  bool get hasPaymentSnapshot {
+    return hasPickerPartner ||
+        (_paymentBuyerName != null &&
+            _paymentBuyerName!.isNotEmpty &&
+            _paymentBuyerName != '-');
+  }
+
   String? get pickerPersonType {
     if (_paymentSellerId != null && _paymentSellerId!.isNotEmpty) {
       return 'seller';
@@ -1753,23 +1837,81 @@ class SalesController extends GetxController
   }
 
   void syncPickerPartnerFromPayment() {
-    if (_paymentSellerId != null) {
+    if (_paymentSellerId != null && _paymentSellerId!.isNotEmpty) {
       pickerPartnerIsCustomer.value = false;
       final match = pickerSellersList.firstWhereOrNull(
         (e) => e.id.toString() == _paymentSellerId,
       );
       pickerSelectedPartner.value = match;
+      _syncPickerPartnerObservables();
       return;
     }
-    if (_paymentBuyerId != null) {
+    if (_paymentBuyerId != null && _paymentBuyerId!.isNotEmpty) {
       pickerPartnerIsCustomer.value = true;
       final match = pickerCustomersList.firstWhereOrNull(
         (e) => e.id.toString() == _paymentBuyerId,
       );
       pickerSelectedPartner.value = match;
+      _syncPickerPartnerObservables();
       return;
     }
     pickerSelectedPartner.value = null;
+    _syncPickerPartnerObservables();
+  }
+
+  void resolvePartnerFromOrderSnapshot({
+    int? customerId,
+    String? name,
+    String? phone,
+  }) {
+    SellerModel? match;
+
+    if (customerId != null) {
+      pickerPartnerIsCustomer.value = true;
+      match = pickerCustomersList.firstWhereOrNull((e) => e.id == customerId);
+    }
+
+    final normalizedPhone = _normalizePhone(phone);
+    if (match == null && normalizedPhone.isNotEmpty) {
+      match = pickerCustomersList.firstWhereOrNull(
+        (e) => _normalizePhone(e.phone) == normalizedPhone,
+      );
+      match ??= pickerSellersList.firstWhereOrNull(
+        (e) => _normalizePhone(e.phone) == normalizedPhone,
+      );
+    }
+
+    final trimmedName = name?.trim() ?? '';
+    if (match == null && trimmedName.isNotEmpty) {
+      match = pickerCustomersList.firstWhereOrNull(
+        (e) => e.name.trim() == trimmedName,
+      );
+      match ??= pickerSellersList.firstWhereOrNull(
+        (e) => e.name.trim() == trimmedName,
+      );
+    }
+
+    if (match == null) return;
+
+    final isCustomer = pickerCustomersList.any((e) => e.id == match!.id);
+    pickerPartnerIsCustomer.value = isCustomer;
+    pickerSelectedPartner.value = match;
+    if (isCustomer) {
+      _paymentBuyerType = 'customer';
+      _paymentBuyerId = match.id.toString();
+      _paymentSellerId = null;
+    } else {
+      _paymentBuyerType = 'seller';
+      _paymentSellerId = match.id.toString();
+      _paymentBuyerId = null;
+    }
+    _paymentBuyerName = match.name;
+    _syncPickerPartnerObservables();
+  }
+
+  String _normalizePhone(String? phone) {
+    if (phone == null) return '';
+    return phone.replaceAll(RegExp(r'\D'), '');
   }
 
   Future<CustomerProductPriceHistory?> fetchLinePriceHistory({
@@ -2141,6 +2283,21 @@ class SalesController extends GetxController
     instantSalePaidAmount.value = double.tryParse(raw) ?? 0;
   }
 
+  /// Same as [refreshInstantSalePaymentSummary] but for flows using a custom payment controller tag
+  /// (e.g. sales orders checkout uses `kSalesOrderPaymentTag`).
+  void refreshInstantSalePaymentSummaryForTag(String paymentTag) {
+    if (!Get.isRegistered<PaymentController>(tag: paymentTag)) {
+      instantSalePaidAmount.value = 0;
+      return;
+    }
+    final payment = Get.find<PaymentController>(tag: paymentTag);
+    final raw = payment.cashValueController.text
+        .replaceAll(',', '')
+        .replaceAll('،', '')
+        .trim();
+    instantSalePaidAmount.value = double.tryParse(raw) ?? 0;
+  }
+
   void syncPaymentCashFromTotal({bool onlyIfCashEmpty = false}) {
     final payment = _instantSalePayment;
     if (payment == null) return;
@@ -2412,6 +2569,12 @@ class SalesController extends GetxController
       'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.INSTANTSALEPRODUCTPICKER,
       'freshInstantSale': 'true',
+    },
+    {
+      'title': 'salesOrderNew',
+      'icon': AssetsManager.invoiceIcon,
+      'route': AppRoutes.NEWSALESORDERSCREEN,
+      'freshSalesOrder': 'true',
     },
     {
       'title': 'newCashProfit',
