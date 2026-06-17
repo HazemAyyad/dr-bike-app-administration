@@ -165,6 +165,7 @@ class SalesOrderDetailModel {
   final int? instantSaleId;
   final String? instantSaleSerial;
   final String? trackingNumber;
+  final int? deliveryCompanyId;
   final String? deliveryCompanyName;
   final int? shiplyCityId;
   final int? shiplyVillageId;
@@ -198,6 +199,7 @@ class SalesOrderDetailModel {
     this.instantSaleId,
     this.instantSaleSerial,
     this.trackingNumber,
+    this.deliveryCompanyId,
     this.deliveryCompanyName,
     this.shiplyCityId,
     this.shiplyVillageId,
@@ -238,6 +240,7 @@ class SalesOrderDetailModel {
       instantSaleId: json['instant_sale_id'] as int?,
       instantSaleSerial: json['instant_sale_serial'] as String?,
       trackingNumber: json['tracking_number'] as String?,
+      deliveryCompanyId: json['delivery_company_id'] as int?,
       deliveryCompanyName: json['delivery_company_name'] as String?,
       shiplyCityId: json['shiply_city_id'] as int?,
       shiplyVillageId: json['shiply_village_id'] as int?,

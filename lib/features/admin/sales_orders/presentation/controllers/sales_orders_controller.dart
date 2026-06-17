@@ -133,6 +133,35 @@ class SalesOrdersController extends GetxController {
     return null;
   }
 
+  void pickDefaultHandoverCompany(SalesOrderDetailModel? order) {
+    if (deliveryCompanies.isEmpty) return;
+
+    if (order?.deliveryCompanyId != null) {
+      final savedId = order!.deliveryCompanyId!;
+      if (deliveryCompanies.any((c) => c.id == savedId)) {
+        selectedDeliveryCompanyId.value = savedId;
+        return;
+      }
+    }
+
+    if (order != null &&
+        order.isShiplyDelivery &&
+        shiplyDeliveryCompany != null) {
+      selectedDeliveryCompanyId.value = shiplyDeliveryCompany!.id;
+      return;
+    }
+
+    final nonShiply = deliveryCompanies
+        .where((c) => c.code?.toLowerCase() != 'shiply')
+        .toList();
+    if (nonShiply.isNotEmpty) {
+      selectedDeliveryCompanyId.value = nonShiply.first.id;
+      return;
+    }
+
+    selectedDeliveryCompanyId.value = deliveryCompanies.first.id;
+  }
+
   final statusTabs = const [
     'unconfirmed',
     'confirmed',

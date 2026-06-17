@@ -1122,48 +1122,32 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   }
 
   Future<void> _startHandover(SalesOrderDetailModel order) async {
-    if (controller.shiplyDeliveryCompany != null) {
-      if (controller.shiplyCities.isEmpty) {
-        await controller.loadLookups();
-      }
-      await controller.loadShiplyPartners();
+    if (controller.deliveryCompanies.isEmpty) {
+      await controller.loadLookups();
+    }
+    _showHandoverSheet(order.id, order);
+  }
 
-      var current = order;
+  Future<bool> _prepareShiplyHandover(SalesOrderDetailModel order) async {
+    if (controller.shiplyCities.isEmpty) {
+      await controller.loadLookups();
+    }
+    await controller.loadShiplyPartners();
 
-      if (controller.needsShiplyCustomerSelection(current)) {
-        final customerResult = await Get.dialog<dynamic>(
-          SalesOrderShiplyCustomerDialog(
-            orderId: order.id,
-            controller: controller,
-            initialName: current.customerName,
-          ),
-          barrierDismissible: false,
-        );
-        if (customerResult == 'needs_phone') {
-          final selection = controller.pendingShiplyPartner;
-          if (selection == null) return;
-          final phoneSaved = await Get.dialog<bool>(
-            SalesOrderShiplyPhoneDialog(
-              orderId: order.id,
-              controller: controller,
-              selection: selection,
-            ),
-            barrierDismissible: false,
-          );
-          if (phoneSaved != true) return;
-        } else if (customerResult != true) {
-          return;
-        }
-        await controller.loadDetail(order.id);
-        current = controller.detail.value ?? current;
-      }
+    var current = order;
 
-      if (controller.needsShiplyPhone(current)) {
-        final selection = controller.shiplyPartnerForPhonePrompt(current);
-        if (selection == null) {
-          Get.snackbar('error'.tr, 'salesOrderShiplyPhoneRequired'.tr);
-          return;
-        }
+    if (controller.needsShiplyCustomerSelection(current)) {
+      final customerResult = await Get.dialog<dynamic>(
+        SalesOrderShiplyCustomerDialog(
+          orderId: order.id,
+          controller: controller,
+          initialName: current.customerName,
+        ),
+        barrierDismissible: false,
+      );
+      if (customerResult == 'needs_phone') {
+        final selection = controller.pendingShiplyPartner;
+        if (selection == null) return false;
         final phoneSaved = await Get.dialog<bool>(
           SalesOrderShiplyPhoneDialog(
             orderId: order.id,
@@ -1172,37 +1156,53 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
           ),
           barrierDismissible: false,
         );
-        if (phoneSaved != true) return;
-        await controller.loadDetail(order.id);
-        current = controller.detail.value ?? current;
+        if (phoneSaved != true) return false;
+      } else if (customerResult != true) {
+        return false;
       }
-
-      if (controller.needsShiplyAddress(current)) {
-        controller.preloadShiplyAddressFromOrder(current);
-        final parcelPrice = current.subtotal - current.discount;
-        final saved = await Get.dialog<bool>(
-          SalesOrderShiplyAddressDialog(
-            orderId: order.id,
-            controller: controller,
-            parcelPrice: parcelPrice > 0 ? parcelPrice : current.total,
-          ),
-          barrierDismissible: false,
-        );
-        if (saved != true) return;
-        await controller.loadDetail(order.id);
-      }
+      await controller.loadDetail(order.id);
+      current = controller.detail.value ?? current;
     }
-    _showHandoverSheet(order.id);
+
+    if (controller.needsShiplyPhone(current)) {
+      final selection = controller.shiplyPartnerForPhonePrompt(current);
+      if (selection == null) {
+        Get.snackbar('error'.tr, 'salesOrderShiplyPhoneRequired'.tr);
+        return false;
+      }
+      final phoneSaved = await Get.dialog<bool>(
+        SalesOrderShiplyPhoneDialog(
+          orderId: order.id,
+          controller: controller,
+          selection: selection,
+        ),
+        barrierDismissible: false,
+      );
+      if (phoneSaved != true) return false;
+      await controller.loadDetail(order.id);
+      current = controller.detail.value ?? current;
+    }
+
+    if (controller.needsShiplyAddress(current)) {
+      controller.preloadShiplyAddressFromOrder(current);
+      final parcelPrice = current.subtotal - current.discount;
+      final saved = await Get.dialog<bool>(
+        SalesOrderShiplyAddressDialog(
+          orderId: order.id,
+          controller: controller,
+          parcelPrice: parcelPrice > 0 ? parcelPrice : current.total,
+        ),
+        barrierDismissible: false,
+      );
+      if (saved != true) return false;
+      await controller.loadDetail(order.id);
+    }
+
+    return true;
   }
 
-  void _showHandoverSheet(int orderId) {
-    final shiply = controller.shiplyDeliveryCompany;
-    if (shiply != null) {
-      controller.selectedDeliveryCompanyId.value = shiply.id;
-    } else if (controller.deliveryCompanies.isNotEmpty) {
-      controller.selectedDeliveryCompanyId.value =
-          controller.deliveryCompanies.first.id;
-    }
+  void _showHandoverSheet(int orderId, SalesOrderDetailModel order) {
+    controller.pickDefaultHandoverCompany(order);
     controller.trackingController.clear();
     Get.bottomSheet(
       Container(
@@ -1273,6 +1273,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                 );
               }
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(height: 10.h),
                   TextField(
@@ -1293,13 +1294,28 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                       ),
                     ),
                   ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 6.h),
+                    child: Text(
+                      'salesOrderManualHandoverHint'.tr,
+                      style: TextStyle(
+                        color: SalesOrdersController.textSecondary,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  ),
                 ],
               );
             }),
             SizedBox(height: 16.h),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                final isShiply = controller.isSelectedCompanyShiply;
                 Get.back();
+                if (isShiply) {
+                  final ready = await _prepareShiplyHandover(order);
+                  if (!ready) return;
+                }
                 controller.handover(orderId);
               },
               style: ElevatedButton.styleFrom(

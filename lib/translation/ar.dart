@@ -1386,6 +1386,7 @@ const Map<String, String> ar = {
   'shiplyHandoverHint': 'سيتم إنشاء الطرد في Shiply تلقائياً عند التأكيد.',
   'shiplySandboxAccountBadge': 'حساب شبلي تجريبي (Sandbox) — الطرود لا تُوصَّل فعلياً.',
   'shiplySandboxShort': 'تجريبي',
+  'salesOrderManualHandoverHint': 'تسليم يدوي — اختياري: رقم تتبع أو ملاحظة (مكتب / شركة توصيل).',
   'shiplyUnauthorizedHint': 'رفضت Shiply التسليم. تأكد أن إيميل تسجيل دخولك مضاف كموظف في شبلي (نفس وضع تجريبي/فعلي)، وأن مفتاح API يطابق الوضع في الإعدادات.',
   'shiplySettingsTitle': 'إعدادات التوصيل (Shiply)',
   'shiplySettingsDesc': 'تفعيل الربط ووضع Sandbox / Live',

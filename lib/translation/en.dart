@@ -1319,6 +1319,7 @@ const Map<String, String> en = {
   'shiplyHandoverHint': 'A Shiply parcel will be created automatically on confirm.',
   'shiplySandboxAccountBadge': 'Shiply test account (Sandbox) — parcels are not sent for real delivery.',
   'shiplySandboxShort': 'Test',
+  'salesOrderManualHandoverHint': 'Manual handover — optional tracking or reference (office / carrier).',
   'shiplyUnauthorizedHint': 'Shiply rejected the handover. Ensure your login email is registered as an employee in Shiply (same test/live mode), and that the API key matches the mode in settings.',
   'shiplySettingsTitle': 'Delivery settings (Shiply)',
   'shiplySettingsDesc': 'Enable integration and Sandbox / Live mode',
