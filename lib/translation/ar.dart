@@ -1095,6 +1095,15 @@ const Map<String, String> ar = {
   'fingerprintSyncModePush': 'استقبال مباشر ADMS / Push',
   'fingerprintSyncInterval': 'فاصل المزامنة',
   'minutesLabel': 'دقيقة',
+  'attendanceRulesSection': 'قواعد الحضور',
+  'reverseCheckoutWindow': 'نافذة الخروج العكسي',
+  'reverseCheckoutWindowDesc':
+      'إذا بصم الموظف دخولاً قرب نهاية دوامه وهو لا يزال داخل العمل، يُعتبر خروجاً ضمن ± الدقائق حول وقت نهاية الدوام',
+  'reverseCheckoutWindowOff': 'معطّل',
+  'afterMidnightGraceHour': 'سماح بعد منتصف الليل حتى الساعة',
+  'afterMidnightGraceHourDesc':
+      'الخروج بين 12:00 صباحاً وهذه الساعة يُحسب ليوم العمل السابق؛ الإغلاق التلقائي يعمل بعدها بـ 10 دقائق',
+  'amHourLabel': 'صباحاً',
   'fingerprintDevices': 'أجهزة البصمة',
   'testConnection': 'اختبار الاتصال',
   'syncUsers': 'مزامنة المستخدمين',
@@ -2298,7 +2307,9 @@ const Map<String, String> ar = {
 
   'salesDailyDayOpen': 'يوم المبيعات مفتوح',
   'salesDailyDrawerNotOpen': 'صندوق المبيعات غير مفتوح',
+  'salesDailyOpenDrawersTab': 'الصناديق المفتوحة',
   'salesDailyOpenDrawer': 'فتح الصندوق',
+  'salesDailyFinalizeClosing': 'إغلاق وترحيل',
   'salesDailyOpenDrawerConfirm': 'هل تريد فتح صندوق المبيعات اليومي؟ لن يتمكن موظف آخر من فتح صندوق حتى تغلقه.',
   'salesDailyDrawerBusy': 'صندوق المبيعات مشغول',
   'salesDailyDrawerOpenByOther': 'الصندوق مفتوح لدى @employee',

@@ -2263,6 +2263,15 @@ const Map<String, String> en = {
   'fingerprintSyncModePush': 'ADMS / Push receiver',
   'fingerprintSyncInterval': 'Sync interval',
   'minutesLabel': 'minutes',
+  'attendanceRulesSection': 'Attendance rules',
+  'reverseCheckoutWindow': 'Reverse checkout window',
+  'reverseCheckoutWindowDesc':
+      'If an employee scans IN near shift end while still inside, treat it as OUT within ± minutes around scheduled end time',
+  'reverseCheckoutWindowOff': 'Off',
+  'afterMidnightGraceHour': 'After-midnight grace until',
+  'afterMidnightGraceHourDesc':
+      'Check-outs between 12:00 AM and this hour count for the previous work day; auto-checkout runs 10 minutes after',
+  'amHourLabel': 'AM',
   'fingerprintDevices': 'Attendance devices',
   'testConnection': 'Test connection',
   'syncUsers': 'Sync users',
@@ -2310,7 +2319,9 @@ const Map<String, String> en = {
 
   'salesDailyDayOpen': 'Sales day open',
   'salesDailyDrawerNotOpen': 'Sales drawer not open',
+  'salesDailyOpenDrawersTab': 'Open drawers',
   'salesDailyOpenDrawer': 'Open drawer',
+  'salesDailyFinalizeClosing': 'Close and transfer',
   'salesDailyOpenDrawerConfirm':
       'Open today\'s sales drawer? No other employee can open a drawer until you close it.',
   'salesDailyDrawerBusy': 'Sales drawer in use',
