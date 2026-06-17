@@ -1335,6 +1335,8 @@ const Map<String, String> en = {
   'salesOrderStatusReview': 'Review',
   'salesOrderStatusPartialDelivered': 'Partial delivered',
   'salesOrderStatusPartialReturn': 'Partial return',
+  'salesOrderMovedToTab': 'Order moved to @status tab',
+  'salesOrderMarkReturned': 'Returned from delivery company',
   'salesOrderStatusAlternativeReturn': 'Alternative return',
   'salesOrderNumber': 'Order number',
   'salesOrderInvoiceNumber': 'Invoice number',

@@ -1402,6 +1402,8 @@ const Map<String, String> ar = {
   'salesOrderStatusReview': 'مراجعة',
   'salesOrderStatusPartialDelivered': 'توصيل جزئي',
   'salesOrderStatusPartialReturn': 'راجع جزئي',
+  'salesOrderMovedToTab': 'انتقلت الطلبية إلى تبويب @status',
+  'salesOrderMarkReturned': 'راجع من شركة التوصيل',
   'salesOrderStatusAlternativeReturn': 'راجع بديل',
   'salesOrderNumber': 'رقم الطلبية',
   'salesOrderInvoiceNumber': 'رقم الفاتورة',

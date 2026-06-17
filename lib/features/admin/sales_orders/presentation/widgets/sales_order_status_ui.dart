@@ -346,7 +346,32 @@ class SalesOrderActions {
           ),
           SalesOrderActionDef(
             id: SalesOrderActionId.cancel,
-            labelKey: 'cancel',
+            labelKey: 'salesOrderMarkReturned',
+            isDanger: true,
+          ),
+        ];
+      case 'partial_return':
+        return const [
+          SalesOrderActionDef(
+            id: SalesOrderActionId.partialDeliver,
+            labelKey: 'salesOrderPartialDeliver',
+            isPrimary: true,
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.partialReturn,
+            labelKey: 'salesOrderPartialReturn',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.uploadMedia,
+            labelKey: 'salesOrderUploadMedia',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.share,
+            labelKey: 'salesOrderShare',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.cancel,
+            labelKey: 'salesOrderMarkReturned',
             isDanger: true,
           ),
         ];

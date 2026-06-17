@@ -50,8 +50,6 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
   }
 }
 
-import '../widgets/sales_skeleton_widgets.dart';
-
 class _OpenSessionsList extends StatelessWidget {
   const _OpenSessionsList({required this.controller});
 

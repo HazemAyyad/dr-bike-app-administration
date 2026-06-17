@@ -99,8 +99,10 @@ class SalesOrdersController extends GetxController {
     'with_delivery',
     'review',
     'delivered',
+    'partial_return',
     'returned',
     'postponed',
+    'canceled',
     'archived',
   ];
 
@@ -153,6 +155,19 @@ class SalesOrdersController extends GetxController {
 
   void changeStatusFilter(String status) {
     statusFilter.value = status;
+    loadOrders();
+  }
+
+  /// After a status-changing action, show the order under its new tab.
+  void focusOrderStatusTab(String status) {
+    if (statusTabs.contains(status)) {
+      if (statusFilter.value != status) {
+        changeStatusFilter(status);
+      } else {
+        loadOrders();
+      }
+      return;
+    }
     loadOrders();
   }
 
@@ -397,7 +412,11 @@ class SalesOrdersController extends GetxController {
       (f) => Get.snackbar('error'.tr, _humanizeFailure(f)),
       (order) {
         detail.value = order;
-        loadOrders();
+        focusOrderStatusTab(order.status);
+        Get.snackbar(
+          'success'.tr,
+          'salesOrderMovedToTab'.trParams({'status': statusLabel(order.status)}),
+        );
       },
     );
   }
