@@ -16,6 +16,8 @@ import '../../data/repositories/sales_orders_implement.dart';
 import '../../../payment_method/presentation/controllers/payment_controller.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
+import '../../../checks/data/models/check_model.dart';
+import '../../../../../core/helpers/phone_format_helper.dart';
 import '../widgets/sales_order_media_source_sheet.dart';
 import '../widgets/sales_order_share_sheet.dart';
 
@@ -45,6 +47,16 @@ class SalesOrderCartItem {
       };
 }
 
+class ShiplyPartnerSelection {
+  const ShiplyPartnerSelection({
+    required this.partner,
+    required this.isCustomer,
+  });
+
+  final SellerModel partner;
+  final bool isCustomer;
+}
+
 class SalesOrdersController extends GetxController {
   SalesOrdersController({required this.repository});
 
@@ -66,7 +78,12 @@ class SalesOrdersController extends GetxController {
   final cities = <CityModel>[].obs;
   final shiplyCities = <ShiplyCityModel>[].obs;
   final deliveryCompanies = <DeliveryCompanyModel>[].obs;
+  final shiplyCustomers = <SellerModel>[].obs;
+  final shiplySellers = <SellerModel>[].obs;
+  final shiplyPartnerIsCustomer = true.obs;
   final cartItems = <SalesOrderCartItem>[].obs;
+
+  ShiplyPartnerSelection? pendingShiplyPartner;
 
   final customerNameController = TextEditingController();
   final customerPhoneController = TextEditingController();
@@ -367,6 +384,184 @@ class SalesOrdersController extends GetxController {
   bool needsShiplyAddress(SalesOrderDetailModel order) {
     return order.shiplyVillageId == null ||
         (order.customerAddress ?? '').trim().isEmpty;
+  }
+
+  bool needsShiplyCustomerSelection(SalesOrderDetailModel order) {
+    return order.customerId == null;
+  }
+
+  bool needsShiplyPhone(SalesOrderDetailModel order) {
+    return (order.customerPhone ?? '').trim().isEmpty;
+  }
+
+  Future<void> loadShiplyPartners() async {
+    if (shiplyCustomers.isNotEmpty && shiplySellers.isNotEmpty) return;
+    final customersResult = await repository.getCustomersList();
+    customersResult.fold((_) {}, (data) => shiplyCustomers.assignAll(data));
+    final sellersResult = await repository.getSellersList();
+    sellersResult.fold((_) {}, (data) => shiplySellers.assignAll(data));
+  }
+
+  Map<String, dynamic> buildCustomerPayloadFromPartner(
+    SellerModel partner, {
+    required bool isCustomer,
+  }) {
+    final phone = partner.phone.trim();
+    if (isCustomer) {
+      return {
+        'customer_id': partner.id,
+        'customer_name': partner.name,
+        'customer_phone': phone,
+      };
+    }
+    return {
+      'customer_name': partner.name,
+      'customer_phone': phone,
+    };
+  }
+
+  Future<bool> saveOrderCustomerPayload(
+    int orderId,
+    Map<String, dynamic> payload,
+  ) async {
+    isSubmitting.value = true;
+    final result = await repository.updateOrder(orderId, payload);
+    isSubmitting.value = false;
+    return result.fold(
+      (f) {
+        Get.snackbar('error'.tr, _humanizeFailure(f));
+        return false;
+      },
+      (order) {
+        detail.value = order;
+        customerNameController.text = order.customerName ?? '';
+        customerPhoneController.text = order.customerPhone ?? '';
+        return true;
+      },
+    );
+  }
+
+  Future<SellerModel?> createShiplyPartner({
+    required bool isCustomer,
+    required String name,
+    required String phone,
+  }) async {
+    final personType = isCustomer ? 'customer' : 'seller';
+    final result = await repository.createPersonQuick(
+      personType: personType,
+      name: name,
+      phone: phone,
+    );
+    return result.fold(
+      (f) {
+        Get.snackbar('error'.tr, _humanizeFailure(f));
+        return null;
+      },
+      (partner) {
+        if (isCustomer) {
+          shiplyCustomers.add(partner);
+        } else {
+          shiplySellers.add(partner);
+        }
+        return partner;
+      },
+    );
+  }
+
+  Future<bool> updatePartnerPhoneAndOrder({
+    required int orderId,
+    required ShiplyPartnerSelection selection,
+    required String phone,
+  }) async {
+    final formatted = PhoneFormatHelper.forApi(phone);
+    if (!PhoneFormatHelper.isValidApiPhone(formatted)) {
+      Get.snackbar('error'.tr, 'salesOrderShiplyPhoneInvalid'.tr);
+      return false;
+    }
+
+    if (selection.partner.id > 0) {
+      isSubmitting.value = true;
+      final updateResult = await repository.updatePersonPhone(
+        isCustomer: selection.isCustomer,
+        personId: selection.partner.id,
+        name: selection.partner.name,
+        phone: formatted,
+      );
+      isSubmitting.value = false;
+
+      final personOk = updateResult.fold(
+        (f) {
+          Get.snackbar('error'.tr, _humanizeFailure(f));
+          return false;
+        },
+        (_) => true,
+      );
+      if (!personOk) return false;
+    }
+
+    final partner = SellerModel(
+      id: selection.partner.id,
+      name: selection.partner.name,
+      phone: formatted,
+    );
+    return saveOrderCustomerPayload(
+      orderId,
+      buildCustomerPayloadFromPartner(
+        partner,
+        isCustomer: selection.isCustomer && selection.partner.id > 0,
+      ),
+    );
+  }
+
+  Future<bool> applyShiplyPartnerToOrder({
+    required int orderId,
+    required ShiplyPartnerSelection selection,
+  }) async {
+    pendingShiplyPartner = selection;
+    final phone = selection.partner.phone.trim();
+    if (phone.isEmpty) {
+      return false;
+    }
+    return saveOrderCustomerPayload(
+      orderId,
+      buildCustomerPayloadFromPartner(
+        selection.partner,
+        isCustomer: selection.isCustomer,
+      ),
+    );
+  }
+
+  ShiplyPartnerSelection? shiplyPartnerForPhonePrompt(
+    SalesOrderDetailModel order,
+  ) {
+    if (pendingShiplyPartner != null) return pendingShiplyPartner;
+    if (order.customerId != null) {
+      final match = shiplyCustomers.firstWhereOrNull(
+        (c) => c.id == order.customerId,
+      );
+      if (match != null) {
+        return ShiplyPartnerSelection(partner: match, isCustomer: true);
+      }
+      return ShiplyPartnerSelection(
+        partner: SellerModel(
+          id: order.customerId!,
+          name: order.customerName ?? '',
+          phone: order.customerPhone ?? '',
+        ),
+        isCustomer: true,
+      );
+    }
+    if ((order.customerName ?? '').trim().isNotEmpty) {
+      return ShiplyPartnerSelection(
+        partner: SellerModel(
+          id: 0,
+          name: order.customerName ?? '',
+          phone: order.customerPhone ?? '',
+        ),
+        isCustomer: true,
+      );
+    }
+    return null;
   }
 
   String? validateShiplyAddressForm() {

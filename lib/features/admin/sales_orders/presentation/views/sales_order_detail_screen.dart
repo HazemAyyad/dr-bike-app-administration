@@ -9,6 +9,8 @@ import '../../../../../routes/app_routes.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
+import '../widgets/sales_order_shiply_customer_dialog.dart';
+import '../widgets/sales_order_shiply_phone_dialog.dart';
 import '../widgets/sales_order_status_ui.dart';
 
 class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
@@ -101,7 +103,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                       SizedBox(height: 12.h),
                       _mediaCard(order),
                     ],
-                    SizedBox(height: 80.h),
+                    SizedBox(height: 100.h),
                   ],
                 ),
               ),
@@ -794,17 +796,14 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   }
 
   Widget _bottomActions(SalesOrderDetailModel order) {
-    final primary = SalesOrderActions.primaryFor(
+    final actions = SalesOrderActions.forStatus(
       order.status,
       isShiplyDelivery: order.isShiplyDelivery,
     );
-    final secondary = SalesOrderActions.secondaryFor(
-      order.status,
-      isShiplyDelivery: order.isShiplyDelivery,
-    );
+    if (actions.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 16.h),
+      padding: EdgeInsets.fromLTRB(12.w, 10.h, 12.w, 12.h),
       decoration: BoxDecoration(
         color: SalesOrdersController.cardGray,
         border: const Border(
@@ -818,121 +817,106 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
           ),
         ],
       ),
-      child: Obx(() {
-        final busy = controller.isSubmitting.value;
-        return Row(
-          children: [
-            if (secondary.isNotEmpty)
-              IconButton(
-                onPressed: busy ? null : () => _showActionsSheet(order, secondary),
-                icon: const Icon(Icons.more_horiz),
-                color: SalesOrdersController.textPrimary,
-                tooltip: 'salesOrderMoreActions'.tr,
-              ),
-            Expanded(
-              child: primary == null
-                  ? const SizedBox.shrink()
-                  : ElevatedButton(
-                      onPressed: busy
-                          ? null
-                          : () => _runAction(order.id, primary.id, order),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primary.isDanger
-                            ? const Color(0xFFDC2626)
-                            : SalesOrdersController.textPrimary,
-                        foregroundColor: SalesOrdersController.cardGray,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
+      child: SafeArea(
+        top: false,
+        child: Obx(() {
+          final busy = controller.isSubmitting.value;
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: actions
+                  .map(
+                    (action) => Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4.w),
+                      child: _actionIconTile(
+                        action: action,
+                        order: order,
+                        busy: busy,
                       ),
-                      child: busy
-                          ? SizedBox(
-                              width: 20.w,
-                              height: 20.w,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(
-                              primary.label,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                     ),
+                  )
+                  .toList(),
             ),
-          ],
-        );
-      }),
+          );
+        }),
+      ),
     );
   }
 
-  void _showActionsSheet(
-    SalesOrderDetailModel order,
-    List<SalesOrderActionDef> actions,
-  ) {
-    Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 24.h),
-        decoration: BoxDecoration(
-          color: SalesOrdersController.surfaceGray,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: SalesOrdersController.borderGray,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              'salesOrderMoreActions'.tr,
-              style: TextStyle(
-                color: SalesOrdersController.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16.sp,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            ...actions.map(
-              (action) => ListTile(
-                leading: Icon(
-                  _actionIcon(action.id),
-                  color: action.isDanger
-                      ? const Color(0xFFDC2626)
-                      : SalesOrdersController.textPrimary,
-                ),
-                title: Text(
-                  action.label,
-                  style: TextStyle(
-                    color: action.isDanger
-                        ? const Color(0xFFDC2626)
-                        : SalesOrdersController.textPrimary,
-                    fontSize: 14.sp,
+  Widget _actionIconTile({
+    required SalesOrderActionDef action,
+    required SalesOrderDetailModel order,
+    required bool busy,
+  }) {
+    final isDanger = action.isDanger;
+    final isPrimary = action.isPrimary;
+    final iconColor = isDanger
+        ? const Color(0xFFDC2626)
+        : isPrimary
+            ? SalesOrdersController.cardGray
+            : SalesOrdersController.textPrimary;
+    final bgColor = isDanger
+        ? const Color(0xFFDC2626).withValues(alpha: 0.1)
+        : isPrimary
+            ? SalesOrdersController.textPrimary
+            : SalesOrdersController.surfaceGray;
+
+    return SizedBox(
+      width: 72.w,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: busy
+              ? null
+              : () => _runAction(order.id, action.id, order),
+          borderRadius: BorderRadius.circular(10.r),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 4.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44.w,
+                  height: 44.w,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: isDanger
+                          ? const Color(0xFFDC2626).withValues(alpha: 0.35)
+                          : isPrimary
+                              ? SalesOrdersController.textPrimary
+                              : SalesOrdersController.borderGray,
+                    ),
+                  ),
+                  child: Icon(
+                    _actionIcon(action.id),
+                    color: busy
+                        ? iconColor.withValues(alpha: 0.35)
+                        : iconColor,
+                    size: 22.sp,
                   ),
                 ),
-                onTap: () {
-                  Get.back();
-                  _runAction(order.id, action.id, order);
-                },
-              ),
+                SizedBox(height: 6.h),
+                Text(
+                  action.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    height: 1.2,
+                    fontWeight: isPrimary ? FontWeight.w700 : FontWeight.w500,
+                    color: isDanger
+                        ? const Color(0xFFDC2626)
+                        : SalesOrdersController.textPrimary,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-      isScrollControlled: true,
     );
   }
 
@@ -1137,23 +1121,75 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   }
 
   Future<void> _startHandover(SalesOrderDetailModel order) async {
-    if (controller.shiplyDeliveryCompany != null &&
-        controller.needsShiplyAddress(order)) {
+    if (controller.shiplyDeliveryCompany != null) {
       if (controller.shiplyCities.isEmpty) {
         await controller.loadLookups();
       }
-      controller.preloadShiplyAddressFromOrder(order);
-      final parcelPrice = order.subtotal - order.discount;
-      final saved = await Get.dialog<bool>(
-        SalesOrderShiplyAddressDialog(
-          orderId: order.id,
-          controller: controller,
-          parcelPrice: parcelPrice > 0 ? parcelPrice : order.total,
-        ),
-        barrierDismissible: false,
-      );
-      if (saved != true) return;
-      await controller.loadDetail(order.id);
+      await controller.loadShiplyPartners();
+
+      var current = order;
+
+      if (controller.needsShiplyCustomerSelection(current)) {
+        final customerResult = await Get.dialog<dynamic>(
+          SalesOrderShiplyCustomerDialog(
+            orderId: order.id,
+            controller: controller,
+            initialName: current.customerName,
+          ),
+          barrierDismissible: false,
+        );
+        if (customerResult == 'needs_phone') {
+          final selection = controller.pendingShiplyPartner;
+          if (selection == null) return;
+          final phoneSaved = await Get.dialog<bool>(
+            SalesOrderShiplyPhoneDialog(
+              orderId: order.id,
+              controller: controller,
+              selection: selection,
+            ),
+            barrierDismissible: false,
+          );
+          if (phoneSaved != true) return;
+        } else if (customerResult != true) {
+          return;
+        }
+        await controller.loadDetail(order.id);
+        current = controller.detail.value ?? current;
+      }
+
+      if (controller.needsShiplyPhone(current)) {
+        final selection = controller.shiplyPartnerForPhonePrompt(current);
+        if (selection == null) {
+          Get.snackbar('error'.tr, 'salesOrderShiplyPhoneRequired'.tr);
+          return;
+        }
+        final phoneSaved = await Get.dialog<bool>(
+          SalesOrderShiplyPhoneDialog(
+            orderId: order.id,
+            controller: controller,
+            selection: selection,
+          ),
+          barrierDismissible: false,
+        );
+        if (phoneSaved != true) return;
+        await controller.loadDetail(order.id);
+        current = controller.detail.value ?? current;
+      }
+
+      if (controller.needsShiplyAddress(current)) {
+        controller.preloadShiplyAddressFromOrder(current);
+        final parcelPrice = current.subtotal - current.discount;
+        final saved = await Get.dialog<bool>(
+          SalesOrderShiplyAddressDialog(
+            orderId: order.id,
+            controller: controller,
+            parcelPrice: parcelPrice > 0 ? parcelPrice : current.total,
+          ),
+          barrierDismissible: false,
+        );
+        if (saved != true) return;
+        await controller.loadDetail(order.id);
+      }
     }
     _showHandoverSheet(order.id);
   }

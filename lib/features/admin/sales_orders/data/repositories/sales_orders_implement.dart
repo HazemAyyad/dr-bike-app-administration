@@ -6,6 +6,7 @@ import 'package:doctorbike/core/errors/expentions.dart';
 import 'package:doctorbike/core/errors/failure.dart';
 
 import '../datasources/sales_orders_datasource.dart';
+import '../../../checks/data/models/check_model.dart';
 import '../models/sales_order_model.dart';
 
 abstract class SalesOrdersRepository {
@@ -77,6 +78,23 @@ abstract class SalesOrdersRepository {
   Future<Either<Failure, double?>> calculateShiplyDeliveryFee({
     required int villageId,
     double price,
+  });
+
+  Future<Either<Failure, List<SellerModel>>> getCustomersList();
+
+  Future<Either<Failure, List<SellerModel>>> getSellersList();
+
+  Future<Either<Failure, SellerModel>> createPersonQuick({
+    required String personType,
+    required String name,
+    required String phone,
+  });
+
+  Future<Either<Failure, void>> updatePersonPhone({
+    required bool isCustomer,
+    required int personId,
+    required String name,
+    required String phone,
   });
 }
 
@@ -235,5 +253,39 @@ class SalesOrdersImplement implements SalesOrdersRepository {
       _guard(() => datasource.fetchShiplyDeliveryFee(
             villageId: villageId,
             price: price,
+          ));
+
+  @override
+  Future<Either<Failure, List<SellerModel>>> getCustomersList() =>
+      _guard(() => datasource.fetchCustomersList());
+
+  @override
+  Future<Either<Failure, List<SellerModel>>> getSellersList() =>
+      _guard(() => datasource.fetchSellersList());
+
+  @override
+  Future<Either<Failure, SellerModel>> createPersonQuick({
+    required String personType,
+    required String name,
+    required String phone,
+  }) =>
+      _guard(() => datasource.createPersonQuick(
+            personType: personType,
+            name: name,
+            phone: phone,
+          ));
+
+  @override
+  Future<Either<Failure, void>> updatePersonPhone({
+    required bool isCustomer,
+    required int personId,
+    required String name,
+    required String phone,
+  }) =>
+      _guard(() => datasource.updatePersonPhone(
+            isCustomer: isCustomer,
+            personId: personId,
+            name: name,
+            phone: phone,
           ));
 }

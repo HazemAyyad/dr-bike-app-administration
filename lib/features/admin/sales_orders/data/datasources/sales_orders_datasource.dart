@@ -4,6 +4,7 @@ import 'package:doctorbike/core/errors/error_model.dart';
 import 'package:doctorbike/core/errors/expentions.dart';
 import 'package:dio/dio.dart';
 
+import '../../../checks/data/models/check_model.dart';
 import '../models/sales_order_model.dart';
 
 class SalesOrdersDatasource {
@@ -174,6 +175,72 @@ class SalesOrdersDatasource {
     _ensureSuccess(response);
     final fees = response['fees'] as Map<String, dynamic>?;
     return (fees?['delivery_cost'] as num?)?.toDouble();
+  }
+
+  Future<List<SellerModel>> fetchCustomersList() async {
+    final raw = await api.get(EndPoints.all_customers);
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    final list = response['all_customers'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => SellerModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<SellerModel>> fetchSellersList() async {
+    final raw = await api.get(EndPoints.all_sellers);
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    final list = response['all_sellers'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => SellerModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<SellerModel> createPersonQuick({
+    required String personType,
+    required String name,
+    required String phone,
+  }) async {
+    final raw = await api.post(
+      EndPoints.createPerson,
+      data: {
+        'person_type': personType,
+        'name': name,
+        if (phone.isNotEmpty) 'phone': phone,
+        'type': personType == 'customer' ? 'retail' : 'wholesale',
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    final id = personType == 'customer'
+        ? response['customer_id']
+        : response['seller_id'];
+    return SellerModel(
+      id: int.parse(id.toString()),
+      name: name,
+      phone: phone,
+    );
+  }
+
+  Future<void> updatePersonPhone({
+    required bool isCustomer,
+    required int personId,
+    required String name,
+    required String phone,
+  }) async {
+    final raw = await api.post(
+      EndPoints.editPerson,
+      data: {
+        if (isCustomer) 'customer_id': personId,
+        if (!isCustomer) 'seller_id': personId,
+        'name': name,
+        'phone': phone,
+        'type': isCustomer ? 'retail' : 'wholesale',
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
   }
 
   void _ensureSuccess(Map<String, dynamic> response) {
