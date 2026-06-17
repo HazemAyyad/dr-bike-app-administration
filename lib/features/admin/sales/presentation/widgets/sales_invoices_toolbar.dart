@@ -23,10 +23,22 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                 child: TextField(
                   controller: controller.instantSalesSearchController,
                   textInputAction: TextInputAction.search,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: ThemeService.isDark.value
+                        ? AppColors.whiteColor
+                        : AppColors.darkColor,
+                  ),
                   onChanged: controller.onInstantSalesSearchChanged,
                   onSubmitted: controller.onInstantSalesSearchSubmitted,
                   decoration: InputDecoration(
                     hintText: 'searchInvoicesHint'.tr,
+                    hintStyle: TextStyle(
+                      fontSize: 14.sp,
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor5
+                          : AppColors.customGreyColor4,
+                    ),
                     prefixIcon: Icon(
                       Icons.search,
                       color: ThemeService.isDark.value
@@ -51,7 +63,7 @@ class SalesInvoicesToolbar extends GetView<SalesController> {
                         ? AppColors.customGreyColor
                         : AppColors.whiteColor2,
                     contentPadding: EdgeInsets.symmetric(
-                      vertical: 0,
+                      vertical: 12.h,
                       horizontal: 12.w,
                     ),
                   ),

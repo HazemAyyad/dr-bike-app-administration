@@ -11,6 +11,7 @@ import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
 import '../widgets/sales_order_shiply_phone_dialog.dart';
+import '../widgets/sales_order_shiply_sandbox_badge.dart';
 import '../widgets/sales_order_status_ui.dart';
 
 class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
@@ -1240,21 +1241,35 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                     ),
                   ),
                   items: controller.deliveryCompanies
-                      .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                      .map(
+                        (c) => DropdownMenuItem(
+                          value: c.id,
+                          child: Text(controller.deliveryCompanyLabel(c)),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => controller.selectedDeliveryCompanyId.value = v,
                 )),
             Obx(() {
               if (controller.isSelectedCompanyShiply) {
-                return Padding(
-                  padding: EdgeInsets.only(top: 10.h),
-                  child: Text(
-                    'shiplyHandoverHint'.tr,
-                    style: TextStyle(
-                      color: SalesOrdersController.textSecondary,
-                      fontSize: 12.sp,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 10.h),
+                      child: SalesOrderShiplySandboxBadge(controller: controller),
                     ),
-                  ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 4.h),
+                      child: Text(
+                        'shiplyHandoverHint'.tr,
+                        style: TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               }
               return Column(

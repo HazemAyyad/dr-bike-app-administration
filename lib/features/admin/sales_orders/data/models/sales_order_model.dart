@@ -366,3 +366,13 @@ class ShiplyCityModel {
     );
   }
 }
+
+class ShiplyAddressOptionsResult {
+  final List<ShiplyCityModel> cities;
+  final bool isTestMode;
+
+  const ShiplyAddressOptionsResult({
+    required this.cities,
+    required this.isTestMode,
+  });
+}

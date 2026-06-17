@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 
+import 'sales_order_shiply_sandbox_badge.dart';
+
 /// Searchable Shiply city / village / street fields (gray UI, no purple).
 class SalesOrderShiplyAddressFields extends StatelessWidget {
   const SalesOrderShiplyAddressFields({
@@ -125,6 +127,7 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          SalesOrderShiplySandboxBadge(controller: controller),
           Text(
             'salesOrderShiplyCity'.tr,
             style: TextStyle(

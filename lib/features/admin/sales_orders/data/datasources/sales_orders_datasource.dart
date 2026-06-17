@@ -150,14 +150,18 @@ class SalesOrdersDatasource {
         .toList();
   }
 
-  Future<List<ShiplyCityModel>> fetchShiplyAddressOptions() async {
+  Future<ShiplyAddressOptionsResult> fetchShiplyAddressOptions() async {
     final raw = await api.get(EndPoints.shiplyAddressOptions);
     final response = _asMap(raw);
     _ensureSuccess(response);
     final list = response['cities'] as List<dynamic>? ?? [];
-    return list
-        .map((e) => ShiplyCityModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final mode = response['shiply_mode']?.toString().toLowerCase();
+    return ShiplyAddressOptionsResult(
+      cities: list
+          .map((e) => ShiplyCityModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      isTestMode: mode != 'live',
+    );
   }
 
   Future<double?> fetchShiplyDeliveryFee({

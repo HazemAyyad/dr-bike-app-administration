@@ -77,6 +77,7 @@ class SalesOrdersController extends GetxController {
   final detail = Rxn<SalesOrderDetailModel>();
   final cities = <CityModel>[].obs;
   final shiplyCities = <ShiplyCityModel>[].obs;
+  final shiplyIsSandboxMode = false.obs;
   final deliveryCompanies = <DeliveryCompanyModel>[].obs;
   final shiplyCustomers = <SellerModel>[].obs;
   final shiplySellers = <SellerModel>[].obs;
@@ -167,9 +168,19 @@ class SalesOrdersController extends GetxController {
 
   Future<void> loadLookups() async {
     final shiplyResult = await repository.getShiplyAddressOptions();
-    shiplyResult.fold((_) {}, (data) => shiplyCities.assignAll(data));
+    shiplyResult.fold((_) {}, (data) {
+      shiplyCities.assignAll(data.cities);
+      shiplyIsSandboxMode.value = data.isTestMode;
+    });
     final companiesResult = await repository.getDeliveryCompanies();
     companiesResult.fold((_) {}, (data) => deliveryCompanies.assignAll(data));
+  }
+
+  String deliveryCompanyLabel(DeliveryCompanyModel company) {
+    if (company.code?.toLowerCase() == 'shiply' && shiplyIsSandboxMode.value) {
+      return '${company.name} (${'shiplySandboxShort'.tr})';
+    }
+    return company.name;
   }
 
   Future<void> loadOrders() async {
@@ -943,7 +954,7 @@ class SalesOrdersController extends GetxController {
   String _humanizeFailure(Failure f) {
     final data = f.data;
     if (data is Map<String, dynamic>) {
-      final errors = data['errors'];
+      final errors = data['errors'] ?? (_looksLikeErrorsMap(data) ? data : null);
       if (errors is Map) {
         final parts = <String>[];
         errors.forEach((_, v) {
@@ -962,7 +973,18 @@ class SalesOrdersController extends GetxController {
         }
       }
     }
+    final msg = f.errMessage.trim();
+    if (msg.toLowerCase().contains('unauthorized')) {
+      return 'shiplyUnauthorizedHint'.tr;
+    }
     return f.errMessage;
+  }
+
+  bool _looksLikeErrorsMap(Map<String, dynamic> data) {
+    if (data.containsKey('status') || data.containsKey('message')) {
+      return false;
+    }
+    return data.values.any((v) => v is List);
   }
 
   String statusLabel(String status) {

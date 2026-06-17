@@ -73,7 +73,7 @@ abstract class SalesOrdersRepository {
 
   Future<Either<Failure, List<DeliveryCompanyModel>>> getDeliveryCompanies();
 
-  Future<Either<Failure, List<ShiplyCityModel>>> getShiplyAddressOptions();
+  Future<Either<Failure, ShiplyAddressOptionsResult>> getShiplyAddressOptions();
 
   Future<Either<Failure, double?>> calculateShiplyDeliveryFee({
     required int villageId,
@@ -242,7 +242,7 @@ class SalesOrdersImplement implements SalesOrdersRepository {
       _guard(() => datasource.fetchDeliveryCompanies());
 
   @override
-  Future<Either<Failure, List<ShiplyCityModel>>> getShiplyAddressOptions() =>
+  Future<Either<Failure, ShiplyAddressOptionsResult>> getShiplyAddressOptions() =>
       _guard(() => datasource.fetchShiplyAddressOptions());
 
   @override

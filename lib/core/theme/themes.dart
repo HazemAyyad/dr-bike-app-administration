@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/app_colors.dart';
 
 class AppThemes {
@@ -13,58 +12,58 @@ class AppThemes {
       foregroundColor: AppColors.darkColor,
       elevation: 0,
     ),
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 32.sp,
+        fontSize: 32,
         fontWeight: FontWeight.bold,
         color: Colors.black,
       ),
       headlineMedium: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 24.sp,
+        fontSize: 24,
         fontWeight: FontWeight.w600,
         color: Colors.black,
       ),
       titleMedium: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 18.sp,
+        fontSize: 18,
         fontWeight: FontWeight.w500,
         color: Colors.black,
       ),
       titleSmall: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 16.sp,
+        fontSize: 16,
         fontWeight: FontWeight.w600,
         color: Colors.black,
       ),
       bodySmall: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 12.sp,
+        fontSize: 12,
         fontWeight: FontWeight.w400,
         color: AppColors.customGreyColor4,
       ),
       labelSmall: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 11.sp,
+        fontSize: 11,
         fontWeight: FontWeight.w400,
         color: AppColors.customGreyColor4,
       ),
       bodyLarge: TextStyle(
-        fontSize: 16.sp,
+        fontSize: 16,
         fontFamily: 'Almarai',
         fontWeight: FontWeight.w400,
         color: Colors.black,
       ),
       bodyMedium: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 14.sp,
+        fontSize: 14,
         fontWeight: FontWeight.w400,
         color: Colors.black,
       ),
       labelLarge: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 12.sp,
+        fontSize: 12,
         fontWeight: FontWeight.w400,
         color: Colors.black,
       ),
@@ -81,58 +80,58 @@ class AppThemes {
       foregroundColor: AppColors.whiteColor,
       elevation: 0,
     ),
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       displayLarge: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 32.sp,
+        fontSize: 32,
         fontWeight: FontWeight.bold,
         color: Colors.white,
       ),
       headlineMedium: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 24.sp,
+        fontSize: 24,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       ),
       titleMedium: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 18.sp,
+        fontSize: 18,
         fontWeight: FontWeight.w500,
         color: Colors.white,
       ),
       titleSmall: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 16.sp,
+        fontSize: 16,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       ),
       bodySmall: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 12.sp,
+        fontSize: 12,
         fontWeight: FontWeight.w400,
         color: AppColors.customGreyColor5,
       ),
       labelSmall: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 11.sp,
+        fontSize: 11,
         fontWeight: FontWeight.w400,
         color: AppColors.customGreyColor5,
       ),
       bodyLarge: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 16.sp,
+        fontSize: 16,
         fontWeight: FontWeight.w400,
         color: Colors.white,
       ),
       bodyMedium: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 14.sp,
+        fontSize: 14,
         fontWeight: FontWeight.w400,
         color: Colors.white,
       ),
       labelLarge: TextStyle(
         fontFamily: 'Almarai',
-        fontSize: 12.sp,
+        fontSize: 12,
         fontWeight: FontWeight.w400,
         color: Colors.white,
       ),
