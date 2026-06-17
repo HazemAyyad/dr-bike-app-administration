@@ -166,6 +166,13 @@ class SalesOrderDetailModel {
   final String? instantSaleSerial;
   final String? trackingNumber;
   final String? deliveryCompanyName;
+  final int? shiplyCityId;
+  final int? shiplyVillageId;
+  final String? shiplyCityName;
+  final String? shiplyVillageName;
+  final String? shiplyAddressLabel;
+  final String? customerAddress;
+  final bool isShiplyDelivery;
   final List<SalesOrderItemModel> items;
   final List<SalesOrderMediaModel> media;
   final List<SalesOrderChildModel> childOrders;
@@ -192,6 +199,13 @@ class SalesOrderDetailModel {
     this.instantSaleSerial,
     this.trackingNumber,
     this.deliveryCompanyName,
+    this.shiplyCityId,
+    this.shiplyVillageId,
+    this.shiplyCityName,
+    this.shiplyVillageName,
+    this.shiplyAddressLabel,
+    this.customerAddress,
+    this.isShiplyDelivery = false,
     required this.items,
     required this.media,
     this.childOrders = const [],
@@ -225,6 +239,13 @@ class SalesOrderDetailModel {
       instantSaleSerial: json['instant_sale_serial'] as String?,
       trackingNumber: json['tracking_number'] as String?,
       deliveryCompanyName: json['delivery_company_name'] as String?,
+      shiplyCityId: json['shiply_city_id'] as int?,
+      shiplyVillageId: json['shiply_village_id'] as int?,
+      shiplyCityName: json['shiply_city_name'] as String?,
+      shiplyVillageName: json['shiply_village_name'] as String?,
+      shiplyAddressLabel: json['shiply_address_label'] as String?,
+      customerAddress: json['customer_address'] as String?,
+      isShiplyDelivery: json['is_shiply_delivery'] == true,
       items: itemsJson
           .map((e) => SalesOrderItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -290,6 +311,58 @@ class CityModel {
       id: json['id'] as int,
       nameAr: json['name_ar'] as String? ?? '',
       deliveryFee: (json['delivery_fee'] as num?)?.toDouble(),
+    );
+  }
+}
+
+class ShiplyVillageModel {
+  final int id;
+  final String name;
+  final bool isClosed;
+  final String? note;
+
+  ShiplyVillageModel({
+    required this.id,
+    required this.name,
+    this.isClosed = false,
+    this.note,
+  });
+
+  factory ShiplyVillageModel.fromJson(Map<String, dynamic> json) {
+    return ShiplyVillageModel(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      isClosed: json['is_closed'] == true,
+      note: json['note'] as String?,
+    );
+  }
+
+  String displayLabel(String closedSuffix) {
+    if (!isClosed) return name;
+    final hint = (note ?? '').trim();
+    return hint.isEmpty ? '$name ($closedSuffix)' : '$name ($closedSuffix — $hint)';
+  }
+}
+
+class ShiplyCityModel {
+  final int id;
+  final String name;
+  final List<ShiplyVillageModel> villages;
+
+  ShiplyCityModel({
+    required this.id,
+    required this.name,
+    required this.villages,
+  });
+
+  factory ShiplyCityModel.fromJson(Map<String, dynamic> json) {
+    final villagesJson = json['villages'] as List<dynamic>? ?? [];
+    return ShiplyCityModel(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      villages: villagesJson
+          .map((e) => ShiplyVillageModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

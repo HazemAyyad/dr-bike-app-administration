@@ -36,6 +36,8 @@ class AppSettingsService {
     'دولار': 200,
     'دينار': 200,
   }.obs;
+  final RxBool shiplyEnabled = true.obs;
+  final RxBool shiplyIsTestMode = true.obs;
   bool _loaded = false;
 
   ApiConsumer? get _api =>
@@ -103,6 +105,12 @@ class AppSettingsService {
             _applyMaxFloatMap(maxFloat);
             await FinalClasses.getStorage.write(_salesMaxFloatCacheKey, maxFloat);
           }
+          final shiply = settings['shiply'];
+          if (shiply is Map) {
+            shiplyEnabled.value = shiply['shiply_enabled'] == true;
+            shiplyIsTestMode.value = shiply['shiply_is_test'] != false &&
+                (shiply['shiply_mode']?.toString() != 'live');
+          }
         }
       }
       _loaded = true;
@@ -155,6 +163,33 @@ class AppSettingsService {
           varianceAlertThreshold,
         );
         await FinalClasses.getStorage.write(_salesMaxFloatCacheKey, maxFloat);
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> updateShiplySettings({
+    required bool enabled,
+    required bool testMode,
+  }) async {
+    final api = _api;
+    if (api == null) return false;
+
+    try {
+      final response = await api.put(
+        EndPoints.appSettings,
+        data: {
+          'shiply': {
+            'shiply_enabled': enabled,
+            'shiply_mode': testMode ? 'test' : 'live',
+          },
+        },
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        shiplyEnabled.value = enabled;
+        shiplyIsTestMode.value = testMode;
         return true;
       }
     } catch (_) {}

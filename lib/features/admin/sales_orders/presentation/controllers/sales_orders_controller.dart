@@ -64,16 +64,22 @@ class SalesOrdersController extends GetxController {
   final statusFilter = 'unconfirmed'.obs;
   final detail = Rxn<SalesOrderDetailModel>();
   final cities = <CityModel>[].obs;
+  final shiplyCities = <ShiplyCityModel>[].obs;
   final deliveryCompanies = <DeliveryCompanyModel>[].obs;
   final cartItems = <SalesOrderCartItem>[].obs;
 
   final customerNameController = TextEditingController();
   final customerPhoneController = TextEditingController();
+  final customerAddressController = TextEditingController();
+  final deliveryFeeController = TextEditingController(text: '0');
   final trackingController = TextEditingController();
   final settleAmountController = TextEditingController();
   final notesController = TextEditingController();
 
   final selectedCityId = RxnInt();
+  final selectedShiplyCityId = RxnInt();
+  final selectedShiplyVillageId = RxnInt();
+  final manualDeliveryFee = 0.0.obs;
   final selectedPaymentType = 'cash'.obs;
   final selectedDeliveryCompanyId = RxnInt();
   final hasSuspendedDraft = false.obs;
@@ -81,15 +87,32 @@ class SalesOrdersController extends GetxController {
 
   bool get isEditingOrder => activeEditSalesOrderId.value != null;
 
-  double get selectedCityDeliveryFee {
-    final cityId = selectedCityId.value;
-    if (cityId == null) return 0;
-    for (final city in cities) {
-      if (city.id == cityId) {
-        return city.deliveryFee ?? 0;
+  double get selectedCityDeliveryFee => manualDeliveryFee.value;
+
+  List<ShiplyVillageModel> get selectedShiplyVillages {
+    final cityId = selectedShiplyCityId.value;
+    if (cityId == null) return const [];
+    for (final city in shiplyCities) {
+      if (city.id == cityId) return city.villages;
+    }
+    return const [];
+  }
+
+  bool get isSelectedCompanyShiply {
+    final id = selectedDeliveryCompanyId.value;
+    for (final company in deliveryCompanies) {
+      if (company.id == id) {
+        return company.code?.toLowerCase() == 'shiply';
       }
     }
-    return 0;
+    return false;
+  }
+
+  DeliveryCompanyModel? get shiplyDeliveryCompany {
+    for (final company in deliveryCompanies) {
+      if (company.code?.toLowerCase() == 'shiply') return company;
+    }
+    return null;
   }
 
   final statusTabs = const [
@@ -117,6 +140,8 @@ class SalesOrdersController extends GetxController {
   void onClose() {
     customerNameController.dispose();
     customerPhoneController.dispose();
+    customerAddressController.dispose();
+    deliveryFeeController.dispose();
     trackingController.dispose();
     settleAmountController.dispose();
     notesController.dispose();
@@ -124,8 +149,8 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> loadLookups() async {
-    final citiesResult = await repository.getCities();
-    citiesResult.fold((_) {}, (data) => cities.assignAll(data));
+    final shiplyResult = await repository.getShiplyAddressOptions();
+    shiplyResult.fold((_) {}, (data) => shiplyCities.assignAll(data));
     final companiesResult = await repository.getDeliveryCompanies();
     companiesResult.fold((_) {}, (data) => deliveryCompanies.assignAll(data));
   }
@@ -185,8 +210,13 @@ class SalesOrdersController extends GetxController {
     cartItems.clear();
     customerNameController.clear();
     customerPhoneController.clear();
+    customerAddressController.clear();
+    deliveryFeeController.text = '0';
     notesController.clear();
     selectedCityId.value = null;
+    selectedShiplyCityId.value = null;
+    selectedShiplyVillageId.value = null;
+    manualDeliveryFee.value = 0;
     selectedPaymentType.value = 'cash';
     hasSuspendedDraft.value = false;
     activeEditSalesOrderId.value = null;
@@ -237,8 +267,12 @@ class SalesOrdersController extends GetxController {
 
     customerNameController.text = order.customerName ?? '';
     customerPhoneController.text = order.customerPhone ?? '';
+    customerAddressController.text = order.customerAddress ?? '';
     notesController.text = order.notes ?? '';
-    selectedCityId.value = order.cityId;
+    selectedShiplyCityId.value = order.shiplyCityId;
+    selectedShiplyVillageId.value = order.shiplyVillageId;
+    deliveryFeeController.text = order.customerDeliveryFee.toStringAsFixed(0);
+    manualDeliveryFee.value = order.customerDeliveryFee;
     selectedPaymentType.value = order.paymentType;
 
     isPreparingEdit.value = true;
@@ -291,6 +325,20 @@ class SalesOrdersController extends GetxController {
 
   void onDeliveryCityChanged(int? cityId) {
     selectedCityId.value = cityId;
+  }
+
+  void onShiplyCityChanged(int? cityId) {
+    selectedShiplyCityId.value = cityId;
+    selectedShiplyVillageId.value = null;
+  }
+
+  void onShiplyVillageChanged(int? villageId) {
+    selectedShiplyVillageId.value = villageId;
+  }
+
+  void onDeliveryFeeChanged() {
+    manualDeliveryFee.value =
+        double.tryParse(deliveryFeeController.text.trim()) ?? 0;
   }
 
   // Intentionally: do not auto-change cash when delivery city changes.
@@ -371,7 +419,8 @@ class SalesOrdersController extends GetxController {
     }
 
     final discount = SalesAmountFormat.parse(sales.discountController.text);
-    final deliveryFee = selectedCityId.value == null ? 0 : selectedCityDeliveryFee;
+    onDeliveryFeeChanged();
+    final deliveryFee = manualDeliveryFee.value;
     final total = sales.totalCost.value + deliveryFee;
     var paymentType = 'credit';
     if (paidAmount <= 0) {
@@ -386,7 +435,12 @@ class SalesOrdersController extends GetxController {
       'customer_name': customerName,
       'customer_phone': customerPhone,
       if (customerId != null) 'customer_id': customerId,
-      if (selectedCityId.value != null) 'city_id': selectedCityId.value,
+      if (customerAddressController.text.trim().isNotEmpty)
+        'customer_address': customerAddressController.text.trim(),
+      if (selectedShiplyCityId.value != null)
+        'shiply_city_id': selectedShiplyCityId.value,
+      if (selectedShiplyVillageId.value != null)
+        'shiply_village_id': selectedShiplyVillageId.value,
       if (deliveryFee > 0) 'customer_delivery_fee': deliveryFee,
       'payment_type': paymentType,
       'payment_amount': paidAmount,
@@ -430,12 +484,14 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> handover(int orderId) async {
-    await runAction(() => repository.handover(orderId, {
-          if (selectedDeliveryCompanyId.value != null)
-            'delivery_company_id': selectedDeliveryCompanyId.value,
-          if (trackingController.text.trim().isNotEmpty)
-            'tracking_number': trackingController.text.trim(),
-        }));
+    final body = <String, dynamic>{
+      if (selectedDeliveryCompanyId.value != null)
+        'delivery_company_id': selectedDeliveryCompanyId.value,
+    };
+    if (!isSelectedCompanyShiply && trackingController.text.trim().isNotEmpty) {
+      body['tracking_number'] = trackingController.text.trim();
+    }
+    await runAction(() => repository.handover(orderId, body));
   }
 
   Future<void> deliver(int orderId) async {

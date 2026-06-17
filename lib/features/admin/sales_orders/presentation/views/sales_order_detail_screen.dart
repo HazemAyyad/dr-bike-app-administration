@@ -400,8 +400,14 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
           _infoRow(Icons.person_outline, order.customerName ?? '—'),
           if (order.customerPhone != null && order.customerPhone!.isNotEmpty)
             _infoRow(Icons.phone_outlined, order.customerPhone!),
-          if (order.cityName != null)
+          if (order.shiplyAddressLabel != null &&
+              order.shiplyAddressLabel!.isNotEmpty)
+            _infoRow(Icons.location_on_outlined, order.shiplyAddressLabel!)
+          else if (order.cityName != null)
             _infoRow(Icons.location_on_outlined, order.cityName!),
+          if (order.customerAddress != null &&
+              order.customerAddress!.trim().isNotEmpty)
+            _infoRow(Icons.signpost_outlined, order.customerAddress!),
           if (order.notes != null && order.notes!.trim().isNotEmpty)
             _infoRow(Icons.notes_outlined, order.notes!),
         ],
@@ -787,8 +793,14 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   }
 
   Widget _bottomActions(SalesOrderDetailModel order) {
-    final primary = SalesOrderActions.primaryFor(order.status);
-    final secondary = SalesOrderActions.secondaryFor(order.status);
+    final primary = SalesOrderActions.primaryFor(
+      order.status,
+      isShiplyDelivery: order.isShiplyDelivery,
+    );
+    final secondary = SalesOrderActions.secondaryFor(
+      order.status,
+      isShiplyDelivery: order.isShiplyDelivery,
+    );
 
     return Container(
       padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 16.h),
@@ -1124,10 +1136,14 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   }
 
   void _showHandoverSheet(int orderId) {
-    if (controller.deliveryCompanies.isNotEmpty) {
+    final shiply = controller.shiplyDeliveryCompany;
+    if (shiply != null) {
+      controller.selectedDeliveryCompanyId.value = shiply.id;
+    } else if (controller.deliveryCompanies.isNotEmpty) {
       controller.selectedDeliveryCompanyId.value =
           controller.deliveryCompanies.first.id;
     }
+    controller.trackingController.clear();
     Get.bottomSheet(
       Container(
         padding: EdgeInsets.all(20.r),
@@ -1169,22 +1185,43 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                       .toList(),
                   onChanged: (v) => controller.selectedDeliveryCompanyId.value = v,
                 )),
-            SizedBox(height: 10.h),
-            TextField(
-              controller: controller.trackingController,
-              style: TextStyle(
-                color: SalesOrdersController.textPrimary,
-                fontSize: 14.sp,
-              ),
-              decoration: InputDecoration(
-                labelText: 'salesOrderTracking'.tr,
-                labelStyle:
-                    const TextStyle(color: SalesOrdersController.textSecondary),
-                filled: true,
-                fillColor: SalesOrdersController.cardGray,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
-              ),
-            ),
+            Obx(() {
+              if (controller.isSelectedCompanyShiply) {
+                return Padding(
+                  padding: EdgeInsets.only(top: 10.h),
+                  child: Text(
+                    'shiplyHandoverHint'.tr,
+                    style: TextStyle(
+                      color: SalesOrdersController.textSecondary,
+                      fontSize: 12.sp,
+                    ),
+                  ),
+                );
+              }
+              return Column(
+                children: [
+                  SizedBox(height: 10.h),
+                  TextField(
+                    controller: controller.trackingController,
+                    style: TextStyle(
+                      color: SalesOrdersController.textPrimary,
+                      fontSize: 14.sp,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'salesOrderTracking'.tr,
+                      labelStyle: const TextStyle(
+                        color: SalesOrdersController.textSecondary,
+                      ),
+                      filled: true,
+                      fillColor: SalesOrdersController.cardGray,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
             SizedBox(height: 16.h),
             ElevatedButton(
               onPressed: () {

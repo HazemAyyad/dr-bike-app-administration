@@ -288,6 +288,93 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _editShiplySettings() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final service = AppSettingsService.instance;
+    var enabled = service.shiplyEnabled.value;
+    var testMode = service.shiplyIsTestMode.value;
+
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+
+    if (!mounted) return;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: dialogBg,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'shiplySettingsTitle'.tr,
+            style: const TextStyle(
+              color: textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SwitchListTile(
+                value: enabled,
+                activeColor: const Color(0xFF059669),
+                title: Text(
+                  'shiplyIntegrationEnabled'.tr,
+                  style: const TextStyle(color: textPrimary),
+                ),
+                onChanged: (v) => setDialogState(() => enabled = v),
+              ),
+              SwitchListTile(
+                value: testMode,
+                activeColor: const Color(0xFF2563EB),
+                title: Text(
+                  'shiplySandboxMode'.tr,
+                  style: const TextStyle(color: textPrimary),
+                ),
+                subtitle: Text(
+                  'shiplySandboxModeDesc'.tr,
+                  style: const TextStyle(color: textSecondary, fontSize: 12),
+                ),
+                onChanged: enabled ? (v) => setDialogState(() => testMode = v) : null,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('cancel'.tr, style: const TextStyle(color: textSecondary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('save'.tr, style: const TextStyle(color: textPrimary)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true || !mounted) return;
+
+    final ok = await service.updateShiplySettings(
+      enabled: enabled,
+      testMode: testMode,
+    );
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
+  }
+
   Future<void> _editAdminFabOptions() async {
     await AppSettingsService.instance.ensureLoaded(force: true);
     final service = AppSettingsService.instance;
@@ -452,6 +539,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         titleKey: 'subtaskBonusDefaultSetting',
         descriptionKey: 'subtaskBonusDefaultSettingDesc',
         onTap: _editSubtaskBonusDefault,
+      ),
+      _SettingsItem(
+        icon: Icons.local_shipping_outlined,
+        iconColor: const Color(0xFF7C3AED),
+        titleKey: 'shiplySettingsTitle',
+        descriptionKey: 'shiplySettingsDesc',
+        onTap: _editShiplySettings,
       ),
       _SettingsItem(
         icon: Icons.point_of_sale_outlined,

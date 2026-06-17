@@ -71,6 +71,8 @@ abstract class SalesOrdersRepository {
   Future<Either<Failure, List<CityModel>>> getCities();
 
   Future<Either<Failure, List<DeliveryCompanyModel>>> getDeliveryCompanies();
+
+  Future<Either<Failure, List<ShiplyCityModel>>> getShiplyAddressOptions();
 }
 
 class SalesOrdersImplement implements SalesOrdersRepository {
@@ -215,4 +217,8 @@ class SalesOrdersImplement implements SalesOrdersRepository {
   @override
   Future<Either<Failure, List<DeliveryCompanyModel>>> getDeliveryCompanies() =>
       _guard(() => datasource.fetchDeliveryCompanies());
+
+  @override
+  Future<Either<Failure, List<ShiplyCityModel>>> getShiplyAddressOptions() =>
+      _guard(() => datasource.fetchShiplyAddressOptions());
 }

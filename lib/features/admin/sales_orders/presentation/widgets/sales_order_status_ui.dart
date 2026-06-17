@@ -242,8 +242,11 @@ class SalesOrderActions {
     }.contains(status);
   }
 
-  static List<SalesOrderActionDef> forStatus(String status) {
-    final actions = _baseActionsFor(status);
+  static List<SalesOrderActionDef> forStatus(
+    String status, {
+    bool isShiplyDelivery = false,
+  }) {
+    final actions = _baseActionsFor(status, isShiplyDelivery: isShiplyDelivery);
     if (canRevert(status)) {
       return [
         ...actions,
@@ -256,7 +259,10 @@ class SalesOrderActions {
     return actions;
   }
 
-  static List<SalesOrderActionDef> _baseActionsFor(String status) {
+  static List<SalesOrderActionDef> _baseActionsFor(
+    String status, {
+    bool isShiplyDelivery = false,
+  }) {
     switch (status) {
       case 'unconfirmed':
         return const [
@@ -322,34 +328,37 @@ class SalesOrderActions {
           ),
         ];
       case 'with_delivery':
-        return const [
-          SalesOrderActionDef(
-            id: SalesOrderActionId.deliver,
-            labelKey: 'salesOrderDeliver',
-            isPrimary: true,
-          ),
+        final actions = <SalesOrderActionDef>[
+          if (!isShiplyDelivery)
+            const SalesOrderActionDef(
+              id: SalesOrderActionId.deliver,
+              labelKey: 'salesOrderDeliver',
+              isPrimary: true,
+            ),
           SalesOrderActionDef(
             id: SalesOrderActionId.partialDeliver,
             labelKey: 'salesOrderPartialDeliver',
+            isPrimary: isShiplyDelivery,
           ),
-          SalesOrderActionDef(
+          const SalesOrderActionDef(
             id: SalesOrderActionId.partialReturn,
             labelKey: 'salesOrderPartialReturn',
           ),
-          SalesOrderActionDef(
+          const SalesOrderActionDef(
             id: SalesOrderActionId.uploadMedia,
             labelKey: 'salesOrderUploadMedia',
           ),
-          SalesOrderActionDef(
+          const SalesOrderActionDef(
             id: SalesOrderActionId.share,
             labelKey: 'salesOrderShare',
           ),
-          SalesOrderActionDef(
+          const SalesOrderActionDef(
             id: SalesOrderActionId.cancel,
             labelKey: 'salesOrderMarkReturned',
             isDanger: true,
           ),
         ];
+        return actions;
       case 'partial_return':
         return const [
           SalesOrderActionDef(
@@ -431,14 +440,22 @@ class SalesOrderActions {
     }
   }
 
-  static SalesOrderActionDef? primaryFor(String status) {
-    for (final a in forStatus(status)) {
+  static SalesOrderActionDef? primaryFor(
+    String status, {
+    bool isShiplyDelivery = false,
+  }) {
+    for (final a in forStatus(status, isShiplyDelivery: isShiplyDelivery)) {
       if (a.isPrimary) return a;
     }
     return null;
   }
 
-  static List<SalesOrderActionDef> secondaryFor(String status) {
-    return forStatus(status).where((a) => !a.isPrimary).toList();
+  static List<SalesOrderActionDef> secondaryFor(
+    String status, {
+    bool isShiplyDelivery = false,
+  }) {
+    return forStatus(status, isShiplyDelivery: isShiplyDelivery)
+        .where((a) => !a.isPrimary)
+        .toList();
   }
 }

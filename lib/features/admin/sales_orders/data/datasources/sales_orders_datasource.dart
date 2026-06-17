@@ -149,6 +149,16 @@ class SalesOrdersDatasource {
         .toList();
   }
 
+  Future<List<ShiplyCityModel>> fetchShiplyAddressOptions() async {
+    final raw = await api.get(EndPoints.shiplyAddressOptions);
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    final list = response['cities'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => ShiplyCityModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   void _ensureSuccess(Map<String, dynamic> response) {
     if (response['status'] != 'success') {
       throw ServerException(
