@@ -49,6 +49,7 @@ class AdminNotificationRouter {
           }
           break;
         case 'sales_order_shiply_handover':
+        case 'sales_order_shiply_delivered':
         case 'sales_order_status':
           if (_openSalesOrder(raw)) {
             return;

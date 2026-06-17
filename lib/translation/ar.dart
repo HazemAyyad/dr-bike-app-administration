@@ -2252,6 +2252,7 @@ const Map<String, String> ar = {
   'notifFilterCheckCashed': 'صرف شيك صادر',
   'notifFilterCheckReturned': 'إرجاع شيك صادر',
   'notifFilterShiplyHandover': 'تسليم شبلي',
+  'notifFilterShiplyDelivered': 'توصيل من شبلي',
   'notifFilterDailyTasks': 'مهام اليوم',
   'notifFilterHourlyReminder': 'تذكير كل ساعة',
   'notifFilterTasksComplete': 'إنجاز مهام اليوم',

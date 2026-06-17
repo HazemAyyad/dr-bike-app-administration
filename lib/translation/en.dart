@@ -2190,6 +2190,7 @@ const Map<String, String> en = {
   'notifFilterCheckCashed': 'Outgoing check cashed',
   'notifFilterCheckReturned': 'Outgoing check returned',
   'notifFilterShiplyHandover': 'Shiply handover',
+  'notifFilterShiplyDelivered': 'Shiply delivered',
   'notifFilterDailyTasks': 'Daily tasks',
   'notifFilterHourlyReminder': 'Hourly reminder',
   'notifFilterTasksComplete': 'All tasks done',
