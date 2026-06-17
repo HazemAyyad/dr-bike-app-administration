@@ -8,6 +8,9 @@ class DailySessionPayload {
   final int? pendingClosingRequestId;
   final int? pendingReopenRequestId;
   final DailySessionConfig config;
+  final bool canRequestOpen;
+  final bool blockedByOtherSession;
+  final String? blockedByEmployeeName;
 
   const DailySessionPayload({
     this.session,
@@ -17,6 +20,9 @@ class DailySessionPayload {
     this.pendingClosingRequestId,
     this.pendingReopenRequestId,
     this.config = const DailySessionConfig(),
+    this.canRequestOpen = false,
+    this.blockedByOtherSession = false,
+    this.blockedByEmployeeName,
   });
 
   bool get allowsSales => session?.allowsSales ?? false;
@@ -40,6 +46,9 @@ class DailySessionPayload {
 
   bool get isBlockingPreviousDay =>
       session?.isBlockingPreviousDay ?? false;
+
+  bool get needsManualOpen =>
+      session == null && canRequestOpen && !blockedByOtherSession;
 
   DailyCurrencyRow? rowForCurrency(String currency) {
     final i = currencies.indexWhere((c) => c.currency == currency);
@@ -70,6 +79,11 @@ class DailySessionPayload {
               Map<String, dynamic>.from(json['config'] as Map),
             )
           : const DailySessionConfig(),
+      canRequestOpen: json['can_request_open'] == true ||
+          json['can_request_open'] == 1,
+      blockedByOtherSession: json['blocked_by_other_session'] == true ||
+          json['blocked_by_other_session'] == 1,
+      blockedByEmployeeName: asNullableString(json['blocked_by_employee_name']),
     );
   }
 }

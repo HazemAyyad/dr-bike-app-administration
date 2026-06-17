@@ -2309,6 +2309,13 @@ const Map<String, String> en = {
   'comingSoon': 'Coming soon',
 
   'salesDailyDayOpen': 'Sales day open',
+  'salesDailyDrawerNotOpen': 'Sales drawer not open',
+  'salesDailyOpenDrawer': 'Open drawer',
+  'salesDailyOpenDrawerConfirm':
+      'Open today\'s sales drawer? No other employee can open a drawer until you close it.',
+  'salesDailyDrawerBusy': 'Sales drawer in use',
+  'salesDailyDrawerOpenByOther': 'Drawer is open by @employee',
+  'salesDailyNoSessionOpen': 'Open the sales drawer manually before selling',
   'salesDailyClosingPending': 'Closing request pending admin approval',
   'salesDailyClosingPendingHint':
       'Your closing request was sent. You cannot sell until it is approved.',

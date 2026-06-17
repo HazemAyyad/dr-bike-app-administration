@@ -2297,6 +2297,12 @@ const Map<String, String> ar = {
   'operationCompletedSuccessfully': 'تمت العملية بنجاح',
 
   'salesDailyDayOpen': 'يوم المبيعات مفتوح',
+  'salesDailyDrawerNotOpen': 'صندوق المبيعات غير مفتوح',
+  'salesDailyOpenDrawer': 'فتح الصندوق',
+  'salesDailyOpenDrawerConfirm': 'هل تريد فتح صندوق المبيعات اليومي؟ لن يتمكن موظف آخر من فتح صندوق حتى تغلقه.',
+  'salesDailyDrawerBusy': 'صندوق المبيعات مشغول',
+  'salesDailyDrawerOpenByOther': 'الصندوق مفتوح لدى @employee',
+  'salesDailyNoSessionOpen': 'يجب فتح صندوق المبيعات يدوياً قبل البيع',
   'salesDailyClosingPending': 'بانتظار موافقة الإدارة على الإغلاق',
   'salesDailyClosingPendingHint': 'تم إرسال طلب الإغلاق. لا يمكنك البيع حتى تتم الموافقة.',
   'salesDailyTransferTargetRequired': 'حدد صندوق الوجهة لكل عملة يُرحّل منها مبلغ',

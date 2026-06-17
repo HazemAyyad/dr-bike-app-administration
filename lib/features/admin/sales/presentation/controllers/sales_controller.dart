@@ -344,7 +344,7 @@ class SalesController extends GetxController
     currentTab.value = index;
   }
 
-  bool get canCreateSales => dailySessionPayload.value?.allowsSales ?? true;
+  bool get canCreateSales => dailySessionPayload.value?.allowsSales ?? false;
 
   Future<void> loadDailySession() async {
     isDailySessionLoading(true);
@@ -399,13 +399,34 @@ class SalesController extends GetxController
 
     final message = payload.isBlockingPreviousDay
         ? 'salesDailyPreviousDayOpen'.tr
-        : payload.isClosingRequested
-            ? 'salesDailyClosingPending'.tr
-            : payload.isReopenPending
-                ? 'salesDailyReopenPending'.tr
-                : 'salesDailyDayClosed'.tr;
+        : payload.blockedByOtherSession
+            ? 'salesDailyDrawerOpenByOther'.trParams({
+                'employee': payload.blockedByEmployeeName ?? '',
+              })
+            : payload.needsManualOpen
+                ? 'salesDailyNoSessionOpen'.tr
+                : payload.isClosingRequested
+                    ? 'salesDailyClosingPending'.tr
+                    : payload.isReopenPending
+                        ? 'salesDailyReopenPending'.tr
+                        : 'salesDailyDayClosed'.tr;
     Get.snackbar('error'.tr, message, backgroundColor: Colors.red);
     return true;
+  }
+
+  Future<void> requestDailyOpen() async {
+    final ds = Get.find<SalesDatasource>();
+    final message = await ds.openDailySession();
+    await loadDailySession();
+    final overlayContext = Get.overlayContext ?? Get.context;
+    if (overlayContext != null) {
+      Helpers.showCustomDialogSuccess(
+        context: overlayContext,
+        title: 'success'.tr,
+        message: message,
+        autoCloseAfter: const Duration(seconds: 2),
+      );
+    }
   }
 
   Future<void> requestDailyReopen({required String reason}) async {

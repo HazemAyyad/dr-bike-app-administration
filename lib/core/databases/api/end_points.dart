@@ -388,6 +388,7 @@ class EndPoints {
   static const String deliveryCompanies = 'delivery/companies';
 
   static const String salesDailySessionCurrent = 'sales/daily-session/current';
+  static const String salesDailySessionOpen = 'sales/daily-session/open';
   static const String salesDailySessions = 'sales/daily-sessions';
   static const String salesDailySessionsTodayOverview =
       'sales/daily-sessions/today-overview';

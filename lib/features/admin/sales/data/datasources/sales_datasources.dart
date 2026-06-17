@@ -557,6 +557,11 @@ class SalesDatasource {
     return DailySessionPayload.fromJson(Map<String, dynamic>.from(raw));
   }
 
+  Future<String> openDailySession() async {
+    final response = await api.post(EndPoints.salesDailySessionOpen);
+    return _messageFromResponse(response.data);
+  }
+
   Future<DailyTodayOverviewModel> getDailySessionsTodayOverview() async {
     final response = await api.get(EndPoints.salesDailySessionsTodayOverview);
     final raw = response.data['overview'];
