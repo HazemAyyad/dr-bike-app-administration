@@ -1313,7 +1313,7 @@ const Map<String, String> en = {
   'salesOrderShiplyCity': 'Shiply city',
   'salesOrderShiplyVillage': 'Shiply village / area',
   'salesOrderStreetAddress': 'Street / detailed address',
-  'salesOrderDeliveryFee': 'Delivery fee (₪)',
+  'salesOrderDeliveryFeeInput': 'Delivery fee (₪)',
   'shiplyAddressesEmpty': 'Shiply addresses are not loaded — run address sync on the server.',
   'shiplyVillageClosed': 'closed',
   'shiplyHandoverHint': 'A Shiply parcel will be created automatically on confirm.',

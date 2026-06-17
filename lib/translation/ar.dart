@@ -1380,7 +1380,7 @@ const Map<String, String> ar = {
   'salesOrderShiplyCity': 'مدينة Shiply',
   'salesOrderShiplyVillage': 'قرية / حي Shiply',
   'salesOrderStreetAddress': 'الشارع / العنوان التفصيلي',
-  'salesOrderDeliveryFee': 'رسوم التوصيل (₪)',
+  'salesOrderDeliveryFeeInput': 'رسوم التوصيل (₪)',
   'shiplyAddressesEmpty': 'عناوين Shiply غير متوفرة — شغّل مزامنة العناوين على السيرفر.',
   'shiplyVillageClosed': 'مغلقة',
   'shiplyHandoverHint': 'سيتم إنشاء الطرد في Shiply تلقائياً عند التأكيد.',

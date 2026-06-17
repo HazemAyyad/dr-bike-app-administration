@@ -103,7 +103,7 @@ class SalesOrderShiplyAddressSection extends GetView<SalesOrdersController> {
               fontSize: 14.sp,
             ),
             decoration: InputDecoration(
-              labelText: 'salesOrderDeliveryFee'.tr,
+              labelText: 'salesOrderDeliveryFeeInput'.tr,
               labelStyle: const TextStyle(color: SalesOrdersController.textSecondary),
               filled: true,
               fillColor: SalesOrdersController.cardGray,
