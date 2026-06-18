@@ -12,6 +12,7 @@ import '../widgets/sales_order_shiply_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
 import '../widgets/sales_order_shiply_phone_dialog.dart';
 import '../widgets/sales_order_shiply_sandbox_badge.dart';
+import '../widgets/sales_order_shiply_timeline.dart';
 import '../widgets/sales_order_status_ui.dart';
 
 class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
@@ -279,7 +280,8 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   bool _hasLogisticsInfo(SalesOrderDetailModel order) {
     return (order.trackingNumber != null && order.trackingNumber!.isNotEmpty) ||
         (order.deliveryCompanyName != null &&
-            order.deliveryCompanyName!.isNotEmpty);
+            order.deliveryCompanyName!.isNotEmpty) ||
+        order.shiplyTracking != null;
   }
 
   Widget _logisticsCard(SalesOrderDetailModel order) {
@@ -307,7 +309,34 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
             _infoRow(Icons.local_shipping_outlined, order.deliveryCompanyName!),
           if (order.trackingNumber != null && order.trackingNumber!.isNotEmpty)
             _infoRow(Icons.qr_code_2_outlined, order.trackingNumber!),
+          if (order.shiplyTracking != null) ...[
+            if (order.shiplyTracking!.shiplyMode == 'test') ...[
+              SizedBox(height: 8.h),
+              _shiplyTestModeChip(),
+            ],
+            SizedBox(height: 12.h),
+            SalesOrderShiplyTimeline(tracking: order.shiplyTracking!),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _shiplyTestModeChip() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E1),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFFFCC80)),
+      ),
+      child: Text(
+        'shiplySandboxShort'.tr,
+        style: TextStyle(
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFFE65100),
+        ),
       ),
     );
   }

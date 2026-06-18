@@ -149,6 +149,51 @@ class AttendanceHistoryController extends GetxController {
     }
   }
 
+  Future<bool> updateAttendanceDay({
+    required String workDate,
+    required DateTime checkInAt,
+    DateTime? checkOutAt,
+  }) async {
+    if (employeeId.isEmpty) return false;
+    try {
+      final raw = await Get.find<EmployeeDatasource>().updateEmployeeAttendanceDay(
+        employeeId: employeeId,
+        workDate: workDate,
+        checkInAt: checkInAt,
+        checkOutAt: checkOutAt,
+      );
+      if (raw['status']?.toString() != 'success') {
+        Get.snackbar(
+          'error'.tr,
+          raw['message']?.toString() ?? 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      }
+      Get.snackbar(
+        'success'.tr,
+        raw['message']?.toString() ?? 'settingsUpdated'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      await load();
+      return true;
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    }
+  }
+
   /// تغيير الشهر والسنة وإعادة التحميل
   void changeMonth(int year, int month) {
     selectedYear.value  = year;

@@ -56,6 +56,8 @@ class AttendanceHistoryBody extends StatelessWidget {
     this.monthlySummary,
     this.headerExtra,
     this.showTodaySummary = false,
+    this.showAdminEdit = false,
+    this.onEditDay,
   }) : super(key: key);
 
   final EmployeeAttendanceHead employee;
@@ -63,6 +65,8 @@ class AttendanceHistoryBody extends StatelessWidget {
   final EmployeeAttendanceMonthlySummary? monthlySummary;
   final Widget? headerExtra;
   final bool showTodaySummary;
+  final bool showAdminEdit;
+  final Future<void> Function(EmployeeAttendanceDay day)? onEditDay;
 
   List<EmployeeAttendanceDay> get _logDays {
     if (!showTodaySummary) return days;
@@ -98,7 +102,13 @@ class AttendanceHistoryBody extends StatelessWidget {
               ),
             ),
           ),
-          ..._logDays.map((d) => _CompactAttendanceDayCard(day: d)),
+          ..._logDays.map(
+            (d) => _CompactAttendanceDayCard(
+              day: d,
+              showAdminEdit: showAdminEdit,
+              onEdit: onEditDay == null ? null : () => onEditDay!(d),
+            ),
+          ),
         ],
       ],
     );
@@ -509,9 +519,15 @@ class _SummaryStatCard extends StatelessWidget {
 }
 
 class _CompactAttendanceDayCard extends StatelessWidget {
-  const _CompactAttendanceDayCard({required this.day});
+  const _CompactAttendanceDayCard({
+    required this.day,
+    this.showAdminEdit = false,
+    this.onEdit,
+  });
 
   final EmployeeAttendanceDay day;
+  final bool showAdminEdit;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -532,6 +548,18 @@ class _CompactAttendanceDayCard extends StatelessWidget {
           tilePadding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 0),
           childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 10.h),
           visualDensity: VisualDensity.compact,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showAdminEdit && day.canEditDay && onEdit != null)
+                IconButton(
+                  icon: Icon(Icons.edit_outlined, size: 18.sp),
+                  tooltip: 'editAttendanceDay'.tr,
+                  onPressed: onEdit,
+                ),
+              const Icon(Icons.expand_more),
+            ],
+          ),
           leading: Container(
             width: 36.w,
             height: 36.w,
@@ -643,6 +671,28 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                       label:
                           '${'overtimeLabel'.tr} ${AttendanceHistoryController.formatMinutes(day.overtimeMinutes)}',
                       color: AppColors.customOrange3,
+                      compact: true,
+                    ),
+                  if (day.overtimeRequestStatus == 'pending' &&
+                      day.overtimeRequestedMinutes > 0)
+                    _StatusChip(
+                      label:
+                          '${'overtimePendingApproval'.tr} ${AttendanceHistoryController.formatMinutes(day.overtimeRequestedMinutes)}',
+                      color: Colors.orange.shade700,
+                      compact: true,
+                    ),
+                  if (day.overtimeRequestStatus == 'approved' &&
+                      (day.overtimeApprovedMinutes ?? 0) > 0)
+                    _StatusChip(
+                      label:
+                          '${'overtimeApprovedLabel'.tr} ${AttendanceHistoryController.formatMinutes(day.overtimeApprovedMinutes ?? 0)}',
+                      color: AppColors.customGreen1,
+                      compact: true,
+                    ),
+                  if (day.overtimeRequestStatus == 'rejected')
+                    _StatusChip(
+                      label: 'overtimeRejectedLabel'.tr,
+                      color: Colors.red.shade400,
                       compact: true,
                     ),
                   if (day.source != null && day.source!.isNotEmpty)

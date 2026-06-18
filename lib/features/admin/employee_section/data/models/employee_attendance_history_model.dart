@@ -121,6 +121,11 @@ class EmployeeAttendanceDay {
   final int? contractOvertimeMinutes;
   final List<EmployeeAttendanceSegmentRow> segments;
   final List<EmployeeAttendanceScanRow> scans;
+  final int? overtimeRequestId;
+  final String? overtimeRequestStatus;
+  final int overtimeRequestedMinutes;
+  final int? overtimeApprovedMinutes;
+  final bool canEditDay;
 
   const EmployeeAttendanceDay({
     required this.date,
@@ -147,6 +152,11 @@ class EmployeeAttendanceDay {
     required this.contractOvertimeMinutes,
     required this.segments,
     required this.scans,
+    this.overtimeRequestId,
+    this.overtimeRequestStatus,
+    this.overtimeRequestedMinutes = 0,
+    this.overtimeApprovedMinutes,
+    this.canEditDay = false,
   });
 
   factory EmployeeAttendanceDay.fromJson(Map<String, dynamic> json) {
@@ -198,6 +208,15 @@ class EmployeeAttendanceDay {
         (m) =>
             EmployeeAttendanceScanRow.fromJson(Map<String, dynamic>.from(m)),
       ),
+      overtimeRequestId: j['overtime_request_id'] == null
+          ? null
+          : asInt(j['overtime_request_id']),
+      overtimeRequestStatus: asNullableString(j['overtime_request_status']),
+      overtimeRequestedMinutes: asInt(j['overtime_requested_minutes']),
+      overtimeApprovedMinutes: j['overtime_approved_minutes'] == null
+          ? null
+          : asInt(j['overtime_approved_minutes']),
+      canEditDay: asBool(j['can_edit_day']),
     );
   }
 }

@@ -18,6 +18,7 @@ import '../widgets/employee_sections_list/financial_dues_list.dart';
 import '../widgets/employee_sections_list/loans_list.dart';
 import '../widgets/attendance_report_filter_dialog.dart';
 import '../widgets/employee_sections_list/work_hours_list.dart';
+import '../widgets/attendance_overtime_request_card.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
 class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
@@ -285,13 +286,27 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                 isLoading: controller.isLoading,
                               )
                             : EmployeeSection(
-                                list: controller.filteredOvertimeList,
+                                list: [
+                                  ...controller.attendanceOvertimeRequests,
+                                  ...controller.filteredOvertimeList,
+                                ],
                                 sliverList: SliverList.builder(
-                                  itemCount:
+                                  itemCount: controller
+                                          .attendanceOvertimeRequests.length +
                                       controller.filteredOvertimeList.length,
                                   itemBuilder: (context, index) {
-                                    final financialDues =
-                                        controller.filteredOvertimeList[index];
+                                    final pendingCount = controller
+                                        .attendanceOvertimeRequests.length;
+                                    if (index < pendingCount) {
+                                      return AttendanceOvertimeRequestCard(
+                                        request: controller
+                                            .attendanceOvertimeRequests[index],
+                                        controller: controller,
+                                      );
+                                    }
+                                    final loanIndex = index - pendingCount;
+                                    final financialDues = controller
+                                        .filteredOvertimeList[loanIndex];
                                     return Padding(
                                       padding: EdgeInsets.symmetric(
                                         horizontal: 24.w,
@@ -300,7 +315,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                       child: Column(
                                         children: [
                                           SizedBox(
-                                              height: index == 0 ? 10.h : 0.h),
+                                              height: loanIndex == 0 ? 10.h : 0.h),
                                           Container(
                                             decoration: BoxDecoration(
                                               color: ThemeService.isDark.value
@@ -315,7 +330,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                                             ),
                                           ),
                                           SizedBox(
-                                            height: index ==
+                                            height: loanIndex ==
                                                     controller
                                                             .filteredOvertimeList
                                                             .length -

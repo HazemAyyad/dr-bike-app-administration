@@ -583,6 +583,7 @@ class EmployeeSectionController extends GetxController
     employeeService.financialDuesList.isEmpty
         ? isLoading(true)
         : isLoading(false);
+    await loadAttendanceOvertimeRequests();
     final overtimeResult = await overtimeAndLoanUsecase.call(isOvertime: true);
     employeeService.overtimeList.assignAll(overtimeResult);
     filteredOvertimeList.assignAll(employeeService.overtimeList);
@@ -590,6 +591,54 @@ class EmployeeSectionController extends GetxController
     employeeService.loanList.assignAll(loanResult);
     filteredLoanList.assignAll(employeeService.loanList);
     isLoading(false);
+  }
+
+  Future<void> loadAttendanceOvertimeRequests() async {
+    try {
+      final rows =
+          await Get.find<EmployeeDatasource>().getAttendanceOvertimeRequests();
+      attendanceOvertimeRequests.assignAll(rows);
+    } catch (_) {
+      attendanceOvertimeRequests.clear();
+    }
+  }
+
+  Future<void> approveAttendanceOvertimeRequest(
+    int requestId, {
+    int? approvedMinutes,
+  }) async {
+    try {
+      final raw = await Get.find<EmployeeDatasource>().reviewAttendanceOvertimeRequest(
+        requestId: requestId,
+        approve: true,
+        approvedMinutes: approvedMinutes,
+      );
+      if (raw['status']?.toString() != 'success') {
+        Get.snackbar('error'.tr, raw['message']?.toString() ?? 'error'.tr);
+        return;
+      }
+      Get.snackbar('success'.tr, raw['message']?.toString() ?? 'success'.tr);
+      await loadAttendanceOvertimeRequests();
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+    }
+  }
+
+  Future<void> rejectAttendanceOvertimeRequest(int requestId) async {
+    try {
+      final raw = await Get.find<EmployeeDatasource>().reviewAttendanceOvertimeRequest(
+        requestId: requestId,
+        approve: false,
+      );
+      if (raw['status']?.toString() != 'success') {
+        Get.snackbar('error'.tr, raw['message']?.toString() ?? 'error'.tr);
+        return;
+      }
+      Get.snackbar('success'.tr, raw['message']?.toString() ?? 'success'.tr);
+      await loadAttendanceOvertimeRequests();
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+    }
   }
 
   // Get Logs
@@ -654,6 +703,8 @@ class EmployeeSectionController extends GetxController
       <FinancialDuesModel>[].obs;
   final RxList<OvertimeAndLoanModel> filteredOvertimeList =
       <OvertimeAndLoanModel>[].obs;
+  final RxList<Map<String, dynamic>> attendanceOvertimeRequests =
+      <Map<String, dynamic>>[].obs;
   final RxList<OvertimeAndLoanModel> filteredLoanList =
       <OvertimeAndLoanModel>[].obs;
 

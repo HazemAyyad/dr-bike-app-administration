@@ -505,6 +505,98 @@ class EmployeeDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> updateEmployeeAttendanceDay({
+    required String employeeId,
+    required String workDate,
+    required DateTime checkInAt,
+    DateTime? checkOutAt,
+  }) async {
+    try {
+      final response = await api.put(
+        EndPoints.adminEmployeeUpdateAttendanceDay(employeeId),
+        data: {
+          'work_date': workDate,
+          'check_in_at': checkInAt.toIso8601String(),
+          if (checkOutAt != null) 'check_out_at': checkOutAt.toIso8601String(),
+        },
+      );
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAttendanceOvertimeRequests({
+    String status = 'pending',
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.attendanceOvertimeRequests,
+        queryParameters: {'status': status},
+      );
+      final data = asMap(response.data);
+      final list = data['requests'];
+      if (list is List) {
+        return list
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> reviewAttendanceOvertimeRequest({
+    required int requestId,
+    required bool approve,
+    int? approvedMinutes,
+    String? adminNote,
+  }) async {
+    try {
+      final endpoint = approve
+          ? EndPoints.approveAttendanceOvertimeRequest(requestId)
+          : EndPoints.rejectAttendanceOvertimeRequest(requestId);
+      final response = await api.post(
+        endpoint,
+        data: {
+          if (approvedMinutes != null) 'approved_minutes': approvedMinutes,
+          if (adminNote != null && adminNote.isNotEmpty) 'admin_note': adminNote,
+        },
+      );
+      return asMap(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   Future<EmployeeAttendanceHistoryResult> getEmployeeAttendanceHistory({
     required String employeeId,
     DateTime? fromDate,

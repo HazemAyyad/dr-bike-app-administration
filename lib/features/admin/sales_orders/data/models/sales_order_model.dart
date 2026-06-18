@@ -96,6 +96,76 @@ class SalesOrderItemModel {
   }
 }
 
+class SalesOrderShiplyTrackingEventModel {
+  final int id;
+  final int parcelStatusId;
+  final String? statusKey;
+  final String? statusLabel;
+  final String? note;
+  final String? source;
+  final String? occurredAt;
+
+  SalesOrderShiplyTrackingEventModel({
+    required this.id,
+    required this.parcelStatusId,
+    this.statusKey,
+    this.statusLabel,
+    this.note,
+    this.source,
+    this.occurredAt,
+  });
+
+  factory SalesOrderShiplyTrackingEventModel.fromJson(Map<String, dynamic> json) {
+    return SalesOrderShiplyTrackingEventModel(
+      id: json['id'] as int,
+      parcelStatusId: json['parcel_status_id'] as int? ?? 0,
+      statusKey: json['status_key'] as String?,
+      statusLabel: json['status_label'] as String?,
+      note: json['note'] as String?,
+      source: json['source'] as String?,
+      occurredAt: json['occurred_at'] as String?,
+    );
+  }
+}
+
+class SalesOrderShiplyTrackingModel {
+  final String parcelCode;
+  final String? shiplyMode;
+  final int currentStatusId;
+  final String? currentStatusKey;
+  final String? currentStatusLabel;
+  final List<int> statusSequence;
+  final List<SalesOrderShiplyTrackingEventModel> events;
+
+  SalesOrderShiplyTrackingModel({
+    required this.parcelCode,
+    this.shiplyMode,
+    required this.currentStatusId,
+    this.currentStatusKey,
+    this.currentStatusLabel,
+    this.statusSequence = const [],
+    this.events = const [],
+  });
+
+  factory SalesOrderShiplyTrackingModel.fromJson(Map<String, dynamic> json) {
+    final sequenceJson = json['status_sequence'] as List<dynamic>? ?? [];
+    final eventsJson = json['events'] as List<dynamic>? ?? [];
+
+    return SalesOrderShiplyTrackingModel(
+      parcelCode: json['parcel_code'] as String? ?? '',
+      shiplyMode: json['shiply_mode'] as String?,
+      currentStatusId: json['current_status_id'] as int? ?? 0,
+      currentStatusKey: json['current_status_key'] as String?,
+      currentStatusLabel: json['current_status_label'] as String?,
+      statusSequence: sequenceJson.map((e) => e as int).toList(),
+      events: eventsJson
+          .map((e) => SalesOrderShiplyTrackingEventModel.fromJson(
+              e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
 class SalesOrderStatusLogModel {
   final String? fromStatus;
   final String toStatus;
@@ -178,6 +248,7 @@ class SalesOrderDetailModel {
   final List<SalesOrderMediaModel> media;
   final List<SalesOrderChildModel> childOrders;
   final List<SalesOrderStatusLogModel> statusLogs;
+  final SalesOrderShiplyTrackingModel? shiplyTracking;
 
   SalesOrderDetailModel({
     required this.id,
@@ -212,6 +283,7 @@ class SalesOrderDetailModel {
     required this.media,
     this.childOrders = const [],
     this.statusLogs = const [],
+    this.shiplyTracking,
   });
 
   factory SalesOrderDetailModel.fromJson(Map<String, dynamic> json) {
@@ -219,6 +291,7 @@ class SalesOrderDetailModel {
     final mediaJson = json['media'] as List<dynamic>? ?? [];
     final childJson = json['child_orders'] as List<dynamic>? ?? [];
     final logsJson = json['status_logs'] as List<dynamic>? ?? [];
+    final trackingJson = json['shiply_tracking'] as Map<String, dynamic>?;
     return SalesOrderDetailModel(
       id: json['id'] as int,
       serialNumber: json['serial_number'] as String?,
@@ -262,6 +335,9 @@ class SalesOrderDetailModel {
           .map((e) =>
               SalesOrderStatusLogModel.fromJson(e as Map<String, dynamic>))
           .toList(),
+      shiplyTracking: trackingJson != null
+          ? SalesOrderShiplyTrackingModel.fromJson(trackingJson)
+          : null,
     );
   }
 }

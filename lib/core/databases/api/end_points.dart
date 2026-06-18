@@ -154,6 +154,14 @@ class EndPoints {
   static const String employeeAttendanceHistory = 'employee/attendance/history';
   static String adminEmployeeManualCheckout(String employeeId) =>
       'admin/employees/$employeeId/attendance/manual-checkout';
+  static String adminEmployeeUpdateAttendanceDay(String employeeId) =>
+      'admin/employees/$employeeId/attendance/day';
+  static const String attendanceOvertimeRequests =
+      'employee/attendance/overtime-requests';
+  static String approveAttendanceOvertimeRequest(int requestId) =>
+      'employee/attendance/overtime-requests/$requestId/approve';
+  static String rejectAttendanceOvertimeRequest(int requestId) =>
+      'employee/attendance/overtime-requests/$requestId/reject';
   static const String employeeAttendanceReports = 'employee-attendance/reports';
   static const String editEmployee = 'edit/employee';
   static const String deleteEmployee = 'delete/employee';

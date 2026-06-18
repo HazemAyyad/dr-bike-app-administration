@@ -4,8 +4,113 @@ import 'package:get/get.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/employee_attendance_history_model.dart';
 import '../controllers/attendance_history_controller.dart';
 import '../widgets/attendance_history_body.dart';
+
+Future<void> _showEditDayDialog(
+  BuildContext context,
+  AttendanceHistoryController controller,
+  EmployeeAttendanceDay day,
+) async {
+  if (!day.canEditDay) return;
+
+  TimeOfDay parseTime(DateTime? dt, TimeOfDay fallback) {
+    if (dt == null) return fallback;
+    return TimeOfDay(hour: dt.hour, minute: dt.minute);
+  }
+
+  final dateParts = day.date.split('-');
+  final baseDate = DateTime(
+    int.parse(dateParts[0]),
+    int.parse(dateParts[1]),
+    int.parse(dateParts[2]),
+  );
+
+  var checkInTime = parseTime(day.firstCheckIn, const TimeOfDay(hour: 9, minute: 0));
+  var checkOutTime = parseTime(day.lastCheckOut, const TimeOfDay(hour: 17, minute: 0));
+  var hasCheckout = day.lastCheckOut != null;
+
+  final ok = await Get.dialog<bool>(
+    StatefulBuilder(
+      builder: (ctx, setState) {
+        return AlertDialog(
+          title: Text('editAttendanceDay'.tr),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('attendanceCheckIn'.tr),
+                  subtitle: Text(checkInTime.format(ctx)),
+                  trailing: const Icon(Icons.schedule),
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: ctx,
+                      initialTime: checkInTime,
+                    );
+                    if (picked != null) {
+                      setState(() => checkInTime = picked);
+                    }
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('hasCheckout'.tr),
+                  value: hasCheckout,
+                  onChanged: (v) => setState(() => hasCheckout = v),
+                ),
+                if (hasCheckout)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('attendanceCheckOut'.tr),
+                    subtitle: Text(checkOutTime.format(ctx)),
+                    trailing: const Icon(Icons.schedule),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: ctx,
+                        initialTime: checkOutTime,
+                      );
+                      if (picked != null) {
+                        setState(() => checkOutTime = picked);
+                      }
+                    },
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('cancel'.tr),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              child: Text('save'.tr),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+
+  if (ok != true) return;
+
+  DateTime merge(TimeOfDay t) => DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        t.hour,
+        t.minute,
+      );
+
+  await controller.updateAttendanceDay(
+    workDate: day.date,
+    checkInAt: merge(checkInTime),
+    checkOutAt: hasCheckout ? merge(checkOutTime) : null,
+  );
+}
 
 class EmployeeAttendanceHistoryScreen
     extends GetView<AttendanceHistoryController> {
@@ -128,6 +233,8 @@ class EmployeeAttendanceHistoryScreen
                 monthlySummary: data.monthlySummary,
                 days: data.days,
                 showTodaySummary: controller.isViewingCurrentMonth,
+                showAdminEdit: true,
+                onEditDay: (day) => _showEditDayDialog(context, controller, day),
               );
             }),
           ),
