@@ -1089,6 +1089,12 @@ const Map<String, String> ar = {
   'manualCheckoutConfirm':
       'تسجيل خروج هذا الموظف الآن؟ يُستخدم إذا نسي الخروج بالبصمة أو QR.',
   'manualCheckoutSuccess': 'تم تسجيل الخروج بنجاح',
+  'editAttendanceDay': 'تعديل دوام اليوم',
+  'hasCheckout': 'يوجد وقت خروج',
+  'overtimePendingApproval': 'أوفر تايم بانتظار الموافقة',
+  'overtimeApprovedLabel': 'أوفر تايم معتمد',
+  'overtimeRejectedLabel': 'أوفر تايم مرفوض',
+  'checkoutSourceLabel': 'مصدر الخروج',
   'fingerprintSyncMode': 'طريقة مزامنة جهاز البصمة',
   'fingerprintSyncModeDisabled': 'معطّل',
   'fingerprintSyncModePull': 'سحب دوري من الجهاز',

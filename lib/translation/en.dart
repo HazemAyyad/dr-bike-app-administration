@@ -2307,6 +2307,12 @@ const Map<String, String> en = {
   'manualCheckoutConfirm':
       'Record check-out for this employee now? Use if they forgot fingerprint or QR.',
   'manualCheckoutSuccess': 'Check-out recorded successfully',
+  'editAttendanceDay': 'Edit day attendance',
+  'hasCheckout': 'Has check-out time',
+  'overtimePendingApproval': 'Overtime pending approval',
+  'overtimeApprovedLabel': 'Approved overtime',
+  'overtimeRejectedLabel': 'Overtime rejected',
+  'checkoutSourceLabel': 'Check-out source',
   'fingerprintSyncMode': 'Fingerprint sync mode',
   'fingerprintSyncModeDisabled': 'Disabled',
   'fingerprintSyncModePull': 'Pull from device',
