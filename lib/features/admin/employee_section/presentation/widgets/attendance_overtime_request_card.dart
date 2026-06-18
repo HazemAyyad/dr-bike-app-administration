@@ -7,10 +7,10 @@ import '../controllers/employee_section_controller.dart';
 
 class AttendanceOvertimeRequestCard extends StatelessWidget {
   const AttendanceOvertimeRequestCard({
-    super.key,
+    Key? key,
     required this.request,
     required this.controller,
-  });
+  }) : super(key: key);
 
   final Map<String, dynamic> request;
   final EmployeeSectionController controller;
