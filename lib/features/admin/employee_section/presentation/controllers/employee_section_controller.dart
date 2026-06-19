@@ -317,11 +317,27 @@ class EmployeeSectionController extends GetxController
 
   //Get Employee
   void getEmployee() async {
-    employeeService.employeeList.isEmpty ? isLoading(true) : isLoading(false);
-    final result = await getAllEmployeeUsecase.call();
-    employeeService.employeeList.assignAll(result);
-    filteredEmployees.assignAll(employeeService.employeeList);
-    isLoading(false);
+    final showLoader = employeeService.employeeList.isEmpty;
+    if (showLoader) isLoading(true);
+    try {
+      final result = await getAllEmployeeUsecase.call();
+      employeeService.employeeList.assignAll(result);
+      filteredEmployees.assignAll(employeeService.employeeList);
+    } on Failure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (showLoader) isLoading(false);
+    }
   }
 
   final RxBool isDeletingEmployee = false.obs;
@@ -462,24 +478,52 @@ class EmployeeSectionController extends GetxController
 
   //Get Working Times
   void getWorkingTimes() async {
-    employeeService.workingTimesList.isEmpty
-        ? isLoading(true)
-        : isLoading(false);
-    final result = await workingTimesUsecase.call();
-    employeeService.workingTimesList.assignAll(result);
-    filteredWorkingTimes.assignAll(employeeService.workingTimesList);
-    isLoading(false);
+    final showLoader = employeeService.workingTimesList.isEmpty;
+    if (showLoader) isLoading(true);
+    try {
+      final result = await workingTimesUsecase.call();
+      employeeService.workingTimesList.assignAll(result);
+      filteredWorkingTimes.assignAll(employeeService.workingTimesList);
+    } on Failure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (showLoader) isLoading(false);
+    }
   }
 
   //Get Financial Dues
   void getFinancialDues() async {
-    employeeService.financialDuesList.isEmpty
-        ? isLoading(true)
-        : isLoading(false);
-    final result = await financialDuesUsecase.call();
-    employeeService.financialDuesList.assignAll(result);
-    filteredFinancialDues.assignAll(employeeService.financialDuesList);
-    isLoading(false);
+    final showLoader = employeeService.financialDuesList.isEmpty;
+    if (showLoader) isLoading(true);
+    try {
+      final result = await financialDuesUsecase.call();
+      employeeService.financialDuesList.assignAll(result);
+      filteredFinancialDues.assignAll(employeeService.financialDuesList);
+    } on Failure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (showLoader) isLoading(false);
+    }
   }
 
   RxBool isDialogLoading = false.obs;
@@ -580,17 +624,33 @@ class EmployeeSectionController extends GetxController
 
   // Get Overtime And Loan
   void getOvertimeAndLoan() async {
-    employeeService.financialDuesList.isEmpty
-        ? isLoading(true)
-        : isLoading(false);
-    await loadAttendanceOvertimeRequests();
-    final overtimeResult = await overtimeAndLoanUsecase.call(isOvertime: true);
-    employeeService.overtimeList.assignAll(overtimeResult);
-    filteredOvertimeList.assignAll(employeeService.overtimeList);
-    final loanResult = await overtimeAndLoanUsecase.call(isOvertime: false);
-    employeeService.loanList.assignAll(loanResult);
-    filteredLoanList.assignAll(employeeService.loanList);
-    isLoading(false);
+    final showLoader =
+        employeeService.overtimeList.isEmpty && employeeService.loanList.isEmpty;
+    if (showLoader) isLoading(true);
+    try {
+      final attendanceFuture = loadAttendanceOvertimeRequests();
+      final overtimeResult = await overtimeAndLoanUsecase.call(isOvertime: true);
+      employeeService.overtimeList.assignAll(overtimeResult);
+      filteredOvertimeList.assignAll(employeeService.overtimeList);
+      final loanResult = await overtimeAndLoanUsecase.call(isOvertime: false);
+      employeeService.loanList.assignAll(loanResult);
+      filteredLoanList.assignAll(employeeService.loanList);
+      await attendanceFuture;
+    } on Failure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (showLoader) isLoading(false);
+    }
   }
 
   Future<void> loadAttendanceOvertimeRequests() async {

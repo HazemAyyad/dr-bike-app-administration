@@ -122,229 +122,204 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
             },
           ),
           Obx(
-            () => controller.currentTab.value == 0
-                ? EmployeeSection(
-                    list: controller.filteredEmployees,
-                    sliverList: SliverList.builder(
-                      itemCount: controller.filteredEmployees.length,
-                      itemBuilder: (context, index) {
-                        final employee = controller.filteredEmployees[index];
-
-                        return Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 24.w,
-                            vertical: 5.h,
-                          ),
-                          child: Column(
-                            children: [
-                              SizedBox(height: index == 0 ? 10.h : 0.h),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: ThemeService.isDark.value
-                                      ? AppColors.customGreyColor4
-                                      : AppColors.whiteColor2,
-                                  borderRadius: BorderRadius.circular(4.r),
-                                ),
-                                child: EmployeeList(employee: employee),
-                              ),
-                              SizedBox(
-                                height: index ==
-                                        controller.filteredEmployees.length - 1
-                                    ? 20.h
-                                    : 0.h,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                    isLoading: controller.isLoading,
-                  )
-                : controller.currentTab.value == 1
-                    ? EmployeeSection(
-                        list: controller.filteredWorkingTimes,
-                        sliverList: SliverList.builder(
-                          itemCount: controller.filteredWorkingTimes.length,
-                          itemBuilder: (context, index) {
-                            final employeeWorkingTimes =
-                                controller.filteredWorkingTimes[index];
-
-                            return Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 24.w, vertical: 5.h),
-                              child: Column(
-                                children: [
-                                  SizedBox(height: index == 0 ? 10.h : 0.h),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: ThemeService.isDark.value
-                                          ? AppColors.customGreyColor4
-                                          : AppColors.whiteColor2,
-                                      borderRadius: BorderRadius.circular(4.r),
-                                    ),
-                                    child: WorkHoursList(
-                                      employee: employeeWorkingTimes,
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    height: index ==
-                                            controller.filteredWorkingTimes
-                                                    .length -
-                                                1
-                                        ? 20.h
-                                        : 0.h,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        isLoading: controller.isLoading,
-                      )
-                    : controller.currentTab.value == 2
-                        ? EmployeeSection(
-                            list: controller.filteredFinancialDues,
-                            sliverList: SliverList.builder(
-                              itemCount:
-                                  controller.filteredFinancialDues.length,
-                              itemBuilder: (context, index) {
-                                final financialDues =
-                                    controller.filteredFinancialDues[index];
-                                return Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 24.w, vertical: 5.h),
-                                  child: Column(
-                                    children: [
-                                      SizedBox(height: index == 0 ? 10.h : 0.h),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: ThemeService.isDark.value
-                                              ? AppColors.customGreyColor4
-                                              : AppColors.whiteColor2,
-                                          borderRadius:
-                                              BorderRadius.circular(4.r),
-                                        ),
-                                        child: FinancialDuesList(
-                                            employee: financialDues),
-                                      ),
-                                      SizedBox(
-                                        height: index ==
-                                                controller.filteredFinancialDues
-                                                        .length -
-                                                    1
-                                            ? 20.h
-                                            : 0.h,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+            () {
+              final tab = controller.currentTab.value;
+              if (tab == 0) {
+                return EmployeeSection(
+                  isLoading: controller.isLoading,
+                  onCount: () => controller.filteredEmployees.length,
+                  itemBuilder: (context, index) {
+                    final employee = controller.filteredEmployees[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 5.h,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: index == 0 ? 10.h : 0.h),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor4
+                                  : AppColors.whiteColor2,
+                              borderRadius: BorderRadius.circular(4.r),
                             ),
-                            isLoading: controller.isLoading,
-                          )
-                        : controller.currentTab.value == 3
-                            ? EmployeeSection(
-                                list: controller.filteredLoanList,
-                                sliverList: SliverList.builder(
-                                  itemCount: controller.filteredLoanList.length,
-                                  itemBuilder: (context, index) {
-                                    final financialDues =
-                                        controller.filteredLoanList[index];
-                                    return Padding(
-                                      padding: EdgeInsets.symmetric(
-                                          horizontal: 24.w, vertical: 5.h),
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                              height: index == 0 ? 10.h : 0.h),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: ThemeService.isDark.value
-                                                  ? AppColors.customGreyColor4
-                                                  : AppColors.whiteColor2,
-                                              borderRadius:
-                                                  BorderRadius.circular(4.r),
-                                            ),
-                                            child: LoansList(
-                                              employee: financialDues,
-                                              isOvertime: false,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: index ==
-                                                    controller.filteredLoanList
-                                                            .length -
-                                                        1
-                                                ? 20.h
-                                                : 0.h,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                                isLoading: controller.isLoading,
-                              )
-                            : EmployeeSection(
-                                list: [
-                                  ...controller.attendanceOvertimeRequests,
-                                  ...controller.filteredOvertimeList,
-                                ],
-                                sliverList: SliverList.builder(
-                                  itemCount: controller
-                                          .attendanceOvertimeRequests.length +
-                                      controller.filteredOvertimeList.length,
-                                  itemBuilder: (context, index) {
-                                    final pendingCount = controller
-                                        .attendanceOvertimeRequests.length;
-                                    if (index < pendingCount) {
-                                      return AttendanceOvertimeRequestCard(
-                                        request: controller
-                                            .attendanceOvertimeRequests[index],
-                                        controller: controller,
-                                      );
-                                    }
-                                    final loanIndex = index - pendingCount;
-                                    final financialDues = controller
-                                        .filteredOvertimeList[loanIndex];
-                                    return Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 24.w,
-                                        vertical: 5.h,
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                              height: loanIndex == 0 ? 10.h : 0.h),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: ThemeService.isDark.value
-                                                  ? AppColors.customGreyColor4
-                                                  : AppColors.whiteColor2,
-                                              borderRadius:
-                                                  BorderRadius.circular(4.r),
-                                            ),
-                                            child: LoansList(
-                                              employee: financialDues,
-                                              isOvertime: true,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: loanIndex ==
-                                                    controller
-                                                            .filteredOvertimeList
-                                                            .length -
-                                                        1
-                                                ? 20.h
-                                                : 0.h,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                                isLoading: controller.isLoading,
-                              ),
+                            child: EmployeeList(employee: employee),
+                          ),
+                          SizedBox(
+                            height: index ==
+                                    controller.filteredEmployees.length - 1
+                                ? 20.h
+                                : 0.h,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }
+              if (tab == 1) {
+                return EmployeeSection(
+                  isLoading: controller.isLoading,
+                  onCount: () => controller.filteredWorkingTimes.length,
+                  itemBuilder: (context, index) {
+                    final employeeWorkingTimes =
+                        controller.filteredWorkingTimes[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 5.h,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: index == 0 ? 10.h : 0.h),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor4
+                                  : AppColors.whiteColor2,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: WorkHoursList(
+                              employee: employeeWorkingTimes,
+                            ),
+                          ),
+                          SizedBox(
+                            height: index ==
+                                    controller.filteredWorkingTimes.length - 1
+                                ? 20.h
+                                : 0.h,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }
+              if (tab == 2) {
+                return EmployeeSection(
+                  isLoading: controller.isLoading,
+                  onCount: () => controller.filteredFinancialDues.length,
+                  itemBuilder: (context, index) {
+                    final financialDues =
+                        controller.filteredFinancialDues[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 5.h,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: index == 0 ? 10.h : 0.h),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor4
+                                  : AppColors.whiteColor2,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: FinancialDuesList(employee: financialDues),
+                          ),
+                          SizedBox(
+                            height: index ==
+                                    controller.filteredFinancialDues.length - 1
+                                ? 20.h
+                                : 0.h,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }
+              if (tab == 3) {
+                return EmployeeSection(
+                  isLoading: controller.isLoading,
+                  onCount: () => controller.filteredLoanList.length,
+                  itemBuilder: (context, index) {
+                    final financialDues = controller.filteredLoanList[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 5.h,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: index == 0 ? 10.h : 0.h),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor4
+                                  : AppColors.whiteColor2,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: LoansList(
+                              employee: financialDues,
+                              isOvertime: false,
+                            ),
+                          ),
+                          SizedBox(
+                            height: index ==
+                                    controller.filteredLoanList.length - 1
+                                ? 20.h
+                                : 0.h,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }
+              return EmployeeSection(
+                isLoading: controller.isLoading,
+                onCount: () =>
+                    controller.attendanceOvertimeRequests.length +
+                    controller.filteredOvertimeList.length,
+                itemBuilder: (context, index) {
+                  final pendingCount =
+                      controller.attendanceOvertimeRequests.length;
+                  if (index < pendingCount) {
+                    return AttendanceOvertimeRequestCard(
+                      request: controller.attendanceOvertimeRequests[index],
+                      controller: controller,
+                    );
+                  }
+                  final loanIndex = index - pendingCount;
+                  final financialDues =
+                      controller.filteredOvertimeList[loanIndex];
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 24.w,
+                      vertical: 5.h,
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(height: loanIndex == 0 ? 10.h : 0.h),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: ThemeService.isDark.value
+                                ? AppColors.customGreyColor4
+                                : AppColors.whiteColor2,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: LoansList(
+                            employee: financialDues,
+                            isOvertime: true,
+                          ),
+                        ),
+                        SizedBox(
+                          height: loanIndex ==
+                                  controller.filteredOvertimeList.length - 1
+                              ? 20.h
+                              : 0.h,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
           ),
           SliverToBoxAdapter(
             child: SizedBox(height: 80.h),

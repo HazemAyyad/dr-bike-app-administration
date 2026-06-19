@@ -8,28 +8,33 @@ import '../../../../../../core/widgets/skeleton_loading.dart';
 class EmployeeSection extends StatelessWidget {
   const EmployeeSection({
     Key? key,
-    required this.list,
-    required this.sliverList,
     required this.isLoading,
+    required this.onCount,
+    required this.itemBuilder,
   }) : super(key: key);
 
-  final dynamic list;
-  final SliverList sliverList;
   final RxBool isLoading;
+  final int Function() onCount;
+  final NullableIndexedWidgetBuilder itemBuilder;
+
   @override
   Widget build(BuildContext context) {
-    return Obx(
-      () {
-        if (isLoading.value) {
-          return const _EmployeeSectionSkeletonSliver();
-        } else if (list.isEmpty) {
-          return const SliverFillRemaining(
-            child: ShowNoData(),
-          );
-        }
-        return sliverList;
-      },
-    );
+    return Obx(() {
+      final count = onCount();
+      if (isLoading.value) {
+        return const _EmployeeSectionSkeletonSliver();
+      }
+      if (count == 0) {
+        return const SliverFillRemaining(
+          hasScrollBody: false,
+          child: ShowNoData(),
+        );
+      }
+      return SliverList.builder(
+        itemCount: count,
+        itemBuilder: itemBuilder,
+      );
+    });
   }
 }
 
