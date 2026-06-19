@@ -249,6 +249,7 @@ class SalesOrderDetailModel {
   final List<SalesOrderChildModel> childOrders;
   final List<SalesOrderStatusLogModel> statusLogs;
   final SalesOrderShiplyTrackingModel? shiplyTracking;
+  final Map<String, SalesOrderMediaRequirementModel> mediaRequirements;
 
   SalesOrderDetailModel({
     required this.id,
@@ -284,6 +285,7 @@ class SalesOrderDetailModel {
     this.childOrders = const [],
     this.statusLogs = const [],
     this.shiplyTracking,
+    this.mediaRequirements = const {},
   });
 
   factory SalesOrderDetailModel.fromJson(Map<String, dynamic> json) {
@@ -292,6 +294,8 @@ class SalesOrderDetailModel {
     final childJson = json['child_orders'] as List<dynamic>? ?? [];
     final logsJson = json['status_logs'] as List<dynamic>? ?? [];
     final trackingJson = json['shiply_tracking'] as Map<String, dynamic>?;
+    final mediaReqJson =
+        json['media_requirements'] as Map<String, dynamic>? ?? {};
     return SalesOrderDetailModel(
       id: json['id'] as int,
       serialNumber: json['serial_number'] as String?,
@@ -338,6 +342,15 @@ class SalesOrderDetailModel {
       shiplyTracking: trackingJson != null
           ? SalesOrderShiplyTrackingModel.fromJson(trackingJson)
           : null,
+      mediaRequirements: mediaReqJson.map(
+        (key, value) => MapEntry(
+          key,
+          SalesOrderMediaRequirementModel.fromJson(
+            key,
+            value as Map<String, dynamic>,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -345,15 +358,48 @@ class SalesOrderDetailModel {
 class SalesOrderMediaModel {
   final int id;
   final String type;
+  final String category;
   final String? url;
 
-  SalesOrderMediaModel({required this.id, required this.type, this.url});
+  SalesOrderMediaModel({
+    required this.id,
+    required this.type,
+    this.category = 'general',
+    this.url,
+  });
 
   factory SalesOrderMediaModel.fromJson(Map<String, dynamic> json) {
     return SalesOrderMediaModel(
       id: json['id'] as int,
       type: json['type'] as String? ?? 'image',
+      category: json['category'] as String? ?? 'general',
       url: json['url'] as String?,
+    );
+  }
+}
+
+class SalesOrderMediaRequirementModel {
+  final String category;
+  final String label;
+  final bool satisfied;
+  final bool optional;
+
+  SalesOrderMediaRequirementModel({
+    required this.category,
+    required this.label,
+    required this.satisfied,
+    this.optional = false,
+  });
+
+  factory SalesOrderMediaRequirementModel.fromJson(
+    String key,
+    Map<String, dynamic> json,
+  ) {
+    return SalesOrderMediaRequirementModel(
+      category: key,
+      label: json['label'] as String? ?? key,
+      satisfied: json['satisfied'] == true,
+      optional: json['optional'] == true,
     );
   }
 }

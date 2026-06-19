@@ -52,8 +52,25 @@ abstract class SalesOrdersRepository {
 
   Future<Either<Failure, SalesOrderDetailModel>> uploadMedia(
     int orderId,
-    List<MultipartFile> files,
-  );
+    List<MultipartFile> files, {
+    String? category,
+  });
+
+  Future<Either<Failure, SalesOrderDetailModel>> postpone(
+    int orderId,
+    String postponedUntil, {
+    String? reason,
+  });
+
+  Future<Either<Failure, SalesOrderDetailModel>> markStuck(
+    int orderId, {
+    String? reason,
+  });
+
+  Future<Either<Failure, Map<String, dynamic>>> bulkStatus({
+    required List<int> orderIds,
+    required String action,
+  });
 
   Future<Either<Failure, SalesOrderDetailModel>> partialDeliver(
     int orderId,
@@ -63,6 +80,11 @@ abstract class SalesOrdersRepository {
   Future<Either<Failure, SalesOrderDetailModel>> followUp(int orderId);
 
   Future<Either<Failure, SalesOrderDetailModel>> partialReturn(
+    int orderId,
+    List<Map<String, dynamic>> items,
+  );
+
+  Future<Either<Failure, SalesOrderDetailModel>> alternativeReturn(
     int orderId,
     List<Map<String, dynamic>> items,
   );
@@ -199,9 +221,45 @@ class SalesOrdersImplement implements SalesOrdersRepository {
   @override
   Future<Either<Failure, SalesOrderDetailModel>> uploadMedia(
     int orderId,
-    List<MultipartFile> files,
-  ) =>
-      _guard(() => datasource.uploadMedia(orderId, files));
+    List<MultipartFile> files, {
+    String? category,
+  }) =>
+      _guard(() => datasource.uploadMedia(orderId, files, category: category));
+
+  @override
+  Future<Either<Failure, SalesOrderDetailModel>> postpone(
+    int orderId,
+    String postponedUntil, {
+    String? reason,
+  }) =>
+      _guard(() => datasource.postAction(
+            EndPoints.salesOrderPostpone,
+            orderId,
+            extra: {
+              'postponed_until': postponedUntil,
+              if (reason != null && reason.isNotEmpty) 'reason': reason,
+            },
+          ));
+
+  @override
+  Future<Either<Failure, SalesOrderDetailModel>> markStuck(
+    int orderId, {
+    String? reason,
+  }) =>
+      _guard(() => datasource.postAction(
+            EndPoints.salesOrderMarkStuck,
+            orderId,
+            extra: {
+              if (reason != null && reason.isNotEmpty) 'reason': reason,
+            },
+          ));
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> bulkStatus({
+    required List<int> orderIds,
+    required String action,
+  }) =>
+      _guard(() => datasource.bulkStatus(orderIds: orderIds, action: action));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> partialDeliver(
@@ -225,6 +283,17 @@ class SalesOrdersImplement implements SalesOrdersRepository {
   ) =>
       _guard(() => datasource.postAction(
             EndPoints.salesOrderPartialReturn,
+            orderId,
+            extra: {'items': items},
+          ));
+
+  @override
+  Future<Either<Failure, SalesOrderDetailModel>> alternativeReturn(
+    int orderId,
+    List<Map<String, dynamic>> items,
+  ) =>
+      _guard(() => datasource.postAction(
+            EndPoints.salesOrderAlternativeReturn,
             orderId,
             extra: {'items': items},
           ));

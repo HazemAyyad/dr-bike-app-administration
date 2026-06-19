@@ -19,6 +19,7 @@ import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../../../core/helpers/phone_format_helper.dart';
 import '../widgets/sales_order_media_source_sheet.dart';
+import '../widgets/sales_order_media_category_sheet.dart';
 import '../widgets/sales_order_share_sheet.dart';
 
 class SalesOrderCartItem {
@@ -92,7 +93,11 @@ class SalesOrdersController extends GetxController {
   final deliveryFeeController = TextEditingController(text: '0');
   final trackingController = TextEditingController();
   final settleAmountController = TextEditingController();
+  final settleBoxIdController = TextEditingController();
   final notesController = TextEditingController();
+
+  final bulkMode = false.obs;
+  final selectedOrderIds = <int>{}.obs;
 
   final selectedCityId = RxnInt();
   final selectedShiplyCityId = RxnInt();
@@ -172,6 +177,7 @@ class SalesOrdersController extends GetxController {
     'partial_return',
     'returned',
     'postponed',
+    'stuck',
     'canceled',
     'archived',
   ];
@@ -191,6 +197,7 @@ class SalesOrdersController extends GetxController {
     deliveryFeeController.dispose();
     trackingController.dispose();
     settleAmountController.dispose();
+    settleBoxIdController.dispose();
     notesController.dispose();
     super.onClose();
   }
@@ -237,6 +244,12 @@ class SalesOrdersController extends GetxController {
 
   void changeStatusFilter(String status) {
     statusFilter.value = status;
+    if (!canBulkSelectCurrentTab) {
+      toggleBulkMode(false);
+    } else {
+      selectedOrderIds.clear();
+      selectedOrderIds.refresh();
+    }
     loadOrders();
   }
 
@@ -421,17 +434,29 @@ class SalesOrdersController extends GetxController {
     manualDeliveryFee.value = order.customerDeliveryFee;
   }
 
+  bool needsShiplyCustomerSelection(SalesOrderDetailModel order) {
+    if (_hasShiplyRecipient(order)) return false;
+    return order.customerId == null &&
+        (order.customerName ?? '').trim().isEmpty;
+  }
+
+  bool needsShiplyPhone(SalesOrderDetailModel order) {
+    if ((order.customerPhone ?? '').trim().isNotEmpty) return false;
+    return (order.customerName ?? '').trim().isNotEmpty;
+  }
+
+  bool _hasShiplyRecipient(SalesOrderDetailModel order) {
+    return (order.customerName ?? '').trim().isNotEmpty &&
+        (order.customerPhone ?? '').trim().isNotEmpty;
+  }
+
   bool needsShiplyAddress(SalesOrderDetailModel order) {
     return order.shiplyVillageId == null ||
         (order.customerAddress ?? '').trim().isEmpty;
   }
 
-  bool needsShiplyCustomerSelection(SalesOrderDetailModel order) {
-    return order.customerId == null;
-  }
-
-  bool needsShiplyPhone(SalesOrderDetailModel order) {
-    return (order.customerPhone ?? '').trim().isEmpty;
+  bool isShiplyHandoverReady(SalesOrderDetailModel order) {
+    return _hasShiplyRecipient(order) && !needsShiplyAddress(order);
   }
 
   Future<void> loadShiplyPartners() async {
@@ -712,6 +737,9 @@ class SalesOrdersController extends GetxController {
     if (partner != null) {
       customerName = partner.name;
       customerPhone = partner.phone;
+      if (sales.pickerPartnerIsCustomer.value && partner.id > 0) {
+        customerId = partner.id;
+      }
     }
 
     if (Get.isRegistered<PaymentController>(tag: kSalesOrderPaymentTag)) {
@@ -735,13 +763,16 @@ class SalesOrdersController extends GetxController {
     onDeliveryFeeChanged();
     final deliveryFee = manualDeliveryFee.value;
     final total = sales.totalCost.value + deliveryFee;
-    var paymentType = 'credit';
-    if (paidAmount <= 0) {
+    var paymentType = selectedPaymentType.value;
+    if (paymentType != 'visa') {
       paymentType = 'credit';
-    } else if (paidAmount >= total) {
-      paymentType = 'cash';
-    } else {
-      paymentType = 'mixed';
+      if (paidAmount <= 0) {
+        paymentType = 'credit';
+      } else if (paidAmount >= total) {
+        paymentType = 'cash';
+      } else {
+        paymentType = 'mixed';
+      }
     }
 
     return {
@@ -803,7 +834,34 @@ class SalesOrdersController extends GetxController {
     if (!isSelectedCompanyShiply && trackingController.text.trim().isNotEmpty) {
       body['tracking_number'] = trackingController.text.trim();
     }
-    await runAction(() => repository.handover(orderId, body));
+
+    final showShiplyWait = isSelectedCompanyShiply;
+    if (showShiplyWait) {
+      Get.dialog(
+        PopScope(
+          canPop: false,
+          child: AlertDialog(
+            backgroundColor: cardGray,
+            content: Row(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(width: 16),
+                Expanded(child: Text('shiplyHandoverInProgress'.tr)),
+              ],
+            ),
+          ),
+        ),
+        barrierDismissible: false,
+      );
+    }
+
+    try {
+      await runAction(() => repository.handover(orderId, body));
+    } finally {
+      if (showShiplyWait && Get.isDialogOpen == true) {
+        Get.back();
+      }
+    }
   }
 
   Future<void> deliver(int orderId) async {
@@ -812,9 +870,73 @@ class SalesOrdersController extends GetxController {
 
   Future<void> settle(int orderId) async {
     final amount = double.tryParse(settleAmountController.text.trim()) ?? 0;
+    final boxId = int.tryParse(settleBoxIdController.text.trim());
     await runAction(() => repository.settle(orderId, {
           'delivery_settled_amount': amount,
+          if (amount > 0 && boxId != null) 'payment_box_id': boxId,
         }));
+  }
+
+  Future<void> postponeOrder(
+    int orderId,
+    DateTime until, {
+    String? reason,
+  }) async {
+    final formatted =
+        until.toIso8601String().substring(0, 19).replaceFirst('T', ' ');
+    await runAction(() => repository.postpone(
+          orderId,
+          formatted,
+          reason: reason,
+        ));
+  }
+
+  Future<void> markStuckOrder(int orderId, {String? reason}) async {
+    await runAction(() => repository.markStuck(orderId, reason: reason));
+  }
+
+  void toggleBulkMode([bool? value]) {
+    bulkMode.value = value ?? !bulkMode.value;
+    if (!bulkMode.value) {
+      selectedOrderIds.clear();
+    }
+  }
+
+  void toggleOrderSelection(int orderId, bool selected) {
+    if (selected) {
+      selectedOrderIds.add(orderId);
+    } else {
+      selectedOrderIds.remove(orderId);
+    }
+    selectedOrderIds.refresh();
+  }
+
+  Future<void> runBulkAction(String action) async {
+    if (selectedOrderIds.isEmpty) return;
+    isSubmitting.value = true;
+    final result = await repository.bulkStatus(
+      orderIds: selectedOrderIds.toList(),
+      action: action,
+    );
+    isSubmitting.value = false;
+    result.fold(
+      (f) => Get.snackbar('error'.tr, _humanizeFailure(f)),
+      (data) {
+        final updated = data['updated'] as int? ?? 0;
+        final failed = (data['failed'] as List<dynamic>? ?? []).length;
+        toggleBulkMode(false);
+        loadOrders();
+        Get.snackbar(
+          'success'.tr,
+          failed > 0
+              ? 'salesOrderBulkPartial'.trParams({
+                  'ok': '$updated',
+                  'fail': '$failed',
+                })
+              : 'salesOrderBulkDone'.trParams({'count': '$updated'}),
+        );
+      },
+    );
   }
 
   Future<void> archive(int orderId) async {
@@ -845,6 +967,53 @@ class SalesOrdersController extends GetxController {
 
   Future<void> partialReturn(int orderId, List<Map<String, dynamic>> items) async {
     await runAction(() => repository.partialReturn(orderId, items));
+  }
+
+  Future<void> alternativeReturn(
+    int orderId,
+    List<Map<String, dynamic>> items,
+  ) async {
+    await runAction(() => repository.alternativeReturn(orderId, items));
+  }
+
+  bool get canBulkSelectCurrentTab {
+    return const {'unconfirmed', 'confirmed'}.contains(statusFilter.value);
+  }
+
+  List<String> get bulkActionsForCurrentTab {
+    switch (statusFilter.value) {
+      case 'unconfirmed':
+        return const ['confirm', 'cancel'];
+      case 'confirmed':
+        return const ['mark_ready', 'cancel'];
+      default:
+        return const [];
+    }
+  }
+
+  String bulkActionLabel(String action) {
+    switch (action) {
+      case 'confirm':
+        return 'confirm'.tr;
+      case 'mark_ready':
+        return 'salesOrderMarkReady'.tr;
+      case 'cancel':
+        return 'cancel'.tr;
+      default:
+        return action;
+    }
+  }
+
+  void selectAllVisibleOrders() {
+    selectedOrderIds
+      ..clear()
+      ..addAll(orders.map((o) => o.id));
+    selectedOrderIds.refresh();
+  }
+
+  void clearOrderSelection() {
+    selectedOrderIds.clear();
+    selectedOrderIds.refresh();
   }
 
   Future<void> shareOrderVia(int orderId, String channel) async {
@@ -895,6 +1064,9 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> pickAndUploadMedia(int orderId) async {
+    final category = await showSalesOrderMediaCategorySheet();
+    if (category == null) return;
+
     final source = await showSalesOrderMediaSourceSheet();
     if (source == null) return;
 
@@ -969,7 +1141,8 @@ class SalesOrdersController extends GetxController {
     }
 
     isSubmitting.value = true;
-    final uploadResult = await repository.uploadMedia(orderId, multipart);
+    final uploadResult =
+        await repository.uploadMedia(orderId, multipart, category: category);
     isSubmitting.value = false;
     uploadResult.fold(
       (f) => Get.snackbar('error'.tr, _humanizeFailure(f)),
@@ -1003,8 +1176,16 @@ class SalesOrdersController extends GetxController {
       }
     }
     final msg = f.errMessage.trim();
+    if (msg == 'validation_failed'.tr ||
+        msg.toLowerCase() == 'validation failed' ||
+        msg.contains('فشل التحقق')) {
+      return 'makeSureTheDataIsCorrect'.tr;
+    }
     if (msg.toLowerCase().contains('unauthorized')) {
       return 'shiplyUnauthorizedHint'.tr;
+    }
+    if (msg == 'حدث خطأ غير معروف' || msg.toLowerCase() == 'unknown error') {
+      return 'shiplyHandoverFailedGeneric'.tr;
     }
     return f.errMessage;
   }
@@ -1029,6 +1210,7 @@ class SalesOrdersController extends GetxController {
     if (status == 'partial_delivered') return 'salesOrderStatusPartialDelivered'.tr;
     if (status == 'partial_return') return 'salesOrderStatusPartialReturn'.tr;
     if (status == 'alternative_return') return 'salesOrderStatusAlternativeReturn'.tr;
+    if (status == 'stuck') return 'salesOrderStatusStuck'.tr;
     if (status == 'canceled') return 'salesOrderStatusCanceled'.tr;
     return status;
   }

@@ -99,10 +99,12 @@ class SalesOrdersDatasource {
 
   Future<SalesOrderDetailModel> uploadMedia(
     int orderId,
-    List<MultipartFile> files,
-  ) async {
+    List<MultipartFile> files, {
+    String? category,
+  }) async {
     final formData = <String, dynamic>{
       'sales_order_id': orderId,
+      if (category != null && category.isNotEmpty) 'category': category,
     };
     for (var i = 0; i < files.length; i++) {
       formData['media[$i]'] = files[i];
@@ -245,6 +247,22 @@ class SalesOrdersDatasource {
     );
     final response = _asMap(raw);
     _ensureSuccess(response);
+  }
+
+  Future<Map<String, dynamic>> bulkStatus({
+    required List<int> orderIds,
+    required String action,
+  }) async {
+    final raw = await api.post(
+      EndPoints.salesOrdersBulkStatus,
+      data: {
+        'order_ids': orderIds,
+        'action': action,
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    return response;
   }
 
   void _ensureSuccess(Map<String, dynamic> response) {

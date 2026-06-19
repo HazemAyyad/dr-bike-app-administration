@@ -1,11 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
+import 'package:doctorbike/core/services/app_dependency_registry.dart';
 import 'package:doctorbike/core/utils/assets_manger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../routes/app_routes.dart';
+import '../../../boxes/data/models/get_shown_boxes_model.dart';
+import '../../../boxes/data/repositories/boxes_implement.dart';
+import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
@@ -85,6 +89,10 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                       status: order.status,
                       controller: controller,
                     ),
+                    if (order.mediaRequirements.isNotEmpty) ...[
+                      SizedBox(height: 12.h),
+                      _mediaRequirementsCard(order),
+                    ],
                     SizedBox(height: 12.h),
                     _customerCard(order),
                     if (_hasLogisticsInfo(order)) ...[
@@ -784,6 +792,95 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
     );
   }
 
+  Widget _mediaRequirementsCard(SalesOrderDetailModel order) {
+    final entries = order.mediaRequirements.entries.toList()
+      ..sort((a, b) {
+        if (a.value.optional != b.value.optional) {
+          return a.value.optional ? 1 : -1;
+        }
+        return a.key.compareTo(b.key);
+      });
+
+    return Container(
+      padding: EdgeInsets.all(14.r),
+      decoration: BoxDecoration(
+        color: SalesOrdersController.cardGray,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: SalesOrdersController.borderGray),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'salesOrderMediaRequirements'.tr,
+            style: TextStyle(
+              color: SalesOrdersController.textPrimary,
+              fontWeight: FontWeight.w600,
+              fontSize: 14.sp,
+            ),
+          ),
+          SizedBox(height: 10.h),
+          ...entries.map((entry) {
+            final req = entry.value;
+            final labelKey = 'salesOrderMediaCategory_${req.category}';
+            final label = labelKey.tr != labelKey ? labelKey.tr : req.label;
+            final color = req.satisfied
+                ? const Color(0xFF059669)
+                : req.optional
+                    ? SalesOrdersController.textSecondary
+                    : const Color(0xFFDC2626);
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8.h),
+              child: Row(
+                children: [
+                  Icon(
+                    req.satisfied
+                        ? Icons.check_circle
+                        : req.optional
+                            ? Icons.radio_button_unchecked
+                            : Icons.error_outline,
+                    color: color,
+                    size: 20.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 13.sp,
+                      ),
+                    ),
+                  ),
+                  if (req.optional)
+                    Text(
+                      'salesOrderMediaOptional'.tr,
+                      style: TextStyle(
+                        color: SalesOrdersController.textSecondary,
+                        fontSize: 10.sp,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
+          SizedBox(height: 4.h),
+          OutlinedButton.icon(
+            onPressed: controller.isSubmitting.value
+                ? null
+                : () => controller.pickAndUploadMedia(order.id),
+            icon: const Icon(Icons.photo_camera_outlined, size: 18),
+            label: Text('salesOrderUploadMedia'.tr),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: SalesOrdersController.textPrimary,
+              side: const BorderSide(color: SalesOrdersController.borderGray),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _mediaCard(SalesOrderDetailModel order) {
     return Container(
       padding: EdgeInsets.all(14.r),
@@ -978,6 +1075,12 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
         return Icons.cancel_outlined;
       case SalesOrderActionId.revertStatus:
         return Icons.undo_outlined;
+      case SalesOrderActionId.postpone:
+        return Icons.schedule_outlined;
+      case SalesOrderActionId.markStuck:
+        return Icons.report_problem_outlined;
+      case SalesOrderActionId.alternativeReturn:
+        return Icons.swap_horiz_outlined;
     }
   }
 
@@ -1026,6 +1129,15 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
       case SalesOrderActionId.revertStatus:
         controller.revertOrderStatus(orderId);
         break;
+      case SalesOrderActionId.postpone:
+        _showPostponeSheet(orderId);
+        break;
+      case SalesOrderActionId.markStuck:
+        _showMarkStuckSheet(orderId);
+        break;
+      case SalesOrderActionId.alternativeReturn:
+        _showQtySheet(order, 'alternative_return');
+        break;
     }
   }
 
@@ -1052,7 +1164,9 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
             Text(
               mode == 'deliver'
                   ? 'salesOrderPartialDeliver'.tr
-                  : 'salesOrderPartialReturn'.tr,
+                  : mode == 'alternative_return'
+                      ? 'salesOrderAlternativeReturn'.tr
+                      : 'salesOrderPartialReturn'.tr,
               style: TextStyle(
                 color: SalesOrdersController.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -1120,6 +1234,8 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                 if (lines.isEmpty) return;
                 if (mode == 'deliver') {
                   controller.partialDeliver(order.id, lines);
+                } else if (mode == 'alternative_return') {
+                  controller.alternativeReturn(order.id, lines);
                 } else {
                   controller.partialReturn(order.id, lines);
                 }
@@ -1161,9 +1277,14 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
     if (controller.shiplyCities.isEmpty) {
       await controller.loadLookups();
     }
-    await controller.loadShiplyPartners();
 
-    var current = order;
+    var current = controller.detail.value ?? order;
+
+    if (controller.isShiplyHandoverReady(current)) {
+      return true;
+    }
+
+    await controller.loadShiplyPartners();
 
     if (controller.needsShiplyCustomerSelection(current)) {
       final customerResult = await Get.dialog<dynamic>(
@@ -1344,6 +1465,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                 if (isShiply) {
                   final ready = await _prepareShiplyHandover(order);
                   if (!ready) return;
+                  await controller.loadDetail(orderId);
                 }
                 controller.handover(orderId);
               },
@@ -1361,6 +1483,207 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   }
 
   void _showSettleSheet(int orderId) {
+    AppDependencyRegistry.ensureBoxes();
+    controller.settleAmountController.text =
+        controller.detail.value?.total.toStringAsFixed(2) ?? '';
+    controller.settleBoxIdController.clear();
+
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (context, setSheetState) {
+          return FutureBuilder<List<ShownBoxesModel>>(
+            future: GetShownBoxUsecase(
+              boxesRepository: Get.find<BoxesImplement>(),
+            ).call(screen: 0),
+            builder: (context, snapshot) {
+              final boxes = snapshot.data ?? const <ShownBoxesModel>[];
+              ShownBoxesModel? selectedBox;
+              final boxIdText = controller.settleBoxIdController.text.trim();
+              if (boxIdText.isNotEmpty) {
+                final id = int.tryParse(boxIdText);
+                for (final box in boxes) {
+                  if (box.boxId == id) {
+                    selectedBox = box;
+                    break;
+                  }
+                }
+              }
+
+              return Container(
+                padding: EdgeInsets.all(20.r),
+                decoration: BoxDecoration(
+                  color: SalesOrdersController.surfaceGray,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(16.r)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'salesOrderSettle'.tr,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16.sp,
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    TextField(
+                      controller: controller.settleAmountController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderSettleAmount'.tr,
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      const Center(child: CircularProgressIndicator())
+                    else if (boxes.isEmpty)
+                      Text(
+                        'salesOrderSettleBoxHint'.tr,
+                        style: TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                          fontSize: 12.sp,
+                        ),
+                      )
+                    else
+                      DropdownButtonFormField<ShownBoxesModel>(
+                        initialValue: selectedBox,
+                        decoration: InputDecoration(
+                          labelText: 'salesOrderSettleBox'.tr,
+                          filled: true,
+                          fillColor: SalesOrdersController.cardGray,
+                        ),
+                        items: boxes
+                            .map(
+                              (box) => DropdownMenuItem(
+                                value: box,
+                                child: Text(
+                                  '${box.boxName} (${box.totalBalance.toStringAsFixed(2)} ${box.currency})',
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (box) {
+                          controller.settleBoxIdController.text =
+                              box?.boxId.toString() ?? '';
+                          setSheetState(() {});
+                        },
+                      ),
+                    SizedBox(height: 12.h),
+                    ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        controller.settle(orderId);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: SalesOrdersController.textPrimary,
+                        foregroundColor: SalesOrdersController.cardGray,
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                      ),
+                      child: Text('confirm'.tr),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _showPostponeSheet(int orderId) {
+    final reasonController = TextEditingController();
+    var selectedDate = DateTime.now().add(const Duration(days: 1));
+
+    Get.bottomSheet(
+      StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Container(
+            padding: EdgeInsets.all(20.r),
+            decoration: BoxDecoration(
+              color: SalesOrdersController.surfaceGray,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'salesOrderPostpone'.tr,
+                  style: TextStyle(
+                    color: SalesOrdersController.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                OutlinedButton(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      selectedDate = picked;
+                      setSheetState(() {});
+                    }
+                  },
+                  child: Text(
+                    '${'salesOrderPostponeUntil'.tr}: ${selectedDate.toString().substring(0, 10)}',
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'note'.tr,
+                    filled: true,
+                    fillColor: SalesOrdersController.cardGray,
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                ElevatedButton(
+                  onPressed: () {
+                    Get.back();
+                    controller.postponeOrder(
+                      orderId,
+                      selectedDate,
+                      reason: reasonController.text.trim().isEmpty
+                          ? null
+                          : reasonController.text.trim(),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SalesOrdersController.textPrimary,
+                    foregroundColor: SalesOrdersController.cardGray,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                  ),
+                  child: Text('confirm'.tr),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  void _showMarkStuckSheet(int orderId) {
+    final reasonController = TextEditingController();
+
     Get.bottomSheet(
       Container(
         padding: EdgeInsets.all(20.r),
@@ -1370,22 +1693,30 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'salesOrderSettle'.tr,
+              'salesOrderMarkStuck'.tr,
               style: TextStyle(
                 color: SalesOrdersController.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 16.sp,
               ),
             ),
+            SizedBox(height: 8.h),
+            Text(
+              'salesOrderMarkStuckHint'.tr,
+              style: TextStyle(
+                color: SalesOrdersController.textSecondary,
+                fontSize: 12.sp,
+              ),
+            ),
             SizedBox(height: 12.h),
             TextField(
-              controller: controller.settleAmountController,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: SalesOrdersController.textPrimary),
+              controller: reasonController,
+              maxLines: 3,
               decoration: InputDecoration(
-                labelText: 'salesOrderSettleAmount'.tr,
+                labelText: 'salesOrderStuckReason'.tr,
                 filled: true,
                 fillColor: SalesOrdersController.cardGray,
               ),
@@ -1394,11 +1725,16 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
             ElevatedButton(
               onPressed: () {
                 Get.back();
-                controller.settle(orderId);
+                controller.markStuckOrder(
+                  orderId,
+                  reason: reasonController.text.trim().isEmpty
+                      ? null
+                      : reasonController.text.trim(),
+                );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: SalesOrdersController.textPrimary,
-                foregroundColor: SalesOrdersController.cardGray,
+                backgroundColor: const Color(0xFF9333EA),
+                foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(vertical: 14.h),
               ),
               child: Text('confirm'.tr),
@@ -1406,6 +1742,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
           ],
         ),
       ),
+      isScrollControlled: true,
     );
   }
 }

@@ -83,9 +83,11 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
         .toList(growable: false);
   }
 
-  InputDecoration _fieldDecoration(String label) {
+  InputDecoration _fieldDecoration(String hint, {bool floatingLabel = false}) {
     return InputDecoration(
-      labelText: label,
+      hintText: floatingLabel ? null : hint,
+      labelText: floatingLabel ? hint : null,
+      hintStyle: const TextStyle(color: SalesOrdersController.textSecondary),
       labelStyle: const TextStyle(color: SalesOrdersController.textSecondary),
       filled: true,
       fillColor: SalesOrdersController.cardGray,
@@ -128,15 +130,6 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SalesOrderShiplySandboxBadge(controller: controller),
-          Text(
-            'salesOrderShiplyCity'.tr,
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: SalesOrdersController.textPrimary,
-            ),
-          ),
-          SizedBox(height: 8.h),
           DropdownSearch<ShiplyCityModel>(
             selectedItem: _selectedCity(),
             items: (filter, _) async => _filterCities(filter),
@@ -144,29 +137,11 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
             compareFn: (a, b) => a.id == b.id,
             popupProps: _cityPopupProps(),
             decoratorProps: DropDownDecoratorProps(
-              decoration: _fieldDecoration('city'.tr),
-            ),
-            dropdownBuilder: (context, selectedItem) => Text(
-              selectedItem?.name ?? 'city'.tr,
-              style: TextStyle(
-                color: selectedItem == null
-                    ? SalesOrdersController.textSecondary
-                    : SalesOrdersController.textPrimary,
-                fontSize: 14.sp,
-              ),
+              decoration: _fieldDecoration('salesOrderShiplyCity'.tr),
             ),
             onChanged: (city) => controller.onShiplyCityChanged(city?.id),
           ),
           SizedBox(height: 12.h),
-          Text(
-            'salesOrderShiplyVillage'.tr,
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: SalesOrdersController.textPrimary,
-            ),
-          ),
-          SizedBox(height: 8.h),
           DropdownSearch<ShiplyVillageModel>(
             selectedItem: _selectedVillage(),
             items: (filter, _) async => _filterVillages(filter),
@@ -201,16 +176,6 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
             decoratorProps: DropDownDecoratorProps(
               decoration: _fieldDecoration('salesOrderShiplyVillage'.tr),
             ),
-            dropdownBuilder: (context, selectedItem) => Text(
-              selectedItem?.displayLabel(closedLabel) ??
-                  'salesOrderShiplyVillage'.tr,
-              style: TextStyle(
-                color: selectedItem == null
-                    ? SalesOrdersController.textSecondary
-                    : SalesOrdersController.textPrimary,
-                fontSize: 14.sp,
-              ),
-            ),
             onChanged: villages.isEmpty
                 ? null
                 : (village) {
@@ -228,7 +193,7 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
               color: SalesOrdersController.textPrimary,
               fontSize: 14.sp,
             ),
-            decoration: _fieldDecoration('salesOrderStreetAddress'.tr),
+            decoration: _fieldDecoration('salesOrderStreetAddress'.tr, floatingLabel: true),
           ),
           if (showDeliveryFee) ...[
             SizedBox(height: 12.h),
@@ -239,7 +204,7 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
                 color: SalesOrdersController.textPrimary,
                 fontSize: 14.sp,
               ),
-              decoration: _fieldDecoration('salesOrderDeliveryFeeInput'.tr),
+              decoration: _fieldDecoration('salesOrderDeliveryFeeInput'.tr, floatingLabel: true),
               onChanged: (_) => controller.onDeliveryFeeChanged(),
             ),
             SizedBox(height: 4.h),

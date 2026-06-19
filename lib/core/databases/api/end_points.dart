@@ -391,6 +391,8 @@ class EndPoints {
   static const String salesOrderFollowUp = 'sales/order/follow-up';
   static const String salesOrderPartialReturn = 'sales/order/partial-return';
   static const String salesOrderAlternativeReturn = 'sales/order/alternative-return';
+  static const String salesOrderMarkStuck = 'sales/order/mark-stuck';
+  static const String salesOrdersBulkStatus = 'sales/orders/bulk-status';
   static const String salesOrderStatement = 'sales/order/statement';
   static const String cities = 'cities';
   static const String deliveryCompanies = 'delivery/companies';

@@ -2946,6 +2946,12 @@ class SalesController extends GetxController
         salesService.instantSalesTasks.clear();
       }
       _groupInstantSalesIntoMaps(sales);
+    } catch (e) {
+      // Background list load — must not crash handover or other flows.
+      assert(() {
+        debugPrint('[SalesController.fetchInstantSales] $e');
+        return true;
+      }());
     } finally {
       if (shouldShowLoader) {
         isLoading(false);
@@ -2977,6 +2983,11 @@ class SalesController extends GetxController
             .add(profitSale);
       }
       _syncFilteredProfitSales();
+    } catch (e) {
+      assert(() {
+        debugPrint('[SalesController.fetchProfitSales] $e');
+        return true;
+      }());
     } finally {
       if (showLoading) {
         isLoading(false);
@@ -3089,12 +3100,20 @@ class SalesController extends GetxController
   final List<ProductModel> products = [];
   void getAllProducts() async {
     productsLoading(true);
-    final result = await getAllProductsUsecase.call();
-    products
-      ..clear()
-      ..addAll(result);
-    productsLoading(false);
-    _bumpProductsList();
+    try {
+      final result = await getAllProductsUsecase.call();
+      products
+        ..clear()
+        ..addAll(result);
+    } catch (e) {
+      assert(() {
+        debugPrint('[SalesController.getAllProducts] $e');
+        return true;
+      }());
+    } finally {
+      productsLoading(false);
+      _bumpProductsList();
+    }
   }
 
   /// Note sent with payment receive so box history matches cancel wording.
@@ -3334,13 +3353,23 @@ class SalesController extends GetxController
   final List<OngoingProject> ongoingProjects = [];
 
   void getOngoingProjects() async {
-    final result = await api.get(EndPoints.ongoingProjects);
-    ongoingProjects.clear();
-    ongoingProjects.addAll(
-      (result.data['ongoing projects'] as List)
-          .map((e) => OngoingProject.fromJson(e))
-          .toList(),
-    );
+    try {
+      final result = await api.get(EndPoints.ongoingProjects);
+      final raw = result.data['ongoing projects'];
+      if (raw is! List) return;
+      ongoingProjects.clear();
+      ongoingProjects.addAll(
+        raw
+            .whereType<Map>()
+            .map((e) => OngoingProject.fromJson(Map<String, dynamic>.from(e)))
+            .toList(),
+      );
+    } catch (e) {
+      assert(() {
+        debugPrint('[SalesController.getOngoingProjects] $e');
+        return true;
+      }());
+    }
   }
 
   @override

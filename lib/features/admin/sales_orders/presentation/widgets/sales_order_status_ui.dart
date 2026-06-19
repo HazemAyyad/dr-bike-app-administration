@@ -40,6 +40,8 @@ class SalesOrderStatusUi {
         return const Color(0xFFDC2626);
       case 'postponed':
         return const Color(0xFF6B7280);
+      case 'stuck':
+        return const Color(0xFF9333EA);
       case 'canceled':
         return const Color(0xFF9CA3AF);
       default:
@@ -60,6 +62,9 @@ class SalesOrderStatusUi {
     }
     if (status == 'postponed') {
       return workflowSteps.indexOf('unconfirmed');
+    }
+    if (status == 'stuck') {
+      return workflowSteps.indexOf('with_delivery');
     }
     if (status == 'canceled') {
       return -1;
@@ -212,6 +217,9 @@ enum SalesOrderActionId {
   uploadMedia,
   cancel,
   revertStatus,
+  postpone,
+  markStuck,
+  alternativeReturn,
 }
 
 class SalesOrderActionDef {
@@ -276,6 +284,10 @@ class SalesOrderActions {
             labelKey: 'salesOrderUploadMedia',
           ),
           SalesOrderActionDef(
+            id: SalesOrderActionId.postpone,
+            labelKey: 'salesOrderPostpone',
+          ),
+          SalesOrderActionDef(
             id: SalesOrderActionId.share,
             labelKey: 'salesOrderShare',
           ),
@@ -297,6 +309,10 @@ class SalesOrderActions {
             labelKey: 'salesOrderUploadMedia',
           ),
           SalesOrderActionDef(
+            id: SalesOrderActionId.postpone,
+            labelKey: 'salesOrderPostpone',
+          ),
+          SalesOrderActionDef(
             id: SalesOrderActionId.share,
             labelKey: 'salesOrderShare',
           ),
@@ -316,6 +332,10 @@ class SalesOrderActions {
           SalesOrderActionDef(
             id: SalesOrderActionId.uploadMedia,
             labelKey: 'salesOrderUploadMedia',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.postpone,
+            labelKey: 'salesOrderPostpone',
           ),
           SalesOrderActionDef(
             id: SalesOrderActionId.share,
@@ -345,6 +365,14 @@ class SalesOrderActions {
             labelKey: 'salesOrderPartialReturn',
           ),
           const SalesOrderActionDef(
+            id: SalesOrderActionId.alternativeReturn,
+            labelKey: 'salesOrderAlternativeReturn',
+          ),
+          const SalesOrderActionDef(
+            id: SalesOrderActionId.markStuck,
+            labelKey: 'salesOrderMarkStuck',
+          ),
+          const SalesOrderActionDef(
             id: SalesOrderActionId.uploadMedia,
             labelKey: 'salesOrderUploadMedia',
           ),
@@ -369,6 +397,14 @@ class SalesOrderActions {
           SalesOrderActionDef(
             id: SalesOrderActionId.partialReturn,
             labelKey: 'salesOrderPartialReturn',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.alternativeReturn,
+            labelKey: 'salesOrderAlternativeReturn',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.markStuck,
+            labelKey: 'salesOrderMarkStuck',
           ),
           SalesOrderActionDef(
             id: SalesOrderActionId.uploadMedia,
@@ -397,6 +433,14 @@ class SalesOrderActions {
             labelKey: 'salesOrderFollowUp',
           ),
           SalesOrderActionDef(
+            id: SalesOrderActionId.alternativeReturn,
+            labelKey: 'salesOrderAlternativeReturn',
+          ),
+          SalesOrderActionDef(
+            id: SalesOrderActionId.markStuck,
+            labelKey: 'salesOrderMarkStuck',
+          ),
+          SalesOrderActionDef(
             id: SalesOrderActionId.uploadMedia,
             labelKey: 'salesOrderUploadMedia',
           ),
@@ -423,8 +467,18 @@ class SalesOrderActions {
         ];
       case 'archived':
       case 'canceled':
+        return const [
+          SalesOrderActionDef(
+            id: SalesOrderActionId.share,
+            labelKey: 'salesOrderShare',
+          ),
+        ];
       case 'returned':
         return const [
+          SalesOrderActionDef(
+            id: SalesOrderActionId.markStuck,
+            labelKey: 'salesOrderMarkStuck',
+          ),
           SalesOrderActionDef(
             id: SalesOrderActionId.share,
             labelKey: 'salesOrderShare',

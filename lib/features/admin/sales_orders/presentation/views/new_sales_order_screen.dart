@@ -181,6 +181,7 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
                     items: [
                       DropdownMenuItem(value: 'cash', child: Text('cash'.tr)),
                       DropdownMenuItem(value: 'credit', child: Text('credit'.tr)),
+                      DropdownMenuItem(value: 'visa', child: Text('visa'.tr)),
                       DropdownMenuItem(value: 'mixed', child: Text('salesOrderMixed'.tr)),
                     ],
                     onChanged: (v) {
