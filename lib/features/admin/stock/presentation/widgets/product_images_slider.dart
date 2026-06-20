@@ -103,7 +103,7 @@ class ProductImagesSlider extends StatelessWidget {
   final String title;
   final bool compact;
 
-  Future<void> downloadImage(BuildContext context, String imageUrl) async {
+  Future<void> downloadImage(String imageUrl) async {
     try {
       if (Platform.isAndroid) {
         await Permission.photos.request();
@@ -142,96 +142,101 @@ class ProductImagesSlider extends StatelessWidget {
     }
   }
 
+  void _closeViewer() {
+    if (Get.isSnackbarOpen) {
+      Get.closeAllSnackbars();
+    }
+    if (Get.isDialogOpen == true) {
+      Get.back();
+    }
+  }
+
   void _openViewer(BuildContext context, List<String> slides, int initialPage) {
     final carouselController = CarouselSliderController();
     final currentIndex = initialPage.obs;
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Dismiss',
-      barrierColor: Colors.black.withValues(alpha: 0.74),
-      transitionDuration: Duration.zero,
-      pageBuilder: (context, anim1, anim2) {
-        return Material(
-          color: Colors.transparent,
-          child: Stack(
-            children: [
-              Positioned(
-                top: 58.h,
-                right: 16.w,
-                child: _ViewerIconButton(
-                  icon: Icons.close,
-                  onTap: Get.back,
+    final screenHeight = MediaQuery.sizeOf(context).height;
+
+    Get.dialog(
+      Material(
+        type: MaterialType.transparency,
+        child: Stack(
+          children: [
+            Positioned(
+              top: 58.h,
+              right: 16.w,
+              child: _ViewerIconButton(
+                icon: Icons.close,
+                onTap: _closeViewer,
+              ),
+            ),
+            Positioned(
+              top: 58.h,
+              left: 16.w,
+              child: _ViewerIconButton(
+                icon: Icons.download,
+                onTap: () => downloadImage(
+                  ShowNetImage.getPhoto(slides[currentIndex.value]),
                 ),
               ),
-              Positioned(
-                top: 58.h,
-                left: 16.w,
-                child: _ViewerIconButton(
-                  icon: Icons.download,
-                  onTap: () => downloadImage(
-                    context,
-                    ShowNetImage.getPhoto(slides[currentIndex.value]),
-                  ),
-                ),
-              ),
-              Center(
-                child: CarouselSlider.builder(
-                  carouselController: carouselController,
-                  itemCount: slides.length,
-                  itemBuilder: (context, index, realIdx) {
-                    final raw = slides[index];
-                    return Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6.w),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18.r),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            _NetworkProductImage(
-                              imageUrl: ShowNetImage.getPhoto(raw),
-                              fit: BoxFit.contain,
-                              backgroundColor: Colors.black,
-                            ),
-                            _ImageSourceBadge(
-                              source: ShowNetImage.classifySource(raw),
-                            ),
-                          ],
-                        ),
+            ),
+            Center(
+              child: CarouselSlider.builder(
+                carouselController: carouselController,
+                itemCount: slides.length,
+                itemBuilder: (context, index, realIdx) {
+                  final raw = slides[index];
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18.r),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          _NetworkProductImage(
+                            imageUrl: ShowNetImage.getPhoto(raw),
+                            fit: BoxFit.contain,
+                            backgroundColor: Colors.black,
+                          ),
+                          _ImageSourceBadge(
+                            source: ShowNetImage.classifySource(raw),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  options: CarouselOptions(
-                    height: MediaQuery.sizeOf(context).height * 0.62,
-                    enlargeCenterPage: slides.length > 1,
-                    enableInfiniteScroll: slides.length > 1,
-                    autoPlay: false,
-                    viewportFraction: slides.length == 1 ? 0.92 : 0.86,
-                    initialPage: initialPage,
-                    onPageChanged: (i, reason) => currentIndex.value = i,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 42.h,
-                left: 0,
-                right: 0,
-                child: Obx(
-                  () => Text(
-                    '${currentIndex.value + 1} / ${slides.length}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w800,
                     ),
+                  );
+                },
+                options: CarouselOptions(
+                  height: screenHeight * 0.62,
+                  enlargeCenterPage: slides.length > 1,
+                  enableInfiniteScroll: slides.length > 1,
+                  autoPlay: false,
+                  viewportFraction: slides.length == 1 ? 0.92 : 0.86,
+                  initialPage: initialPage,
+                  onPageChanged: (i, reason) => currentIndex.value = i,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 42.h,
+              left: 0,
+              right: 0,
+              child: Obx(
+                () => Text(
+                  '${currentIndex.value + 1} / ${slides.length}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.74),
     );
   }
 

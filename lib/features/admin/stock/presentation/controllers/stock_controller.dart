@@ -23,6 +23,7 @@ import '../../data/models/product_details_model.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../data/models/store_section_model.dart';
 import '../../domain/stock_location_interactor.dart';
+import '../utils/stock_search_history_storage.dart';
 import '../../domain/stock_product_filters.dart';
 import '../widgets/product_location_action_sheet.dart';
 import '../widgets/product_location_confirm_screen.dart';
@@ -1168,6 +1169,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxBool isSubmittingProduct = false.obs;
 
   final RxBool isProductLoading = false.obs;
+  final RxBool isSearchLoading = false.obs;
+  final TextEditingController stockSearchQueryController = TextEditingController();
+  final RxString stockSearchActiveQuery = ''.obs;
+  final RxList<String> stockSearchHistory = <String>[].obs;
 
   final RxBool isLoadingMore = false.obs;
 
@@ -1775,15 +1780,66 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   // search products
   List<AllStockProductsModel> searchProducts = [];
+
+  void loadStockSearchHistory() {
+    stockSearchHistory.assignAll(StockSearchHistoryStorage.load());
+  }
+
+  Future<void> _persistStockSearchHistory() {
+    return StockSearchHistoryStorage.save(stockSearchHistory.toList());
+  }
+
+  void addStockSearchHistory(String query) {
+    final trimmed = query.trim();
+    if (trimmed.length < StockSearchHistoryStorage.minQueryLength) return;
+
+    stockSearchHistory.remove(trimmed);
+    stockSearchHistory.insert(0, trimmed);
+    while (stockSearchHistory.length > StockSearchHistoryStorage.maxItems) {
+      stockSearchHistory.removeLast();
+    }
+    _persistStockSearchHistory();
+  }
+
+  void removeStockSearchHistoryItem(String query) {
+    stockSearchHistory.remove(query.trim());
+    _persistStockSearchHistory();
+  }
+
+  void clearStockSearchHistory() {
+    stockSearchHistory.clear();
+    _persistStockSearchHistory();
+  }
+
+  void applyStockSearchHistory(String query) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+    stockSearchQueryController.text = trimmed;
+    stockSearchQueryController.selection = TextSelection.collapsed(
+      offset: trimmed.length,
+    );
+    stockSearchActiveQuery.value = trimmed;
+    getSearchProducts(name: trimmed);
+  }
+
+  void onStockSearchQueryChanged(String value) {
+    stockSearchActiveQuery.value = value;
+    if (value.trim().isEmpty) {
+      searchProducts.clear();
+      update();
+    }
+  }
+
   void getSearchProducts({required String name}) async {
     searchProducts.clear();
 
-    isProductLoading(true);
+    isSearchLoading(true);
     searchProducts.clear();
 
     final result = await searchProductsUsecase.call(name: name);
     searchProducts.assignAll(result);
-    isProductLoading(false);
+    addStockSearchHistory(name);
+    isSearchLoading(false);
     update();
   }
 
@@ -2479,6 +2535,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   @override
   void onInit() {
     super.onInit();
+    loadStockSearchHistory();
     getAllProducts();
     getCategories();
     scrollController.addListener(_onScroll);
@@ -2544,6 +2601,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     listPriceController.dispose();
     rotationDateController.dispose();
     closeoutsMinimumSaleController.dispose();
+    closeoutsProductNameController.dispose();
+    stockSearchQueryController.dispose();
     super.onClose();
   }
 }

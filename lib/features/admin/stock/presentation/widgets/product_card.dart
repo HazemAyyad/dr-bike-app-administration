@@ -11,7 +11,17 @@ import '../../../../../routes/app_routes.dart';
 import '../../data/models/all_stock_products_model.dart';
 import 'product_location_badge.dart';
 import 'stock_product_grid_layout.dart';
+import 'stock_search_sheet.dart';
 import '../controllers/stock_controller.dart';
+
+void _dismissBlockingOverlays() {
+  if (Get.isSnackbarOpen) {
+    Get.closeAllSnackbars();
+  }
+  while (Get.isDialogOpen == true) {
+    Get.back();
+  }
+}
 
 class BuildProductCard extends GetView<StockController> {
   const BuildProductCard({
@@ -21,6 +31,7 @@ class BuildProductCard extends GetView<StockController> {
     this.newComposition,
     this.productIdController,
     this.productNameController,
+    this.searchContext,
   }) : super(key: key);
 
   final AllStockProductsModel product;
@@ -28,6 +39,27 @@ class BuildProductCard extends GetView<StockController> {
   final NewCompositionModel? newComposition;
   final TextEditingController? productIdController;
   final TextEditingController? productNameController;
+  final StockSearchContext? searchContext;
+
+  Future<void> _openProductDetails() async {
+    final fromSearch = searchContext != null;
+
+    if (fromSearch && Get.isBottomSheetOpen == true) {
+      Get.back();
+    }
+
+    await controller.getProductDetails(productId: product.productId);
+    await Get.toNamed(AppRoutes.PRODUCTDETAILSSCREEN);
+    _dismissBlockingOverlays();
+
+    if (fromSearch &&
+        controller.stockSearchQueryController.text.trim().isNotEmpty) {
+      reopenStockSearchSheetIfNeeded(
+        controller: controller,
+        searchContext: searchContext!,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,14 +125,13 @@ class BuildProductCard extends GetView<StockController> {
                 Get.back();
                 controller.update();
               }
-            : () {
+            : () async {
                 if (canSelectLocation &&
                     controller.locationSelectionActive.value) {
                   controller.toggleProductSelection(product.productId);
                   return;
                 }
-                controller.getProductDetails(productId: product.productId);
-                Get.toNamed(AppRoutes.PRODUCTDETAILSSCREEN);
+                await _openProductDetails();
               },
         onLongPress: () async {
           if (isCloseouts) return;

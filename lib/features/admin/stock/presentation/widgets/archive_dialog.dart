@@ -108,19 +108,21 @@ class ArchiveDialog extends GetView<StockController> {
                                     )
                                   : GestureDetector(
                                       onTap: () {
-                                        showGeneralDialog(
-                                          context: context,
+                                        Get.dialog(
+                                          FullScreenZoomImage(
+                                            imageUrl: product.image,
+                                            onClose: () {
+                                              if (Get.isSnackbarOpen) {
+                                                Get.closeAllSnackbars();
+                                              }
+                                              if (Get.isDialogOpen == true) {
+                                                Get.back();
+                                              }
+                                            },
+                                          ),
                                           barrierDismissible: true,
-                                          barrierLabel: 'Dismiss',
                                           barrierColor:
                                               Colors.black.withAlpha(128),
-                                          transitionDuration:
-                                              const Duration(milliseconds: 300),
-                                          pageBuilder: (context, anim1, anim2) {
-                                            return FullScreenZoomImage(
-                                              imageUrl: product.image,
-                                            );
-                                          },
                                         );
                                       },
                                       child: ClipRRect(

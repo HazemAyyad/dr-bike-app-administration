@@ -13,21 +13,30 @@ import 'video_view.dart';
 
 class FullScreenZoomImage extends StatelessWidget {
   final String imageUrl;
+  final VoidCallback? onClose;
 
-  const FullScreenZoomImage({Key? key, required this.imageUrl})
-      : super(key: key);
+  const FullScreenZoomImage({
+    Key? key,
+    required this.imageUrl,
+    this.onClose,
+  }) : super(key: key);
 
   /// يفتح الصورة بملء الشاشة مع إمكانية التكبير بالقرص.
   static void open(BuildContext context, String imageUrl) {
-    showGeneralDialog(
-      context: context,
+    Get.dialog(
+      FullScreenZoomImage(
+        imageUrl: imageUrl,
+        onClose: () {
+          if (Get.isSnackbarOpen) {
+            Get.closeAllSnackbars();
+          }
+          if (Get.isDialogOpen == true) {
+            Get.back();
+          }
+        },
+      ),
       barrierDismissible: true,
-      barrierLabel: 'Dismiss',
       barrierColor: Colors.black.withValues(alpha: 0.88),
-      transitionDuration: Duration.zero,
-      pageBuilder: (context, anim1, anim2) {
-        return FullScreenZoomImage(imageUrl: imageUrl);
-      },
     );
   }
 
@@ -79,6 +88,19 @@ class FullScreenZoomImage extends StatelessWidget {
     }
   }
 
+  void _close(BuildContext context) {
+    if (Get.isSnackbarOpen) {
+      Get.closeAllSnackbars();
+    }
+    if (onClose != null) {
+      onClose!();
+      return;
+    }
+    if (Get.isDialogOpen == true) {
+      Get.back();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -86,7 +108,7 @@ class FullScreenZoomImage extends StatelessWidget {
         GestureDetector(
           onVerticalDragUpdate: (details) {
             if (details.delta.dy > 12) {
-              Navigator.of(context).pop();
+              _close(context);
             }
           },
           child: isVideoMediaPath(imageUrl)
@@ -127,7 +149,7 @@ class FullScreenZoomImage extends StatelessWidget {
               color: Colors.red,
               size: 30.sp,
             ),
-            onPressed: () => Get.back(),
+            onPressed: () => _close(context),
           ),
         ),
         // زرار تحميل
