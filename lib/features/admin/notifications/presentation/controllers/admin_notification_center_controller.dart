@@ -40,6 +40,10 @@ class AdminNotificationCenterController extends GetxController {
       'id': 'sales_order_shiply_delivered',
       'labelKey': 'notifFilterShiplyDelivered',
     },
+    {
+      'id': 'sales_order_shiply_status',
+      'labelKey': 'notifFilterShiplyStatus',
+    },
   ];
 
   @override

@@ -13,6 +13,7 @@ import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_product_card.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_product_detail_sheet.dart';
 import '../controllers/sales_orders_controller.dart';
+import '../widgets/sales_order_notice.dart';
 
 /// Sales-order creation using the exact InstantSale product picker UI.
 class SalesOrderProductPickerScreen extends StatefulWidget {
@@ -47,7 +48,9 @@ class _SalesOrderProductPickerScreenState
         sales.selectedPackageId.value = null;
         orders.resetCreateForm();
       } else {
-        Get.snackbar('info'.tr, 'salesOrderDraftResuming'.tr);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          SalesOrderNotice.info('salesOrderDraftResuming'.tr);
+        });
       }
     }
     _searchController.text = sales.instantSaleProductSearch.value;

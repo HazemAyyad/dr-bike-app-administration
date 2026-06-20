@@ -12,7 +12,9 @@ import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
+import '../widgets/sales_order_notice.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
+import '../widgets/sales_order_delivery_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
 import '../widgets/sales_order_shiply_phone_dialog.dart';
 import '../widgets/sales_order_shiply_sandbox_badge.dart';
@@ -829,51 +831,81 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                 : req.optional
                     ? SalesOrdersController.textSecondary
                     : const Color(0xFFDC2626);
-            return Padding(
-              padding: EdgeInsets.only(bottom: 8.h),
-              child: Row(
-                children: [
-                  Icon(
-                    req.satisfied
-                        ? Icons.check_circle
-                        : req.optional
-                            ? Icons.radio_button_unchecked
-                            : Icons.error_outline,
-                    color: color,
-                    size: 20.sp,
-                  ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 13.sp,
+            return Obx(() {
+              final busy = controller.isSubmitting.value;
+              return Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: !req.satisfied && !busy
+                        ? () => controller.pickAndUploadMedia(
+                              order.id,
+                              presetCategory: req.category,
+                            )
+                        : null,
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 4.h),
+                      child: Row(
+                        children: [
+                          Icon(
+                            req.satisfied
+                                ? Icons.check_circle
+                                : req.optional
+                                    ? Icons.radio_button_unchecked
+                                    : Icons.error_outline,
+                            color: color,
+                            size: 20.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                color: SalesOrdersController.textPrimary,
+                                fontSize: 13.sp,
+                              ),
+                            ),
+                          ),
+                          if (req.optional)
+                            Text(
+                              'salesOrderMediaOptional'.tr,
+                              style: TextStyle(
+                                color: SalesOrdersController.textSecondary,
+                                fontSize: 10.sp,
+                              ),
+                            ),
+                          if (!req.satisfied) ...[
+                            SizedBox(width: 6.w),
+                            Icon(
+                              Icons.upload_outlined,
+                              size: 18.sp,
+                              color: busy
+                                  ? SalesOrdersController.textSecondary
+                                  : color,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
-                  if (req.optional)
-                    Text(
-                      'salesOrderMediaOptional'.tr,
-                      style: TextStyle(
-                        color: SalesOrdersController.textSecondary,
-                        fontSize: 10.sp,
-                      ),
-                    ),
-                ],
-              ),
-            );
+                ),
+              );
+            });
           }),
           SizedBox(height: 4.h),
-          OutlinedButton.icon(
-            onPressed: controller.isSubmitting.value
-                ? null
-                : () => controller.pickAndUploadMedia(order.id),
-            icon: const Icon(Icons.photo_camera_outlined, size: 18),
-            label: Text('salesOrderUploadMedia'.tr),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: SalesOrdersController.textPrimary,
-              side: const BorderSide(color: SalesOrdersController.borderGray),
+          Obx(
+            () => OutlinedButton.icon(
+              onPressed: controller.isSubmitting.value
+                  ? null
+                  : () => controller.pickAndUploadMedia(order.id),
+              icon: const Icon(Icons.photo_camera_outlined, size: 18),
+              label: Text('salesOrderUploadMedia'.tr),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: SalesOrdersController.textPrimary,
+                side: const BorderSide(color: SalesOrdersController.borderGray),
+              ),
             ),
           ),
         ],
@@ -1273,6 +1305,78 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
     _showHandoverSheet(order.id, order);
   }
 
+  Future<bool> _prepareManualDeliveryHandover(SalesOrderDetailModel order) async {
+    var current = controller.detail.value ?? order;
+
+    if (controller.isDeliveryHandoverReady(current, forShiply: false)) {
+      return true;
+    }
+
+    await controller.loadShiplyPartners();
+
+    if (controller.needsDeliveryCustomer(current)) {
+      final customerResult = await Get.dialog<dynamic>(
+        SalesOrderShiplyCustomerDialog(
+          orderId: order.id,
+          controller: controller,
+          initialName: current.customerName,
+        ),
+        barrierDismissible: false,
+      );
+      if (customerResult == 'needs_phone') {
+        final selection = controller.pendingShiplyPartner;
+        if (selection == null) return false;
+        final phoneSaved = await Get.dialog<bool>(
+          SalesOrderShiplyPhoneDialog(
+            orderId: order.id,
+            controller: controller,
+            selection: selection,
+          ),
+          barrierDismissible: false,
+        );
+        if (phoneSaved != true) return false;
+      } else if (customerResult != true) {
+        return false;
+      }
+      await controller.loadDetail(order.id);
+      current = controller.detail.value ?? current;
+    }
+
+    if (controller.needsDeliveryPhone(current)) {
+      final selection = controller.shiplyPartnerForPhonePrompt(current);
+      if (selection == null) {
+        SalesOrderNotice.error('salesOrderShiplyPhoneRequired'.tr);
+        return false;
+      }
+      final phoneSaved = await Get.dialog<bool>(
+        SalesOrderShiplyPhoneDialog(
+          orderId: order.id,
+          controller: controller,
+          selection: selection,
+        ),
+        barrierDismissible: false,
+      );
+      if (phoneSaved != true) return false;
+      await controller.loadDetail(order.id);
+      current = controller.detail.value ?? current;
+    }
+
+    if (controller.needsDeliveryAddress(current, forShiply: false)) {
+      controller.customerAddressController.text = current.customerAddress ?? '';
+      final saved = await Get.dialog<bool>(
+        SalesOrderDeliveryAddressDialog(
+          orderId: order.id,
+          controller: controller,
+        ),
+        barrierDismissible: false,
+      );
+      if (saved != true) return false;
+      await controller.loadDetail(order.id);
+    }
+
+    return true;
+  }
+
   Future<bool> _prepareShiplyHandover(SalesOrderDetailModel order) async {
     if (controller.shiplyCities.isEmpty) {
       await controller.loadLookups();
@@ -1317,7 +1421,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
     if (controller.needsShiplyPhone(current)) {
       final selection = controller.shiplyPartnerForPhonePrompt(current);
       if (selection == null) {
-        Get.snackbar('error'.tr, 'salesOrderShiplyPhoneRequired'.tr);
+        SalesOrderNotice.error('salesOrderShiplyPhoneRequired'.tr);
         return false;
       }
       final phoneSaved = await Get.dialog<bool>(
@@ -1354,6 +1458,10 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   void _showHandoverSheet(int orderId, SalesOrderDetailModel order) {
     controller.pickDefaultHandoverCompany(order);
     controller.trackingController.clear();
+    controller.carrierContactNameController.clear();
+    controller.carrierContactPhoneController.clear();
+    controller.carrierOfficeNameController.clear();
+    controller.carrierVehicleNumberController.clear();
     Get.bottomSheet(
       Container(
         padding: EdgeInsets.all(20.r),
@@ -1375,7 +1483,10 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
             ),
             SizedBox(height: 12.h),
             Obx(() => DropdownButtonFormField<int>(
-                  initialValue: controller.selectedDeliveryCompanyId.value,
+                  initialValue: controller.deliveryCompanies
+                          .any((c) => c.id == controller.selectedDeliveryCompanyId.value)
+                      ? controller.selectedDeliveryCompanyId.value
+                      : null,
                   dropdownColor: SalesOrdersController.cardGray,
                   style: TextStyle(
                     color: SalesOrdersController.textPrimary,
@@ -1398,7 +1509,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                         ),
                       )
                       .toList(),
-                  onChanged: (v) => controller.selectedDeliveryCompanyId.value = v,
+                  onChanged: controller.onDeliveryCompanyChanged,
                 )),
             Obx(() {
               if (controller.isSelectedCompanyShiply) {
@@ -1422,6 +1533,171 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                   ],
                 );
               }
+
+              if (controller.isSelectedCompanyTaxi) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.trackingController,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderTaxiNumber'.tr,
+                        labelStyle: const TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.carrierContactNameController,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderTaxiDriver'.tr,
+                        labelStyle: const TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.carrierContactPhoneController,
+                      keyboardType: TextInputType.phone,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderTaxiPhone'.tr,
+                        labelStyle: const TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              if (controller.isSelectedCompanyOffice) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.carrierOfficeNameController,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderOfficeName'.tr,
+                        labelStyle: const TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.carrierContactNameController,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderOfficeDriver'.tr,
+                        labelStyle: const TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.carrierContactPhoneController,
+                      keyboardType: TextInputType.phone,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderOfficePhone'.tr,
+                        labelStyle: const TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    TextField(
+                      controller: controller.carrierVehicleNumberController,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'salesOrderOfficeVehicle'.tr,
+                        labelStyle: const TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                        ),
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              if (controller.isSelectedCompanyDoctorBike) {
+                return Padding(
+                  padding: EdgeInsets.only(top: 10.h),
+                  child: Text(
+                    'salesOrderDoctorBikeHandoverHint'.tr,
+                    style: TextStyle(
+                      color: SalesOrdersController.textSecondary,
+                      fontSize: 12.sp,
+                    ),
+                  ),
+                );
+              }
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -1460,13 +1736,24 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
             SizedBox(height: 16.h),
             ElevatedButton(
               onPressed: () async {
-                final isShiply = controller.isSelectedCompanyShiply;
-                Get.back();
-                if (isShiply) {
-                  final ready = await _prepareShiplyHandover(order);
-                  if (!ready) return;
-                  await controller.loadDetail(orderId);
+                final manualErr = controller.validateManualHandoverFields();
+                if (manualErr != null) {
+                  SalesOrderNotice.error(manualErr);
+                  return;
                 }
+
+                final isShiply = controller.isSelectedCompanyShiply;
+                final isDoctorBike = controller.isSelectedCompanyDoctorBike;
+                Get.back();
+
+                final ready = isShiply
+                    ? await _prepareShiplyHandover(order)
+                    : isDoctorBike
+                        ? true
+                        : await _prepareManualDeliveryHandover(order);
+                if (!ready) return;
+
+                await controller.loadDetail(orderId);
                 controller.handover(orderId);
               },
               style: ElevatedButton.styleFrom(

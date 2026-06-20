@@ -81,12 +81,10 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
                       },
               ),
               SizedBox(height: 24.h),
-              Obx(
-                () => AppButton(
-                  isLoading: controller.isLoading,
-                  text: controller.isEdit ? 'save' : 'add',
-                  onPressed: () => controller.submit(context),
-                ),
+              AppButton(
+                isLoading: controller.isLoading,
+                text: controller.isEdit ? 'save'.tr : 'add'.tr,
+                onPressed: () => controller.submit(context),
               ),
             ],
           ),

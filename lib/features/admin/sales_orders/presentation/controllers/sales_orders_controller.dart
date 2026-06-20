@@ -21,6 +21,7 @@ import '../../../../../core/helpers/phone_format_helper.dart';
 import '../widgets/sales_order_media_source_sheet.dart';
 import '../widgets/sales_order_media_category_sheet.dart';
 import '../widgets/sales_order_share_sheet.dart';
+import '../widgets/sales_order_notice.dart';
 
 class SalesOrderCartItem {
   SalesOrderCartItem({
@@ -92,6 +93,10 @@ class SalesOrdersController extends GetxController {
   final customerAddressController = TextEditingController();
   final deliveryFeeController = TextEditingController(text: '0');
   final trackingController = TextEditingController();
+  final carrierContactNameController = TextEditingController();
+  final carrierContactPhoneController = TextEditingController();
+  final carrierOfficeNameController = TextEditingController();
+  final carrierVehicleNumberController = TextEditingController();
   final settleAmountController = TextEditingController();
   final settleBoxIdController = TextEditingController();
   final notesController = TextEditingController();
@@ -121,14 +126,52 @@ class SalesOrdersController extends GetxController {
     return const [];
   }
 
-  bool get isSelectedCompanyShiply {
+  bool get isSelectedCompanyShiply => _selectedCompanyCode == 'shiply';
+
+  bool get isSelectedCompanyTaxi => _selectedCompanyCode == 'taxi';
+
+  bool get isSelectedCompanyOffice => _selectedCompanyCode == 'office';
+
+  bool get isSelectedCompanyDoctorBike => _selectedCompanyCode == 'doctor_bike';
+
+  bool get isSelectedCompanyManualCarrier =>
+      isSelectedCompanyTaxi || isSelectedCompanyOffice;
+
+  bool get isSelectedCompanySelfDelivery => isSelectedCompanyDoctorBike;
+
+  String? get _selectedCompanyCode {
     final id = selectedDeliveryCompanyId.value;
     for (final company in deliveryCompanies) {
       if (company.id == id) {
-        return company.code?.toLowerCase() == 'shiply';
+        return company.code?.toLowerCase();
       }
     }
-    return false;
+    return null;
+  }
+
+  DeliveryCompanyModel? get selectedDeliveryCompany {
+    final id = selectedDeliveryCompanyId.value;
+    for (final company in deliveryCompanies) {
+      if (company.id == id) return company;
+    }
+    return null;
+  }
+
+  void onDeliveryCompanyChanged(int? companyId) {
+    selectedDeliveryCompanyId.value = companyId;
+  }
+
+  void pickDefaultDeliveryCompany(SalesOrderDetailModel? order) {
+    if (order != null) {
+      pickDefaultHandoverCompany(order);
+      return;
+    }
+    if (deliveryCompanies.isEmpty) return;
+    if (shiplyDeliveryCompany != null) {
+      selectedDeliveryCompanyId.value = shiplyDeliveryCompany!.id;
+      return;
+    }
+    selectedDeliveryCompanyId.value = deliveryCompanies.first.id;
   }
 
   DeliveryCompanyModel? get shiplyDeliveryCompany {
@@ -196,6 +239,10 @@ class SalesOrdersController extends GetxController {
     customerAddressController.dispose();
     deliveryFeeController.dispose();
     trackingController.dispose();
+    carrierContactNameController.dispose();
+    carrierContactPhoneController.dispose();
+    carrierOfficeNameController.dispose();
+    carrierVehicleNumberController.dispose();
     settleAmountController.dispose();
     settleBoxIdController.dispose();
     notesController.dispose();
@@ -234,7 +281,7 @@ class SalesOrdersController extends GetxController {
     final result = await repository.getOrder(orderId);
     result.fold(
       (f) {
-        Get.snackbar('error'.tr, f.errMessage);
+        SalesOrderNotice.error(f.errMessage);
         detail.value = null;
       },
       (data) => detail.value = data,
@@ -327,7 +374,7 @@ class SalesOrdersController extends GetxController {
 
   Future<void> openEditSalesOrderFlow(SalesOrderDetailModel order) async {
     if (!canEditOrderStatus(order.status)) {
-      Get.snackbar('error'.tr, 'salesOrderNotEditable'.tr);
+      SalesOrderNotice.error('salesOrderNotEditable'.tr);
       return;
     }
 
@@ -361,7 +408,7 @@ class SalesOrdersController extends GetxController {
   void suspendOrderDraft() {
     hasSuspendedDraft.value = true;
     Get.back();
-    Get.snackbar('success'.tr, 'salesOrderDraftSuspended'.tr);
+    SalesOrderNotice.success('salesOrderDraftSuspended'.tr);
   }
 
   void suspendOrderDraftFromPicker() {
@@ -370,7 +417,7 @@ class SalesOrdersController extends GetxController {
     if (sales.cartDistinctCount <= 0) return;
     hasSuspendedDraft.value = true;
     Get.back();
-    Get.snackbar('success'.tr, 'salesOrderDraftSuspended'.tr);
+    SalesOrderNotice.success('salesOrderDraftSuspended'.tr);
   }
 
   List<Map<String, dynamic>> _itemsFromSalesCart(SalesController sales) {
@@ -434,6 +481,110 @@ class SalesOrdersController extends GetxController {
     manualDeliveryFee.value = order.customerDeliveryFee;
   }
 
+  bool needsDeliveryCustomer(SalesOrderDetailModel order) =>
+      needsShiplyCustomerSelection(order);
+
+  bool needsDeliveryPhone(SalesOrderDetailModel order) =>
+      needsShiplyPhone(order);
+
+  bool needsDeliveryAddress(SalesOrderDetailModel order, {bool? forShiply}) {
+    final shiply = forShiply ?? order.isShiplyDelivery;
+    if (shiply) {
+      return needsShiplyAddress(order);
+    }
+    return (order.customerAddress ?? '').trim().isEmpty;
+  }
+
+  bool isDeliveryHandoverReady(
+    SalesOrderDetailModel order, {
+    bool? forShiply,
+  }) {
+    final shiply = forShiply ?? order.isShiplyDelivery;
+    return _hasShiplyRecipient(order) && !needsDeliveryAddress(order, forShiply: shiply);
+  }
+
+  String? validateCheckoutDeliveryRequirements(SalesController sales) {
+    if (selectedDeliveryCompanyId.value == null) {
+      return 'salesOrderDeliveryCompanyRequired'.tr;
+    }
+
+    final partner = sales.pickerSelectedPartner.value;
+    final hasPartner = partner != null && partner.name.trim().isNotEmpty;
+    final hasManualCustomer = customerNameController.text.trim().isNotEmpty;
+    if (!hasPartner && !hasManualCustomer) {
+      return 'salesOrderCustomerRequired'.tr;
+    }
+
+    if (isSelectedCompanyShiply) {
+      return validateShiplyAddressForm();
+    }
+
+    if (isSelectedCompanyDoctorBike) {
+      return null;
+    }
+
+    if (customerAddressController.text.trim().isEmpty) {
+      return 'salesOrderAddressRequired'.tr;
+    }
+
+    return null;
+  }
+
+  String? validateManualHandoverFields() {
+    if (isSelectedCompanyTaxi) {
+      if (trackingController.text.trim().isEmpty) {
+        return 'salesOrderTaxiNumberRequired'.tr;
+      }
+      if (carrierContactNameController.text.trim().isEmpty) {
+        return 'salesOrderTaxiDriverRequired'.tr;
+      }
+      if (carrierContactPhoneController.text.trim().isEmpty) {
+        return 'salesOrderTaxiPhoneRequired'.tr;
+      }
+      return null;
+    }
+
+    if (isSelectedCompanyOffice) {
+      if (carrierOfficeNameController.text.trim().isEmpty) {
+        return 'salesOrderOfficeNameRequired'.tr;
+      }
+      if (carrierContactNameController.text.trim().isEmpty) {
+        return 'salesOrderOfficeDriverRequired'.tr;
+      }
+      if (carrierContactPhoneController.text.trim().isEmpty) {
+        return 'salesOrderOfficePhoneRequired'.tr;
+      }
+      if (carrierVehicleNumberController.text.trim().isEmpty) {
+        return 'salesOrderOfficeVehicleRequired'.tr;
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  Future<bool> saveDeliveryAddressForOrder(int orderId) async {
+    if (customerAddressController.text.trim().isEmpty) {
+      SalesOrderNotice.error('salesOrderAddressRequired'.tr);
+      return false;
+    }
+    isSubmitting.value = true;
+    final result = await repository.updateOrder(orderId, {
+      'customer_address': customerAddressController.text.trim(),
+    });
+    isSubmitting.value = false;
+    return result.fold(
+      (f) {
+        SalesOrderNotice.error(_humanizeFailure(f));
+        return false;
+      },
+      (order) {
+        detail.value = order;
+        return true;
+      },
+    );
+  }
+
   bool needsShiplyCustomerSelection(SalesOrderDetailModel order) {
     if (_hasShiplyRecipient(order)) return false;
     return order.customerId == null &&
@@ -494,7 +645,7 @@ class SalesOrdersController extends GetxController {
     isSubmitting.value = false;
     return result.fold(
       (f) {
-        Get.snackbar('error'.tr, _humanizeFailure(f));
+        SalesOrderNotice.error(_humanizeFailure(f));
         return false;
       },
       (order) {
@@ -519,7 +670,7 @@ class SalesOrdersController extends GetxController {
     );
     return result.fold(
       (f) {
-        Get.snackbar('error'.tr, _humanizeFailure(f));
+        SalesOrderNotice.error(_humanizeFailure(f));
         return null;
       },
       (partner) {
@@ -540,7 +691,7 @@ class SalesOrdersController extends GetxController {
   }) async {
     final formatted = PhoneFormatHelper.forApi(phone);
     if (!PhoneFormatHelper.isValidApiPhone(formatted)) {
-      Get.snackbar('error'.tr, 'salesOrderShiplyPhoneInvalid'.tr);
+      SalesOrderNotice.error('salesOrderShiplyPhoneInvalid'.tr);
       return false;
     }
 
@@ -556,7 +707,7 @@ class SalesOrdersController extends GetxController {
 
       final personOk = updateResult.fold(
         (f) {
-          Get.snackbar('error'.tr, _humanizeFailure(f));
+          SalesOrderNotice.error(_humanizeFailure(f));
           return false;
         },
         (_) => true,
@@ -655,7 +806,7 @@ class SalesOrdersController extends GetxController {
   Future<bool> saveShiplyAddressForOrder(int orderId) async {
     final err = validateShiplyAddressForm();
     if (err != null) {
-      Get.snackbar('error'.tr, err);
+      SalesOrderNotice.error(err);
       return false;
     }
     isSubmitting.value = true;
@@ -664,7 +815,7 @@ class SalesOrdersController extends GetxController {
     isSubmitting.value = false;
     return result.fold(
       (f) {
-        Get.snackbar('error'.tr, _humanizeFailure(f));
+        SalesOrderNotice.error(_humanizeFailure(f));
         return false;
       },
       (order) {
@@ -693,12 +844,11 @@ class SalesOrdersController extends GetxController {
     isSubmitting.value = false;
     return result.fold(
       (f) {
-        Get.snackbar('error'.tr, _humanizeFailure(f));
+        SalesOrderNotice.error(_humanizeFailure(f));
         return false;
       },
       (order) {
-        Get.snackbar(
-          'success'.tr,
+        SalesOrderNotice.success(
           editId != null ? 'salesOrderUpdated'.tr : 'salesOrderCreated'.tr,
         );
         hasSuspendedDraft.value = false;
@@ -717,13 +867,19 @@ class SalesOrdersController extends GetxController {
     sales.calculateGrandTotal();
     final lines = sales.cartLines.where((l) => !l.isDisposed).toList();
     if (lines.isEmpty) {
-      Get.snackbar('error'.tr, 'salesOrderAddItem'.tr);
+      SalesOrderNotice.error('salesOrderAddItem'.tr);
+      return null;
+    }
+
+    final deliveryErr = validateCheckoutDeliveryRequirements(sales);
+    if (deliveryErr != null) {
+      SalesOrderNotice.error(deliveryErr);
       return null;
     }
 
     final items = _itemsFromSalesCart(sales);
     if (items.isEmpty) {
-      Get.snackbar('error'.tr, 'salesOrderAddItem'.tr);
+      SalesOrderNotice.error('salesOrderAddItem'.tr);
       return null;
     }
 
@@ -780,6 +936,8 @@ class SalesOrdersController extends GetxController {
       'customer_phone': customerPhone,
       if (customerId != null) 'customer_id': customerId,
       'customer_address': customerAddressController.text.trim(),
+      if (selectedDeliveryCompanyId.value != null)
+        'delivery_company_id': selectedDeliveryCompanyId.value,
       if (selectedShiplyCityId.value != null)
         'shiply_city_id': selectedShiplyCityId.value,
       if (selectedShiplyVillageId.value != null)
@@ -800,45 +958,64 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> runAction(
-    Future<Either<Failure, SalesOrderDetailModel>> Function() action,
-  ) async {
+    Future<Either<Failure, SalesOrderDetailModel>> Function() action, {
+    bool deferNotice = false,
+  }) async {
     isSubmitting.value = true;
-    final result = await action();
-    isSubmitting.value = false;
-    result.fold(
-      (f) => Get.snackbar('error'.tr, _humanizeFailure(f)),
-      (order) {
-        detail.value = order;
-        focusOrderStatusTab(order.status);
-        Get.snackbar(
-          'success'.tr,
-          'salesOrderMovedToTab'.trParams({'status': statusLabel(order.status)}),
-        );
-      },
-    );
+    try {
+      final result = await action();
+      result.fold(
+        (f) => deferNotice
+            ? SalesOrderNotice.errorDeferred(_humanizeFailure(f))
+            : SalesOrderNotice.error(_humanizeFailure(f)),
+        (order) {
+          detail.value = order;
+          focusOrderStatusTab(order.status);
+          final msg = 'salesOrderMovedToTab'.trParams({
+            'status': statusLabel(order.status),
+          });
+          if (deferNotice) {
+            SalesOrderNotice.successDeferred(msg);
+          } else {
+            SalesOrderNotice.success(msg);
+          }
+        },
+      );
+    } catch (e) {
+      if (deferNotice) {
+        SalesOrderNotice.errorDeferred(e.toString());
+      } else {
+        SalesOrderNotice.error(e.toString());
+      }
+    } finally {
+      isSubmitting.value = false;
+    }
   }
 
-  Future<void> confirmOrder(int orderId) async {
-    await runAction(() => repository.confirmOrder(orderId));
-  }
-
-  Future<void> markReady(int orderId) async {
-    await runAction(() => repository.markReady(orderId));
-  }
-
-  Future<void> handover(int orderId) async {
-    final body = <String, dynamic>{
-      if (selectedDeliveryCompanyId.value != null)
-        'delivery_company_id': selectedDeliveryCompanyId.value,
-    };
-    if (!isSelectedCompanyShiply && trackingController.text.trim().isNotEmpty) {
-      body['tracking_number'] = trackingController.text.trim();
+  Future<void> withBlockingProgress(
+    Future<void> Function() action, {
+    required String message,
+  }) async {
+    final hostContext = Get.overlayContext ?? Get.context;
+    if (hostContext == null) {
+      await action();
+      return;
     }
 
-    final showShiplyWait = isSelectedCompanyShiply;
-    if (showShiplyWait) {
-      Get.dialog(
-        PopScope(
+    void Function()? closeLoader;
+
+    showDialog<void>(
+      context: hostContext,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (dialogContext) {
+        closeLoader = () {
+          final nav = Navigator.of(dialogContext, rootNavigator: true);
+          if (nav.canPop()) {
+            nav.pop();
+          }
+        };
+        return PopScope(
           canPop: false,
           child: AlertDialog(
             backgroundColor: cardGray,
@@ -846,22 +1023,78 @@ class SalesOrdersController extends GetxController {
               children: [
                 const CircularProgressIndicator(),
                 const SizedBox(width: 16),
-                Expanded(child: Text('shiplyHandoverInProgress'.tr)),
+                Expanded(child: Text(message)),
               ],
             ),
           ),
-        ),
-        barrierDismissible: false,
-      );
-    }
+        );
+      },
+    );
+
+    await WidgetsBinding.instance.endOfFrame;
 
     try {
-      await runAction(() => repository.handover(orderId, body));
+      await action();
+    } catch (e) {
+      SalesOrderNotice.errorDeferred(e.toString());
     } finally {
-      if (showShiplyWait && Get.isDialogOpen == true) {
-        Get.back();
-      }
+      closeLoader?.call();
     }
+  }
+
+  Future<void> confirmOrder(int orderId) async {
+    await withBlockingProgress(
+      () => runAction(
+        () => repository.confirmOrder(orderId),
+        deferNotice: true,
+      ),
+      message: 'salesOrderActionInProgress'.tr,
+    );
+  }
+
+  Future<void> markReady(int orderId) async {
+    await withBlockingProgress(
+      () => runAction(
+        () => repository.markReady(orderId),
+        deferNotice: true,
+      ),
+      message: 'salesOrderActionInProgress'.tr,
+    );
+  }
+
+  Future<void> handover(int orderId) async {
+    final body = <String, dynamic>{
+      if (selectedDeliveryCompanyId.value != null)
+        'delivery_company_id': selectedDeliveryCompanyId.value,
+    };
+    if (isSelectedCompanyTaxi) {
+      body['tracking_number'] = trackingController.text.trim();
+      body['carrier_contact_name'] = carrierContactNameController.text.trim();
+      body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();
+    } else if (isSelectedCompanyOffice) {
+      body['carrier_office_name'] = carrierOfficeNameController.text.trim();
+      body['carrier_contact_name'] = carrierContactNameController.text.trim();
+      body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();
+      body['carrier_vehicle_number'] = carrierVehicleNumberController.text.trim();
+    } else if (!isSelectedCompanyShiply &&
+        !isSelectedCompanyDoctorBike &&
+        trackingController.text.trim().isNotEmpty) {
+      body['tracking_number'] = trackingController.text.trim();
+    }
+
+    final showShiplyWait = isSelectedCompanyShiply;
+    if (showShiplyWait) {
+      await withBlockingProgress(
+        () => runAction(
+          () => repository.handover(orderId, body),
+          deferNotice: true,
+        ),
+        message: 'shiplyHandoverInProgress'.tr,
+      );
+      return;
+    }
+
+    await runAction(() => repository.handover(orderId, body));
   }
 
   Future<void> deliver(int orderId) async {
@@ -920,14 +1153,13 @@ class SalesOrdersController extends GetxController {
     );
     isSubmitting.value = false;
     result.fold(
-      (f) => Get.snackbar('error'.tr, _humanizeFailure(f)),
+      (f) => SalesOrderNotice.error(_humanizeFailure(f)),
       (data) {
         final updated = data['updated'] as int? ?? 0;
         final failed = (data['failed'] as List<dynamic>? ?? []).length;
         toggleBulkMode(false);
         loadOrders();
-        Get.snackbar(
-          'success'.tr,
+        SalesOrderNotice.success(
           failed > 0
               ? 'salesOrderBulkPartial'.trParams({
                   'ok': '$updated',
@@ -956,11 +1188,11 @@ class SalesOrdersController extends GetxController {
     final result = await repository.followUp(orderId);
     isSubmitting.value = false;
     result.fold(
-      (f) => Get.snackbar('error'.tr, f.errMessage),
+      (f) => SalesOrderNotice.error(f.errMessage),
       (order) {
         detail.value = order;
         loadOrders();
-        Get.snackbar('success'.tr, 'salesOrderFollowUpCreated'.tr);
+        SalesOrderNotice.success('salesOrderFollowUpCreated'.tr);
       },
     );
   }
@@ -1022,7 +1254,7 @@ class SalesOrdersController extends GetxController {
     isSubmitting.value = false;
 
     await result.fold(
-      (f) async => Get.snackbar('error'.tr, f.errMessage),
+      (f) async => SalesOrderNotice.error(f.errMessage),
       (report) async {
         final pdfUrl = report['pdf_url']?.toString() ?? '';
         final serial = report['serial_number']?.toString() ?? '#$orderId';
@@ -1063,8 +1295,11 @@ class SalesOrdersController extends GetxController {
     );
   }
 
-  Future<void> pickAndUploadMedia(int orderId) async {
-    final category = await showSalesOrderMediaCategorySheet();
+  Future<void> pickAndUploadMedia(
+    int orderId, {
+    String? presetCategory,
+  }) async {
+    final category = presetCategory ?? await showSalesOrderMediaCategorySheet();
     if (category == null) return;
 
     final source = await showSalesOrderMediaSourceSheet();
@@ -1084,7 +1319,7 @@ class SalesOrdersController extends GetxController {
     switch (choice) {
       case 'camera_image':
         if (!await ensureCameraPermission()) {
-          showMediaPermissionDeniedSnackbar();
+          SalesOrderNotice.error('cameraPermissionDenied'.tr);
           return;
         }
         final image = await picker.pickImage(source: ImageSource.camera);
@@ -1092,7 +1327,7 @@ class SalesOrdersController extends GetxController {
         break;
       case 'camera_video':
         if (!await ensureCameraPermission()) {
-          showMediaPermissionDeniedSnackbar();
+          SalesOrderNotice.error('cameraPermissionDenied'.tr);
           return;
         }
         final video = await picker.pickVideo(source: ImageSource.camera);
@@ -1100,7 +1335,7 @@ class SalesOrdersController extends GetxController {
         break;
       case 'gallery_mixed':
         if (!await ensurePhotosPermission()) {
-          showMediaPermissionDeniedSnackbar();
+          SalesOrderNotice.error('cameraPermissionDenied'.tr);
           return;
         }
         final result = await FilePicker.platform.pickFiles(
@@ -1133,24 +1368,27 @@ class SalesOrdersController extends GetxController {
 
     if (picked.isEmpty) return;
 
-    final multipart = <dio.MultipartFile>[];
-    for (final file in picked) {
-      multipart.add(
-        await dio.MultipartFile.fromFile(file.path, filename: file.name),
-      );
-    }
+    await withBlockingProgress(() async {
+      final multipart = <dio.MultipartFile>[];
+      for (final file in picked) {
+        multipart.add(
+          await dio.MultipartFile.fromFile(file.path, filename: file.name),
+        );
+      }
 
-    isSubmitting.value = true;
-    final uploadResult =
-        await repository.uploadMedia(orderId, multipart, category: category);
-    isSubmitting.value = false;
-    uploadResult.fold(
-      (f) => Get.snackbar('error'.tr, _humanizeFailure(f)),
-      (order) {
-        detail.value = order;
-        Get.snackbar('success'.tr, 'salesOrderMediaUploaded'.tr);
-      },
-    );
+      final uploadResult = await repository.uploadMedia(
+        orderId,
+        multipart,
+        category: category,
+      );
+      uploadResult.fold(
+        (f) => SalesOrderNotice.errorDeferred(_humanizeFailure(f)),
+        (order) {
+          detail.value = order;
+          SalesOrderNotice.successDeferred('salesOrderMediaUploaded'.tr);
+        },
+      );
+    }, message: 'salesOrderMediaUploadInProgress'.tr);
   }
 
   String _humanizeFailure(Failure f) {
@@ -1184,8 +1422,10 @@ class SalesOrdersController extends GetxController {
     if (msg.toLowerCase().contains('unauthorized')) {
       return 'shiplyUnauthorizedHint'.tr;
     }
-    if (msg == 'حدث خطأ غير معروف' || msg.toLowerCase() == 'unknown error') {
-      return 'shiplyHandoverFailedGeneric'.tr;
+    if (msg.contains('حدث خطأ') ||
+        msg.toLowerCase().contains('something_wrong') ||
+        msg.toLowerCase() == 'unknown error') {
+      return 'salesOrderActionFailedGeneric'.tr;
     }
     return f.errMessage;
   }

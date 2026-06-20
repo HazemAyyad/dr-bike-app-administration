@@ -294,8 +294,21 @@ class SalesOrderDetailModel {
     final childJson = json['child_orders'] as List<dynamic>? ?? [];
     final logsJson = json['status_logs'] as List<dynamic>? ?? [];
     final trackingJson = json['shiply_tracking'] as Map<String, dynamic>?;
-    final mediaReqJson =
-        json['media_requirements'] as Map<String, dynamic>? ?? {};
+    final mediaReqRaw = json['media_requirements'];
+    final mediaRequirements = <String, SalesOrderMediaRequirementModel>{};
+    if (mediaReqRaw is Map) {
+      for (final entry in mediaReqRaw.entries) {
+        final value = entry.value;
+        if (value is Map<String, dynamic>) {
+          mediaRequirements[entry.key.toString()] =
+              SalesOrderMediaRequirementModel.fromJson(
+            entry.key.toString(),
+            value,
+          );
+        }
+      }
+    }
+
     return SalesOrderDetailModel(
       id: json['id'] as int,
       serialNumber: json['serial_number'] as String?,
@@ -342,15 +355,7 @@ class SalesOrderDetailModel {
       shiplyTracking: trackingJson != null
           ? SalesOrderShiplyTrackingModel.fromJson(trackingJson)
           : null,
-      mediaRequirements: mediaReqJson.map(
-        (key, value) => MapEntry(
-          key,
-          SalesOrderMediaRequirementModel.fromJson(
-            key,
-            value as Map<String, dynamic>,
-          ),
-        ),
-      ),
+      mediaRequirements: mediaRequirements,
     );
   }
 }

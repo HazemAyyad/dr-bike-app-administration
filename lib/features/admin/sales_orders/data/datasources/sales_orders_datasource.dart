@@ -102,18 +102,19 @@ class SalesOrdersDatasource {
     List<MultipartFile> files, {
     String? category,
   }) async {
-    final formData = <String, dynamic>{
-      'sales_order_id': orderId,
-      if (category != null && category.isNotEmpty) 'category': category,
-    };
-    for (var i = 0; i < files.length; i++) {
-      formData['media[$i]'] = files[i];
+    final formData = FormData();
+    formData.fields.add(MapEntry('sales_order_id', orderId.toString()));
+    if (category != null && category.isNotEmpty) {
+      formData.fields.add(MapEntry('category', category));
+    }
+    for (final file in files) {
+      formData.files.add(MapEntry('media[]', file));
     }
 
     final raw = await api.post(
       EndPoints.salesOrderMedia,
       data: formData,
-      isFormData: true,
+      isFormData: false,
     );
     final response = _asMap(raw);
     _ensureSuccess(response);

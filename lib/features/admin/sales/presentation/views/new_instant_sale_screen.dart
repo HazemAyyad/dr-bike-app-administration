@@ -36,6 +36,13 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
     _ensurePaymentController();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+        final payment = Get.find<PaymentController>(tag: kInstantSalePaymentTag);
+        if (controller.activeSuspendedSaleId.value == null &&
+            controller.activeEditInstantSaleId.value == null) {
+          payment.clearPaymentForm();
+        }
+      }
       await controller.loadDailySession();
       if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
         controller.applyDailyBoxToPayment(
@@ -65,10 +72,6 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
     if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
       final existing = Get.find<PaymentController>(tag: kInstantSalePaymentTag);
       existing.forInstantSale = true;
-      if (controller.activeSuspendedSaleId.value == null &&
-          controller.activeEditInstantSaleId.value == null) {
-        existing.clearPaymentForm();
-      }
       return;
     }
 

@@ -44,10 +44,43 @@ const String kDrBikeAdminAttendanceChannelName = 'تنبيهات خروج الم
 const String kDrBikeTaskSuccessChannelId = 'dr_bike_task_success_notifications';
 const String kDrBikeTaskSuccessChannelName = 'إنجاز المهام';
 
+/// Must match Laravel [FirebaseService::SHIPLY_MOTORCYCLE_CHANNEL_ID].
+const String kDrBikeShiplyMotorcycleChannelId = 'dr_bike_shiply_motorcycle';
+const String kDrBikeShiplyMotorcycleChannelName = 'تحديثات شبلي';
+
+/// Must match Laravel [FirebaseService::SHIPLY_STUCK_CHANNEL_ID].
+const String kDrBikeShiplyStuckChannelId = 'dr_bike_shiply_stuck_alert';
+const String kDrBikeShiplyStuckChannelName = 'شبلي — عالقة';
+
+/// Must match Laravel [FirebaseService::SHIPLY_RETURNED_CHANNEL_ID].
+const String kDrBikeShiplyReturnedChannelId = 'dr_bike_shiply_returned_ambulance';
+const String kDrBikeShiplyReturnedChannelName = 'شبلي — راجع';
+
+/// Must match Laravel [FirebaseService::SHIPLY_DELIVERED_CHANNEL_ID].
+const String kDrBikeShiplyDeliveredChannelId = 'dr_bike_shiply_delivered_finale';
+const String kDrBikeShiplyDeliveredChannelName = 'توصيل شبلي';
+
+/// Must match Laravel [FirebaseService::SALES_ORDER_STATUS_CHANNEL_ID].
+const String kDrBikeSalesOrderStatusChannelId = 'dr_bike_sales_order_status';
+const String kDrBikeSalesOrderStatusChannelName = 'تحديثات الطلبيات';
+
+const int kShiplyParcelStatusPending = 5;
+const int kShiplyParcelStatusReturned = 7;
+
 const String kTaskSosSoundResource = 'task_sos_alert';
 const String kTaskSosSoundIos = 'task_sos_alert.mp3';
 const String kTaskSuccessSoundResource = 'task_success';
 const String kTaskSuccessSoundIos = 'task_success.wav';
+const String kShiplyMotorcycleSoundResource = 'shiply_motorcycle';
+const String kShiplyMotorcycleSoundIos = 'shiply_motorcycle.wav';
+const String kShiplyStuckSoundResource = 'shiply_stuck';
+const String kShiplyStuckSoundIos = 'shiply_stuck.wav';
+const String kShiplyReturnedSoundResource = 'shiply_returned';
+const String kShiplyReturnedSoundIos = 'shiply_returned.wav';
+const String kShiplyDeliveredSoundResource = 'shiply_delivered';
+const String kShiplyDeliveredSoundIos = 'shiply_delivered.wav';
+const String kSalesOrderChurchBellSoundResource = 'sales_order_church_bell';
+const String kSalesOrderChurchBellSoundIos = 'sales_order_church_bell.wav';
 const String kAdminLoginMotivateSoundResource = 'admin_login_motivate';
 const String kAdminLoginMotivateSoundIos = 'admin_login_motivate.wav';
 
@@ -59,9 +92,29 @@ final Int64List kTaskSosVibrationPattern =
 final Int64List kTaskSuccessVibrationPattern =
     Int64List.fromList([0, 100, 60, 140]);
 
+/// Motorcycle-style vibration for Shiply tracking updates.
+final Int64List kShiplyMotorcycleVibrationPattern =
+    Int64List.fromList([0, 120, 80, 160, 80, 140]);
+
+/// Crash-style vibration for stuck/pending Shiply parcels.
+final Int64List kShiplyStuckVibrationPattern =
+    Int64List.fromList([0, 500, 200, 600, 200, 500]);
+
+/// Ambulance-style vibration for returned Shiply parcels.
+final Int64List kShiplyReturnedVibrationPattern =
+    Int64List.fromList([0, 280, 140, 280, 140, 280, 140, 320]);
+
+/// Celebration vibration for Shiply delivered (coins + whistle).
+final Int64List kShiplyDeliveredVibrationPattern =
+    Int64List.fromList([0, 70, 50, 90, 50, 110, 80, 200, 100, 260]);
+
 /// Energetic vibration for admin login (motivational).
 final Int64List kAdminLoginMotivateVibrationPattern =
     Int64List.fromList([0, 180, 90, 180, 90, 280]);
+
+/// Church-bell style vibration for sales order status changes.
+final Int64List kSalesOrderStatusVibrationPattern =
+    Int64List.fromList([0, 220, 120, 280, 120, 320]);
 
 /// Urgent employee task FCM types (SOS tone).
 const Set<String> kEmployeeTaskUrgentNotificationTypes = {
@@ -96,6 +149,28 @@ const Set<String> kAdminLogoutNotificationTypes = {
   'employee_logout_pending_tasks',
 };
 
+/// Shiply handover / tracking FCM types (sound depends on parcel_status_id).
+const Set<String> kShiplyTrackingNotificationTypes = {
+  'sales_order_shiply_handover',
+  'sales_order_shiply_status',
+};
+
+/// Shiply delivered FCM type (coins + end whistle).
+const Set<String> kShiplyDeliveredNotificationTypes = {
+  'sales_order_shiply_delivered',
+};
+
+/// Sales order manual status change FCM type (church bell).
+const Set<String> kSalesOrderStatusNotificationTypes = {
+  'sales_order_status',
+};
+
+/// All Shiply admin notification types.
+const Set<String> kShiplyNotificationTypes = {
+  ...kShiplyTrackingNotificationTypes,
+  ...kShiplyDeliveredNotificationTypes,
+};
+
 bool isEmployeeTaskUrgentNotificationType(String? type) =>
     type != null && kEmployeeTaskUrgentNotificationTypes.contains(type);
 
@@ -108,12 +183,49 @@ bool isAdminLoginNotificationType(String? type) =>
 bool isAdminLogoutNotificationType(String? type) =>
     type != null && kAdminLogoutNotificationTypes.contains(type);
 
+bool isShiplyNotificationType(String? type) =>
+    type != null && kShiplyNotificationTypes.contains(type);
+
+bool isShiplyTrackingNotificationType(String? type) =>
+    type != null && kShiplyTrackingNotificationTypes.contains(type);
+
+bool isShiplyDeliveredNotificationType(String? type) =>
+    type != null && kShiplyDeliveredNotificationTypes.contains(type);
+
+bool isSalesOrderStatusNotificationType(String? type) =>
+    type != null && kSalesOrderStatusNotificationTypes.contains(type);
+
+_TrayAlertStyle? resolveShiplyTrayStyle(String type, Map<String, dynamic> data) {
+  if (isShiplyDeliveredNotificationType(type)) {
+    return _TrayAlertStyle.shiplyDelivered;
+  }
+  if (!isShiplyTrackingNotificationType(type)) {
+    return null;
+  }
+
+  final statusId =
+      int.tryParse(data['parcel_status_id']?.toString() ?? '') ?? 0;
+  if (statusId == kShiplyParcelStatusReturned) {
+    return _TrayAlertStyle.shiplyReturned;
+  }
+  if (statusId == kShiplyParcelStatusPending) {
+    return _TrayAlertStyle.shiplyStuck;
+  }
+
+  return _TrayAlertStyle.shiplyMotorcycle;
+}
+
 enum _TrayAlertStyle {
   normal,
   employeeTaskUrgent,
   taskSuccess,
   adminLogin,
   adminLogout,
+  shiplyMotorcycle,
+  shiplyStuck,
+  shiplyReturned,
+  shiplyDelivered,
+  salesOrderStatus,
 }
 
 /// google-services.json (android/app) — compare with [DefaultFirebaseOptions.android.projectId].
@@ -562,10 +674,85 @@ class NotificationFirebaseService {
     );
     await androidPlugin?.createNotificationChannel(taskSuccessChannel);
 
+    final shiplyMotorcycleChannel = AndroidNotificationChannel(
+      kDrBikeShiplyMotorcycleChannelId,
+      kDrBikeShiplyMotorcycleChannelName,
+      description: 'صوت درّاجة نارية (بنزين) لتحديثات شبلي',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(
+        kShiplyMotorcycleSoundResource,
+      ),
+      enableVibration: true,
+      vibrationPattern: kShiplyMotorcycleVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(shiplyMotorcycleChannel);
+
+    final shiplyStuckChannel = AndroidNotificationChannel(
+      kDrBikeShiplyStuckChannelId,
+      kDrBikeShiplyStuckChannelName,
+      description: 'صوت حادث عند تعثر الطرد مع شبلي',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(kShiplyStuckSoundResource),
+      enableVibration: true,
+      vibrationPattern: kShiplyStuckVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(shiplyStuckChannel);
+
+    final shiplyReturnedChannel = AndroidNotificationChannel(
+      kDrBikeShiplyReturnedChannelId,
+      kDrBikeShiplyReturnedChannelName,
+      description: 'صوت إسعاف عند رجوع الطرد من شبلي',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(
+        kShiplyReturnedSoundResource,
+      ),
+      enableVibration: true,
+      vibrationPattern: kShiplyReturnedVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(shiplyReturnedChannel);
+
+    final shiplyDeliveredChannel = AndroidNotificationChannel(
+      kDrBikeShiplyDeliveredChannelId,
+      kDrBikeShiplyDeliveredChannelName,
+      description: 'عملات معدنية + صفارة نهاية عند توصيل شبلي',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(kShiplyDeliveredSoundResource),
+      enableVibration: true,
+      vibrationPattern: kShiplyDeliveredVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(shiplyDeliveredChannel);
+
+    final salesOrderStatusChannel = AndroidNotificationChannel(
+      kDrBikeSalesOrderStatusChannelId,
+      kDrBikeSalesOrderStatusChannelName,
+      description: 'جرس كنيسة عند تغيير مرحلة الطلبية',
+      importance: Importance.max,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound(
+        kSalesOrderChurchBellSoundResource,
+      ),
+      enableVibration: true,
+      vibrationPattern: kSalesOrderStatusVibrationPattern,
+      showBadge: true,
+    );
+    await androidPlugin?.createNotificationChannel(salesOrderStatusChannel);
+
     debugPrint(
       '[FCM] Android channels: admin=$kDrBikeAdminNotificationChannelId '
       'task=$kDrBikeTaskNotificationChannelId login=$kDrBikeAdminLoginChannelId '
-      'logout=$kDrBikeAdminAttendanceChannelId success=$kDrBikeTaskSuccessChannelId',
+      'logout=$kDrBikeAdminAttendanceChannelId success=$kDrBikeTaskSuccessChannelId '
+      'shiplyMotor=$kDrBikeShiplyMotorcycleChannelId shiplyStuck=$kDrBikeShiplyStuckChannelId '
+      'shiplyReturned=$kDrBikeShiplyReturnedChannelId '
+      'delivered=$kDrBikeShiplyDeliveredChannelId '
+      'salesOrderStatus=$kDrBikeSalesOrderStatusChannelId',
     );
 
     const initializationSettingsAndroid =
@@ -644,11 +831,16 @@ class NotificationFirebaseService {
 
   Future<void> showForegroundNotification(RemoteMessage message) async {
     final type = message.data['type']?.toString() ?? '';
+    final shiplyStyle = resolveShiplyTrayStyle(type, message.data);
     final _TrayAlertStyle style;
     if (isAdminLoginNotificationType(type)) {
       style = _TrayAlertStyle.adminLogin;
     } else if (isAdminLogoutNotificationType(type)) {
       style = _TrayAlertStyle.adminLogout;
+    } else if (shiplyStyle != null) {
+      style = shiplyStyle;
+    } else if (isSalesOrderStatusNotificationType(type)) {
+      style = _TrayAlertStyle.salesOrderStatus;
     } else if (isTaskSuccessNotificationType(type)) {
       style = _TrayAlertStyle.taskSuccess;
     } else if (isEmployeeTaskUrgentNotificationType(type)) {
@@ -763,6 +955,111 @@ class NotificationFirebaseService {
           contentTitle: title,
         ),
       );
+    } else if (style == _TrayAlertStyle.shiplyMotorcycle) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeShiplyMotorcycleChannelId,
+        kDrBikeShiplyMotorcycleChannelName,
+        channelDescription: 'صوت درّاجة نارية (بنزين) لتحديثات شبلي',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kShiplyMotorcycleSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kShiplyMotorcycleVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.shiplyStuck) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeShiplyStuckChannelId,
+        kDrBikeShiplyStuckChannelName,
+        channelDescription: 'صوت حادث عند تعثر الطرد مع شبلي',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kShiplyStuckSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kShiplyStuckVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.shiplyReturned) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeShiplyReturnedChannelId,
+        kDrBikeShiplyReturnedChannelName,
+        channelDescription: 'صوت إسعاف عند رجوع الطرد من شبلي',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kShiplyReturnedSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kShiplyReturnedVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.shiplyDelivered) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeShiplyDeliveredChannelId,
+        kDrBikeShiplyDeliveredChannelName,
+        channelDescription: 'عملات معدنية + صفارة نهاية عند توصيل شبلي',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kShiplyDeliveredSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kShiplyDeliveredVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
+    } else if (style == _TrayAlertStyle.salesOrderStatus) {
+      androidDetails = AndroidNotificationDetails(
+        kDrBikeSalesOrderStatusChannelId,
+        kDrBikeSalesOrderStatusChannelName,
+        channelDescription: 'جرس كنيسة عند تغيير مرحلة الطلبية',
+        icon: 'ic_notification',
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        sound: const RawResourceAndroidNotificationSound(
+          kSalesOrderChurchBellSoundResource,
+        ),
+        enableVibration: true,
+        vibrationPattern: kSalesOrderStatusVibrationPattern,
+        visibility: NotificationVisibility.public,
+        color: AppColors.primaryColor,
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+        ),
+      );
     } else {
       androidDetails = AndroidNotificationDetails(
         kDrBikeAdminNotificationChannelId,
@@ -785,6 +1082,16 @@ class NotificationFirebaseService {
     final String? iosSound;
     if (style == _TrayAlertStyle.taskSuccess) {
       iosSound = kTaskSuccessSoundIos;
+    } else if (style == _TrayAlertStyle.shiplyDelivered) {
+      iosSound = kShiplyDeliveredSoundIos;
+    } else if (style == _TrayAlertStyle.shiplyMotorcycle) {
+      iosSound = kShiplyMotorcycleSoundIos;
+    } else if (style == _TrayAlertStyle.shiplyStuck) {
+      iosSound = kShiplyStuckSoundIos;
+    } else if (style == _TrayAlertStyle.shiplyReturned) {
+      iosSound = kShiplyReturnedSoundIos;
+    } else if (style == _TrayAlertStyle.salesOrderStatus) {
+      iosSound = kSalesOrderChurchBellSoundIos;
     } else if (style == _TrayAlertStyle.adminLogin) {
       iosSound = kAdminLoginMotivateSoundIos;
     } else if (style == _TrayAlertStyle.employeeTaskUrgent ||

@@ -20,7 +20,7 @@ import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_cart_s
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_payment_section.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../controllers/sales_orders_controller.dart';
-import '../widgets/sales_order_shiply_address_section.dart';
+import '../widgets/sales_order_delivery_section.dart';
 import '../widgets/sales_order_checkout_totals.dart';
 
 /// مراجعة الطلبية قبل الحفظ — نفس تدفق البيع الفوري.
@@ -42,6 +42,10 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
     _ensurePaymentController();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      if (Get.isRegistered<PaymentController>(tag: kSalesOrderPaymentTag)) {
+        final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
+        payment.clearPaymentForm();
+      }
       await sales.loadDailySession();
       if (Get.isRegistered<PaymentController>(tag: kSalesOrderPaymentTag)) {
         final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
@@ -74,6 +78,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
       if (orders.cities.isEmpty) {
         await orders.loadLookups();
       }
+      orders.pickDefaultDeliveryCompany(orders.detail.value);
     });
   }
 
@@ -82,7 +87,6 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
       final existing =
           Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
       existing.forInstantSale = true;
-      existing.clearPaymentForm();
       return;
     }
 
@@ -191,7 +195,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                 Obx(() {
                   final _ = sales.cartRevision.value;
                   final parcelPrice = sales.totalCost.value;
-                  return SalesOrderShiplyAddressSection(
+                  return SalesOrderDeliverySection(
                     parcelPriceForFee: parcelPrice,
                   );
                 }),

@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../checks/data/models/check_model.dart';
 import '../../../../../core/helpers/phone_format_helper.dart';
 import '../controllers/sales_orders_controller.dart';
+import 'sales_order_notice.dart';
 
 /// Select customer / seller (or add new) before Shiply handover.
 class SalesOrderShiplyCustomerDialog extends StatefulWidget {
@@ -136,17 +137,14 @@ class _SalesOrderShiplyCustomerDialogState
                         onPressed: () async {
                           final name = nameController.text.trim();
                           if (name.isEmpty) {
-                            Get.snackbar('error'.tr, 'salesOrderShiplyNameRequired'.tr);
+                            SalesOrderNotice.error('salesOrderShiplyNameRequired'.tr);
                             return;
                           }
                           final phone =
                               PhoneFormatHelper.forApi(phoneController.text);
                           if (phone.isNotEmpty &&
                               !PhoneFormatHelper.isValidApiPhone(phone)) {
-                            Get.snackbar(
-                              'error'.tr,
-                              'salesOrderShiplyPhoneInvalid'.tr,
-                            );
+                            SalesOrderNotice.error('salesOrderShiplyPhoneInvalid'.tr);
                             return;
                           }
                           final partner =
@@ -185,7 +183,7 @@ class _SalesOrderShiplyCustomerDialogState
   Future<void> _onSave() async {
     final partner = _selected;
     if (partner == null) {
-      Get.snackbar('error'.tr, 'salesOrderShiplyPartnerRequired'.tr);
+      SalesOrderNotice.error('salesOrderShiplyPartnerRequired'.tr);
       return;
     }
 

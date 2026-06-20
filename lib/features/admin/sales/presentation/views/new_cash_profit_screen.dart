@@ -39,6 +39,10 @@ class _NewCashProfitScreenState extends State<NewCashProfitScreen> {
     _ensurePaymentController();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      if (Get.isRegistered<PaymentController>(tag: kProfitSalePaymentTag)) {
+        Get.find<PaymentController>(tag: kProfitSalePaymentTag)
+            .clearPaymentForm();
+      }
       await controller.loadDailySession();
       controller.applyDailyBoxToPayment(payment);
     });
@@ -48,7 +52,6 @@ class _NewCashProfitScreenState extends State<NewCashProfitScreen> {
     if (Get.isRegistered<PaymentController>(tag: kProfitSalePaymentTag)) {
       final existing = Get.find<PaymentController>(tag: kProfitSalePaymentTag);
       existing.forInstantSale = true;
-      existing.clearPaymentForm();
       return;
     }
 

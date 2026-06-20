@@ -20,6 +20,11 @@
 		F1A2B3C41CF9000F007C117E /* task_sos_alert.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = F1A2B3C31CF9000F007C117E /* task_sos_alert.mp3 */; };
 		F2B3C4D51CF9000F007C117F /* task_success.wav in Resources */ = {isa = PBXBuildFile; fileRef = F2B3C4D41CF9000F007C117F /* task_success.wav */; };
 		F3C4D5E61CF9000F007C1180 /* admin_login_motivate.wav in Resources */ = {isa = PBXBuildFile; fileRef = F3C4D5E51CF9000F007C1180 /* admin_login_motivate.wav */; };
+		F4D5E6F71CF9000F007C1181 /* shiply_motorcycle.wav in Resources */ = {isa = PBXBuildFile; fileRef = F4D5E6F61CF9000F007C1181 /* shiply_motorcycle.wav */; };
+		F5E6F7081CF9000F007C1182 /* shiply_delivered.wav in Resources */ = {isa = PBXBuildFile; fileRef = F5E6F7071CF9000F007C1182 /* shiply_delivered.wav */; };
+		F6G7H8091CF9000F007C1183 /* sales_order_church_bell.wav in Resources */ = {isa = PBXBuildFile; fileRef = F6G7H8081CF9000F007C1183 /* sales_order_church_bell.wav */; };
+		F6F708091CF9000F007C1183 /* shiply_stuck.wav in Resources */ = {isa = PBXBuildFile; fileRef = F6F708081CF9000F007C1183 /* shiply_stuck.wav */; };
+		F7F8091A1CF9000F007C1184 /* shiply_returned.wav in Resources */ = {isa = PBXBuildFile; fileRef = F7F809191CF9000F007C1184 /* shiply_returned.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +79,11 @@
 		F1A2B3C31CF9000F007C117E /* task_sos_alert.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = task_sos_alert.mp3; sourceTree = "<group>"; };
 		F2B3C4D41CF9000F007C117F /* task_success.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = task_success.wav; sourceTree = "<group>"; };
 		F3C4D5E51CF9000F007C1180 /* admin_login_motivate.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = admin_login_motivate.wav; sourceTree = "<group>"; };
+		F4D5E6F61CF9000F007C1181 /* shiply_motorcycle.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = shiply_motorcycle.wav; sourceTree = "<group>"; };
+		F5E6F7071CF9000F007C1182 /* shiply_delivered.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = shiply_delivered.wav; sourceTree = "<group>"; };
+		F6G7H8081CF9000F007C1183 /* sales_order_church_bell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sales_order_church_bell.wav; sourceTree = "<group>"; };
+		F6F708081CF9000F007C1183 /* shiply_stuck.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = shiply_stuck.wav; sourceTree = "<group>"; };
+		F7F809191CF9000F007C1184 /* shiply_returned.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = shiply_returned.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -174,6 +184,11 @@
 				F1A2B3C31CF9000F007C117E /* task_sos_alert.mp3 */,
 				F2B3C4D41CF9000F007C117F /* task_success.wav */,
 				F3C4D5E51CF9000F007C1180 /* admin_login_motivate.wav */,
+				F4D5E6F61CF9000F007C1181 /* shiply_motorcycle.wav */,
+				F5E6F7071CF9000F007C1182 /* shiply_delivered.wav */,
+				F6G7H8081CF9000F007C1183 /* sales_order_church_bell.wav */,
+				F6F708081CF9000F007C1183 /* shiply_stuck.wav */,
+				F7F809191CF9000F007C1184 /* shiply_returned.wav */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -282,6 +297,11 @@
 				F1A2B3C41CF9000F007C117E /* task_sos_alert.mp3 in Resources */,
 				F2B3C4D51CF9000F007C117F /* task_success.wav in Resources */,
 				F3C4D5E61CF9000F007C1180 /* admin_login_motivate.wav in Resources */,
+				F4D5E6F71CF9000F007C1181 /* shiply_motorcycle.wav in Resources */,
+				F5E6F7081CF9000F007C1182 /* shiply_delivered.wav in Resources */,
+				F6G7H8091CF9000F007C1183 /* sales_order_church_bell.wav in Resources */,
+				F6F708091CF9000F007C1183 /* shiply_stuck.wav in Resources */,
+				F7F8091A1CF9000F007C1184 /* shiply_returned.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
