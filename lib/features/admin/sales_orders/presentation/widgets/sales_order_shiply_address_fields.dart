@@ -8,18 +8,20 @@ import '../controllers/sales_orders_controller.dart';
 
 import 'sales_order_shiply_sandbox_badge.dart';
 
-/// Searchable Shiply city / village / street fields (gray UI, no purple).
+/// Searchable city / village / street fields for delivery handover.
 class SalesOrderShiplyAddressFields extends StatelessWidget {
   const SalesOrderShiplyAddressFields({
     Key? key,
     required this.controller,
     this.showDeliveryFee = true,
     this.parcelPriceForFee = 0,
+    this.showShiplyBranding = true,
   }) : super(key: key);
 
   final SalesOrdersController controller;
   final bool showDeliveryFee;
   final double parcelPriceForFee;
+  final bool showShiplyBranding;
 
   static PopupProps<ShiplyCityModel> _cityPopupProps() {
     return PopupProps.menu(
@@ -114,7 +116,9 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
         return Padding(
           padding: EdgeInsets.only(bottom: 8.h),
           child: Text(
-            'shiplyAddressesEmpty'.tr,
+            showShiplyBranding
+                ? 'shiplyAddressesEmpty'.tr
+                : 'salesOrderDeliveryAddressesEmpty'.tr,
             style: TextStyle(
               fontSize: 12.sp,
               color: SalesOrdersController.textSecondary,
@@ -123,13 +127,25 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
         );
       }
 
-      final closedLabel = 'shiplyVillageClosed'.tr;
+      final closedLabel = showShiplyBranding
+          ? 'shiplyVillageClosed'.tr
+          : 'salesOrderDeliveryVillageClosed'.tr;
       final villages = controller.selectedShiplyVillages;
+      final cityLabel = showShiplyBranding
+          ? 'salesOrderShiplyCity'.tr
+          : 'salesOrderDeliveryCity'.tr;
+      final villageLabel = showShiplyBranding
+          ? 'salesOrderShiplyVillage'.tr
+          : 'salesOrderDeliveryVillage'.tr;
+      final feeHint = showShiplyBranding
+          ? 'shiplyDeliveryFeeHint'.tr
+          : 'salesOrderDeliveryFeeHint'.tr;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SalesOrderShiplySandboxBadge(controller: controller),
+          if (showShiplyBranding)
+            SalesOrderShiplySandboxBadge(controller: controller),
           DropdownSearch<ShiplyCityModel>(
             selectedItem: _selectedCity(),
             items: (filter, _) async => _filterCities(filter),
@@ -137,7 +153,7 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
             compareFn: (a, b) => a.id == b.id,
             popupProps: _cityPopupProps(),
             decoratorProps: DropDownDecoratorProps(
-              decoration: _fieldDecoration('salesOrderShiplyCity'.tr),
+              decoration: _fieldDecoration(cityLabel),
             ),
             onChanged: (city) => controller.onShiplyCityChanged(city?.id),
           ),
@@ -174,7 +190,7 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
               ),
             ),
             decoratorProps: DropDownDecoratorProps(
-              decoration: _fieldDecoration('salesOrderShiplyVillage'.tr),
+              decoration: _fieldDecoration(villageLabel),
             ),
             onChanged: villages.isEmpty
                 ? null
@@ -209,7 +225,7 @@ class SalesOrderShiplyAddressFields extends StatelessWidget {
             ),
             SizedBox(height: 4.h),
             Text(
-              'shiplyDeliveryFeeHint'.tr,
+              feeHint,
               style: TextStyle(
                 fontSize: 11.sp,
                 color: SalesOrdersController.textSecondary,

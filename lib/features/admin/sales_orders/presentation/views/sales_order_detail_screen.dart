@@ -300,13 +300,16 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   }
 
   bool _hasLogisticsInfo(SalesOrderDetailModel order) {
+    final handover = order.latestHandover;
     return (order.trackingNumber != null && order.trackingNumber!.isNotEmpty) ||
         (order.deliveryCompanyName != null &&
             order.deliveryCompanyName!.isNotEmpty) ||
+        handover != null ||
         order.shiplyTracking != null;
   }
 
   Widget _logisticsCard(SalesOrderDetailModel order) {
+    final handover = order.latestHandover;
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
@@ -329,8 +332,44 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
           if (order.deliveryCompanyName != null &&
               order.deliveryCompanyName!.isNotEmpty)
             _infoRow(Icons.local_shipping_outlined, order.deliveryCompanyName!),
-          if (order.trackingNumber != null && order.trackingNumber!.isNotEmpty)
-            _infoRow(Icons.qr_code_2_outlined, order.trackingNumber!),
+          if (handover != null) ...[
+            if (handover.isTaxi) ...[
+              if ((handover.trackingNumber ?? '').isNotEmpty)
+                _infoRow(Icons.local_taxi_outlined,
+                    '${'salesOrderTaxiNumber'.tr}: ${handover.trackingNumber}'),
+              if ((handover.carrierContactName ?? '').isNotEmpty)
+                _infoRow(Icons.person_outline,
+                    '${'salesOrderTaxiDriver'.tr}: ${handover.carrierContactName}'),
+              if ((handover.carrierContactPhone ?? '').isNotEmpty)
+                _infoRow(Icons.phone_outlined,
+                    '${'salesOrderTaxiPhone'.tr}: ${handover.carrierContactPhone}'),
+            ] else if (handover.isOffice) ...[
+              if ((handover.carrierOfficeName ?? '').isNotEmpty)
+                _infoRow(Icons.store_outlined,
+                    '${'salesOrderOfficeName'.tr}: ${handover.carrierOfficeName}'),
+              if ((handover.carrierContactName ?? '').isNotEmpty)
+                _infoRow(Icons.person_outline,
+                    '${'salesOrderOfficeDriver'.tr}: ${handover.carrierContactName}'),
+              if ((handover.carrierContactPhone ?? '').isNotEmpty)
+                _infoRow(Icons.phone_outlined,
+                    '${'salesOrderOfficePhone'.tr}: ${handover.carrierContactPhone}'),
+              if ((handover.carrierVehicleNumber ?? '').isNotEmpty)
+                _infoRow(Icons.directions_car_outlined,
+                    '${'salesOrderOfficeVehicle'.tr}: ${handover.carrierVehicleNumber}'),
+            ] else if (handover.isShiply) ...[
+              if ((handover.shiplyParcelCode ?? handover.trackingNumber ?? '')
+                  .isNotEmpty)
+                _infoRow(Icons.qr_code_2_outlined,
+                    handover.shiplyParcelCode ?? handover.trackingNumber!),
+            ],
+            if ((handover.handedOverAt ?? '').isNotEmpty)
+              _infoRow(Icons.schedule_outlined,
+                  '${'salesOrderHandedOverAt'.tr}: ${handover.handedOverAt}'),
+          ] else ...[
+            if (order.trackingNumber != null &&
+                order.trackingNumber!.isNotEmpty)
+              _infoRow(Icons.qr_code_2_outlined, order.trackingNumber!),
+          ],
           if (order.shiplyTracking != null) ...[
             if (order.shiplyTracking!.shiplyMode == 'test') ...[
               SizedBox(height: 8.h),
@@ -1320,7 +1359,8 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   Future<bool> _prepareManualDeliveryHandover(SalesOrderDetailModel order) async {
     var current = controller.detail.value ?? order;
     final requiresFullAddress = controller.isSelectedCompanyTaxi ||
-        controller.isSelectedCompanyOffice;
+        controller.isSelectedCompanyOffice ||
+        controller.isSelectedCompanyDoctorBike;
 
     if (!requiresFullAddress && controller.isDeliveryHandoverReady(current)) {
       return true;
@@ -1386,6 +1426,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
           orderId: order.id,
           controller: controller,
           parcelPrice: parcelPrice > 0 ? parcelPrice : current.total,
+          showShiplyBranding: false,
         ),
         barrierDismissible: false,
       );
@@ -1734,7 +1775,7 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                 return Padding(
                   padding: EdgeInsets.only(top: 10.h),
                   child: Text(
-                    'salesOrderDoctorBikeHandoverHint'.tr,
+                    'salesOrderCarrierAddressHint'.tr,
                     style: TextStyle(
                       color: SalesOrdersController.textSecondary,
                       fontSize: 12.sp,
@@ -1788,14 +1829,11 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                 }
 
                 final isShiply = controller.isSelectedCompanyShiply;
-                final isDoctorBike = controller.isSelectedCompanyDoctorBike;
                 Get.back();
 
                 final ready = isShiply
                     ? await _prepareShiplyHandover(order)
-                    : isDoctorBike
-                        ? true
-                        : await _prepareManualDeliveryHandover(order);
+                    : await _prepareManualDeliveryHandover(order);
                 if (!ready) return;
 
                 await controller.loadDetail(orderId);

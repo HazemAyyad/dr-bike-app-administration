@@ -5,18 +5,20 @@ import 'package:get/get.dart';
 import '../controllers/sales_orders_controller.dart';
 import 'sales_order_shiply_address_fields.dart';
 
-/// Modal to capture Shiply address before handover.
+/// Modal to capture delivery address before handover.
 class SalesOrderShiplyAddressDialog extends StatelessWidget {
   const SalesOrderShiplyAddressDialog({
     Key? key,
     required this.orderId,
     required this.controller,
     required this.parcelPrice,
+    this.showShiplyBranding = true,
   }) : super(key: key);
 
   final int orderId;
   final SalesOrdersController controller;
   final double parcelPrice;
+  final bool showShiplyBranding;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,9 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'salesOrderShiplyAddressTitle'.tr,
+                showShiplyBranding
+                    ? 'salesOrderShiplyAddressTitle'.tr
+                    : 'salesOrderCarrierAddressTitle'.tr,
                 style: TextStyle(
                   color: SalesOrdersController.textPrimary,
                   fontWeight: FontWeight.bold,
@@ -41,7 +45,9 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
               ),
               SizedBox(height: 6.h),
               Text(
-                'salesOrderShiplyAddressSubtitle'.tr,
+                showShiplyBranding
+                    ? 'salesOrderShiplyAddressSubtitle'.tr
+                    : 'salesOrderCarrierAddressSubtitle'.tr,
                 style: TextStyle(
                   color: SalesOrdersController.textSecondary,
                   fontSize: 12.sp,
@@ -51,6 +57,7 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
               SalesOrderShiplyAddressFields(
                 controller: controller,
                 parcelPriceForFee: parcelPrice,
+                showShiplyBranding: showShiplyBranding,
               ),
               SizedBox(height: 20.h),
               Obx(() {
@@ -77,8 +84,11 @@ class SalesOrderShiplyAddressDialog extends StatelessWidget {
                         onPressed: busy
                             ? null
                             : () async {
-                                final ok = await controller
-                                    .saveShiplyAddressForOrder(orderId);
+                                final ok = showShiplyBranding
+                                    ? await controller
+                                        .saveShiplyAddressForOrder(orderId)
+                                    : await controller
+                                        .saveCarrierAddressForOrder(orderId);
                                 if (ok) Get.back(result: true);
                               },
                         style: ElevatedButton.styleFrom(

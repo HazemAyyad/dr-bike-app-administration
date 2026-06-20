@@ -766,6 +766,19 @@ class SalesOrdersController extends GetxController {
     return null;
   }
 
+  String? validateCarrierAddressForm() {
+    if (selectedShiplyCityId.value == null) {
+      return 'salesOrderDeliveryCityRequired'.tr;
+    }
+    if (selectedShiplyVillageId.value == null) {
+      return 'salesOrderDeliveryVillageRequired'.tr;
+    }
+    if (customerAddressController.text.trim().isEmpty) {
+      return 'salesOrderStreetRequired'.tr;
+    }
+    return null;
+  }
+
   Map<String, dynamic> buildShiplyAddressPayload() {
     onDeliveryFeeChanged();
     return {
@@ -780,6 +793,28 @@ class SalesOrdersController extends GetxController {
 
   Future<bool> saveShiplyAddressForOrder(int orderId) async {
     final err = validateShiplyAddressForm();
+    if (err != null) {
+      SalesOrderNotice.error(err);
+      return false;
+    }
+    isSubmitting.value = true;
+    final result =
+        await repository.updateOrder(orderId, buildShiplyAddressPayload());
+    isSubmitting.value = false;
+    return result.fold(
+      (f) {
+        SalesOrderNotice.error(_humanizeFailure(f));
+        return false;
+      },
+      (order) {
+        detail.value = order;
+        return true;
+      },
+    );
+  }
+
+  Future<bool> saveCarrierAddressForOrder(int orderId) async {
+    final err = validateCarrierAddressForm();
     if (err != null) {
       SalesOrderNotice.error(err);
       return false;

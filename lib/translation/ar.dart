@@ -1453,6 +1453,17 @@ const Map<String, String> ar = {
   'salesOrderShiplyAddressTitle': 'عنوان التوصيل',
   'salesOrderShiplyAddressSubtitle':
       'اختر مدينة وقرية وشارع Shiply قبل التسليم لشركة التوصيل.',
+  'salesOrderCarrierAddressTitle': 'عنوان التوصيل',
+  'salesOrderCarrierAddressSubtitle':
+      'اختر المدينة والقرية والشارع ورسوم التوصيل.',
+  'salesOrderDeliveryCity': 'المدينة',
+  'salesOrderDeliveryVillage': 'القرية / الحي',
+  'salesOrderDeliveryCityRequired': 'يرجى اختيار المدينة',
+  'salesOrderDeliveryVillageRequired': 'يرجى اختيار القرية',
+  'salesOrderDeliveryFeeHint':
+      'رسوم التوصيل عند اختيار القرية — يمكنك تعديلها',
+  'salesOrderDeliveryAddressesEmpty': 'جاري تحميل المناطق…',
+  'salesOrderDeliveryVillageClosed': 'مغلق',
   'salesOrderShiplyCityRequired': 'يرجى اختيار مدينة Shiply',
   'salesOrderShiplyVillageRequired': 'يرجى اختيار قرية Shiply',
   'salesOrderStreetRequired': 'عنوان الشارع مطلوب',
@@ -1478,6 +1489,7 @@ const Map<String, String> ar = {
   'salesOrderRevertStatus': 'إرجاع للمرحلة السابقة',
   'salesOrderEdit': 'تعديل الطلبية',
   'salesOrderLogistics': 'التوصيل والتتبع',
+  'salesOrderHandedOverAt': 'تاريخ التسليم لشركة التوصيل',
   'shiplyTrackingTimeline': 'تتبع شبلي',
   'shiplyParcelStatus_draft': 'مسودة',
   'shiplyParcelStatus_submitted': 'مُسلَّم لشبلي',

@@ -1381,6 +1381,17 @@ const Map<String, String> en = {
   'salesOrderShiplyAddressTitle': 'Delivery address',
   'salesOrderShiplyAddressSubtitle':
       'Select Shiply city, village, and street before handover.',
+  'salesOrderCarrierAddressTitle': 'Delivery address',
+  'salesOrderCarrierAddressSubtitle':
+      'Select city, village, street, and delivery fee.',
+  'salesOrderDeliveryCity': 'City',
+  'salesOrderDeliveryVillage': 'Village / area',
+  'salesOrderDeliveryCityRequired': 'Please select a city',
+  'salesOrderDeliveryVillageRequired': 'Please select a village',
+  'salesOrderDeliveryFeeHint':
+      'Delivery fee when village is selected — you can adjust it',
+  'salesOrderDeliveryAddressesEmpty': 'Loading areas…',
+  'salesOrderDeliveryVillageClosed': 'Closed',
   'salesOrderShiplyCityRequired': 'Please select a Shiply city',
   'salesOrderShiplyVillageRequired': 'Please select a Shiply village',
   'salesOrderStreetRequired': 'Street address is required',
@@ -1406,6 +1417,7 @@ const Map<String, String> en = {
   'salesOrderRevertStatus': 'Revert to previous stage',
   'salesOrderEdit': 'Edit order',
   'salesOrderLogistics': 'Delivery & tracking',
+  'salesOrderHandedOverAt': 'Handed over to carrier at',
   'shiplyTrackingTimeline': 'Shiply tracking',
   'shiplyParcelStatus_draft': 'Draft',
   'shiplyParcelStatus_submitted': 'Submitted to Shiply',

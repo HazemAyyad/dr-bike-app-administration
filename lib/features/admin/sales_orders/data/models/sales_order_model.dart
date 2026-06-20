@@ -215,6 +215,56 @@ class SalesOrderChildModel {
   }
 }
 
+class SalesOrderHandoverModel {
+  final int id;
+  final String? deliveryCompanyName;
+  final String? deliveryCompanyCode;
+  final String? trackingNumber;
+  final String? carrierContactName;
+  final String? carrierContactPhone;
+  final String? carrierOfficeName;
+  final String? carrierVehicleNumber;
+  final String? shiplyParcelCode;
+  final String? handedOverAt;
+  final String? deliveredAt;
+
+  SalesOrderHandoverModel({
+    required this.id,
+    this.deliveryCompanyName,
+    this.deliveryCompanyCode,
+    this.trackingNumber,
+    this.carrierContactName,
+    this.carrierContactPhone,
+    this.carrierOfficeName,
+    this.carrierVehicleNumber,
+    this.shiplyParcelCode,
+    this.handedOverAt,
+    this.deliveredAt,
+  });
+
+  factory SalesOrderHandoverModel.fromJson(Map<String, dynamic> json) {
+    return SalesOrderHandoverModel(
+      id: json['id'] as int,
+      deliveryCompanyName: json['delivery_company_name'] as String?,
+      deliveryCompanyCode: json['delivery_company_code'] as String?,
+      trackingNumber: json['tracking_number'] as String?,
+      carrierContactName: json['carrier_contact_name'] as String?,
+      carrierContactPhone: json['carrier_contact_phone'] as String?,
+      carrierOfficeName: json['carrier_office_name'] as String?,
+      carrierVehicleNumber: json['carrier_vehicle_number'] as String?,
+      shiplyParcelCode: json['shiply_parcel_code'] as String?,
+      handedOverAt: json['handed_over_at'] as String?,
+      deliveredAt: json['delivered_at'] as String?,
+    );
+  }
+
+  bool get isTaxi => deliveryCompanyCode == 'taxi';
+
+  bool get isOffice => deliveryCompanyCode == 'office';
+
+  bool get isShiply => deliveryCompanyCode == 'shiply';
+}
+
 class SalesOrderDetailModel {
   final int id;
   final String? serialNumber;
@@ -239,6 +289,8 @@ class SalesOrderDetailModel {
   final String? trackingNumber;
   final int? deliveryCompanyId;
   final String? deliveryCompanyName;
+  final String? deliveryCompanyCode;
+  final SalesOrderHandoverModel? latestHandover;
   final int? shiplyCityId;
   final int? shiplyVillageId;
   final String? shiplyCityName;
@@ -277,6 +329,8 @@ class SalesOrderDetailModel {
     this.trackingNumber,
     this.deliveryCompanyId,
     this.deliveryCompanyName,
+    this.deliveryCompanyCode,
+    this.latestHandover,
     this.shiplyCityId,
     this.shiplyVillageId,
     this.shiplyCityName,
@@ -340,6 +394,12 @@ class SalesOrderDetailModel {
       trackingNumber: json['tracking_number'] as String?,
       deliveryCompanyId: json['delivery_company_id'] as int?,
       deliveryCompanyName: json['delivery_company_name'] as String?,
+      deliveryCompanyCode: json['delivery_company_code'] as String?,
+      latestHandover: json['latest_handover'] is Map<String, dynamic>
+          ? SalesOrderHandoverModel.fromJson(
+              json['latest_handover'] as Map<String, dynamic>,
+            )
+          : null,
       shiplyCityId: json['shiply_city_id'] as int?,
       shiplyVillageId: json['shiply_village_id'] as int?,
       shiplyCityName: json['shiply_city_name'] as String?,
