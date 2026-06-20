@@ -349,7 +349,7 @@ class _SpecialTaskCard extends StatelessWidget {
     final showProgress = progress > 0 && task.status != 'completed';
 
     return Padding(
-      padding: EdgeInsets.only(bottom: archived ? 4.h : 2.h),
+      padding: EdgeInsets.only(bottom: archived ? 3.h : 1.h),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -357,8 +357,8 @@ class _SpecialTaskCard extends StatelessWidget {
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(10.r),
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 1.h),
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+            margin: EdgeInsets.symmetric(horizontal: 2.w),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
             decoration: BoxDecoration(
               color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(12.r),
@@ -375,6 +375,7 @@ class _SpecialTaskCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Obx(
                       () => Checkbox(
@@ -382,13 +383,14 @@ class _SpecialTaskCard extends StatelessWidget {
                         onChanged: archived ? null : onComplete,
                         activeColor: AppColors.operationalPurple,
                         visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: const CircleBorder(),
                       ),
                     ),
                     SizedBox(width: 4.w),
                     Container(
-                      width: 32.r,
-                      height: 32.r,
+                      width: 30.r,
+                      height: 30.r,
                       decoration: BoxDecoration(
                         color:
                             AppColors.operationalPurple.withValues(alpha: 0.1),
@@ -397,56 +399,30 @@ class _SpecialTaskCard extends StatelessWidget {
                       child: Icon(
                         Icons.assignment_outlined,
                         color: AppColors.operationalPurple,
-                        size: 17.sp,
+                        size: 16.sp,
                       ),
                     ),
                     SizedBox(width: 8.w),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  task.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                    decoration: archived
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                    color: isDark
-                                        ? AppColors.whiteColor
-                                        : AppColors.operationalNavy,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 6.w),
-                              _TimeLeftLabel(endTime: task.endDate),
-                            ],
-                          ),
-                          SizedBox(height: 1.h),
-                          Text(
-                            '${'dueDate'.tr}: ${showDateTime12(task.endDate)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              height: 1.15,
-                              color: AppColors.customGreyColor5,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        task.name,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          decoration: archived
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          color: isDark
+                              ? AppColors.whiteColor
+                              : AppColors.operationalNavy,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 if (showProgress) ...[
-                  SizedBox(height: 6.h),
+                  SizedBox(height: 5.h),
                   Row(
                     children: [
                       const Spacer(),
@@ -460,7 +436,7 @@ class _SpecialTaskCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 3.h),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4.r),
                     child: LinearProgressIndicator(
@@ -497,7 +473,7 @@ class _DayHeader extends StatelessWidget {
     final isToday = date == todayKey;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(0, isFirst ? 2.h : 4.h, 0, 2.h),
+      padding: EdgeInsets.fromLTRB(0, isFirst ? 1.h : 3.h, 0, 1.h),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -535,59 +511,15 @@ class _DayHeader extends StatelessWidget {
                 ),
             ],
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 3.h),
           Container(
             height: 1,
             color: AppColors.operationalPurple.withValues(alpha: 0.35),
           ),
-          SizedBox(height: 4.h),
+          SizedBox(height: 2.h),
         ],
       ),
     );
-  }
-}
-
-class _TimeLeftLabel extends StatelessWidget {
-  const _TimeLeftLabel({required this.endTime});
-
-  final DateTime endTime;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = _formatTimeLeft(endTime);
-    final color = _colorFor(endTime);
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6.r),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 9.5.sp,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  static String _formatTimeLeft(DateTime end) {
-    final diff = end.difference(DateTime.now());
-    if (diff.inSeconds <= 0) return 'overdue'.tr;
-    if (diff.inDays >= 1) return '${diff.inDays} ${'days'.tr}';
-    if (diff.inHours >= 1) return '${diff.inHours} ${'hours'.tr}';
-    final mins = diff.inMinutes.clamp(1, 59);
-    return '$mins ${'minute'.tr}';
-  }
-
-  static Color _colorFor(DateTime end) {
-    final hours = end.difference(DateTime.now()).inHours;
-    if (hours <= 0) return AppColors.redColor;
-    if (hours <= 24) return AppColors.customOrange3;
-    return AppColors.customGreen1;
   }
 }
 
@@ -600,42 +532,28 @@ class _SpecialTasksSkeletonSliver extends StatelessWidget {
       itemCount: 8,
       itemBuilder: (context, index) {
         return Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 5.h),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 3.h),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: AppColors.operationalCardBorder),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SkeletonCircle(size: 32.r),
+                SkeletonCircle(size: 30.r),
                 SizedBox(width: 8.w),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FractionallySizedBox(
-                        widthFactor: index.isEven ? 0.72 : 0.58,
-                        child: SkeletonBlock(
-                          width: double.infinity,
-                          height: 13.h,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      FractionallySizedBox(
-                        widthFactor: index.isEven ? 0.52 : 0.68,
-                        child: SkeletonBlock(
-                          width: double.infinity,
-                          height: 10.h,
-                        ),
-                      ),
-                    ],
+                  child: FractionallySizedBox(
+                    widthFactor: index.isEven ? 0.72 : 0.58,
+                    child: SkeletonBlock(
+                      width: double.infinity,
+                      height: 13.h,
+                    ),
                   ),
                 ),
-                SizedBox(width: 8.w),
-                SkeletonBlock(width: 54.w, height: 18.h, radius: 6),
               ],
             ),
           ),
