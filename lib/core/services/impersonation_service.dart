@@ -20,20 +20,31 @@ import 'notification_firebase_service.dart';
 import 'session_service.dart';
 import 'user_data.dart';
 
-/// Admin enters an employee account without password; session can be restored.
+/// Admin or privileged employee enters another employee account; session can be restored.
 class ImpersonationService {
-  static const _adminTokenKey = 'impersonation_admin_token';
-  static const _adminUserKey = 'impersonation_admin_user_json';
-  static const _adminNameKey = 'impersonation_admin_name';
+  static const _originalTokenKey = 'impersonation_admin_token';
+  static const _originalUserKey = 'impersonation_admin_user_json';
+  static const _originalNameKey = 'impersonation_admin_name';
+  static const _originalTypeKey = 'impersonation_impersonator_type';
 
-  static String adminDisplayName = '';
+  static const impersonationPermissionId = 43;
+
+  static String impersonatorDisplayName = '';
+  static String impersonatorType = '';
+
+  static bool get canImpersonateEmployees =>
+      userType == 'admin' || employeePermissions.contains(impersonationPermissionId);
 
   static Future<bool> get isActive async {
-    final t = FinalClasses.getStorage.read(_adminTokenKey);
+    final t = FinalClasses.getStorage.read(_originalTokenKey);
     return t != null && t.toString().isNotEmpty;
   }
 
   static Future<void> startFromLoginResponse(Map<String, dynamic> raw) async {
+    if (await isActive) {
+      throw Exception('impersonationAlreadyActive'.tr);
+    }
+
     final data = Map<String, dynamic>.from(raw);
     if (!isLoginSuccessStatus(data['status'])) {
       throw Exception(data['message']?.toString() ?? 'impersonationFailed'.tr);
@@ -44,24 +55,33 @@ class ImpersonationService {
       throw Exception('impersonationFailed'.tr);
     }
 
-    final adminToken = UserData.userToken.isNotEmpty
+    final originalToken = UserData.userToken.isNotEmpty
         ? UserData.userToken
         : await UserData.getUserToken();
-    final adminUser = await UserData.getSavedUser();
-    if (adminToken.isEmpty || adminUser == null) {
+    final originalUser = await UserData.getSavedUser();
+    if (originalToken.isEmpty || originalUser == null) {
       throw Exception('impersonationFailed'.tr);
     }
 
-    await FinalClasses.getStorage.write(_adminTokenKey, adminToken);
+    await FinalClasses.getStorage.write(_originalTokenKey, originalToken);
     await FinalClasses.getStorage.write(
-      _adminUserKey,
-      jsonEncode(adminUser.toJson()),
+      _originalUserKey,
+      jsonEncode(originalUser.toJson()),
     );
 
     final imp = data['impersonation'];
     if (imp is Map) {
-      adminDisplayName = imp['admin_name']?.toString() ?? '';
-      await FinalClasses.getStorage.write(_adminNameKey, adminDisplayName);
+      impersonatorDisplayName =
+          imp['impersonator_name']?.toString() ??
+              imp['admin_name']?.toString() ??
+              '';
+      impersonatorType = imp['impersonator_type']?.toString() ??
+          (imp['admin_name'] != null ? 'admin' : userType);
+      await FinalClasses.getStorage.write(_originalNameKey, impersonatorDisplayName);
+      await FinalClasses.getStorage.write(_originalTypeKey, impersonatorType);
+    } else {
+      impersonatorType = userType;
+      await FinalClasses.getStorage.write(_originalTypeKey, impersonatorType);
     }
 
     await UserData.saveToken(token);
@@ -71,16 +91,16 @@ class ImpersonationService {
     try {
       userModel = UserModel.fromJson(data);
     } catch (e) {
-      await UserData.saveToken(adminToken);
-      UserData.userToken = adminToken;
-      await UserData.saveUser(adminUser);
+      await UserData.saveToken(originalToken);
+      UserData.userToken = originalToken;
+      await UserData.saveUser(originalUser);
       throw Exception('impersonationFailed: $e');
     }
 
     final role = userModel.user.type.toLowerCase();
     if (role != 'employee') {
-      await UserData.saveToken(adminToken);
-      UserData.userToken = adminToken;
+      await UserData.saveToken(originalToken);
+      UserData.userToken = originalToken;
       throw Exception('impersonationFailed'.tr);
     }
 
@@ -95,7 +115,6 @@ class ImpersonationService {
 
     await SessionService.hydrateToken();
     await _navigateToShell(registerEmployeeShell: true);
-
   }
 
   static Future<void> _registerEmployeeShell() async {
@@ -124,18 +143,22 @@ class ImpersonationService {
     }
   }
 
-  static Future<void> exitToAdmin() async {
-    final adminToken = FinalClasses.getStorage.read(_adminTokenKey)?.toString();
-    final adminJson = FinalClasses.getStorage.read(_adminUserKey)?.toString();
-    if (adminToken == null ||
-        adminToken.isEmpty ||
-        adminJson == null ||
-        adminJson.isEmpty) {
+  static Future<void> exitToOriginal() async {
+    final originalToken =
+        FinalClasses.getStorage.read(_originalTokenKey)?.toString();
+    final originalJson =
+        FinalClasses.getStorage.read(_originalUserKey)?.toString();
+    final savedType =
+        FinalClasses.getStorage.read(_originalTypeKey)?.toString() ?? 'admin';
+    if (originalToken == null ||
+        originalToken.isEmpty ||
+        originalJson == null ||
+        originalJson.isEmpty) {
       return;
     }
 
-    await UserData.saveToken(adminToken);
-    await UserData.saveUserJson(adminJson);
+    await UserData.saveToken(originalToken);
+    await UserData.saveUserJson(originalJson);
 
     final userdata = await UserData.getSavedUser();
     if (userdata != null) {
@@ -146,34 +169,54 @@ class ImpersonationService {
             userdata.employeePermissions.map((p) => p.permissionId).toList(),
       );
     }
-    UserData.userToken = adminToken;
+    UserData.userToken = originalToken;
 
+    final returningToAdmin = savedType == 'admin';
     await _clearBackup();
-    adminDisplayName = '';
+    impersonatorDisplayName = '';
+    impersonatorType = '';
 
     await SessionService.hydrateToken();
-    await _navigateToShell(registerEmployeeShell: false);
-    await _registerAdminShell();
+    await _navigateToShell(registerEmployeeShell: !returningToAdmin);
+    if (returningToAdmin) {
+      await _registerAdminShell();
+    } else {
+      await _registerEmployeeShell();
+    }
 
-    try {
-      await NotificationFirebaseService.instance
-          .registerAdminDeviceTokenIfReady(source: 'exit_impersonation');
-    } catch (_) {}
+    if (returningToAdmin) {
+      try {
+        await NotificationFirebaseService.instance
+            .registerAdminDeviceTokenIfReady(source: 'exit_impersonation');
+      } catch (_) {}
+    }
 
     if (Get.isSnackbarOpen) Get.closeAllSnackbars();
     Get.rawSnackbar(
-      message: 'impersonationExitSuccess'.tr,
+      message: returningToAdmin
+          ? 'impersonationExitSuccess'.tr
+          : 'impersonationExitSuccessEmployee'.tr,
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 3),
       margin: const EdgeInsets.all(12),
       borderRadius: 8,
       backgroundColor: const Color(0xFF374151),
       messageText: Text(
-        'impersonationExitSuccess'.tr,
+        returningToAdmin
+            ? 'impersonationExitSuccess'.tr
+            : 'impersonationExitSuccessEmployee'.tr,
         style: const TextStyle(color: Colors.white, fontSize: 14),
       ),
     );
   }
+
+  /// Backward-compatible alias.
+  static Future<void> exitToAdmin() => exitToOriginal();
+
+  static String get exitButtonLabel =>
+      impersonatorType == 'employee'
+          ? 'exitImpersonationEmployee'.tr
+          : 'exitImpersonation'.tr;
 
   /// Rebuilds bottom nav without racing [sessionEpoch] against a deleted controller.
   static Future<void> _navigateToShell({
@@ -209,15 +252,21 @@ class ImpersonationService {
     } catch (_) {}
   }
 
-  static Future<void> loadAdminNameIfImpersonating() async {
+  static Future<void> loadImpersonatorInfoIfActive() async {
     if (!await isActive) return;
-    adminDisplayName =
-        FinalClasses.getStorage.read(_adminNameKey)?.toString() ?? '';
+    impersonatorDisplayName =
+        FinalClasses.getStorage.read(_originalNameKey)?.toString() ?? '';
+    impersonatorType =
+        FinalClasses.getStorage.read(_originalTypeKey)?.toString() ?? 'admin';
   }
 
+  static Future<void> loadAdminNameIfImpersonating() =>
+      loadImpersonatorInfoIfActive();
+
   static Future<void> _clearBackup() async {
-    await FinalClasses.getStorage.remove(_adminTokenKey);
-    await FinalClasses.getStorage.remove(_adminUserKey);
-    await FinalClasses.getStorage.remove(_adminNameKey);
+    await FinalClasses.getStorage.remove(_originalTokenKey);
+    await FinalClasses.getStorage.remove(_originalUserKey);
+    await FinalClasses.getStorage.remove(_originalNameKey);
+    await FinalClasses.getStorage.remove(_originalTypeKey);
   }
 }

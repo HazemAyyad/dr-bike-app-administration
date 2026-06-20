@@ -119,6 +119,7 @@ class AddEmployeeController extends GetxController {
     {'name': 'maintenance'.tr, 'id': '15', 'permission': false.obs},
     {'name': 'stock'.tr, 'id': '16', 'permission': false.obs},
     {'name': 'completeData'.tr, 'id': '40', 'permission': false.obs},
+    {'name': 'impersonateEmployeePermission'.tr, 'id': '43', 'permission': false.obs},
   ];
 
   final RxBool isAllPermissionsSelected = false.obs;

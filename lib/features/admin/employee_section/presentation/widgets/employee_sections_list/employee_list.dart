@@ -235,6 +235,9 @@ class EmployeeList extends GetView<EmployeeSectionController> {
             ),
           ),
           Obx(() {
+            if (!controller.canShowImpersonateFor(employee.id)) {
+              return const SizedBox.shrink();
+            }
             final busy =
                 controller.impersonatingEmployeeId.value == employee.id;
             return IconButton(

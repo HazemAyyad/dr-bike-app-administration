@@ -18,6 +18,8 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/impersonation_service.dart';
+import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/user_data.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/datasources/employee_datasource.dart';
 import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
@@ -533,11 +535,39 @@ class EmployeeSectionController extends GetxController
 
   /// Employee row id currently loading for impersonation (0 = none).
   final RxInt impersonatingEmployeeId = 0.obs;
+  final RxInt currentEmployeeRecordId = 0.obs;
+
+  bool canShowImpersonateFor(int targetEmployeeId) {
+    if (!ImpersonationService.canImpersonateEmployees) return false;
+    if (userType == 'employee' &&
+        currentEmployeeRecordId.value != 0 &&
+        currentEmployeeRecordId.value == targetEmployeeId) {
+      return false;
+    }
+    return true;
+  }
+
+  Future<void> _resolveCurrentEmployeeRecordId() async {
+    if (userType != 'employee') return;
+    final user = await UserData.getSavedUser();
+    currentEmployeeRecordId.value = user?.user.employee.id ?? 0;
+  }
 
   Future<void> impersonateEmployee(
     BuildContext context,
     EmployeeEntity employee,
   ) async {
+    if (!canShowImpersonateFor(employee.id)) return;
+    if (await ImpersonationService.isActive) {
+      if (!context.mounted) return;
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'impersonationAlreadyActive'.tr,
+      );
+      return;
+    }
+
     impersonatingEmployeeId.value = employee.id;
     try {
       final raw = await Get.find<EmployeeDatasource>()
@@ -919,6 +949,7 @@ class EmployeeSectionController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    _resolveCurrentEmployeeRecordId();
     getEmployee();
     filteredEmployees.assignAll(employeeService.employeeList);
     getWorkingTimes();

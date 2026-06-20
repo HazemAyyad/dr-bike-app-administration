@@ -25,7 +25,7 @@ class _ImpersonationExitButtonState extends State<ImpersonationExitButton> {
   Future<void> _load() async {
     final active = await ImpersonationService.isActive;
     if (mounted) setState(() => _visible = active);
-    if (active) await ImpersonationService.loadAdminNameIfImpersonating();
+    if (active) await ImpersonationService.loadImpersonatorInfoIfActive();
     if (mounted) setState(() {});
   }
 
@@ -40,7 +40,7 @@ class _ImpersonationExitButtonState extends State<ImpersonationExitButton> {
         borderRadius: BorderRadius.circular(10.r),
         child: InkWell(
           onTap: () async {
-            await ImpersonationService.exitToAdmin();
+            await ImpersonationService.exitToOriginal();
           },
           borderRadius: BorderRadius.circular(10.r),
           child: Padding(
@@ -55,7 +55,7 @@ class _ImpersonationExitButtonState extends State<ImpersonationExitButton> {
                 ),
                 SizedBox(width: 4.w),
                 Text(
-                  'exitImpersonation'.tr,
+                  ImpersonationService.exitButtonLabel,
                   style: TextStyle(
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w700,

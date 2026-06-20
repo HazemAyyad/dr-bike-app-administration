@@ -129,6 +129,8 @@ class EndPoints {
   static const String employees = 'employees';
   static String adminImpersonateEmployee(int employeeId) =>
       'admin/impersonate-employee/$employeeId';
+  static String employeeImpersonateEmployee(int employeeId) =>
+      'employee/impersonate/$employeeId';
 
   static const String appSettings = 'app/settings';
   static const String attendanceSettings = 'admin/settings/attendance';

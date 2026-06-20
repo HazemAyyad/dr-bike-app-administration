@@ -9,6 +9,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/json_safe_parser.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/employee_details_model.dart';
 import '../models/employee_advances_model.dart';
@@ -222,8 +223,11 @@ class EmployeeDatasource {
   // get all employees
   Future<Map<String, dynamic>> impersonateEmployee(int employeeId) async {
     try {
+      final endpoint = userType == 'admin'
+          ? EndPoints.adminImpersonateEmployee(employeeId)
+          : EndPoints.employeeImpersonateEmployee(employeeId);
       final response = await api.post(
-        EndPoints.adminImpersonateEmployee(employeeId),
+        endpoint,
       );
       final data = response.data;
       Map<String, dynamic> map;
