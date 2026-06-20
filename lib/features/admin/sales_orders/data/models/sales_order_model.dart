@@ -228,6 +228,8 @@ class SalesOrderDetailModel {
   final double subtotal;
   final double discount;
   final double customerDeliveryFee;
+  final double? shiplyQuotedDeliveryFee;
+  final double? shiplyDeliveryFeeAdjustment;
   final String paymentType;
   final double paymentAmount;
   final int? paymentBoxId;
@@ -264,6 +266,8 @@ class SalesOrderDetailModel {
     required this.subtotal,
     required this.discount,
     required this.customerDeliveryFee,
+    this.shiplyQuotedDeliveryFee,
+    this.shiplyDeliveryFeeAdjustment,
     required this.paymentType,
     this.paymentAmount = 0,
     this.paymentBoxId,
@@ -323,6 +327,10 @@ class SalesOrderDetailModel {
       discount: (json['discount'] as num?)?.toDouble() ?? 0,
       customerDeliveryFee:
           (json['customer_delivery_fee'] as num?)?.toDouble() ?? 0,
+      shiplyQuotedDeliveryFee:
+          (json['shiply_quoted_delivery_fee'] as num?)?.toDouble(),
+      shiplyDeliveryFeeAdjustment:
+          (json['shiply_delivery_fee_adjustment'] as num?)?.toDouble(),
       paymentType: json['payment_type'] as String? ?? 'cash',
       paymentAmount: (json['payment_amount'] as num?)?.toDouble() ?? 0,
       paymentBoxId: json['payment_box_id'] as int?,

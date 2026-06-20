@@ -108,6 +108,7 @@ class SalesOrdersController extends GetxController {
   final selectedShiplyCityId = RxnInt();
   final selectedShiplyVillageId = RxnInt();
   final manualDeliveryFee = 0.0.obs;
+  final shiplyQuotedDeliveryFee = RxnDouble();
   final selectedPaymentType = 'cash'.obs;
   final selectedDeliveryCompanyId = RxnInt();
   final hasSuspendedDraft = false.obs;
@@ -334,6 +335,7 @@ class SalesOrdersController extends GetxController {
     selectedShiplyCityId.value = null;
     selectedShiplyVillageId.value = null;
     manualDeliveryFee.value = 0;
+    shiplyQuotedDeliveryFee.value = null;
     selectedPaymentType.value = 'cash';
     hasSuspendedDraft.value = false;
     activeEditSalesOrderId.value = null;
@@ -390,6 +392,7 @@ class SalesOrdersController extends GetxController {
     selectedShiplyVillageId.value = order.shiplyVillageId;
     deliveryFeeController.text = order.customerDeliveryFee.toStringAsFixed(0);
     manualDeliveryFee.value = order.customerDeliveryFee;
+    shiplyQuotedDeliveryFee.value = order.shiplyQuotedDeliveryFee;
     selectedPaymentType.value = order.paymentType;
 
     isPreparingEdit.value = true;
@@ -447,6 +450,7 @@ class SalesOrdersController extends GetxController {
   void onShiplyCityChanged(int? cityId) {
     selectedShiplyCityId.value = cityId;
     selectedShiplyVillageId.value = null;
+    shiplyQuotedDeliveryFee.value = null;
   }
 
   Future<void> onShiplyVillageChanged(
@@ -468,6 +472,7 @@ class SalesOrdersController extends GetxController {
     );
     result.fold((_) {}, (fee) {
       if (fee == null) return;
+      shiplyQuotedDeliveryFee.value = fee;
       deliveryFeeController.text = fee.toStringAsFixed(0);
       manualDeliveryFee.value = fee;
     });
@@ -479,6 +484,7 @@ class SalesOrdersController extends GetxController {
     selectedShiplyVillageId.value = order.shiplyVillageId;
     deliveryFeeController.text = order.customerDeliveryFee.toStringAsFixed(0);
     manualDeliveryFee.value = order.customerDeliveryFee;
+    shiplyQuotedDeliveryFee.value = order.shiplyQuotedDeliveryFee;
   }
 
   bool needsDeliveryCustomer(SalesOrderDetailModel order) =>
@@ -487,47 +493,14 @@ class SalesOrdersController extends GetxController {
   bool needsDeliveryPhone(SalesOrderDetailModel order) =>
       needsShiplyPhone(order);
 
-  bool needsDeliveryAddress(SalesOrderDetailModel order, {bool? forShiply}) {
-    final shiply = forShiply ?? order.isShiplyDelivery;
-    if (shiply) {
-      return needsShiplyAddress(order);
-    }
-    return (order.customerAddress ?? '').trim().isEmpty;
-  }
+  bool needsDeliveryAddress(SalesOrderDetailModel order, {bool? forShiply}) =>
+      needsShiplyAddress(order);
 
   bool isDeliveryHandoverReady(
     SalesOrderDetailModel order, {
     bool? forShiply,
   }) {
-    final shiply = forShiply ?? order.isShiplyDelivery;
-    return _hasShiplyRecipient(order) && !needsDeliveryAddress(order, forShiply: shiply);
-  }
-
-  String? validateCheckoutDeliveryRequirements(SalesController sales) {
-    if (selectedDeliveryCompanyId.value == null) {
-      return 'salesOrderDeliveryCompanyRequired'.tr;
-    }
-
-    final partner = sales.pickerSelectedPartner.value;
-    final hasPartner = partner != null && partner.name.trim().isNotEmpty;
-    final hasManualCustomer = customerNameController.text.trim().isNotEmpty;
-    if (!hasPartner && !hasManualCustomer) {
-      return 'salesOrderCustomerRequired'.tr;
-    }
-
-    if (isSelectedCompanyShiply) {
-      return validateShiplyAddressForm();
-    }
-
-    if (isSelectedCompanyDoctorBike) {
-      return null;
-    }
-
-    if (customerAddressController.text.trim().isEmpty) {
-      return 'salesOrderAddressRequired'.tr;
-    }
-
-    return null;
+    return _hasShiplyRecipient(order) && !needsShiplyAddress(order);
   }
 
   String? validateManualHandoverFields() {
@@ -800,6 +773,8 @@ class SalesOrdersController extends GetxController {
       'shiply_city_id': selectedShiplyCityId.value,
       'shiply_village_id': selectedShiplyVillageId.value,
       'customer_delivery_fee': manualDeliveryFee.value,
+      if (shiplyQuotedDeliveryFee.value != null)
+        'shiply_quoted_delivery_fee': shiplyQuotedDeliveryFee.value,
     };
   }
 
@@ -832,6 +807,20 @@ class SalesOrdersController extends GetxController {
 
   // Intentionally: do not auto-change cash when delivery city changes.
 
+  void openOrderDetailAfterSave(SalesOrderDetailModel order) {
+    statusFilter.value = order.status;
+    loadOrders();
+    detail.value = order;
+
+    Get.until((route) => route.settings.name == AppRoutes.SALESSCREEN);
+
+    if (Get.isRegistered<SalesController>()) {
+      Get.find<SalesController>().changeTab(2);
+    }
+
+    Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN, arguments: order.id);
+  }
+
   Future<bool> submitCreateOrderFromCheckout(SalesController sales) async {
     final body = await _buildCheckoutBody(sales);
     if (body == null) return false;
@@ -855,9 +844,14 @@ class SalesOrdersController extends GetxController {
         activeEditSalesOrderId.value = null;
         resetCreateForm();
         sales.resetInstantSaleForm();
-        loadOrders();
-        detail.value = order;
-        Get.offNamed(AppRoutes.SALESORDERDETAILSCREEN, arguments: order.id);
+        if (editId != null) {
+          loadOrders();
+          detail.value = order;
+          Get.back();
+          Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN, arguments: order.id);
+        } else {
+          openOrderDetailAfterSave(order);
+        }
         return true;
       },
     );
@@ -868,12 +862,6 @@ class SalesOrdersController extends GetxController {
     final lines = sales.cartLines.where((l) => !l.isDisposed).toList();
     if (lines.isEmpty) {
       SalesOrderNotice.error('salesOrderAddItem'.tr);
-      return null;
-    }
-
-    final deliveryErr = validateCheckoutDeliveryRequirements(sales);
-    if (deliveryErr != null) {
-      SalesOrderNotice.error(deliveryErr);
       return null;
     }
 
@@ -916,9 +904,7 @@ class SalesOrdersController extends GetxController {
     }
 
     final discount = SalesAmountFormat.parse(sales.discountController.text);
-    onDeliveryFeeChanged();
-    final deliveryFee = manualDeliveryFee.value;
-    final total = sales.totalCost.value + deliveryFee;
+    final total = sales.totalCost.value;
     var paymentType = selectedPaymentType.value;
     if (paymentType != 'visa') {
       paymentType = 'credit';
@@ -935,14 +921,6 @@ class SalesOrdersController extends GetxController {
       'customer_name': customerName,
       'customer_phone': customerPhone,
       if (customerId != null) 'customer_id': customerId,
-      'customer_address': customerAddressController.text.trim(),
-      if (selectedDeliveryCompanyId.value != null)
-        'delivery_company_id': selectedDeliveryCompanyId.value,
-      if (selectedShiplyCityId.value != null)
-        'shiply_city_id': selectedShiplyCityId.value,
-      if (selectedShiplyVillageId.value != null)
-        'shiply_village_id': selectedShiplyVillageId.value,
-      'customer_delivery_fee': deliveryFee,
       'payment_type': paymentType,
       'payment_amount': paidAmount,
       if (paymentBoxId != null) 'payment_box_id': paymentBoxId,

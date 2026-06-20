@@ -14,7 +14,6 @@ import '../../data/models/sales_order_model.dart';
 import '../controllers/sales_orders_controller.dart';
 import '../widgets/sales_order_notice.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
-import '../widgets/sales_order_delivery_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
 import '../widgets/sales_order_shiply_phone_dialog.dart';
 import '../widgets/sales_order_shiply_sandbox_badge.dart';
@@ -231,12 +230,25 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
   Widget _totalsSummary(SalesOrderDetailModel order) {
     final paid = order.paymentAmount;
     final remaining = (order.total - paid).clamp(0, double.infinity).toDouble();
+    final quoted = order.shiplyQuotedDeliveryFee;
+    final hasShiplyFeeBreakdown =
+        quoted != null && (quoted > 0 || order.customerDeliveryFee > 0);
     return Column(
       children: [
         _totalLine('subtotal'.tr, order.subtotal),
         if (order.discount > 0)
           _totalLine('discount'.tr, -order.discount, muted: true),
-        if (order.customerDeliveryFee > 0)
+        if (hasShiplyFeeBreakdown) ...[
+          _totalLine('salesOrderShiplyQuotedFee'.tr, quoted!, muted: true),
+          _totalLine('salesOrderShiplyChargedFee'.tr, order.customerDeliveryFee),
+          if (order.shiplyDeliveryFeeAdjustment != null &&
+              order.shiplyDeliveryFeeAdjustment!.abs() >= 0.01)
+            _totalLine(
+              'salesOrderShiplyFeeDifference'.tr,
+              order.shiplyDeliveryFeeAdjustment!,
+              muted: true,
+            ),
+        ] else if (order.customerDeliveryFee > 0)
           _totalLine('salesOrderDeliveryFee'.tr, order.customerDeliveryFee),
         Divider(height: 16.h, color: SalesOrdersController.borderGray),
         _totalLine(
@@ -1307,8 +1319,10 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
 
   Future<bool> _prepareManualDeliveryHandover(SalesOrderDetailModel order) async {
     var current = controller.detail.value ?? order;
+    final requiresFullAddress = controller.isSelectedCompanyTaxi ||
+        controller.isSelectedCompanyOffice;
 
-    if (controller.isDeliveryHandoverReady(current, forShiply: false)) {
+    if (!requiresFullAddress && controller.isDeliveryHandoverReady(current)) {
       return true;
     }
 
@@ -1361,12 +1375,17 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
       current = controller.detail.value ?? current;
     }
 
-    if (controller.needsDeliveryAddress(current, forShiply: false)) {
-      controller.customerAddressController.text = current.customerAddress ?? '';
+    if (controller.needsShiplyAddress(current)) {
+      if (controller.shiplyCities.isEmpty) {
+        await controller.loadLookups();
+      }
+      controller.preloadShiplyAddressFromOrder(current);
+      final parcelPrice = current.subtotal - current.discount;
       final saved = await Get.dialog<bool>(
-        SalesOrderDeliveryAddressDialog(
+        SalesOrderShiplyAddressDialog(
           orderId: order.id,
           controller: controller,
+          parcelPrice: parcelPrice > 0 ? parcelPrice : current.total,
         ),
         barrierDismissible: false,
       );
@@ -1463,16 +1482,22 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
     controller.carrierOfficeNameController.clear();
     controller.carrierVehicleNumberController.clear();
     Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.all(20.r),
-        decoration: BoxDecoration(
-          color: SalesOrdersController.surfaceGray,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+      Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(Get.context!).viewInsets.bottom,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child: Container(
+          constraints: BoxConstraints(maxHeight: Get.height * 0.88),
+          padding: EdgeInsets.all(20.r),
+          decoration: BoxDecoration(
+            color: SalesOrdersController.surfaceGray,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
             Text(
               'salesOrderHandover'.tr,
               style: TextStyle(
@@ -1596,6 +1621,16 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                         ),
                       ),
                     ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 6.h),
+                      child: Text(
+                        'salesOrderCarrierAddressHint'.tr,
+                        style: TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ),
                   ],
                 );
               }
@@ -1681,6 +1716,16 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                         ),
                       ),
                     ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 6.h),
+                      child: Text(
+                        'salesOrderCarrierAddressHint'.tr,
+                        style: TextStyle(
+                          color: SalesOrdersController.textSecondary,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ),
                   ],
                 );
               }
@@ -1763,9 +1808,12 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
               ),
               child: Text('confirm'.tr),
             ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
+      isScrollControlled: true,
     );
   }
 

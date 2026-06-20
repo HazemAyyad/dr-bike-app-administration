@@ -20,7 +20,6 @@ import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_cart_s
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_payment_section.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../controllers/sales_orders_controller.dart';
-import '../widgets/sales_order_delivery_section.dart';
 import '../widgets/sales_order_checkout_totals.dart';
 
 /// مراجعة الطلبية قبل الحفظ — نفس تدفق البيع الفوري.
@@ -78,7 +77,6 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
       if (orders.cities.isEmpty) {
         await orders.loadLookups();
       }
-      orders.pickDefaultDeliveryCompany(orders.detail.value);
     });
   }
 
@@ -191,14 +189,6 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   showNotes: false,
                   showHints: false,
                 ),
-                SizedBox(height: 16.h),
-                Obx(() {
-                  final _ = sales.cartRevision.value;
-                  final parcelPrice = sales.totalCost.value;
-                  return SalesOrderDeliverySection(
-                    parcelPriceForFee: parcelPrice,
-                  );
-                }),
                 SizedBox(height: 12.h),
                 const SalesOrderCheckoutTotals(),
                 SizedBox(height: 16.h),
@@ -211,13 +201,11 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                 SizedBox(height: 12.h),
                 Obx(() {
                   final _ = sales.cartRevision.value;
-                  final deliveryFee = orders.manualDeliveryFee.value;
                   return InstantSalePaymentSection(
                     paymentTag: kSalesOrderPaymentTag,
                     showHeader: false,
                     showPartner: false,
                     showDailyBoxInfo: false,
-                    extraTotal: deliveryFee,
                   );
                 }),
                 SizedBox(height: 16.h),
