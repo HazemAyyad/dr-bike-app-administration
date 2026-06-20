@@ -24,6 +24,7 @@ import '../models/employee_points_log_model.dart';
 import '../models/employee_reward_rule_model.dart';
 import '../models/qr_history_model.dart';
 import '../models/working_times_model.dart';
+import '../models/admin_user_model.dart';
 
 class EmployeeDatasource {
   final ApiConsumer api;
@@ -1349,6 +1350,146 @@ class EmployeeDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<AdminUserModel>> getAdminUsers({String? search}) async {
+    try {
+      final response = await api.get(
+        EndPoints.adminUsers,
+        queryParameters: {
+          if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        },
+      );
+      return mapListFromResponseKey(
+        response.data,
+        ApiKey.admins,
+        (Map<String, dynamic> m) => AdminUserModel.fromJson(m),
+        debugScope: 'EmployeeDatasource.getAdminUsers',
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> createAdminUser({
+    required String name,
+    required String email,
+    String? phone,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.adminUsers,
+        data: {
+          'name': name,
+          'email': email,
+          if (phone != null && phone.isNotEmpty) 'phone': phone,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> updateAdminUser({
+    required String adminId,
+    required String name,
+    required String email,
+    String? phone,
+    String? password,
+    String? passwordConfirmation,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.editAdminUser(int.parse(adminId)),
+        data: {
+          'name': name,
+          'email': email,
+          if (phone != null) 'phone': phone,
+          if (password != null && password.isNotEmpty) 'password': password,
+          if (passwordConfirmation != null && passwordConfirmation.isNotEmpty)
+            'password_confirmation': passwordConfirmation,
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteAdminUser({
+    required String adminId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.deleteAdminUser(int.parse(adminId)),
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> toggleBlockAdminUser({
+    required String adminId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.toggleBlockAdminUser(int.parse(adminId)),
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }

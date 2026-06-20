@@ -60,6 +60,7 @@ import '../features/admin/debts/presentation/views/debts_screen.dart';
 import '../features/admin/employee_section/presentation/binding/employee_section_binding.dart';
 import '../features/admin/employee_section/presentation/views/activity_log_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_new_employee_screen.dart';
+import '../features/admin/employee_section/presentation/views/add_edit_admin_screen.dart';
 import '../features/admin/employee_section/presentation/views/add_penalty_and_reward.dart';
 import '../features/admin/employee_section/presentation/views/employee_details_screen.dart';
 import '../features/admin/employee_section/data/repositorie_imp/employee_implement.dart';
@@ -375,6 +376,14 @@ class AppPages {
     GetPage(
       name: AppRoutes.ADDNEWEMPLOYEESCREEN,
       page: () => const AddNewEmployeeScreen(),
+      binding: EmployeeSectionBinding(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.ADDEDITADMINSCREEN,
+      page: () => const AddEditAdminScreen(),
       binding: EmployeeSectionBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight

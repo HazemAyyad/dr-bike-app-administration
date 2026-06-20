@@ -419,6 +419,10 @@ class _SpecialTaskCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (!archived) ...[
+                      SizedBox(width: 6.w),
+                      _TimeLeftLabel(endTime: task.endDate),
+                    ],
                   ],
                 ),
                 if (showProgress) ...[
@@ -520,6 +524,50 @@ class _DayHeader extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _TimeLeftLabel extends StatelessWidget {
+  const _TimeLeftLabel({required this.endTime});
+
+  final DateTime endTime;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = _formatTimeLeft(endTime);
+    final color = _colorFor(endTime);
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9.5.sp,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  static String _formatTimeLeft(DateTime end) {
+    final diff = end.difference(DateTime.now());
+    if (diff.inSeconds <= 0) return 'overdue'.tr;
+    if (diff.inDays >= 1) return '${diff.inDays} ${'days'.tr}';
+    if (diff.inHours >= 1) return '${diff.inHours} ${'hours'.tr}';
+    final mins = diff.inMinutes.clamp(1, 59);
+    return '$mins ${'minute'.tr}';
+  }
+
+  static Color _colorFor(DateTime end) {
+    final hours = end.difference(DateTime.now()).inHours;
+    if (hours <= 0) return AppColors.redColor;
+    if (hours <= 24) return AppColors.customOrange3;
+    return AppColors.customGreen1;
   }
 }
 

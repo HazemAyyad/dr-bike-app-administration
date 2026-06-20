@@ -22,7 +22,9 @@ import '../../domain/usecases/qr_history_usecase.dart';
 import '../../domain/usecases/reject_order_usecase.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
 import '../../domain/usecases/working_times_usecase.dart';
+import '../../domain/usecases/admin_users_usecase.dart';
 import '../controllers/add_employee_controller.dart';
+import '../controllers/add_admin_controller.dart';
 import '../controllers/employee_point_categories_controller.dart';
 import '../controllers/employee_points_controller.dart';
 import '../controllers/employee_points_report_controller.dart';
@@ -85,9 +87,23 @@ class EmployeeSectionBinding extends Bindings {
         deleteEmployeeUsecase: DeleteEmployeeUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
+        getAdminUsersUsecase: GetAdminUsersUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        manageAdminUserUsecase: ManageAdminUserUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
         getReportByType: GetReportByTypeUsecase(
           countersRepository: Get.find<CountrersImplement>(),
         ),
+      ),
+    );
+    Get.lazyPut(
+      () => AddAdminController(
+        manageAdminUserUsecase: ManageAdminUserUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        sectionController: Get.find<EmployeeSectionController>(),
       ),
     );
     Get.lazyPut(

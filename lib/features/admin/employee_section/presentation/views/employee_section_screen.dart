@@ -18,6 +18,7 @@ import '../widgets/employee_sections_list/financial_dues_list.dart';
 import '../widgets/employee_sections_list/loans_list.dart';
 import '../widgets/attendance_report_filter_dialog.dart';
 import '../widgets/employee_sections_list/work_hours_list.dart';
+import '../widgets/employee_sections_list/admin_list.dart';
 import '../widgets/attendance_overtime_request_card.dart';
 import '../../../../../core/widgets/app_pull_to_refresh.dart';
 
@@ -271,7 +272,8 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                   },
                 );
               }
-              return EmployeeSection(
+              if (tab == 4) {
+                return EmployeeSection(
                 isLoading: controller.isLoading,
                 onCount: () =>
                     controller.attendanceOvertimeRequests.length +
@@ -319,6 +321,43 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                   );
                 },
               );
+              }
+              if (tab == 5) {
+                return EmployeeSection(
+                  isLoading: controller.isLoading,
+                  onCount: () => controller.filteredAdmins.length,
+                  itemBuilder: (context, index) {
+                    final admin = controller.filteredAdmins[index];
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 24.w,
+                        vertical: 5.h,
+                      ),
+                      child: Column(
+                        children: [
+                          SizedBox(height: index == 0 ? 10.h : 0.h),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor4
+                                  : AppColors.whiteColor2,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: AdminList(admin: admin),
+                          ),
+                          SizedBox(
+                            height: index ==
+                                    controller.filteredAdmins.length - 1
+                                ? 20.h
+                                : 0.h,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
             },
           ),
           SliverToBoxAdapter(

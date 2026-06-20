@@ -13,6 +13,7 @@ import 'package:doctorbike/features/admin/employee_section/data/models/employee_
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_reward_rule_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/qr_history_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/working_times_model.dart';
+import 'package:doctorbike/features/admin/employee_section/data/models/admin_user_model.dart';
 
 import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
@@ -884,5 +885,95 @@ class EmployeeImplement implements EmployeeRepository {
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
+  }
+
+  @override
+  Future<List<AdminUserModel>> getAdminUsers({String? search}) async {
+    if (!await networkInfo.isConnected) {
+      throw NoConnectionFailure();
+    }
+    try {
+      return await employeeDatasource.getAdminUsers(search: search);
+    } on ServerException catch (e) {
+      throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+    }
+  }
+
+  Future<Either<Failure, String>> _adminAction(
+    Future<Map<String, dynamic>> Function() request,
+  ) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await request();
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? 'success');
+      }
+      return Left(
+        ValidationFailure(
+          result['message']?.toString() ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> createAdminUser({
+    required String name,
+    required String email,
+    String? phone,
+    required String password,
+    required String passwordConfirmation,
+  }) {
+    return _adminAction(
+      () => employeeDatasource.createAdminUser(
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+        passwordConfirmation: passwordConfirmation,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<Failure, String>> updateAdminUser({
+    required String adminId,
+    required String name,
+    required String email,
+    String? phone,
+    String? password,
+    String? passwordConfirmation,
+  }) {
+    return _adminAction(
+      () => employeeDatasource.updateAdminUser(
+        adminId: adminId,
+        name: name,
+        email: email,
+        phone: phone,
+        password: password,
+        passwordConfirmation: passwordConfirmation,
+      ),
+    );
+  }
+
+  @override
+  Future<Either<Failure, String>> deleteAdminUser({required String adminId}) {
+    return _adminAction(
+      () => employeeDatasource.deleteAdminUser(adminId: adminId),
+    );
+  }
+
+  @override
+  Future<Either<Failure, String>> toggleBlockAdminUser({
+    required String adminId,
+  }) {
+    return _adminAction(
+      () => employeeDatasource.toggleBlockAdminUser(adminId: adminId),
+    );
   }
 }

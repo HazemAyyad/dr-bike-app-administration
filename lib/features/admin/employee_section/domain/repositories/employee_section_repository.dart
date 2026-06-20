@@ -16,6 +16,7 @@ import '../../data/models/employee_reward_rule_model.dart';
 import '../../data/models/qr_history_model.dart';
 import '../../data/models/working_times_model.dart';
 import '../entities/employee_entity.dart';
+import '../../data/models/admin_user_model.dart';
 
 abstract class EmployeeRepository {
   Future<List<EmployeeEntity>> getEmployees();
@@ -211,4 +212,27 @@ abstract class EmployeeRepository {
     int? categoryId,
     bool includeLogs,
   });
+
+  Future<List<AdminUserModel>> getAdminUsers({String? search});
+
+  Future<Either<Failure, String>> createAdminUser({
+    required String name,
+    required String email,
+    String? phone,
+    required String password,
+    required String passwordConfirmation,
+  });
+
+  Future<Either<Failure, String>> updateAdminUser({
+    required String adminId,
+    required String name,
+    required String email,
+    String? phone,
+    String? password,
+    String? passwordConfirmation,
+  });
+
+  Future<Either<Failure, String>> deleteAdminUser({required String adminId});
+
+  Future<Either<Failure, String>> toggleBlockAdminUser({required String adminId});
 }

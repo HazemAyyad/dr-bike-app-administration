@@ -165,6 +165,12 @@ class EndPoints {
   static const String employeeAttendanceReports = 'employee-attendance/reports';
   static const String editEmployee = 'edit/employee';
   static const String deleteEmployee = 'delete/employee';
+
+  // admin users
+  static const String adminUsers = 'admin/users';
+  static String editAdminUser(int id) => 'admin/users/$id/edit';
+  static String deleteAdminUser(int id) => 'admin/users/$id/delete';
+  static String toggleBlockAdminUser(int id) => 'admin/users/$id/toggle-block';
   static const String qrScan = 'qr-scan';
   static const String overtimeOrders = 'employee/overtime/orders';
   static const String loanOrders = 'employee/loan/orders';
@@ -651,6 +657,10 @@ class ApiKey {
   static const String subtask_admin_img_path = 'subtask_admin_img_path';
   static const String employee_images_path = 'employee_images_path';
   static const String employees = 'employees';
+  static const String admins = 'admins';
+  static const String is_blocked = 'is_blocked';
+  static const String is_online = 'is_online';
+  static const String active_sessions_count = 'active_sessions_count';
   static const String start_date = 'start_date';
   static const String end_date = 'end_date';
   static const String ongoing_tasks = 'ongoing_tasks';

@@ -42,6 +42,8 @@ import '../../domain/usecases/qr_generation_usecase.dart';
 import '../../domain/usecases/qr_history_usecase.dart';
 import '../../domain/usecases/reject_order_usecase.dart';
 import '../../domain/usecases/working_times_usecase.dart';
+import '../../domain/usecases/admin_users_usecase.dart';
+import '../../data/models/admin_user_model.dart';
 import 'employee_service.dart';
 
 class EmployeeSectionController extends GetxController
@@ -61,6 +63,8 @@ class EmployeeSectionController extends GetxController
   final GetLogsUsecase getLogsUsecase;
   final CancelLogUsecase cancelLogUsecase;
   final DeleteEmployeeUsecase deleteEmployeeUsecase;
+  final GetAdminUsersUsecase getAdminUsersUsecase;
+  final ManageAdminUserUsecase manageAdminUserUsecase;
   final EmployeeService employeeService;
   final GetReportByTypeUsecase getReportByType;
 
@@ -80,6 +84,8 @@ class EmployeeSectionController extends GetxController
     required this.getLogsUsecase,
     required this.cancelLogUsecase,
     required this.deleteEmployeeUsecase,
+    required this.getAdminUsersUsecase,
+    required this.manageAdminUserUsecase,
     required this.employeeService,
     required this.getReportByType,
   });
@@ -91,8 +97,14 @@ class EmployeeSectionController extends GetxController
   final TextEditingController employeeNameController = TextEditingController();
 
   RxInt currentTab = 0.obs;
-  final tabs =
-      ['employeeList', 'workHours', 'entitlements', 'loans', 'overtime'].obs;
+  final tabs = [
+    'employeeList',
+    'workHours',
+    'entitlements',
+    'loans',
+    'overtime',
+    'admins',
+  ].obs;
 
   final RxBool isLoading = false.obs;
 
@@ -102,6 +114,9 @@ class EmployeeSectionController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
+    if (index == 5) {
+      getAdminUsers();
+    }
   }
 
   final TextEditingController paySalaryController = TextEditingController();
@@ -157,6 +172,11 @@ class EmployeeSectionController extends GetxController
       'title': 'penalty',
       'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
+    },
+    {
+      'title': 'newAdmin',
+      'icon': AssetsManager.userIcon,
+      'route': AppRoutes.ADDEDITADMINSCREEN,
     },
   ];
 
@@ -338,6 +358,72 @@ class EmployeeSectionController extends GetxController
     } finally {
       if (showLoader) isLoading(false);
     }
+  }
+
+  Future<void> getAdminUsers() async {
+    final showLoader = employeeService.adminList.isEmpty;
+    if (showLoader) isLoading(true);
+    try {
+      final search = employeeNameController.text.trim();
+      final result = await getAdminUsersUsecase.call(
+        search: search.isEmpty ? null : search,
+      );
+      employeeService.adminList.assignAll(result);
+      filteredAdmins.assignAll(employeeService.adminList);
+    } on Failure catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (showLoader) isLoading(false);
+      update();
+    }
+  }
+
+  Future<void> deleteAdmin(String adminId) async {
+    isLoading(true);
+    update();
+    final result = await manageAdminUserUsecase.delete(adminId: adminId);
+    result.fold(
+      (failure) => Get.snackbar(
+        'error'.tr,
+        failure.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      ),
+      (success) async {
+        Get.snackbar('success'.tr, success, snackPosition: SnackPosition.BOTTOM);
+        await getAdminUsers();
+      },
+    );
+    isLoading(false);
+    update();
+  }
+
+  Future<void> toggleAdminBlock(String adminId) async {
+    isLoading(true);
+    update();
+    final result = await manageAdminUserUsecase.toggleBlock(adminId: adminId);
+    result.fold(
+      (failure) => Get.snackbar(
+        'error'.tr,
+        failure.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      ),
+      (success) async {
+        Get.snackbar('success'.tr, success, snackPosition: SnackPosition.BOTTOM);
+        await getAdminUsers();
+      },
+    );
+    isLoading(false);
+    update();
   }
 
   final RxBool isDeletingEmployee = false.obs;
@@ -757,6 +843,7 @@ class EmployeeSectionController extends GetxController
   }
 
   final RxList<EmployeeEntity> filteredEmployees = <EmployeeEntity>[].obs;
+  final RxList<AdminUserModel> filteredAdmins = <AdminUserModel>[].obs;
   final RxList<WorkingTimesEntity> filteredWorkingTimes =
       <WorkingTimesEntity>[].obs;
   final RxList<FinancialDuesModel> filteredFinancialDues =
@@ -776,12 +863,21 @@ class EmployeeSectionController extends GetxController
       filteredFinancialDues.assignAll(employeeService.financialDuesList);
       filteredOvertimeList.assignAll(employeeService.overtimeList);
       filteredLoanList.assignAll(employeeService.loanList);
+      filteredAdmins.assignAll(employeeService.adminList);
     } else {
       final lowerQuery = employeeNameController.text..toLowerCase();
 
       filteredEmployees.assignAll(
         employeeService.employeeList
             .where((e) => e.employeeName.toLowerCase().contains(lowerQuery)),
+      );
+
+      filteredAdmins.assignAll(
+        employeeService.adminList.where(
+          (a) =>
+              a.name.toLowerCase().contains(lowerQuery) ||
+              a.email.toLowerCase().contains(lowerQuery),
+        ),
       );
 
       filteredWorkingTimes.assignAll(
@@ -815,6 +911,7 @@ class EmployeeSectionController extends GetxController
     getFinancialDues();
     getOvertimeAndLoan();
     getLogs();
+    await getAdminUsers();
     isLoading(false);
     update();
   }
@@ -828,6 +925,7 @@ class EmployeeSectionController extends GetxController
     getFinancialDues();
     getOvertimeAndLoan();
     getLogs();
+    getAdminUsers();
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),

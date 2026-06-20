@@ -28,6 +28,7 @@ class AppRoutes {
   static const PRIVATETASKSSCREEN = '/privatetasksscreen';
   static const EMPLOYEESECTIONSCREEN = '/employeesectionscreen';
   static const ADDNEWEMPLOYEESCREEN = '/AddNewEmployeeScreen';
+  static const ADDEDITADMINSCREEN = '/AddEditAdminScreen';
   static const CURRENTFOLLOWUPSCREEN = '/CurrentFollowUpScreen';
   static const ADDFOLLOWUPSCREEN = '/AddFollowUpScreen';
   static const PROJECTMANAGEMENTSCREEN = '/ProjectManagementScreen';
