@@ -44,22 +44,22 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
   static const double _minPickRadius = 44;
   static const double _pageSwipeThreshold = 52;
   static const double _arcSweep = math.pi / 2;
+  static const double _arcEdgePadding = 0.07;
 
-  /// Each arc gets a capacity based on its length (radius × 90°).
   static final List<_ArcRowConfig> _arcRows = _buildArcRows();
 
   static List<_ArcRowConfig> _buildArcRows() {
-    const baseRadius = 72.0;
-    const radiusStep = 46.0;
+    const baseRadius = 94.0;
+    const radiusStep = 58.0;
     const arcCount = 6;
-    const minBubble = 32.0;
-    const gap = 7.0;
-    const slotPitch = minBubble + gap;
+    const minChipWidth = 96.0;
+    const gap = 22.0;
+    const slotPitch = minChipWidth + gap;
 
     return List.generate(arcCount, (i) {
       final radius = baseRadius + i * radiusStep;
       final arcLength = radius * math.pi / 2;
-      final capacity = math.max(2, (arcLength / slotPitch).floor());
+      final capacity = math.max(1, (arcLength / slotPitch).floor());
       return _ArcRowConfig(capacity: capacity, radius: radius);
     });
   }
@@ -134,16 +134,33 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
     }
   }
 
+  void _restoreActiveFilterHighlight() {
+    final id = _tasks.filterEmployeeId.value;
+    if (id == null || _employees.isEmpty) {
+      _highlightIndex = -1;
+      _segmentPage = 0;
+      return;
+    }
+    final idx = _employees.indexWhere((e) => e.id == id);
+    if (idx < 0) {
+      _highlightIndex = -1;
+      _segmentPage = 0;
+      return;
+    }
+    _highlightIndex = idx;
+    _segmentPage = idx ~/ _employeesPerPage;
+  }
+
   Future<void> _openLens() async {
     HapticHelper.selection();
-    _highlightIndex = -1;
-    _segmentPage = 0;
     _pageDragAccum = 0;
     _anchorCenter = _readFabCenter();
     _overlay = OverlayEntry(builder: _buildOverlay);
     Overlay.of(context).insert(_overlay!);
     await _loadEmployees(force: _employees.isEmpty);
+    _restoreActiveFilterHighlight();
     _overlay?.markNeedsBuild();
+    if (mounted) setState(() {});
   }
 
   void _removeOverlay({required bool applySelection}) {
@@ -157,20 +174,29 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
   }
 
   void _commitSelection(int index) {
-    if (index < 0) {
-      _tasks.employeeNameController.clear();
-    } else if (_employees.isNotEmpty) {
+    if (index < 0 || _employees.isEmpty) {
+      _tasks.applyEmployeeArcFilter(employeeId: null);
+    } else {
       final i = index.clamp(0, _employees.length - 1);
-      _tasks.employeeNameController.text = _employees[i].employeeName;
+      _tasks.applyEmployeeArcFilter(
+        employeeId: _employees[i].id,
+        displayName: _employees[i].employeeName,
+      );
     }
-    _scheduleListRefresh();
   }
 
-  void _scheduleListRefresh() {
+  void _previewSelection(int index) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _tasks.applyAllFilters();
-      _tasks.update(['tasksList', 'periodBar']);
+      if (index < 0 || _employees.isEmpty) {
+        _tasks.applyEmployeeArcFilter(employeeId: null);
+      } else {
+        final i = index.clamp(0, _employees.length - 1);
+        _tasks.applyEmployeeArcFilter(
+          employeeId: _employees[i].id,
+          displayName: _employees[i].employeeName,
+        );
+      }
     });
   }
 
@@ -178,14 +204,7 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
     if (index == _highlightIndex) return;
     if (vibrate) HapticHelper.confirm();
     _highlightIndex = index;
-    if (index >= 0 && _employees.isNotEmpty) {
-      final i = index.clamp(0, _employees.length - 1);
-      _tasks.employeeNameController.text = _employees[i].employeeName;
-      _scheduleListRefresh();
-    } else if (index < 0) {
-      _tasks.employeeNameController.clear();
-      _scheduleListRefresh();
-    }
+    _previewSelection(index);
     _overlay?.markNeedsBuild();
   }
 
@@ -243,33 +262,47 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
 
   double _arcStartAngle() => _fabOnLeft ? -math.pi / 2 : -math.pi;
 
-  double _arcEndAngle() => _fabOnLeft ? 0.0 : -math.pi / 2;
-
   bool _angleInArc(double angle) {
     const margin = 0.22;
     final start = _arcStartAngle();
-    final end = _arcEndAngle();
+    final end = _fabOnLeft ? 0.0 : -math.pi / 2;
     return angle >= (start - margin) && angle <= (end + margin);
   }
 
   double _angleForSlot(int index, int total) {
+    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
+    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
     final t = total <= 1 ? 0.5 : (index + 0.5) / total;
-    final start = _arcStartAngle();
-    return start + t * _arcSweep;
+    return start + t * sweep;
   }
 
   int _localIndexFromAngle(double angle, int total) {
-    final start = _arcStartAngle();
-    final t = ((angle - start) / _arcSweep).clamp(0.0, 0.999999);
+    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
+    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
+    final t = ((angle - start) / sweep).clamp(0.0, 0.999999);
     return (t * total).floor().clamp(0, total - 1);
   }
 
-  double _bubbleAvatarSize({required int rowCount}) {
-    if (rowCount >= 9) return 32;
-    if (rowCount >= 7) return 36;
-    if (rowCount >= 5) return 40;
-    if (rowCount >= 3) return 44;
-    return 48;
+  double _chipMaxWidth({required int rowCount}) {
+    if (rowCount <= 1) return 124;
+    if (rowCount == 2) return 116;
+    if (rowCount <= 3) return 108;
+    if (rowCount <= 4) return 100;
+    return 92;
+  }
+
+  double _chipMinHeight({required int rowCount}) {
+    if (rowCount >= 5) return 34;
+    if (rowCount >= 3) return 38;
+    if (rowCount >= 2) return 42;
+    return 46;
+  }
+
+  double _chipFontSize({required int rowCount}) {
+    if (rowCount >= 5) return 9;
+    if (rowCount >= 3) return 10;
+    if (rowCount >= 2) return 11;
+    return 12;
   }
 
   int? _rowFromDistance(double distance, int pageCount) {
@@ -283,7 +316,7 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
           ? _minPickRadius
           : (_radiusForRow(rows[i - 1]) + radius) / 2;
       final outer = i == rows.length - 1
-          ? radius + 36
+          ? radius + 48
           : (radius + _radiusForRow(rows[i + 1])) / 2;
       if (distance >= inner && distance < outer) return row;
     }
@@ -436,25 +469,24 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
                   final pos = _slotPosition(slot, anchor);
                   final emp = pageEmployees[slot.localIndex];
                   final selected = globalIndex == _highlightIndex;
-                  final avatarSize =
-                      _bubbleAvatarSize(rowCount: slot.rowCount);
+                  final chipMaxWidth = _chipMaxWidth(rowCount: slot.rowCount);
+                  final chipMinHeight = _chipMinHeight(rowCount: slot.rowCount);
                   return Positioned(
-                    left: pos.dx - avatarSize / 2,
-                    top: pos.dy - avatarSize / 2,
+                    left: pos.dx - chipMaxWidth / 2,
+                    top: pos.dy - chipMinHeight / 2,
                     child: Transform.scale(
-                      scale: selected ? 1.16 : 0.94,
-                      child: _EmployeeBubble(
-                        imageUrl: emp.employeeImg,
+                      scale: selected ? 1.08 : 0.96,
+                      child: _EmployeeArcChip(
+                        employee: emp,
                         selected: selected,
-                        avatarSize: avatarSize,
+                        maxWidth: chipMaxWidth,
+                        minHeight: chipMinHeight,
+                        fontSize: _chipFontSize(rowCount: slot.rowCount),
                       ),
                     ),
                   );
                 }),
-              if (!_loadingEmployees &&
-                  _highlightIndex < 0 &&
-                  pageCount > 1 &&
-                  onPage > 0)
+              if (!_loadingEmployees && pageCount > 1 && onPage > 0)
                 Positioned(
                   left: _fabOnLeft ? anchor.dx + 8 : anchor.dx - 168,
                   top: anchor.dy - maxArcRadius - 48,
@@ -481,7 +513,7 @@ class _EmployeeTasksCreateFabState extends State<EmployeeTasksCreateFab> {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        'اسحب يمين/يسار للمزيد',
+                        'employeeTasksFabSwipeHint'.tr,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.85),
@@ -592,16 +624,29 @@ class _CenterSelectionBanner extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              name,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              softWrap: true,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20.sp,
+                fontWeight: FontWeight.w800,
+                height: 1.25,
+              ),
+            ),
+          ),
+          SizedBox(height: 4.h),
           Text(
-            name,
+            'employeeTasksFabFilterHint'.tr,
             textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w800,
-              height: 1.25,
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: 6.h),
@@ -635,6 +680,93 @@ class _CenterSelectionBanner extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _EmployeeArcChip extends StatelessWidget {
+  const _EmployeeArcChip({
+    required this.employee,
+    required this.selected,
+    required this.maxWidth,
+    required this.minHeight,
+    required this.fontSize,
+  });
+
+  final EmployeeEntity employee;
+  final bool selected;
+  final double maxWidth;
+  final double minHeight;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = ShowNetImage.getThumbnailPhoto(employee.employeeImg);
+    final avatarSize = (minHeight * 0.62).clamp(20.0, 28.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: maxWidth,
+        minWidth: minHeight,
+        minHeight: minHeight,
+      ),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: Colors.white,
+          border: Border.all(
+            color: selected ? AppColors.secondaryColor : Colors.white,
+            width: selected ? 2.5 : 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipOval(
+              child: SizedBox(
+                width: avatarSize,
+                height: avatarSize,
+                child: url.isNotEmpty
+                    ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover)
+                    : ColoredBox(
+                        color: AppColors.operationalNavy.withValues(alpha: 0.12),
+                        child: Icon(
+                          Icons.person,
+                          size: avatarSize * 0.65,
+                          color: AppColors.operationalNavy,
+                        ),
+                      ),
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  employee.employeeName,
+                  maxLines: 2,
+                  softWrap: true,
+                  textAlign: TextAlign.start,
+                  style: TextStyle(
+                    color: AppColors.secondaryColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: fontSize.sp,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -731,54 +863,6 @@ class _CenterClearBubble extends StatelessWidget {
         Icons.filter_alt_off_outlined,
         color: selected ? AppColors.secondaryColor : Colors.grey.shade600,
         size: 26,
-      ),
-    );
-  }
-}
-
-class _EmployeeBubble extends StatelessWidget {
-  const _EmployeeBubble({
-    required this.imageUrl,
-    required this.selected,
-    required this.avatarSize,
-  });
-
-  final String imageUrl;
-  final bool selected;
-  final double avatarSize;
-
-  @override
-  Widget build(BuildContext context) {
-    final url = ShowNetImage.getThumbnailPhoto(imageUrl);
-    final compact = avatarSize <= 40;
-
-    return Container(
-      width: avatarSize,
-      height: avatarSize,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: selected ? AppColors.secondaryColor : Colors.white,
-          width: selected ? 3 : 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: url.isNotEmpty
-            ? CachedNetworkImage(imageUrl: url, fit: BoxFit.cover)
-            : ColoredBox(
-                color: AppColors.operationalNavy.withValues(alpha: 0.15),
-                child: Icon(
-                  Icons.person,
-                  size: compact ? 20 : 24,
-                  color: AppColors.operationalNavy,
-                ),
-              ),
       ),
     );
   }

@@ -50,6 +50,8 @@ class EmployeeTasksController extends GetxController {
   final fromDateController = TextEditingController();
   final toDateController = TextEditingController();
   final employeeNameController = TextEditingController();
+  final RxnInt filterEmployeeId = RxnInt();
+  String? _arcFilterDisplayName;
 
   final args = Get.arguments as Map<String, dynamic>?;
 
@@ -357,10 +359,11 @@ class EmployeeTasksController extends GetxController {
         }
       }
 
-      // فلترة بالاسم
-      if (name.isNotEmpty &&
-          !task.employeeName.toLowerCase().contains(name.toLowerCase())) {
-        matchesName = false;
+      // فلترة بالموظف / البحث
+      if (filterEmployeeId.value != null) {
+        matchesName = task.matchesAssigneeFilter(filterEmployeeId.value!);
+      } else if (name.isNotEmpty) {
+        matchesName = task.matchesSearchQuery(name);
       }
 
       return matchesDate && matchesName;
@@ -389,11 +392,47 @@ class EmployeeTasksController extends GetxController {
     );
   }
 
+  void applyEmployeeArcFilter({int? employeeId, String? displayName}) {
+    if (employeeId == null || employeeId <= 0) {
+      filterEmployeeId.value = null;
+      _arcFilterDisplayName = null;
+      employeeNameController.clear();
+    } else {
+      filterEmployeeId.value = employeeId;
+      final label = displayName?.trim() ?? '';
+      _arcFilterDisplayName = label.isEmpty ? null : label;
+      if (label.isNotEmpty) {
+        employeeNameController.text = label;
+      }
+    }
+    applyAllFilters();
+    update(['tasksList', 'periodBar']);
+  }
+
+  void clearEmployeeTaskFilters() {
+    filterEmployeeId.value = null;
+    _arcFilterDisplayName = null;
+    employeeNameController.clear();
+    applyAllFilters();
+    update(['tasksList', 'periodBar']);
+  }
+
   // filter employee tasks
   void filterEmployeeTasks() {
+    final text = employeeNameController.text.trim();
+    if (text.isEmpty) {
+      filterEmployeeId.value = null;
+      _arcFilterDisplayName = null;
+    } else if (filterEmployeeId.value != null &&
+        _arcFilterDisplayName != null &&
+        text != _arcFilterDisplayName) {
+      filterEmployeeId.value = null;
+      _arcFilterDisplayName = null;
+    }
     if (fromDateController.text.isEmpty &&
         toDateController.text.isEmpty &&
-        employeeNameController.text.isEmpty) {
+        employeeNameController.text.isEmpty &&
+        filterEmployeeId.value == null) {
       applyFiltersForTab(currentTab.value);
       return;
     }
@@ -415,7 +454,9 @@ class EmployeeTasksController extends GetxController {
     Map<String, List<EmployeeTaskModel>> source,
   ) {
     final sorted = sortByDate(source);
-    final withName = employeeNameController.text.trim().isEmpty
+    final hasEmployeeFilter = filterEmployeeId.value != null;
+    final hasTextFilter = employeeNameController.text.trim().isNotEmpty;
+    final withName = !hasEmployeeFilter && !hasTextFilter
         ? sorted
         : filterTasks(sorted);
     return filterByRange(_expandForCurrentView(withName));

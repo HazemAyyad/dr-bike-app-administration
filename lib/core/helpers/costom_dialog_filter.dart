@@ -149,7 +149,9 @@ void showCustomDialog(
                       fillColor: ThemeService.isDark.value
                           ? AppColors.customGreyColor
                           : AppColors.whiteColor2,
-                      hintText: 'employeeNameExample',
+                      hintText: label == 'employeeTasksSearch'
+                          ? 'employeeTasksSearchHint'
+                          : 'employeeNameExample',
                       controller: employeeNameController,
                     )
                   : const SizedBox.shrink(),

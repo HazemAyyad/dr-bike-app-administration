@@ -3,8 +3,10 @@ import 'package:doctorbike/core/helpers/json_safe_parser.dart';
 import 'package:doctorbike/core/helpers/task_recurrence_rules.dart';
 import 'package:doctorbike/core/helpers/audio_helper.dart';
 import 'package:doctorbike/core/helpers/show_net_image.dart';
+import 'package:doctorbike/core/helpers/task_media_paths.dart';
 
 import '../../domain/entities/employee_task_entity.dart';
+import '../../domain/entities/task_assignee_info.dart';
 
 class EmployeeTaskModel extends EmployeeTaskEntity {
   EmployeeTaskModel({
@@ -30,6 +32,11 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     String taskRecurrence = 'noRepeat',
     List<String> taskRecurrenceTime = const [],
     int? templateId,
+    List<int> assigneeIds = const [],
+    List<TaskAssigneeInfo> assignees = const [],
+    bool isShared = false,
+    String assigneeLabel = '',
+    List<String> subtaskNames = const [],
   }) : super(
           taskId: taskId,
           occurrenceId: occurrenceId,
@@ -53,6 +60,11 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
           taskRecurrence: taskRecurrence,
           taskRecurrenceTime: taskRecurrenceTime,
           templateId: templateId,
+          assigneeIds: assigneeIds,
+          assignees: assignees,
+          isShared: isShared,
+          assigneeLabel: assigneeLabel,
+          subtaskNames: subtaskNames,
         );
 
   factory EmployeeTaskModel.fromJson(Map<String, dynamic> json) {
@@ -60,6 +72,14 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     final List<String> recurrenceTimes = trt is List
         ? trt.map((e) => e.toString()).toList()
         : const [];
+    final assignees = _parseAssignees(json['assignees']);
+    final assigneeIds = json['assignee_ids'] is List
+        ? (json['assignee_ids'] as List).map((e) => asInt(e)).toList()
+        : assignees.map((a) => a.id).toList();
+    final assigneeLabel = asString(json['assignee_label']);
+    final resolvedAssigneeLabel = assigneeLabel.isNotEmpty
+        ? assigneeLabel
+        : assignees.map((a) => a.name).where((n) => n.isNotEmpty).join(' · ');
 
     return EmployeeTaskModel(
       taskId: asInt(json[ApiKey.task_id]),
@@ -88,6 +108,18 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       taskRecurrence: asString(json[ApiKey.task_recurrence], 'noRepeat'),
       taskRecurrenceTime: recurrenceTimes,
       templateId: json['template_id'] != null ? asInt(json['template_id']) : null,
+      assigneeIds: assigneeIds,
+      assignees: assignees,
+      isShared: json.containsKey('is_shared')
+          ? asBool(json['is_shared'])
+          : assigneeIds.length > 1,
+      assigneeLabel: resolvedAssigneeLabel,
+      subtaskNames: json['subtask_names'] is List
+          ? (json['subtask_names'] as List)
+              .map((e) => e.toString())
+              .where((e) => e.trim().isNotEmpty)
+              .toList()
+          : const [],
     );
   }
 
@@ -138,6 +170,11 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       taskRecurrence: taskRecurrence,
       taskRecurrenceTime: taskRecurrenceTime,
       templateId: templateId,
+      assigneeIds: assigneeIds,
+      assignees: assignees,
+      isShared: isShared,
+      assigneeLabel: assigneeLabel,
+      subtaskNames: subtaskNames,
     );
   }
 
@@ -176,6 +213,11 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       taskRecurrence: taskRecurrence,
       taskRecurrenceTime: taskRecurrenceTime,
       templateId: templateId,
+      assigneeIds: assigneeIds,
+      assignees: assignees,
+      isShared: isShared,
+      assigneeLabel: assigneeLabel,
+      subtaskNames: subtaskNames,
     );
   }
 
@@ -194,4 +236,26 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       ApiKey.audio: audio ?? 'no audio',
     };
   }
+}
+
+List<TaskAssigneeInfo> _parseAssignees(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map>()
+      .map((m) => _parseAssignee(Map<String, dynamic>.from(m)))
+      .toList();
+}
+
+TaskAssigneeInfo _parseAssignee(Map<String, dynamic> json) {
+  final photoRaw = asNullableString(json['photo']) ?? '';
+  final photo =
+      photoRaw.isEmpty || photoRaw == 'no images' || photoRaw == 'no image'
+          ? ''
+          : resolveTaskMediaUri(photoRaw);
+
+  return TaskAssigneeInfo(
+    id: asInt(json['id']),
+    name: asString(json['name']),
+    photoUrl: photo,
+  );
 }

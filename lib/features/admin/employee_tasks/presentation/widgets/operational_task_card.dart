@@ -85,8 +85,10 @@ class OperationalTaskCard extends StatelessWidget {
                         ),
                         SizedBox(height: 2.h),
                         Text(
-                          '${task.employeeName} · ${'dueDate'.tr}: ${showDateTime12(task.endTime)}',
-                          maxLines: 1,
+                          task.isShared
+                              ? '${'sharedTask'.tr}: ${task.displayAssigneeLabel} · ${'dueDate'.tr}: ${showDateTime12(task.endTime)}'
+                              : '${task.displayAssigneeLabel} · ${'dueDate'.tr}: ${showDateTime12(task.endTime)}',
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 10.5.sp,
@@ -116,6 +118,14 @@ class OperationalTaskCard extends StatelessWidget {
               Row(
                 children: [
                   TaskStatusBadge(status: task.status, compact: true),
+                  if (task.isShared) ...[
+                    SizedBox(width: 4.w),
+                    _MiniChip(
+                      label: 'sharedTask'.tr,
+                      color: AppColors.customGreen1,
+                      icon: Icons.people_outline,
+                    ),
+                  ],
                   if (task.isRepeatedCopy) ...[
                     SizedBox(width: 4.w),
                     _MiniChip(

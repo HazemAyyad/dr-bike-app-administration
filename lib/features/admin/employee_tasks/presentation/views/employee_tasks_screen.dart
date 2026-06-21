@@ -23,6 +23,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
         fromDateController: controller.fromDateController,
         toDateController: controller.toDateController,
         employeeNameController: controller.employeeNameController,
+        label: 'employeeTasksSearch',
         onPressedFilter: () {
           controller.filterEmployeeTasks();
           Get.back();
