@@ -1403,7 +1403,6 @@ const Map<String, String> ar = {
   'salesOrderSuspend': 'تعليق الطلبية',
   'salesOrderDraftSuspended': 'تم تعليق الطلبية — يمكنك متابعتها لاحقاً',
   'salesOrderDraftResuming': 'متابعة مسودة الطلبية',
-  'salesOrderDeliveryCity': 'مدينة التوصيل',
   'salesOrderShiplyCity': 'مدينة Shiply',
   'salesOrderShiplyVillage': 'قرية / حي Shiply',
   'salesOrderStreetAddress': 'الشارع / العنوان التفصيلي',

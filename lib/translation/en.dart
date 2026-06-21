@@ -1330,7 +1330,6 @@ const Map<String, String> en = {
   'salesOrderSuspend': 'Suspend order',
   'salesOrderDraftSuspended': 'Order draft suspended — you can resume later',
   'salesOrderDraftResuming': 'Resuming order draft',
-  'salesOrderDeliveryCity': 'Delivery city',
   'salesOrderShiplyCity': 'Shiply city',
   'salesOrderShiplyVillage': 'Shiply village / area',
   'salesOrderStreetAddress': 'Street / detailed address',
