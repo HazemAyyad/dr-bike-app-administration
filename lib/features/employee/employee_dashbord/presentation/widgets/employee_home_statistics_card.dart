@@ -3,11 +3,13 @@ import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../admin/employee_section/presentation/controllers/attendance_history_controller.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../controllers/employee_dashbord_controller.dart';
 import 'employee_compact_stat_tile.dart';
@@ -20,68 +22,127 @@ class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
     return n > 10 ? 'hour'.tr : 'hours'.tr;
   }
 
+  static String? _formatClock(DateTime? value) {
+    if (value == null) return null;
+    return DateFormat('h:mm a', Get.locale?.toString()).format(value.toLocal());
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(
-              child: AppButton(
-                text: 'startWork',
-                onPressed: () {
-                  Get.toNamed(AppRoutes.FULLSCREENQRSCANNER);
-                },
-                color: Colors.green,
-                borderRadius: BorderRadius.all(Radius.circular(8.r)),
-              ),
-            ),
-            SizedBox(width: 10.w),
-            Expanded(
-              child: AppButton(
-                text: 'leaveWork',
-                onPressed: () {
-                  Get.toNamed(AppRoutes.FULLSCREENQRSCANNER);
-                },
-                color: Colors.red,
-                borderRadius: BorderRadius.all(
-                  Radius.circular(8.r),
-                ),
-              ),
-            ),
-          ],
-        ),
-        Obx(
-          () {
-            final day = controller.todayAttendance.value;
-            final inside = controller.isStartWork ||
-                day?.currentlyIn == true;
-            if (!inside) {
-              return const SizedBox();
-            }
+        Obx(() {
+          final day = controller.todayAttendance.value;
+          final inside =
+              controller.isStartWork || day?.currentlyIn == true;
+          final checkIn = day?.firstCheckIn ??
+              day?.firstCheckInServer ??
+              controller.startTime;
+          final checkInLabel = _formatClock(checkIn);
 
-            Duration elapsed = controller.elapsed.value;
-            if (!controller.isStartWork) {
-              final checkIn = day?.firstCheckIn ?? day?.firstCheckInServer;
-              if (checkIn != null) {
-                elapsed = DateTime.now().difference(checkIn);
-              }
+          if (inside) {
+            final tick = controller.elapsed.value;
+            Duration elapsed = tick;
+            if (!controller.isStartWork && checkIn != null) {
+              elapsed = DateTime.now().difference(checkIn);
             }
-
             final hours = elapsed.inHours;
             final minutes = elapsed.inMinutes % 60;
             final seconds = elapsed.inSeconds % 60;
-            return Text(
-              '$seconds : $minutes : $hours',
-              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+
+            return Column(
+              children: [
+                AppButton(
+                  text: 'leaveWork',
+                  onPressed: () {
+                    Get.toNamed(AppRoutes.FULLSCREENQRSCANNER);
+                  },
+                  color: Colors.red,
+                  borderRadius: BorderRadius.all(Radius.circular(8.r)),
+                ),
+                if (checkInLabel != null) ...[
+                  SizedBox(height: 8.h),
+                  Text(
+                    '${'firstCheckInLabel'.tr}: $checkInLabel',
+                    style: theme.bodyMedium?.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor6
+                          : AppColors.secondaryColor,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 6.h),
+                Text(
+                  'stillInside'.tr,
+                  style: theme.bodySmall?.copyWith(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  '$seconds : $minutes : $hours',
+                  style: theme.bodyLarge?.copyWith(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
                     color: Colors.green,
                   ),
+                ),
+              ],
             );
-          },
-        ),
+          }
+
+          if (day != null) {
+            final checkOut = day.lastCheckOut ?? day.lastCheckOutServer;
+            final checkOutLabel = _formatClock(checkOut);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (checkInLabel != null)
+                  Text(
+                    '${'firstCheckInLabel'.tr}: $checkInLabel',
+                    textAlign: TextAlign.center,
+                    style: theme.bodyMedium?.copyWith(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                if (checkOutLabel != null) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    '${'lastCheckOutLabel'.tr}: $checkOutLabel',
+                    textAlign: TextAlign.center,
+                    style: theme.bodyMedium?.copyWith(
+                      fontSize: 14.sp,
+                      color: AppColors.customGreyColor5,
+                    ),
+                  ),
+                ],
+                SizedBox(height: 6.h),
+                Text(
+                  AttendanceHistoryController.formatMinutes(day.workedMinutes),
+                  textAlign: TextAlign.center,
+                  style: theme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.secondaryColor,
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return AppButton(
+            text: 'startWork',
+            onPressed: () {
+              Get.toNamed(AppRoutes.FULLSCREENQRSCANNER);
+            },
+            color: Colors.green,
+            borderRadius: BorderRadius.all(Radius.circular(8.r)),
+          );
+        }),
         SizedBox(height: 10.h),
         Obx(() {
           final summary =
