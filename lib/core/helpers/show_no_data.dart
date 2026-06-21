@@ -11,6 +11,7 @@ class ShowNoData extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
@@ -19,15 +20,14 @@ class ShowNoData extends StatelessWidget {
             color: AppColors.graywhiteColor,
           ),
           SizedBox(height: 10.h),
-          Flexible(
-            child: Text(
-              'noData'.tr,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.graywhiteColor,
-                  ),
-            ),
+          Text(
+            'noData'.tr,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.graywhiteColor,
+                ),
           ),
         ],
       ),
