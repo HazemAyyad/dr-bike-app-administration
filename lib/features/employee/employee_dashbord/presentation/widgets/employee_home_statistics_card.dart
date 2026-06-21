@@ -34,8 +34,8 @@ class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
         Obx(
           () => _CompactAttendanceStrip(
             day: controller.todayAttendance.value,
-            inside: controller.isStartWork ||
-                controller.todayAttendance.value?.currentlyIn == true,
+            inside: controller.isAttendanceInside,
+            loading: controller.todayAttendanceLoading.value,
             elapsed: controller.elapsed.value,
             isStartWork: controller.isStartWork,
             startTime: controller.startTime,
@@ -191,6 +191,7 @@ class _CompactAttendanceStrip extends StatelessWidget {
   const _CompactAttendanceStrip({
     required this.day,
     required this.inside,
+    required this.loading,
     required this.elapsed,
     required this.isStartWork,
     required this.startTime,
@@ -199,6 +200,7 @@ class _CompactAttendanceStrip extends StatelessWidget {
 
   final EmployeeAttendanceDay? day;
   final bool inside;
+  final bool loading;
   final Duration elapsed;
   final bool isStartWork;
   final DateTime? startTime;
@@ -222,6 +224,20 @@ class _CompactAttendanceStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return Container(
+        height: 52.h,
+        padding: EdgeInsets.symmetric(horizontal: 10.w),
+        decoration: _cardDecoration(),
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: 18.r,
+          height: 18.r,
+          child: const CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
     final theme = Theme.of(context).textTheme;
     final checkIn = day?.firstCheckIn ?? day?.firstCheckInServer ?? startTime;
     final checkInLabel = formatClock(checkIn);

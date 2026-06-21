@@ -16,6 +16,7 @@ import '../../../../../core/helpers/task_details_debug.dart';
 import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../../core/services/user_data.dart';
 import '../../../../employee_reminders/data/employee_reminder_models.dart';
 import '../../../../employee_reminders/data/employee_reminders_datasource.dart';
 import '../../../../bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
@@ -54,6 +55,14 @@ class EmployeeDashbordController extends GetxController
 
   final RxBool todayAttendanceLoading = false.obs;
   final Rxn<EmployeeAttendanceDay> todayAttendance = Rxn();
+
+  /// Server-first: avoids stale local state when admin impersonates another employee.
+  bool get isAttendanceInside {
+    if (todayAttendanceLoading.value) return false;
+    final day = todayAttendance.value;
+    if (day != null) return day.currentlyIn;
+    return isStartWork;
+  }
 
   Future<void> refreshTodayAttendance({bool silent = false}) async {
     final previous = todayAttendance.value;
@@ -104,16 +113,15 @@ class EmployeeDashbordController extends GetxController
       final checkIn = day!.firstCheckIn ?? day.firstCheckInServer;
       if (!isStartWork) {
         isStartWork = true;
-        box.write('isStartWork', true);
         startTime = checkIn ?? DateTime.now();
-        _saveStartTime();
+        _persistWorkSession();
         _startTimer();
         update();
       } else if (checkIn != null && startTime != null) {
         final drift = startTime!.difference(checkIn).inSeconds.abs();
         if (drift > 120) {
           startTime = checkIn;
-          _saveStartTime();
+          _persistWorkSession();
           update();
         }
       }
@@ -130,16 +138,16 @@ class EmployeeDashbordController extends GetxController
       return;
     }
 
-    _clearStaleWorkSessionIfNeeded();
+    if (isStartWork) {
+      _endWorkSessionLocally();
+    } else {
+      _clearStaleWorkSessionIfNeeded();
+    }
   }
 
   void _endWorkSessionLocally() {
-    isStartWork = false;
-    box.write('isStartWork', false);
-    timer?.cancel();
-    startTime = null;
-    elapsed.value = Duration.zero;
-    box.remove('work_start_time');
+    _resetWorkSessionMemory();
+    _persistWorkSession();
     update();
   }
 
@@ -194,19 +202,66 @@ class EmployeeDashbordController extends GetxController
   Timer? timer;
   DateTime? startTime;
   Rx<Duration> elapsed = Duration.zero.obs;
+  int? _sessionEmployeeId;
 
-  void _loadStartTime() {
-    final startMillis = box.read("work_start_time");
-    if (startMillis != null) {
-      startTime = DateTime.fromMillisecondsSinceEpoch(startMillis);
-      _startTimer();
+  Future<int?> _resolveEmployeeId() async {
+    final user = await UserData.getSavedUser();
+    final id = user?.user.employee.id;
+    return id != null && id > 0 ? id : null;
+  }
+
+  String _isStartWorkKey(int employeeId) => 'isStartWork_$employeeId';
+
+  String _workStartTimeKey(int employeeId) => 'work_start_time_$employeeId';
+
+  void _purgeLegacyWorkSessionKeys() {
+    box.remove('isStartWork');
+    box.remove('work_start_time');
+  }
+
+  Future<void> _initWorkSession() async {
+    _purgeLegacyWorkSessionKeys();
+    _sessionEmployeeId = await _resolveEmployeeId();
+    if (_sessionEmployeeId == null) {
+      _resetWorkSessionMemory();
+      update();
+      return;
     }
-    isStartWork = box.read("isStartWork") ?? false;
+    final empId = _sessionEmployeeId!;
+    final startMillis = box.read(_workStartTimeKey(empId));
+    isStartWork = box.read(_isStartWorkKey(empId)) == true;
+    startTime = startMillis is int
+        ? DateTime.fromMillisecondsSinceEpoch(startMillis)
+        : null;
+    if (isStartWork && startTime != null) {
+      _startTimer();
+    } else {
+      _resetWorkSessionMemory();
+      _persistWorkSession();
+    }
     update();
   }
 
+  void _resetWorkSessionMemory() {
+    isStartWork = false;
+    timer?.cancel();
+    startTime = null;
+    elapsed.value = Duration.zero;
+  }
+
+  void _persistWorkSession() {
+    final empId = _sessionEmployeeId;
+    if (empId == null) return;
+    box.write(_isStartWorkKey(empId), isStartWork);
+    if (startTime != null) {
+      box.write(_workStartTimeKey(empId), startTime!.millisecondsSinceEpoch);
+    } else {
+      box.remove(_workStartTimeKey(empId));
+    }
+  }
+
   void _saveStartTime() {
-    box.write("work_start_time", startTime!.millisecondsSinceEpoch);
+    _persistWorkSession();
     update();
   }
 
@@ -219,26 +274,17 @@ class EmployeeDashbordController extends GetxController
   }
 
   void onStartWork() {
-    isStartWork = !isStartWork;
-    box.write("isStartWork", isStartWork);
+    isStartWork = true;
     if (startTime == null) {
       startTime = DateTime.now();
-      _saveStartTime();
-      _startTimer();
     }
-    isStartWork = box.read("isStartWork") ?? false;
+    _persistWorkSession();
+    _startTimer();
     update();
   }
 
   void onResetWork() {
-    isStartWork = !isStartWork;
-    box.write("isStartWork", isStartWork);
-    timer?.cancel();
-    startTime = null;
-    elapsed.value = Duration.zero;
-    isStartWork = box.read("isStartWork") ?? false;
-    box.remove("work_start_time");
-    update();
+    _endWorkSessionLocally();
   }
 
   final formKey = GlobalKey<FormState>();
@@ -954,16 +1000,20 @@ class EmployeeDashbordController extends GetxController
     );
   }
 
+  Future<void> _bootstrapAttendance() async {
+    await _initWorkSession();
+    await getEmployeeData(scrollToTodayb: false);
+  }
+
   @override
-  void onInit() async {
+  void onInit() {
     super.onInit();
     WidgetsBinding.instance.addObserver(this);
     if (Get.isRegistered<EmployeeNotificationBadgeController>()) {
       unawaited(Get.find<EmployeeNotificationBadgeController>().refresh());
     }
     syncPeriodBounds();
-    _loadStartTime();
-    getEmployeeData(scrollToTodayb: false);
+    unawaited(_bootstrapAttendance());
     _startAttendanceLiveRefresh();
     animController = AnimationController(
       vsync: this,
