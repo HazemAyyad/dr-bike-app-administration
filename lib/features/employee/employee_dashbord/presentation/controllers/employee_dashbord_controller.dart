@@ -35,7 +35,7 @@ import '../../domain/usecases/get_my_attendance_history_usecase.dart';
 import '../../domain/usecases/request_over_time_loan_usecase.dart';
 
 class EmployeeDashbordController extends GetxController
-    with GetTickerProviderStateMixin {
+    with GetTickerProviderStateMixin, WidgetsBindingObserver {
   final RequestOverTimeLoanUsecase requestOverTimeLoanUsecase;
   final GetEmployeeDataUsecase getEmployeeDataUsecase;
   final ChangeTaskCompletedUasecase changeTaskCompletedUasecase;
@@ -56,6 +56,7 @@ class EmployeeDashbordController extends GetxController
   final Rxn<EmployeeAttendanceDay> todayAttendance = Rxn();
 
   Future<void> refreshTodayAttendance({bool silent = false}) async {
+    final previous = todayAttendance.value;
     try {
       if (!silent) todayAttendanceLoading.value = true;
       final now = DateTime.now();
@@ -73,10 +74,13 @@ class EmployeeDashbordController extends GetxController
         }
       }
       todayAttendance.value = match;
+      _syncWorkSessionFromAttendance(match, previous: previous);
     } on Failure {
       todayAttendance.value = null;
+      _clearStaleWorkSessionIfNeeded();
     } catch (_) {
       todayAttendance.value = null;
+      _clearStaleWorkSessionIfNeeded();
     } finally {
       if (!silent) todayAttendanceLoading.value = false;
     }
@@ -86,11 +90,103 @@ class EmployeeDashbordController extends GetxController
 
   void _startAttendanceLiveRefresh() {
     _attendanceLiveTimer?.cancel();
-    _attendanceLiveTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      if (todayAttendance.value?.currentlyIn == true) {
-        refreshTodayAttendance(silent: true);
-      }
+    _attendanceLiveTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+      refreshTodayAttendance(silent: true);
     });
+  }
+
+  /// Keeps the home timer in sync with QR / fingerprint / admin attendance.
+  void _syncWorkSessionFromAttendance(
+    EmployeeAttendanceDay? day, {
+    EmployeeAttendanceDay? previous,
+  }) {
+    if (day?.currentlyIn == true) {
+      final checkIn = day!.firstCheckIn ?? day.firstCheckInServer;
+      if (!isStartWork) {
+        isStartWork = true;
+        box.write('isStartWork', true);
+        startTime = checkIn ?? DateTime.now();
+        _saveStartTime();
+        _startTimer();
+        update();
+      } else if (checkIn != null && startTime != null) {
+        final drift = startTime!.difference(checkIn).inSeconds.abs();
+        if (drift > 120) {
+          startTime = checkIn;
+          _saveStartTime();
+          update();
+        }
+      }
+      return;
+    }
+
+    if (day != null && !day.currentlyIn) {
+      if (isStartWork) {
+        _endWorkSessionLocally();
+      }
+      if (previous?.currentlyIn == true) {
+        _showCheckoutSummary(day);
+      }
+      return;
+    }
+
+    _clearStaleWorkSessionIfNeeded();
+  }
+
+  void _endWorkSessionLocally() {
+    isStartWork = false;
+    box.write('isStartWork', false);
+    timer?.cancel();
+    startTime = null;
+    elapsed.value = Duration.zero;
+    box.remove('work_start_time');
+    update();
+  }
+
+  void _clearStaleWorkSessionIfNeeded() {
+    if (!isStartWork && startTime == null) {
+      return;
+    }
+    final now = DateTime.now();
+    if (startTime != null &&
+        (startTime!.year != now.year ||
+            startTime!.month != now.month ||
+            startTime!.day != now.day)) {
+      _endWorkSessionLocally();
+    }
+  }
+
+  void _showCheckoutSummary(EmployeeAttendanceDay day) {
+    final context = Get.context;
+    if (context == null) return;
+
+    final extra = <String>[];
+    if (day.workedHours != null && day.workedHours!.isNotEmpty) {
+      extra.add('${'workedHoursLabel'.tr}: ${day.workedHours}');
+    }
+    if (day.overtimeHours != null && day.overtimeHours!.isNotEmpty) {
+      extra.add('${'overtimeHoursLabel'.tr}: ${day.overtimeHours}');
+    }
+    if (day.totalSalary != null && day.totalSalary!.isNotEmpty) {
+      extra.add('${'totalSalaryLabel'.tr}: ${day.totalSalary}');
+    }
+
+    final message = extra.isEmpty
+        ? 'manualCheckoutSuccess'.tr
+        : extra.join('\n');
+
+    Helpers.showCustomDialogSuccess(
+      context: context,
+      title: 'success'.tr,
+      message: message,
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshTodayAttendance(silent: true);
+    }
   }
 
   bool isStartWork = false;
@@ -861,6 +957,7 @@ class EmployeeDashbordController extends GetxController
   @override
   void onInit() async {
     super.onInit();
+    WidgetsBinding.instance.addObserver(this);
     if (Get.isRegistered<EmployeeNotificationBadgeController>()) {
       unawaited(Get.find<EmployeeNotificationBadgeController>().refresh());
     }
@@ -889,6 +986,7 @@ class EmployeeDashbordController extends GetxController
 
   @override
   void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
     _attendanceLiveTimer?.cancel();
     animController.dispose();
     opacityAnimation.isDismissed;

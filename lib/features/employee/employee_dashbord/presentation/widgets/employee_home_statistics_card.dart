@@ -54,21 +54,32 @@ class EmployeeHomeStatisticsCard extends GetView<EmployeeDashbordController> {
         ),
         Obx(
           () {
-            final hours = controller.elapsed.value.inHours;
-            final minutes = controller.elapsed.value.inMinutes % 60;
-            final seconds = controller.elapsed.value.inSeconds % 60;
-            return controller.isStartWork
-                ? Text(
-                    '$seconds : $minutes : $hours',
-                    style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                          fontSize: 20.sp,
-                          fontWeight: FontWeight.bold,
-                          color: controller.isStartWork
-                              ? Colors.green
-                              : Colors.red,
-                        ),
-                  )
-                : const SizedBox();
+            final day = controller.todayAttendance.value;
+            final inside = controller.isStartWork ||
+                day?.currentlyIn == true;
+            if (!inside) {
+              return const SizedBox();
+            }
+
+            Duration elapsed = controller.elapsed.value;
+            if (!controller.isStartWork) {
+              final checkIn = day?.firstCheckIn ?? day?.firstCheckInServer;
+              if (checkIn != null) {
+                elapsed = DateTime.now().difference(checkIn);
+              }
+            }
+
+            final hours = elapsed.inHours;
+            final minutes = elapsed.inMinutes % 60;
+            final seconds = elapsed.inSeconds % 60;
+            return Text(
+              '$seconds : $minutes : $hours',
+              style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+            );
           },
         ),
         SizedBox(height: 10.h),

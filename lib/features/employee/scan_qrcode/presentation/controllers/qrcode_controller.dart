@@ -48,11 +48,13 @@ class QrCodeController extends GetxController {
         );
       },
       (success) {
-        if (Get.find<EmployeeDashbordController>().isStartWork) {
-          Get.find<EmployeeDashbordController>().onResetWork();
+        final dashboard = Get.find<EmployeeDashbordController>();
+        if (dashboard.isStartWork) {
+          dashboard.onResetWork();
         } else {
-          Get.find<EmployeeDashbordController>().onStartWork();
+          dashboard.onStartWork();
         }
+        dashboard.refreshTodayAttendance(silent: true);
         Get.back();
         Future.delayed(
           const Duration(milliseconds: 1000),
