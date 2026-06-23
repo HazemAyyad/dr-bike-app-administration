@@ -18,8 +18,6 @@ import '../../data/models/sales_order_model.dart';
 
 import '../controllers/sales_orders_controller.dart';
 
-import 'sales_order_status_ui.dart';
-
 
 
 /// جدول الطلبيات — نفس أسلوب جدول المبيعات الفورية.
@@ -71,8 +69,6 @@ class SalesOrdersTable extends GetView<SalesOrdersController> {
               (order) => _OrderTableRow(
 
                 order: order,
-
-                statusLabel: controller.statusLabel(order.status),
 
                 showBulkCheckbox: showBulk,
 
@@ -341,14 +337,9 @@ class _OrdersTableHeader extends StatelessWidget {
           if (showBulkColumn) SizedBox(width: 36.w),
 
           const _HeaderCell('salesOrderNumber', flex: 2),
-
-          const _HeaderCell('customer', flex: 2),
-
+          const _HeaderCell('customer', flex: 3),
           const _HeaderCell('total', flex: 2),
-
-          const _HeaderCell('status', flex: 2),
-
-          const _HeaderCell('orderDate', flex: 2),
+          const _HeaderCell('orderDate', flex: 3),
 
         ],
 
@@ -409,31 +400,16 @@ class _HeaderCell extends StatelessWidget {
 
 
 class _OrderTableRow extends StatelessWidget {
-
   const _OrderTableRow({
-
     required this.order,
-
-    required this.statusLabel,
-
     required this.onTap,
-
     this.onConfirm,
-
     this.showBulkCheckbox = false,
-
     this.isSelected = false,
-
     this.onSelectionChanged,
-
   });
 
-
-
   final SalesOrderListItemModel order;
-
-  final String statusLabel;
-
   final VoidCallback onTap;
 
   final VoidCallback? onConfirm;
@@ -452,7 +428,9 @@ class _OrderTableRow extends StatelessWidget {
 
     try {
 
-      return DateFormat('HH:mm').format(DateTime.parse(raw));
+      final dt = DateTime.parse(raw);
+      final locale = Get.locale?.languageCode ?? 'ar';
+      return DateFormat('d/M/yyyy hh:mm a', locale).format(dt);
 
     } catch (_) {
 
@@ -469,8 +447,6 @@ class _OrderTableRow extends StatelessWidget {
   Widget build(BuildContext context) {
 
     final isDark = ThemeService.isDark.value;
-
-    final statusColor = SalesOrderStatusUi.statusColor(order.status);
 
     final bg = isDark ? AppColors.customGreyColor4 : Colors.white;
 
@@ -567,9 +543,7 @@ class _OrderTableRow extends StatelessWidget {
               ),
 
               Expanded(
-
-                flex: 2,
-
+                flex: 3,
                 child: Column(
 
                   mainAxisSize: MainAxisSize.min,
@@ -647,65 +621,8 @@ class _OrderTableRow extends StatelessWidget {
               ),
 
               Expanded(
-
-                flex: 2,
-
-                child: Center(
-
-                  child: Container(
-
-                    padding:
-
-                        EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-
-                    decoration: BoxDecoration(
-
-                      color: statusColor.withValues(alpha: 0.12),
-
-                      borderRadius: BorderRadius.circular(12.r),
-
-                      border: Border.all(
-
-                        color: statusColor.withValues(alpha: 0.35),
-
-                      ),
-
-                    ),
-
-                    child: Text(
-
-                      statusLabel,
-
-                      textAlign: TextAlign.center,
-
-                      maxLines: 2,
-
-                      overflow: TextOverflow.ellipsis,
-
-                      style: TextStyle(
-
-                        fontSize: 9.sp,
-
-                        fontWeight: FontWeight.w600,
-
-                        color: statusColor,
-
-                      ),
-
-                    ),
-
-                  ),
-
-                ),
-
-              ),
-
-              Expanded(
-
-                flex: 2,
-
+                flex: 3,
                 child: Text(
-
                   _formatTime(order.createdAt),
 
                   textAlign: TextAlign.center,

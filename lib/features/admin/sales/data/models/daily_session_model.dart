@@ -570,6 +570,8 @@ class DailySessionSaleLogRow {
 
   bool get isInstant => saleType == 'instant';
 
+  bool get isSalesOrderDelivery => saleType == 'sales_order';
+
   factory DailySessionSaleLogRow.fromJson(Map<String, dynamic> json) {
     return DailySessionSaleLogRow(
       id: asInt(json['id']),
@@ -605,6 +607,7 @@ class DailySessionOrderLogRow {
   final int? instantSaleId;
   final bool deliveredToday;
   final String? createdAt;
+  final String? financialPostedAt;
 
   const DailySessionOrderLogRow({
     required this.id,
@@ -617,6 +620,7 @@ class DailySessionOrderLogRow {
     this.instantSaleId,
     this.deliveredToday = false,
     this.createdAt,
+    this.financialPostedAt,
   });
 
   factory DailySessionOrderLogRow.fromJson(Map<String, dynamic> json) {
@@ -632,6 +636,7 @@ class DailySessionOrderLogRow {
       deliveredToday:
           json['delivered_today'] == true || json['delivered_today'] == 1,
       createdAt: asNullableString(json['created_at']),
+      financialPostedAt: asNullableString(json['financial_posted_at']),
     );
   }
 }

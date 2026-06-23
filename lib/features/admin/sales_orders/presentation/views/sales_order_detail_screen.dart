@@ -231,8 +231,9 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
     final paid = order.paymentAmount;
     final remaining = (order.total - paid).clamp(0, double.infinity).toDouble();
     final quoted = order.shiplyQuotedDeliveryFee;
-    final hasShiplyFeeBreakdown =
-        quoted != null && (quoted > 0 || order.customerDeliveryFee > 0);
+    final hasShiplyFeeBreakdown = order.isShiplyDelivery &&
+        quoted != null &&
+        (quoted > 0 || order.customerDeliveryFee > 0);
     return Column(
       children: [
         _totalLine('subtotal'.tr, order.subtotal),
@@ -1882,87 +1883,117 @@ class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
                 }
               }
 
-              return Container(
-                padding: EdgeInsets.all(20.r),
-                decoration: BoxDecoration(
-                  color: SalesOrdersController.surfaceGray,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(16.r)),
+              String boxLabel(ShownBoxesModel box) =>
+                  '${box.boxName} (${box.totalBalance.toStringAsFixed(2)} ${box.currency})';
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'salesOrderSettle'.tr,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                    TextField(
-                      controller: controller.settleAmountController,
-                      keyboardType: TextInputType.number,
-                      style: const TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderSettleAmount'.tr,
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                      ),
-                    ),
-                    SizedBox(height: 12.h),
-                    if (snapshot.connectionState == ConnectionState.waiting)
-                      const Center(child: CircularProgressIndicator())
-                    else if (boxes.isEmpty)
-                      Text(
-                        'salesOrderSettleBoxHint'.tr,
-                        style: TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                          fontSize: 12.sp,
+                child: Container(
+                  padding: EdgeInsets.all(20.r),
+                  decoration: BoxDecoration(
+                    color: SalesOrdersController.surfaceGray,
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(16.r)),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'salesOrderSettle'.tr,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                          ),
                         ),
-                      )
-                    else
-                      DropdownButtonFormField<ShownBoxesModel>(
-                        initialValue: selectedBox,
-                        decoration: InputDecoration(
-                          labelText: 'salesOrderSettleBox'.tr,
-                          filled: true,
-                          fillColor: SalesOrdersController.cardGray,
+                        SizedBox(height: 12.h),
+                        TextField(
+                          controller: controller.settleAmountController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderSettleAmount'.tr,
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                          ),
                         ),
-                        items: boxes
-                            .map(
-                              (box) => DropdownMenuItem(
-                                value: box,
-                                child: Text(
-                                  '${box.boxName} (${box.totalBalance.toStringAsFixed(2)} ${box.currency})',
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (box) {
-                          controller.settleBoxIdController.text =
-                              box?.boxId.toString() ?? '';
-                          setSheetState(() {});
-                        },
-                      ),
-                    SizedBox(height: 12.h),
-                    ElevatedButton(
-                      onPressed: () {
-                        Get.back();
-                        controller.settle(orderId);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: SalesOrdersController.textPrimary,
-                        foregroundColor: SalesOrdersController.cardGray,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                      ),
-                      child: Text('confirm'.tr),
+                        SizedBox(height: 12.h),
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting)
+                          const Center(child: CircularProgressIndicator())
+                        else if (boxes.isEmpty)
+                          Text(
+                            'salesOrderSettleBoxHint'.tr,
+                            style: TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                              fontSize: 12.sp,
+                            ),
+                          )
+                        else
+                          DropdownButtonFormField<ShownBoxesModel>(
+                            isExpanded: true,
+                            value: selectedBox,
+                            decoration: InputDecoration(
+                              labelText: 'salesOrderSettleBox'.tr,
+                              filled: true,
+                              fillColor: SalesOrdersController.cardGray,
+                            ),
+                            selectedItemBuilder: (context) => boxes
+                                .map(
+                                  (box) => Align(
+                                    alignment: AlignmentDirectional.centerStart,
+                                    child: Text(
+                                      boxLabel(box),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: SalesOrdersController.textPrimary,
+                                        fontSize: 14.sp,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            items: boxes
+                                .map(
+                                  (box) => DropdownMenuItem(
+                                    value: box,
+                                    child: Text(
+                                      boxLabel(box),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (box) {
+                              controller.settleBoxIdController.text =
+                                  box?.boxId.toString() ?? '';
+                              setSheetState(() {});
+                            },
+                          ),
+                        SizedBox(height: 12.h),
+                        ElevatedButton(
+                          onPressed: () {
+                            Get.back();
+                            controller.settle(orderId);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: SalesOrdersController.textPrimary,
+                            foregroundColor: SalesOrdersController.cardGray,
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                          ),
+                          child: Text('confirm'.tr),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               );
             },

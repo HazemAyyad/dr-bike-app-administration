@@ -1315,14 +1315,21 @@ class SalesOrdersController extends GetxController {
     final category = presetCategory ?? await showSalesOrderMediaCategorySheet();
     if (category == null) return;
 
-    final source = await showSalesOrderMediaSourceSheet();
-    if (source == null) return;
-
+    final isDocumentCategory = category == 'document';
     String? choice;
-    if (source == 'camera') {
+
+    if (!isDocumentCategory) {
+      // Photography / general uploads: camera only (image or video), no gallery.
       choice = await showSalesOrderCameraTypeSheet();
-    } else if (source == 'gallery') {
-      choice = 'gallery_mixed';
+    } else {
+      final source = await showSalesOrderMediaSourceSheet();
+      if (source == null) return;
+
+      if (source == 'camera') {
+        choice = await showSalesOrderCameraTypeSheet();
+      } else if (source == 'gallery') {
+        choice = 'gallery_mixed';
+      }
     }
     if (choice == null) return;
 

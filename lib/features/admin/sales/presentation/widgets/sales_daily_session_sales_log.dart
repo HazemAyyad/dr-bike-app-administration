@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import 'package:intl/intl.dart';
+
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../data/models/daily_session_model.dart';
 import '../binding/sales_binding.dart';
 import '../controllers/sales_controller.dart';
@@ -89,6 +92,14 @@ class _SalesList extends StatelessWidget {
   }
 
   Future<void> _onSaleTap(BuildContext context, DailySessionSaleLogRow sale) async {
+    if (sale.isSalesOrderDelivery && sale.salesOrderId != null) {
+      await Get.toNamed(
+        AppRoutes.SALESORDERDETAILSCREEN,
+        arguments: sale.salesOrderId,
+      );
+      return;
+    }
+
     if (sale.isInstant) {
       _ensureSalesController();
       if (Get.isRegistered<SalesController>()) {
@@ -151,8 +162,11 @@ class _SaleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cancelled = sale.isCancelled;
-    final typeLabel =
-        sale.isInstant ? 'instantSale'.tr : 'cashProfit'.tr;
+    final typeLabel = sale.isSalesOrderDelivery
+        ? 'salesOrders'.tr
+        : sale.isInstant
+            ? 'instantSale'.tr
+            : 'cashProfit'.tr;
 
     return Material(
       color: Colors.transparent,
@@ -181,7 +195,9 @@ class _SaleRow extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          '#${sale.id}',
+                          sale.isSalesOrderDelivery
+                              ? (sale.salesOrderSerial ?? '#${sale.salesOrderId ?? sale.id}')
+                              : '#${sale.id}',
                           style: TextStyle(
                             fontSize: 11.sp,
                             fontWeight: FontWeight.w800,
@@ -300,7 +316,13 @@ class _SaleRow extends StatelessWidget {
   }
 
   String _shortTime(String raw) {
-    if (raw.length >= 16) return raw.substring(0, 16);
-    return raw;
+    try {
+      final dt = DateTime.parse(raw);
+      final locale = Get.locale?.languageCode ?? 'ar';
+      return DateFormat('d/M/yyyy hh:mm a', locale).format(dt);
+    } catch (_) {
+      if (raw.length >= 16) return raw.substring(0, 16);
+      return raw;
+    }
   }
 }

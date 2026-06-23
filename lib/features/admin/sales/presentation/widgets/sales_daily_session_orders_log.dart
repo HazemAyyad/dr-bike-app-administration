@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import 'package:intl/intl.dart';
+
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../data/models/daily_session_model.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
+import '../../../sales_orders/presentation/widgets/sales_order_status_ui.dart';
 
 class SalesDailySessionOrdersLog extends StatelessWidget {
   const SalesDailySessionOrdersLog({
@@ -99,14 +102,40 @@ class SalesDailySessionOrdersLog extends StatelessWidget {
                             ),
                           ),
                         ],
-                        SizedBox(height: 2.h),
-                        Text(
-                          _statusLabel(order.status),
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: Colors.grey.shade600,
+                        SizedBox(height: 4.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 2.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: SalesOrderStatusUi.statusColor(order.status)
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: SalesOrderStatusUi.statusColor(order.status)
+                                  .withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Text(
+                            _statusLabel(order.status),
+                            style: TextStyle(
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.w600,
+                              color: SalesOrderStatusUi.statusColor(order.status),
+                            ),
                           ),
                         ),
+                        if (order.createdAt?.isNotEmpty ?? false) ...[
+                          SizedBox(height: 4.h),
+                          Text(
+                            _formatDateTime(order.createdAt!),
+                            style: TextStyle(
+                              fontSize: 9.sp,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -132,5 +161,15 @@ class SalesDailySessionOrdersLog extends StatelessWidget {
       return Get.find<SalesOrdersController>().statusLabel(status);
     }
     return status;
+  }
+
+  String _formatDateTime(String raw) {
+    try {
+      final dt = DateTime.parse(raw);
+      final locale = Get.locale?.languageCode ?? 'ar';
+      return DateFormat('d/M/yyyy hh:mm a', locale).format(dt);
+    } catch (_) {
+      return raw;
+    }
   }
 }
