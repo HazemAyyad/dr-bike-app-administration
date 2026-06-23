@@ -6,6 +6,8 @@ import '../../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/product_variant_model.dart';
+import '../../../../sales_orders/data/models/sales_order_model.dart';
+import '../../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
 import '../../utils/sales_amount_format.dart';
 
 class SalesVariantPickerResult {
@@ -80,6 +82,32 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
   }
 
   int get _stock => _selectedColor?.stock ?? 0;
+
+  String get _stockLabel {
+    final orderStock = _orderStock;
+    if (orderStock != null && orderStock.hasReservation) {
+      return 'salesOrderPickerVariantStock'.trParams({
+        'available': '${orderStock.availableQty}',
+        'reserved': '${orderStock.reservedQty}',
+      });
+    }
+    return '$_stock';
+  }
+
+  String? get _orderStockHint =>
+      SalesOrderStockContext.controller?.stockHintForProduct(
+        widget.product.id,
+        sizeColorId: int.tryParse(_selectedColor?.id ?? ''),
+      );
+
+  ProductStockAvailabilityModel? get _orderStock {
+    if (!SalesOrderStockContext.isActive) return null;
+    final colorId = int.tryParse(_selectedColor?.id ?? '');
+    return SalesOrderStockContext.controller?.availabilityForProduct(
+      widget.product.id,
+      sizeColorId: colorId,
+    );
+  }
 
   void _confirm() {
     final size = _selectedSize;
@@ -263,7 +291,7 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
                     child: _infoTile(
                       context,
                       'stock'.tr,
-                      '$_stock',
+                      _stockLabel,
                     ),
                   ),
                   SizedBox(width: 8.w),
@@ -287,6 +315,20 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
                 ],
               ),
             ),
+            if (_orderStockHint != null) ...[
+              SizedBox(height: 8.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                child: Text(
+                  _orderStockHint!,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.deepOrange.shade800,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
             SizedBox(height: 14.h),
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),

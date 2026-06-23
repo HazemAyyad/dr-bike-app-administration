@@ -574,3 +574,94 @@ class ShiplyAddressOptionsResult {
     required this.isTestMode,
   });
 }
+
+class SalesOrderStockConflictModel {
+  final int productId;
+  final String productName;
+  final int? sizeColorId;
+  final int physicalStock;
+  final int reservedByOthers;
+  final int available;
+  final int requestedQty;
+  final int deficit;
+
+  const SalesOrderStockConflictModel({
+    required this.productId,
+    required this.productName,
+    this.sizeColorId,
+    required this.physicalStock,
+    required this.reservedByOthers,
+    required this.available,
+    required this.requestedQty,
+    required this.deficit,
+  });
+
+  factory SalesOrderStockConflictModel.fromJson(Map<String, dynamic> json) {
+    return SalesOrderStockConflictModel(
+      productId: json['product_id'] as int,
+      productName: json['product_name'] as String? ?? '',
+      sizeColorId: json['size_color_id'] as int?,
+      physicalStock: (json['physical_stock'] as num?)?.toInt() ?? 0,
+      reservedByOthers: (json['reserved_by_others'] as num?)?.toInt() ?? 0,
+      available: (json['available'] as num?)?.toInt() ?? 0,
+      requestedQty: (json['requested_qty'] as num?)?.toInt() ?? 0,
+      deficit: (json['deficit'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class SalesOrderStockCheckResult {
+  final bool hasConflicts;
+  final List<SalesOrderStockConflictModel> conflicts;
+
+  const SalesOrderStockCheckResult({
+    required this.hasConflicts,
+    required this.conflicts,
+  });
+
+  factory SalesOrderStockCheckResult.fromJson(Map<String, dynamic> json) {
+    final list = json['conflicts'] as List<dynamic>? ?? [];
+    return SalesOrderStockCheckResult(
+      hasConflicts: json['has_conflicts'] == true,
+      conflicts: list
+          .map((e) =>
+              SalesOrderStockConflictModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class ProductStockAvailabilityModel {
+  final int productId;
+  final int? sizeColorId;
+  final int physicalStock;
+  final int reservedQty;
+  final int availableQty;
+  final bool isAggregate;
+
+  const ProductStockAvailabilityModel({
+    required this.productId,
+    this.sizeColorId,
+    required this.physicalStock,
+    required this.reservedQty,
+    required this.availableQty,
+    this.isAggregate = false,
+  });
+
+  String get mapKey => sizeColorId == null
+      ? '$productId'
+      : '${productId}_$sizeColorId';
+
+  bool get hasReservation => reservedQty > 0;
+
+  factory ProductStockAvailabilityModel.fromJson(Map<String, dynamic> json) {
+    return ProductStockAvailabilityModel(
+      productId: json['product_id'] as int,
+      sizeColorId: json['size_color_id'] as int?,
+      physicalStock: (json['physical_stock'] as num?)?.toInt() ?? 0,
+      reservedQty: (json['reserved_qty'] as num?)?.toInt() ?? 0,
+      availableQty: (json['available_qty'] as num?)?.toInt() ?? 0,
+      isAggregate: json['is_aggregate'] == true,
+    );
+  }
+}

@@ -59,6 +59,9 @@ class _SalesOrderProductPickerScreenState
     }
     sales.ensurePickerStoreSectionsLoaded();
     sales.ensurePickerPartnersLoaded();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      orders.scheduleStockAvailabilityRefresh(sales.filteredProductsForPicker);
+    });
   }
 
   @override
@@ -128,6 +131,7 @@ class _SalesOrderProductPickerScreenState
                   final packages = const <dynamic>[];
                   final products =
                       hasLocationFilter ? sales.filteredProductsForPicker : sales.filteredProductsForPicker;
+                  orders.scheduleStockAvailabilityRefresh(products);
                   final total = products.length;
 
                   if (total == 0) {

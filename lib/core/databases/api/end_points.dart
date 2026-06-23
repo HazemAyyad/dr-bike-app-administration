@@ -384,6 +384,8 @@ class EndPoints {
 
   static const String salesOrders = 'sales/orders';
   static const String salesOrder = 'sales/order';
+  static const String salesOrderCheckStock = 'sales/order/check-stock';
+  static const String salesOrderStockAvailability = 'sales/order/stock-availability';
   static const String salesOrderUpdate = 'sales/order/update';
   static const String salesOrderConfirm = 'sales/order/confirm';
   static const String salesOrderReady = 'sales/order/ready';

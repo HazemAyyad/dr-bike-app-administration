@@ -47,6 +47,7 @@ import '../widgets/instant_sale_actions_sheet.dart';
 import '../widgets/new_instant_sale/sales_variant_picker_sheet.dart';
 import '../widgets/new_instant_sale/instant_sale_price_dialog.dart';
 import '../widgets/new_instant_sale/instant_sale_quantity_dialog.dart';
+import '../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
 import 'sales_service.dart';
 
 /// GetX tag for payment fields on the new instant sale screen.
@@ -2082,6 +2083,8 @@ class SalesController extends GetxController
       context,
       initialQuantity: current,
       maxQuantity: stock,
+      stockHint: SalesOrderStockContext.controller
+          ?.stockHintForProduct(resolved.id),
     );
     if (result == null) return;
 

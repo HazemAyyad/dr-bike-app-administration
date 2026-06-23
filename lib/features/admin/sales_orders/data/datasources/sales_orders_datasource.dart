@@ -60,6 +60,43 @@ class SalesOrdersDatasource {
     );
   }
 
+  Future<SalesOrderStockCheckResult> checkStock({
+    required List<Map<String, dynamic>> items,
+    int? salesOrderId,
+  }) async {
+    final raw = await api.post(
+      EndPoints.salesOrderCheckStock,
+      data: {
+        'items': items,
+        if (salesOrderId != null) 'sales_order_id': salesOrderId,
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    return SalesOrderStockCheckResult.fromJson(response);
+  }
+
+  Future<List<ProductStockAvailabilityModel>> fetchStockAvailability({
+    required List<int> productIds,
+    int? salesOrderId,
+  }) async {
+    final raw = await api.post(
+      EndPoints.salesOrderStockAvailability,
+      data: {
+        'product_ids': productIds,
+        if (salesOrderId != null) 'sales_order_id': salesOrderId,
+      },
+    );
+    final response = _asMap(raw);
+    _ensureSuccess(response);
+    final list = response['availability'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => ProductStockAvailabilityModel.fromJson(
+              e as Map<String, dynamic>,
+            ))
+        .toList();
+  }
+
   Future<SalesOrderDetailModel> postAction(
     String endpoint,
     int orderId, {

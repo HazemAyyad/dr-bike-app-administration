@@ -1315,6 +1315,15 @@ const Map<String, String> en = {
   'salesOrderStatusReturned': 'Returned',
   'salesOrderNew': 'New order',
   'salesOrderCreated': 'Order created',
+  'salesOrderReservedStockTitle': 'Reserved quantity',
+  'salesOrderReservedStockMessage':
+      'Some items in this order are reserved by other unconfirmed orders. If you continue, product stock may go negative. Are you sure you want to proceed?',
+  'salesOrderReservedQtyLine':
+      'Reserved: @reserved — Available: @available — Requested: @requested (short: @deficit)',
+  'salesOrderPickerStockHint':
+      'Physical stock: @physical — Reserved by other orders: @reserved — Available: @available',
+  'salesOrderPickerReservedShort': 'Reserved @reserved',
+  'salesOrderPickerVariantStock': '@available available (@reserved reserved)',
   'salesOrderAddItem': 'Add item',
   'salesOrderMarkReady': 'Mark ready',
   'salesOrderHandover': 'Handover',

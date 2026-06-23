@@ -10,6 +10,7 @@ Future<int?> showInstantSaleQuantityDialog(
   BuildContext context, {
   required int initialQuantity,
   required int maxQuantity,
+  String? stockHint,
 }) {
   return showDialog<int>(
     context: context,
@@ -17,6 +18,7 @@ Future<int?> showInstantSaleQuantityDialog(
     builder: (ctx) => _InstantSaleQuantityDialog(
       initialQuantity: initialQuantity,
       maxQuantity: maxQuantity,
+      stockHint: stockHint,
     ),
   );
 }
@@ -25,10 +27,12 @@ class _InstantSaleQuantityDialog extends StatefulWidget {
   const _InstantSaleQuantityDialog({
     required this.initialQuantity,
     required this.maxQuantity,
+    this.stockHint,
   });
 
   final int initialQuantity;
   final int maxQuantity;
+  final String? stockHint;
 
   @override
   State<_InstantSaleQuantityDialog> createState() =>
@@ -84,6 +88,18 @@ class _InstantSaleQuantityDialogState extends State<_InstantSaleQuantityDialog> 
                   color: Colors.black87,
                 ),
               ),
+              if (widget.stockHint != null && widget.stockHint!.isNotEmpty) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  widget.stockHint!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.deepOrange.shade800,
+                    height: 1.3,
+                  ),
+                ),
+              ],
               SizedBox(height: 14.h),
               TextField(
                 controller: _controller,

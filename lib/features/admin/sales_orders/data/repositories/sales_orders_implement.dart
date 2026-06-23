@@ -20,6 +20,17 @@ abstract class SalesOrdersRepository {
     Map<String, dynamic> body,
   );
 
+  Future<Either<Failure, SalesOrderStockCheckResult>> checkStock({
+    required List<Map<String, dynamic>> items,
+    int? salesOrderId,
+  });
+
+  Future<Either<Failure, List<ProductStockAvailabilityModel>>>
+      fetchStockAvailability({
+    required List<int> productIds,
+    int? salesOrderId,
+  });
+
   Future<Either<Failure, SalesOrderDetailModel>> updateOrder(
     int orderId,
     Map<String, dynamic> body,
@@ -157,6 +168,27 @@ class SalesOrdersImplement implements SalesOrdersRepository {
     Map<String, dynamic> body,
   ) =>
       _guard(() => datasource.createOrder(body));
+
+  @override
+  Future<Either<Failure, SalesOrderStockCheckResult>> checkStock({
+    required List<Map<String, dynamic>> items,
+    int? salesOrderId,
+  }) =>
+      _guard(() => datasource.checkStock(
+            items: items,
+            salesOrderId: salesOrderId,
+          ));
+
+  @override
+  Future<Either<Failure, List<ProductStockAvailabilityModel>>>
+      fetchStockAvailability({
+    required List<int> productIds,
+    int? salesOrderId,
+  }) =>
+      _guard(() => datasource.fetchStockAvailability(
+            productIds: productIds,
+            salesOrderId: salesOrderId,
+          ));
 
   @override
   Future<Either<Failure, SalesOrderDetailModel>> updateOrder(

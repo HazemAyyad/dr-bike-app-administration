@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:doctorbike/core/errors/failure.dart';
@@ -113,6 +115,8 @@ class SalesOrdersController extends GetxController {
   final selectedDeliveryCompanyId = RxnInt();
   final hasSuspendedDraft = false.obs;
   final activeEditSalesOrderId = RxnInt();
+  final productStockAvailability = <String, ProductStockAvailabilityModel>{}.obs;
+  final stockAvailabilityVersion = 0.obs;
 
   bool get isEditingOrder => activeEditSalesOrderId.value != null;
 
@@ -235,6 +239,7 @@ class SalesOrdersController extends GetxController {
 
   @override
   void onClose() {
+    _stockAvailabilityDebounce?.cancel();
     customerNameController.dispose();
     customerPhoneController.dispose();
     customerAddressController.dispose();
@@ -441,6 +446,63 @@ class SalesOrdersController extends GetxController {
             })
         .where((m) => (m['product_id'] as int) > 0)
         .toList();
+  }
+
+  Timer? _stockAvailabilityDebounce;
+
+  ProductStockAvailabilityModel? availabilityForProduct(
+    String productId, {
+    int? sizeColorId,
+  }) {
+    final id = int.tryParse(productId);
+    if (id == null) return null;
+    if (sizeColorId != null) {
+      return productStockAvailability['${id}_$sizeColorId'] ??
+          productStockAvailability['$id'];
+    }
+    return productStockAvailability['$id'];
+  }
+
+  String? stockHintForProduct(String productId, {int? sizeColorId}) {
+    final info = availabilityForProduct(productId, sizeColorId: sizeColorId);
+    if (info == null || !info.hasReservation) return null;
+    return 'salesOrderPickerStockHint'.trParams({
+      'physical': '${info.physicalStock}',
+      'reserved': '${info.reservedQty}',
+      'available': '${info.availableQty}',
+    });
+  }
+
+  void scheduleStockAvailabilityRefresh(Iterable<dynamic> products) {
+    final ids = <int>{};
+    for (final product in products) {
+      final id = int.tryParse(product.id?.toString() ?? '');
+      if (id != null && id > 0) ids.add(id);
+    }
+    if (ids.isEmpty) return;
+
+    _stockAvailabilityDebounce?.cancel();
+    _stockAvailabilityDebounce = Timer(const Duration(milliseconds: 350), () {
+      refreshProductStockAvailability(ids.toList());
+    });
+  }
+
+  Future<void> refreshProductStockAvailability(List<int> productIds) async {
+    if (productIds.isEmpty) return;
+
+    final result = await repository.fetchStockAvailability(
+      productIds: productIds,
+      salesOrderId: activeEditSalesOrderId.value,
+    );
+
+    result.fold((_) {}, (rows) {
+      final next = <String, ProductStockAvailabilityModel>{};
+      for (final row in rows) {
+        next[row.mapKey] = row;
+      }
+      productStockAvailability.assignAll(next);
+      stockAvailabilityVersion.value++;
+    });
   }
 
   void onDeliveryCityChanged(int? cityId) {
@@ -860,8 +922,37 @@ class SalesOrdersController extends GetxController {
     final body = await _buildCheckoutBody(sales);
     if (body == null) return false;
 
-    isSubmitting.value = true;
+    final items = (body['items'] as List<dynamic>)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
     final editId = activeEditSalesOrderId.value;
+
+    final stockCheck = await repository.checkStock(
+      items: items,
+      salesOrderId: editId,
+    );
+
+    SalesOrderStockCheckResult? stockCheckResult;
+    final stockCheckFailed = stockCheck.fold(
+      (f) {
+        SalesOrderNotice.error(_humanizeFailure(f));
+        return true;
+      },
+      (check) {
+        stockCheckResult = check;
+        return false;
+      },
+    );
+    if (stockCheckFailed) return false;
+
+    if (stockCheckResult!.hasConflicts) {
+      final confirmed =
+          await _confirmReservedStockConflicts(stockCheckResult!.conflicts);
+      if (!confirmed) return false;
+      body['acknowledge_negative_stock'] = true;
+    }
+
+    isSubmitting.value = true;
     final result = editId != null
         ? await repository.updateOrder(editId, body)
         : await repository.createOrder(body);
@@ -890,6 +981,51 @@ class SalesOrdersController extends GetxController {
         return true;
       },
     );
+  }
+
+  Future<bool> _confirmReservedStockConflicts(
+    List<SalesOrderStockConflictModel> conflicts,
+  ) async {
+    final hostContext = Get.overlayContext ?? Get.context;
+    if (hostContext == null) return false;
+
+    final lines = conflicts
+        .map(
+          (c) => '• ${c.productName}: '
+              '${'salesOrderReservedQtyLine'.trParams({
+                'reserved': '${c.reservedByOthers}',
+                'available': '${c.available}',
+                'requested': '${c.requestedQty}',
+                'deficit': '${c.deficit}',
+              })}',
+        )
+        .join('\n');
+
+    final confirmed = await showDialog<bool>(
+          context: hostContext,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: surfaceGray,
+            title: Text('salesOrderReservedStockTitle'.tr),
+            content: SingleChildScrollView(
+              child: Text(
+                '${'salesOrderReservedStockMessage'.tr}\n\n$lines',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text('cancel'.tr),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text('confirm'.tr),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    return confirmed;
   }
 
   Future<Map<String, dynamic>?> _buildCheckoutBody(SalesController sales) async {

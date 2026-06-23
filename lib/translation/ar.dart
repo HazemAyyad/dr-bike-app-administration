@@ -1388,6 +1388,15 @@ const Map<String, String> ar = {
   'salesOrderStatusReturned': 'راجع',
   'salesOrderNew': 'طلبية جديدة',
   'salesOrderCreated': 'تم إنشاء الطلبية',
+  'salesOrderReservedStockTitle': 'كمية محجوزة',
+  'salesOrderReservedStockMessage':
+      'بعض الأصناف في هذه الطلبية محجوزة لطلبيات غير مؤكدة سابقة. إذا أكملت، قد يصبح مخزون المنتج سالباً. هل أنت متأكد أنك تريد المتابعة؟',
+  'salesOrderReservedQtyLine':
+      'محجوز: @reserved — متاح: @available — مطلوب: @requested (نقص: @deficit)',
+  'salesOrderPickerStockHint':
+      'المخزون الفعلي: @physical — محجوز لطلبيات أخرى: @reserved — المتاح: @available',
+  'salesOrderPickerReservedShort': 'محجوز @reserved',
+  'salesOrderPickerVariantStock': '@available متاح (@reserved محجوز)',
   'salesOrderAddItem': 'أضف صنفاً',
   'salesOrderMarkReady': 'جاهزة',
   'salesOrderHandover': 'تسليم للتوصيل',
