@@ -38,6 +38,7 @@ class SpecialTasksController extends GetxController {
 
   final fromDateController = TextEditingController();
   final toDateController = TextEditingController();
+  final searchController = TextEditingController();
 
   final RxInt currentTab = 0.obs;
 
@@ -185,6 +186,7 @@ class SpecialTasksController extends GetxController {
     );
 
     isLoading(false);
+    filterLists(false);
     if (scrollToTodayb) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         scrollToToday();
@@ -376,9 +378,13 @@ class SpecialTasksController extends GetxController {
   ) {
     final from = DateTime.tryParse(fromDateController.text);
     final to = DateTime.tryParse(toDateController.text);
+    final query = searchController.text.trim().toLowerCase();
     final Map<String, List<SpecialTaskModel>> newMap = {};
     source.forEach((key, tasks) {
       final filteredList = tasks.where((task) {
+        if (query.isNotEmpty && !task.name.toLowerCase().contains(query)) {
+          return false;
+        }
         final start = task.startDate;
         final end = task.startDate;
         if (from != null && to == null) {
@@ -405,7 +411,9 @@ class SpecialTasksController extends GetxController {
 
   void filterLists(bool isFilter) {
     // لو مفيش أي فلترة → رجع البيانات الأصلية كلها
-    if (fromDateController.text.isEmpty && toDateController.text.isEmpty) {
+    if (fromDateController.text.isEmpty &&
+        toDateController.text.isEmpty &&
+        searchController.text.trim().isEmpty) {
       filteredWeeklyTasks
           .assignAll(filterByRange(specialTasksService.weeklyTasks));
       filteredNoDateTasks.assignAll(specialTasksService.noDateTasks);
@@ -427,6 +435,10 @@ class SpecialTasksController extends GetxController {
 
     if (isFilter) Get.back();
     update(['specialTasksList', 'specialPeriodBar']);
+  }
+
+  void onSearchChanged(String _) {
+    filterLists(false);
   }
 
   DateTime startDate = DateTime.now();
@@ -501,11 +513,7 @@ class SpecialTasksController extends GetxController {
   }
 
   void filterDataByDateRange() {
-    filteredWeeklyTasks
-        .assignAll(filterByRange(specialTasksService.weeklyTasks));
-    filteredArchivedTasks
-        .assignAll(filterByRange(specialTasksService.archivedTasks));
-    update(['specialTasksList', 'specialPeriodBar']);
+    filterLists(false);
   }
 
   void changePeriod(bool isNext) {
@@ -572,6 +580,7 @@ class SpecialTasksController extends GetxController {
   void onClose() {
     fromDateController.dispose();
     toDateController.dispose();
+    searchController.dispose();
     scrollController.dispose();
     super.onClose();
   }

@@ -1,4 +1,6 @@
 import 'dart:ui';
+import 'package:doctorbike/core/services/app_home_widget_service.dart';
+import 'package:doctorbike/core/services/app_shortcut_service.dart';
 import 'package:doctorbike/core/services/final_classes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -22,6 +24,8 @@ class LanguageController extends GetxController {
 
     // Persist the selected language
     setLang(languageCode);
+    AppShortcutService.instance.refreshShortcutItems();
+    AppHomeWidgetService.instance.syncPresentation();
     Get.back();
   }
 

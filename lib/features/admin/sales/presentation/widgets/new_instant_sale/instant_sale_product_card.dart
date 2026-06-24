@@ -7,6 +7,7 @@ import '../../../../stock/presentation/widgets/product_location_badge.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/product_model.dart';
+import '../../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
 import '../../controllers/sales_controller.dart';
 import 'instant_sale_product_detail_sheet.dart';
@@ -16,9 +17,11 @@ class InstantSaleProductCard extends StatelessWidget {
   const InstantSaleProductCard({
     Key? key,
     required this.product,
+    this.showOrderStock = false,
   }) : super(key: key);
 
   final ProductModel product;
+  final bool showOrderStock;
 
   @override
   Widget build(BuildContext context) {
@@ -35,17 +38,32 @@ class InstantSaleProductCard extends StatelessWidget {
       final __ = controller.pickerBuyerIdRx.value;
       final ___ = controller.pickerSellerIdRx.value;
       final ____ = controller.pickerPartnerIsCustomer.value;
-      if (SalesOrderStockContext.isActive) {
-        final _____ =
-            SalesOrderStockContext.controller?.stockAvailabilityVersion.value;
+      final pickerStockEnabled = controller.pickerReservedStockEnabled.value;
+      final stockUiActive = showOrderStock ||
+          pickerStockEnabled ||
+          SalesOrderStockContext.isActive;
+      final ordersCtrl = stockUiActive ? _resolveOrdersController() : null;
+      if (ordersCtrl != null) {
+        // يحدّث البطاقة بعد جلب بيانات المحجوز من السيرفر.
+        final _ = ordersCtrl.stockAvailabilityVersion.value;
+        final productId = int.tryParse(product.id);
+        if (productId != null) {
+          final __ = ordersCtrl.productStockAvailability['$productId'];
+          ordersCtrl.requestStockAvailabilityIfMissing(productId);
+        }
       }
-      final orderStock = SalesOrderStockContext.isActive
-          ? SalesOrderStockContext.controller
-              ?.availabilityForProduct(product.id)
-          : null;
-      final physicalStock = int.tryParse(product.stock) ?? 0;
+      final orderStock =
+          ordersCtrl?.availabilityForProduct(product.id);
+      final physicalStock = orderStock?.physicalStock ??
+          int.tryParse(product.stock) ??
+          0;
       final displayStock = orderStock?.availableQty ?? physicalStock;
-      final reservedStock = orderStock?.reservedQty ?? 0;
+      final badgeReserved = orderStock?.totalReservedQty ??
+          orderStock?.reservedQty ??
+          0;
+      final effectiveReserved = badgeReserved > 0
+          ? badgeReserved
+          : (physicalStock - displayStock).clamp(0, physicalStock);
       final outOfStock = physicalStock < 1;
       final qty = controller.cartQtyForProduct(product.id);
       final inCart = qty > 0;
@@ -113,7 +131,7 @@ class InstantSaleProductCard extends StatelessWidget {
                         child: _StockBadge(
                           displayStock: displayStock,
                           physicalStock: physicalStock,
-                          reservedStock: reservedStock,
+                          reservedStock: effectiveReserved,
                         ),
                       ),
                       if (locationCodeLabel != null)
@@ -276,6 +294,14 @@ class InstantSaleProductCard extends StatelessWidget {
       );
     });
   }
+
+  static SalesOrdersController? _resolveOrdersController() {
+    if (!Get.isRegistered<SalesOrdersController>() &&
+        !Get.isPrepared<SalesOrdersController>()) {
+      return null;
+    }
+    return Get.find<SalesOrdersController>();
+  }
 }
 
 class _StockBadge extends StatelessWidget {
@@ -292,7 +318,8 @@ class _StockBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final out = physicalStock < 1;
-    final hasReservation = reservedStock > 0;
+    final hasReservation = reservedStock > 0 ||
+        (physicalStock > displayStock && displayStock >= 0);
     final low = !out && displayStock <= 3;
     final bg = out
         ? Colors.red.shade700
@@ -335,9 +362,10 @@ class _StockBadge extends StatelessWidget {
         if (hasReservation)
           Container(
             margin: EdgeInsets.only(top: 2.h),
-            padding: EdgeInsets.symmetric(horizontal: 3.w, vertical: 1.h),
+            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.72),
+              color: Colors.orange.shade50,
+              border: Border.all(color: Colors.deepOrange.shade300, width: 0.8),
               borderRadius: BorderRadius.circular(4.r),
             ),
             child: Text(
@@ -345,9 +373,9 @@ class _StockBadge extends StatelessWidget {
                 'reserved': '$reservedStock',
               }),
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 6.sp,
-                fontWeight: FontWeight.w600,
+                color: Colors.deepOrange.shade900,
+                fontSize: 6.5.sp,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

@@ -6,6 +6,7 @@ import '../../../stock/data/models/offer_package_model.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../controllers/sales_controller.dart';
+import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../widgets/new_instant_sale/instant_sale_package_card.dart';
 import '../widgets/sales_location_filter_fab.dart';
@@ -34,6 +35,7 @@ class _InstantSaleProductPickerScreenState
   @override
   void initState() {
     super.initState();
+    controller.enablePickerReservedStock();
     final args = Get.arguments;
     if (args is Map && args['freshInstantSale'] == true) {
       controller.resetInstantSaleForm();
@@ -46,10 +48,19 @@ class _InstantSaleProductPickerScreenState
     controller.loadOfferPackagesForSale();
     controller.ensurePickerStoreSectionsLoaded();
     controller.ensurePickerPartnersLoaded();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<SalesOrdersController>() ||
+          Get.isPrepared<SalesOrdersController>()) {
+        Get.find<SalesOrdersController>().scheduleStockAvailabilityRefresh(
+          controller.filteredProductsForPicker,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    controller.disablePickerReservedStock();
     _searchController.dispose();
     super.dispose();
   }
@@ -151,6 +162,10 @@ class _InstantSaleProductPickerScreenState
                       ? <OfferPackageModel>[]
                       : controller.filteredPackagesForPicker;
                   final products = controller.filteredProductsForPicker;
+                  if (Get.isRegistered<SalesOrdersController>()) {
+                    Get.find<SalesOrdersController>()
+                        .scheduleStockAvailabilityRefresh(products);
+                  }
                   final total = packages.length + products.length;
 
                   if (total == 0) {
@@ -229,6 +244,7 @@ class _InstantSaleProductPickerScreenState
                               return InstantSaleProductCard(
                                 key: ValueKey('picker_${product.id}'),
                                 product: product,
+                                showOrderStock: true,
                               );
                             },
                           );

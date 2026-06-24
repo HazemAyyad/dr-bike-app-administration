@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart' as dio;
 import 'package:doctorbike/core/errors/failure.dart';
@@ -24,6 +25,7 @@ import '../widgets/sales_order_media_source_sheet.dart';
 import '../widgets/sales_order_media_category_sheet.dart';
 import '../widgets/sales_order_share_sheet.dart';
 import '../widgets/sales_order_notice.dart';
+import '../widgets/sales_order_reserved_stock_dialog.dart';
 
 class SalesOrderCartItem {
   SalesOrderCartItem({
@@ -449,6 +451,7 @@ class SalesOrdersController extends GetxController {
   }
 
   Timer? _stockAvailabilityDebounce;
+  final _pendingStockAvailabilityIds = <int>{};
 
   ProductStockAvailabilityModel? availabilityForProduct(
     String productId, {
@@ -458,9 +461,54 @@ class SalesOrdersController extends GetxController {
     if (id == null) return null;
     if (sizeColorId != null) {
       return productStockAvailability['${id}_$sizeColorId'] ??
-          productStockAvailability['$id'];
+          productStockAvailability['$id'] ??
+          _aggregateAvailabilityForProduct(id);
     }
-    return productStockAvailability['$id'];
+    return productStockAvailability['$id'] ??
+        _aggregateAvailabilityForProduct(id);
+  }
+
+  ProductStockAvailabilityModel? _aggregateAvailabilityForProduct(int productId) {
+    var physical = 0;
+    var reserved = 0;
+    var totalReserved = 0;
+    var available = 0;
+    var found = false;
+
+    for (final entry in productStockAvailability.entries) {
+      final key = entry.key;
+      if (!key.startsWith('${productId}_')) continue;
+      found = true;
+      physical += entry.value.physicalStock;
+      reserved += entry.value.reservedQty;
+      totalReserved += entry.value.totalReservedQty;
+      available += entry.value.availableQty;
+    }
+
+    if (!found) return null;
+
+    return ProductStockAvailabilityModel(
+      productId: productId,
+      physicalStock: physical,
+      reservedQty: reserved,
+      totalReservedQty: totalReserved,
+      availableQty: available,
+      isAggregate: true,
+    );
+  }
+
+  Future<ProductStockAvailabilityModel?> availabilityForProductOrFetch(
+    String productId, {
+    int? sizeColorId,
+  }) async {
+    final cached = availabilityForProduct(productId, sizeColorId: sizeColorId);
+    if (cached != null) return cached;
+
+    final id = int.tryParse(productId);
+    if (id == null) return null;
+
+    await refreshProductStockAvailability([id]);
+    return availabilityForProduct(productId, sizeColorId: sizeColorId);
   }
 
   String? stockHintForProduct(String productId, {int? sizeColorId}) {
@@ -479,30 +527,123 @@ class SalesOrdersController extends GetxController {
       final id = int.tryParse(product.id?.toString() ?? '');
       if (id != null && id > 0) ids.add(id);
     }
+    scheduleStockAvailabilityRefreshByIds(ids);
+  }
+
+  void scheduleStockAvailabilityRefreshByIds(Iterable<int> productIds) {
+    final ids = productIds.where((id) => id > 0);
     if (ids.isEmpty) return;
+
+    _pendingStockAvailabilityIds.addAll(ids);
 
     _stockAvailabilityDebounce?.cancel();
     _stockAvailabilityDebounce = Timer(const Duration(milliseconds: 350), () {
-      refreshProductStockAvailability(ids.toList());
+      final batch = _pendingStockAvailabilityIds.toList();
+      _pendingStockAvailabilityIds.clear();
+      refreshProductStockAvailability(batch);
     });
+  }
+
+  void requestStockAvailabilityIfMissing(int productId) {
+    if (productId <= 0) return;
+    if (availabilityForProduct('$productId') != null) return;
+    scheduleStockAvailabilityRefreshByIds([productId]);
   }
 
   Future<void> refreshProductStockAvailability(List<int> productIds) async {
     if (productIds.isEmpty) return;
 
+    final uniqueIds = productIds.where((id) => id > 0).toSet().toList();
+    if (uniqueIds.isEmpty) return;
+
+    const chunkSize = 400;
+    for (var i = 0; i < uniqueIds.length; i += chunkSize) {
+      final chunk = uniqueIds.sublist(
+        i,
+        i + chunkSize > uniqueIds.length ? uniqueIds.length : i + chunkSize,
+      );
+      await _fetchStockAvailabilityChunk(chunk);
+    }
+  }
+
+  Future<void> _fetchStockAvailabilityChunk(List<int> productIds) async {
     final result = await repository.fetchStockAvailability(
       productIds: productIds,
       salesOrderId: activeEditSalesOrderId.value,
     );
 
-    result.fold((_) {}, (rows) {
-      final next = <String, ProductStockAvailabilityModel>{};
+    result.fold((failure) {
+      debugPrint(
+        '[SalesOrders] stock availability failed: ${failure.errMessage}',
+      );
+      _pendingStockAvailabilityIds.addAll(productIds);
+      _stockAvailabilityDebounce?.cancel();
+      _stockAvailabilityDebounce = Timer(const Duration(seconds: 2), () {
+        final batch = _pendingStockAvailabilityIds.toList();
+        _pendingStockAvailabilityIds.clear();
+        if (batch.isNotEmpty) {
+          refreshProductStockAvailability(batch);
+        }
+      });
+    }, (rows) {
       for (final row in rows) {
-        next[row.mapKey] = row;
+        productStockAvailability[row.mapKey] = row;
+        if (row.isAggregate) {
+          productStockAvailability['${row.productId}'] = row;
+        }
       }
-      productStockAvailability.assignAll(next);
+      productStockAvailability.refresh();
       stockAvailabilityVersion.value++;
     });
+  }
+
+  /// يعرض تحذير المحجوز قبل إضافة منتج للسلة (فقط عند تجاوز الكمية المتاحة).
+  Future<bool> confirmReservedStockBeforeAdd({
+    required String productId,
+    required String productName,
+    int? sizeColorId,
+    int requestedQty = 1,
+  }) async {
+    final productIdInt = int.tryParse(productId);
+    if (productIdInt == null) return true;
+
+    final result = await repository.checkStock(
+      items: [
+        {
+          'product_id': productIdInt,
+          'quantity': requestedQty,
+          if (sizeColorId != null) 'size_color_id': sizeColorId,
+          'product_name': productName,
+        },
+      ],
+      salesOrderId: activeEditSalesOrderId.value,
+    );
+
+    return result.fold(
+      (_) => true,
+      (check) async {
+        if (!check.hasConflicts) return true;
+
+        SalesOrderStockConflictModel conflict;
+        try {
+          conflict = check.conflicts.firstWhere(
+            (c) =>
+                c.productId == productIdInt && c.sizeColorId == sizeColorId,
+          );
+        } catch (_) {
+          conflict = check.conflicts.first;
+        }
+
+        final hostContext = Get.overlayContext ?? Get.context;
+        if (hostContext == null) return false;
+
+        return showSalesOrderReservedStockDialog(
+          context: hostContext,
+          message: 'salesOrderReservedStockMessage'.tr,
+          details: formatReservedStockConflictDetail(conflict),
+        );
+      },
+    );
   }
 
   void onDeliveryCityChanged(int? cityId) {
@@ -989,43 +1130,11 @@ class SalesOrdersController extends GetxController {
     final hostContext = Get.overlayContext ?? Get.context;
     if (hostContext == null) return false;
 
-    final lines = conflicts
-        .map(
-          (c) => '• ${c.productName}: '
-              '${'salesOrderReservedQtyLine'.trParams({
-                'reserved': '${c.reservedByOthers}',
-                'available': '${c.available}',
-                'requested': '${c.requestedQty}',
-                'deficit': '${c.deficit}',
-              })}',
-        )
-        .join('\n');
-
-    final confirmed = await showDialog<bool>(
-          context: hostContext,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: surfaceGray,
-            title: Text('salesOrderReservedStockTitle'.tr),
-            content: SingleChildScrollView(
-              child: Text(
-                '${'salesOrderReservedStockMessage'.tr}\n\n$lines',
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: Text('cancel'.tr),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: Text('confirm'.tr),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-
-    return confirmed;
+    return showSalesOrderReservedStockDialog(
+      context: hostContext,
+      message: 'salesOrderReservedStockMessage'.tr,
+      details: formatReservedStockConflictLines(conflicts),
+    );
   }
 
   Future<Map<String, dynamic>?> _buildCheckoutBody(SalesController sales) async {

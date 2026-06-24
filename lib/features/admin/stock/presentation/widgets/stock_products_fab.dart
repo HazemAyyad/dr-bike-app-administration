@@ -9,6 +9,7 @@ import '../../../../../core/helpers/haptic_helper.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/store_section_model.dart';
+import '../../domain/product_location_utils.dart';
 import '../controllers/stock_controller.dart';
 
 /// Products FAB: tap = add menu; long-press = quarter-arc location filter.
@@ -72,11 +73,24 @@ class _StockProductsFabState extends State<StockProductsFab> {
   List<StoreSectionModel> get _activeSections =>
       _stock.storeSections.where((s) => s.isActive).toList(growable: false);
 
+  List<_LocationFilterOption> get _locationFilterOptions {
+    final sections = _activeSections;
+    return [
+      _LocationFilterOption(
+        id: kUnassignedStoreSectionFilterId,
+        label: 'noLocationAssigned'.tr,
+      ),
+      ...sections.map(
+        (s) => _LocationFilterOption(id: s.id, label: s.name),
+      ),
+    ];
+  }
+
   int get _itemsPerPage =>
       _arcRows.fold(0, (sum, row) => sum + row.capacity);
 
-  List<StoreSectionModel> get _currentPageItems {
-    final source = _activeSections;
+  List<_LocationFilterOption> get _currentPageItems {
+    final source = _locationFilterOptions;
     if (source.isEmpty) return const [];
     final start = _segmentPage * _itemsPerPage;
     final end = math.min(start + _itemsPerPage, source.length);
@@ -84,7 +98,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
   }
 
   int get _pageCount {
-    final total = _activeSections.length;
+    final total = _locationFilterOptions.length;
     if (total <= 0) return 1;
     return ((total + _itemsPerPage - 1) ~/ _itemsPerPage);
   }
@@ -160,10 +174,10 @@ class _StockProductsFabState extends State<StockProductsFab> {
     if (_highlightIndex < 0) {
       _stock.clearStoreLocationFilterFromFab();
     } else {
-      final sections = _activeSections;
-      if (sections.isNotEmpty) {
-        final i = _highlightIndex.clamp(0, sections.length - 1);
-        _stock.applyStoreLocationFilterFromFab(sectionId: sections[i].id);
+      final options = _locationFilterOptions;
+      if (options.isNotEmpty) {
+        final i = _highlightIndex.clamp(0, options.length - 1);
+        _stock.applyStoreLocationFilterFromFab(sectionId: options[i].id);
       }
     }
   }
@@ -351,9 +365,9 @@ class _StockProductsFabState extends State<StockProductsFab> {
 
   String? _centerBannerLabel() {
     if (_highlightIndex < 0) return null;
-    final sections = _activeSections;
-    if (sections.isEmpty) return null;
-    return sections[_highlightIndex.clamp(0, sections.length - 1)].name;
+    final options = _locationFilterOptions;
+    if (options.isEmpty) return null;
+    return options[_highlightIndex.clamp(0, options.length - 1)].label;
   }
 
   void _onPointerUp() {
@@ -370,7 +384,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
     final maxArcRadius =
         guideRadii.isEmpty ? 180.0 : guideRadii.reduce(math.max);
     final bannerLabel = _centerBannerLabel();
-    final totalCount = _activeSections.length;
+    final totalCount = _locationFilterOptions.length;
     final clearSelected = _highlightIndex < 0;
 
     return Material(
@@ -447,7 +461,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
                     child: Transform.scale(
                       scale: selected ? 1.08 : 0.96,
                       child: _SectionBubble(
-                        name: _currentPageItems[slot.localIndex].name,
+                        name: _currentPageItems[slot.localIndex].label,
                         selected: selected,
                         maxWidth: chipMaxWidth,
                         minHeight: chipMinHeight,
@@ -526,7 +540,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
                 ),
               ),
             ],
-            if (!_loading && _activeSections.isEmpty && anchor != null)
+            if (!_loading && _locationFilterOptions.isEmpty && anchor != null)
               Positioned(
                 left: anchor.dx - 80,
                 top: anchor.dy - 120,
@@ -638,6 +652,16 @@ class _StockProductsFabState extends State<StockProductsFab> {
       ),
     );
   }
+}
+
+class _LocationFilterOption {
+  const _LocationFilterOption({
+    required this.id,
+    required this.label,
+  });
+
+  final String id;
+  final String label;
 }
 
 class _CenterSelectionBanner extends StatelessWidget {

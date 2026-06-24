@@ -32,6 +32,23 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
             SliverToBoxAdapter(
               child: _SpecialCompactTabs(controller: controller),
             ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                child: SearchBar(
+                  controller: controller.searchController,
+                  shadowColor: WidgetStateProperty.all(Colors.transparent),
+                  leading: const Icon(Icons.search),
+                  hintText: 'search'.tr,
+                  backgroundColor: WidgetStateProperty.all(
+                    ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.customGreyColor7,
+                  ),
+                  onChanged: controller.onSearchChanged,
+                ),
+              ),
+            ),
             const SliverToBoxAdapter(child: _SpecialTasksViewModeBar()),
             SliverToBoxAdapter(
               child: GetBuilder<SpecialTasksController>(

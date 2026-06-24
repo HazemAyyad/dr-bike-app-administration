@@ -47,6 +47,7 @@ import '../widgets/instant_sale_actions_sheet.dart';
 import '../widgets/new_instant_sale/sales_variant_picker_sheet.dart';
 import '../widgets/new_instant_sale/instant_sale_price_dialog.dart';
 import '../widgets/new_instant_sale/instant_sale_quantity_dialog.dart';
+import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
 import 'sales_service.dart';
 
@@ -518,6 +519,27 @@ class SalesController extends GetxController
   Timer? _instantSalePickerSearchDebounce;
   final RxInt productsListVersion = 0.obs;
 
+  /// عرض المحجوز على بطاقات المنتج (طلبية أو بيع فوري).
+  final RxBool pickerReservedStockEnabled = false.obs;
+
+  /// مودال التحذير عند الإضافة (تدفق الطلبية فقط).
+  final RxBool salesOrderStockMode = false.obs;
+
+  void enablePickerReservedStock({bool salesOrderFlow = false}) {
+    pickerReservedStockEnabled.value = true;
+    if (salesOrderFlow) {
+      salesOrderStockMode.value = true;
+    }
+  }
+
+  void disablePickerReservedStock() {
+    pickerReservedStockEnabled.value = false;
+    salesOrderStockMode.value = false;
+  }
+
+  bool get shouldWarnReservedStock =>
+      pickerReservedStockEnabled.value || salesOrderStockMode.value;
+
   final RxList<StoreSectionModel> pickerStoreSections =
       <StoreSectionModel>[].obs;
   final RxnString pickerLocationSectionId = RxnString();
@@ -870,6 +892,21 @@ class SalesController extends GetxController
     await _addProductToCartOnce(product);
   }
 
+  Future<bool> _confirmSalesOrderReservedStock({
+    required ProductModel product,
+    int? sizeColorId,
+    int requestedQty = 1,
+  }) async {
+    if (!shouldWarnReservedStock) return true;
+    if (!Get.isRegistered<SalesOrdersController>()) return true;
+    return Get.find<SalesOrdersController>().confirmReservedStockBeforeAdd(
+      productId: product.id,
+      productName: product.nameAr,
+      sizeColorId: sizeColorId,
+      requestedQty: requestedQty,
+    );
+  }
+
   Future<void> incrementProductInCart(
     ProductModel product, {
     BuildContext? context,
@@ -889,6 +926,12 @@ class SalesController extends GetxController
     final stock = int.tryParse(resolved.stock) ?? 0;
     final line = cartLines[idx];
     final next = (int.tryParse(line.quantityController.text.trim()) ?? 0) + 1;
+    if (!await _confirmSalesOrderReservedStock(
+      product: resolved,
+      requestedQty: next,
+    )) {
+      return;
+    }
     if (next > stock) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
           backgroundColor: Colors.red);
@@ -923,6 +966,7 @@ class SalesController extends GetxController
     );
     if (pick == null) return;
 
+    final sizeColorId = int.tryParse(pick.variant.id);
     final existingIdx = _cartIndexForVariantLine(
       '${resolved.id}::${pick.variant.id}',
     );
@@ -930,6 +974,13 @@ class SalesController extends GetxController
       final line = cartLines[existingIdx];
       final next =
           (int.tryParse(line.quantityController.text.trim()) ?? 0) + pick.quantity;
+      if (!await _confirmSalesOrderReservedStock(
+        product: resolved,
+        sizeColorId: sizeColorId,
+        requestedQty: next,
+      )) {
+        return;
+      }
       if (next > pick.variant.stock) {
         Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
             backgroundColor: Colors.red);
@@ -939,6 +990,14 @@ class SalesController extends GetxController
       line.recalculateTotal();
       calculateGrandTotal();
       bumpCartRevision();
+      return;
+    }
+
+    if (!await _confirmSalesOrderReservedStock(
+      product: resolved,
+      sizeColorId: sizeColorId,
+      requestedQty: pick.quantity,
+    )) {
       return;
     }
 
@@ -971,6 +1030,12 @@ class SalesController extends GetxController
     if (stock < 1) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
           backgroundColor: Colors.red);
+      return;
+    }
+    if (!await _confirmSalesOrderReservedStock(
+      product: resolved,
+      requestedQty: 1,
+    )) {
       return;
     }
     final unitPrice = await resolveDefaultUnitPrice(resolved);
@@ -2087,6 +2152,13 @@ class SalesController extends GetxController
           ?.stockHintForProduct(resolved.id),
     );
     if (result == null) return;
+
+    if (!await _confirmSalesOrderReservedStock(
+      product: resolved,
+      requestedQty: result,
+    )) {
+      return;
+    }
 
     if (idx < 0) {
       final priced = await ensureProductPricesForPicker(resolved);

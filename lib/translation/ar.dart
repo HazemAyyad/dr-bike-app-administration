@@ -27,6 +27,15 @@ const Map<String, String> ar = {
   'attendanceCheckIn': 'دخول',
   'attendanceCheckOut': 'خروج',
   'stillInside': 'لم يُسجَّل خروج بعد',
+  'attendancePersistentCheckInTitle': 'سجّل دخولك',
+  'attendancePersistentCheckInBody': 'البصمة أو امسح QR',
+  'attendancePersistentCountdownTitle': 'متبقي للانصراف',
+  'attendancePersistentOvertimeTitle': 'حان وقت الانصراف',
+  'attendancePersistentOvertimeBody': 'سجّل خروجك من الدوام',
+  'attendancePersistentInsideTitle': 'أنت داخل الدوام',
+  'attendancePersistentChannelName': 'حضور الدوام',
+  'attendancePersistentChannelDesc':
+      'إشعار ثابت لتسجيل الدخول والعد التنازلي للانصراف',
   'todayAttendanceTitle': 'دوام اليوم',
   'attendanceHistory': 'سجل الدوام',
   'attendanceAppBarHint': 'دوام اليوم وسجل الحضور',
@@ -651,6 +660,9 @@ const Map<String, String> ar = {
   'cloneTask': 'نسخ المهمة',
   'taskRepeatedCopy': 'نسخة تكرار',
   'addNewPravateTask': 'إنشاء مهمة خاصة جديدة',
+  'newPrivateTask': 'مهمة خاصة',
+  'shortcutSpecialTaskNoPermission':
+      'ليس لديك صلاحية إنشاء مهمة خاصة. تواصل مع المسؤول.',
   'employeeSection': 'قسم الموظفين',
 
   'taskName': 'أسم المهمة',
@@ -1393,6 +1405,10 @@ const Map<String, String> ar = {
       'بعض الأصناف في هذه الطلبية محجوزة لطلبيات غير مؤكدة سابقة. إذا أكملت، قد يصبح مخزون المنتج سالباً. هل أنت متأكد أنك تريد المتابعة؟',
   'salesOrderReservedQtyLine':
       'محجوز: @reserved — متاح: @available — مطلوب: @requested (نقص: @deficit)',
+  'salesOrderReservedByOrdersTitle': 'محجوز للطلبيات التالية:',
+  'salesOrderReservedByOrderLine':
+      'طلبية @serial — @party — محجوز: @qty',
+  'salesOrderReservedPartyUnknown': 'بدون زبون/تاجر',
   'salesOrderPickerStockHint':
       'المخزون الفعلي: @physical — محجوز لطلبيات أخرى: @reserved — المتاح: @available',
   'salesOrderPickerReservedShort': 'محجوز @reserved',

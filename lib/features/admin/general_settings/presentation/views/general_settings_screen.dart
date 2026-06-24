@@ -384,6 +384,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       'newExpense': 'newExpense',
       'newCustomer': 'newCustomer',
       'createNewEmployeeTask': 'newTask',
+      'addNewPrivateTask': 'newPrivateTask',
     };
     final selected = service.adminFabOptions.toSet();
     const dialogBg = Color(0xFFF3F4F6);

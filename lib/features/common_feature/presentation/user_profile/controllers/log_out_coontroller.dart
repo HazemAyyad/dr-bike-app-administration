@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/admin_notification_api_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
+import '../../../../../core/services/employee_attendance_persistent_notification_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../routes/app_routes.dart';
@@ -31,6 +32,10 @@ class LogOutController extends GetxController {
     BuildContext context, {
     required bool biometricLocalLogout,
   }) async {
+    await EmployeeAttendancePersistentNotificationService.instance.stop(
+      reason: 'logout',
+    );
+
     final loginRoute = biometricLocalLogout
         ? AppRoutes.LOGINSCREEN
         : AppRoutes.LOGINORSIGNUPSCREEN;

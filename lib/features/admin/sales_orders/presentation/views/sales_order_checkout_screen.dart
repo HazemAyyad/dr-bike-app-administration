@@ -38,6 +38,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
   @override
   void initState() {
     super.initState();
+    sales.enablePickerReservedStock(salesOrderFlow: true);
     _ensurePaymentController();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;

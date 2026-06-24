@@ -1,4 +1,6 @@
 import 'package:doctorbike/core/services/user_data.dart';
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
@@ -6,9 +8,11 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/api_error_message.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/services/app_shortcut_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/employee_attendance_persistent_notification_service.dart';
 import '../../../../../core/services/notification_firebase_service.dart';
 import '../../../../../core/services/session_service.dart';
 import '../../../../../routes/app_routes.dart';
@@ -193,6 +197,13 @@ class LoginController extends GetxController {
         debugPrint('biometric login push setup error: $e\n$st');
       }
       Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+      AppShortcutService.instance.scheduleConsumePending();
+      if (userType == 'employee') {
+        unawaited(
+          EmployeeAttendancePersistentNotificationService.instance
+              .initializeForEmployee(),
+        );
+      }
     } catch (e, st) {
       debugPrint('biometric login error: $e\n$st');
       _showMessage(
@@ -225,6 +236,13 @@ class LoginController extends GetxController {
     await _registerAdminPushAfterLogin();
 
     Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+    AppShortcutService.instance.scheduleConsumePending();
+    if (userType == 'employee') {
+      unawaited(
+        EmployeeAttendancePersistentNotificationService.instance
+            .initializeForEmployee(),
+      );
+    }
   }
 
   Future<void> _registerAdminPushAfterLogin() async {

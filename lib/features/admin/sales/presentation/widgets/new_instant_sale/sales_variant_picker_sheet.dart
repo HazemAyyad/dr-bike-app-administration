@@ -6,7 +6,9 @@ import '../../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/product_variant_model.dart';
+import '../../controllers/sales_controller.dart';
 import '../../../../sales_orders/data/models/sales_order_model.dart';
+import '../../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
 import '../../utils/sales_amount_format.dart';
 
@@ -109,7 +111,7 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
     );
   }
 
-  void _confirm() {
+  void _confirm() async {
     final size = _selectedSize;
     final color = _selectedColor;
     if (size == null || color == null) {
@@ -125,6 +127,24 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr);
       return;
     }
+
+    if (SalesOrderStockContext.isActive) {
+      final sales = Get.find<SalesController>();
+      if (sales.shouldWarnReservedStock) {
+        final orders = SalesOrderStockContext.controller ??
+            Get.find<SalesOrdersController>();
+        final colorId = int.tryParse(color.id);
+        final ok = await orders.confirmReservedStockBeforeAdd(
+          productId: widget.product.id,
+          productName: widget.product.nameAr,
+          sizeColorId: colorId,
+          requestedQty: qty,
+        );
+        if (!ok) return;
+      }
+    }
+
+    if (!mounted) return;
     Navigator.of(context).pop(
       SalesVariantPickerResult(
         variant: color,

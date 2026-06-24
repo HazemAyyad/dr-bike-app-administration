@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -8,7 +10,10 @@ import '../../features/admin/notifications/presentation/controllers/admin_notifi
 import '../../features/employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import 'app_bootstrap.dart';
 import 'app_dependency_registry.dart';
+import 'app_home_widget_service.dart';
+import 'app_shortcut_service.dart';
 import 'app_startup.dart';
+import 'employee_attendance_persistent_notification_service.dart';
 import 'notification_firebase_service.dart';
 import 'session_service.dart';
 import 'user_data.dart';
@@ -59,6 +64,8 @@ class InitialBindings implements Bindings {
         startApp.value = true;
       } else {
         await AppBootstrap.initializeMobile();
+        await AppShortcutService.instance.initialize();
+        await AppHomeWidgetService.instance.initialize();
         try {
           final doc = await FirebaseFirestore.instance
               .collection('Test')
@@ -139,6 +146,13 @@ class InitialBindings implements Bindings {
       }
       await NotificationFirebaseService.instance
           .syncFcmTokenToServer(source: 'app_resume');
+
+      if (userdata.user.type == 'employee') {
+        unawaited(
+          EmployeeAttendancePersistentNotificationService.instance
+              .initializeForEmployee(),
+        );
+      }
     } catch (e, st) {
       debugPrint('[Startup] deferred setup error: $e\n$st');
     }

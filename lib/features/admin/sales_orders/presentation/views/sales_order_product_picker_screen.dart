@@ -38,6 +38,7 @@ class _SalesOrderProductPickerScreenState
   @override
   void initState() {
     super.initState();
+    sales.enablePickerReservedStock(salesOrderFlow: true);
     final args = Get.arguments;
     if (args is Map && args['editSalesOrder'] == true) {
       // Cart and form already hydrated in openEditSalesOrderFlow.
@@ -66,6 +67,7 @@ class _SalesOrderProductPickerScreenState
 
   @override
   void dispose() {
+    sales.disablePickerReservedStock();
     _searchController.dispose();
     super.dispose();
   }
@@ -74,9 +76,12 @@ class _SalesOrderProductPickerScreenState
   Widget build(BuildContext context) {
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop && orders.isEditingOrder) {
-          orders.clearActiveEditSalesOrder();
-          sales.resetInstantSaleForm();
+        if (didPop) {
+          sales.disablePickerReservedStock();
+          if (orders.isEditingOrder) {
+            orders.clearActiveEditSalesOrder();
+            sales.resetInstantSaleForm();
+          }
         }
       },
       child: Scaffold(
@@ -208,6 +213,7 @@ class _SalesOrderProductPickerScreenState
                                 child: InstantSaleProductCard(
                                   key: ValueKey('order_picker_${product.id}'),
                                   product: product,
+                                  showOrderStock: true,
                                 ),
                               );
                             },

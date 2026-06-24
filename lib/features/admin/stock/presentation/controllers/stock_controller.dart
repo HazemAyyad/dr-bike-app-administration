@@ -22,6 +22,7 @@ import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../data/models/store_section_model.dart';
+import '../../domain/product_location_utils.dart';
 import '../../domain/stock_location_interactor.dart';
 import '../utils/stock_search_history_storage.dart';
 import '../../domain/stock_product_filters.dart';
@@ -508,7 +509,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       }
     }
 
-    if (filterSectionId != null && !sectionIds.contains(filterSectionId)) {
+    if (filterSectionId != null &&
+        !isUnassignedStoreSectionFilter(filterSectionId) &&
+        !sectionIds.contains(filterSectionId)) {
       productListFilters.value = productListFilters.value.copyWith(
         clearStoreSectionId: true,
       );
@@ -517,7 +520,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
     await reloadProductsList();
 
-    if (locationSectionId != null && !sectionIds.contains(locationSectionId)) {
+    if (locationSectionId != null &&
+        !isUnassignedStoreSectionFilter(locationSectionId) &&
+        !sectionIds.contains(locationSectionId)) {
       selectedLocationSectionId.value = null;
       locationFilterProducts.clear();
     } else if (selectedLocationSectionId.value != null) {

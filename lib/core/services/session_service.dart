@@ -9,6 +9,7 @@ import '../../routes/app_routes.dart';
 import '../databases/api/dio_consumer.dart';
 import '../databases/api/end_points.dart';
 import 'biometric_auth_service.dart';
+import 'employee_attendance_persistent_notification_service.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
 
@@ -136,6 +137,9 @@ class SessionService {
 
     _redirectingToLogin = true;
     try {
+      await EmployeeAttendancePersistentNotificationService.instance.stop(
+        reason: 'session_cleared',
+      );
       await DefaultCacheManager().emptyCache();
       await UserData.clearAllUserData();
       if (!kIsWeb) {

@@ -19,6 +19,7 @@ import '../utils/app_colors.dart';
 import '../../features/employee/notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import 'admin_notification_api_service.dart';
 import 'admin_notification_router.dart';
+import 'employee_attendance_persistent_notification_service.dart';
 import 'employee_notification_router.dart';
 import 'initial_bindings.dart';
 import 'user_data.dart';
@@ -237,6 +238,9 @@ class NotificationFirebaseService {
       NotificationFirebaseService._();
   final firebaseMessaging = FirebaseMessaging.instance;
   final _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  FlutterLocalNotificationsPlugin get localNotificationsPlugin =>
+      _flutterLocalNotificationsPlugin;
   String finalToken = '';
 
   bool _isFlutterLocalNotificationsPluginRegistered = false;
@@ -1146,6 +1150,10 @@ class NotificationFirebaseService {
   }
 
   void _routeNotificationPayload(Map<String, dynamic> data) {
+    if (data['type']?.toString() == 'employee_attendance_persistent') {
+      EmployeeAttendancePersistentNotificationService.handlePayload(data);
+      return;
+    }
     if (userType == 'employee') {
       EmployeeNotificationRouter.handlePayload(data);
     } else {

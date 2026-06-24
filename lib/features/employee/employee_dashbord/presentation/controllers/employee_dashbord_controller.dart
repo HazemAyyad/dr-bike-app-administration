@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
-import 'package:doctorbike/core/services/initial_bindings.dart';
+import '../../../../../core/services/employee_attendance_persistent_notification_service.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -58,9 +59,9 @@ class EmployeeDashbordController extends GetxController
 
   /// Server-first: avoids stale local state when admin impersonates another employee.
   bool get isAttendanceInside {
-    if (todayAttendanceLoading.value) return false;
     final day = todayAttendance.value;
     if (day != null) return day.currentlyIn;
+    if (todayAttendanceLoading.value) return isStartWork;
     return isStartWork;
   }
 
@@ -92,7 +93,19 @@ class EmployeeDashbordController extends GetxController
       _clearStaleWorkSessionIfNeeded();
     } finally {
       if (!silent) todayAttendanceLoading.value = false;
+      _syncPersistentAttendanceNotification();
     }
+  }
+
+  void _syncPersistentAttendanceNotification() {
+    if (userType != 'employee') return;
+    unawaited(
+      EmployeeAttendancePersistentNotificationService.instance.sync(
+        weeklyDaysOff: employeeData.value?.weeklyDaysOff ?? const [],
+        endWorkTime: employeeData.value?.endWorkTime ?? '',
+        isInside: isAttendanceInside,
+      ),
+    );
   }
 
   Timer? _attendanceLiveTimer;
@@ -194,6 +207,7 @@ class EmployeeDashbordController extends GetxController
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       refreshTodayAttendance(silent: true);
+      _syncPersistentAttendanceNotification();
     }
   }
 
@@ -756,6 +770,7 @@ class EmployeeDashbordController extends GetxController
     }
     update();
     refreshTodayAttendance();
+    _syncPersistentAttendanceNotification();
     loadDashboardReminders();
     if (scrollToTodayb) {
       Future.delayed(const Duration(milliseconds: 400), scrollToToday);

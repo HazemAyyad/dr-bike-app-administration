@@ -36,66 +36,86 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
           controller: controller.scrollController,
           physics: kRefreshableScrollPhysics,
           slivers: [
-          SliverToBoxAdapter(
-            child: AppTabs(
-              tabs: controller.tabs,
-              currentTab: controller.currentTab,
-              changeTab: controller.changeTab,
+            SliverToBoxAdapter(
+              child: AppTabs(
+                tabs: controller.tabs,
+                currentTab: controller.currentTab,
+                changeTab: controller.changeTab,
+              ),
             ),
-          ),
-          const SliverToBoxAdapter(child: TasksViewModeBar()),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
-              child: Obx(() {
-                controller.listEpoch.value;
-                controller.tasksViewMode.value;
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(minWidth: 36.w, minHeight: 36.w),
-                      onPressed: () => controller.changePeriod(false),
-                      icon: Icon(
-                        Icons.chevron_left_rounded,
-                        color: AppColors.operationalPurple,
-                        size: 26.sp,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        controller.periodLabel,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w600,
-                              color: ThemeService.isDark.value
-                                  ? AppColors.primaryColor
-                                  : AppColors.operationalNavy,
-                            ),
-                      ),
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(minWidth: 36.w, minHeight: 36.w),
-                      onPressed: () => controller.changePeriod(true),
-                      icon: Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.operationalPurple,
-                        size: 26.sp,
-                      ),
-                    ),
-                  ],
-                );
-              }),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+                child: SearchBar(
+                  controller: controller.employeeNameController,
+                  shadowColor: WidgetStateProperty.all(Colors.transparent),
+                  leading: const Icon(Icons.search),
+                  hintText: 'employeeTasksSearchHint'.tr,
+                  backgroundColor: WidgetStateProperty.all(
+                    ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.customGreyColor7,
+                  ),
+                  onChanged: (_) => controller.filterEmployeeTasks(),
+                ),
+              ),
             ),
-          ),
-          const EmployeeTasks(),
-          SliverToBoxAdapter(child: SizedBox(height: 72.h)),
-        ],
+            const SliverToBoxAdapter(child: TasksViewModeBar()),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
+                child: Obx(() {
+                  controller.listEpoch.value;
+                  controller.tasksViewMode.value;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            BoxConstraints(minWidth: 36.w, minHeight: 36.w),
+                        onPressed: () => controller.changePeriod(false),
+                        icon: Icon(
+                          Icons.chevron_left_rounded,
+                          color: AppColors.operationalPurple,
+                          size: 26.sp,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          controller.periodLabel,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.primaryColor
+                                        : AppColors.operationalNavy,
+                                  ),
+                        ),
+                      ),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            BoxConstraints(minWidth: 36.w, minHeight: 36.w),
+                        onPressed: () => controller.changePeriod(true),
+                        icon: Icon(
+                          Icons.chevron_right_rounded,
+                          color: AppColors.operationalPurple,
+                          size: 26.sp,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+            const EmployeeTasks(),
+            SliverToBoxAdapter(child: SizedBox(height: 72.h)),
+          ],
         ),
       ),
       floatingActionButton: const EmployeeTasksCreateFab(),

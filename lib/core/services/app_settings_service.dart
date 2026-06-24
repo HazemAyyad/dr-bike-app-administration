@@ -26,6 +26,7 @@ class AppSettingsService {
   static const allAdminFabOptions = <String>{
     ...defaultAdminFabOptions,
     'createNewEmployeeTask',
+    'addNewPrivateTask',
   };
 
   final RxInt subtaskBonusDefault = 5.obs;

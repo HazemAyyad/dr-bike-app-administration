@@ -27,6 +27,15 @@ const Map<String, String> en = {
   'attendanceCheckIn': 'In',
   'attendanceCheckOut': 'Out',
   'stillInside': 'No check-out yet',
+  'attendancePersistentCheckInTitle': 'Check in',
+  'attendancePersistentCheckInBody': 'Fingerprint or scan QR',
+  'attendancePersistentCountdownTitle': 'Time left until leave',
+  'attendancePersistentOvertimeTitle': 'Time to leave',
+  'attendancePersistentOvertimeBody': 'Check out from your shift',
+  'attendancePersistentInsideTitle': 'You are on shift',
+  'attendancePersistentChannelName': 'Work attendance',
+  'attendancePersistentChannelDesc':
+      'Persistent check-in and leave countdown',
   'todayAttendanceTitle': "Today's attendance",
   'attendanceHistory': 'Attendance history',
   'attendanceAppBarHint': "Today's attendance and history",
@@ -652,6 +661,9 @@ const Map<String, String> en = {
   'cloneTask': 'Clone Task',
   'taskRepeatedCopy': 'Repeated Copy',
   'addNewPravateTask': 'Add New Private Task',
+  'newPrivateTask': 'Special task',
+  'shortcutSpecialTaskNoPermission':
+      'You do not have permission to create a special task. Contact an administrator.',
   'employeeSection': 'Employee Section',
 
   'taskName': 'Task Name',
@@ -1320,6 +1332,10 @@ const Map<String, String> en = {
       'Some items in this order are reserved by other unconfirmed orders. If you continue, product stock may go negative. Are you sure you want to proceed?',
   'salesOrderReservedQtyLine':
       'Reserved: @reserved — Available: @available — Requested: @requested (short: @deficit)',
+  'salesOrderReservedByOrdersTitle': 'Reserved by the following orders:',
+  'salesOrderReservedByOrderLine':
+      'Order @serial — @party — reserved: @qty',
+  'salesOrderReservedPartyUnknown': 'No customer/trader',
   'salesOrderPickerStockHint':
       'Physical stock: @physical — Reserved by other orders: @reserved — Available: @available',
   'salesOrderPickerReservedShort': 'Reserved @reserved',

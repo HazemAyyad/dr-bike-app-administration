@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../domain/product_location_utils.dart';
 import '../controllers/stock_controller.dart';
 import 'product_card.dart';
 import '../../../../../routes/app_routes.dart';
@@ -17,6 +18,8 @@ class StockLocationTab extends GetView<StockController> {
           .where((s) => s.isActive)
           .toList(growable: false);
       final selectedSectionId = controller.selectedLocationSectionId.value;
+      final hasLocationFilter = selectedSectionId != null &&
+          selectedSectionId.isNotEmpty;
 
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -60,6 +63,25 @@ class StockLocationTab extends GetView<StockController> {
                       onSelected: (_) => controller.selectLocationFilter(null),
                     ),
                   ),
+                  Padding(
+                    padding: EdgeInsets.only(right: 8.w),
+                    child: ChoiceChip(
+                      avatar: const Icon(Icons.location_off_outlined, size: 16),
+                      label: Text('noLocationAssigned'.tr),
+                      selected: selectedSectionId ==
+                          kUnassignedStoreSectionFilterId,
+                      onSelected: (_) {
+                        if (selectedSectionId ==
+                            kUnassignedStoreSectionFilterId) {
+                          controller.selectLocationFilter(null);
+                        } else {
+                          controller.selectLocationFilter(
+                            kUnassignedStoreSectionFilterId,
+                          );
+                        }
+                      },
+                    ),
+                  ),
                   ...sections.map(
                     (s) => Padding(
                       padding: EdgeInsets.only(right: 8.w),
@@ -81,7 +103,7 @@ class StockLocationTab extends GetView<StockController> {
               ),
             ),
             SizedBox(height: 16.h),
-            if (selectedSectionId == null || selectedSectionId.isEmpty)
+            if (!hasLocationFilter)
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 24.h),
                 child: Text(

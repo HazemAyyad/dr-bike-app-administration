@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_add_special_task_description"
+    android:initialLayout="@layout/add_special_task_widget"
+    android:label="@string/widget_add_special_task_label"
+    android:minWidth="180dp"
+    android:minHeight="48dp"
+    android:previewLayout="@layout/add_special_task_widget"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="43200000"
+    android:widgetCategory="home_screen" />

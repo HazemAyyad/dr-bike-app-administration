@@ -162,6 +162,13 @@ class AdminDashboardController extends GetxController
       'settingKey': 'createNewEmployeeTask',
       'flowTitle': 'createNewEmployeeTask',
     },
+    {
+      'title': 'newPrivateTask',
+      'icon': AssetsManager.taskIcon,
+      'route': AppRoutes.CREATETASKSCREEN,
+      'settingKey': 'addNewPrivateTask',
+      'flowTitle': 'addNewPravateTask',
+    },
   ];
 
   List<Map<String, String>> get visibleAdminAddList {

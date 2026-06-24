@@ -1,4 +1,9 @@
+import 'package:doctorbike/core/services/app_shortcut_service.dart';
 import 'package:doctorbike/core/services/app_startup.dart';
+import 'dart:async';
+
+import 'package:doctorbike/core/services/employee_attendance_persistent_notification_service.dart';
+import 'package:doctorbike/core/services/employee_attendance_persistent_notification_service.dart';
 import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/services/session_service.dart';
 import 'package:doctorbike/core/services/user_data.dart';
@@ -80,6 +85,13 @@ class SplashController extends GetxController {
 
       if (validation.isValid) {
         Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+        AppShortcutService.instance.scheduleConsumePending();
+        if (userType == 'employee') {
+          unawaited(
+            EmployeeAttendancePersistentNotificationService.instance
+                .initializeForEmployee(),
+          );
+        }
         return;
       }
 
@@ -92,6 +104,13 @@ class SplashController extends GetxController {
       if (cachedUser != null) {
         await SessionService.restoreGlobalsFromStorage();
         Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+        AppShortcutService.instance.scheduleConsumePending();
+        if (userType == 'employee') {
+          unawaited(
+            EmployeeAttendancePersistentNotificationService.instance
+                .initializeForEmployee(),
+          );
+        }
       } else {
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
       }

@@ -1,5 +1,11 @@
 import '../data/models/all_stock_products_model.dart';
 
+/// API / filter sentinel for products without an assigned store section.
+const kUnassignedStoreSectionFilterId = 'none';
+
+bool isUnassignedStoreSectionFilter(String? sectionId) =>
+    sectionId == kUnassignedStoreSectionFilterId;
+
 /// True when the product has a store section assigned.
 bool productHasAssignedLocation(AllStockProductsModel product) {
   final section = product.storeSectionId?.trim();

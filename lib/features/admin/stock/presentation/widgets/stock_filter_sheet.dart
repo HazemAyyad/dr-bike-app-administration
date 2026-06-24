@@ -6,6 +6,7 @@ import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../sales/data/models/product_model.dart';
+import '../../domain/product_location_utils.dart';
 import '../../domain/stock_product_filters.dart';
 import '../controllers/stock_controller.dart';
 
@@ -150,6 +151,10 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
                 value: storeSectionId,
                 items: [
                   DropdownMenuItem<String?>(value: null, child: Text('all'.tr)),
+                  DropdownMenuItem<String?>(
+                    value: kUnassignedStoreSectionFilterId,
+                    child: Text('noLocationAssigned'.tr),
+                  ),
                   ...controller.storeSections
                       .where((s) => s.isActive)
                       .map(
