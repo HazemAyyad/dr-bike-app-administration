@@ -15,6 +15,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../presentation/controllers/stock_controller.dart';
 import '../models/all_stock_products_model.dart';
+import '../models/stock_products_page_result.dart';
 import '../models/product_details_model.dart';
 import '../models/product_tag_model.dart';
 import '../../domain/product_location_utils.dart';
@@ -120,7 +121,7 @@ class StockDatasource {
   }
 
   // Get all products
-  Future<List<AllStockProductsModel>> getAllStock({
+  Future<StockProductsPageResult> getAllStock({
     required int page,
     required bool ifCombinations,
     required bool ifCloseouts,
@@ -147,10 +148,20 @@ class StockDatasource {
           : ifCloseouts
               ? 'closeoutes'
               : 'products';
-      return mapListFromResponseKey(
-        response.data,
+      final raw = response.data;
+      final map = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final products = mapListFromResponseKey(
+        map,
         key,
         (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
+      );
+      final p = map['pagination'];
+      final pg = p is Map ? Map<String, dynamic>.from(p) : <String, dynamic>{};
+      return StockProductsPageResult(
+        products: products,
+        currentPage: asInt(pg['current_page'], page),
+        lastPage: asInt(pg['last_page'], 1),
+        total: asInt(pg['total'], products.length),
       );
     } on DioException catch (e) {
       final data = e.response?.data;

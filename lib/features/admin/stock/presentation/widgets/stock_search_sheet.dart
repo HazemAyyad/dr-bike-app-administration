@@ -8,6 +8,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../controllers/stock_controller.dart';
 import 'product_card.dart';
 import 'stock_product_grid_layout.dart';
+import 'stock_results_count_banner.dart';
 
 /// Context passed to product cards opened from the stock search bottom sheet.
 class StockSearchContext {
@@ -205,9 +206,35 @@ void openStockSearchSheet({
                 );
               }
               if (controller.searchProducts.isEmpty) {
-                return const SliverFillRemaining(
-                  child: ShowNoData(),
+                return SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 24.w),
+                        child: const StockResultsCountBanner(count: 0),
+                      ),
+                      const Expanded(child: ShowNoData()),
+                    ],
+                  ),
                 );
+              }
+              return SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 8.h),
+                  child: StockResultsCountBanner(
+                    count: controller.searchProducts.length,
+                  ),
+                ),
+              );
+            }),
+            Obx(() {
+              final query = controller.stockSearchActiveQuery.value.trim();
+              if (query.isEmpty ||
+                  controller.isSearchLoading.value ||
+                  controller.searchProducts.isEmpty) {
+                return const SliverToBoxAdapter(child: SizedBox.shrink());
               }
               return SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: 24.w),

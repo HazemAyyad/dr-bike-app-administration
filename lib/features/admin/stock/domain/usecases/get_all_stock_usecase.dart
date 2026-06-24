@@ -1,4 +1,4 @@
-import '../../data/models/all_stock_products_model.dart';
+import '../../data/models/stock_products_page_result.dart';
 import '../repositories/stock_repository.dart';
 import '../stock_product_filters.dart';
 
@@ -7,7 +7,7 @@ class GetAllStockUsecase {
 
   GetAllStockUsecase({required this.stockRepository});
 
-  Future<List<AllStockProductsModel>> call({
+  Future<StockProductsPageResult> call({
     required int page,
     required bool ifCombinations,
     required bool ifCloseouts,

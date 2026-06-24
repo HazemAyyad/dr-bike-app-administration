@@ -7,6 +7,7 @@ import '../controllers/stock_controller.dart';
 import 'product_card.dart';
 import '../../../../../routes/app_routes.dart';
 import 'stock_product_grid_layout.dart';
+import 'stock_results_count_banner.dart';
 
 class StockLocationTab extends GetView<StockController> {
   const StockLocationTab({Key? key}) : super(key: key);
@@ -120,34 +121,39 @@ class StockLocationTab extends GetView<StockController> {
                 padding: EdgeInsets.all(32),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (controller.locationFilterProducts.isEmpty)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: 24.h),
-                child: Text(
-                  'noData'.tr,
-                  textAlign: TextAlign.center,
-                ),
-              )
             else ...[
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: StockProductGridLayout.delegate(
-                  aspectRatio: StockProductGridLayout.aspectRatioForTab(0),
-                ),
-                itemCount: controller.locationFilterProducts.length,
-                itemBuilder: (context, index) {
-                  final product = controller.locationFilterProducts[index];
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: BuildProductCard(
-                      product: product,
-                      isCloseouts: false,
-                    ),
-                  );
-                },
+              StockResultsCountBanner(
+                count: controller.locationFilterTotalCount.value,
               ),
-              if (controller.locationProductsLoadingMore.value)
+              if (controller.locationFilterProducts.isEmpty)
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24.h),
+                  child: Text(
+                    'noData'.tr,
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: StockProductGridLayout.delegate(
+                    aspectRatio: StockProductGridLayout.aspectRatioForTab(0),
+                  ),
+                  itemCount: controller.locationFilterProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = controller.locationFilterProducts[index];
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: BuildProductCard(
+                        product: product,
+                        isCloseouts: false,
+                      ),
+                    );
+                  },
+                ),
+              if (controller.locationFilterProducts.isNotEmpty &&
+                  controller.locationProductsLoadingMore.value)
                 const Padding(
                   padding: EdgeInsets.all(16),
                   child: Center(child: CircularProgressIndicator()),

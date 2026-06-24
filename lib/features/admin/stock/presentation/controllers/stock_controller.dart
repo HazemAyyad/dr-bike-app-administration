@@ -20,6 +20,7 @@ import '../../../sales/data/models/product_model.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
+import '../../data/models/stock_products_page_result.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../data/models/store_section_model.dart';
 import '../../domain/product_location_utils.dart';
@@ -175,6 +176,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxList<AllStockProductsModel> locationFilterProducts =
       <AllStockProductsModel>[].obs;
   final RxnString selectedLocationSectionId = RxnString();
+  final RxInt locationFilterTotalCount = 0.obs;
+  final RxInt productListTotalCount = 0.obs;
   final RxBool locationProductsLoadingMore = false.obs;
   int locationProductsPage = 1;
   int locationProductsLastPage = 1;
@@ -551,9 +554,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         ifCloseouts: false,
         filters: filters,
       );
-      _mergeStockItems(allProducts, result);
+      _mergeStockItems(allProducts, result.products);
+      productListTotalCount.value =
+          filters != null ? result.total : 0;
       _productsPage = 2;
-      _hasMoreProducts = result.isNotEmpty;
+      _hasMoreProducts = result.currentPage < result.lastPage;
     } on ServerFailure {
       // Snackbar already shown in StockImplement.
     } on NoConnectionFailure catch (e) {
@@ -581,6 +586,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   Future<void> selectLocationFilter(String? sectionId) async {
     selectedLocationSectionId.value = sectionId;
     locationFilterProducts.clear();
+    locationFilterTotalCount.value = 0;
     locationProductsPage = 1;
     locationProductsLastPage = 1;
     if (sectionId == null || sectionId.isEmpty) {
@@ -597,8 +603,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       locationFilterProducts.assignAll(res.products);
       locationProductsPage = res.currentPage;
       locationProductsLastPage = res.lastPage;
+      locationFilterTotalCount.value = res.total;
     } catch (_) {
       locationFilterProducts.clear();
+      locationFilterTotalCount.value = 0;
     } finally {
       isLoading(false);
       update();
@@ -1299,6 +1307,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> clearProductFilters() async {
     productListFilters.value = StockProductFilters.empty;
+    productListTotalCount.value = 0;
     _resetPaginationForCurrentTab();
     allProducts.clear();
     await getAllProducts();
@@ -1595,7 +1604,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
-  Future<List<AllStockProductsModel>> _fetchStockForCurrentTab() {
+  Future<StockProductsPageResult> _fetchStockForCurrentTab() {
     final tab = currentTab.value;
     final filters = tab == 0 && productListFilters.value.hasActiveFilters
         ? productListFilters.value
@@ -1654,16 +1663,27 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (tab != currentTab.value) {
         return;
       }
-      if (result.isEmpty) {
+      if (result.products.isEmpty) {
         _hasMoreForCurrentTab = false;
+        if (tab == 0 && page == 1) {
+          productListTotalCount.value =
+              productListFilters.value.hasActiveFilters ? result.total : 0;
+        }
         return;
       }
       if (tab == 0) {
-        _mergeStockItems(allProducts, result);
+        if (page == 1) {
+          productListTotalCount.value =
+              productListFilters.value.hasActiveFilters ? result.total : 0;
+        }
+        _mergeStockItems(allProducts, result.products);
+        _hasMoreForCurrentTab = result.currentPage < result.lastPage;
       } else if (tab == 1) {
-        _mergeStockItems(allClearances, result);
+        _mergeStockItems(allClearances, result.products);
+        _hasMoreForCurrentTab = result.currentPage < result.lastPage;
       } else {
-        _mergeStockItems(allCombinations, result);
+        _mergeStockItems(allCombinations, result.products);
+        _hasMoreForCurrentTab = result.currentPage < result.lastPage;
       }
       page++;
     } on ServerFailure {

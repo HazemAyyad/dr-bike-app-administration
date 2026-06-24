@@ -5,12 +5,13 @@ import 'package:get/get.dart' hide FormData;
 import '../../../../../core/errors/failure.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/models/all_stock_products_model.dart';
+import '../../data/models/stock_products_page_result.dart';
 import '../../data/models/product_details_model.dart';
 import '../../domain/stock_product_filters.dart';
 import '../../presentation/controllers/stock_controller.dart';
 
 abstract class StockRepository {
-  Future<List<AllStockProductsModel>> getAllStock({
+  Future<StockProductsPageResult> getAllStock({
     required int page,
     required bool ifCombinations,
     required bool ifCloseouts,

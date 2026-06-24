@@ -109,7 +109,9 @@ class QrCodeController extends GetxController {
     await EmployeeAttendancePersistentNotificationService.instance.sync(
       weeklyDaysOff: dashboard.employeeData.value?.weeklyDaysOff ?? const [],
       endWorkTime: dashboard.employeeData.value?.endWorkTime ?? '',
+      numberOfWorkHours: dashboard.employeeData.value?.numberOfWorkHours ?? '',
       isInside: inside,
+      todayDay: dashboard.todayAttendance.value,
     );
   }
 }

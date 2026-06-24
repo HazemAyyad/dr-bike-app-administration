@@ -8,6 +8,7 @@ import 'product_card.dart';
 import 'stock_product_grid_layout.dart';
 import 'stock_location_tab.dart';
 import 'stock_offer_packages_tab.dart';
+import 'stock_results_count_banner.dart';
 import 'stock_skeleton_widgets.dart';
 
 class GridViewItems extends GetView<StockController> {
@@ -43,6 +44,25 @@ class GridViewItems extends GetView<StockController> {
               : controller.allCombinations.isEmpty;
 
       if (isEmpty) {
+        if (controller.currentTab.value == 0 &&
+            controller.productListFilters.value.hasActiveFilters) {
+          return SliverFillRemaining(
+            hasScrollBody: false,
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 0),
+                  child: Obx(
+                    () => StockResultsCountBanner(
+                      count: controller.productListTotalCount.value,
+                    ),
+                  ),
+                ),
+                const Expanded(child: ShowNoData()),
+              ],
+            ),
+          );
+        }
         return const SliverFillRemaining(
           child: ShowNoData(),
         );
@@ -51,6 +71,16 @@ class GridViewItems extends GetView<StockController> {
       return SliverList(
         delegate: SliverChildListDelegate(
           [
+            if (controller.currentTab.value == 0 &&
+                controller.productListFilters.value.hasActiveFilters)
+              Padding(
+                padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 4.h),
+                child: Obx(
+                  () => StockResultsCountBanner(
+                    count: controller.productListTotalCount.value,
+                  ),
+                ),
+              ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Obx(() {

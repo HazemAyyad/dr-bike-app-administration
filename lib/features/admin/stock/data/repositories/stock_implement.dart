@@ -13,6 +13,7 @@ import '../../domain/repositories/stock_repository.dart';
 import '../../domain/stock_product_filters.dart';
 import '../datasources/stock_datasource.dart';
 import '../models/all_stock_products_model.dart';
+import '../models/stock_products_page_result.dart';
 
 class StockImplement implements StockRepository {
   final NetworkInfo networkInfo;
@@ -21,7 +22,7 @@ class StockImplement implements StockRepository {
   StockImplement({required this.networkInfo, required this.stockDataSource});
 
   @override
-  Future<List<AllStockProductsModel>> getAllStock({
+  Future<StockProductsPageResult> getAllStock({
     required int page,
     required bool ifCombinations,
     required bool ifCloseouts,
