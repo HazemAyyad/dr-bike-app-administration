@@ -44,7 +44,8 @@ class EmployeeTaskDetailsOperationalScreen
           ),
         ),
         actions: [
-          if (userType == 'admin') ...[
+          // النسخ محصور على الأدمن أو من يملك صلاحية "نسخ مهمة موظف".
+          if (canCloneEmployeeTasks)
             IconButton(
               tooltip: 'cloneTask'.tr,
               icon: Icon(
@@ -63,6 +64,8 @@ class EmployeeTaskDetailsOperationalScreen
                 );
               },
             ),
+          // التعديل محصور على الأدمن أو من يملك صلاحية "تعديل مهمة موظف".
+          if (canEditEmployeeTasks)
             TextButton(
               style: TextButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -76,7 +79,6 @@ class EmployeeTaskDetailsOperationalScreen
               },
               child: Text('edit'.tr, style: TextStyle(fontSize: 13.sp)),
             ),
-          ],
         ],
       ),
       body: Obx(() {

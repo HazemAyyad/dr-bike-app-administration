@@ -70,8 +70,13 @@ class ProductLanguageDetailsTabs extends StatelessWidget {
 
   bool _hasValue(Object? value) {
     final text = value?.toString().trim() ?? '';
-    if (text.isEmpty || text == '0' || text == '0.0' || text == 'null') {
+    if (text.isEmpty || text.toLowerCase() == 'null') {
       return false;
+    }
+    // أي قيمة رقمية تساوي صفر (0 ، 0.0 ، 0.00 ...) تُعتبر غير موجودة.
+    final number = double.tryParse(text);
+    if (number != null) {
+      return number != 0;
     }
     return true;
   }

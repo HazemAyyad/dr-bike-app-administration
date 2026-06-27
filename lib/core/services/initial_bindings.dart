@@ -29,12 +29,52 @@ final RxInt sessionEpoch = 0.obs;
 RxBool startApp = true.obs;
 bool supabase = true;
 List<int> employeePermissions = [];
+
+/// أسماء صلاحيات الموظف بالإنجليزي (name_en) — تُستخدم للفحص بالاسم بدل الـ ID.
+List<String> employeePermissionNames = [];
 String userName = '';
+
+/// اسم صلاحية رؤية/تعديل سعر التكلفة (يطابق name_en في الباك إند).
+const String costPricePermissionName = 'Cost Price';
+
+/// هل يحق للمستخدم الحالي رؤية/تعديل سعر التكلفة؟
+/// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Cost Price".
+bool get canViewCostPrice =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(costPricePermissionName);
+
+/// رقم صلاحية الوصول لمهام الموظفين (Employee Tasks).
+const int employeeTasksPermissionId = 7;
+
+/// هل يقدر المستخدم الحالي الوصول لشاشة إدارة مهام الموظفين (عرض/إنشاء)؟
+/// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Employee Tasks".
+bool get canManageEmployeeTasks =>
+    userType == 'admin' ||
+    employeePermissions.contains(employeeTasksPermissionId);
+
+/// اسم صلاحية تعديل مهمة موظف (يطابق name_en في الباك إند).
+const String editEmployeeTaskPermissionName = 'Edit Employee Task';
+
+/// هل يحق للمستخدم الحالي تعديل مهمة موظف؟
+/// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Edit Employee Task".
+bool get canEditEmployeeTasks =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(editEmployeeTaskPermissionName);
+
+/// اسم صلاحية نسخ مهمة موظف (يطابق name_en في الباك إند).
+const String cloneEmployeeTaskPermissionName = 'Clone Employee Task';
+
+/// هل يحق للمستخدم الحالي نسخ مهمة موظف؟
+/// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Clone Employee Task".
+bool get canCloneEmployeeTasks =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(cloneEmployeeTaskPermissionName);
 
 void syncSessionIdentity({
   String? type,
   String? name,
   List<int>? permissionIds,
+  List<String>? permissionNamesEn,
 }) {
   if (type != null) {
     userType = type;
@@ -47,6 +87,11 @@ void syncSessionIdentity({
     employeePermissions
       ..clear()
       ..addAll(permissionIds);
+  }
+  if (permissionNamesEn != null) {
+    employeePermissionNames
+      ..clear()
+      ..addAll(permissionNamesEn);
   }
 }
 
@@ -131,6 +176,9 @@ class InitialBindings implements Bindings {
         name: userdata.user.name,
         permissionIds:
             userdata.employeePermissions.map((p) => p.permissionId).toList(),
+        permissionNamesEn: userdata.employeePermissions
+            .map((p) => p.permissionNameEn)
+            .toList(),
       );
 
       if (userdata.user.type == 'admin') {

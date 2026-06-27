@@ -509,6 +509,8 @@ class EndPoints {
   static const String getReadyMaintenances = 'get/ready/maintenances';
   static const String getDeliveredMaintenances = 'get/delivered/maintenances';
   static const String showMaintenance = 'show/maintenance';
+  static const String maintenanceSyncProducts = 'maintenance/sync/products';
+  static const String maintenanceDeliver = 'maintenance/deliver';
 
   // goals
   static const String getAllGoals = 'get/all/goals';

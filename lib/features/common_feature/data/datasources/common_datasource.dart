@@ -118,6 +118,9 @@ class CommonDatasource {
         final permissionIds =
             userdata.employeePermissions.map((p) => p.permissionId).toList();
         employeePermissions.addAll(permissionIds);
+        employeePermissionNames.addAll(
+          userdata.employeePermissions.map((p) => p.permissionNameEn),
+        );
         userType = userdata.user.type;
       }
       return user;

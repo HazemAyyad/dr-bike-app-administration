@@ -111,7 +111,7 @@ class _ProductOverviewGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = userType.toLowerCase() == 'admin';
+    final showCost = canViewCostPrice;
     final cost =
         product.purchasePrices != null && product.purchasePrices!.isNotEmpty
             ? product.purchasePrices!.first.price.toString()
@@ -130,7 +130,7 @@ class _ProductOverviewGrid extends StatelessWidget {
           Icons.percent, 'discountPercentage'.tr, '${product.discount ?? 0}%'),
       ProductMetricData(Icons.price_change_outlined, 'minimumSalePrice'.tr,
           product.minSalePrice?.toString() ?? '—'),
-      if (isAdmin)
+      if (showCost)
         ProductMetricData(Icons.shopping_bag_outlined, 'ThePurchase'.tr, cost,
             onTap: () => Get.dialog(ShowPurchasePrice(product: product))),
       ProductMetricData(Icons.price_check_outlined, 'listPriceField'.tr,

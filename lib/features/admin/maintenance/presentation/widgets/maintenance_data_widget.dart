@@ -223,8 +223,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             imageBuilder:
                                                 (context, imageProvider) =>
                                                     Container(
-                                              height: 60.h,
-                                              width: 80.w,
+                                              height: 50.h,
+                                              width: 64.w,
                                               decoration: BoxDecoration(
                                                 image: DecorationImage(
                                                   image: imageProvider,
@@ -237,8 +237,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             imageUrl: item.mediaFiles,
                                             placeholder: (context, url) =>
                                                 SizedBox(
-                                              height: 60.h,
-                                              width: 80.w,
+                                              height: 50.h,
+                                              width: 64.w,
                                               child: const Center(
                                                 child:
                                                     CircularProgressIndicator(),
@@ -276,12 +276,23 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                                 .textTheme
                                                 .bodyMedium!
                                                 .copyWith(
-                                                  fontSize: 14.sp,
-                                                  fontWeight: FontWeight.w400,
+                                                  fontSize: 12.sp,
                                                   color: Colors.grey
                                                       .withAlpha(500),
                                                 ),
                                           ),
+                                          if (item.invoiceTotal > 0)
+                                            Text(
+                                              '${'total'.tr}: ${item.invoiceTotal.toStringAsFixed(2)}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium!
+                                                  .copyWith(
+                                                    fontSize: 12.sp,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.primaryColor,
+                                                  ),
+                                            ),
                                         ],
                                       ),
                                     ],
@@ -292,8 +303,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                 () => Container(
                                   padding:
                                       EdgeInsets.symmetric(horizontal: 5.w),
-                                  width: 70.w,
-                                  height: 70.h,
+                                  width: 58.w,
+                                  height: 58.h,
                                   decoration: BoxDecoration(
                                     color: getStatusColor(
                                       receiptDate: item.receiptDate,

@@ -112,6 +112,7 @@ class UserData {
     saveIsRememberUser(false);
     userToken = '';
     employeePermissions = [];
+    employeePermissionNames = [];
     userType = '';
     sessionUserType.value = '';
   }

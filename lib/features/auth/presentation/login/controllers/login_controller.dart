@@ -273,6 +273,8 @@ class LoginController extends GetxController {
       name: userdata.user.name,
       permissionIds:
           userdata.employeePermissions.map((p) => p.permissionId).toList(),
+      permissionNamesEn:
+          userdata.employeePermissions.map((p) => p.permissionNameEn).toList(),
     );
   }
 

@@ -10,6 +10,7 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/maintenance_repository.dart';
 import '../datasources/maintenance_datasource.dart';
+import '../models/maintenance_product_model.dart';
 
 class MaintenanceImplement implements MaintenanceRepository {
   final MaintenanceDatasource maintenanceDatasource;
@@ -40,7 +41,7 @@ class MaintenanceImplement implements MaintenanceRepository {
   }
 
   @override
-  Future<Either<Failure, String>> creatMaintenance({
+  Future<Either<Failure, Map<String, String>>> creatMaintenance({
     String? maintenanceId,
     required String customerId,
     required String sellerId,
@@ -49,6 +50,8 @@ class MaintenanceImplement implements MaintenanceRepository {
     required String receiptTime,
     required List<File> files,
     required String status,
+    double? laborCost,
+    double? discount,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -63,9 +66,15 @@ class MaintenanceImplement implements MaintenanceRepository {
         receiptTime: receiptTime,
         files: files,
         status: status,
+        laborCost: laborCost,
+        discount: discount,
       );
       if (result['status'] == 'success') {
-        return Right(result['message']);
+        return Right({
+          'message': result['message']?.toString() ?? '',
+          'maintenance_id':
+              result['maintenance_id']?.toString() ?? maintenanceId ?? '',
+        });
       } else {
         return Left(
           ValidationFailure(
@@ -82,7 +91,7 @@ class MaintenanceImplement implements MaintenanceRepository {
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-      throw ServerFailure(e.message ?? 'error'.tr, {});
+      return Left(ServerFailure(e.message ?? 'error'.tr, {}));
     }
   }
 
@@ -106,6 +115,74 @@ class MaintenanceImplement implements MaintenanceRepository {
       }
     } else {
       throw ServerFailure('No internet connection', {});
+    }
+  }
+
+  @override
+  Future<Either<Failure, MaintenanceBillingModel>> syncMaintenanceProducts({
+    required String maintenanceId,
+    required List<MaintenanceProductModel> products,
+    double? laborCost,
+    double? discount,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await maintenanceDatasource.syncMaintenanceProducts(
+        maintenanceId: maintenanceId,
+        products: products,
+        laborCost: laborCost,
+        discount: discount,
+      );
+      if (result['status'] == 'success') {
+        return Right(
+          MaintenanceBillingModel.fromJson(
+            Map<String, dynamic>.from(result['billing'] ?? {}),
+          ),
+        );
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'error'.tr, {}));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> deliverMaintenance({
+    required String maintenanceId,
+    double? laborCost,
+    double? discount,
+    double? paymentAmount,
+    int? paymentBoxId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await maintenanceDatasource.deliverMaintenance(
+        maintenanceId: maintenanceId,
+        laborCost: laborCost,
+        discount: discount,
+        paymentAmount: paymentAmount,
+        paymentBoxId: paymentBoxId,
+      );
+      if (result['status'] == 'success') {
+        return Right(Map<String, dynamic>.from(result));
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'error'.tr, {}));
     }
   }
 }

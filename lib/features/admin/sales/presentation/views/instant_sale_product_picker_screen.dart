@@ -35,9 +35,19 @@ class _InstantSaleProductPickerScreenState
   @override
   void initState() {
     super.initState();
-    controller.enablePickerReservedStock();
     final args = Get.arguments;
-    if (args is Map && args['freshInstantSale'] == true) {
+    final maintenanceFlow =
+        args is Map && args['maintenanceFlow'] == true;
+
+    if (maintenanceFlow) {
+      controller.setMaintenancePickerFlow(true);
+    } else {
+      controller.enablePickerReservedStock();
+    }
+
+    if (!maintenanceFlow &&
+        args is Map &&
+        args['freshInstantSale'] == true) {
       controller.resetInstantSaleForm();
       controller.isPackageSale.value = false;
     }
@@ -158,7 +168,8 @@ class _InstantSaleProductPickerScreenState
 
                   final hasLocationFilter = locationFilter != null &&
                       locationFilter.isNotEmpty;
-                  final packages = hasLocationFilter
+                  final packages = hasLocationFilter ||
+                          controller.maintenancePickerFlow.value
                       ? <OfferPackageModel>[]
                       : controller.filteredPackagesForPicker;
                   final products = controller.filteredProductsForPicker;
@@ -375,7 +386,8 @@ class _InstantSaleProductPickerScreenState
                   ),
                 ),
                 SizedBox(width: 8.w),
-                if (!controller.isEditingInstantSale) ...[
+                if (!controller.isEditingInstantSale &&
+                    !controller.maintenancePickerFlow.value) ...[
                   SizedBox(
                     height: 46.h,
                     child: OutlinedButton(
@@ -408,10 +420,18 @@ class _InstantSaleProductPickerScreenState
                       ),
                     ),
                     onPressed: canContinue
-                        ? controller.openInstantSaleCheckout
+                        ? () {
+                            if (controller.maintenancePickerFlow.value) {
+                              controller.confirmMaintenancePickerAndPop();
+                            } else {
+                              controller.openInstantSaleCheckout();
+                            }
+                          }
                         : null,
                     child: Text(
-                      'instantSaleContinue'.tr,
+                      controller.maintenancePickerFlow.value
+                          ? 'confirm'.tr
+                          : 'instantSaleContinue'.tr,
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w700,

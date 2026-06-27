@@ -16,6 +16,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/maintenance_controller.dart';
 import '../widgets/custom_line_steps_widget.dart';
+import '../widgets/maintenance_products_section.dart';
 import '../widgets/next_back_button.dart';
 
 class NewMaintenanceScreen extends StatelessWidget {
@@ -29,18 +30,14 @@ class NewMaintenanceScreen extends StatelessWidget {
         action: false,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        padding: EdgeInsets.symmetric(horizontal: 16.w),
         child: GetBuilder<MaintenanceController>(
           builder: (controller) {
             if (controller.isEditLoading.value) {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 250.h),
-                    const Center(child: CircularProgressIndicator()),
-                  ],
+                child: Padding(
+                  padding: EdgeInsets.only(top: 200.h),
+                  child: const CircularProgressIndicator(),
                 ),
               );
             }
@@ -53,48 +50,44 @@ class NewMaintenanceScreen extends StatelessWidget {
                     selectedStep: controller.selectedStep,
                     changeSelected: controller.changeSelected,
                   ),
-                  SizedBox(height: 20.h),
+                  SizedBox(height: 12.h),
                   Obx(
                     () => Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Flexible(
+                        Expanded(
                           child: CustomCheckBox(
                             title: 'seller'.tr,
                             value: RxBool(
                                 !controller.selectedSellers.value == true),
                             onChanged: (val) {
                               controller.getAllCustomersAndSellers();
-                              controller.isEdit.value
-                                  ? null
-                                  : controller.selectedSellers.value = false;
+                              if (!controller.isEdit.value) {
+                                controller.selectedSellers.value = false;
+                              }
                             },
                           ),
                         ),
-                        Flexible(
+                        Expanded(
                           child: CustomCheckBox(
                             title: 'customer'.tr,
                             value: RxBool(
                                 !controller.selectedSellers.value == false),
                             onChanged: (val) {
                               controller.getAllCustomersAndSellers();
-                              controller.isEdit.value
-                                  ? null
-                                  : controller.selectedSellers.value = true;
+                              if (!controller.isEdit.value) {
+                                controller.selectedSellers.value = true;
+                              }
                             },
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
-                  SizedBox(height: 10.h),
+                  SizedBox(height: 8.h),
                   Obx(
                     () => Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Flexible(
+                        Expanded(
                           child: CustomDropdownFieldWithSearch(
                             value: controller.selectedSellers.value == false
                                 ? controller.allCustomersList.firstWhereOrNull(
@@ -123,136 +116,129 @@ class NewMaintenanceScreen extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          onPressed: () => Get.toNamed(
-                              AppRoutes.ADDNEWCUSTOMERSCREEN,
-                              arguments: {
-                                'sellerId': '',
-                                'employeeId': '',
-                                'employeeType': controller.selectedSellers.value
-                                    ? 'customer'
-                                    : 'seller',
-                              })?.then((value) {
-                            controller.getAllCustomersAndSellers();
-                          }),
+                          onPressed: controller.isEdit.value
+                              ? null
+                              : () => Get.toNamed(
+                                    AppRoutes.ADDNEWCUSTOMERSCREEN,
+                                    arguments: {
+                                      'sellerId': '',
+                                      'employeeId': '',
+                                      'employeeType':
+                                          controller.selectedSellers.value
+                                              ? 'customer'
+                                              : 'seller',
+                                    },
+                                  )?.then((_) {
+                                    controller.getAllCustomersAndSellers();
+                                  }),
                           icon: Icon(
                             Icons.add_circle_sharp,
                             color: AppColors.primaryColor,
-                            size: 35.sp,
+                            size: 30.sp,
                           ),
-                        )
+                        ),
                       ],
                     ),
                   ),
-                  SizedBox(height: 15.h),
-                  CustomCalendar(
-                    isRequired: true,
-                    label: 'deliveryDate',
-                    isVisible: controller.isCalendarVisible,
-                    onTap: () {
-                      controller.isCalendarVisible.value =
-                          !controller.isCalendarVisible.value;
-                    },
-                    selectedDay: controller.deliveryDate,
+                  SizedBox(height: 10.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomCalendar(
+                          isRequired: true,
+                          label: 'deliveryDate',
+                          isVisible: controller.isCalendarVisible,
+                          onTap: () {
+                            controller.isCalendarVisible.value =
+                                !controller.isCalendarVisible.value;
+                          },
+                          selectedDay: controller.deliveryDate,
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: CustomTimePicker(
+                          label: 'deliveryTime',
+                          isRequired: true,
+                          isVisible: controller.isTimeVisible,
+                          onTap: () {
+                            controller.isTimeVisible.value =
+                                !controller.isTimeVisible.value;
+                          },
+                          selectedTime: controller.deliveryTime,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 15.h),
-                  CustomTimePicker(
-                    label: 'deliveryTime',
-                    isRequired: true,
-                    isVisible: controller.isTimeVisible,
-                    onTap: () {
-                      controller.isTimeVisible.value =
-                          !controller.isTimeVisible.value;
-                    },
-                    selectedTime: controller.deliveryTime,
-                  ),
-                  SizedBox(height: 15.h),
+                  SizedBox(height: 10.h),
                   CustomTextField(
                     validator: (value) => null,
                     label: 'details',
                     hintText: 'detailsExample',
                     controller: controller.descriptionController,
-                    minLines: 6,
-                    maxLines: 10,
+                    minLines: 2,
+                    maxLines: 4,
                     keyboardType: TextInputType.multiline,
                     textInputAction: TextInputAction.newline,
                   ),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Obx(
-                      () => controller.isLoading.value
-                          ? const Center(
-                              child: CircularProgressIndicator(),
-                            )
-                          : controller.selectedMedia.isEmpty
-                              ? const SizedBox.shrink()
-                              : Padding(
-                                  padding: EdgeInsets.only(top: 10.h),
-                                  child: Row(
-                                    children: [
-                                      ...controller.selectedMedia
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                        (entry) {
-                                          final index = entry.key;
-                                          final file = entry.value;
-                                          return Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 5.w),
-                                            child: Stack(
-                                              children: [
-                                                ShowImageOrVideo(
-                                                  path: file.path,
-                                                ),
-                                                // زرار فوق الصورة
-                                                Positioned(
-                                                  right: 8,
-                                                  top: 8,
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.delete,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      controller
-                                                          .isLoading(true);
-                                                      controller.selectedMedia
-                                                          .removeAt(index);
-                                                      controller
-                                                          .isLoading(false);
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
+                  SizedBox(height: 12.h),
+                  MaintenanceProductsSection(controller: controller),
+                  SizedBox(height: 10.h),
+                  if (controller.selectedMedia.isNotEmpty)
+                    SizedBox(
+                      height: 72.h,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: controller.selectedMedia.length,
+                        separatorBuilder: (_, __) => SizedBox(width: 6.w),
+                        itemBuilder: (_, index) {
+                          final file = controller.selectedMedia[index];
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(6.r),
+                                child: SizedBox(
+                                  width: 72.w,
+                                  height: 72.h,
+                                  child: ShowImageOrVideo(path: file.path),
+                                ),
+                              ),
+                              Positioned(
+                                right: 2,
+                                top: 2,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    controller.selectedMedia.removeAt(index);
+                                    controller.update();
+                                  },
+                                  child: Icon(
+                                    Icons.cancel,
+                                    color: Colors.red,
+                                    size: 20.sp,
                                   ),
                                 ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 20.h),
                   MediaUploadButton(
                     title: 'uploadMedia',
                     allowedType: MediaType.both,
                     isShowPreview: false,
                     onFilesChanged: (files) {
-                      if (controller.selectedMedia.isEmpty) {
-                        controller.selectedMedia = files;
-                      } else {
-                        for (var file in files) {
-                          if (!controller.selectedMedia
-                              .any((f) => f.path == file.path)) {
-                            controller.selectedMedia.add(file);
-                          }
+                      for (var file in files) {
+                        if (!controller.selectedMedia
+                            .any((f) => f.path == file.path)) {
+                          controller.selectedMedia.add(file);
                         }
                       }
                       controller.update();
                     },
                   ),
-                  SizedBox(height: 30.h),
-                  if (controller.isEdit.value)
+                  SizedBox(height: 20.h),
+                  if (!controller.isDelivered.value)
                     AppButton(
                       isLoading: controller.isLoading,
                       text: 'save',
@@ -270,17 +256,17 @@ class NewMaintenanceScreen extends StatelessWidget {
                     totalSteps: controller.timeLineSteps.length.obs,
                     selectedStep: controller.selectedStep,
                     onPressedBack: controller.prevStep,
-                    onPressedNext: controller.currentTab.value != 3
-                        ? controller.nextStep
-                        : () {},
+                    onPressedNext: controller.isDelivered.value
+                        ? () {}
+                        : controller.nextStep,
                   ),
+                  SizedBox(height: 16.h),
                 ],
               ),
             );
           },
         ),
       ),
-      resizeToAvoidBottomInset: null,
     );
   }
 }

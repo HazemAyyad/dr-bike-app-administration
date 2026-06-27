@@ -1085,6 +1085,8 @@ class EmployeeTasksController extends GetxController {
         if (occurrenceId != null && occurrenceId.isNotEmpty)
           'occurrence_id': occurrenceId,
         if (taskDate != null && taskDate.isNotEmpty) 'task_date': taskDate,
+        // فتح من قائمة الإدارة: المدير (أدمن أو صاحب صلاحية المهام) يرى شاشة الإدارة بزر التعديل.
+        if (canManageEmployeeTasks) 'viewMode': 'manage',
         if (Get.isRegistered<EmployeeDashbordController>())
           'EmployeeDashbordController': Get.find<EmployeeDashbordController>(),
       },

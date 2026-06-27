@@ -13,6 +13,10 @@ class MaintenanceDataModel {
   final String? contactPhone;
   final int? customerId;
   final int? sellerId;
+  final double partsTotal;
+  final double laborCost;
+  final double invoiceTotal;
+  final int? instantSaleId;
 
   MaintenanceDataModel({
     required this.id,
@@ -26,6 +30,10 @@ class MaintenanceDataModel {
     required this.createdAt,
     required this.status,
     required this.mediaFiles,
+    this.partsTotal = 0,
+    this.laborCost = 0,
+    this.invoiceTotal = 0,
+    this.instantSaleId,
   });
 
   factory MaintenanceDataModel.fromJson(Map<String, dynamic> json) {
@@ -42,19 +50,11 @@ class MaintenanceDataModel {
       contactPhone: asNullableString(j['contact_phone']),
       customerId: j['customer_id'] == null ? null : asInt(j['customer_id']),
       sellerId: j['seller_id'] == null ? null : asInt(j['seller_id']),
+      partsTotal: asDouble(j['parts_total']),
+      laborCost: asDouble(j['labor_cost']),
+      invoiceTotal: asDouble(j['invoice_total']),
+      instantSaleId:
+          j['instant_sale_id'] == null ? null : asInt(j['instant_sale_id']),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'customer_name': customerName,
-      'seller_name': sellerName,
-      'receipt_date': receiptDate,
-      'receipt_time': receiptTime,
-      'created_at': createdAt,
-      'status': status,
-      'media_files': mediaFiles,
-    };
   }
 }

@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:dartz/dartz.dart';
 
 import '../../../../../core/errors/failure.dart';
+import '../../data/models/maintenance_product_model.dart';
 
 abstract class MaintenanceRepository {
   Future<dynamic> getMaintenances({required int tab});
 
   Future<dynamic> getMaintenancesDetails({required String maintenanceId});
 
-  Future<Either<Failure, String>> creatMaintenance({
+  Future<Either<Failure, Map<String, String>>> creatMaintenance({
     String? maintenanceId,
     required String customerId,
     required String sellerId,
@@ -18,5 +19,22 @@ abstract class MaintenanceRepository {
     required String receiptTime,
     required List<File> files,
     required String status,
+    double? laborCost,
+    double? discount,
+  });
+
+  Future<Either<Failure, MaintenanceBillingModel>> syncMaintenanceProducts({
+    required String maintenanceId,
+    required List<MaintenanceProductModel> products,
+    double? laborCost,
+    double? discount,
+  });
+
+  Future<Either<Failure, Map<String, dynamic>>> deliverMaintenance({
+    required String maintenanceId,
+    double? laborCost,
+    double? discount,
+    double? paymentAmount,
+    int? paymentBoxId,
   });
 }

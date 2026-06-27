@@ -8,6 +8,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
+import '../models/maintenance_product_model.dart';
 
 class MaintenanceDatasource {
   final ApiConsumer api;
@@ -48,6 +49,8 @@ class MaintenanceDatasource {
     required String receiptTime,
     required List<File> files,
     required String status,
+    double? laborCost,
+    double? discount,
   }) async {
     try {
       final response = await api.post(
@@ -61,6 +64,8 @@ class MaintenanceDatasource {
           'description': description,
           'receipt_date': receipDate,
           'receipt_time': receiptTime,
+          if (laborCost != null) 'labor_cost': laborCost,
+          if (discount != null) 'discount': discount,
           if (files.isNotEmpty)
             'files[]': await Future.wait(
               files.map((e) async {
@@ -109,6 +114,66 @@ class MaintenanceDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> syncMaintenanceProducts({
+    required String maintenanceId,
+    required List<MaintenanceProductModel> products,
+    double? laborCost,
+    double? discount,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceSyncProducts,
+        data: {
+          'maintenance_id': maintenanceId,
+          if (laborCost != null) 'labor_cost': laborCost,
+          if (discount != null) 'discount': discount,
+          'products': products.map((e) => e.toApiJson()).toList(),
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> deliverMaintenance({
+    required String maintenanceId,
+    double? laborCost,
+    double? discount,
+    double? paymentAmount,
+    int? paymentBoxId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceDeliver,
+        data: {
+          'maintenance_id': maintenanceId,
+          if (laborCost != null) 'labor_cost': laborCost,
+          if (discount != null) 'discount': discount,
+          if (paymentAmount != null) 'payment_amount': paymentAmount,
+          if (paymentBoxId != null) 'payment_box_id': paymentBoxId,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
         ),
       );
     }

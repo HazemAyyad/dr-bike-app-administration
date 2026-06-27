@@ -10,7 +10,7 @@ class CreatMaintenanceUsecase {
 
   CreatMaintenanceUsecase({required this.maintenanceRepository});
 
-  Future<Either<Failure, String>> call({
+  Future<Either<Failure, Map<String, String>>> call({
     String? maintenanceId,
     required String customerId,
     required String sellerId,
@@ -19,6 +19,8 @@ class CreatMaintenanceUsecase {
     required String receiptTime,
     required List<File> files,
     required String status,
+    double? laborCost,
+    double? discount,
   }) {
     return maintenanceRepository.creatMaintenance(
       maintenanceId: maintenanceId,
@@ -29,6 +31,8 @@ class CreatMaintenanceUsecase {
       receiptTime: receiptTime,
       files: files,
       status: status,
+      laborCost: laborCost,
+      discount: discount,
     );
   }
 }

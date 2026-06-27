@@ -525,6 +525,26 @@ class SalesController extends GetxController
   /// مودال التحذير عند الإضافة (تدفق الطلبية فقط).
   final RxBool salesOrderStockMode = false.obs;
 
+  /// تدفق إضافة قطع من شاشة الصيانة.
+  final RxBool maintenancePickerFlow = false.obs;
+
+  void setMaintenancePickerFlow(bool enabled) {
+    maintenancePickerFlow.value = enabled;
+  }
+
+  bool confirmMaintenancePickerAndPop() {
+    if (!canContinueFromPicker) {
+      Get.snackbar(
+        'error'.tr,
+        'instantSaleCartEmpty'.tr,
+        backgroundColor: Colors.red,
+      );
+      return false;
+    }
+    Get.back(result: true);
+    return true;
+  }
+
   void enablePickerReservedStock({bool salesOrderFlow = false}) {
     pickerReservedStockEnabled.value = true;
     if (salesOrderFlow) {
@@ -535,6 +555,7 @@ class SalesController extends GetxController
   void disablePickerReservedStock() {
     pickerReservedStockEnabled.value = false;
     salesOrderStockMode.value = false;
+    maintenancePickerFlow.value = false;
   }
 
   bool get shouldWarnReservedStock =>

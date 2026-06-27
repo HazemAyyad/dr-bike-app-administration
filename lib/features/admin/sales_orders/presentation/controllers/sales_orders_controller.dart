@@ -77,6 +77,7 @@ class SalesOrdersController extends GetxController {
   final isLoading = false.obs;
   final isDetailLoading = false.obs;
   final isSubmitting = false.obs;
+  int? _loadingDetailOrderId;
   final isPreparingEdit = false.obs;
   final orders = <SalesOrderListItemModel>[].obs;
   final statusFilter = 'unconfirmed'.obs;
@@ -285,16 +286,24 @@ class SalesOrdersController extends GetxController {
   }
 
   Future<void> loadDetail(int orderId) async {
+    if (_loadingDetailOrderId == orderId) return;
+    _loadingDetailOrderId = orderId;
     isDetailLoading.value = true;
-    final result = await repository.getOrder(orderId);
-    result.fold(
-      (f) {
-        SalesOrderNotice.error(f.errMessage);
-        detail.value = null;
-      },
-      (data) => detail.value = data,
-    );
-    isDetailLoading.value = false;
+    try {
+      final result = await repository.getOrder(orderId);
+      result.fold(
+        (f) {
+          SalesOrderNotice.error(f.errMessage);
+          detail.value = null;
+        },
+        (data) => detail.value = data,
+      );
+    } finally {
+      isDetailLoading.value = false;
+      if (_loadingDetailOrderId == orderId) {
+        _loadingDetailOrderId = null;
+      }
+    }
   }
 
   void changeStatusFilter(String status) {

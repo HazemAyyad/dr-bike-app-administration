@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/product_details_model.dart' show ProductMediaItem;
 import '../controllers/stock_controller.dart';
@@ -282,15 +283,16 @@ class _EditProductOverviewSectionState extends State<EditProductOverviewSection>
           signed: false,
         ),
       ),
-      EditMetricInputCard(
-        icon: Icons.shopping_bag_outlined,
-        label: 'productCost'.tr,
-        controller: c.purchasePriceController,
-        keyboardType: const TextInputType.numberWithOptions(
-          decimal: true,
-          signed: false,
+      if (canViewCostPrice)
+        EditMetricInputCard(
+          icon: Icons.shopping_bag_outlined,
+          label: 'productCost'.tr,
+          controller: c.purchasePriceController,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+            signed: false,
+          ),
         ),
-      ),
       EditMetricInputCard(
         icon: Icons.percent,
         label: 'discountPercentage'.tr,

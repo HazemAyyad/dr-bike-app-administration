@@ -20,18 +20,39 @@ import '../widgets/sales_order_shiply_sandbox_badge.dart';
 import '../widgets/sales_order_shiply_timeline.dart';
 import '../widgets/sales_order_status_ui.dart';
 
-class SalesOrderDetailScreen extends GetView<SalesOrdersController> {
+class SalesOrderDetailScreen extends StatefulWidget {
   const SalesOrderDetailScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final orderId = Get.arguments as int;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (controller.detail.value?.id != orderId) {
-        controller.loadDetail(orderId);
+  State<SalesOrderDetailScreen> createState() => _SalesOrderDetailScreenState();
+}
+
+class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
+  late final int orderId;
+  bool _requestedLoad = false;
+
+  SalesOrdersController get controller => Get.find<SalesOrdersController>();
+
+  @override
+  void initState() {
+    super.initState();
+    orderId = Get.arguments as int;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadIfNeeded());
+  }
+
+  void _loadIfNeeded() {
+    if (_requestedLoad) return;
+    if (controller.detail.value?.id == orderId) return;
+    _requestedLoad = true;
+    controller.loadDetail(orderId).whenComplete(() {
+      if (mounted) {
+        _requestedLoad = false;
       }
     });
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: SalesOrdersController.surfaceGray,
       appBar: AppBar(
