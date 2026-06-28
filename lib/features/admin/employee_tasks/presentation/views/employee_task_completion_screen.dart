@@ -111,6 +111,7 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
                         compact: true,
                         interactive: !_isLocked(data),
                         onSubtaskTap: (sub) => _onSubtaskTap(context, sub),
+                        onSubtaskReject: (sub) => _onSubtaskReject(context, sub),
                       ),
                     ),
                     if (_showsMainProofSection(data, controller)) ...[
@@ -186,8 +187,9 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     }
 
     final refreshed = controller.employeeTaskService.taskDetails.value;
-    final allDone =
-        refreshed?.subTasks.every((s) => s.status == 'completed') ?? false;
+    final allDone = refreshed?.subTasks.every(
+            (s) => s.status == 'completed' || s.status == 'rejected') ??
+        false;
     if (!allDone || !context.mounted) return;
 
     final needsMainProof = (refreshed ?? details).isForcedToUploadImg &&
@@ -219,8 +221,155 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     }
   }
 
+  Future<void> _onSubtaskReject(BuildContext context, SubTaskEntity sub) async {
+    if (sub.status == 'completed' || sub.status == 'rejected') return;
+
+    final details = controller.employeeTaskService.taskDetails.value;
+    if (details == null) return;
+
+    final reasonController = TextEditingController();
+    const dialogBg = Color(0xFFF0F0F0);
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: dialogBg,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        title: Text(
+          'declineSubtaskTitle'.tr,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.operationalNavy,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'declineSubtaskHint'.tr,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: AppColors.customGreyColor5,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            TextField(
+              controller: reasonController,
+              maxLines: 4,
+              autofocus: true,
+              style: TextStyle(
+                fontSize: 13.sp,
+                color: AppColors.operationalNavy,
+              ),
+              decoration: InputDecoration(
+                hintText: 'declineReasonRequired'.tr,
+                hintStyle: TextStyle(
+                  color: AppColors.customGreyColor5,
+                  fontSize: 12.sp,
+                ),
+                filled: true,
+                fillColor: AppColors.whiteColor,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                  borderSide: const BorderSide(
+                    color: AppColors.operationalCardBorder,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                  borderSide: const BorderSide(color: AppColors.redColor),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(
+              'cancel'.tr,
+              style: const TextStyle(color: AppColors.customGreyColor5),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                Get.snackbar('error'.tr, 'declineReasonRequired'.tr);
+                return;
+              }
+              Get.back(result: true);
+            },
+            child: Text(
+              'confirm'.tr,
+              style: const TextStyle(
+                color: AppColors.redColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final args = Get.arguments is Map<String, dynamic>
+        ? Get.arguments as Map<String, dynamic>
+        : <String, dynamic>{};
+    final mainTaskId = details.taskId.toString();
+    final occurrenceId =
+        args['occurrence_id']?.toString() ?? controller.lastLoadedOccurrenceId;
+
+    final ok = await controller.rejectSubtask(
+      subTaskId: sub.id,
+      reason: reasonController.text.trim(),
+      mainTaskId: mainTaskId,
+      occurrenceId: occurrenceId,
+    );
+    if (!ok || !context.mounted) return;
+
+    final refreshed = controller.employeeTaskService.taskDetails.value;
+    final meta = controller.lastRejectResponseMeta;
+    final needsMainProof = meta != null &&
+        EmployeeTasksController.metaTruthy(meta['all_subtasks_done']);
+
+    // Auto-submitted by the backend (no remaining subtasks, proof satisfied).
+    if (refreshed?.status == 'waiting_review' ||
+        refreshed?.status == 'completed') {
+      Get.snackbar(
+        'success'.tr,
+        'taskSubmittedForReview'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+      );
+      Get.back(result: true);
+      return;
+    }
+
+    if (needsMainProof) {
+      Get.snackbar(
+        'note'.tr,
+        'allSubtasksDoneUploadMainProof'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 4),
+      );
+      return;
+    }
+
+    Get.snackbar(
+      'success'.tr,
+      'subtaskDeclined'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
+    );
+  }
+
   Future<void> _submit(BuildContext context, TaskDetailsModel data) async {
-    final incomplete = data.subTasks.any((s) => s.status != 'completed');
+    final incomplete = data.subTasks
+        .any((s) => s.status != 'completed' && s.status != 'rejected');
     if (incomplete) {
       Get.snackbar('error'.tr, 'completeAllSubtasksFirst'.tr);
       return;

@@ -3,6 +3,7 @@ import 'package:doctorbike/core/databases/api/end_points.dart';
 import 'package:doctorbike/core/errors/error_model.dart';
 import 'package:doctorbike/core/errors/expentions.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../checks/data/models/check_model.dart';
 import '../models/sales_order_model.dart';
@@ -102,18 +103,41 @@ class SalesOrdersDatasource {
     int orderId, {
     Map<String, dynamic>? extra,
   }) async {
-    final raw = await api.post(
-      endpoint,
-      data: {
-        'sales_order_id': orderId,
-        ...?extra,
-      },
-    );
-    final response = _asMap(raw);
-    _ensureSuccess(response);
-    return SalesOrderDetailModel.fromJson(
-      response['sales_order'] as Map<String, dynamic>,
-    );
+    final payload = <String, dynamic>{
+      'sales_order_id': orderId,
+      ...?extra,
+    };
+    final isHandover = endpoint == EndPoints.salesOrderHandover;
+    if (isHandover) {
+      debugPrint('[SHIPLY-HANDOVER] → POST $endpoint');
+      debugPrint('[SHIPLY-HANDOVER]   body=$payload');
+    }
+    try {
+      final raw = await api.post(endpoint, data: payload);
+      final response = _asMap(raw);
+      if (isHandover) {
+        debugPrint('[SHIPLY-HANDOVER] ← status=${response['status']} '
+            'message=${response['message']}');
+        debugPrint('[SHIPLY-HANDOVER]   raw=$response');
+      }
+      _ensureSuccess(response);
+      return SalesOrderDetailModel.fromJson(
+        response['sales_order'] as Map<String, dynamic>,
+      );
+    } on ServerException catch (e) {
+      if (isHandover) {
+        debugPrint('[SHIPLY-HANDOVER] ✗ FAILED');
+        debugPrint('[SHIPLY-HANDOVER]   message=${e.errorModel.errorMessage}');
+        debugPrint('[SHIPLY-HANDOVER]   status=${e.errorModel.status}');
+        debugPrint('[SHIPLY-HANDOVER]   data=${e.errorModel.data}');
+      }
+      rethrow;
+    } catch (e) {
+      if (isHandover) {
+        debugPrint('[SHIPLY-HANDOVER] ✗ UNEXPECTED ERROR: $e');
+      }
+      rethrow;
+    }
   }
 
   Future<SalesOrderDetailModel> updateOrder(

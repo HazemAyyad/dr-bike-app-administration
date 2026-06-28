@@ -207,7 +207,7 @@ class EmployeeAttendanceHistoryScreen
               }
               final hasContent = data.days.isNotEmpty ||
                   data.monthlySummary != null ||
-                  controller.isViewingCurrentMonth;
+                  controller.includesToday;
               if (!hasContent) {
                 return Center(
                   child: Column(
@@ -232,7 +232,7 @@ class EmployeeAttendanceHistoryScreen
                 employee: head,
                 monthlySummary: data.monthlySummary,
                 days: data.days,
-                showTodaySummary: controller.isViewingCurrentMonth,
+                showTodaySummary: controller.includesToday,
                 showAdminEdit: true,
                 onEditDay: (day) => _showEditDayDialog(context, controller, day),
               );
@@ -268,42 +268,99 @@ class _MonthYearPicker extends StatelessWidget {
       child: Obx(() {
         final year  = controller.selectedYear.value;
         final month = controller.selectedMonth.value;
+        final isCustom = controller.isCustomRange;
 
-        return Row(
+        return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ── السنة ──
-            Expanded(
-              child: _PickerButton(
-                label: year.toString(),
-                icon: Icons.calendar_today_outlined,
-                onTap: () => _pickYear(context),
-              ),
+            Row(
+              children: [
+                // ── السنة ──
+                Expanded(
+                  child: _PickerButton(
+                    label: year.toString(),
+                    icon: Icons.calendar_today_outlined,
+                    onTap: () => _pickYear(context),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                // ── الشهر ──
+                Expanded(
+                  flex: 2,
+                  child: _PickerButton(
+                    label: AttendanceHistoryController.monthNames[month - 1],
+                    icon: Icons.date_range_outlined,
+                    onTap: () => _pickMonth(context, year),
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                // ── زر التحديث ──
+                SizedBox(
+                  width: 42.w,
+                  child: IconButton(
+                    onPressed: controller.load,
+                    icon: const Icon(Icons.refresh),
+                    color: AppColors.primaryColor,
+                    tooltip: 'refresh'.tr,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: 8.w),
-            // ── الشهر ──
-            Expanded(
-              flex: 2,
-              child: _PickerButton(
-                label: AttendanceHistoryController.monthNames[month - 1],
-                icon: Icons.date_range_outlined,
-                onTap: () => _pickMonth(context, year),
-              ),
-            ),
-            SizedBox(width: 8.w),
-            // ── زر التحديث ──
-            SizedBox(
-              width: 42.w,
-              child: IconButton(
-              onPressed: controller.load,
-              icon: const Icon(Icons.refresh),
-              color: AppColors.primaryColor,
-              tooltip: 'refresh'.tr,
-            ),
+            SizedBox(height: 8.h),
+            // ── فلتر مدى الأيام (من / إلى) ──
+            Row(
+              children: [
+                Expanded(
+                  child: _PickerButton(
+                    label: isCustom
+                        ? '${_fmtDate(controller.customFrom.value!)} → ${_fmtDate(controller.customTo.value!)}'
+                        : 'filterByDateRange'.tr,
+                    icon: Icons.filter_alt_outlined,
+                    onTap: () => _pickDateRange(context),
+                  ),
+                ),
+                if (isCustom) ...[
+                  SizedBox(width: 8.w),
+                  SizedBox(
+                    width: 42.w,
+                    child: IconButton(
+                      onPressed: controller.clearDateRange,
+                      icon: const Icon(Icons.clear),
+                      color: Colors.red.shade400,
+                      tooltip: 'clearDateFilter'.tr,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         );
       }),
     );
+  }
+
+  static String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDateRange(BuildContext context) async {
+    final now = DateTime.now();
+    final initialRange = controller.isCustomRange
+        ? DateTimeRange(
+            start: controller.customFrom.value!,
+            end: controller.customTo.value!,
+          )
+        : null;
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      initialDateRange: initialRange,
+      helpText: 'filterByDateRange'.tr,
+      saveText: 'confirm'.tr,
+    );
+    if (picked != null) {
+      controller.applyDateRange(picked.start, picked.end);
+    }
   }
 
   void _pickYear(BuildContext context) {

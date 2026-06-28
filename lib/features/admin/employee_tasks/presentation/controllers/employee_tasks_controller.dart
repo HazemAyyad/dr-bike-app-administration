@@ -609,6 +609,9 @@ class EmployeeTasksController extends GetxController {
   /// Parsed from last successful proof upload (subtask auto-complete flags).
   Map<String, dynamic>? lastProofUploadMeta;
 
+  /// Parsed from last successful subtask reject response (auto-submit flags).
+  Map<String, dynamic>? lastRejectResponseMeta;
+
   static bool metaTruthy(dynamic v) =>
       v == true || v == 1 || v == '1' || v == 'true';
 
@@ -740,7 +743,10 @@ class EmployeeTasksController extends GetxController {
   }) async {
     final data = employeeTaskService.taskDetails.value;
     if (data == null) return false;
-    if (data.subTasks.any((s) => s.status != 'completed')) return false;
+    if (data.subTasks
+        .any((s) => s.status != 'completed' && s.status != 'rejected')) {
+      return false;
+    }
     if (data.status == 'waiting_review' ||
         data.status == 'completed' ||
         data.status == 'canceled') {
@@ -823,6 +829,45 @@ class EmployeeTasksController extends GetxController {
       );
     } on Failure catch (f) {
       Get.snackbar('error'.tr, f.errMessage);
+      return false;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  /// Employee declines to execute a subtask (with a reason).
+  /// A rejected subtask does NOT block submitting the parent task.
+  Future<bool> rejectSubtask({
+    required int subTaskId,
+    required String reason,
+    required String mainTaskId,
+    String? occurrenceId,
+  }) async {
+    final occ = occurrenceId ?? lastLoadedOccurrenceId;
+    final isOccurrence = occ != null && occ.isNotEmpty;
+
+    isLoading(true);
+    try {
+      final res = await _taskDs.rejectSubtask(
+        subTaskId: subTaskId,
+        reason: reason,
+        isOccurrence: isOccurrence,
+      );
+      if (res['status'] == 'success') {
+        await getTaskDetails(
+          taskId: mainTaskId,
+          occurrenceId: occ,
+          showFullScreenLoader: false,
+        );
+        _refreshEmployeeHomeAfterTaskChange();
+        update(['taskDetails', 'subtasks']);
+        lastRejectResponseMeta = res;
+        return true;
+      }
+      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
       return false;
     } catch (e) {
       Get.snackbar('error'.tr, e.toString());
@@ -1403,8 +1448,11 @@ class EmployeeTasksController extends GetxController {
 
   int subtaskProgress(TaskDetailsModel data) {
     if (data.subTasks.isEmpty) return data.progress;
-    final done = data.subTasks.where((s) => s.status == 'completed').length;
-    return ((done / data.subTasks.length) * 100).round();
+    // Declined subtasks are considered resolved so progress can reach 100%.
+    final resolved = data.subTasks
+        .where((s) => s.status == 'completed' || s.status == 'rejected')
+        .length;
+    return ((resolved / data.subTasks.length) * 100).round();
   }
 
   @override

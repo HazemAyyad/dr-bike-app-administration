@@ -225,6 +225,7 @@ class SalesOrderHandoverModel {
   final String? carrierOfficeName;
   final String? carrierVehicleNumber;
   final String? shiplyParcelCode;
+  final String? shiplyQrCode;
   final String? handedOverAt;
   final String? deliveredAt;
 
@@ -238,6 +239,7 @@ class SalesOrderHandoverModel {
     this.carrierOfficeName,
     this.carrierVehicleNumber,
     this.shiplyParcelCode,
+    this.shiplyQrCode,
     this.handedOverAt,
     this.deliveredAt,
   });
@@ -253,6 +255,7 @@ class SalesOrderHandoverModel {
       carrierOfficeName: json['carrier_office_name'] as String?,
       carrierVehicleNumber: json['carrier_vehicle_number'] as String?,
       shiplyParcelCode: json['shiply_parcel_code'] as String?,
+      shiplyQrCode: json['shiply_qr_code'] as String?,
       handedOverAt: json['handed_over_at'] as String?,
       deliveredAt: json['delivered_at'] as String?,
     );

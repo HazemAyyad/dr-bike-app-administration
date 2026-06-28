@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../sales/presentation/controllers/sales_controller.dart';
+import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../../sales/presentation/widgets/new_instant_sale/instant_sale_picker_partner_bar.dart';
 import '../controllers/sales_orders_controller.dart';
 
@@ -285,8 +286,8 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
         false;
 
     if (!ok) return;
-    final qty = int.tryParse(qtyController.text.trim()) ?? 1;
-    final price = double.tryParse(priceController.text.trim()) ?? 0;
+    final qty = SalesAmountFormat.parse(qtyController.text).round();
+    final price = SalesAmountFormat.parse(priceController.text);
     if (qty <= 0 || price <= 0) return;
 
     controller.addCartItem(

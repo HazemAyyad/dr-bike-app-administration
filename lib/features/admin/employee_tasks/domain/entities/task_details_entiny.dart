@@ -87,6 +87,7 @@ class SubTaskEntity {
   final String name;
   final String description;
   final String status;
+  final String? rejectionReason;
   final List<String>? adminImg;
   final List<String>? adminVideos;
   final String? adminAudio;
@@ -102,6 +103,7 @@ class SubTaskEntity {
     required this.name,
     required this.description,
     required this.status,
+    this.rejectionReason,
     this.adminImg,
     this.adminVideos,
     this.adminAudio,
@@ -112,6 +114,9 @@ class SubTaskEntity {
     this.completedByEmployeeId,
     this.completedByName,
   });
+
+  bool get isRejected => status == 'rejected';
+  bool get isCompleted => status == 'completed';
 }
 
 class ImagesPathInfoEntity {

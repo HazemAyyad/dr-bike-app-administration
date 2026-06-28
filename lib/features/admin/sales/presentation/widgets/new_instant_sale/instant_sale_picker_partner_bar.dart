@@ -148,6 +148,27 @@ class _PickerPartnerSheet extends StatelessWidget {
                   itemAsString: (item) => item.name,
                   compareFn: (a, b) => a.id == b.id,
                 ),
+                SizedBox(height: 6.h),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () => _showQuickAddPartnerDialog(
+                      context,
+                      isCustomer: isCustomer,
+                    ),
+                    icon: Icon(Icons.person_add_alt_1, size: 18.sp),
+                    label: Text(
+                      isCustomer
+                          ? 'quickAddCustomer'.tr
+                          : 'quickAddSeller'.tr,
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primaryColor,
+                      padding: EdgeInsets.symmetric(horizontal: 6.w),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ),
                 if (selected != null) ...[
                   SizedBox(height: 8.h),
                   Align(
@@ -191,6 +212,134 @@ class _PickerPartnerSheet extends StatelessWidget {
             );
           }),
         ),
+      ),
+    );
+  }
+}
+
+/// نافذة إضافة سريعة لزبون/تاجر — اسم (إلزامي) ورقم هاتف (اختياري).
+Future<void> _showQuickAddPartnerDialog(
+  BuildContext context, {
+  required bool isCustomer,
+}) {
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => _QuickAddPartnerDialog(isCustomer: isCustomer),
+  );
+}
+
+class _QuickAddPartnerDialog extends StatefulWidget {
+  const _QuickAddPartnerDialog({required this.isCustomer});
+
+  final bool isCustomer;
+
+  @override
+  State<_QuickAddPartnerDialog> createState() => _QuickAddPartnerDialogState();
+}
+
+class _QuickAddPartnerDialogState extends State<_QuickAddPartnerDialog> {
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<SalesController>();
+    final isCustomer = widget.isCustomer;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        title: Text(
+          isCustomer ? 'quickAddCustomer'.tr : 'quickAddSeller'.tr,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryColor,
+          ),
+        ),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: isCustomer ? 'customerName'.tr : 'sellerName1'.tr,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'requiredField'.tr
+                    : null,
+              ),
+              SizedBox(height: 12.h),
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: '${'customerPhoneNumber'.tr} (${'optional'.tr})',
+                  hintText: 'phoneNumberExample'.tr,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('cancel'.tr),
+          ),
+          Obx(
+            () => ElevatedButton(
+              onPressed: controller.pickerQuickAddLoading.value
+                  ? null
+                  : () async {
+                      if (!(_formKey.currentState?.validate() ?? false)) {
+                        return;
+                      }
+                      final ok = await controller.quickAddPartner(
+                        name: _nameController.text,
+                        phone: _phoneController.text,
+                        isCustomer: isCustomer,
+                      );
+                      if (ok && context.mounted) Navigator.pop(context);
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: controller.pickerQuickAddLoading.value
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text('add'.tr),
+            ),
+          ),
+        ],
       ),
     );
   }

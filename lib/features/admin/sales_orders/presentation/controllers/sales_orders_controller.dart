@@ -674,6 +674,19 @@ class SalesOrdersController extends GetxController {
     await _applyShiplyDeliveryFeeQuote(villageId, parcelPrice: parcelPrice);
   }
 
+  /// اختيار المدينة والقرية معاً (من مربع البحث الموحّد).
+  Future<void> selectShiplyCityAndVillage({
+    required int cityId,
+    int? villageId,
+    double parcelPrice = 0,
+  }) async {
+    selectedShiplyCityId.value = cityId;
+    selectedShiplyVillageId.value = villageId;
+    shiplyQuotedDeliveryFee.value = null;
+    if (villageId == null) return;
+    await _applyShiplyDeliveryFeeQuote(villageId, parcelPrice: parcelPrice);
+  }
+
   Future<void> _applyShiplyDeliveryFeeQuote(
     int villageId, {
     double parcelPrice = 0,
@@ -1348,6 +1361,15 @@ class SalesOrdersController extends GetxController {
         trackingController.text.trim().isNotEmpty) {
       body['tracking_number'] = trackingController.text.trim();
     }
+
+    debugPrint('[SHIPLY-HANDOVER] orderId=$orderId '
+        'companyId=${selectedDeliveryCompanyId.value} '
+        'companyCode=$_selectedCompanyCode isShiply=$isSelectedCompanyShiply');
+    debugPrint('[SHIPLY-HANDOVER]   shiplyCityId=${selectedShiplyCityId.value} '
+        'villageId=${selectedShiplyVillageId.value} '
+        'deliveryFee=${manualDeliveryFee.value} '
+        'quotedFee=${shiplyQuotedDeliveryFee.value}');
+    debugPrint('[SHIPLY-HANDOVER]   requestBody=$body');
 
     final showShiplyWait = isSelectedCompanyShiply;
     if (showShiplyWait) {

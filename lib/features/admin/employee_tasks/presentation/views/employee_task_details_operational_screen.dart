@@ -454,12 +454,14 @@ class OperationalChecklist extends StatelessWidget {
     this.interactive = false,
     this.compact = false,
     this.onSubtaskTap,
+    this.onSubtaskReject,
   }) : super(key: key);
 
   final TaskDetailsModel data;
   final bool interactive;
   final bool compact;
   final void Function(SubTaskEntity sub)? onSubtaskTap;
+  final void Function(SubTaskEntity sub)? onSubtaskReject;
 
   @override
   Widget build(BuildContext context) {
@@ -472,14 +474,18 @@ class OperationalChecklist extends StatelessWidget {
     return Column(
       children: data.subTasks.map((sub) {
         final done = sub.status == 'completed';
+        final rejected = sub.status == 'rejected';
         final needsProof = sub.isForcedToUploadImg;
+        final canReject = interactive && !done && !rejected;
         final hasAdminMedia = (sub.adminImg?.isNotEmpty ?? false) ||
             (sub.adminVideos?.isNotEmpty ?? false) ||
             hasPlayableAudio(sub.adminAudio);
         final hasEmployeeProof = (sub.employeeImg?.isNotEmpty ?? false) ||
             (sub.employeeVideos?.isNotEmpty ?? false);
         return GestureDetector(
-          onTap: interactive && !done ? () => onSubtaskTap?.call(sub) : null,
+          onTap: interactive && !done && !rejected
+              ? () => onSubtaskTap?.call(sub)
+              : null,
           child: Container(
             margin: EdgeInsets.only(bottom: compact ? 4.h : 8.h),
             padding: EdgeInsets.symmetric(
@@ -487,23 +493,35 @@ class OperationalChecklist extends StatelessWidget {
               vertical: compact ? 6.h : 10.h,
             ),
             decoration: BoxDecoration(
-              color: AppColors.operationalSurface,
+              color: rejected
+                  ? AppColors.redColor.withValues(alpha: 0.06)
+                  : AppColors.operationalSurface,
               borderRadius: BorderRadius.circular(compact ? 8.r : 14.r),
-              border: needsProof && !done
+              border: rejected
                   ? Border.all(
-                      color:
-                          AppColors.operationalPurple.withValues(alpha: 0.35),
+                      color: AppColors.redColor.withValues(alpha: 0.35),
                     )
-                  : null,
+                  : needsProof && !done
+                      ? Border.all(
+                          color: AppColors.operationalPurple
+                              .withValues(alpha: 0.35),
+                        )
+                      : null,
             ),
             child: Row(
               children: [
                 Icon(
-                  done ? Icons.check_circle : Icons.radio_button_unchecked,
+                  rejected
+                      ? Icons.cancel
+                      : done
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
                   size: compact ? 16.sp : 22.sp,
-                  color: done
-                      ? AppColors.operationalPurple
-                      : AppColors.customGreyColor5,
+                  color: rejected
+                      ? AppColors.redColor
+                      : done
+                          ? AppColors.operationalPurple
+                          : AppColors.customGreyColor5,
                 ),
                 SizedBox(width: compact ? 8.w : 12.w),
                 Expanded(
@@ -515,12 +533,39 @@ class OperationalChecklist extends StatelessWidget {
                         style: TextStyle(
                           fontSize: compact ? 11.5.sp : 14.sp,
                           fontWeight: FontWeight.w600,
-                          decoration: done ? TextDecoration.lineThrough : null,
-                          color: done
-                              ? AppColors.customGreyColor5
-                              : AppColors.operationalNavy,
+                          decoration: done || rejected
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: rejected
+                              ? AppColors.redColor
+                              : done
+                                  ? AppColors.customGreyColor5
+                                  : AppColors.operationalNavy,
                         ),
                       ),
+                      if (rejected) ...[
+                        SizedBox(height: 2.h),
+                        Text(
+                          'subtaskDeclinedLabel'.tr,
+                          style: TextStyle(
+                            fontSize: compact ? 9.sp : 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.redColor,
+                          ),
+                        ),
+                        if (sub.rejectionReason != null &&
+                            sub.rejectionReason!.trim().isNotEmpty) ...[
+                          SizedBox(height: 2.h),
+                          Text(
+                            '${'reasonLabel'.tr}: ${sub.rejectionReason}',
+                            style: TextStyle(
+                              fontSize: compact ? 9.sp : 10.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.redColor,
+                            ),
+                          ),
+                        ],
+                      ],
                       if (done &&
                           sub.completedByName != null &&
                           sub.completedByName!.isNotEmpty) ...[
@@ -536,7 +581,7 @@ class OperationalChecklist extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (needsProof && !done && !hasEmployeeProof) ...[
+                      if (needsProof && !done && !rejected && !hasEmployeeProof) ...[
                         SizedBox(height: 2.h),
                         Text(
                           ProofMediaType.subtaskRequiredHintKey(sub.proofMediaType)
@@ -614,7 +659,7 @@ class OperationalChecklist extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (needsProof) ...[
+                if (needsProof && !rejected) ...[
                   SizedBox(width: 6.w),
                   Tooltip(
                     message: done && hasEmployeeProof
@@ -629,6 +674,35 @@ class OperationalChecklist extends StatelessWidget {
                       color: done && hasEmployeeProof
                           ? AppColors.customGreen1
                           : AppColors.operationalPurple,
+                    ),
+                  ),
+                ],
+                if (canReject && onSubtaskReject != null) ...[
+                  SizedBox(width: 6.w),
+                  Tooltip(
+                    message: 'declineSubtask'.tr,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onSubtaskReject?.call(sub),
+                        borderRadius: BorderRadius.circular(8.r),
+                        child: Container(
+                          width: compact ? 26.w : 32.w,
+                          height: compact ? 26.w : 32.w,
+                          decoration: BoxDecoration(
+                            color: AppColors.redColor.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: AppColors.redColor.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: compact ? 16.sp : 20.sp,
+                            color: AppColors.redColor,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

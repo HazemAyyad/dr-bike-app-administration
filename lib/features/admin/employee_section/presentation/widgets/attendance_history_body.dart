@@ -69,9 +69,19 @@ class AttendanceHistoryBody extends StatelessWidget {
   final Future<void> Function(EmployeeAttendanceDay day)? onEditDay;
 
   List<EmployeeAttendanceDay> get _logDays {
-    if (!showTodaySummary) return days;
-    final key = _todayDateKey();
-    return days.where((d) => d.date != key).toList();
+    final list = showTodaySummary
+        ? days.where((d) => d.date != _todayDateKey()).toList()
+        : List<EmployeeAttendanceDay>.from(days);
+    // من الأحدث إلى الأقدم
+    list.sort((a, b) => b.date.compareTo(a.date));
+    return list;
+  }
+
+  /// ملخص الأسبوع — يُحسب من صفوف الأيام المحمّلة (آخر 7 أيام ضمن البيانات).
+  List<Widget> _buildWeeklySection() {
+    final agg = _WeeklyAggregate.fromDays(days);
+    if (agg == null) return const [];
+    return [_WeeklySummarySection(aggregate: agg)];
   }
 
   @override
@@ -90,6 +100,7 @@ class AttendanceHistoryBody extends StatelessWidget {
           ),
         if (monthlySummary != null)
           _MonthlySummarySection(summary: monthlySummary!),
+        ..._buildWeeklySection(),
         if (_logDays.isNotEmpty) ...[
           Padding(
             padding: EdgeInsets.fromLTRB(4.w, 4.h, 4.w, 8.h),
@@ -368,91 +379,252 @@ class _MonthlySummarySection extends StatelessWidget {
         ),
     ];
 
+    return _CollapsibleSummaryCard(
+      icon: Icons.insights_rounded,
+      title: 'monthlySummaryTitle'.tr,
+      rangeText: (summary.rangeFrom != null && summary.rangeTo != null)
+          ? '${summary.rangeFrom} → ${summary.rangeTo}'
+          : null,
+      stats: stats,
+      footer: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          color: AppColors.operationalSurface,
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.beach_access_outlined,
+              size: 16.sp,
+              color: AppColors.customGreyColor5,
+            ),
+            SizedBox(width: 6.w),
+            Expanded(
+              child: Text(
+                '${'weeklyDaysOffTitle'.tr}: ${_weeklyDaysOffLabel(summary.weeklyDaysOff)}',
+                style: TextStyle(
+                  fontSize: 10.5.sp,
+                  color: isDark ? Colors.white70 : AppColors.customGreyColor5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// تجميعة بيانات الأسبوع المحسوبة محليًا من صفوف الأيام.
+class _WeeklyAggregate {
+  const _WeeklyAggregate({
+    required this.from,
+    required this.to,
+    required this.workedMinutes,
+    required this.requiredMinutes,
+    required this.overtimeMinutes,
+    required this.workingDays,
+    required this.totalSalary,
+  });
+
+  final String from;
+  final String to;
+  final int workedMinutes;
+  final int requiredMinutes;
+  final int overtimeMinutes;
+  final int workingDays;
+  final double totalSalary;
+
+  /// يحسب ملخص آخر 7 أيام ضمن البيانات المحمّلة (اعتمادًا على أحدث يوم موجود).
+  static _WeeklyAggregate? fromDays(List<EmployeeAttendanceDay> days) {
+    if (days.isEmpty) return null;
+
+    DateTime? parse(String s) {
+      try {
+        return DateTime.parse(s);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    DateTime? anchor;
+    for (final d in days) {
+      final dt = parse(d.date);
+      if (dt == null) continue;
+      if (anchor == null || dt.isAfter(anchor)) anchor = dt;
+    }
+    if (anchor == null) return null;
+
+    final weekStart = anchor.subtract(const Duration(days: 6));
+
+    var workedMinutes = 0;
+    var requiredMinutes = 0;
+    var workingDays = 0;
+    var totalSalary = 0.0;
+
+    for (final d in days) {
+      final dt = parse(d.date);
+      if (dt == null) continue;
+      if (dt.isBefore(weekStart) || dt.isAfter(anchor)) continue;
+      workedMinutes += d.workedMinutes;
+      requiredMinutes += d.expectedWorkMinutes;
+      workingDays += 1;
+      final s = double.tryParse(d.totalSalary ?? '');
+      if (s != null) totalSalary += s;
+    }
+
+    if (workingDays == 0) return null;
+
+    String fmt(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+    return _WeeklyAggregate(
+      from: fmt(weekStart),
+      to: fmt(anchor),
+      workedMinutes: workedMinutes,
+      requiredMinutes: requiredMinutes,
+      overtimeMinutes:
+          workedMinutes > requiredMinutes ? workedMinutes - requiredMinutes : 0,
+      workingDays: workingDays,
+      totalSalary: totalSalary,
+    );
+  }
+}
+
+class _WeeklySummarySection extends StatelessWidget {
+  const _WeeklySummarySection({required this.aggregate});
+
+  final _WeeklyAggregate aggregate;
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = <_SummaryStat>[
+      _SummaryStat(
+        icon: Icons.timelapse_rounded,
+        label: 'workedHoursLabel'.tr,
+        value: AttendanceHistoryController.formatMinutes(
+          aggregate.workedMinutes,
+        ),
+        color: AppColors.operationalPurple,
+      ),
+      _SummaryStat(
+        icon: Icons.flag_outlined,
+        label: 'requiredHoursLabel'.tr,
+        value: AttendanceHistoryController.formatMinutes(
+          aggregate.requiredMinutes,
+        ),
+        color: AppColors.operationalNavy,
+      ),
+      _SummaryStat(
+        icon: Icons.more_time_rounded,
+        label: 'overtimeHoursLabel'.tr,
+        value: AttendanceHistoryController.formatMinutes(
+          aggregate.overtimeMinutes,
+        ),
+        color: AppColors.customOrange3,
+      ),
+      _SummaryStat(
+        icon: Icons.calendar_view_week_outlined,
+        label: 'weeklyWorkingDaysLabel'.tr,
+        value: aggregate.workingDays.toString(),
+        color: AppColors.customGreen1,
+      ),
+      if (aggregate.totalSalary > 0)
+        _SummaryStat(
+          icon: Icons.payments_outlined,
+          label: 'totalSalaryLabel'.tr,
+          value: aggregate.totalSalary.toStringAsFixed(2),
+          color: const Color(0xFF059669),
+        ),
+    ];
+
+    return _CollapsibleSummaryCard(
+      icon: Icons.calendar_view_week_rounded,
+      title: 'weeklySummaryTitle'.tr,
+      rangeText: '${aggregate.from} → ${aggregate.to}',
+      stats: stats,
+    );
+  }
+}
+
+/// بطاقة ملخص قابلة للطي (مغلقة افتراضيًا) — تُستخدم للشهري والأسبوعي.
+class _CollapsibleSummaryCard extends StatelessWidget {
+  const _CollapsibleSummaryCard({
+    required this.icon,
+    required this.title,
+    required this.stats,
+    this.rangeText,
+    this.footer,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<_SummaryStat> stats;
+  final String? rangeText;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
         color: _cardBg(isDark),
         borderRadius: BorderRadius.circular(14.r),
         border: Border.fromBorderSide(_cardBorder(isDark)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.insights_rounded,
-                size: 18.sp,
-                color: AppColors.operationalPurple,
-              ),
-              SizedBox(width: 6.w),
-              Text(
-                'monthlySummaryTitle'.tr,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppColors.operationalNavy,
-                ),
-              ),
-            ],
-          ),
-          if (summary.rangeFrom != null && summary.rangeTo != null) ...[
-            SizedBox(height: 4.h),
-            Text(
-              '${summary.rangeFrom} → ${summary.rangeTo}',
-              style: TextStyle(
-                fontSize: 10.sp,
-                color: AppColors.customGreyColor5,
-              ),
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: false,
+          tilePadding: EdgeInsets.symmetric(horizontal: 12.w),
+          childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          leading: Icon(icon, size: 20.sp, color: AppColors.operationalPurple),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : AppColors.operationalNavy,
             ),
-          ],
-          SizedBox(height: 10.h),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final w = (constraints.maxWidth - 6.w) / 2;
-              return Wrap(
-                spacing: 6.w,
-                runSpacing: 6.h,
-                children: stats
-                    .map(
-                      (s) => SizedBox(
-                        width: w,
-                        child: _SummaryStatCard(stat: s, isDark: isDark),
-                      ),
-                    )
-                    .toList(),
-              );
-            },
           ),
-          SizedBox(height: 8.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: AppColors.operationalSurface,
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.beach_access_outlined,
-                  size: 16.sp,
-                  color: AppColors.customGreyColor5,
-                ),
-                SizedBox(width: 6.w),
-                Expanded(
-                  child: Text(
-                    '${'weeklyDaysOffTitle'.tr}: ${_weeklyDaysOffLabel(summary.weeklyDaysOff)}',
-                    style: TextStyle(
-                      fontSize: 10.5.sp,
-                      color: isDark ? Colors.white70 : AppColors.customGreyColor5,
-                    ),
+          subtitle: rangeText == null
+              ? null
+              : Text(
+                  rangeText!,
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    color: AppColors.customGreyColor5,
                   ),
                 ),
-              ],
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final w = (constraints.maxWidth - 6.w) / 2;
+                return Wrap(
+                  spacing: 6.w,
+                  runSpacing: 6.h,
+                  children: stats
+                      .map(
+                        (s) => SizedBox(
+                          width: w,
+                          child: _SummaryStatCard(stat: s, isDark: isDark),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
             ),
-          ),
-        ],
+            if (footer != null) ...[
+              SizedBox(height: 8.h),
+              footer!,
+            ],
+          ],
+        ),
       ),
     );
   }

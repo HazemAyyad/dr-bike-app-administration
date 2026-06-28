@@ -11,9 +11,13 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/phone_format_helper.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../general_data_list/data/datasources/general_data_list_datasource.dart';
+import '../../../general_data_list/domain/entity/add_person_entity.dart';
 import '../../../stock/data/models/offer_package_model.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
@@ -1946,6 +1950,125 @@ class SalesController extends GetxController
     _clearPaymentBuyer();
     await refreshCartPricesForPartner();
     bumpCartRevision();
+  }
+
+  final RxBool pickerQuickAddLoading = false.obs;
+
+  /// إضافة سريعة لزبون/تاجر من شاشة اختيار الطرف، ثم اختياره مباشرة.
+  /// تُعيد true عند النجاح.
+  Future<bool> quickAddPartner({
+    required String name,
+    required String phone,
+    required bool isCustomer,
+  }) async {
+    final trimmedName = name.trim();
+    if (trimmedName.isEmpty) return false;
+
+    final formattedPhone =
+        phone.trim().isEmpty ? '' : PhoneFormatHelper.forApi(phone);
+
+    pickerQuickAddLoading(true);
+    try {
+      final datasource = Get.find<GeneralDataListDatasource>();
+      final response = await datasource.addPerson(
+        data: AddPersonEntity(
+          isEdit: false,
+          name: trimmedName,
+          personType: isCustomer ? 'customer' : 'seller',
+          customerCategory: isCustomer ? 'retail' : 'wholesale',
+          phone: formattedPhone,
+          subPhone: '',
+          address: '',
+          jobTitle: '',
+          facebookUsername: '',
+          facebookLink: '',
+          instagramUsername: '',
+          instagramLink: '',
+          relatedPeople: '',
+          relativePhone: '',
+          relativeJobTitle: '',
+          workAddress: '',
+          iDImage: const [],
+          licenseImage: const [],
+        ),
+        customerId: '',
+        sellerId: '',
+      );
+
+      if (response is Map && response['status'] == 'success') {
+        final newId = isCustomer
+            ? (response['customer_id'] as num?)?.toInt()
+            : (response['seller_id'] as num?)?.toInt();
+        if (newId == null) {
+          _showQuickAddError('tryAgain'.tr);
+          return false;
+        }
+
+        final model = SellerModel(
+          id: newId,
+          name: trimmedName,
+          phone: formattedPhone,
+        );
+        pickerPartnerIsCustomer.value = isCustomer;
+        if (isCustomer) {
+          pickerCustomersList.insert(0, model);
+        } else {
+          pickerSellersList.insert(0, model);
+        }
+        await onPickerPartnerSelected(model);
+
+        Get.snackbar(
+          'success'.tr,
+          response['message']?.toString() ?? 'success'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+        return true;
+      }
+
+      _showQuickAddError(_extractQuickAddError(response));
+      return false;
+    } on ServerException catch (e) {
+      _showQuickAddError(e.errorModel.errorMessage);
+      return false;
+    } catch (_) {
+      _showQuickAddError('tryAgain'.tr);
+      return false;
+    } finally {
+      pickerQuickAddLoading(false);
+    }
+  }
+
+  String _extractQuickAddError(dynamic response) {
+    if (response is Map) {
+      final errors = response['errors'];
+      if (errors is Map) {
+        final buffer = StringBuffer();
+        errors.forEach((key, value) {
+          if (value is List && value.isNotEmpty) {
+            buffer.writeln('- ${value.first}');
+          }
+        });
+        final text = buffer.toString().trim();
+        if (text.isNotEmpty) return text;
+      }
+      final message = response['message'];
+      if (message is String && message.isNotEmpty) return message;
+    }
+    return 'tryAgain'.tr;
+  }
+
+  void _showQuickAddError(String message) {
+    Get.snackbar(
+      'error'.tr,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 3),
+    );
   }
 
   void syncPickerPartnerFromPayment() {

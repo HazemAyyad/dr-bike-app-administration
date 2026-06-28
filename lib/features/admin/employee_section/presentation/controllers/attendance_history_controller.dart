@@ -28,6 +28,12 @@ class AttendanceHistoryController extends GetxController {
   final Rx<int> selectedYear  = DateTime.now().year.obs;
   final Rx<int> selectedMonth = DateTime.now().month.obs;
 
+  // فلتر مدى الأيام (من / إلى) — يلغي وضع الشهر عند تفعيله
+  final Rxn<DateTime> customFrom = Rxn<DateTime>();
+  final Rxn<DateTime> customTo = Rxn<DateTime>();
+
+  bool get isCustomRange => customFrom.value != null && customTo.value != null;
+
   Timer? _liveRefreshTimer;
 
   String get _todayDateKey {
@@ -36,7 +42,7 @@ class AttendanceHistoryController extends GetxController {
   }
 
   bool get _shouldLiveRefresh {
-    if (!isViewingCurrentMonth || employeeId.isEmpty) return false;
+    if (!includesToday || employeeId.isEmpty) return false;
     final data = result.value;
     if (data == null) return false;
     if (data.employee.currentlyInToday) return true;
@@ -69,9 +75,18 @@ class AttendanceHistoryController extends GetxController {
     try {
       if (!silent) isLoading.value = true;
 
-      final from = DateTime(selectedYear.value, selectedMonth.value, 1);
-      // آخر يوم في الشهر
-      final to   = DateTime(selectedYear.value, selectedMonth.value + 1, 0, 23, 59, 59);
+      final DateTime from;
+      final DateTime to;
+      if (isCustomRange) {
+        final f = customFrom.value!;
+        final t = customTo.value!;
+        from = DateTime(f.year, f.month, f.day);
+        to = DateTime(t.year, t.month, t.day, 23, 59, 59);
+      } else {
+        from = DateTime(selectedYear.value, selectedMonth.value, 1);
+        // آخر يوم في الشهر
+        to = DateTime(selectedYear.value, selectedMonth.value + 1, 0, 23, 59, 59);
+      }
 
       result.value = await getHistory.call(
         employeeId: employeeId,
@@ -94,8 +109,21 @@ class AttendanceHistoryController extends GetxController {
     return selectedYear.value == now.year && selectedMonth.value == now.month;
   }
 
+  /// هل الفترة المعروضة (شهر أو مدى مخصص) تشمل اليوم؟
+  bool get includesToday {
+    final now = DateTime.now();
+    if (isCustomRange) {
+      final f = customFrom.value!;
+      final t = customTo.value!;
+      final start = DateTime(f.year, f.month, f.day);
+      final end = DateTime(t.year, t.month, t.day, 23, 59, 59);
+      return !now.isBefore(start) && !now.isAfter(end);
+    }
+    return isViewingCurrentMonth;
+  }
+
   bool get canManualCheckoutToday {
-    if (!isViewingCurrentMonth || employeeId.isEmpty) return false;
+    if (!includesToday || employeeId.isEmpty) return false;
     final data = result.value;
     if (data == null) return false;
     if (data.employee.currentlyInToday) return true;
@@ -194,10 +222,33 @@ class AttendanceHistoryController extends GetxController {
     }
   }
 
-  /// تغيير الشهر والسنة وإعادة التحميل
+  /// تغيير الشهر والسنة وإعادة التحميل (يلغي فلتر المدى المخصص)
   void changeMonth(int year, int month) {
+    customFrom.value = null;
+    customTo.value = null;
     selectedYear.value  = year;
     selectedMonth.value = month;
+    load();
+  }
+
+  /// تطبيق فلتر مدى الأيام (من / إلى) وإعادة التحميل
+  void applyDateRange(DateTime from, DateTime to) {
+    // ضمان أن البداية قبل النهاية
+    if (from.isAfter(to)) {
+      final tmp = from;
+      from = to;
+      to = tmp;
+    }
+    customFrom.value = DateTime(from.year, from.month, from.day);
+    customTo.value = DateTime(to.year, to.month, to.day);
+    load();
+  }
+
+  /// إلغاء فلتر المدى والعودة لعرض الشهر المختار
+  void clearDateRange() {
+    if (!isCustomRange) return;
+    customFrom.value = null;
+    customTo.value = null;
     load();
   }
 

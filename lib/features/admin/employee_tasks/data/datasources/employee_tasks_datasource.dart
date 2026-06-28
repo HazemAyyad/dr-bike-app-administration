@@ -327,4 +327,35 @@ class EmployeeTasksDatasource {
       );
     }
   }
+
+  /// Employee declines to execute a subtask (with a reason).
+  /// Does not affect the ability to submit the parent task.
+  Future<Map<String, dynamic>> rejectSubtask({
+    required int subTaskId,
+    required String reason,
+    bool isOccurrence = false,
+  }) async {
+    try {
+      final endpoint = isOccurrence
+          ? EndPoints.changeSubEmployeeOccurrenceTaskToRejected
+          : EndPoints.changeSubEmployeeTaskToRejected;
+      final response = await api.post(
+        endpoint,
+        data: {
+          'sub_task_id': subTaskId,
+          'rejection_reason': reason,
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data?['data'] ?? {},
+        ),
+      );
+    }
+  }
 }

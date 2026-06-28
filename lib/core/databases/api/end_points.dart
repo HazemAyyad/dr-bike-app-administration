@@ -35,6 +35,10 @@ class EndPoints {
       'change/sub/employee/task/to/completed';
   static const String changeSubEmployeeOccurrenceTaskToCompleted =
       'change/sub/employee/occurrence/task/to/completed';
+  static const String changeSubEmployeeTaskToRejected =
+      'change/sub/employee/task/to/rejected';
+  static const String changeSubEmployeeOccurrenceTaskToRejected =
+      'change/sub/employee/occurrence/task/to/rejected';
 
   static const String addOvertimeOrder = 'employee/add/overtime/order';
   static const String addLoanOrder = 'employee/add/loan/order';

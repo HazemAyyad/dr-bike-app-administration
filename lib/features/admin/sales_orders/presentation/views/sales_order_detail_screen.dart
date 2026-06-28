@@ -16,6 +16,7 @@ import '../widgets/sales_order_notice.dart';
 import '../widgets/sales_order_shiply_address_dialog.dart';
 import '../widgets/sales_order_shiply_customer_dialog.dart';
 import '../widgets/sales_order_shiply_phone_dialog.dart';
+import '../widgets/sales_order_shiply_qr.dart';
 import '../widgets/sales_order_shiply_sandbox_badge.dart';
 import '../widgets/sales_order_shiply_timeline.dart';
 import '../widgets/sales_order_status_ui.dart';
@@ -383,6 +384,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   .isNotEmpty)
                 _infoRow(Icons.qr_code_2_outlined,
                     handover.shiplyParcelCode ?? handover.trackingNumber!),
+              if ((handover.shiplyQrCode ?? '').isNotEmpty)
+                SalesOrderShiplyQrTile(code: handover.shiplyQrCode!),
             ],
             if ((handover.handedOverAt ?? '').isNotEmpty)
               _infoRow(Icons.schedule_outlined,
