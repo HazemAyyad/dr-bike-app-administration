@@ -59,7 +59,8 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
         final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
         await payment.getAllCustomersAndSellers();
         sales.syncPickerPartnerFromPayment();
-        if (sales.pickerSelectedPartner.value == null) {
+        if (orders.isEditingOrder &&
+            sales.pickerSelectedPartner.value == null) {
           sales.resolvePartnerFromOrderSnapshot(
             customerId: orders.detail.value?.customerId,
             name: orders.customerNameController.text.trim().isNotEmpty
