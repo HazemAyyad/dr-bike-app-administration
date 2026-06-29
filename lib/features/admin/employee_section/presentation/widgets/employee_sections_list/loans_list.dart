@@ -8,6 +8,7 @@ import '../../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/models/overtime_and_loan_model.dart';
 import '../../controllers/employee_section_controller.dart';
+import '../../utils/overtime_duration_format.dart';
 import '../requests_details.dart';
 
 class LoansList extends GetView<EmployeeSectionController> {
@@ -49,8 +50,7 @@ class LoansList extends GetView<EmployeeSectionController> {
                           barrierDismissible: true,
                           barrierLabel: 'Dismiss',
                           barrierColor: Colors.black.withAlpha(128),
-                          transitionDuration:
-                              const Duration(milliseconds: 300),
+                          transitionDuration: const Duration(milliseconds: 300),
                           pageBuilder: (context, anim1, anim2) {
                             return FullScreenZoomImage(
                               imageUrl: employee.employeeImg,
@@ -59,10 +59,9 @@ class LoansList extends GetView<EmployeeSectionController> {
                         );
                       },
                       child: Container(
-                        height: 80.h,
-                        width: 80.w,
-                        decoration:
-                            const BoxDecoration(shape: BoxShape.circle),
+                        height: 44.w,
+                        width: 44.w,
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         clipBehavior: Clip.antiAlias,
                         child: CachedNetworkImage(
                           cacheManager: CacheManager(
@@ -101,14 +100,14 @@ class LoansList extends GetView<EmployeeSectionController> {
                           color: AppColors.customGreyColor5,
                         ),
                       ),
-                      SizedBox(height: 5.h),
+                      SizedBox(height: 2.h),
                       isOvertime
                           ? Text(
-                              employee.overtimeValue!.isEmpty
-                                  ? '${'overtimeValue'.tr} : ${employee.extraWorkHoursValue ?? ''} '
-                                      '${(int.tryParse(employee.extraWorkHoursValue ?? '0') ?? 0) > 10 ? 'hour'.tr : 'hours'.tr}'
-                                  : '${'overtimeValue'.tr} : ${employee.overtimeValue ?? ''} '
-                                      '${(int.tryParse(employee.overtimeValue ?? '0') ?? 0) > 10 ? 'hour'.tr : 'hours'.tr}',
+                              '${'overtimeValue'.tr}: ${formatOvertimeDecimalHours(
+                                employee.overtimeValue!.isEmpty
+                                    ? employee.extraWorkHoursValue
+                                    : employee.overtimeValue,
+                              )}',
                               style: textStyle.copyWith(
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w400,
@@ -130,25 +129,22 @@ class LoansList extends GetView<EmployeeSectionController> {
             ),
           ),
           Container(
-            width: 60.w,
-            height: 90.h,
+            margin: EdgeInsetsDirectional.only(end: 8.w),
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
             decoration: BoxDecoration(
               color: employee.orderStatus == 'approved'
                   ? AppColors.customGreen1
                   : employee.orderStatus == 'pending'
                       ? AppColors.customOrange
                       : AppColors.redColor,
-              borderRadius: BorderRadiusDirectional.only(
-                topEnd: Radius.circular(4.r),
-                bottomEnd: Radius.circular(4.r),
-              ),
+              borderRadius: BorderRadius.circular(12.r),
             ),
             child: Center(
               child: Text(
                 employee.orderStatus.tr,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontSize: 13.sp,
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),

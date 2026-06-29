@@ -156,7 +156,8 @@ const Map<String, String> ar = {
   'enable': 'تفعيل',
   'select': 'اختيار',
   'deviceUserId': 'معرّف المستخدم على جهاز البصمة',
-  'fingerprintDefaultDeviceRequired': 'حدد الجهاز الافتراضي للبصمة من الإعدادات أولاً.',
+  'fingerprintDefaultDeviceRequired':
+      'حدد الجهاز الافتراضي للبصمة من الإعدادات أولاً.',
   'enabledLabel': 'مفعّل',
   'disabledLabel': 'غير مفعّل',
   'failed': 'فشل',
@@ -344,8 +345,7 @@ const Map<String, String> ar = {
   'swapAssignTargetsTitle': 'تحديد مواقع الاستبدال',
   'swapAssignTargetsHint':
       'كل منتجات المجموعة أ تنتقل لوجهة أ، وكل منتجات المجموعة ب تنتقل لوجهة ب',
-  'swapGroupsBulkHint':
-      'جميع عناصر كل مجموعة تذهب للوجهة الرئيسية المحددة لها',
+  'swapGroupsBulkHint': 'جميع عناصر كل مجموعة تذهب للوجهة الرئيسية المحددة لها',
   'swapGroupADestination': 'وجهة المجموعة أ',
   'swapGroupBDestination': 'وجهة المجموعة ب',
   'swapAssignedDestination': 'موقع مُعيَّن',
@@ -481,6 +481,9 @@ const Map<String, String> ar = {
   // my Orders
   'loanRequests': 'طلبات سلفة',
   'overtimeRequests': 'طلبات اوفرتايم',
+  'overtimeDurationHoursMinutes': '@hours ساعة و@minutes دقيقة',
+  'overtimeDurationHours': '@hours ساعة',
+  'overtimeDurationMinutes': '@minutes دقيقة',
   'creationDate': 'تاريخ انشاء الطلب',
   'status': 'حالة الطلب',
   'completed': 'مكتملة',
@@ -678,7 +681,8 @@ const Map<String, String> ar = {
   'subtaskFinishedBy': 'أنجزها: @name',
   'declineSubtask': 'رفض تنفيذ المهمة الفرعية',
   'declineSubtaskTitle': 'رفض تنفيذ المهمة الفرعية',
-  'declineSubtaskHint': 'اكتب سبب عدم رغبتك في تنفيذ هذه المهمة الفرعية. لن يؤثر ذلك على تسليم المهمة، وسيظهر السبب للإدارة عند المراجعة.',
+  'declineSubtaskHint':
+      'اكتب سبب عدم رغبتك في تنفيذ هذه المهمة الفرعية. لن يؤثر ذلك على تسليم المهمة، وسيظهر السبب للإدارة عند المراجعة.',
   'declineReasonRequired': 'يرجى كتابة سبب الرفض',
   'subtaskDeclined': 'تم تسجيل رفض المهمة الفرعية',
   'subtaskDeclinedLabel': 'مرفوضة',
@@ -1137,7 +1141,8 @@ const Map<String, String> ar = {
   'usersCount': 'عدد المستخدمين',
   'fingerprintLogsCount': 'سجلات البصمة',
   'fingerprintActivityLog': 'سجل البصمات',
-  'fingerprintActivityLogDesc': 'كل بصمة وإجراؤها (دخول/خروج) مرتبة حسب اليوم — اليوم أولاً',
+  'fingerprintActivityLogDesc':
+      'كل بصمة وإجراؤها (دخول/خروج) مرتبة حسب اليوم — اليوم أولاً',
   'fingerprintLogViewAttendance': 'بصمات الحضور',
   'fingerprintLogViewAll': 'كل السجلات الخام',
   'fingerprintScanActionIn': 'دخول',
@@ -1447,8 +1452,7 @@ const Map<String, String> ar = {
   'salesOrderReservedQtyLine':
       'محجوز: @reserved — متاح: @available — مطلوب: @requested (نقص: @deficit)',
   'salesOrderReservedByOrdersTitle': 'محجوز للطلبيات التالية:',
-  'salesOrderReservedByOrderLine':
-      'طلبية @serial — @party — محجوز: @qty',
+  'salesOrderReservedByOrderLine': 'طلبية @serial — @party — محجوز: @qty',
   'salesOrderReservedPartyUnknown': 'بدون زبون/تاجر',
   'salesOrderPickerStockHint':
       'المخزون الفعلي: @physical — محجوز لطلبيات أخرى: @reserved — المتاح: @available',
@@ -1479,7 +1483,8 @@ const Map<String, String> ar = {
   'salesOrderDeliverySectionTitle': 'التوصيل',
   'salesOrderDeliveryCompany': 'شركة التوصيل',
   'salesOrderDeliveryCompanyRequired': 'يرجى اختيار شركة التوصيل',
-  'salesOrderDeliveryCompaniesEmpty': 'لا توجد شركات توصيل — حدّث القائمة من السيرفر.',
+  'salesOrderDeliveryCompaniesEmpty':
+      'لا توجد شركات توصيل — حدّث القائمة من السيرفر.',
   'salesOrderCustomerRequired': 'يرجى اختيار الزبون أو إدخال اسمه',
   'salesOrderAddressRequired': 'عنوان التوصيل مطلوب',
   'salesOrderDeliveryAddressTitle': 'عنوان التوصيل',
@@ -1507,18 +1512,24 @@ const Map<String, String> ar = {
   'salesOrderOfficeNameRequired': 'اسم مكتب التوصيل مطلوب',
   'salesOrderOfficePhoneRequired': 'رقم جوال السائق مطلوب',
   'salesOrderDeliveryFeeInput': 'رسوم التوصيل (₪)',
-  'shiplyAddressesEmpty': 'عناوين Shiply غير متوفرة — شغّل مزامنة العناوين على السيرفر.',
+  'shiplyAddressesEmpty':
+      'عناوين Shiply غير متوفرة — شغّل مزامنة العناوين على السيرفر.',
   'shiplyVillageClosed': 'مغلقة',
   'shiplyHandoverHint': 'سيتم إنشاء الطرد في Shiply تلقائياً عند التأكيد.',
-  'shiplySandboxAccountBadge': 'حساب شبلي تجريبي (Sandbox) — الطرود لا تُوصَّل فعلياً.',
+  'shiplySandboxAccountBadge':
+      'حساب شبلي تجريبي (Sandbox) — الطرود لا تُوصَّل فعلياً.',
   'shiplySandboxShort': 'تجريبي',
   'shiplyHandoverInProgress': 'جاري إرسال الطرد لشبلي… قد يستغرق دقيقة',
-  'shiplyHandoverFailedGeneric': 'فشل تسليم شبلي — تحقق من الاتصال والعنوان والصور المطلوبة ثم أعد المحاولة',
+  'shiplyHandoverFailedGeneric':
+      'فشل تسليم شبلي — تحقق من الاتصال والعنوان والصور المطلوبة ثم أعد المحاولة',
   'salesOrderMediaUploadInProgress': 'جاري رفع الصورة… قد يستغرق دقيقة',
   'salesOrderActionInProgress': 'جاري تنفيذ الإجراء…',
-  'salesOrderActionFailedGeneric': 'تعذّر تنفيذ الإجراء — تحقق من المخزون والصور المطلوبة ثم أعد المحاولة',
-  'salesOrderManualHandoverHint': 'تسليم يدوي — اختياري: رقم تتبع أو ملاحظة (مكتب / شركة توصيل).',
-  'shiplyUnauthorizedHint': 'رفضت Shiply التسليم. تأكد أن إيميل تسجيل دخولك مضاف كموظف في شبلي (نفس وضع تجريبي/فعلي)، وأن مفتاح API يطابق الوضع في الإعدادات.',
+  'salesOrderActionFailedGeneric':
+      'تعذّر تنفيذ الإجراء — تحقق من المخزون والصور المطلوبة ثم أعد المحاولة',
+  'salesOrderManualHandoverHint':
+      'تسليم يدوي — اختياري: رقم تتبع أو ملاحظة (مكتب / شركة توصيل).',
+  'shiplyUnauthorizedHint':
+      'رفضت Shiply التسليم. تأكد أن إيميل تسجيل دخولك مضاف كموظف في شبلي (نفس وضع تجريبي/فعلي)، وأن مفتاح API يطابق الوضع في الإعدادات.',
   'shiplySettingsTitle': 'إعدادات التوصيل (Shiply)',
   'shiplySettingsDesc': 'تفعيل الربط ووضع Sandbox / Live',
   'shiplyIntegrationEnabled': 'تفعيل ربط Shiply',
@@ -1534,8 +1545,7 @@ const Map<String, String> ar = {
   'salesOrderDeliveryVillage': 'القرية / الحي',
   'salesOrderDeliveryCityRequired': 'يرجى اختيار المدينة',
   'salesOrderDeliveryVillageRequired': 'يرجى اختيار القرية',
-  'salesOrderDeliveryFeeHint':
-      'رسوم التوصيل عند اختيار القرية — يمكنك تعديلها',
+  'salesOrderDeliveryFeeHint': 'رسوم التوصيل عند اختيار القرية — يمكنك تعديلها',
   'salesOrderDeliveryAddressesEmpty': 'جاري تحميل المناطق…',
   'salesOrderDeliveryVillageClosed': 'مغلق',
   'salesOrderShiplyCityRequired': 'يرجى اختيار مدينة Shiply',
@@ -1561,6 +1571,20 @@ const Map<String, String> ar = {
   'salesOrderShiplyQrShow': 'عرض رمز QR',
   'salesOrderShiplyQrSaved': 'تم حفظ الرمز في المعرض',
   'salesOrderShiplyQrSaveFailed': 'فشل حفظ الرمز',
+  'salesOrderShiplyLabelPrintV1': 'عرض ملصق شيبلي V1',
+  'salesOrderShiplyLabelPrintV2': 'عرض ملصق شيبلي V2',
+  'salesOrderShiplyLabelTitleV1': 'ملصق طرد شيبلي V1',
+  'salesOrderShiplyLabelTitleV2': 'ملصق طرد شيبلي V2',
+  'salesOrderShiplyV2Options': 'خيارات ملصق شيبلي V2',
+  'salesOrderShiplyLabelSize': 'مقاس الملصق',
+  'salesOrderShiplyLabelLanguage': 'لغة الملصق',
+  'salesOrderShiplySizeA4': 'صفحة A4',
+  'salesOrderShiplySize10': 'ملصق 10 × 10',
+  'salesOrderShiplySizeQr': 'QR فقط — 10 × 10',
+  'salesOrderShiplyLanguageArabic': 'العربية',
+  'salesOrderShiplyLanguageEnglish': 'الإنجليزية',
+  'salesOrderShiplyLanguageHebrew': 'العبرية',
+  'salesOrderShiplyLabelPreview': 'معاينة',
   'salesOrderQrDownload': 'تحميل',
   'salesOrderQrPrint': 'طباعة',
   'salesOrderQrClose': 'إغلاق',
@@ -1631,6 +1655,13 @@ const Map<String, String> ar = {
   'salesOrderBulkDone': 'تم تحديث @count طلبية',
   'salesOrderBulkPartial': 'نجح @ok — فشل @fail',
   'salesOrderDeliveryFee': 'التوصيل',
+  'salesOrderEditableTotal': 'الإجمالي القابل للتعديل',
+  'salesOrderCalculatedTotal': 'الإجمالي الأساسي المحسوب',
+  'salesOrderPriceIncludesDelivery': 'السعر شامل التوصيل',
+  'salesOrderPriceIncludesDeliveryHint':
+      'عند الإرسال إلى شبلي سيُخصم سعر التوصيل من الإجمالي.',
+  'salesOrderIncludesDelivery': 'شامل التوصيل',
+  'salesOrderExcludesDelivery': 'غير شامل التوصيل',
   'salesOrderShiplyQuotedFee': 'سعر شبلي (أصلي)',
   'salesOrderShiplyChargedFee': 'سعر التوصيل للزبون',
   'salesOrderShiplyFeeDifference': 'فرق السعر',
@@ -1746,7 +1777,7 @@ const Map<String, String> ar = {
       'املأ النموذج ثم اضغط حفظ. يمكنك إضافة أكثر من إشعار.',
   'checkNotificationChannelHint':
       'الشيكات الواردة: يُرسل SMS لصاحب الشيك (أو الإدارة).\n'
-      'الشيكات الصادرة: يُرسل Push Notification لأجهزة الإدارة في التطبيق.',
+          'الشيكات الصادرة: يُرسل Push Notification لأجهزة الإدارة في التطبيق.',
   'checkNotificationMessageHint':
       'نص الإشعار. استخدم {name} {check_number} {amount} {currency} {due_date} {bank} {check_type}',
   'checkNotificationSavedHint': 'تم حفظ إعداد الإشعار بنجاح.',
@@ -2503,7 +2534,8 @@ const Map<String, String> ar = {
   'instantSaleRetailPriceSaved': 'تم حفظ سعر المفرق في المنتج',
   'instantSaleProductPricesSaved': 'تم حفظ أسعار المنتج',
   'instantSaleNoRetailPrice': 'لا يوجد سعر مفرق',
-  'instantSalePickerPartnerHint': 'اختياري — حدّد الزبون/التاجر لعرض آخر أسعار البيع',
+  'instantSalePickerPartnerHint':
+      'اختياري — حدّد الزبون/التاجر لعرض آخر أسعار البيع',
   'instantSaleSelectPartner': 'اختيار الزبون / التاجر',
   'instantSaleLastPrices': 'آخر الأسعار',
   'instantSaleLastPricesTitle': 'آخر 5 أسعار بيع',
@@ -2537,21 +2569,26 @@ const Map<String, String> ar = {
   'salesDailyOpenDrawersTab': 'الصناديق المفتوحة',
   'salesDailyOpenDrawer': 'فتح الصندوق',
   'salesDailyFinalizeClosing': 'إغلاق وترحيل',
-  'salesDailyOpenDrawerConfirm': 'هل تريد فتح صندوق المبيعات اليومي؟ لن يتمكن موظف آخر من فتح صندوق حتى تغلقه.',
+  'salesDailyOpenDrawerConfirm':
+      'هل تريد فتح صندوق المبيعات اليومي؟ لن يتمكن موظف آخر من فتح صندوق حتى تغلقه.',
   'salesDailyDrawerBusy': 'صندوق المبيعات مشغول',
   'salesDailyDrawerOpenByOther': 'الصندوق مفتوح لدى @employee',
   'salesDailyNoSessionOpen': 'يجب فتح صندوق المبيعات يدوياً قبل البيع',
   'salesDailyClosingPending': 'بانتظار موافقة الإدارة على الإغلاق',
-  'salesDailyClosingPendingHint': 'تم إرسال طلب الإغلاق. لا يمكنك البيع حتى تتم الموافقة.',
-  'salesDailyTransferTargetRequired': 'حدد صندوق الوجهة لكل عملة يُرحّل منها مبلغ',
+  'salesDailyClosingPendingHint':
+      'تم إرسال طلب الإغلاق. لا يمكنك البيع حتى تتم الموافقة.',
+  'salesDailyTransferTargetRequired':
+      'حدد صندوق الوجهة لكل عملة يُرحّل منها مبلغ',
   'salesDailyDayClosed': 'يوم المبيعات مغلق',
   'salesDailyPreviousDayOpen': 'يجب إغلاق يوم المبيعات السابق أولاً',
   'salesDailyBusinessDate': 'تاريخ اليوم',
   'salesDailyCloseDay': 'إغلاق اليوم',
   'salesDailyBox': 'الصندوق اليومي',
   'salesDailyPrimaryCurrency': 'أساسي',
-  'salesDailyCloseIntro': 'عدّ الكاش فعلياً وحدد الفكة التي تبقى للغد. الباقي يُرحّل بعد موافقة الإدارة.',
-  'salesDailyClosePreviousDayIntro': 'أنت تغلق يوم مبيعات سابق. عدّ الكاش وحدد الفكة، ثم اكتب سبب التأخير.',
+  'salesDailyCloseIntro':
+      'عدّ الكاش فعلياً وحدد الفكة التي تبقى للغد. الباقي يُرحّل بعد موافقة الإدارة.',
+  'salesDailyClosePreviousDayIntro':
+      'أنت تغلق يوم مبيعات سابق. عدّ الكاش وحدد الفكة، ثم اكتب سبب التأخير.',
   'salesDailyLateCloseReason': 'سبب تأخير الإغلاق',
   'salesDailyLateCloseReasonHint': 'لماذا لم يُغلق اليوم في موعده؟',
   'salesDailyLateCloseReasonRequired': 'سبب تأخير الإغلاق مطلوب',

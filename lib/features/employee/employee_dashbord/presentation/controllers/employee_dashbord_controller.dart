@@ -194,9 +194,8 @@ class EmployeeDashbordController extends GetxController
       extra.add('${'totalSalaryLabel'.tr}: ${day.totalSalary}');
     }
 
-    final message = extra.isEmpty
-        ? 'manualCheckoutSuccess'.tr
-        : extra.join('\n');
+    final message =
+        extra.isEmpty ? 'manualCheckoutSuccess'.tr : extra.join('\n');
 
     Helpers.showCustomDialogSuccess(
       context: context,
@@ -533,15 +532,20 @@ class EmployeeDashbordController extends GetxController
     );
   }
 
-  /// Load the correct task, then open details (avoids showing a previous task).
+  bool _openingTaskDetails = false;
+
+  /// Open details once; the entry screen owns the single details API request.
   Future<void> openTaskDetails(Task task) async {
+    if (_openingTaskDetails) return;
+    _openingTaskDetails = true;
+
     final actionTask = resolveTaskForInteraction(task);
     if (!Get.isRegistered<EmployeeTasksController>()) {
       EmployeeTasksBinding().dependencies();
     }
-    final tasksCtrl = Get.find<EmployeeTasksController>();
-    final occurrenceId =
-        actionTask.isOccurrence ? (actionTask.occurrenceId ?? actionTask.id).toString() : null;
+    final occurrenceId = actionTask.isOccurrence
+        ? (actionTask.occurrenceId ?? actionTask.id).toString()
+        : null;
     final taskDate = occurrenceId == null ? _taskDateParam(actionTask) : null;
 
     TaskDetailsDebug.tap(
@@ -553,48 +557,20 @@ class EmployeeDashbordController extends GetxController
     );
 
     try {
-      await tasksCtrl.getTaskDetails(
-        taskId: actionTask.taskId.toString(),
-        occurrenceId: occurrenceId,
-        taskDate: taskDate,
-      );
-    } catch (e) {
-      TaskDetailsDebug.fail('openTaskDetails_exception', detail: e.toString());
-      Get.snackbar(
-        'error'.tr,
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-
-    if (tasksCtrl.employeeTaskService.taskDetails.value == null) {
-      TaskDetailsDebug.fail(
-        'openTaskDetails_null_after_load',
-        detail: {
-          'taskId': task.taskId,
-          'occurrenceId': occurrenceId,
+      await Get.toNamed(
+        AppRoutes.TASKDETAILS,
+        arguments: {
+          'taskId': actionTask.taskId.toString(),
+          if (occurrenceId != null && occurrenceId.isNotEmpty)
+            'occurrence_id': occurrenceId,
+          if (taskDate != null && taskDate.isNotEmpty) 'task_date': taskDate,
+          'EmployeeDashbordController': this,
         },
       );
-      Get.snackbar(
-        'error'.tr,
-        'errorLoadingTaskDetails'.tr,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
+      await getEmployeeData(scrollToTodayb: false);
+    } finally {
+      _openingTaskDetails = false;
     }
-
-    await Get.toNamed(
-      AppRoutes.TASKDETAILS,
-      arguments: {
-        'taskId': actionTask.taskId.toString(),
-        if (occurrenceId != null && occurrenceId.isNotEmpty)
-          'occurrence_id': occurrenceId,
-        if (taskDate != null && taskDate.isNotEmpty) 'task_date': taskDate,
-        'EmployeeDashbordController': this,
-      },
-    );
-    await getEmployeeData(scrollToTodayb: false);
   }
 
   int? _occurrenceIdFor(Task? task) {
@@ -602,7 +578,8 @@ class EmployeeDashbordController extends GetxController
     return task.occurrenceId ?? task.id;
   }
 
-  String _taskDateParam(Task task) => TaskRecurrenceRules.dateKeyFrom(task.startTime);
+  String _taskDateParam(Task task) =>
+      TaskRecurrenceRules.dateKeyFrom(task.startTime);
 
   Task resolveTaskForInteraction(Task task) {
     if (task.isOccurrence || task.isRepeatedCopy) return task;

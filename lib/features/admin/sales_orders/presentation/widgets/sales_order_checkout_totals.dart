@@ -21,7 +21,8 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
       final deliveryFee = orders.selectedCityDeliveryFee;
       final discount = SalesAmountFormat.parse(sales.discountController.text);
       final subtotal = itemsTotal + discount;
-      final grandTotal = itemsTotal + deliveryFee;
+      final calculatedTotal = itemsTotal + deliveryFee;
+      final grandTotal = orders.manualTotal.value ?? itemsTotal + deliveryFee;
 
       return Container(
         padding: EdgeInsets.all(12.w),
@@ -34,9 +35,42 @@ class SalesOrderCheckoutTotals extends StatelessWidget {
           children: [
             _line('subtotal'.tr, subtotal),
             if (discount > 0) _line('discount'.tr, -discount, muted: true),
-            if (deliveryFee > 0)
-              _line('salesOrderDeliveryFee'.tr, deliveryFee),
+            if (deliveryFee > 0) _line('salesOrderDeliveryFee'.tr, deliveryFee),
+            _line('salesOrderCalculatedTotal'.tr, calculatedTotal),
             Divider(height: 14.h, color: SalesOrdersController.borderGray),
+            TextField(
+              controller: orders.deliveryFeeController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (_) => orders.onDeliveryFeeChanged(),
+              decoration: InputDecoration(
+                labelText: 'salesOrderDeliveryFeeInput'.tr,
+                suffixText: '₪',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            TextField(
+              controller: orders.totalController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              onChanged: orders.onTotalChanged,
+              decoration: InputDecoration(
+                labelText: 'salesOrderEditableTotal'.tr,
+                suffixText: '₪',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: orders.priceIncludesDelivery.value,
+              onChanged: (value) =>
+                  orders.priceIncludesDelivery.value = value ?? false,
+              title: Text('salesOrderPriceIncludesDelivery'.tr),
+              subtitle: Text('salesOrderPriceIncludesDeliveryHint'.tr),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
             _line('total'.tr, grandTotal, bold: true),
           ],
         ),

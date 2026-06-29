@@ -145,8 +145,10 @@ class EndPoints {
       'admin/attendance-devices/$id/sync-users';
   static String attendanceDeviceSyncLogs(int id) =>
       'admin/attendance-devices/$id/sync-logs';
-  static String attendanceDeviceUsers(int id) => 'admin/attendance-devices/$id/users';
-  static String attendanceDeviceLogs(int id) => 'admin/attendance-devices/$id/logs';
+  static String attendanceDeviceUsers(int id) =>
+      'admin/attendance-devices/$id/users';
+  static String attendanceDeviceLogs(int id) =>
+      'admin/attendance-devices/$id/logs';
   static const String fingerprintActivityLog = 'admin/fingerprint/activity-log';
   static const String workingTimes = 'working/times';
   static const String financialDues = 'financial/dues';
@@ -389,7 +391,8 @@ class EndPoints {
   static const String salesOrders = 'sales/orders';
   static const String salesOrder = 'sales/order';
   static const String salesOrderCheckStock = 'sales/order/check-stock';
-  static const String salesOrderStockAvailability = 'sales/order/stock-availability';
+  static const String salesOrderStockAvailability =
+      'sales/order/stock-availability';
   static const String salesOrderUpdate = 'sales/order/update';
   static const String salesOrderConfirm = 'sales/order/confirm';
   static const String salesOrderReady = 'sales/order/ready';
@@ -404,14 +407,17 @@ class EndPoints {
   static const String salesOrderPartialDeliver = 'sales/order/partial-deliver';
   static const String salesOrderFollowUp = 'sales/order/follow-up';
   static const String salesOrderPartialReturn = 'sales/order/partial-return';
-  static const String salesOrderAlternativeReturn = 'sales/order/alternative-return';
+  static const String salesOrderAlternativeReturn =
+      'sales/order/alternative-return';
   static const String salesOrderMarkStuck = 'sales/order/mark-stuck';
   static const String salesOrdersBulkStatus = 'sales/orders/bulk-status';
   static const String salesOrderStatement = 'sales/order/statement';
   static const String cities = 'cities';
   static const String deliveryCompanies = 'delivery/companies';
   static const String shiplyAddressOptions = 'shiply/address-options';
-  static const String shiplyCalculateDeliveryFee = 'shiply/calculate-delivery-fee';
+  static const String shiplyCalculateDeliveryFee =
+      'shiply/calculate-delivery-fee';
+  static const String shiplyPrintParcel = 'shiply/print-parcel';
 
   static const String salesDailySessionCurrent = 'sales/daily-session/current';
   static const String salesDailySessionOpen = 'sales/daily-session/open';

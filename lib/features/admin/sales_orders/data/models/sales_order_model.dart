@@ -115,7 +115,8 @@ class SalesOrderShiplyTrackingEventModel {
     this.occurredAt,
   });
 
-  factory SalesOrderShiplyTrackingEventModel.fromJson(Map<String, dynamic> json) {
+  factory SalesOrderShiplyTrackingEventModel.fromJson(
+      Map<String, dynamic> json) {
     return SalesOrderShiplyTrackingEventModel(
       id: json['id'] as int,
       parcelStatusId: json['parcel_status_id'] as int? ?? 0,
@@ -280,7 +281,9 @@ class SalesOrderDetailModel {
   final double total;
   final double subtotal;
   final double discount;
+  final double calculatedTotal;
   final double customerDeliveryFee;
+  final bool priceIncludesDelivery;
   final double? shiplyQuotedDeliveryFee;
   final double? shiplyDeliveryFeeAdjustment;
   final String paymentType;
@@ -320,7 +323,9 @@ class SalesOrderDetailModel {
     required this.total,
     required this.subtotal,
     required this.discount,
+    required this.calculatedTotal,
     required this.customerDeliveryFee,
+    this.priceIncludesDelivery = false,
     this.shiplyQuotedDeliveryFee,
     this.shiplyDeliveryFeeAdjustment,
     required this.paymentType,
@@ -382,8 +387,13 @@ class SalesOrderDetailModel {
       total: (json['total'] as num?)?.toDouble() ?? 0,
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0,
       discount: (json['discount'] as num?)?.toDouble() ?? 0,
+      calculatedTotal: (json['calculated_total'] as num?)?.toDouble() ??
+          (json['total'] as num?)?.toDouble() ??
+          0,
       customerDeliveryFee:
           (json['customer_delivery_fee'] as num?)?.toDouble() ?? 0,
+      priceIncludesDelivery: json['price_includes_delivery'] == true ||
+          json['price_includes_delivery'] == 1,
       shiplyQuotedDeliveryFee:
           (json['shiply_quoted_delivery_fee'] as num?)?.toDouble(),
       shiplyDeliveryFeeAdjustment:
@@ -541,7 +551,9 @@ class ShiplyVillageModel {
   String displayLabel(String closedSuffix) {
     if (!isClosed) return name;
     final hint = (note ?? '').trim();
-    return hint.isEmpty ? '$name ($closedSuffix)' : '$name ($closedSuffix — $hint)';
+    return hint.isEmpty
+        ? '$name ($closedSuffix)'
+        : '$name ($closedSuffix — $hint)';
   }
 }
 
@@ -690,9 +702,8 @@ class ProductStockAvailabilityModel {
     this.isAggregate = false,
   });
 
-  String get mapKey => sizeColorId == null
-      ? '$productId'
-      : '${productId}_$sizeColorId';
+  String get mapKey =>
+      sizeColorId == null ? '$productId' : '${productId}_$sizeColorId';
 
   bool get hasReservation => totalReservedQty > 0 || reservedQty > 0;
 

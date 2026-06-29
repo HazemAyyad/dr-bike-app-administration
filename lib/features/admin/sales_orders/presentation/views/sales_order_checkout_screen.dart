@@ -52,20 +52,24 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
         sales.applyDailyBoxToPayment(payment);
       }
       sales.syncCartToItems();
+      orders.initializeEditableTotal(
+        sales.totalCost.value + orders.selectedCityDeliveryFee,
+      );
       if (Get.isRegistered<PaymentController>(tag: kSalesOrderPaymentTag)) {
-        final payment =
-            Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
+        final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
         await payment.getAllCustomersAndSellers();
         sales.syncPickerPartnerFromPayment();
-        sales.resolvePartnerFromOrderSnapshot(
-          customerId: orders.detail.value?.customerId,
-          name: orders.customerNameController.text.trim().isNotEmpty
-              ? orders.customerNameController.text.trim()
-              : orders.detail.value?.customerName,
-          phone: orders.customerPhoneController.text.trim().isNotEmpty
-              ? orders.customerPhoneController.text.trim()
-              : orders.detail.value?.customerPhone,
-        );
+        if (sales.pickerSelectedPartner.value == null) {
+          sales.resolvePartnerFromOrderSnapshot(
+            customerId: orders.detail.value?.customerId,
+            name: orders.customerNameController.text.trim().isNotEmpty
+                ? orders.customerNameController.text.trim()
+                : orders.detail.value?.customerName,
+            phone: orders.customerPhoneController.text.trim().isNotEmpty
+                ? orders.customerPhoneController.text.trim()
+                : orders.detail.value?.customerPhone,
+          );
+        }
         if (sales.hasPaymentSnapshot) {
           sales.applySuspendedPaymentToController(payment);
         }
@@ -83,8 +87,7 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
 
   void _ensurePaymentController() {
     if (Get.isRegistered<PaymentController>(tag: kSalesOrderPaymentTag)) {
-      final existing =
-          Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
+      final existing = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
       existing.forInstantSale = true;
       return;
     }
@@ -190,9 +193,6 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                   showNotes: false,
                   showHints: false,
                 ),
-                SizedBox(height: 12.h),
-                const SalesOrderCheckoutTotals(),
-                SizedBox(height: 16.h),
                 _SalesOrderPartnerCard(
                   onEdit: () => showInstantSalePickerPartnerSheet(context),
                 ),
@@ -207,8 +207,14 @@ class _SalesOrderCheckoutScreenState extends State<SalesOrderCheckoutScreen> {
                     showHeader: false,
                     showPartner: false,
                     showDailyBoxInfo: false,
+                    extraTotal: (orders.manualTotal.value ??
+                            sales.totalCost.value +
+                                orders.selectedCityDeliveryFee) -
+                        sales.totalCost.value,
                   );
                 }),
+                SizedBox(height: 16.h),
+                const SalesOrderCheckoutTotals(),
                 SizedBox(height: 16.h),
                 Obx(() {
                   if (orders.hasSuspendedDraft.value) {

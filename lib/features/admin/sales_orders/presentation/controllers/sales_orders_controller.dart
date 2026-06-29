@@ -97,6 +97,7 @@ class SalesOrdersController extends GetxController {
   final customerPhoneController = TextEditingController();
   final customerAddressController = TextEditingController();
   final deliveryFeeController = TextEditingController(text: '0');
+  final totalController = TextEditingController();
   final trackingController = TextEditingController();
   final carrierContactNameController = TextEditingController();
   final carrierContactPhoneController = TextEditingController();
@@ -114,11 +115,14 @@ class SalesOrdersController extends GetxController {
   final selectedShiplyVillageId = RxnInt();
   final manualDeliveryFee = 0.0.obs;
   final shiplyQuotedDeliveryFee = RxnDouble();
+  final priceIncludesDelivery = false.obs;
+  final manualTotal = RxnDouble();
   final selectedPaymentType = 'cash'.obs;
   final selectedDeliveryCompanyId = RxnInt();
   final hasSuspendedDraft = false.obs;
   final activeEditSalesOrderId = RxnInt();
-  final productStockAvailability = <String, ProductStockAvailabilityModel>{}.obs;
+  final productStockAvailability =
+      <String, ProductStockAvailabilityModel>{}.obs;
   final stockAvailabilityVersion = 0.obs;
 
   bool get isEditingOrder => activeEditSalesOrderId.value != null;
@@ -247,6 +251,7 @@ class SalesOrdersController extends GetxController {
     customerPhoneController.dispose();
     customerAddressController.dispose();
     deliveryFeeController.dispose();
+    totalController.dispose();
     trackingController.dispose();
     carrierContactNameController.dispose();
     carrierContactPhoneController.dispose();
@@ -346,12 +351,15 @@ class SalesOrdersController extends GetxController {
     customerPhoneController.clear();
     customerAddressController.clear();
     deliveryFeeController.text = '0';
+    totalController.clear();
     notesController.clear();
     selectedCityId.value = null;
     selectedShiplyCityId.value = null;
     selectedShiplyVillageId.value = null;
     manualDeliveryFee.value = 0;
     shiplyQuotedDeliveryFee.value = null;
+    priceIncludesDelivery.value = false;
+    manualTotal.value = null;
     selectedPaymentType.value = 'cash';
     hasSuspendedDraft.value = false;
     activeEditSalesOrderId.value = null;
@@ -409,6 +417,9 @@ class SalesOrdersController extends GetxController {
     deliveryFeeController.text = order.customerDeliveryFee.toStringAsFixed(0);
     manualDeliveryFee.value = order.customerDeliveryFee;
     shiplyQuotedDeliveryFee.value = order.shiplyQuotedDeliveryFee;
+    priceIncludesDelivery.value = order.priceIncludesDelivery;
+    manualTotal.value = order.total;
+    totalController.text = _formatAmount(order.total);
     selectedPaymentType.value = order.paymentType;
 
     isPreparingEdit.value = true;
@@ -477,7 +488,8 @@ class SalesOrdersController extends GetxController {
         _aggregateAvailabilityForProduct(id);
   }
 
-  ProductStockAvailabilityModel? _aggregateAvailabilityForProduct(int productId) {
+  ProductStockAvailabilityModel? _aggregateAvailabilityForProduct(
+      int productId) {
     var physical = 0;
     var reserved = 0;
     var totalReserved = 0;
@@ -636,8 +648,7 @@ class SalesOrdersController extends GetxController {
         SalesOrderStockConflictModel conflict;
         try {
           conflict = check.conflicts.firstWhere(
-            (c) =>
-                c.productId == productIdInt && c.sizeColorId == sizeColorId,
+            (c) => c.productId == productIdInt && c.sizeColorId == sizeColorId,
           );
         } catch (_) {
           conflict = check.conflicts.first;
@@ -1065,6 +1076,19 @@ class SalesOrdersController extends GetxController {
         double.tryParse(deliveryFeeController.text.trim()) ?? 0;
   }
 
+  void initializeEditableTotal(double calculatedTotal) {
+    if (manualTotal.value != null) return;
+    manualTotal.value = calculatedTotal;
+    totalController.text = _formatAmount(calculatedTotal);
+  }
+
+  void onTotalChanged(String value) {
+    manualTotal.value = SalesAmountFormat.parse(value);
+  }
+
+  String _formatAmount(double value) =>
+      value.toStringAsFixed(value == value.roundToDouble() ? 0 : 2);
+
   // Intentionally: do not auto-change cash when delivery city changes.
 
   void openOrderDetailAfterSave(SalesOrderDetailModel order) {
@@ -1136,8 +1160,9 @@ class SalesOrdersController extends GetxController {
         if (editId != null) {
           loadOrders();
           detail.value = order;
-          Get.back();
-          Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN, arguments: order.id);
+          Get.until(
+            (route) => route.settings.name == AppRoutes.SALESORDERDETAILSCREEN,
+          );
         } else {
           openOrderDetailAfterSave(order);
         }
@@ -1159,7 +1184,8 @@ class SalesOrdersController extends GetxController {
     );
   }
 
-  Future<Map<String, dynamic>?> _buildCheckoutBody(SalesController sales) async {
+  Future<Map<String, dynamic>?> _buildCheckoutBody(
+      SalesController sales) async {
     sales.calculateGrandTotal();
     final lines = sales.cartLines.where((l) => !l.isDisposed).toList();
     if (lines.isEmpty) {
@@ -1190,13 +1216,15 @@ class SalesOrdersController extends GetxController {
 
     if (Get.isRegistered<PaymentController>(tag: kSalesOrderPaymentTag)) {
       final payment = Get.find<PaymentController>(tag: kSalesOrderPaymentTag);
-      final buyer = payment.buildInstantSaleBuyerPayload();
-      final buyerName = buyer['buyer_name']?.toString().trim() ?? '';
-      if (buyerName.isNotEmpty) {
-        customerName = buyerName;
-      }
-      if (buyer['buyer_type'] == 'customer' && buyer['buyer_id'] != null) {
-        customerId = int.tryParse(buyer['buyer_id'].toString());
+      if (partner == null) {
+        final buyer = payment.buildInstantSaleBuyerPayload();
+        final buyerName = buyer['buyer_name']?.toString().trim() ?? '';
+        if (buyerName.isNotEmpty) {
+          customerName = buyerName;
+        }
+        if (buyer['buyer_type'] == 'customer' && buyer['buyer_id'] != null) {
+          customerId = int.tryParse(buyer['buyer_id'].toString());
+        }
       }
 
       // For sales orders we consider cash entered even if the UI hides box selection;
@@ -1206,7 +1234,8 @@ class SalesOrdersController extends GetxController {
     }
 
     final discount = SalesAmountFormat.parse(sales.discountController.text);
-    final total = sales.totalCost.value;
+    final total =
+        manualTotal.value ?? sales.totalCost.value + selectedCityDeliveryFee;
     var paymentType = selectedPaymentType.value;
     if (paymentType != 'visa') {
       paymentType = 'credit';
@@ -1222,18 +1251,25 @@ class SalesOrdersController extends GetxController {
     return {
       'customer_name': customerName,
       'customer_phone': customerPhone,
-      if (customerId != null) 'customer_id': customerId,
+      // Explicit null is important when an edited order changes from a saved
+      // customer to a seller or an unnamed/manual recipient.
+      'customer_id': customerId,
+      if (selectedCityId.value != null) 'city_id': selectedCityId.value,
       'payment_type': paymentType,
       'payment_amount': paidAmount,
       if (paymentBoxId != null) 'payment_box_id': paymentBoxId,
       'discount': discount,
+      'customer_delivery_fee': selectedCityDeliveryFee,
+      'price_includes_delivery': priceIncludesDelivery.value,
+      'total': total,
       'notes': notesController.text.trim(),
       'items': items,
     };
   }
 
   @Deprecated('Use submitCreateOrderFromCheckout')
-  Future<bool> submitCreateOrderFromCheckoutLegacy(SalesController sales) async {
+  Future<bool> submitCreateOrderFromCheckoutLegacy(
+      SalesController sales) async {
     return submitCreateOrderFromCheckout(sales);
   }
 
@@ -1355,7 +1391,8 @@ class SalesOrdersController extends GetxController {
       body['carrier_office_name'] = carrierOfficeNameController.text.trim();
       body['carrier_contact_name'] = carrierContactNameController.text.trim();
       body['carrier_contact_phone'] = carrierContactPhoneController.text.trim();
-      body['carrier_vehicle_number'] = carrierVehicleNumberController.text.trim();
+      body['carrier_vehicle_number'] =
+          carrierVehicleNumberController.text.trim();
     } else if (!isSelectedCompanyShiply &&
         !isSelectedCompanyDoctorBike &&
         trackingController.text.trim().isNotEmpty) {
@@ -1468,7 +1505,8 @@ class SalesOrdersController extends GetxController {
     await runAction(() => repository.cancel(orderId));
   }
 
-  Future<void> partialDeliver(int orderId, List<Map<String, dynamic>> items) async {
+  Future<void> partialDeliver(
+      int orderId, List<Map<String, dynamic>> items) async {
     await runAction(() => repository.partialDeliver(orderId, items));
   }
 
@@ -1486,7 +1524,8 @@ class SalesOrdersController extends GetxController {
     );
   }
 
-  Future<void> partialReturn(int orderId, List<Map<String, dynamic>> items) async {
+  Future<void> partialReturn(
+      int orderId, List<Map<String, dynamic>> items) async {
     await runAction(() => repository.partialReturn(orderId, items));
   }
 
@@ -1551,11 +1590,13 @@ class SalesOrdersController extends GetxController {
         final message = '${'salesOrderShareIntro'.tr} $serial\n'
             '${'total'.tr}: $total ₪\n$pdfUrl';
 
-        final phone = detail.value?.customerPhone?.replaceAll(RegExp(r'\D'), '') ?? '';
+        final phone =
+            detail.value?.customerPhone?.replaceAll(RegExp(r'\D'), '') ?? '';
 
         if (channel == 'sms') {
           if (phone.isNotEmpty) {
-            final uri = Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
+            final uri =
+                Uri.parse('sms:$phone?body=${Uri.encodeComponent(message)}');
             if (await canLaunchUrl(uri)) {
               await launchUrl(uri);
               return;
@@ -1566,7 +1607,8 @@ class SalesOrdersController extends GetxController {
         }
 
         if (phone.isNotEmpty) {
-          final uri = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
+          final uri = Uri.parse(
+              'https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
             return;
@@ -1690,7 +1732,8 @@ class SalesOrdersController extends GetxController {
   String _humanizeFailure(Failure f) {
     final data = f.data;
     if (data is Map<String, dynamic>) {
-      final errors = data['errors'] ?? (_looksLikeErrorsMap(data) ? data : null);
+      final errors =
+          data['errors'] ?? (_looksLikeErrorsMap(data) ? data : null);
       if (errors is Map) {
         final parts = <String>[];
         errors.forEach((_, v) {
@@ -1743,9 +1786,11 @@ class SalesOrdersController extends GetxController {
     if (status == 'archived') return 'salesOrderStatusArchived'.tr;
     if (status == 'returned') return 'salesOrderStatusReturned'.tr;
     if (status == 'review') return 'salesOrderStatusReview'.tr;
-    if (status == 'partial_delivered') return 'salesOrderStatusPartialDelivered'.tr;
+    if (status == 'partial_delivered')
+      return 'salesOrderStatusPartialDelivered'.tr;
     if (status == 'partial_return') return 'salesOrderStatusPartialReturn'.tr;
-    if (status == 'alternative_return') return 'salesOrderStatusAlternativeReturn'.tr;
+    if (status == 'alternative_return')
+      return 'salesOrderStatusAlternativeReturn'.tr;
     if (status == 'stuck') return 'salesOrderStatusStuck'.tr;
     if (status == 'canceled') return 'salesOrderStatusCanceled'.tr;
     return status;

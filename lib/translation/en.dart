@@ -34,8 +34,7 @@ const Map<String, String> en = {
   'attendancePersistentOvertimeBody': 'Check out from your shift',
   'attendancePersistentInsideTitle': 'You are on shift',
   'attendancePersistentChannelName': 'Work attendance',
-  'attendancePersistentChannelDesc':
-      'Persistent check-in and leave countdown',
+  'attendancePersistentChannelDesc': 'Persistent check-in and leave countdown',
   'attendancePersistentWorkedLine': 'Worked: @time (@duration)',
   'attendancePersistentStatsLine': 'Required: @required · Overtime: @overtime',
   'attendancePersistentOnTimeLine': 'On time: @value',
@@ -156,7 +155,8 @@ const Map<String, String> en = {
   'enable': 'Enable',
   'select': 'Select',
   'deviceUserId': 'Device user ID',
-  'fingerprintDefaultDeviceRequired': 'Please set the default fingerprint device first.',
+  'fingerprintDefaultDeviceRequired':
+      'Please set the default fingerprint device first.',
   'enabledLabel': 'Enabled',
   'disabledLabel': 'Disabled',
   'failed': 'Failed',
@@ -397,9 +397,12 @@ const Map<String, String> en = {
   'developmentFinal': 'Final',
   'developmentStatus': 'Development status',
   'developmentDateFilter': 'Development date',
-  'productDevelopmentCreatedSuccessfully': 'Product added to development successfully',
-  'productDevelopmentUpdatedSuccessfully': 'Product development updated successfully',
-  'productDevelopmentDeletedSuccessfully': 'Product removed from development successfully',
+  'productDevelopmentCreatedSuccessfully':
+      'Product added to development successfully',
+  'productDevelopmentUpdatedSuccessfully':
+      'Product development updated successfully',
+  'productDevelopmentDeletedSuccessfully':
+      'Product removed from development successfully',
   'productDevelopmentLog': 'Product development log',
   'removeFromDevelopment': 'Remove from development',
   'removeFromDevelopmentConfirm':
@@ -482,6 +485,9 @@ const Map<String, String> en = {
   'approvedValue': 'Approved Value',
 
   'overtimeRequests': 'Overtime Requests',
+  'overtimeDurationHoursMinutes': '@hours h @minutes min',
+  'overtimeDurationHours': '@hours h',
+  'overtimeDurationMinutes': '@minutes min',
   'creationDate': 'Creation Date',
   'status': 'Order Status',
   'completed': 'Completed',
@@ -612,7 +618,8 @@ const Map<String, String> en = {
   'approveTask': 'Approve',
   'rejectTask': 'Reject',
   'reopenTask': 'Reopen task',
-  'reopenTaskConfirm': 'The task will be sent back to the employee as incomplete and they will be notified.',
+  'reopenTaskConfirm':
+      'The task will be sent back to the employee as incomplete and they will be notified.',
   'reopenTaskNotesHint': 'Note for employee (optional)',
   'reopenTaskSuccess': 'Task reopened',
   'workProofSection': 'Work documentation',
@@ -621,7 +628,8 @@ const Map<String, String> en = {
   'proofRequiredHint': 'A proof photo is required to finish this task',
   'proofRequiredHintImage': 'A proof photo is required to finish this task',
   'proofRequiredHintVideo': 'A proof video is required to finish this task',
-  'proofRequiredHintEither': 'A proof photo or video is required to finish this task',
+  'proofRequiredHintEither':
+      'A proof photo or video is required to finish this task',
   'addProofImage': 'Add photo',
   'addImage': 'Add image',
   'removeImage': 'Remove image',
@@ -679,7 +687,8 @@ const Map<String, String> en = {
   'subtaskFinishedBy': 'Done by: @name',
   'declineSubtask': 'Decline subtask',
   'declineSubtaskTitle': 'Decline subtask',
-  'declineSubtaskHint': 'Write why you do not want to execute this subtask. This will not affect submitting the task, and the reason will be shown to admin on review.',
+  'declineSubtaskHint':
+      'Write why you do not want to execute this subtask. This will not affect submitting the task, and the reason will be shown to admin on review.',
   'declineReasonRequired': 'Please write a reason',
   'subtaskDeclined': 'Subtask has been declined',
   'subtaskDeclinedLabel': 'Declined',
@@ -1113,7 +1122,8 @@ const Map<String, String> en = {
   'costPricePermission': 'Cost Price',
   'editEmployeeTaskPermission': 'Edit Employee Task',
   'cloneEmployeeTaskPermission': 'Clone Employee Task',
-  'impersonationAlreadyActive': 'Finish the current employee session before opening another account',
+  'impersonationAlreadyActive':
+      'Finish the current employee session before opening another account',
   'impersonationExitSuccessEmployee': 'Returned to your account',
   'impersonationFailed': 'Could not open employee account',
   'impersonationSuccessTitle': 'Employee view',
@@ -1154,7 +1164,8 @@ const Map<String, String> en = {
   'subtaskProofRequiredImage': 'Proof required (photo)',
   'subtaskProofRequiredVideo': 'Proof required (video)',
   'subtaskProofUploaded': 'Proof uploaded',
-  'subtaskAdminMaterialsForEmployee': 'Attachments for employee (photo / video / audio)',
+  'subtaskAdminMaterialsForEmployee':
+      'Attachments for employee (photo / video / audio)',
   'subtaskAdminVoiceNote': 'Voice note for this subtask',
   'subtaskEmployeeProofTitle': 'Employee proof',
   'waitingForEmployeeProof': 'Waiting for employee to upload proof',
@@ -1374,8 +1385,7 @@ const Map<String, String> en = {
   'salesOrderReservedQtyLine':
       'Reserved: @reserved — Available: @available — Requested: @requested (short: @deficit)',
   'salesOrderReservedByOrdersTitle': 'Reserved by the following orders:',
-  'salesOrderReservedByOrderLine':
-      'Order @serial — @party — reserved: @qty',
+  'salesOrderReservedByOrderLine': 'Order @serial — @party — reserved: @qty',
   'salesOrderReservedPartyUnknown': 'No customer/trader',
   'salesOrderPickerStockHint':
       'Physical stock: @physical — Reserved by other orders: @reserved — Available: @available',
@@ -1406,7 +1416,8 @@ const Map<String, String> en = {
   'salesOrderDeliverySectionTitle': 'Delivery',
   'salesOrderDeliveryCompany': 'Delivery company',
   'salesOrderDeliveryCompanyRequired': 'Please select a delivery company',
-  'salesOrderDeliveryCompaniesEmpty': 'No delivery companies loaded — refresh from server.',
+  'salesOrderDeliveryCompaniesEmpty':
+      'No delivery companies loaded — refresh from server.',
   'salesOrderCustomerRequired': 'Please select or enter the customer',
   'salesOrderAddressRequired': 'Delivery address is required',
   'salesOrderDeliveryAddressTitle': 'Delivery address',
@@ -1435,18 +1446,26 @@ const Map<String, String> en = {
   'salesOrderOfficeNameRequired': 'Delivery office name is required',
   'salesOrderOfficePhoneRequired': 'Driver mobile is required',
   'salesOrderDeliveryFeeInput': 'Delivery fee (₪)',
-  'shiplyAddressesEmpty': 'Shiply addresses are not loaded — run address sync on the server.',
+  'shiplyAddressesEmpty':
+      'Shiply addresses are not loaded — run address sync on the server.',
   'shiplyVillageClosed': 'closed',
-  'shiplyHandoverHint': 'A Shiply parcel will be created automatically on confirm.',
-  'shiplySandboxAccountBadge': 'Shiply test account (Sandbox) — parcels are not sent for real delivery.',
+  'shiplyHandoverHint':
+      'A Shiply parcel will be created automatically on confirm.',
+  'shiplySandboxAccountBadge':
+      'Shiply test account (Sandbox) — parcels are not sent for real delivery.',
   'shiplySandboxShort': 'Test',
-  'shiplyHandoverInProgress': 'Submitting parcel to Shiply… this may take a minute',
-  'shiplyHandoverFailedGeneric': 'Shiply handover failed — check connection, address, required photos, then retry',
+  'shiplyHandoverInProgress':
+      'Submitting parcel to Shiply… this may take a minute',
+  'shiplyHandoverFailedGeneric':
+      'Shiply handover failed — check connection, address, required photos, then retry',
   'salesOrderMediaUploadInProgress': 'Uploading media… this may take a minute',
   'salesOrderActionInProgress': 'Processing action…',
-  'salesOrderActionFailedGeneric': 'Action failed — check stock, required photos, then retry',
-  'salesOrderManualHandoverHint': 'Manual handover — optional tracking or reference (office / carrier).',
-  'shiplyUnauthorizedHint': 'Shiply rejected the handover. Ensure your login email is registered as an employee in Shiply (same test/live mode), and that the API key matches the mode in settings.',
+  'salesOrderActionFailedGeneric':
+      'Action failed — check stock, required photos, then retry',
+  'salesOrderManualHandoverHint':
+      'Manual handover — optional tracking or reference (office / carrier).',
+  'shiplyUnauthorizedHint':
+      'Shiply rejected the handover. Ensure your login email is registered as an employee in Shiply (same test/live mode), and that the API key matches the mode in settings.',
   'shiplySettingsTitle': 'Delivery settings (Shiply)',
   'shiplySettingsDesc': 'Enable integration and Sandbox / Live mode',
   'shiplyIntegrationEnabled': 'Enable Shiply integration',
@@ -1480,7 +1499,8 @@ const Map<String, String> en = {
   'salesOrderShiplyPartnerRequired': 'Please select a customer or seller',
   'salesOrderShiplyPartnersEmpty': 'List is empty — use Add below.',
   'salesOrderShiplyPhoneTitle': 'Recipient phone',
-  'salesOrderShiplyPhoneSubtitle': 'Enter phone for :name — required for Shiply.',
+  'salesOrderShiplyPhoneSubtitle':
+      'Enter phone for :name — required for Shiply.',
   'salesOrderShiplyPhoneHint': 'Example: 0599999999 or +972 599999999',
   'salesOrderShiplyPhoneInvalid': 'Invalid phone number',
   'salesOrderShiplyPhoneRequired': 'Recipient phone is required for Shiply',
@@ -1489,6 +1509,20 @@ const Map<String, String> en = {
   'salesOrderShiplyQrShow': 'Show QR code',
   'salesOrderShiplyQrSaved': 'QR saved to gallery',
   'salesOrderShiplyQrSaveFailed': 'Failed to save QR',
+  'salesOrderShiplyLabelPrintV1': 'View Shiply V1 label',
+  'salesOrderShiplyLabelPrintV2': 'View Shiply V2 label',
+  'salesOrderShiplyLabelTitleV1': 'Shiply V1 parcel label',
+  'salesOrderShiplyLabelTitleV2': 'Shiply V2 parcel label',
+  'salesOrderShiplyV2Options': 'Shiply V2 label options',
+  'salesOrderShiplyLabelSize': 'Label size',
+  'salesOrderShiplyLabelLanguage': 'Label language',
+  'salesOrderShiplySizeA4': 'A4 page',
+  'salesOrderShiplySize10': '10 × 10 label',
+  'salesOrderShiplySizeQr': 'QR only — 10 × 10',
+  'salesOrderShiplyLanguageArabic': 'Arabic',
+  'salesOrderShiplyLanguageEnglish': 'English',
+  'salesOrderShiplyLanguageHebrew': 'Hebrew',
+  'salesOrderShiplyLabelPreview': 'Preview',
   'salesOrderQrDownload': 'Download',
   'salesOrderQrPrint': 'Print',
   'salesOrderQrClose': 'Close',
@@ -1546,12 +1580,14 @@ const Map<String, String> en = {
   'salesOrderPostpone': 'Postpone',
   'salesOrderPostponeUntil': 'Postpone until',
   'salesOrderMarkStuck': 'Mark stuck',
-  'salesOrderMarkStuckHint': 'For orders stuck at the delivery company — enter a reason.',
+  'salesOrderMarkStuckHint':
+      'For orders stuck at the delivery company — enter a reason.',
   'salesOrderStuckReason': 'Stuck reason',
   'salesOrderStatusStuck': 'Stuck',
   'salesOrderAlternativeReturn': 'Alternative return',
   'salesOrderSettleBox': 'Collection box',
-  'salesOrderSettleBoxHint': 'No visible boxes — you can settle without depositing.',
+  'salesOrderSettleBoxHint':
+      'No visible boxes — you can settle without depositing.',
   'salesOrderBulkMode': 'Multi-select',
   'salesOrderBulkSelectAll': 'Select all',
   'salesOrderBulkClear': 'Clear selection',
@@ -1559,6 +1595,13 @@ const Map<String, String> en = {
   'salesOrderBulkDone': 'Updated @count orders',
   'salesOrderBulkPartial': '@ok succeeded — @fail failed',
   'salesOrderDeliveryFee': 'Delivery',
+  'salesOrderEditableTotal': 'Editable total',
+  'salesOrderCalculatedTotal': 'Original calculated total',
+  'salesOrderPriceIncludesDelivery': 'Price includes delivery',
+  'salesOrderPriceIncludesDeliveryHint':
+      'The delivery fee will be deducted from the total sent to Shiply.',
+  'salesOrderIncludesDelivery': 'Includes delivery',
+  'salesOrderExcludesDelivery': 'Excludes delivery',
   'salesOrderShiplyQuotedFee': 'Shiply price (original)',
   'salesOrderShiplyChargedFee': 'Customer delivery fee',
   'salesOrderShiplyFeeDifference': 'Price difference',
@@ -1675,7 +1718,7 @@ const Map<String, String> en = {
       'Fill the form and tap Save. You can add multiple notifications.',
   'checkNotificationChannelHint':
       'Incoming checks: SMS is sent to the check owner (or admin).\n'
-      'Outgoing checks: Push notification is sent to admin devices in the app.',
+          'Outgoing checks: Push notification is sent to admin devices in the app.',
   'checkNotificationMessageHint':
       'Notification text. Use {name} {check_number} {amount} {currency} {due_date} {bank} {check_type}',
   'checkNotificationSavedHint': 'Notification setting saved successfully.',
@@ -1914,8 +1957,7 @@ const Map<String, String> en = {
   'stockInventorySettings': 'Inventory settings',
   'stockInventorySettingsDesc': 'Manage stock lists and product sizes',
   'storeSectionsSetting': 'Store sections',
-  'storeSectionsSettingDesc':
-      'Add, edit and delete store sections',
+  'storeSectionsSettingDesc': 'Add, edit and delete store sections',
   'sectionStatProducts': '@count product(s)',
   'storeSectionDescription': 'Section description',
   'storeSectionDescriptionHint': 'e.g. E-bike section — ground floor',
@@ -2470,7 +2512,8 @@ const Map<String, String> en = {
   'attendanceMethodsSection': 'Attendance methods',
   'fingerprintOptionsSection': 'Fingerprint options',
   'qrAttendanceDesc': 'Employees scan QR from the app to check in/out',
-  'fingerprintAttendanceDesc': 'Record attendance through connected fingerprint devices',
+  'fingerprintAttendanceDesc':
+      'Record attendance through connected fingerprint devices',
   'fingerprintDevicesDesc': 'Manage devices and link users to employees',
   'qrAttendance': 'QR attendance',
   'fingerprintAttendance': 'Fingerprint attendance',
@@ -2505,7 +2548,8 @@ const Map<String, String> en = {
   'syncUsers': 'Sync users',
   'syncLogs': 'Sync logs',
   'fingerprintDeviceUsers': 'Fingerprint device users',
-  'fingerprintDeviceUsersDesc': 'Link device PIN numbers to employees in the system',
+  'fingerprintDeviceUsersDesc':
+      'Link device PIN numbers to employees in the system',
   'linkToEmployee': 'Link to employee',
   'changeLink': 'Change link',
   'unlinkEmployee': 'Unlink',

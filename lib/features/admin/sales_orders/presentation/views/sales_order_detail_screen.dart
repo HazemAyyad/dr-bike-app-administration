@@ -60,7 +60,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         backgroundColor: SalesOrdersController.cardGray,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: SalesOrdersController.textPrimary),
+        iconTheme:
+            const IconThemeData(color: SalesOrdersController.textPrimary),
         title: Text(
           'salesOrders'.tr,
           style: TextStyle(
@@ -85,7 +86,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
         ],
       ),
       body: Obx(() {
-        if (controller.isDetailLoading.value && controller.detail.value == null) {
+        if (controller.isDetailLoading.value &&
+            controller.detail.value == null) {
           return const Center(child: CircularProgressIndicator());
         }
         final order = controller.detail.value;
@@ -93,7 +95,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           return Center(
             child: Text(
               'noData'.tr,
-              style: const TextStyle(color: SalesOrdersController.textSecondary),
+              style:
+                  const TextStyle(color: SalesOrdersController.textSecondary),
             ),
           );
         }
@@ -174,13 +177,21 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                       ),
                     ),
                     SizedBox(height: 2.h),
-                    Text(
-                      order.serialNumber ?? '#${order.id}',
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22.sp,
-                      ),
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 5.h,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          order.serialNumber ?? '#${order.id}',
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22.sp,
+                          ),
+                        ),
+                        _deliveryIncludedBadge(order.priceIncludesDelivery),
+                      ],
                     ),
                   ],
                 ),
@@ -198,7 +209,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                 borderRadius: BorderRadius.circular(8.r),
                 child: Container(
                   width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8.r),
                     border: Border.all(color: const Color(0xFF6EE7B7)),
@@ -249,6 +261,45 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     );
   }
 
+  Widget _deliveryIncludedBadge(bool includesDelivery) {
+    final color = includesDelivery
+        ? const Color(0xFF6D28D9)
+        : SalesOrdersController.textSecondary;
+    final background = includesDelivery
+        ? const Color(0xFFF3E8FF)
+        : SalesOrdersController.surfaceGray;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.local_shipping_outlined,
+            size: 13.sp,
+            color: color,
+          ),
+          SizedBox(width: 4.w),
+          Text(
+            includesDelivery
+                ? 'salesOrderIncludesDelivery'.tr
+                : 'salesOrderExcludesDelivery'.tr,
+            style: TextStyle(
+              color: color,
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _totalsSummary(SalesOrderDetailModel order) {
     final paid = order.paymentAmount;
     final remaining = (order.total - paid).clamp(0, double.infinity).toDouble();
@@ -263,7 +314,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
           _totalLine('discount'.tr, -order.discount, muted: true),
         if (hasShiplyFeeBreakdown) ...[
           _totalLine('salesOrderShiplyQuotedFee'.tr, quoted!, muted: true),
-          _totalLine('salesOrderShiplyChargedFee'.tr, order.customerDeliveryFee),
+          _totalLine(
+              'salesOrderShiplyChargedFee'.tr, order.customerDeliveryFee),
           if (order.shiplyDeliveryFeeAdjustment != null &&
               order.shiplyDeliveryFeeAdjustment!.abs() >= 0.01)
             _totalLine(
@@ -386,6 +438,22 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                     handover.shiplyParcelCode ?? handover.trackingNumber!),
               if ((handover.shiplyQrCode ?? '').isNotEmpty)
                 SalesOrderShiplyQrTile(code: handover.shiplyQrCode!),
+              if ((handover.shiplyParcelCode ?? handover.trackingNumber ?? '')
+                  .isNotEmpty)
+                SalesOrderShiplyLabelTile(
+                  orderId: order.id,
+                  parcelCode:
+                      handover.shiplyParcelCode ?? handover.trackingNumber!,
+                  version: 'v1',
+                ),
+              if ((handover.shiplyParcelCode ?? handover.trackingNumber ?? '')
+                  .isNotEmpty)
+                SalesOrderShiplyLabelTile(
+                  orderId: order.id,
+                  parcelCode:
+                      handover.shiplyParcelCode ?? handover.trackingNumber!,
+                  version: 'v2',
+                ),
             ],
             if ((handover.handedOverAt ?? '').isNotEmpty)
               _infoRow(Icons.schedule_outlined,
@@ -861,8 +929,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              onTap: () =>
-                  Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN, arguments: child.id),
+              onTap: () => Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN,
+                  arguments: child.id),
             ),
           ),
         ],
@@ -1101,9 +1169,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: busy
-              ? null
-              : () => _runAction(order.id, action.id, order),
+          onTap: busy ? null : () => _runAction(order.id, action.id, order),
           borderRadius: BorderRadius.circular(10.r),
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 4.h),
@@ -1126,9 +1192,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   ),
                   child: Icon(
                     _actionIcon(action.id),
-                    color: busy
-                        ? iconColor.withValues(alpha: 0.35)
-                        : iconColor,
+                    color: busy ? iconColor.withValues(alpha: 0.35) : iconColor,
                     size: 22.sp,
                   ),
                 ),
@@ -1252,7 +1316,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   void _showQtySheet(SalesOrderDetailModel order, String mode) {
     final qtyControllers = <int, TextEditingController>{};
     for (final item in order.items) {
-      final max = mode == 'deliver' ? item.pendingDeliverQty : item.returnableQty;
+      final max =
+          mode == 'deliver' ? item.pendingDeliverQty : item.returnableQty;
       if (max > 0) {
         qtyControllers[item.id] = TextEditingController(text: '0');
       }
@@ -1286,9 +1351,11 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: qtyControllers.entries.map((entry) {
-                    final item = order.items.firstWhere((i) => i.id == entry.key);
-                    final max =
-                        mode == 'deliver' ? item.pendingDeliverQty : item.returnableQty;
+                    final item =
+                        order.items.firstWhere((i) => i.id == entry.key);
+                    final max = mode == 'deliver'
+                        ? item.pendingDeliverQty
+                        : item.returnableQty;
                     return Padding(
                       padding: EdgeInsets.only(bottom: 10.h),
                       child: Row(
@@ -1369,7 +1436,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(6.r),
       child: has
-          ? CachedNetworkImage(imageUrl: url, width: 36.w, height: 36.w, fit: BoxFit.cover)
+          ? CachedNetworkImage(
+              imageUrl: url, width: 36.w, height: 36.w, fit: BoxFit.cover)
           : _itemPlaceholder(size: 36),
     );
   }
@@ -1381,7 +1449,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
     _showHandoverSheet(order.id, order);
   }
 
-  Future<bool> _prepareManualDeliveryHandover(SalesOrderDetailModel order) async {
+  Future<bool> _prepareManualDeliveryHandover(
+      SalesOrderDetailModel order) async {
     var current = controller.detail.value ?? order;
     final requiresFullAddress = controller.isSelectedCompanyTaxi ||
         controller.isSelectedCompanyOffice ||
@@ -1564,131 +1633,243 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-            Text(
-              'salesOrderHandover'.tr,
-              style: TextStyle(
-                color: SalesOrdersController.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16.sp,
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Obx(() => DropdownButtonFormField<int>(
-                  initialValue: controller.deliveryCompanies
-                          .any((c) => c.id == controller.selectedDeliveryCompanyId.value)
-                      ? controller.selectedDeliveryCompanyId.value
-                      : null,
-                  dropdownColor: SalesOrdersController.cardGray,
+                Text(
+                  'salesOrderHandover'.tr,
                   style: TextStyle(
                     color: SalesOrdersController.textPrimary,
-                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.sp,
                   ),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: SalesOrdersController.cardGray,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                      borderSide:
-                          const BorderSide(color: SalesOrdersController.borderGray),
-                    ),
-                  ),
-                  items: controller.deliveryCompanies
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c.id,
-                          child: Text(controller.deliveryCompanyLabel(c)),
+                ),
+                SizedBox(height: 12.h),
+                Obx(() => DropdownButtonFormField<int>(
+                      initialValue: controller.deliveryCompanies.any((c) =>
+                              c.id ==
+                              controller.selectedDeliveryCompanyId.value)
+                          ? controller.selectedDeliveryCompanyId.value
+                          : null,
+                      dropdownColor: SalesOrdersController.cardGray,
+                      style: TextStyle(
+                        color: SalesOrdersController.textPrimary,
+                        fontSize: 14.sp,
+                      ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: SalesOrdersController.cardGray,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                          borderSide: const BorderSide(
+                              color: SalesOrdersController.borderGray),
                         ),
-                      )
-                      .toList(),
-                  onChanged: controller.onDeliveryCompanyChanged,
-                )),
-            Obx(() {
-              if (controller.isSelectedCompanyShiply) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
+                      ),
+                      items: controller.deliveryCompanies
+                          .map(
+                            (c) => DropdownMenuItem(
+                              value: c.id,
+                              child: Text(controller.deliveryCompanyLabel(c)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: controller.onDeliveryCompanyChanged,
+                    )),
+                Obx(() {
+                  if (controller.isSelectedCompanyShiply) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(top: 10.h),
+                          child: SalesOrderShiplySandboxBadge(
+                              controller: controller),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(top: 4.h),
+                          child: Text(
+                            'shiplyHandoverHint'.tr,
+                            style: TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  if (controller.isSelectedCompanyTaxi) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: 10.h),
+                        TextField(
+                          controller: controller.trackingController,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontSize: 14.sp,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderTaxiNumber'.tr,
+                            labelStyle: const TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        TextField(
+                          controller: controller.carrierContactNameController,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontSize: 14.sp,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderTaxiDriver'.tr,
+                            labelStyle: const TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        TextField(
+                          controller: controller.carrierContactPhoneController,
+                          keyboardType: TextInputType.phone,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontSize: 14.sp,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderTaxiPhone'.tr,
+                            labelStyle: const TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(top: 6.h),
+                          child: Text(
+                            'salesOrderCarrierAddressHint'.tr,
+                            style: TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  if (controller.isSelectedCompanyOffice) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: 10.h),
+                        TextField(
+                          controller: controller.carrierOfficeNameController,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontSize: 14.sp,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderOfficeName'.tr,
+                            labelStyle: const TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        TextField(
+                          controller: controller.carrierContactNameController,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontSize: 14.sp,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderOfficeDriver'.tr,
+                            labelStyle: const TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        TextField(
+                          controller: controller.carrierContactPhoneController,
+                          keyboardType: TextInputType.phone,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontSize: 14.sp,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderOfficePhone'.tr,
+                            labelStyle: const TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 10.h),
+                        TextField(
+                          controller: controller.carrierVehicleNumberController,
+                          style: TextStyle(
+                            color: SalesOrdersController.textPrimary,
+                            fontSize: 14.sp,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesOrderOfficeVehicle'.tr,
+                            labelStyle: const TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: SalesOrdersController.cardGray,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.only(top: 6.h),
+                          child: Text(
+                            'salesOrderCarrierAddressHint'.tr,
+                            style: TextStyle(
+                              color: SalesOrdersController.textSecondary,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  if (controller.isSelectedCompanyDoctorBike) {
+                    return Padding(
                       padding: EdgeInsets.only(top: 10.h),
-                      child: SalesOrderShiplySandboxBadge(controller: controller),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 4.h),
-                      child: Text(
-                        'shiplyHandoverHint'.tr,
-                        style: TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              }
-
-              if (controller.isSelectedCompanyTaxi) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: 10.h),
-                    TextField(
-                      controller: controller.trackingController,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderTaxiNumber'.tr,
-                        labelStyle: const TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    TextField(
-                      controller: controller.carrierContactNameController,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderTaxiDriver'.tr,
-                        labelStyle: const TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    TextField(
-                      controller: controller.carrierContactPhoneController,
-                      keyboardType: TextInputType.phone,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderTaxiPhone'.tr,
-                        labelStyle: const TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 6.h),
                       child: Text(
                         'salesOrderCarrierAddressHint'.tr,
                         style: TextStyle(
@@ -1696,181 +1877,71 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           fontSize: 12.sp,
                         ),
                       ),
-                    ),
-                  ],
-                );
-              }
+                    );
+                  }
 
-              if (controller.isSelectedCompanyOffice) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: 10.h),
-                    TextField(
-                      controller: controller.carrierOfficeNameController,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderOfficeName'.tr,
-                        labelStyle: const TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    TextField(
-                      controller: controller.carrierContactNameController,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderOfficeDriver'.tr,
-                        labelStyle: const TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    TextField(
-                      controller: controller.carrierContactPhoneController,
-                      keyboardType: TextInputType.phone,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderOfficePhone'.tr,
-                        labelStyle: const TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10.h),
-                    TextField(
-                      controller: controller.carrierVehicleNumberController,
-                      style: TextStyle(
-                        color: SalesOrdersController.textPrimary,
-                        fontSize: 14.sp,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'salesOrderOfficeVehicle'.tr,
-                        labelStyle: const TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                        ),
-                        filled: true,
-                        fillColor: SalesOrdersController.cardGray,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 6.h),
-                      child: Text(
-                        'salesOrderCarrierAddressHint'.tr,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(height: 10.h),
+                      TextField(
+                        controller: controller.trackingController,
                         style: TextStyle(
-                          color: SalesOrdersController.textSecondary,
-                          fontSize: 12.sp,
+                          color: SalesOrdersController.textPrimary,
+                          fontSize: 14.sp,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'salesOrderTracking'.tr,
+                          labelStyle: const TextStyle(
+                            color: SalesOrdersController.textSecondary,
+                          ),
+                          filled: true,
+                          fillColor: SalesOrdersController.cardGray,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              }
-
-              if (controller.isSelectedCompanyDoctorBike) {
-                return Padding(
-                  padding: EdgeInsets.only(top: 10.h),
-                  child: Text(
-                    'salesOrderCarrierAddressHint'.tr,
-                    style: TextStyle(
-                      color: SalesOrdersController.textSecondary,
-                      fontSize: 12.sp,
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(height: 10.h),
-                  TextField(
-                    controller: controller.trackingController,
-                    style: TextStyle(
-                      color: SalesOrdersController.textPrimary,
-                      fontSize: 14.sp,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'salesOrderTracking'.tr,
-                      labelStyle: const TextStyle(
-                        color: SalesOrdersController.textSecondary,
+                      Padding(
+                        padding: EdgeInsets.only(top: 6.h),
+                        child: Text(
+                          'salesOrderManualHandoverHint'.tr,
+                          style: TextStyle(
+                            color: SalesOrdersController.textSecondary,
+                            fontSize: 12.sp,
+                          ),
+                        ),
                       ),
-                      filled: true,
-                      fillColor: SalesOrdersController.cardGray,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
+                    ],
+                  );
+                }),
+                SizedBox(height: 16.h),
+                ElevatedButton(
+                  onPressed: () async {
+                    final manualErr = controller.validateManualHandoverFields();
+                    if (manualErr != null) {
+                      SalesOrderNotice.error(manualErr);
+                      return;
+                    }
+
+                    final isShiply = controller.isSelectedCompanyShiply;
+                    Get.back();
+
+                    final ready = isShiply
+                        ? await _prepareShiplyHandover(order)
+                        : await _prepareManualDeliveryHandover(order);
+                    if (!ready) return;
+
+                    await controller.loadDetail(orderId);
+                    controller.handover(orderId);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: SalesOrdersController.textPrimary,
+                    foregroundColor: SalesOrdersController.cardGray,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
                   ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 6.h),
-                    child: Text(
-                      'salesOrderManualHandoverHint'.tr,
-                      style: TextStyle(
-                        color: SalesOrdersController.textSecondary,
-                        fontSize: 12.sp,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
-            SizedBox(height: 16.h),
-            ElevatedButton(
-              onPressed: () async {
-                final manualErr = controller.validateManualHandoverFields();
-                if (manualErr != null) {
-                  SalesOrderNotice.error(manualErr);
-                  return;
-                }
-
-                final isShiply = controller.isSelectedCompanyShiply;
-                Get.back();
-
-                final ready = isShiply
-                    ? await _prepareShiplyHandover(order)
-                    : await _prepareManualDeliveryHandover(order);
-                if (!ready) return;
-
-                await controller.loadDetail(orderId);
-                controller.handover(orderId);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: SalesOrdersController.textPrimary,
-                foregroundColor: SalesOrdersController.cardGray,
-                padding: EdgeInsets.symmetric(vertical: 14.h),
-              ),
-              child: Text('confirm'.tr),
-            ),
+                  child: Text('confirm'.tr),
+                ),
               ],
             ),
           ),
@@ -1948,8 +2019,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                           ),
                         ),
                         SizedBox(height: 12.h),
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting)
+                        if (snapshot.connectionState == ConnectionState.waiting)
                           const Center(child: CircularProgressIndicator())
                         else if (boxes.isEmpty)
                           Text(
@@ -1977,7 +2047,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: SalesOrdersController.textPrimary,
+                                        color:
+                                            SalesOrdersController.textPrimary,
                                         fontSize: 14.sp,
                                       ),
                                     ),

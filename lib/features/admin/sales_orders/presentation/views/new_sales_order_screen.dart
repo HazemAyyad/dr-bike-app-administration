@@ -26,7 +26,12 @@ class _NewSalesOrderScreenState extends State<NewSalesOrderScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      controller.resetCreateForm();
+      final args = Get.arguments;
+      final isEdit = args is Map && args['editSalesOrder'] == true;
+      if (!isEdit) {
+        controller.resetCreateForm();
+        sales.resetInstantSaleForm();
+      }
       sales.getAllProducts();
       await sales.ensurePickerPartnersLoaded();
     });
