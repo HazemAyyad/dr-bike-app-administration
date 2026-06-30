@@ -104,12 +104,20 @@ class SalesImplement implements SalesRepository {
 
   // get all products
   @override
-  Future<List<ProductModel>> getAllProducts({required String endPoint}) async {
+  Future<List<ProductModel>> getAllProducts({
+    required String endPoint,
+    String? customerId,
+    String? sellerId,
+  }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
     }
     try {
-      final result = await salesDatasource.getAllProducts(endPoint: endPoint);
+      final result = await salesDatasource.getAllProducts(
+        endPoint: endPoint,
+        customerId: customerId,
+        sellerId: sellerId,
+      );
       return result;
     } on ServerException catch (e) {
       throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);

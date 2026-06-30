@@ -196,8 +196,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       swapGroupAIds.isNotEmpty && swapGroupBIds.isNotEmpty;
 
   bool isProductSelected(String productId) =>
-      swapGroupAIds.contains(productId) ||
-      swapGroupBIds.contains(productId);
+      swapGroupAIds.contains(productId) || swapGroupBIds.contains(productId);
 
   bool isProductInSwapGroupA(String productId) =>
       swapGroupAIds.contains(productId);
@@ -299,7 +298,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     for (final p in locationFilterProducts) {
       byId[p.productId] = p;
     }
-    return ids.map((id) => byId[id]).whereType<AllStockProductsModel>().toList();
+    return ids
+        .map((id) => byId[id])
+        .whereType<AllStockProductsModel>()
+        .toList();
   }
 
   List<AllStockProductsModel> getSelectedProductsList() =>
@@ -391,14 +393,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       );
       return;
     }
-    final idsA = swapGroupAIds
-        .map((id) => int.tryParse(id))
-        .whereType<int>()
-        .toList();
-    final idsB = swapGroupBIds
-        .map((id) => int.tryParse(id))
-        .whereType<int>()
-        .toList();
+    final idsA =
+        swapGroupAIds.map((id) => int.tryParse(id)).whereType<int>().toList();
+    final idsB =
+        swapGroupBIds.map((id) => int.tryParse(id)).whereType<int>().toList();
     if (idsA.isEmpty || idsB.isEmpty) return;
 
     final ctx = context ?? Get.context;
@@ -555,8 +553,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         filters: filters,
       );
       _mergeStockItems(allProducts, result.products);
-      productListTotalCount.value =
-          filters != null ? result.total : 0;
+      productListTotalCount.value = filters != null ? result.total : 0;
       _productsPage = 2;
       _hasMoreProducts = result.currentPage < result.lastPage;
     } on ServerFailure {
@@ -1183,7 +1180,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   final RxBool isProductLoading = false.obs;
   final RxBool isSearchLoading = false.obs;
-  final TextEditingController stockSearchQueryController = TextEditingController();
+  final TextEditingController stockSearchQueryController =
+      TextEditingController();
   final RxString stockSearchActiveQuery = ''.obs;
   final RxList<String> stockSearchHistory = <String>[].obs;
 
@@ -2455,7 +2453,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
     final sizeQtyErr = validateAllSizeColorQuantities();
     if (sizeQtyErr != null) {
-      Get.snackbar('error'.tr, sizeQtyErr.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, sizeQtyErr.tr,
+          snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
@@ -2560,6 +2559,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   @override
   void onInit() {
     super.onInit();
+    final routeArgs = Get.arguments;
+    if (routeArgs is Map && routeArgs['createProduct'] == true) {
+      prepareCreateProduct();
+    }
     loadStockSearchHistory();
     getAllProducts();
     getCategories();

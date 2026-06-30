@@ -10,6 +10,8 @@ class ProductModel {
   final List<dynamic> projects;
   final double unitPrice;
   final double wholesalePrice;
+  final double? customPrice;
+  final bool hasCustomPrice;
   final double rate;
   final double purchaseCost;
   final String imageUrl;
@@ -33,6 +35,8 @@ class ProductModel {
     required this.projects,
     this.unitPrice = 0,
     this.wholesalePrice = 0,
+    this.customPrice,
+    this.hasCustomPrice = false,
     this.rate = 0,
     this.purchaseCost = 0,
     this.imageUrl = '',
@@ -54,7 +58,8 @@ class ProductModel {
         fallbackImage: imageUrl,
       );
 
-  List<String> get allImageUrlsInPriority => ProductImageUtils.allValidUrlsInPriority(
+  List<String> get allImageUrlsInPriority =>
+      ProductImageUtils.allValidUrlsInPriority(
         viewImages: viewImageUrls,
         normalImages: normalImageUrls,
         image3d: image3dUrls,
@@ -93,6 +98,9 @@ class ProductModel {
       wholesalePrice: asDouble(
         j['wholesale_price'] ?? j['wholesalePrice'] ?? 0,
       ),
+      customPrice:
+          j['custom_price'] == null ? null : asDouble(j['custom_price']),
+      hasCustomPrice: j['has_custom_price'] == true,
       rate: asDouble(j['rate'] ?? 0),
       purchaseCost: asDouble(j['purchase_cost'] ?? j['purchaseCost'] ?? 0),
       imageUrl: asString(
@@ -103,8 +111,7 @@ class ProductModel {
           ProductImageUtils.allValidUrlsFromList(j['product_viewImages']),
       normalImageUrls:
           ProductImageUtils.allValidUrlsFromList(j['product_normalImages']),
-      image3dUrls:
-          ProductImageUtils.allValidUrlsFromList(j['product_image3d']),
+      image3dUrls: ProductImageUtils.allValidUrlsFromList(j['product_image3d']),
       mainCategoryId: mainCatRaw == null ? null : asString(mainCatRaw),
       productCode: asNullableString(
         j['product_code'] ?? j['productCode'] ?? j['code'],
@@ -127,6 +134,8 @@ class ProductModel {
   ProductModel copyWith({
     double? unitPrice,
     double? wholesalePrice,
+    double? customPrice,
+    bool? hasCustomPrice,
     double? purchaseCost,
     String? productCode,
     String? storeSectionId,
@@ -139,6 +148,8 @@ class ProductModel {
       projects: projects,
       unitPrice: unitPrice ?? this.unitPrice,
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
+      customPrice: customPrice ?? this.customPrice,
+      hasCustomPrice: hasCustomPrice ?? this.hasCustomPrice,
       rate: rate,
       purchaseCost: purchaseCost ?? this.purchaseCost,
       imageUrl: imageUrl,
@@ -149,6 +160,8 @@ class ProductModel {
       productCode: productCode ?? this.productCode,
       storeSectionId: storeSectionId ?? this.storeSectionId,
       storeSectionName: storeSectionName ?? this.storeSectionName,
+      hasVariants: hasVariants,
+      sizes: sizes,
     );
   }
 
@@ -159,6 +172,8 @@ class ProductModel {
       'stock': stock,
       'projects': projects,
       'normail_price': unitPrice,
+      if (customPrice != null) 'custom_price': customPrice,
+      'has_custom_price': hasCustomPrice,
       'rate': rate,
       'product_image': imageUrl,
       'product_viewImages': viewImageUrls,

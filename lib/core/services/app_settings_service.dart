@@ -27,6 +27,11 @@ class AppSettingsService {
     ...defaultAdminFabOptions,
     'createNewEmployeeTask',
     'addNewPrivateTask',
+    'newSalesInvoice',
+    'newCashProfit',
+    'newMaintenance',
+    'newFollowUp',
+    'newProduct',
   };
 
   final RxInt subtaskBonusDefault = 5.obs;
@@ -104,7 +109,8 @@ class AppSettingsService {
           final maxFloat = settings['sales_daily_max_float'];
           if (maxFloat is Map) {
             _applyMaxFloatMap(maxFloat);
-            await FinalClasses.getStorage.write(_salesMaxFloatCacheKey, maxFloat);
+            await FinalClasses.getStorage
+                .write(_salesMaxFloatCacheKey, maxFloat);
           }
           final shiply = settings['shiply'];
           if (shiply is Map) {

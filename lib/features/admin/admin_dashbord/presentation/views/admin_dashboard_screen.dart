@@ -143,6 +143,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
           opacityAnimation: controller.sizeAnimation,
           sizeAnimation: controller.opacityAnimation,
           addList: controller.visibleAdminAddList,
+          useGrid: true,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,

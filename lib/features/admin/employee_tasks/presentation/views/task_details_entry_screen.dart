@@ -93,8 +93,12 @@ class _TaskDetailsEntryScreenState extends State<TaskDetailsEntryScreen> {
   bool get _loadFailed =>
       _loadStarted &&
       !Get.find<EmployeeTasksController>().isTaskDetailsLoading.value &&
-      Get.find<EmployeeTasksController>().employeeTaskService.taskDetails.value ==
-          null;
+      !_detailsMatchRequest(
+        Get.find<EmployeeTasksController>()
+            .employeeTaskService
+            .taskDetails
+            .value,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -102,9 +106,8 @@ class _TaskDetailsEntryScreenState extends State<TaskDetailsEntryScreen> {
         ? Get.arguments as Map<String, dynamic>
         : <String, dynamic>{};
     final viewMode = args['viewMode']?.toString();
-    final role = sessionUserType.value.isNotEmpty
-        ? sessionUserType.value
-        : userType;
+    final role =
+        sessionUserType.value.isNotEmpty ? sessionUserType.value : userType;
     final useCompletion =
         viewMode == 'complete' || (viewMode == null && role != 'admin');
 

@@ -33,7 +33,11 @@ abstract class SalesRepository {
     String sortDirection = 'desc',
   });
 
-  Future<List<ProductModel>> getAllProducts({required String endPoint});
+  Future<List<ProductModel>> getAllProducts({
+    required String endPoint,
+    String? customerId,
+    String? sellerId,
+  });
 
   Future<Either<Failure, ProductPriceUpdateResult>> updateProductRetailPrice({
     required String productId,

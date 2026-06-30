@@ -138,26 +138,31 @@ class AdminDashboardController extends GetxController
     {
       'title': 'newInvoice',
       'icon': AssetsManager.invoiceIcon,
+      'materialIcon': 'sales_invoice',
       'route': AppRoutes.ADDNEWBILLSCREEN
     },
     {
       'title': 'newEmployee',
       'icon': AssetsManager.userIcon,
+      'materialIcon': 'employee',
       'route': AppRoutes.ADDNEWEMPLOYEESCREEN,
     },
     {
       'title': 'newExpense',
       'icon': AssetsManager.moneyIcon,
+      'materialIcon': 'expense',
       'route': AppRoutes.ADDEXPENSESCREEN,
     },
     {
       'title': 'newCustomer',
       'icon': AssetsManager.userIcon,
+      'materialIcon': 'customer',
       'route': AppRoutes.ADDNEWCUSTOMERSCREEN,
     },
     {
       'title': 'newTask',
       'icon': AssetsManager.taskIcon,
+      'materialIcon': 'employee_task',
       'route': AppRoutes.CREATETASKSCREEN,
       'settingKey': 'createNewEmployeeTask',
       'flowTitle': 'createNewEmployeeTask',
@@ -165,9 +170,47 @@ class AdminDashboardController extends GetxController
     {
       'title': 'newPrivateTask',
       'icon': AssetsManager.taskIcon,
+      'materialIcon': 'private_task',
       'route': AppRoutes.CREATETASKSCREEN,
       'settingKey': 'addNewPrivateTask',
       'flowTitle': 'addNewPravateTask',
+    },
+    {
+      'title': 'salesInvoiceShortcut',
+      'icon': AssetsManager.invoiceIcon,
+      'materialIcon': 'sales_invoice',
+      'route': AppRoutes.NEWSALESORDERSCREEN,
+      'settingKey': 'newSalesInvoice',
+      'freshSalesOrder': 'true',
+    },
+    {
+      'title': 'newCashProfit',
+      'icon': AssetsManager.moneyIcon,
+      'materialIcon': 'profit',
+      'route': AppRoutes.NEWCASHPROFITSCREEN,
+      'settingKey': 'newCashProfit',
+    },
+    {
+      'title': 'newMaintenance',
+      'icon': AssetsManager.taskIcon,
+      'materialIcon': 'maintenance',
+      'route': AppRoutes.NEWMAINTENANCESCREEN,
+      'settingKey': 'newMaintenance',
+    },
+    {
+      'title': 'createFollowUp',
+      'icon': AssetsManager.taskIcon,
+      'materialIcon': 'follow_up',
+      'route': AppRoutes.ADDFOLLOWUPSCREEN,
+      'settingKey': 'newFollowUp',
+    },
+    {
+      'title': 'addProduct',
+      'icon': AssetsManager.invoiceIcon,
+      'materialIcon': 'product',
+      'route': AppRoutes.EDITPRODUCTSCREEN,
+      'settingKey': 'newProduct',
+      'createProduct': 'true',
     },
   ];
 

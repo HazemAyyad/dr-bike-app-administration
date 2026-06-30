@@ -16,6 +16,7 @@ class CustomFloatingActionButton extends StatelessWidget {
     required this.opacityAnimation,
     this.addList,
     this.customWidget,
+    this.useGrid = false,
   }) : super(key: key);
 
   final RxBool isAddMenuOpen;
@@ -24,6 +25,7 @@ class CustomFloatingActionButton extends StatelessWidget {
   final Animation<double> opacityAnimation;
   final List<Map<String, String>>? addList;
   final Widget? customWidget;
+  final bool useGrid;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +76,9 @@ class CustomFloatingActionButton extends StatelessWidget {
                       ),
                     ],
                   ),
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * .68,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -90,11 +95,40 @@ class CustomFloatingActionButton extends StatelessWidget {
                       ),
                       SizedBox(height: 8.h),
                       if (addList?.isNotEmpty ?? false)
-                        ...addList!.map(
-                          (e) => BuildAddMenuItem(
-                            item: e,
-                            onTap: () => onTap!(),
-                          ),
+                        Flexible(
+                          child: useGrid
+                              ? GridView.builder(
+                                  shrinkWrap: true,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 10.w,
+                                    vertical: 4.h,
+                                  ),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 8.h,
+                                    crossAxisSpacing: 8.w,
+                                    childAspectRatio: 2.15,
+                                  ),
+                                  itemCount: addList!.length,
+                                  itemBuilder: (_, index) => BuildAddMenuItem(
+                                    item: addList![index],
+                                    compactCard: true,
+                                    onTap: () => onTap!(),
+                                  ),
+                                )
+                              : ListView(
+                                  shrinkWrap: true,
+                                  padding: EdgeInsets.zero,
+                                  children: addList!
+                                      .map(
+                                        (e) => BuildAddMenuItem(
+                                          item: e,
+                                          onTap: () => onTap!(),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
                         ),
                       customWidget ?? const SizedBox.shrink(),
                     ],
@@ -133,6 +167,7 @@ class BuildAddMenuItem extends StatelessWidget {
     this.title,
     this.iconAsset,
     this.route,
+    this.compactCard = false,
     required this.onTap,
   }) : super(key: key);
 
@@ -141,10 +176,38 @@ class BuildAddMenuItem extends StatelessWidget {
   final String? iconAsset;
   final String? route;
   final void Function()? onTap;
+  final bool compactCard;
 
   String get _title => item?['title'] ?? title ?? '';
   String get _iconAsset => item?['icon'] ?? iconAsset ?? '';
   String get _route => item?['route'] ?? route ?? '';
+
+  IconData get _materialIcon {
+    switch (item?['materialIcon']) {
+      case 'employee':
+        return Icons.person_add_alt_1_rounded;
+      case 'expense':
+        return Icons.payments_outlined;
+      case 'customer':
+        return Icons.group_add_outlined;
+      case 'employee_task':
+        return Icons.assignment_ind_outlined;
+      case 'private_task':
+        return Icons.task_alt_rounded;
+      case 'sales_invoice':
+        return Icons.receipt_long_outlined;
+      case 'profit':
+        return Icons.trending_up_rounded;
+      case 'maintenance':
+        return Icons.build_circle_outlined;
+      case 'follow_up':
+        return Icons.follow_the_signs_outlined;
+      case 'product':
+        return Icons.add_box_outlined;
+      default:
+        return Icons.add_circle_outline_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -163,25 +226,62 @@ class BuildAddMenuItem extends StatelessWidget {
           if (item?['freshSalesOrder'] == 'true') {
             args['freshSalesOrder'] = true;
           }
+          if (item?['createProduct'] == 'true') {
+            args['createProduct'] = true;
+          }
           Get.toNamed(_route, arguments: args);
         }
         //  else {
         onTap?.call();
         // }
       },
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.h),
+      child: Container(
+        margin: compactCard ? EdgeInsets.zero : null,
+        padding: compactCard
+            ? EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h)
+            : EdgeInsets.symmetric(vertical: 8.h),
+        decoration: compactCard
+            ? BoxDecoration(
+                color: ThemeService.isDark.value
+                    ? AppColors.darkColor.withValues(alpha: .65)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(
+                  color: AppColors.primaryColor.withValues(alpha: .14),
+                ),
+              )
+            : null,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              compactCard ? MainAxisAlignment.start : MainAxisAlignment.center,
           children: [
-            Flexible(child: Image.asset(_iconAsset, height: 24.h, width: 24.w)),
-            SizedBox(width: 5.w),
-            Flexible(
+            Container(
+              width: compactCard ? 30.w : 26.w,
+              height: compactCard ? 30.w : 26.w,
+              decoration: BoxDecoration(
+                color: AppColors.primaryColor.withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: item?['materialIcon'] != null
+                  ? Icon(
+                      _materialIcon,
+                      size: compactCard ? 18.sp : 17.sp,
+                      color: AppColors.primaryColor,
+                    )
+                  : Padding(
+                      padding: EdgeInsets.all(4.w),
+                      child: Image.asset(_iconAsset),
+                    ),
+            ),
+            SizedBox(width: 7.w),
+            Expanded(
               child: Text(
                 _title.tr,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                       color: Get.isDarkMode ? Colors.white : Colors.black,
-                      fontSize: 16.sp,
+                      fontSize: compactCard ? 11.sp : 16.sp,
                       fontWeight: FontWeight.w700,
                     ),
               ),

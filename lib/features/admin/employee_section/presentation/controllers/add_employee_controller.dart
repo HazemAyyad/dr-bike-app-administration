@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/helpers.dart';
+import '../../../../../core/helpers/phone_format_helper.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
 import '../../domain/usecases/add_points_usecase.dart';
@@ -29,8 +30,12 @@ class AddEmployeeController extends GetxController {
     if (isEditEmployee) {
       employeeNameController.text = employeeService.employeeDetails.value!.name;
       emailController.text = employeeService.employeeDetails.value!.email;
-      phoneNumberController.text = employeeService.employeeDetails.value!.phone;
-      subPhoneController.text = employeeService.employeeDetails.value!.subPhone;
+      phoneNumberController.text = PhoneFormatHelper.forApi(
+        employeeService.employeeDetails.value!.phone,
+      );
+      subPhoneController.text = PhoneFormatHelper.forApi(
+        employeeService.employeeDetails.value!.subPhone,
+      );
       hourlyRateController.text =
           employeeService.employeeDetails.value!.hourWorkPrice;
       overTimeRateController.text =
@@ -119,10 +124,22 @@ class AddEmployeeController extends GetxController {
     {'name': 'maintenance'.tr, 'id': '15', 'permission': false.obs},
     {'name': 'stock'.tr, 'id': '16', 'permission': false.obs},
     {'name': 'completeData'.tr, 'id': '40', 'permission': false.obs},
-    {'name': 'impersonateEmployeePermission'.tr, 'id': '43', 'permission': false.obs},
+    {
+      'name': 'impersonateEmployeePermission'.tr,
+      'id': '43',
+      'permission': false.obs
+    },
     {'name': 'costPricePermission'.tr, 'id': '44', 'permission': false.obs},
-    {'name': 'editEmployeeTaskPermission'.tr, 'id': '45', 'permission': false.obs},
-    {'name': 'cloneEmployeeTaskPermission'.tr, 'id': '46', 'permission': false.obs},
+    {
+      'name': 'editEmployeeTaskPermission'.tr,
+      'id': '45',
+      'permission': false.obs
+    },
+    {
+      'name': 'cloneEmployeeTaskPermission'.tr,
+      'id': '46',
+      'permission': false.obs
+    },
   ];
 
   final RxBool isAllPermissionsSelected = false.obs;
@@ -189,12 +206,8 @@ class AddEmployeeController extends GetxController {
               : null,
           name: employeeNameController.text,
           email: emailController.text,
-          phone: RegExp(r'^[0-9+\s]+$').hasMatch(phoneNumberController.text)
-              ? phoneNumberController.text
-              : '',
-          subPhone: RegExp(r'^[0-9+\s]+$').hasMatch(subPhoneController.text)
-              ? subPhoneController.text
-              : '',
+          phone: PhoneFormatHelper.forApi(phoneNumberController.text),
+          subPhone: PhoneFormatHelper.forApi(subPhoneController.text),
           password: passwordController.text,
           passwordConfirmation: confirmPasswordController.text,
           hourWorkPrice: hourlyRateController.text,

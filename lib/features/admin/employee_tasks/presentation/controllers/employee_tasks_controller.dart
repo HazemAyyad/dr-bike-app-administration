@@ -59,7 +59,10 @@ class EmployeeTasksController extends GetxController {
 
   final tabs = <String>[].obs;
 
-  bool get _isAdminViewer => userType == 'admin';
+  bool get canReviewTasks =>
+      userType == 'admin' || employeePermissions.contains(7);
+
+  bool get _isAdminViewer => canReviewTasks;
 
   int get archiveTabIndex => _isAdminViewer ? 3 : 2;
 
@@ -1066,7 +1069,7 @@ class EmployeeTasksController extends GetxController {
             )
             .toList(),
         cachedNote:
-            'req taskId=$taskId occ=${occurrenceId ?? "-"} | rx cleared before load=${showFullScreenLoader}',
+            'req taskId=$taskId occ=${occurrenceId ?? "-"} | rx cleared before load=$showFullScreenLoader',
       );
     } catch (e, st) {
       TaskDetailsDebug.parseError(e, st);
@@ -1510,10 +1513,9 @@ class EmployeeTasksController extends GetxController {
         getEmployeeTasks();
       }
     }
-    final String taskId = args?['taskId'] ?? '';
-    if (taskId.isNotEmpty) {
-      getTaskDetails(taskId: taskId);
-    }
+    // TaskDetailsEntryScreen owns loading task details. Loading here as well
+    // used to send a second legacy request for occurrence tasks with the same
+    // numeric id, overwriting the correct occurrence response.
   }
 
   @override

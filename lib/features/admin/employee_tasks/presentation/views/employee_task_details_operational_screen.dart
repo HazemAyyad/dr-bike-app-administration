@@ -93,7 +93,7 @@ class EmployeeTaskDetailsOperationalScreen
 
         final progress = controller.subtaskProgress(data);
         final showReview =
-            data.status == 'waiting_review' && userType == 'admin';
+            data.status == 'waiting_review' && controller.canReviewTasks;
 
         return Column(
           children: [
@@ -111,7 +111,7 @@ class EmployeeTaskDetailsOperationalScreen
                       ),
                     TaskAdminMaterialsSection(data: data, compact: _compact),
                     if (data.subTasks.isNotEmpty) ...[
-                      TaskSectionTitle('taskProgress', compact: _compact),
+                      const TaskSectionTitle('taskProgress', compact: _compact),
                       TaskOpCard(
                         compact: _compact,
                         child: OperationalChecklist(
@@ -121,7 +121,8 @@ class EmployeeTaskDetailsOperationalScreen
                       ),
                     ],
                     if (_showsEmployeeProofSection(data)) ...[
-                      TaskSectionTitle('employeeProofSection', compact: _compact),
+                      const TaskSectionTitle('employeeProofSection',
+                          compact: _compact),
                       _ProofGallery(data: data),
                     ],
                     if (data.timeline.isNotEmpty) ...[
@@ -581,10 +582,14 @@ class OperationalChecklist extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (needsProof && !done && !rejected && !hasEmployeeProof) ...[
+                      if (needsProof &&
+                          !done &&
+                          !rejected &&
+                          !hasEmployeeProof) ...[
                         SizedBox(height: 2.h),
                         Text(
-                          ProofMediaType.subtaskRequiredHintKey(sub.proofMediaType)
+                          ProofMediaType.subtaskRequiredHintKey(
+                                  sub.proofMediaType)
                               .tr,
                           style: TextStyle(
                             fontSize: compact ? 9.sp : 10.sp,
@@ -664,7 +669,8 @@ class OperationalChecklist extends StatelessWidget {
                   Tooltip(
                     message: done && hasEmployeeProof
                         ? 'subtaskProofUploaded'.tr
-                        : ProofMediaType.subtaskRequiredHintKey(sub.proofMediaType)
+                        : ProofMediaType.subtaskRequiredHintKey(
+                                sub.proofMediaType)
                             .tr,
                     child: Icon(
                       done && hasEmployeeProof

@@ -13,6 +13,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/admin_dashbord/presentation/widgets/actions_buttons.dart';
 import '../controllers/employee_dashbord_controller.dart';
+import '../binding/employee_dashbord_binding.dart';
 import '../helpers/employee_task_visibility.dart';
 import '../widgets/employee_dashbord_tasks.dart';
 import '../widgets/employee_dashboard_reminders.dart';
@@ -23,6 +24,15 @@ import '../widgets/impersonation_exit_button.dart';
 
 class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
   const EmployeeDashbordScreen({Key? key}) : super(key: key);
+
+  @override
+  EmployeeDashbordController get controller {
+    if (!Get.isRegistered<EmployeeDashbordController>() &&
+        !Get.isPrepared<EmployeeDashbordController>()) {
+      EmployeeDashbordBinding().dependencies();
+    }
+    return Get.find<EmployeeDashbordController>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -162,13 +172,14 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                 ...() {
                                   final dashboardTasks = dashboardTasksForToday(
                                     controller.employeeData.value!.tasks,
-                                    weeklyDaysOff:
-                                        controller.employeeData.value!.weeklyDaysOff,
+                                    weeklyDaysOff: controller
+                                        .employeeData.value!.weeklyDaysOff,
                                   );
                                   if (dashboardTasks.isEmpty) {
                                     return [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             'لا يوجد مهمات'.tr,
@@ -178,9 +189,12 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                                                 .copyWith(
                                                   fontSize: 14.sp,
                                                   fontWeight: FontWeight.w400,
-                                                  color: ThemeService.isDark.value
-                                                      ? AppColors.customGreyColor7
-                                                      : AppColors.customGreyColor4,
+                                                  color:
+                                                      ThemeService.isDark.value
+                                                          ? AppColors
+                                                              .customGreyColor7
+                                                          : AppColors
+                                                              .customGreyColor4,
                                                 ),
                                           ),
                                         ],

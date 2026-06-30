@@ -331,7 +331,8 @@ class SalesController extends GetxController
 
   final currentTab = 0.obs;
 
-  final Rxn<DailySessionPayload> dailySessionPayload = Rxn<DailySessionPayload>();
+  final Rxn<DailySessionPayload> dailySessionPayload =
+      Rxn<DailySessionPayload>();
   final isDailySessionLoading = false.obs;
 
   /// Bumped when sales lists change so [Obx] on [SalesScreen] rebuilds.
@@ -364,11 +365,9 @@ class SalesController extends GetxController
     }
   }
 
-  bool get hasInstantSalesData =>
-      salesService.instantSalesTasks.isNotEmpty;
+  bool get hasInstantSalesData => salesService.instantSalesTasks.isNotEmpty;
 
-  bool get hasProfitSalesData =>
-      salesService.filterProfitSalesTasks.isNotEmpty;
+  bool get hasProfitSalesData => salesService.filterProfitSalesTasks.isNotEmpty;
 
   void applyDailyBoxToPayment(
     PaymentController payment, {
@@ -633,7 +632,13 @@ class SalesController extends GetxController
   final RxBool savingProductPrice = false.obs;
 
   /// يتأكد أن المفرق والجملة معرّفان قبل إضافة المنتج للسلة.
-  Future<ProductModel?> ensureProductPricesForPicker(ProductModel product) async {
+  Future<ProductModel?> ensureProductPricesForPicker(
+      ProductModel product) async {
+    if (product.hasCustomPrice &&
+        product.customPrice != null &&
+        product.customPrice! > 0) {
+      return product;
+    }
     if (product.unitPrice > 0 && product.wholesalePrice > 0) return product;
 
     final dialogResult = await showInstantSalePriceDialog(product);
@@ -804,11 +809,9 @@ class SalesController extends GetxController
   }
 
   int get pickerGridItemCount {
-    final hasLocationFilter =
-        pickerLocationSectionId.value != null &&
-            pickerLocationSectionId.value!.isNotEmpty;
-    final packages =
-        hasLocationFilter ? 0 : filteredPackagesForPicker.length;
+    final hasLocationFilter = pickerLocationSectionId.value != null &&
+        pickerLocationSectionId.value!.isNotEmpty;
+    final packages = hasLocationFilter ? 0 : filteredPackagesForPicker.length;
     return packages + filteredProductsForPicker.length;
   }
 
@@ -997,8 +1000,8 @@ class SalesController extends GetxController
     );
     if (existingIdx != null) {
       final line = cartLines[existingIdx];
-      final next =
-          (int.tryParse(line.quantityController.text.trim()) ?? 0) + pick.quantity;
+      final next = (int.tryParse(line.quantityController.text.trim()) ?? 0) +
+          pick.quantity;
       if (!await _confirmSalesOrderReservedStock(
         product: resolved,
         sizeColorId: sizeColorId,
@@ -1191,13 +1194,15 @@ class SalesController extends GetxController
   final RxnInt activeSuspendedSaleId = RxnInt();
   final RxnInt activeEditInstantSaleId = RxnInt();
 
-  String? get activeSuspendedReferenceCode => activeSuspendedSaleId.value == null
-      ? null
-      : 'ع-${activeSuspendedSaleId.value}';
+  String? get activeSuspendedReferenceCode =>
+      activeSuspendedSaleId.value == null
+          ? null
+          : 'ع-${activeSuspendedSaleId.value}';
 
-  String? get activeEditInstantSaleReference => activeEditInstantSaleId.value == null
-      ? null
-      : '${activeEditInstantSaleId.value}';
+  String? get activeEditInstantSaleReference =>
+      activeEditInstantSaleId.value == null
+          ? null
+          : '${activeEditInstantSaleId.value}';
 
   bool get isEditingInstantSale => activeEditInstantSaleId.value != null;
 
@@ -1459,8 +1464,7 @@ class SalesController extends GetxController
           addInstantSaleNoteLine();
           final idx = instantSaleNotes.length - 1;
           instantSaleNotes[idx].text.text = raw['text']?.toString() ?? '';
-          instantSaleNotes[idx].amount.text =
-              raw['amount']?.toString() ?? '0';
+          instantSaleNotes[idx].amount.text = raw['amount']?.toString() ?? '0';
         }
       }
     }
@@ -1918,7 +1922,9 @@ class SalesController extends GetxController
     pickerPartnerIsCustomer.value = isCustomer;
     pickerSelectedPartner.value = null;
     _clearPaymentBuyer();
-    refreshCartPricesForPartner().then((_) => bumpCartRevision());
+    getAllProducts().then(
+      (_) => refreshCartPricesForPartner().then((_) => bumpCartRevision()),
+    );
   }
 
   Future<void> onPickerPartnerSelected(SellerModel? partner) async {
@@ -1941,6 +1947,7 @@ class SalesController extends GetxController
         'buyer_name': partner.name,
       });
     }
+    await getAllProducts();
     await refreshCartPricesForPartner();
     bumpCartRevision();
   }
@@ -1948,6 +1955,7 @@ class SalesController extends GetxController
   Future<void> clearPickerPartner() async {
     pickerSelectedPartner.value = null;
     _clearPaymentBuyer();
+    await getAllProducts();
     await refreshCartPricesForPartner();
     bumpCartRevision();
   }
@@ -2182,10 +2190,16 @@ class SalesController extends GetxController
     double? variantRetailPrice,
     double? variantWholesalePrice,
   }) {
+    if (product.hasCustomPrice &&
+        product.customPrice != null &&
+        product.customPrice! > 0) {
+      return product.customPrice!;
+    }
     if (isWholesalePartner) {
-      final wholesale = (variantWholesalePrice != null && variantWholesalePrice > 0)
-          ? variantWholesalePrice
-          : product.wholesalePrice;
+      final wholesale =
+          (variantWholesalePrice != null && variantWholesalePrice > 0)
+              ? variantWholesalePrice
+              : product.wholesalePrice;
       return wholesale > 0 ? wholesale : 0;
     }
     final retail = (variantRetailPrice != null && variantRetailPrice > 0)
@@ -2284,16 +2298,15 @@ class SalesController extends GetxController
     }
 
     final idx = cartLines.indexWhere((l) => l.productId == product.id);
-    final current = idx >= 0
-        ? (int.tryParse(cartLines[idx].quantityText) ?? 1)
-        : 1;
+    final current =
+        idx >= 0 ? (int.tryParse(cartLines[idx].quantityText) ?? 1) : 1;
 
     final result = await showInstantSaleQuantityDialog(
       context,
       initialQuantity: current,
       maxQuantity: stock,
-      stockHint: SalesOrderStockContext.controller
-          ?.stockHintForProduct(resolved.id),
+      stockHint:
+          SalesOrderStockContext.controller?.stockHintForProduct(resolved.id),
     );
     if (result == null) return;
 
@@ -2343,6 +2356,12 @@ class SalesController extends GetxController
       return null;
     }
 
+    if (product.hasCustomPrice &&
+        product.customPrice != null &&
+        product.customPrice! > 0) {
+      return _formatUnitPrice(product.customPrice!);
+    }
+
     try {
       final history = await fetchLinePriceHistory(
         productId: product.id,
@@ -2358,9 +2377,10 @@ class SalesController extends GetxController
     }
 
     if (isSeller) {
-      final wholesale = (variantWholesalePrice != null && variantWholesalePrice > 0)
-          ? variantWholesalePrice
-          : product.wholesalePrice;
+      final wholesale =
+          (variantWholesalePrice != null && variantWholesalePrice > 0)
+              ? variantWholesalePrice
+              : product.wholesalePrice;
       if (wholesale > 0) return _formatUnitPrice(wholesale);
       return null;
     } else {
@@ -2945,7 +2965,8 @@ class SalesController extends GetxController
     isLoading(true);
     try {
       final payload = buildInstantSaleSuspendPayload();
-      final result = await Get.find<SalesImplement>().completeSuspendedInstantSale(
+      final result =
+          await Get.find<SalesImplement>().completeSuspendedInstantSale(
         suspendedInstantSaleId: suspendedId,
         payload: payload,
       );
@@ -3317,13 +3338,25 @@ class SalesController extends GetxController
 
   // get all products
   final List<ProductModel> products = [];
-  void getAllProducts() async {
+  Future<void> getAllProducts() async {
     productsLoading(true);
     try {
-      final result = await getAllProductsUsecase.call();
+      final result = await getAllProductsUsecase.call(
+        customerId: pickerPersonType == 'customer' ? pickerPersonId : null,
+        sellerId: pickerPersonType == 'seller' ? pickerPersonId : null,
+      );
       products
         ..clear()
         ..addAll(result);
+      if (hasPickerPartner && cartLines.isNotEmpty) {
+        final availableIds = products.map((product) => product.id).toSet();
+        for (var i = cartLines.length - 1; i >= 0; i--) {
+          if (!availableIds.contains(cartLines[i].productId)) {
+            removeCartLine(i);
+          }
+        }
+        syncCartToItems();
+      }
     } catch (e) {
       assert(() {
         debugPrint('[SalesController.getAllProducts] $e');

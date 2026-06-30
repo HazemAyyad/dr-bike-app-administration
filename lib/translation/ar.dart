@@ -1445,6 +1445,7 @@ const Map<String, String> ar = {
   'salesOrderStatusArchived': 'أرشيف',
   'salesOrderStatusReturned': 'راجع',
   'salesOrderNew': 'طلبية جديدة',
+  'salesInvoiceShortcut': 'فاتورة مبيعات',
   'salesOrderCreated': 'تم إنشاء الطلبية',
   'salesOrderReservedStockTitle': 'كمية محجوزة',
   'salesOrderReservedStockMessage':

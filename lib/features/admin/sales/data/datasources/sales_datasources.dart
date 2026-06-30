@@ -172,10 +172,20 @@ class SalesDatasource {
   }
 
   // get all products
-  Future<List<ProductModel>> getAllProducts({required String endPoint}) async {
+  Future<List<ProductModel>> getAllProducts({
+    required String endPoint,
+    String? customerId,
+    String? sellerId,
+  }) async {
     try {
-      final response =
-          await api.get(endPoint.isNotEmpty ? endPoint : EndPoints.allProducts);
+      final response = await api.get(
+        endPoint.isNotEmpty ? endPoint : EndPoints.allProducts,
+        queryParameters: {
+          if (customerId != null && customerId.isNotEmpty)
+            'customer_id': customerId,
+          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+        },
+      );
       final listKey = endPoint == 'get/all/categories'
           ? 'categories'
           : endPoint == 'get/all/subcategories'
@@ -409,7 +419,8 @@ class SalesDatasource {
             row['quantity']?.toString() ?? '1';
         otherProductsMap['other_products[$i][type]'] =
             row['type']?.toString() ?? 'normal';
-        if (row['project_id'] != null && row['project_id'].toString().isNotEmpty) {
+        if (row['project_id'] != null &&
+            row['project_id'].toString().isNotEmpty) {
           otherProductsMap['other_products[$i][project_id]'] =
               row['project_id'].toString();
         }
@@ -604,7 +615,8 @@ class SalesDatasource {
   }
 
   Future<DailySessionDetailModel> getDailySessionDetail(int sessionId) async {
-    final response = await api.get(EndPoints.salesDailySessionDetail(sessionId));
+    final response =
+        await api.get(EndPoints.salesDailySessionDetail(sessionId));
     final raw = response.data['session_detail'];
     if (raw is! Map) {
       throw ServerException(
@@ -915,7 +927,8 @@ class SalesDatasource {
       final response = await api.get(
         EndPoints.suspendedInstantSales,
         queryParameters: {
-          if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
           if (createdByUserId != null) 'created_by_user_id': createdByUserId,
         },
       );

@@ -15,6 +15,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/general_data_list_controller.dart';
+import 'person_product_settings_screen.dart';
 
 class AddNewCustomerScreen extends StatefulWidget {
   const AddNewCustomerScreen({Key? key}) : super(key: key);
@@ -52,6 +53,25 @@ class _AddNewCustomerScreenState extends State<AddNewCustomerScreen> {
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               children: [
                 SizedBox(height: 10.h),
+                if (controller.isEdit.value)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 10.h),
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        final isSeller = controller.currentTab.value == 0 ||
+                            employeeType == 'seller';
+                        Get.to(
+                          () => PersonProductSettingsScreen(
+                            personName: controller.customerNameController.text,
+                            customerId: isSeller ? null : employeeId.toString(),
+                            sellerId: isSeller ? sellerId.toString() : null,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.price_change_outlined),
+                      label: const Text('تعديل أسعار وإظهار المنتجات'),
+                    ),
+                  ),
                 if (!controller.isEdit.value)
                   Align(
                     alignment: AlignmentDirectional.centerStart,

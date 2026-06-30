@@ -124,17 +124,19 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     await AppSettingsService.instance.ensureLoaded(force: true);
     final service = AppSettingsService.instance;
     final varianceCtrl = TextEditingController(
-      text: service.salesDailyVarianceAlertThreshold.value
-          .toStringAsFixed(0),
+      text: service.salesDailyVarianceAlertThreshold.value.toStringAsFixed(0),
     );
     final shekelCtrl = TextEditingController(
-      text: '${service.salesDailyMaxFloat['شيكل']?.toStringAsFixed(0) ?? '500'}',
+      text:
+          '${service.salesDailyMaxFloat['شيكل']?.toStringAsFixed(0) ?? '500'}',
     );
     final dollarCtrl = TextEditingController(
-      text: '${service.salesDailyMaxFloat['دولار']?.toStringAsFixed(0) ?? '200'}',
+      text:
+          '${service.salesDailyMaxFloat['دولار']?.toStringAsFixed(0) ?? '200'}',
     );
     final dinarCtrl = TextEditingController(
-      text: '${service.salesDailyMaxFloat['دينار']?.toStringAsFixed(0) ?? '200'}',
+      text:
+          '${service.salesDailyMaxFloat['دينار']?.toStringAsFixed(0) ?? '200'}',
     );
 
     const dialogBg = Color(0xFFF3F4F6);
@@ -335,18 +337,21 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
                   'shiplySandboxModeDesc'.tr,
                   style: const TextStyle(color: textSecondary, fontSize: 12),
                 ),
-                onChanged: enabled ? (v) => setDialogState(() => testMode = v) : null,
+                onChanged:
+                    enabled ? (v) => setDialogState(() => testMode = v) : null,
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text('cancel'.tr, style: const TextStyle(color: textSecondary)),
+              child: Text('cancel'.tr,
+                  style: const TextStyle(color: textSecondary)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: Text('save'.tr, style: const TextStyle(color: textPrimary)),
+              child:
+                  Text('save'.tr, style: const TextStyle(color: textPrimary)),
             ),
           ],
         ),
@@ -385,6 +390,11 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       'newCustomer': 'newCustomer',
       'createNewEmployeeTask': 'newTask',
       'addNewPrivateTask': 'newPrivateTask',
+      'newSalesInvoice': 'salesInvoiceShortcut',
+      'newCashProfit': 'newCashProfit',
+      'newMaintenance': 'newMaintenance',
+      'newFollowUp': 'createFollowUp',
+      'newProduct': 'addProduct',
     };
     final selected = service.adminFabOptions.toSet();
     const dialogBg = Color(0xFFF3F4F6);
@@ -406,31 +416,39 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: options.entries
-                .map(
-                  (entry) => CheckboxListTile(
-                    value: selected.contains(entry.key),
-                    activeColor: const Color(0xFF059669),
-                    checkColor: Colors.white,
-                    title: Text(
-                      entry.value.tr,
-                      style: const TextStyle(color: textPrimary),
-                    ),
-                    controlAffinity: ListTileControlAffinity.leading,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        if (value == true) {
-                          selected.add(entry.key);
-                        } else {
-                          selected.remove(entry.key);
-                        }
-                      });
-                    },
-                  ),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: (options.length * 56.0)
+                .clamp(
+                  0,
+                  MediaQuery.of(ctx).size.height * .62,
                 )
-                .toList(),
+                .toDouble(),
+            child: ListView(
+              children: options.entries
+                  .map(
+                    (entry) => CheckboxListTile(
+                      value: selected.contains(entry.key),
+                      activeColor: const Color(0xFF059669),
+                      checkColor: Colors.white,
+                      title: Text(
+                        entry.value.tr,
+                        style: const TextStyle(color: textPrimary),
+                      ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          if (value == true) {
+                            selected.add(entry.key);
+                          } else {
+                            selected.remove(entry.key);
+                          }
+                        });
+                      },
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
           actions: [
             TextButton(

@@ -1378,6 +1378,7 @@ const Map<String, String> en = {
   'salesOrderStatusArchived': 'Archived',
   'salesOrderStatusReturned': 'Returned',
   'salesOrderNew': 'New order',
+  'salesInvoiceShortcut': 'Sales invoice',
   'salesOrderCreated': 'Order created',
   'salesOrderReservedStockTitle': 'Reserved quantity',
   'salesOrderReservedStockMessage':

@@ -611,7 +611,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.ADDFOLLOWUPSCREEN,
       page: () => const AddNewFollowUpScreen(),
-      // binding:
+      binding: FollowUpBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
@@ -663,7 +663,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.NEWSALESORDERSCREEN,
       page: () => const SalesOrderProductPickerScreen(),
-      binding: SalesOrdersBinding(),
+      binding: SalesBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(
@@ -701,6 +701,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.NEWCASHPROFITSCREEN,
       page: () => const NewCashProfitScreen(),
+      binding: SalesBinding(),
       transition: Get.locale == const Locale('ar')
           ? _transitionLeftToRight
           : _transitionRightToLeft,
