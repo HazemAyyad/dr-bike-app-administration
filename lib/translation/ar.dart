@@ -1,4 +1,5 @@
 const Map<String, String> ar = {
+  'whatsappCenter': 'مركز واتساب',
   'homeTitle': 'دراجة الطبيب',
   'tryAgain': 'حاول مرة اخرى',
   'noInternet': "التطبيق غير متصل بالإنترنت",

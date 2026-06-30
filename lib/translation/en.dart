@@ -1,4 +1,5 @@
 const Map<String, String> en = {
+  'whatsappCenter': 'WhatsApp Center',
   'homeTitle': 'Doctorbike',
   'tryAgain': 'Try again',
   'noInternet': "No internet connection",
