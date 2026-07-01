@@ -28,11 +28,19 @@ class WhatsAppContact {
   final int id;
   final String? name;
   final String phone;
-  const WhatsAppContact({required this.id, this.name, required this.phone});
+  final int? customerId, supplierId;
+  const WhatsAppContact(
+      {required this.id,
+      this.name,
+      required this.phone,
+      this.customerId,
+      this.supplierId});
   factory WhatsAppContact.fromJson(Map<String, dynamic> j) => WhatsAppContact(
       id: _int(j['id']),
       name: j['name']?.toString(),
-      phone: j['phone']?.toString() ?? '');
+      phone: j['phone']?.toString() ?? '',
+      customerId: int.tryParse(j['customer_id']?.toString() ?? ''),
+      supplierId: int.tryParse(j['supplier_id']?.toString() ?? ''));
 }
 
 class WhatsAppConversation {
@@ -70,6 +78,7 @@ class WhatsAppMessage {
   final int id;
   final String direction, type, status;
   final String? body, errorMessage;
+  final String? mediaUrl;
   final DateTime? createdAt;
   const WhatsAppMessage({
     required this.id,
@@ -78,6 +87,7 @@ class WhatsAppMessage {
     this.body,
     required this.status,
     this.errorMessage,
+    this.mediaUrl,
     this.createdAt,
   });
   factory WhatsAppMessage.fromJson(Map<String, dynamic> j) => WhatsAppMessage(
@@ -87,6 +97,7 @@ class WhatsAppMessage {
         body: j['body']?.toString(),
         status: j['status']?.toString() ?? 'pending',
         errorMessage: j['error_message']?.toString(),
+        mediaUrl: j['media_url']?.toString(),
         createdAt: DateTime.tryParse(j['created_at']?.toString() ?? ''),
       );
 }

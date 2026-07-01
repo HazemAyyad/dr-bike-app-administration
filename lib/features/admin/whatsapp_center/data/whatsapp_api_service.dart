@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:get/get.dart' hide Response;
+import 'package:get/get.dart' hide Response, FormData, MultipartFile;
 
 import '../../../../core/databases/api/dio_consumer.dart';
 
@@ -28,6 +28,40 @@ class WhatsAppApiService {
   Future<Map<String, dynamic>> sendWhatsAppMessageToConversation(
           int id, String message) =>
       _post('$_base/conversations/$id/send', {'message': message});
+
+  Future<Map<String, dynamic>> sendWhatsAppMedia(
+      int id, String path, String name,
+      {String? caption}) async {
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(path, filename: name),
+      if (caption != null && caption.isNotEmpty) 'caption': caption,
+    });
+    final Response response =
+        await _api.post('$_base/conversations/$id/send-media', data: form);
+    return _map(response.data);
+  }
+
+  Future<Map<String, dynamic>> linkPerson(int id, String type, String name) =>
+      _post('$_base/conversations/$id/link-person',
+          {'person_type': type, 'name': name});
+
+  Future<List<int>> getMedia(int messageId) async {
+    final response = await _api.get('$_base/messages/$messageId/media',
+        options: Options(responseType: ResponseType.bytes));
+    return List<int>.from(response.data as List);
+  }
+
+  Future<List<int>> getQr() async {
+    final response = await _api.get('$_base/qr',
+        options: Options(responseType: ResponseType.bytes));
+    return List<int>.from(response.data as List);
+  }
+
+  Future<List<int>> getQrPdf() async {
+    final response = await _api.get('$_base/qr/a4',
+        options: Options(responseType: ResponseType.bytes));
+    return List<int>.from(response.data as List);
+  }
 
   Future<Map<String, dynamic>> sendWhatsAppText(String phone, String message) =>
       _post('$_base/send-text', {'phone': phone, 'message': message});

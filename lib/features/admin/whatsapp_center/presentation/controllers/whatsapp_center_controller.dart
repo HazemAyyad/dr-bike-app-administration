@@ -1,5 +1,13 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:typed_data';
+import 'package:printing/printing.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:open_filex/open_filex.dart';
+import 'dart:io';
 
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
@@ -16,6 +24,7 @@ class WhatsAppCenterController extends GetxController {
   final conversations = <WhatsAppConversation>[].obs;
   final templates = <WhatsAppTemplate>[].obs;
   final settings = Rxn<WhatsAppSettings>();
+  final qrBytes = Rxn<Uint8List>();
   final selectedStatus = 'all'.obs;
   final searchController = TextEditingController();
   final testPhoneController = TextEditingController();
@@ -90,7 +99,35 @@ class WhatsAppCenterController extends GetxController {
   Future<void> loadSettings() => _load(() async {
         settings.value =
             WhatsAppSettings.fromJson(await api.getWhatsAppSettings());
+        try {
+          qrBytes.value = Uint8List.fromList(await api.getQr());
+        } catch (_) {
+          qrBytes.value = null;
+        }
       });
+
+  Future<void> printQrA4() async {
+    final bytes = Uint8List.fromList(await api.getQrPdf());
+    await Printing.layoutPdf(onLayout: (_) async => bytes);
+  }
+
+  Future<File> _saveQrPdf() async {
+    final bytes = await api.getQrPdf();
+    final directory = await getTemporaryDirectory();
+    final file = File('${directory.path}/dr-bike-whatsapp-qr.pdf');
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
+  Future<void> downloadQrA4() async {
+    final file = await _saveQrPdf();
+    await OpenFilex.open(file.path);
+  }
+
+  Future<void> shareQrA4() async {
+    final file = await _saveQrPdf();
+    await Share.shareXFiles([XFile(file.path)], text: 'QR واتساب دكتور بايك');
+  }
 
   Future<bool> sendDirect(String phone, String message,
       {bool test = false}) async {

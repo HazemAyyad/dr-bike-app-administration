@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../data/whatsapp_models.dart';
 import '../controllers/whatsapp_center_controller.dart';
@@ -11,54 +12,93 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('مركز واتساب')),
-        body: Column(children: [
-          Obx(() => NavigationBar(
-                selectedIndex: controller.tabIndex.value,
-                onDestinationSelected: controller.selectTab,
-                destinations: const [
-                  NavigationDestination(
-                      icon: Icon(Icons.dashboard_outlined),
-                      label: 'لوحة التحكم'),
-                  NavigationDestination(
-                      icon: Icon(Icons.forum_outlined), label: 'المحادثات'),
-                  NavigationDestination(
-                      icon: Icon(Icons.description_outlined), label: 'القوالب'),
-                  NavigationDestination(
-                      icon: Icon(Icons.settings_outlined), label: 'الإعدادات'),
-                ],
-              )),
-          Expanded(child: Obx(() {
-            if (controller.loading.value) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (controller.error.value != null) {
-              return _StateMessage(
-                icon: Icons.cloud_off,
-                text: controller.error.value!,
-                action: controller.refreshCurrent,
-              );
-            }
-            final children = <Widget>[
-              _DashboardTab(controller: controller),
-              _ConversationsTab(controller: controller),
-              _TemplatesTab(controller: controller),
-              _SettingsTab(controller: controller),
-            ];
-            return RefreshIndicator(
-              onRefresh: controller.refreshCurrent,
-              child: children[controller.tabIndex.value],
-            );
-          })),
-        ]),
-        floatingActionButton: Obx(() => controller.tabIndex.value == 1
-            ? FloatingActionButton.extended(
-                onPressed: () => _showDirectMessage(context),
-                icon: const Icon(Icons.send),
-                label: const Text('إرسال رسالة'))
-            : const SizedBox.shrink()),
-      ),
+      child: Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF075E54),
+              brightness: Theme.of(context).brightness,
+            ),
+          ),
+          child: Scaffold(
+            appBar: AppBar(title: const Text('مركز واتساب')),
+            body: Column(children: [
+              Obx(() => Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                    child: Row(
+                      children: const [
+                        [Icons.dashboard_outlined, 'الرئيسية'],
+                        [Icons.forum_outlined, 'المحادثات'],
+                        [Icons.description_outlined, 'القوالب'],
+                        [Icons.settings_outlined, 'الإعدادات'],
+                      ].asMap().entries.map((entry) {
+                        final selected = controller.tabIndex.value == entry.key;
+                        return Expanded(
+                            child: InkWell(
+                          onTap: () => controller.selectTab(entry.key),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 7),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? const Color(0xFF075E54)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border:
+                                  Border.all(color: const Color(0xFFDDE5E3)),
+                            ),
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(entry.value[0] as IconData,
+                                      size: 20,
+                                      color: selected
+                                          ? Colors.white
+                                          : const Color(0xFF075E54)),
+                                  Text(entry.value[1] as String,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: selected
+                                              ? Colors.white
+                                              : const Color(0xFF263B37))),
+                                ]),
+                          ),
+                        ));
+                      }).toList(),
+                    ),
+                  )),
+              Expanded(child: Obx(() {
+                if (controller.loading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (controller.error.value != null) {
+                  return _StateMessage(
+                    icon: Icons.cloud_off,
+                    text: controller.error.value!,
+                    action: controller.refreshCurrent,
+                  );
+                }
+                final children = <Widget>[
+                  _DashboardTab(controller: controller),
+                  _ConversationsTab(controller: controller),
+                  _TemplatesTab(controller: controller),
+                  _SettingsTab(controller: controller),
+                ];
+                return RefreshIndicator(
+                  onRefresh: controller.refreshCurrent,
+                  child: children[controller.tabIndex.value],
+                );
+              })),
+            ]),
+            floatingActionButton: Obx(() => controller.tabIndex.value == 1
+                ? FloatingActionButton.extended(
+                    backgroundColor: const Color(0xFF075E54),
+                    foregroundColor: Colors.white,
+                    onPressed: () => _showDirectMessage(context),
+                    icon: const Icon(Icons.send),
+                    label: const Text('إرسال رسالة'))
+                : const SizedBox.shrink()),
+          )),
     );
   }
 
@@ -157,26 +197,25 @@ class _DashboardTab extends StatelessWidget {
       Text('نظرة عامة', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 12),
       LayoutBuilder(builder: (context, constraints) {
-        final count = constraints.maxWidth >= 900
-            ? 3
-            : constraints.maxWidth >= 520
-                ? 2
-                : 1;
+        final count = constraints.maxWidth >= 900 ? 3 : 2;
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: count,
-              childAspectRatio: 2.35,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12),
+              childAspectRatio: constraints.maxWidth < 520 ? 1.55 : 2.5,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8),
           itemCount: items.length,
           itemBuilder: (_, i) => Card(
               child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(10),
             child: Row(children: [
-              CircleAvatar(child: Icon(items[i]['icon'] as IconData)),
-              const SizedBox(width: 14),
+              CircleAvatar(
+                  backgroundColor: const Color(0xFFE7F5F1),
+                  child: Icon(items[i]['icon'] as IconData,
+                      color: const Color(0xFF075E54))),
+              const SizedBox(width: 8),
               Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,21 +238,23 @@ class _ConversationsTab extends StatelessWidget {
   const _ConversationsTab({required this.controller});
   @override
   Widget build(BuildContext context) =>
-      ListView(padding: const EdgeInsets.all(12), children: [
-        SearchBar(
-          controller: controller.searchController,
-          hintText: 'بحث بالاسم أو الرقم أو الرسالة',
-          leading: const Icon(Icons.search),
-          trailing: [
-            IconButton(
-                onPressed: controller.loadConversations,
-                icon: const Icon(Icons.arrow_forward))
-          ],
-          onSubmitted: (_) => controller.loadConversations(),
-        ),
-        const SizedBox(height: 10),
+      ListView(padding: const EdgeInsets.fromLTRB(8, 6, 8, 70), children: [
+        SizedBox(
+            height: 46,
+            child: SearchBar(
+              controller: controller.searchController,
+              hintText: 'بحث بالاسم أو الرقم أو الرسالة',
+              leading: const Icon(Icons.search),
+              trailing: [
+                IconButton(
+                    onPressed: controller.loadConversations,
+                    icon: const Icon(Icons.arrow_forward))
+              ],
+              onSubmitted: (_) => controller.loadConversations(),
+            )),
+        const SizedBox(height: 6),
         Obx(() => Wrap(
-            spacing: 8,
+            spacing: 5,
             children: const <Map<String, String>>[
               {'id': 'all', 'label': 'الكل'},
               {'id': 'open', 'label': 'مفتوحة'},
@@ -229,7 +270,7 @@ class _ConversationsTab extends StatelessWidget {
                       },
                     ))
                 .toList())),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Obx(() {
           if (controller.conversations.isEmpty) {
             return const SizedBox(
@@ -240,7 +281,12 @@ class _ConversationsTab extends StatelessWidget {
           return Column(
               children: controller.conversations
                   .map((item) => Card(
+                        margin: const EdgeInsets.symmetric(vertical: 2),
                         child: ListTile(
+                          dense: true,
+                          visualDensity: const VisualDensity(vertical: -2),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 10),
                           onTap: () =>
                               Get.toNamed('/WhatsAppConversation/${item.id}'),
                           leading: CircleAvatar(
@@ -269,7 +315,6 @@ class _ConversationsTab extends StatelessWidget {
                       ))
                   .toList());
         }),
-        const SizedBox(height: 80),
       ]);
 }
 
@@ -457,6 +502,34 @@ class _SettingsTab extends StatelessWidget {
       const SizedBox(height: 12),
       const Text(
           'رمز الوصول محفوظ في Laravel .env ولا يتم عرضه أو تخزينه داخل التطبيق.'),
+      const Divider(height: 28),
+      Text('QR واتساب دكتور بايك',
+          style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 8),
+      Obx(() => controller.qrBytes.value == null
+          ? const SizedBox(
+              height: 180, child: Center(child: CircularProgressIndicator()))
+          : Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(12),
+              height: 230,
+              child: SvgPicture.memory(controller.qrBytes.value!),
+            )),
+      const SizedBox(height: 8),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        OutlinedButton.icon(
+            onPressed: controller.printQrA4,
+            icon: const Icon(Icons.print),
+            label: const Text('طباعة A4')),
+        OutlinedButton.icon(
+            onPressed: controller.downloadQrA4,
+            icon: const Icon(Icons.download),
+            label: const Text('تنزيل')),
+        OutlinedButton.icon(
+            onPressed: controller.shareQrA4,
+            icon: const Icon(Icons.share),
+            label: const Text('مشاركة')),
+      ]),
     ]);
   }
 }
