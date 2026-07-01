@@ -34,6 +34,8 @@ import '../features/admin/notifications/presentation/views/admin_notification_ce
 import '../features/admin/whatsapp_center/presentation/bindings/whatsapp_center_binding.dart';
 import '../features/admin/whatsapp_center/presentation/views/whatsapp_center_screen.dart';
 import '../features/admin/whatsapp_center/presentation/views/whatsapp_conversation_screen.dart';
+import '../features/admin/meta_catalog/presentation/bindings/meta_catalog_binding.dart';
+import '../features/admin/meta_catalog/presentation/views/meta_catalog_sync_screen.dart';
 import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
 import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
 import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
@@ -301,6 +303,12 @@ class AppPages {
       name: AppRoutes.WHATSAPPCENTER,
       page: () => const WhatsAppCenterScreen(),
       binding: WhatsAppCenterBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.METACATALOGSYNC,
+      page: () => const MetaCatalogSyncScreen(),
+      binding: MetaCatalogBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'dart:typed_data';
 
 import '../controllers/whatsapp_conversation_controller.dart';
 
@@ -89,7 +90,47 @@ class WhatsAppConversationScreen
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (message.mediaUrl != null)
+                                  if (message.mediaUrl != null &&
+                                      message.type == 'image')
+                                    GestureDetector(
+                                      onTap: () =>
+                                          controller.showMedia(message),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: FutureBuilder<Uint8List>(
+                                          future:
+                                              controller.getMediaBytes(message),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.hasData) {
+                                              return Image.memory(
+                                                snapshot.data!,
+                                                width: 230,
+                                                height: 180,
+                                                fit: BoxFit.cover,
+                                              );
+                                            }
+                                            if (snapshot.hasError) {
+                                              return const SizedBox(
+                                                width: 230,
+                                                height: 90,
+                                                child: Center(
+                                                    child: Icon(Icons
+                                                        .broken_image_outlined)),
+                                              );
+                                            }
+                                            return const SizedBox(
+                                              width: 230,
+                                              height: 150,
+                                              child: Center(
+                                                  child:
+                                                      CircularProgressIndicator()),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  if (message.mediaUrl != null &&
+                                      message.type != 'image')
                                     InkWell(
                                       onTap: () =>
                                           controller.showMedia(message),
@@ -104,19 +145,13 @@ class WhatsAppConversationScreen
                                           border: Border.all(
                                               color: const Color(0xFFB8CBC6)),
                                         ),
-                                        child: Row(
+                                        child: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(
-                                                  message.type == 'image'
-                                                      ? Icons.image_outlined
-                                                      : Icons.attach_file,
-                                                  color:
-                                                      const Color(0xFF075E54)),
-                                              const SizedBox(width: 6),
-                                              Text(message.type == 'image'
-                                                  ? 'عرض الصورة'
-                                                  : 'فتح المرفق'),
+                                              Icon(Icons.attach_file,
+                                                  color: Color(0xFF075E54)),
+                                              SizedBox(width: 6),
+                                              Text('فتح المرفق'),
                                             ]),
                                       ),
                                     ),

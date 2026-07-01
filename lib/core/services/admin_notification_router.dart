@@ -56,6 +56,11 @@ class AdminNotificationRouter {
             return;
           }
           break;
+        case 'whatsapp_message_received':
+          if (_openWhatsAppConversation(raw)) {
+            return;
+          }
+          break;
         default:
           break;
       }
@@ -150,6 +155,13 @@ class AdminNotificationRouter {
       debugPrint('[NotificationRouter] sales order screen unavailable: $e');
       return false;
     }
+  }
+
+  static bool _openWhatsAppConversation(Map<String, dynamic> raw) {
+    final id = int.tryParse(raw['conversation_id']?.toString() ?? '');
+    if (id == null || id <= 0) return false;
+    Get.toNamed('/WhatsAppConversation/$id');
+    return true;
   }
 
   static Map<String, dynamic> parsePayload(String? payload) {

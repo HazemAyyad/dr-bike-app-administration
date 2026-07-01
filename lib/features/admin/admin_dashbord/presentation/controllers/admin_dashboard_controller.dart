@@ -113,7 +113,12 @@ class AdminDashboardController extends GetxController
       'title': 'employeeReminders',
       'route': AppRoutes.EMPLOYEEREMINDERSSCREEN
     },
-    {'id': '24', 'title': 'whatsappCenter', 'route': AppRoutes.WHATSAPPCENTER},
+    {'id': '17', 'title': 'whatsappCenter', 'route': AppRoutes.WHATSAPPCENTER},
+    {
+      'id': '16',
+      'title': 'whatsappCatalog',
+      'route': AppRoutes.METACATALOGSYNC
+    },
   ];
 
   // متغيرات للإحصائيات

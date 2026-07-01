@@ -34,7 +34,8 @@ class DioConsumer extends ApiConsumer {
         },
         onResponse: (response, handler) async {
           final authHeader =
-              response.requestOptions.headers['Authorization']?.toString() ?? '';
+              response.requestOptions.headers['Authorization']?.toString() ??
+                  '';
           if (authHeader.isNotEmpty) {
             await SessionService.handleAuthFailureIfNeeded(
               response.data,
@@ -90,8 +91,9 @@ class DioConsumer extends ApiConsumer {
         errorMessage =
             'السيرفر غير متاح حالياً. تحقق من الاتصال أو جرّب بعد قليل.';
       } else {
-        final dynamic rawMsg =
-            (data is Map && data['message'] != null) ? data['message'] : e.message;
+        final dynamic rawMsg = (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message;
         errorMessage = apiErrorMessageFromPayload(
           rawMsg,
           fallback: 'حدث خطأ غير معروف',
@@ -101,12 +103,8 @@ class DioConsumer extends ApiConsumer {
       throw ServerException(
         ErrorModel(
           errorMessage: errorMessage,
-          status: (data is Map && data['status'] != null)
-              ? data['status']
-              : statusCode,
-          data: (data is Map)
-              ? (data['errors'] ?? data['data'] ?? data)
-              : {},
+          status: _resolveErrorStatus(data, statusCode),
+          data: (data is Map) ? (data['errors'] ?? data['data'] ?? data) : {},
         ),
       );
     }
@@ -146,8 +144,9 @@ class DioConsumer extends ApiConsumer {
         errorMessage =
             'السيرفر غير متاح حالياً. تحقق من الاتصال أو جرّب بعد قليل.';
       } else {
-        final dynamic rawMsg =
-            (data is Map && data['message'] != null) ? data['message'] : e.message;
+        final dynamic rawMsg = (data is Map && data['message'] != null)
+            ? data['message']
+            : e.message;
         errorMessage = apiErrorMessageFromPayload(
           rawMsg,
           fallback: 'حدث خطأ غير معروف',
@@ -156,12 +155,8 @@ class DioConsumer extends ApiConsumer {
       throw ServerException(
         ErrorModel(
           errorMessage: errorMessage,
-          status: (data is Map && data['status'] != null)
-              ? data['status']
-              : statusCode,
-          data: (data is Map)
-              ? (data['errors'] ?? data['data'] ?? data)
-              : {},
+          status: _resolveErrorStatus(data, statusCode),
+          data: (data is Map) ? (data['errors'] ?? data['data'] ?? data) : {},
         ),
       );
     }
@@ -253,12 +248,17 @@ class DioConsumer extends ApiConsumer {
       throw ServerException(
         ErrorModel(
           errorMessage: errorMessage,
-          status: (data is Map && data['status'] != null)
-              ? data['status']
-              : statusCode,
+          status: _resolveErrorStatus(data, statusCode),
           data: (data is Map && data['data'] != null) ? data['data'] : {},
         ),
       );
     }
+  }
+
+  static int _resolveErrorStatus(dynamic data, int httpStatusCode) {
+    if (data is! Map) return httpStatusCode;
+    final value = data['status'];
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '') ?? httpStatusCode;
   }
 }

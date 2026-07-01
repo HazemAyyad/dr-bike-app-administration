@@ -20,6 +20,13 @@ class EmployeeNotificationRouter {
     }
 
     final type = raw['type']?.toString() ?? '';
+    if (type == 'whatsapp_message_received') {
+      final id = int.tryParse(raw['conversation_id']?.toString() ?? '');
+      if (id != null && id > 0) {
+        Get.toNamed('/WhatsAppConversation/$id');
+        return;
+      }
+    }
     switch (type) {
       case typeReopenApproved:
         openSalesAndRefreshDailySession(

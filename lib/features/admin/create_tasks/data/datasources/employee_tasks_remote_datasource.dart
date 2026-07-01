@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart' hide MultipartFile;
 // ignore: depend_on_referenced_packages
 import 'package:http_parser/http_parser.dart';
@@ -56,8 +57,7 @@ Future<void> _appendSubtaskAdminUploads({
   Future<void> addPath(String path) async {
     if (path.isEmpty || seen.contains(path)) return;
     seen.add(path);
-    final key =
-        'sub_employee_tasks[$subIndex][admin_subtask__img][$fileIndex]';
+    final key = 'sub_employee_tasks[$subIndex][admin_subtask__img][$fileIndex]';
     if (_isAudioPath(path)) {
       target[key] = await _multipartFromPath(path);
     } else {
@@ -197,57 +197,72 @@ class CreateEmployeeTasksDatasource {
         response: 'pending…',
       );
 
+      final endpoint =
+          isEdit ? EndPoints.editEmployeeTask : EndPoints.createEmployeeTask;
+      final requestData = <String, dynamic>{
+        if (isEdit) 'employee_task_id': employeeTaskId,
+        if (templateId != null && templateId > 0) 'template_id': templateId,
+        if (occurrenceId != null && occurrenceId > 0)
+          'occurrence_id': occurrenceId,
+        'name': name,
+        'description': description,
+        'notes': notes,
+        'employee_id': employeeId,
+        ...employeeIdsFormFields(employeeIds),
+        'points': points,
+        if (priority != null && priority.isNotEmpty) 'priority': priority,
+        'start_time': startTime.toIso8601String(),
+        'end_time': endTime.toIso8601String(),
+        'task_recurrence': taskRecurrence,
+        'task_recurrence_time[]': taskRecurrenceTime,
+        if (useV2) 'use_v2_recurrence': '1',
+        if (useV2) ...RecurrenceConfigHelper.flattenForRequest(configMap),
+        ...subEmployeeTasksMap,
+        'not_shown_for_employee': notShownForEmployee,
+        'is_forced_to_upload_img': isForcedToUploadImg,
+        'proof_media_type': proofMediaType,
+        'requires_admin_review': requiresAdminReview,
+        if (adminImg.isNotEmpty)
+          'admin_img[]': await Future.wait(
+            adminImg.map((e) async {
+              if (e.path.startsWith('http')) {
+                return e.path;
+              } else {
+                final compressedImg = await compressImage(XFile(e.path));
+                return await MultipartFile.fromFile(
+                  compressedImg.path,
+                  filename: compressedImg.path.split('/').last,
+                );
+              }
+            }),
+          ),
+        if (audio.path.isNotEmpty && await audio.exists())
+          'audio': audio.path.startsWith('http')
+              ? audio.path
+              : await MultipartFile.fromFile(
+                  audio.path,
+                  filename: audio.path.split('/').last,
+                  contentType: MediaType('audio', 'x-m4a'),
+                ),
+      };
+      if (kDebugMode && isEdit) {
+        debugPrint(
+          '[EmployeeTaskEdit] REQUEST | POST $endpoint | '
+          'payload=${TaskDetailsDebug.compactJson(_debugSafePayload(requestData), maxLen: 8000)}',
+        );
+      }
       final response = await api.post(
-        isEdit ? EndPoints.editEmployeeTask : EndPoints.createEmployeeTask,
-        data: {
-          if (isEdit) 'employee_task_id': employeeTaskId,
-          if (templateId != null && templateId > 0) 'template_id': templateId,
-          if (occurrenceId != null && occurrenceId > 0)
-            'occurrence_id': occurrenceId,
-          'name': name,
-          'description': description,
-          'notes': notes,
-          'employee_id': employeeId,
-          ...employeeIdsFormFields(employeeIds),
-          'points': points,
-          if (priority != null && priority.isNotEmpty) 'priority': priority,
-          'start_time': startTime.toIso8601String(),
-          'end_time': endTime.toIso8601String(),
-          'task_recurrence': taskRecurrence,
-          'task_recurrence_time[]': taskRecurrenceTime,
-          if (useV2) 'use_v2_recurrence': '1',
-          if (useV2) ...RecurrenceConfigHelper.flattenForRequest(configMap),
-          ...subEmployeeTasksMap,
-          'not_shown_for_employee': notShownForEmployee,
-          'is_forced_to_upload_img': isForcedToUploadImg,
-          'proof_media_type': proofMediaType,
-          'requires_admin_review': requiresAdminReview,
-          if (adminImg.isNotEmpty)
-            'admin_img[]': await Future.wait(
-              adminImg.map((e) async {
-                if (e.path.startsWith('http')) {
-                  return e.path;
-                } else {
-                  final compressedImg = await compressImage(XFile(e.path));
-                  return await MultipartFile.fromFile(
-                    compressedImg.path,
-                    filename: compressedImg.path.split('/').last,
-                  );
-                }
-              }),
-            ),
-          if (audio.path.isNotEmpty && await audio.exists())
-            'audio': audio.path.startsWith('http')
-                ? audio.path
-                : await MultipartFile.fromFile(
-                    audio.path,
-                    filename: audio.path.split('/').last,
-                    contentType: MediaType('audio', 'x-m4a'),
-                  ),
-        },
+        endpoint,
+        data: requestData,
         isFormData: true,
       );
       final data = response.data;
+      if (kDebugMode && isEdit) {
+        debugPrint(
+          '[EmployeeTaskEdit] RESPONSE | statusCode=${response.statusCode ?? '-'} | '
+          'payload=${TaskDetailsDebug.compactJson(data, maxLen: 8000)}',
+        );
+      }
       TaskDetailsDebug.createTask(
         subtasksSent: subEmployeeTasks.length,
         subtaskNames: subNames,
@@ -258,14 +273,54 @@ class CreateEmployeeTasksDatasource {
       return data;
     } on DioException catch (e) {
       final data = e.response?.data;
+      if (kDebugMode) {
+        debugPrint(
+          '[EmployeeTaskEdit] DIO_ERROR | statusCode=${e.response?.statusCode ?? '-'} | '
+          'type=${e.type} | message=${e.message ?? '-'} | '
+          'payload=${TaskDetailsDebug.compactJson(data, maxLen: 8000)}',
+        );
+      }
+      final responseMap =
+          data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage: responseMap['message']?.toString() ??
+              e.message ??
+              'Unknown error',
+          status: responseMap['status'] ?? e.response?.statusCode ?? 500,
+          data: responseMap['data'] is Map
+              ? Map<String, dynamic>.from(responseMap['data'])
+              : responseMap['errors'] is Map
+                  ? {
+                      'message': responseMap['message'] ?? 'Validation failed',
+                      'errors':
+                          Map<String, dynamic>.from(responseMap['errors']),
+                    }
+                  : <String, dynamic>{},
         ),
       );
     }
+  }
+
+  Map<String, dynamic> _debugSafePayload(Map<String, dynamic> payload) {
+    return payload.map(
+      (key, value) => MapEntry(key, _debugSafeValue(value)),
+    );
+  }
+
+  dynamic _debugSafeValue(dynamic value) {
+    if (value is MultipartFile) {
+      return '<file:${value.filename ?? 'unnamed'}>';
+    }
+    if (value is List) {
+      return value.map(_debugSafeValue).toList();
+    }
+    if (value is Map) {
+      return value.map(
+        (key, nested) => MapEntry(key.toString(), _debugSafeValue(nested)),
+      );
+    }
+    return value;
   }
 
   // create special task

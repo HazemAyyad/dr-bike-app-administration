@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter_svg/flutter_svg.dart' as svg;
 
 import '../../data/whatsapp_api_service.dart';
 import '../../data/whatsapp_models.dart';
@@ -125,8 +127,18 @@ class WhatsAppCenterController extends GetxController {
   }
 
   Future<void> shareQrA4() async {
-    final file = await _saveQrPdf();
-    await Share.shareXFiles([XFile(file.path)], text: 'QR واتساب دكتور بايك');
+    final source = qrBytes.value ?? Uint8List.fromList(await api.getQr());
+    final picture = await svg.vg.loadPicture(svg.SvgBytesLoader(source), null);
+    final image = await picture.picture.toImage(1200, 1200);
+    picture.picture.dispose();
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
+    if (data == null) throw Exception('تعذر تجهيز صورة QR');
+    final directory = await getTemporaryDirectory();
+    final file = File('${directory.path}/dr-bike-whatsapp-qr.png');
+    await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+    await Share.shareXFiles([XFile(file.path, mimeType: 'image/png')],
+        text: 'تواصل مع دكتور بايك عبر واتساب');
   }
 
   Future<bool> sendDirect(String phone, String message,

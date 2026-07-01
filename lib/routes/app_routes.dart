@@ -43,6 +43,7 @@ class AppRoutes {
   static const EMPLOYEENOTIFICATIONCENTER = '/EmployeeNotificationCenter';
   static const WHATSAPPCENTER = '/WhatsAppCenter';
   static const WHATSAPPCONVERSATION = '/WhatsAppConversation/:id';
+  static const METACATALOGSYNC = '/MetaCatalogSync';
 
   // EMPLOYEE TASKS SCREEN
   static const EMPLOYEEDETAILSSCREEN = '/EmployeeDetailsScreen';
