@@ -75,7 +75,12 @@ class CustomActionsAppBar extends GetView<ChecksController> {
                 ? AppColors.primaryColor
                 : AppColors.secondaryColor,
           ),
-          onPressed: () => Get.toNamed(AppRoutes.CHECKNOTIFICATIONRULESSCREEN),
+          onPressed: () => Get.toNamed(
+            AppRoutes.CHECKNOTIFICATIONRULESSCREEN,
+            arguments: {
+              'check_direction': isNewCheck ? 'outgoing' : 'incoming',
+            },
+          ),
         ),
         IconButton(
           highlightColor: Colors.transparent,

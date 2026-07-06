@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:open_filex/open_filex.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'dart:math' as math;
 import 'package:flutter_svg/flutter_svg.dart' as svg;
 
 import '../../data/whatsapp_api_service.dart';
@@ -26,6 +27,9 @@ class WhatsAppCenterController extends GetxController {
   final conversations = <WhatsAppConversation>[].obs;
   final templates = <WhatsAppTemplate>[].obs;
   final settings = Rxn<WhatsAppSettings>();
+  final whatsAppEmployees = <WhatsAppEmployeeAccess>[].obs;
+  final selectedWhatsAppEmployeeIds = <int>{}.obs;
+  final canManageWhatsAppEmployees = false.obs;
   final qrBytes = Rxn<Uint8List>();
   final selectedStatus = 'all'.obs;
   final searchController = TextEditingController();
@@ -99,14 +103,50 @@ class WhatsAppCenterController extends GetxController {
       });
 
   Future<void> loadSettings() => _load(() async {
-        settings.value =
-            WhatsAppSettings.fromJson(await api.getWhatsAppSettings());
+        final result = await api.getWhatsAppSettings();
+        settings.value = WhatsAppSettings.fromJson(result);
+        canManageWhatsAppEmployees.value =
+            result['can_manage_employees'] == true;
+        final employees = result['employees'] is List
+            ? result['employees'] as List
+            : const [];
+        whatsAppEmployees.assignAll(employees.whereType<Map>().map((item) =>
+            WhatsAppEmployeeAccess.fromJson(Map<String, dynamic>.from(item))));
+        selectedWhatsAppEmployeeIds.assignAll(whatsAppEmployees
+            .where((employee) => employee.hasAccess)
+            .map((employee) => employee.id));
         try {
           qrBytes.value = Uint8List.fromList(await api.getQr());
         } catch (_) {
           qrBytes.value = null;
         }
       });
+
+  void toggleWhatsAppEmployee(int id, bool selected) {
+    final values = Set<int>.from(selectedWhatsAppEmployeeIds);
+    selected ? values.add(id) : values.remove(id);
+    selectedWhatsAppEmployeeIds.assignAll(values);
+  }
+
+  Future<void> saveWhatsAppEmployees() async {
+    actionLoading.value = true;
+    try {
+      final result = await api
+          .updateWhatsAppEmployees(selectedWhatsAppEmployeeIds.toList());
+      final employees =
+          result['employees'] is List ? result['employees'] as List : const [];
+      whatsAppEmployees.assignAll(employees.whereType<Map>().map((item) =>
+          WhatsAppEmployeeAccess.fromJson(Map<String, dynamic>.from(item))));
+      selectedWhatsAppEmployeeIds.assignAll(whatsAppEmployees
+          .where((employee) => employee.hasAccess)
+          .map((employee) => employee.id));
+      Get.snackbar('تم', 'تم تحديث صلاحيات قسم واتساب');
+    } catch (e) {
+      Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      actionLoading.value = false;
+    }
+  }
 
   Future<void> printQrA4() async {
     final bytes = Uint8List.fromList(await api.getQrPdf());
@@ -129,8 +169,42 @@ class WhatsAppCenterController extends GetxController {
   Future<void> shareQrA4() async {
     final source = qrBytes.value ?? Uint8List.fromList(await api.getQr());
     final picture = await svg.vg.loadPicture(svg.SvgBytesLoader(source), null);
-    final image = await picture.picture.toImage(1200, 1200);
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    const outputSize = 1400.0;
+    canvas.drawRect(
+      const Rect.fromLTWH(0, 0, outputSize, outputSize),
+      Paint()..color = Colors.white,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        const Rect.fromLTWH(105, 105, 1190, 1190),
+        const Radius.circular(42),
+      ),
+      Paint()
+        ..color = const Color(0xFF075E54)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 18,
+    );
+    const targetSize = 1050.0;
+    final scale = math.min(
+      targetSize / picture.size.width,
+      targetSize / picture.size.height,
+    );
+    final drawnWidth = picture.size.width * scale;
+    final drawnHeight = picture.size.height * scale;
+    canvas.save();
+    canvas.translate(
+      (outputSize - drawnWidth) / 2,
+      (outputSize - drawnHeight) / 2,
+    );
+    canvas.scale(scale, scale);
+    canvas.drawPicture(picture.picture);
+    canvas.restore();
+    final centeredPicture = recorder.endRecording();
     picture.picture.dispose();
+    final image = await centeredPicture.toImage(1400, 1400);
+    centeredPicture.dispose();
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
     if (data == null) throw Exception('تعذر تجهيز صورة QR');

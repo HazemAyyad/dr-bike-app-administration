@@ -1396,7 +1396,7 @@ class EmployeeTasksController extends GetxController {
       );
       if (res['status'] == 'success') {
         await getTaskDetails(taskId: taskId, occurrenceId: occ);
-        getEmployeeTasks();
+        await getEmployeeTasks();
         Get.snackbar('success'.tr, '${res['message'] ?? 'taskCompleted'.tr}');
         return true;
       }
@@ -1428,7 +1428,7 @@ class EmployeeTasksController extends GetxController {
       );
       if (res['status'] == 'success') {
         await getTaskDetails(taskId: taskId, occurrenceId: occ);
-        getEmployeeTasks();
+        await getEmployeeTasks();
         Get.snackbar('success'.tr, '${res['message'] ?? 'taskRejected'.tr}');
         return true;
       }
@@ -1462,7 +1462,7 @@ class EmployeeTasksController extends GetxController {
         }(),
       );
       if (res['status'] == 'success') {
-        getEmployeeTasks();
+        await getEmployeeTasks();
         Get.back();
         Get.snackbar(
             'success'.tr, '${res['message'] ?? 'reopenTaskSuccess'.tr}');

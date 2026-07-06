@@ -8,6 +8,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/app_navigation.dart';
 import '../../../../../routes/app_routes.dart';
@@ -695,9 +696,8 @@ class ChecksController extends GetxController
       checkValueController.text = check.total.toString();
       final currencyMatches =
           currency.where((element) => element.tr == check.currency);
-      currencyController.text = currencyMatches.isEmpty
-          ? check.currency
-          : currencyMatches.first;
+      currencyController.text =
+          currencyMatches.isEmpty ? check.currency : currencyMatches.first;
       checkNumberController.text = check.checkId;
       bankNameController.text = check.bankName;
       editCheckFrontImage.value =
@@ -823,6 +823,14 @@ class ChecksController extends GetxController
     String? customerId,
     String? sellerId,
   }) async {
+    if (!await _ensureCheckOwnerPhone(
+      checkId,
+      'cashed',
+      customerId: customerId,
+      sellerId: sellerId,
+    )) {
+      return;
+    }
     isLoading(true);
     final result = await cashedToPersonCancelUsecase.call(
       isInComing: isInComing,
@@ -879,6 +887,15 @@ class ChecksController extends GetxController
     String? successMessage;
     var processed = 0;
     for (final id in ids) {
+      if (!await _ensureCheckOwnerPhone(
+        id,
+        'cashed',
+        customerId: customerId,
+        sellerId: sellerId,
+      )) {
+        failureMessage = 'missingCheckOwnerPhone'.tr;
+        break;
+      }
       final result = await cashedToPersonCancelUsecase.call(
         isInComing: isInComing,
         checkId: id,
@@ -914,6 +931,7 @@ class ChecksController extends GetxController
 
   // return check
   void returnCheck({required String checkId, required bool isCancel}) async {
+    if (!isCancel && !await _ensureCheckOwnerPhone(checkId, 'returned')) return;
     isLoading(true);
     final result = await returnCheckUsercase.call(
       checkId: checkId,
@@ -966,6 +984,98 @@ class ChecksController extends GetxController
     update();
   }
 
+  Future<bool> _ensureCheckOwnerPhone(
+    String checkId,
+    String eventType, {
+    String? customerId,
+    String? sellerId,
+  }) async {
+    try {
+      final api = Get.find<DioConsumer>();
+      final direction = isInComing ? 'incoming' : 'outgoing';
+      final response = await api.get(
+        EndPoints.checkNotificationOwner,
+        queryParameters: {
+          'check_direction': direction,
+          'check_id': checkId,
+          'event_type': eventType,
+          if (!isInComing && customerId != null) 'owner_type': 'customer',
+          if (!isInComing && sellerId != null) 'owner_type': 'seller',
+          if (!isInComing && customerId != null) 'owner_id': customerId,
+          if (!isInComing && sellerId != null) 'owner_id': sellerId,
+        },
+      );
+      final body = response.data;
+      if (body is! Map || body['requires_owner_phone'] != true) return true;
+
+      final owner = body['owner'];
+      if (owner is! Map || owner['needs_phone'] != true) return true;
+
+      final phoneController = TextEditingController();
+      final saved = await Get.dialog<bool>(
+        AlertDialog(
+          title: Text('missingCheckOwnerPhone'.tr),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${owner['name'] ?? ''} · '
+                '${owner['type'] == 'customer' ? 'customer'.tr : 'seller'.tr}',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'phoneNumber'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final phone = phoneController.text.trim();
+                if (phone.length < 8) {
+                  Get.snackbar('error'.tr, 'invalidPhoneNumber'.tr);
+                  return;
+                }
+                await api.put(
+                  EndPoints.checkNotificationOwnerPhone,
+                  data: {
+                    'check_direction': direction,
+                    'check_id': checkId,
+                    'phone': phone,
+                    if (!isInComing && customerId != null)
+                      'owner_type': 'customer',
+                    if (!isInComing && sellerId != null) 'owner_type': 'seller',
+                    if (!isInComing && customerId != null)
+                      'owner_id': customerId,
+                    if (!isInComing && sellerId != null) 'owner_id': sellerId,
+                  },
+                );
+                Get.back(result: true);
+              },
+              child: Text('save'.tr),
+            ),
+          ],
+        ),
+        barrierDismissible: false,
+      );
+      phoneController.dispose();
+      return saved == true;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+      return false;
+    }
+  }
+
   Future<void> bulkReturnCheck({required bool isCancel}) async {
     final ids = selectedBulkCheckIds.map((e) => e.toString()).toList();
     if (ids.isEmpty) return;
@@ -974,6 +1084,10 @@ class ChecksController extends GetxController
     String? successMessage;
     var processed = 0;
     for (final id in ids) {
+      if (!isCancel && !await _ensureCheckOwnerPhone(id, 'returned')) {
+        failureMessage = 'missingCheckOwnerPhone'.tr;
+        break;
+      }
       final result = await returnCheckUsercase.call(
         checkId: id,
         isInComing: isInComing,
@@ -1008,6 +1122,7 @@ class ChecksController extends GetxController
 
   // cash to box
   void chashToBox({required String checkId, required String boxId}) async {
+    if (!await _ensureCheckOwnerPhone(checkId, 'cashed')) return;
     isLoading(true);
     final result = await chashToBoxUsecase.chashToBox(
       checkId: checkId,

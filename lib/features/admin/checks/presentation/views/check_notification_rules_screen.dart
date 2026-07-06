@@ -23,6 +23,7 @@ class _CheckNotificationRulesScreenState
   final api = Get.find<DioConsumer>();
   bool loading = false;
   List<Map<String, dynamic>> rules = [];
+  late final String checkDirection;
 
   Color get _accentColor => ThemeService.isDark.value
       ? AppColors.primaryColor
@@ -31,13 +32,21 @@ class _CheckNotificationRulesScreenState
   @override
   void initState() {
     super.initState();
+    final arguments = Get.arguments;
+    checkDirection = arguments is Map &&
+            arguments['check_direction']?.toString() == 'outgoing'
+        ? 'outgoing'
+        : 'incoming';
     _load();
   }
 
   Future<void> _load() async {
     setState(() => loading = true);
     try {
-      final response = await api.get(EndPoints.checkNotificationRules);
+      final response = await api.get(
+        EndPoints.checkNotificationRules,
+        queryParameters: {'check_direction': checkDirection},
+      );
       final raw = response.data['rules'];
       rules = raw is List
           ? raw.map((e) => Map<String, dynamic>.from(e as Map)).toList()
@@ -118,6 +127,7 @@ class _CheckNotificationRulesScreenState
         child: _CheckNotificationRuleSheet(
           accentColor: _accentColor,
           initialRule: rule,
+          fixedDirection: checkDirection,
           onSaved: _load,
         ),
       ),
@@ -128,7 +138,8 @@ class _CheckNotificationRulesScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'checkNotifications'.tr,
+        title:
+            '${'checkNotifications'.tr} - ${('checkDirection_$checkDirection').tr}',
         action: false,
         actions: [
           IconButton(
@@ -149,7 +160,8 @@ class _CheckNotificationRulesScreenState
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(
           'addCheckNotification'.tr,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
       ),
       body: loading
@@ -198,8 +210,7 @@ class _CheckNotificationRulesScreenState
                     return _RuleCard(
                       rule: rule,
                       onEdit: () => _openFormModal(rule: rule),
-                      onDelete: () =>
-                          _delete(int.parse(rule['id'].toString())),
+                      onDelete: () => _delete(int.parse(rule['id'].toString())),
                     );
                   },
                 ),
@@ -211,24 +222,30 @@ class _CheckNotificationRuleSheet extends StatefulWidget {
   const _CheckNotificationRuleSheet({
     required this.accentColor,
     required this.onSaved,
+    required this.fixedDirection,
     this.initialRule,
   });
 
   final Color accentColor;
   final Map<String, dynamic>? initialRule;
   final Future<void> Function() onSaved;
+  final String fixedDirection;
 
   @override
   State<_CheckNotificationRuleSheet> createState() =>
       _CheckNotificationRuleSheetState();
 }
 
-class _CheckNotificationRuleSheetState extends State<_CheckNotificationRuleSheet> {
+class _CheckNotificationRuleSheetState
+    extends State<_CheckNotificationRuleSheet> {
   final api = Get.find<DioConsumer>();
   final formKey = GlobalKey<FormState>();
   late final TextEditingController messageController;
   late final TextEditingController daysController;
   late String type;
+  late String checkDirection;
+  late String channel;
+  late String recipient;
   late String triggerMode;
   late TimeOfDay sendTime;
   late bool isActive;
@@ -246,14 +263,18 @@ class _CheckNotificationRuleSheetState extends State<_CheckNotificationRuleSheet
     final rule = widget.initialRule;
     editingId = rule != null ? int.tryParse(rule['id'].toString()) : null;
     type = rule?['type']?.toString() ?? 'before_due';
+    checkDirection =
+        rule?['check_direction']?.toString() ?? widget.fixedDirection;
+    channel = rule?['channel']?.toString() ?? 'sms';
+    recipient = rule?['recipient']?.toString() ?? 'admin';
     triggerMode = rule?['trigger_mode']?.toString() ?? 'at_time';
     if (type == 'before_due') triggerMode = 'at_time';
-    daysController = TextEditingController(text: rule?['days']?.toString() ?? '0');
+    daysController =
+        TextEditingController(text: rule?['days']?.toString() ?? '0');
     messageController =
         TextEditingController(text: rule?['message']?.toString() ?? '');
-    isActive = rule == null ||
-        rule['is_active'] == true ||
-        rule['is_active'] == 1;
+    isActive =
+        rule == null || rule['is_active'] == true || rule['is_active'] == 1;
     sendTime = const TimeOfDay(hour: 9, minute: 0);
     final time = rule?['send_time']?.toString();
     if (time != null && time.contains(':')) {
@@ -279,6 +300,9 @@ class _CheckNotificationRuleSheetState extends State<_CheckNotificationRuleSheet
     try {
       final data = {
         'type': type,
+        'check_direction': checkDirection,
+        'channel': channel,
+        'recipient': recipient,
         'days':
             showDaysField ? int.tryParse(daysController.text.trim()) ?? 0 : 0,
         'trigger_mode': isBeforeDue ? 'at_time' : triggerMode,
@@ -388,159 +412,212 @@ class _CheckNotificationRuleSheetState extends State<_CheckNotificationRuleSheet
                 shrinkWrap: true,
                 padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 12.h),
                 children: [
-                    DropdownButtonFormField<String>(
-                      value: type,
-                      isExpanded: true,
-                      decoration: _compactInput('notificationType'.tr),
-                      items: const ['before_due', 'cashed', 'returned']
-                          .map(
-                            (item) => DropdownMenuItem(
-                              value: item,
-                              child: Text(
-                                ('checkNotif_$item').tr,
-                                style: TextStyle(fontSize: 13.sp),
-                              ),
+                  DropdownButtonFormField<String>(
+                    initialValue: type,
+                    isExpanded: true,
+                    decoration: _compactInput('notificationType'.tr),
+                    items: const ['before_due', 'cashed', 'returned']
+                        .map(
+                          (item) => DropdownMenuItem(
+                            value: item,
+                            child: Text(
+                              ('checkNotif_$item').tr,
+                              style: TextStyle(fontSize: 13.sp),
                             ),
-                          )
-                          .toList(),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        type = value ?? type;
+                        if (type == 'before_due') triggerMode = 'at_time';
+                      });
+                    },
+                  ),
+                  SizedBox(height: 10.h),
+                  InputDecorator(
+                    decoration: _compactInput('checkDirection'.tr),
+                    child: Text(
+                      ('checkDirection_$checkDirection').tr,
+                      style: TextStyle(fontSize: 13.sp),
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  DropdownButtonFormField<String>(
+                    initialValue: channel,
+                    isExpanded: true,
+                    decoration: _compactInput('notificationChannel'.tr),
+                    items: const ['push', 'sms']
+                        .map(
+                          (item) => DropdownMenuItem(
+                            value: item,
+                            child: Text(
+                              ('notificationChannel_$item').tr,
+                              style: TextStyle(fontSize: 13.sp),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        channel = value ?? channel;
+                        if (channel == 'push') recipient = 'admin';
+                      });
+                    },
+                  ),
+                  SizedBox(height: 10.h),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey('recipient-$channel-$recipient'),
+                    initialValue: recipient,
+                    isExpanded: true,
+                    decoration: _compactInput('notificationRecipient'.tr),
+                    items: (channel == 'push'
+                            ? const ['admin']
+                            : const ['admin', 'check_owner'])
+                        .map(
+                          (item) => DropdownMenuItem(
+                            value: item,
+                            child: Text(
+                              ('notificationRecipient_$item').tr,
+                              style: TextStyle(fontSize: 13.sp),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => recipient = value ?? recipient),
+                  ),
+                  if (showTriggerMode) ...[
+                    SizedBox(height: 10.h),
+                    DropdownButtonFormField<String>(
+                      initialValue: triggerMode,
+                      isExpanded: true,
+                      decoration: _compactInput('notificationTiming'.tr),
+                      items: [
+                        DropdownMenuItem(
+                          value: 'at_time',
+                          child: Text(
+                            'atSpecificTime'.tr,
+                            style: TextStyle(fontSize: 13.sp),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'on_action',
+                          child: Text(
+                            'onActionImmediately'.tr,
+                            style: TextStyle(fontSize: 13.sp),
+                          ),
+                        ),
+                      ],
                       onChanged: (value) {
-                        setState(() {
-                          type = value ?? type;
-                          if (type == 'before_due') triggerMode = 'at_time';
-                        });
+                        setState(() => triggerMode = value ?? triggerMode);
                       },
                     ),
-                    if (showTriggerMode) ...[
-                      SizedBox(height: 10.h),
-                      DropdownButtonFormField<String>(
-                        value: triggerMode,
-                        isExpanded: true,
-                        decoration: _compactInput('notificationTiming'.tr),
-                        items: [
-                          DropdownMenuItem(
-                            value: 'at_time',
-                            child: Text(
-                              'atSpecificTime'.tr,
-                              style: TextStyle(fontSize: 13.sp),
-                            ),
-                          ),
-                          DropdownMenuItem(
-                            value: 'on_action',
-                            child: Text(
-                              'onActionImmediately'.tr,
-                              style: TextStyle(fontSize: 13.sp),
-                            ),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          setState(() => triggerMode = value ?? triggerMode);
-                        },
-                      ),
-                    ],
-                    if (showDaysField && triggerMode == 'at_time') ...[
-                      SizedBox(height: 10.h),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 96.w,
-                            child: CustomTextField(
-                              label: 'daysCount',
-                              hintText: 'daysCountHint',
-                              controller: daysController,
-                              keyboardType: TextInputType.number,
-                              isRequired: true,
-                              sizedBox: false,
-                            ),
-                          ),
-                          SizedBox(width: 10.w),
-                          Expanded(
-                            child: _CompactTimeTile(
-                              value: _formatTime(sendTime),
-                              onTap: _pickSendTime,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ] else if (showDaysField) ...[
-                      SizedBox(height: 10.h),
-                      SizedBox(
-                        width: 96.w,
-                        child: CustomTextField(
-                          label: 'daysCount',
-                          hintText: 'daysCountHint',
-                          controller: daysController,
-                          keyboardType: TextInputType.number,
-                          isRequired: true,
-                          sizedBox: false,
-                        ),
-                      ),
-                    ],
+                  ],
+                  if (showDaysField && triggerMode == 'at_time') ...[
                     SizedBox(height: 10.h),
-                    CustomTextField(
-                      label: 'smsMessageText',
-                      hintText: 'checkNotificationMessageHint',
-                      controller: messageController,
-                      keyboardType: TextInputType.multiline,
-                      minLines: 2,
-                      maxLines: 4,
-                      isRequired: true,
-                      sizedBox: false,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 96.w,
+                          child: CustomTextField(
+                            label: 'daysCount',
+                            hintText: 'daysCountHint',
+                            controller: daysController,
+                            keyboardType: TextInputType.number,
+                            isRequired: true,
+                            sizedBox: false,
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: _CompactTimeTile(
+                            value: _formatTime(sendTime),
+                            onTap: _pickSendTime,
+                          ),
+                        ),
+                      ],
                     ),
-                    SwitchListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                      value: isActive,
-                      title: Text(
-                        'checkNotificationActive'.tr,
-                        style: TextStyle(fontSize: 13.sp),
+                  ] else if (showDaysField) ...[
+                    SizedBox(height: 10.h),
+                    SizedBox(
+                      width: 96.w,
+                      child: CustomTextField(
+                        label: 'daysCount',
+                        hintText: 'daysCountHint',
+                        controller: daysController,
+                        keyboardType: TextInputType.number,
+                        isRequired: true,
+                        sizedBox: false,
                       ),
-                      onChanged: (value) => setState(() => isActive = value),
                     ),
                   ],
-                ),
+                  SizedBox(height: 10.h),
+                  CustomTextField(
+                    label: 'smsMessageText',
+                    hintText: 'checkNotificationMessageHint',
+                    controller: messageController,
+                    keyboardType: TextInputType.multiline,
+                    minLines: 2,
+                    maxLines: 4,
+                    isRequired: true,
+                    sizedBox: false,
+                  ),
+                  SwitchListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    value: isActive,
+                    title: Text(
+                      'checkNotificationActive'.tr,
+                      style: TextStyle(fontSize: 13.sp),
+                    ),
+                    onChanged: (value) => setState(() => isActive = value),
+                  ),
+                ],
               ),
             ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 46.h,
-                  child: FilledButton.icon(
-                    onPressed: saving ? null : _save,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: widget.accentColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+              child: SizedBox(
+                width: double.infinity,
+                height: 46.h,
+                child: FilledButton.icon(
+                  onPressed: saving ? null : _save,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: widget.accentColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    icon: saving
-                        ? SizedBox(
-                            width: 18.w,
-                            height: 18.w,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(Icons.save, size: 20.sp),
-                    label: Text(
-                      'save'.tr,
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  ),
+                  icon: saving
+                      ? SizedBox(
+                          width: 18.w,
+                          height: 18.w,
+                          child: const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(Icons.save, size: 20.sp),
+                  label: Text(
+                    'save'.tr,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -588,6 +665,16 @@ class _RuleCard extends StatelessWidget {
                   ruleTriggerMode == 'on_action'
                       ? 'onActionImmediately'.tr
                       : '${rule['days']} ${'daysCount'.tr} · ${rule['send_time'] ?? ''}',
+                  style: TextStyle(
+                    fontSize: 11.5.sp,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  '${('checkDirection_${rule['check_direction']}').tr} · '
+                  '${('notificationChannel_${rule['channel']}').tr} · '
+                  '${('notificationRecipient_${rule['recipient']}').tr}',
                   style: TextStyle(
                     fontSize: 11.5.sp,
                     color: Colors.grey.shade700,
@@ -679,7 +766,8 @@ class _CompactTimeTile extends StatelessWidget {
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500),
+                    style:
+                        TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w500),
                   ),
                 ),
               ],

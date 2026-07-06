@@ -278,6 +278,10 @@ class EndPoints {
   static const String addIncomingChecksBatch = 'add/incoming/checks/batch';
   static const String checkNotificationRules = 'check-notification-rules';
   static String checkNotificationRule(int id) => 'check-notification-rules/$id';
+  static const String checkNotificationOwner =
+      'check-notification-rules/check-owner';
+  static const String checkNotificationOwnerPhone =
+      'check-notification-rules/check-owner-phone';
 
   static const String editOutgoingCheck = 'edit/outgoing/check';
   static const String editIncomingCheck = 'edit/incoming/check';

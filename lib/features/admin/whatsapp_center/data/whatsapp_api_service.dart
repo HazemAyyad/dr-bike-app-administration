@@ -26,15 +26,43 @@ class WhatsAppApiService {
       _get('$_base/conversations/$id', query: {'page': page, 'per_page': 50});
 
   Future<Map<String, dynamic>> sendWhatsAppMessageToConversation(
-          int id, String message) =>
-      _post('$_base/conversations/$id/send', {'message': message});
+          int id, String message,
+          {int? replyToMessageId}) =>
+      _post('$_base/conversations/$id/send', {
+        'message': message,
+        if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
+      });
+
+  Future<Map<String, dynamic>> requestConversationContinuation(int id) =>
+      _post('$_base/conversations/$id/request-continuation', const {});
+
+  Future<void> sendTypingIndicator(int id) async {
+    await _api.post('$_base/conversations/$id/typing');
+  }
+
+  Future<Map<String, dynamic>> getProducts({String? search}) =>
+      _get('$_base/products', query: {
+        'per_page': 60,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      });
+
+  Future<Map<String, dynamic>> sendProducts(
+          int conversationId, List<String> productIds) =>
+      _post('$_base/conversations/$conversationId/send-products',
+          {'product_ids': productIds});
+
+  Future<void> hideMessage(int conversationId, int messageId) async {
+    await _api
+        .delete('$_base/conversations/$conversationId/messages/$messageId');
+  }
 
   Future<Map<String, dynamic>> sendWhatsAppMedia(
       int id, String path, String name,
-      {String? caption}) async {
+      {String? caption, String? mediaKind}) async {
     final form = FormData.fromMap({
       'file': await MultipartFile.fromFile(path, filename: name),
       if (caption != null && caption.isNotEmpty) 'caption': caption,
+      if (mediaKind != null) 'media_kind': mediaKind,
     });
     final Response response =
         await _api.post('$_base/conversations/$id/send-media', data: form);
@@ -89,6 +117,9 @@ class WhatsAppApiService {
   Future<Map<String, dynamic>> saveWhatsAppSettings(
           Map<String, dynamic> data) =>
       _post('$_base/settings', data);
+
+  Future<Map<String, dynamic>> updateWhatsAppEmployees(List<int> employeeIds) =>
+      _post('$_base/settings/employees', {'employee_ids': employeeIds});
 
   Future<Map<String, dynamic>> sendWhatsAppTestMessage(
           String phone, String message) =>

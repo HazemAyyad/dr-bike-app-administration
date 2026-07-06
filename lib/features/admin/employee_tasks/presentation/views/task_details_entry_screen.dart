@@ -85,7 +85,7 @@ class _TaskDetailsEntryScreenState extends State<TaskDetailsEntryScreen> {
       return data.occurrenceId?.toString() == _occurrenceId;
     }
     if (_taskId != null && _taskId!.isNotEmpty) {
-      return data.taskId.toString() == _taskId;
+      return data.taskId.toString() == _taskId || data.parentId == _taskId;
     }
     return false;
   }

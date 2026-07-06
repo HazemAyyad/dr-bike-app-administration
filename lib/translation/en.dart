@@ -1231,6 +1231,7 @@ const Map<String, String> en = {
   'ledgerArchiveConfirmBody':
       'The transaction will move to Archive and you can restore it later.',
   'ledgerUpdated': 'Transaction updated',
+  'whatsappSectionPermission': 'WhatsApp section',
   'ledgerInstantSaleTag': 'Instant sale transaction',
   'ledgerInstantSaleNoBoxEdit':
       'Instant sale entries are not linked to a ledger box',
@@ -1725,6 +1726,16 @@ const Map<String, String> en = {
   'checkNotificationMessageHint':
       'Notification text. Use {name} {check_number} {amount} {currency} {due_date} {bank} {check_type}',
   'checkNotificationSavedHint': 'Notification setting saved successfully.',
+  'checkDirection': 'Check direction',
+  'checkDirection_incoming': 'Incoming check',
+  'checkDirection_outgoing': 'Outgoing check',
+  'notificationChannel': 'Delivery channel',
+  'notificationChannel_push': 'Push notification',
+  'notificationChannel_sms': 'SMS message',
+  'notificationRecipient': 'Recipient',
+  'notificationRecipient_admin': 'Administration',
+  'notificationRecipient_check_owner': 'Check owner',
+  'missingCheckOwnerPhone': 'Check owner phone is missing',
   'confirmDeleteCheckNotification': 'Delete this notification setting?',
 
   // قسم الصناديق

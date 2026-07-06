@@ -1299,6 +1299,7 @@ const Map<String, String> ar = {
   'ledgerArchiveConfirmBody':
       'ستُنقل المعاملة للأرشيف ويمكنك استرجاعها لاحقاً من قسم الأرشيف.',
   'ledgerUpdated': 'تم تعديل المعاملة',
+  'whatsappSectionPermission': 'قسم واتساب (الرسائل)',
   'ledgerInstantSaleTag': 'معاملة بيع فوري',
   'ledgerInstantSaleNoBoxEdit':
       'معاملات البيع الفوري لا ترتبط بصندوق في الدفتر',
@@ -1784,6 +1785,16 @@ const Map<String, String> ar = {
   'checkNotificationMessageHint':
       'نص الإشعار. استخدم {name} {check_number} {amount} {currency} {due_date} {bank} {check_type}',
   'checkNotificationSavedHint': 'تم حفظ إعداد الإشعار بنجاح.',
+  'checkDirection': 'اتجاه الشيك',
+  'checkDirection_incoming': 'شيك وارد',
+  'checkDirection_outgoing': 'شيك صادر',
+  'notificationChannel': 'قناة الإرسال',
+  'notificationChannel_push': 'إشعار Push',
+  'notificationChannel_sms': 'رسالة SMS',
+  'notificationRecipient': 'المستلم',
+  'notificationRecipient_admin': 'الإدارة',
+  'notificationRecipient_check_owner': 'صاحب الشيك',
+  'missingCheckOwnerPhone': 'رقم صاحب الشيك غير موجود',
   'confirmDeleteCheckNotification': 'حذف إعداد الإشعار هذا؟',
 
   // قسم الصناديق

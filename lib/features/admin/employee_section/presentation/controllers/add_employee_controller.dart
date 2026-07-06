@@ -123,6 +123,11 @@ class AddEmployeeController extends GetxController {
     {'name': 'checksandCommitments'.tr, 'id': '14', 'permission': false.obs},
     {'name': 'maintenance'.tr, 'id': '15', 'permission': false.obs},
     {'name': 'stock'.tr, 'id': '16', 'permission': false.obs},
+    {
+      'name': 'whatsappSectionPermission'.tr,
+      'id': '17',
+      'permission': false.obs
+    },
     {'name': 'completeData'.tr, 'id': '40', 'permission': false.obs},
     {
       'name': 'impersonateEmployeePermission'.tr,

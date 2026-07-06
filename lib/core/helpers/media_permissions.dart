@@ -26,9 +26,9 @@ Future<bool> ensurePhotosPermission() async {
   }
 
   var status = await Permission.photos.status;
-  if (status.isGranted) return true;
+  if (status.isGranted || status.isLimited) return true;
   status = await Permission.photos.request();
-  return status.isGranted;
+  return status.isGranted || status.isLimited;
 }
 
 void showMediaPermissionDeniedSnackbar() {

@@ -18,6 +18,14 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
               seedColor: const Color(0xFF075E54),
               brightness: Theme.of(context).brightness,
             ),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xFFF7FAF9),
+              surfaceTintColor: Colors.transparent,
+            ),
+            bottomSheetTheme: const BottomSheetThemeData(
+              backgroundColor: Color(0xFFF7FAF9),
+              surfaceTintColor: Colors.transparent,
+            ),
           ),
           child: Scaffold(
             appBar: AppBar(title: const Text('مركز واتساب')),
@@ -208,25 +216,46 @@ class _DashboardTab extends StatelessWidget {
               mainAxisSpacing: 8),
           itemCount: items.length,
           itemBuilder: (_, i) => Card(
-              child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(children: [
-              CircleAvatar(
-                  backgroundColor: const Color(0xFFE7F5F1),
-                  child: Icon(items[i]['icon'] as IconData,
-                      color: const Color(0xFF075E54))),
-              const SizedBox(width: 8),
-              Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                    Text('${items[i]['value']}',
-                        style: Theme.of(context).textTheme.headlineSmall),
-                    Text(items[i]['label'].toString(), maxLines: 2),
-                  ])),
-            ]),
-          )),
+            elevation: 0,
+            color: const Color(0xFFF0F7F5),
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: Color(0xFFD5E8E2)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(children: [
+                CircleAvatar(
+                    backgroundColor: const Color(0xFFD9EEE8),
+                    child: Icon(items[i]['icon'] as IconData,
+                        color: const Color(0xFF075E54))),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                      Text(
+                        '${items[i]['value']}',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: const Color(0xFF102A25),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                      ),
+                      Text(
+                        items[i]['label'].toString(),
+                        maxLines: 2,
+                        style: const TextStyle(
+                          color: Color(0xFF425E58),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ])),
+              ]),
+            ),
+          ),
         );
       }),
     ]);
@@ -289,10 +318,22 @@ class _ConversationsTab extends StatelessWidget {
                               const EdgeInsets.symmetric(horizontal: 10),
                           onTap: () =>
                               Get.toNamed('/WhatsAppConversation/${item.id}'),
-                          leading: CircleAvatar(
-                              child: Text((item.contact?.name ?? item.phone)
-                                  .characters
-                                  .first)),
+                          leading: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              CircleAvatar(
+                                  child: Text((item.contact?.name ?? item.phone)
+                                      .characters
+                                      .first)),
+                              if (item.contact?.customerId != null ||
+                                  item.contact?.supplierId != null)
+                                const Positioned(
+                                  left: -3,
+                                  bottom: -2,
+                                  child: _LinkedBadge(),
+                                ),
+                            ],
+                          ),
                           title: Text(item.contact?.name?.isNotEmpty == true
                               ? item.contact!.name!
                               : item.phone),
@@ -473,6 +514,86 @@ class _SettingsTab extends StatelessWidget {
             '${settings.message}\nPhone number ID: ${settings.phoneNumberId ?? '—'}'),
         isThreeLine: true,
       )),
+      Obx(() {
+        if (!controller.canManageWhatsAppEmployees.value) {
+          return const SizedBox.shrink();
+        }
+        return Card(
+          margin: const EdgeInsets.only(top: 12),
+          color: const Color(0xFFF0F7F5),
+          surfaceTintColor: Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(children: [
+                  Icon(Icons.manage_accounts, color: Color(0xFF075E54)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'الموظفون المخولون بقسم واتساب',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                    ),
+                  ),
+                ]),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Text(
+                    'هذا الاختيار يستخدم نفس صلاحية قسم واتساب الموجودة في إضافة وتعديل الموظف.',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF52635F)),
+                  ),
+                ),
+                if (controller.whatsAppEmployees.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Center(child: Text('لا يوجد موظفون')),
+                  )
+                else
+                  ...controller.whatsAppEmployees.map((employee) {
+                    final selected = controller.selectedWhatsAppEmployeeIds
+                        .contains(employee.id);
+                    return CheckboxListTile(
+                      value: selected,
+                      activeColor: const Color(0xFF00A884),
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(employee.name),
+                      subtitle: Text([
+                        if (employee.jobTitle?.isNotEmpty == true)
+                          employee.jobTitle!,
+                        if (employee.phone?.isNotEmpty == true) employee.phone!,
+                      ].join(' • ')),
+                      secondary: CircleAvatar(
+                        backgroundColor: const Color(0xFFD9EEE8),
+                        child: Text(employee.name.characters.first),
+                      ),
+                      onChanged: (value) => controller.toggleWhatsAppEmployee(
+                          employee.id, value == true),
+                    );
+                  }),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF075E54)),
+                    onPressed: controller.actionLoading.value
+                        ? null
+                        : controller.saveWhatsAppEmployees,
+                    icon: controller.actionLoading.value
+                        ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.save),
+                    label: const Text('حفظ صلاحيات واتساب'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }),
       const SizedBox(height: 16),
       Text('رسالة تجربة', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 10),
@@ -559,6 +680,22 @@ class _StateMessage extends StatelessWidget {
                       label: const Text('إعادة المحاولة')),
               ])))
         ],
+      );
+}
+
+class _LinkedBadge extends StatelessWidget {
+  const _LinkedBadge();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 18,
+        height: 18,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D9BF0),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: const Icon(Icons.check, color: Colors.white, size: 11),
       );
 }
 
