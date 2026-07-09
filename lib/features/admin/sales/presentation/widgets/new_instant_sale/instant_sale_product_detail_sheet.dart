@@ -65,12 +65,11 @@ class _ProductDetailSheet extends StatelessWidget {
           borderRadius: BorderRadius.circular(14.r),
         ),
         child: Obx(() {
-          final _ = controller.pickerBuyerIdRx.value;
-          final __ = controller.pickerSellerIdRx.value;
-          final ___ = controller.pickerPartnerIsCustomer.value;
+          controller.pickerBuyerIdRx.value;
+          controller.pickerSellerIdRx.value;
+          controller.pickerPartnerIsCustomer.value;
           final linePrice = cartLine?.priceText;
           final retail = product.unitPrice;
-          final wholesale = product.wholesalePrice;
           final historyLine = cartLine ??
               InstantSaleCartLine.fromProduct(
                 product,
@@ -103,7 +102,8 @@ class _ProductDetailSheet extends StatelessWidget {
               SizedBox(height: 12.h),
               if (hasImage)
                 GestureDetector(
-                  onTap: () => openProductImageViewer(context, product.imageUrl),
+                  onTap: () =>
+                      openProductImageViewer(context, product.imageUrl),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10.r),
                     child: AspectRatio(
@@ -135,12 +135,6 @@ class _ProductDetailSheet extends StatelessWidget {
                 retail > 0
                     ? SalesAmountFormat.displayShekel(retail)
                     : 'instantSaleNoRetailPrice'.tr,
-              ),
-              _row(
-                'wholesalePriceField'.tr,
-                wholesale > 0
-                    ? SalesAmountFormat.displayShekel(wholesale)
-                    : '—',
               ),
               if (isAdmin)
                 _row(

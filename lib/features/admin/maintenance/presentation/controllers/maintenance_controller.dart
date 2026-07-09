@@ -17,16 +17,19 @@ import '../../../sales/presentation/binding/sales_binding.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/models/instant_sale_cart_line.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
-import '../../../stock/presentation/utils/open_instant_sale_invoice.dart';
 import '../../data/models/maintenance_product_model.dart';
 import '../../data/models/maintenances_model.dart';
 import '../../domain/usecases/creat_maintenance_usecase.dart';
 import '../../domain/usecases/deliver_maintenance_usecase.dart';
+import '../../domain/usecases/get_maintenance_activity_log_usecase.dart';
+import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../domain/usecases/get_maintenances_details_usecase.dart';
 import '../../domain/usecases/maintenance_usecase.dart';
 import '../../domain/usecases/sync_maintenance_products_usecase.dart';
 import 'maintenance_serves.dart';
+import '../widgets/maintenance_activity_log_sheet.dart';
 import '../widgets/maintenance_delivery_dialog.dart';
+import '../widgets/maintenance_invoice_sheet.dart';
 
 class MaintenanceController extends GetxController {
   final MaintenanceUsecase maintenanceUsecase;
@@ -35,6 +38,8 @@ class MaintenanceController extends GetxController {
   final GetMaintenancesDetailsUsecase getMaintenancesDetailsUsecase;
   final SyncMaintenanceProductsUsecase syncMaintenanceProductsUsecase;
   final DeliverMaintenanceUsecase deliverMaintenanceUsecase;
+  final GetMaintenanceActivityLogUsecase getMaintenanceActivityLogUsecase;
+  final GetMaintenanceInvoiceUsecase getMaintenanceInvoiceUsecase;
   final GetShownBoxUsecase getShownBoxUsecase;
 
   MaintenanceController({
@@ -44,6 +49,8 @@ class MaintenanceController extends GetxController {
     required this.getMaintenancesDetailsUsecase,
     required this.syncMaintenanceProductsUsecase,
     required this.deliverMaintenanceUsecase,
+    required this.getMaintenanceActivityLogUsecase,
+    required this.getMaintenanceInvoiceUsecase,
     required this.getShownBoxUsecase,
   });
 
@@ -160,7 +167,8 @@ class MaintenanceController extends GetxController {
     if (!formKey.currentState!.validate()) return;
 
     if (maintenanceId == null || maintenanceId!.isEmpty) {
-      await createMaintenance(step: selectedStep.value, maintenanceId: maintenanceId);
+      await createMaintenance(
+          step: selectedStep.value, maintenanceId: maintenanceId);
       if (maintenanceId == null || maintenanceId!.isEmpty) return;
     }
 
@@ -234,8 +242,7 @@ class MaintenanceController extends GetxController {
           return MaintenanceProductModel(
             productId: int.parse(line.productId),
             productName: line.displayName,
-            sizeId:
-                line.sizeId != null ? int.tryParse(line.sizeId!) : null,
+            sizeId: line.sizeId != null ? int.tryParse(line.sizeId!) : null,
             sizeColorId: line.sizeColorId != null
                 ? int.tryParse(line.sizeColorId!)
                 : null,
@@ -317,13 +324,12 @@ class MaintenanceController extends GetxController {
           success['message']?.toString() ?? '',
           snackPosition: SnackPosition.BOTTOM,
         );
-        final saleId = success['instant_sale_id']?.toString();
-        if (saleId != null &&
-            saleId.isNotEmpty &&
+        if (maintenanceId != null &&
+            maintenanceId!.isNotEmpty &&
             Get.context != null) {
-          await openInstantSaleInvoiceFromStock(
+          await openMaintenanceInvoice(
             context: Get.context!,
-            saleId: saleId,
+            maintenanceId: maintenanceId!,
           );
         }
       },
@@ -332,6 +338,44 @@ class MaintenanceController extends GetxController {
     isLoading(false);
     update();
     return ok;
+  }
+
+  Future<void> openActivityLog({
+    required BuildContext context,
+    required String maintenanceId,
+  }) async {
+    final result = await getMaintenanceActivityLogUsecase.call(
+      maintenanceId: maintenanceId,
+    );
+    result.fold(
+      (failure) => Get.snackbar(
+        'error'.tr,
+        failure.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      ),
+      (logs) => showMaintenanceActivityLogSheet(context, logs),
+    );
+  }
+
+  Future<void> openMaintenanceInvoice({
+    required BuildContext context,
+    required String maintenanceId,
+  }) async {
+    final result = await getMaintenanceInvoiceUsecase.call(
+      maintenanceId: maintenanceId,
+    );
+    result.fold(
+      (failure) => Get.snackbar(
+        'error'.tr,
+        failure.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      ),
+      (invoice) => showMaintenanceInvoiceSheet(context, invoice),
+    );
   }
 
   void getMaintenancesData() async {
@@ -423,9 +467,9 @@ class MaintenanceController extends GetxController {
       }
 
       this.maintenanceId = maintenances['id'].toString();
-      deliveryDate.value = DateTime.tryParse(
-              maintenances['receipt_date']?.toString() ?? '') ??
-          DateTime.now();
+      deliveryDate.value =
+          DateTime.tryParse(maintenances['receipt_date']?.toString() ?? '') ??
+              DateTime.now();
 
       final receiptDateTime = DateTime.tryParse(
           '${maintenances['receipt_date']} ${maintenances['receipt_time']}');
@@ -433,7 +477,8 @@ class MaintenanceController extends GetxController {
         deliveryTime.value = TimeOfDay.fromDateTime(receiptDateTime);
       }
 
-      descriptionController.text = maintenances['description']?.toString() ?? '';
+      descriptionController.text =
+          maintenances['description']?.toString() ?? '';
 
       final customer = maintenances['customer'];
       final seller = maintenances['seller'];
@@ -645,16 +690,16 @@ class MaintenanceController extends GetxController {
       ..addAll(groupByDate(applyFilter(MaintenanceServes().maintenancesList)));
     ongoingMaintenancesSearch
       ..clear()
-      ..addAll(
-          groupByDate(applyFilter(MaintenanceServes().ongoingMaintenancesList)));
+      ..addAll(groupByDate(
+          applyFilter(MaintenanceServes().ongoingMaintenancesList)));
     readyMaintenancesSearch
       ..clear()
       ..addAll(
           groupByDate(applyFilter(MaintenanceServes().readyMaintenancesList)));
     archiveMaintenancesSearch
       ..clear()
-      ..addAll(
-          groupByDate(applyFilter(MaintenanceServes().archiveMaintenancesList)));
+      ..addAll(groupByDate(
+          applyFilter(MaintenanceServes().archiveMaintenancesList)));
     Get.back();
     update();
   }

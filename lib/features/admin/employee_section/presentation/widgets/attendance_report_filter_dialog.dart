@@ -47,13 +47,15 @@ class _AttendanceReportFilterDialogContent extends StatefulWidget {
 
 class _AttendanceReportFilterDialogContentState
     extends State<_AttendanceReportFilterDialogContent> {
-  static const _types = ['daily', 'weekly', 'monthly'];
+  static const _types = ['daily', 'weekly', 'monthly', 'custom'];
 
   late String _reportType;
   late int _month;
   late int _year;
   late int _day;
   late int _week;
+  late DateTime? _customFrom;
+  late DateTime? _customTo;
   late bool _allEmployees;
   final Set<int> _selectedIds = {};
 
@@ -78,6 +80,13 @@ class _AttendanceReportFilterDialogContentState
       _selectedIds
         ..clear()
         ..addAll(i.employeeIds);
+      if (i.dateFrom != null && i.dateTo != null) {
+        _customFrom = DateTime.tryParse(i.dateFrom!);
+        _customTo = DateTime.tryParse(i.dateTo!);
+      } else {
+        _customFrom = DateTime(i.year, i.month, 1);
+        _customTo = DateTime(i.year, i.month, DateTime(i.year, i.month + 1, 0).day);
+      }
     } else {
       _reportType = 'monthly';
       _month = now.month;
@@ -85,7 +94,14 @@ class _AttendanceReportFilterDialogContentState
       _day = now.day;
       _week = 1;
       _allEmployees = true;
+      _customFrom = DateTime(now.year, now.month, 1);
+      _customTo = now;
     }
+  }
+
+  String? _fmtDate(DateTime? d) {
+    if (d == null) return null;
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
   }
 
   void _reset() {
@@ -98,6 +114,8 @@ class _AttendanceReportFilterDialogContentState
       _week = 1;
       _allEmployees = true;
       _selectedIds.clear();
+      _customFrom = DateTime(now.year, now.month, 1);
+      _customTo = now;
     });
   }
 
@@ -142,12 +160,23 @@ class _AttendanceReportFilterDialogContentState
       return;
     }
 
+    if (_reportType == 'custom' && (_customFrom == null || _customTo == null)) {
+      Get.snackbar(
+        'error'.tr,
+        'attendanceReportCustomRangeRequired'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     final args = AttendanceReportArgs(
       reportType: _reportType,
-      month: _month,
-      year: _year,
+      month: _reportType == 'custom' ? (_customFrom?.month ?? _month) : _month,
+      year: _reportType == 'custom' ? (_customFrom?.year ?? _year) : _year,
       day: _reportType == 'daily' ? _day : null,
       week: _reportType == 'weekly' ? _week : null,
+      dateFrom: _reportType == 'custom' ? _fmtDate(_customFrom) : null,
+      dateTo: _reportType == 'custom' ? _fmtDate(_customTo) : null,
       allEmployees: _allEmployees,
       employeeIds:
           _allEmployees ? const <int>[] : (_selectedIds.toList()..sort()),
@@ -177,6 +206,8 @@ class _AttendanceReportFilterDialogContentState
         return 'reportTypeWeekly'.tr;
       case 'monthly':
         return 'reportTypeMonthly'.tr;
+      case 'custom':
+        return 'reportTypeCustom'.tr;
       default:
         return code;
     }
@@ -331,6 +362,38 @@ class _AttendanceReportFilterDialogContentState
                     _week = v ?? _week;
                     _clampWeekToMonth();
                   }),
+                ),
+              ],
+              if (_reportType == 'custom') ...[
+                SizedBox(height: 10.h),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final now = DateTime.now();
+                    final picked = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime(now.year - 5),
+                      lastDate: DateTime(now.year + 1, 12, 31),
+                      initialDateRange: _customFrom != null && _customTo != null
+                          ? DateTimeRange(start: _customFrom!, end: _customTo!)
+                          : null,
+                      helpText: 'filterByDateRange'.tr,
+                      saveText: 'confirm'.tr,
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _customFrom = picked.start;
+                        _customTo = picked.end;
+                        _month = picked.start.month;
+                        _year = picked.start.year;
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.date_range_outlined),
+                  label: Text(
+                    _customFrom != null && _customTo != null
+                        ? '${_fmtDate(_customFrom)} → ${_fmtDate(_customTo)}'
+                        : 'filterByDateRange'.tr,
+                  ),
                 ),
               ],
               SizedBox(height: 12.h),

@@ -32,7 +32,7 @@ class StockInventorySettingsScreen extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         children: [
-          if (userType == 'admin' && stock != null) ...[
+          if (canManageStockInventorySettings && stock != null) ...[
             Obx(
               () => _SettingsTile(
                 icon: Icons.file_download_outlined,
@@ -87,7 +87,9 @@ class StockInventorySettingsScreen extends StatelessWidget {
             description: 'storeSectionsSettingDesc'.tr,
             onTap: () async {
               await Get.toNamed(AppRoutes.STORESECTIONSSETTINGSSCREEN);
-              if (Get.isRegistered<StockController>()) {
+              if ((userType == 'admin' ||
+                      employeePermissions.contains(stockPermissionId)) &&
+                  Get.isRegistered<StockController>()) {
                 await Get.find<StockController>()
                     .refreshAfterStoreSectionsChanged();
               }

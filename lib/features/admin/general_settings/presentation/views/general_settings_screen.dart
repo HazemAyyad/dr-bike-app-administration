@@ -10,6 +10,7 @@ import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/app_settings_service.dart';
 import '../../../../../core/services/attendance_settings_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/user_data.dart';
 import '../../../../../routes/app_routes.dart';
@@ -503,98 +504,105 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
   Widget build(BuildContext context) {
     final pageBg = const Color(0xFFF5F5F5);
 
-    final items = <_SettingsItem>[
-      _SettingsItem(
-        icon: Icons.how_to_reg_outlined,
-        iconColor: const Color(0xFFDC2626),
-        titleKey: 'attendanceSettings',
-        descriptionKey: 'attendanceSettingsDesc',
-        onTap: () => Get.toNamed(AppRoutes.ATTENDANCESETTINGSSCREEN),
-      ),
-      _SettingsItem(
-        icon: Icons.people_outline,
-        iconColor: const Color(0xFF059669),
-        titleKey: 'manageCustomers',
-        descriptionKey: 'manageCustomersDesc',
-        onTap: () => Get.toNamed(
-          AppRoutes.GENERALDATALISTSCREEN,
-          arguments: {'initialTab': 1},
-        ),
-      ),
-      _SettingsItem(
-        icon: Icons.storefront_outlined,
-        iconColor: const Color(0xFF7C3AED),
-        titleKey: 'manageMerchants',
-        descriptionKey: 'manageMerchantsDesc',
-        onTap: () => Get.toNamed(
-          AppRoutes.GENERALDATALISTSCREEN,
-          arguments: {'initialTab': 0},
-        ),
-      ),
-      _SettingsItem(
-        icon: Icons.category_outlined,
-        iconColor: const Color(0xFF6B65BD),
-        titleKey: 'contactCategoriesSettings',
-        descriptionKey: 'contactCategoriesSettingsDesc',
-        onTap: () => Get.toNamed(AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN),
-      ),
-      _SettingsItem(
-        icon: Icons.account_balance_outlined,
-        iconColor: const Color(0xFF0D9488),
-        titleKey: 'banksManagement',
-        descriptionKey: 'banksManagementDesc',
-        onTap: () => Get.toNamed(AppRoutes.BANKSSETTINGSSCREEN),
-      ),
-      _SettingsItem(
-        icon: Icons.tune_rounded,
-        iconColor: const Color(0xFF2563EB),
-        titleKey: 'pointCategoriesSetting',
-        descriptionKey: 'pointCategoriesSettingDesc',
-        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTCATEGORIESSCREEN),
-      ),
-      _SettingsItem(
-        icon: Icons.stars_rounded,
-        iconColor: const Color(0xFFEA580C),
-        titleKey: 'subtaskBonusDefaultSetting',
-        descriptionKey: 'subtaskBonusDefaultSettingDesc',
-        onTap: _editSubtaskBonusDefault,
-      ),
-      _SettingsItem(
-        icon: Icons.local_shipping_outlined,
-        iconColor: const Color(0xFF7C3AED),
-        titleKey: 'shiplySettingsTitle',
-        descriptionKey: 'shiplySettingsDesc',
-        onTap: _editShiplySettings,
-      ),
-      _SettingsItem(
-        icon: Icons.point_of_sale_outlined,
-        iconColor: const Color(0xFFBE123C),
-        titleKey: 'salesDailySettingsTitle',
-        descriptionKey: 'salesDailySettingsDesc',
-        onTap: _editSalesDailySettings,
-      ),
-      _SettingsItem(
-        icon: Icons.emoji_events_outlined,
-        iconColor: const Color(0xFFB45309),
-        titleKey: 'rewardRulesSetting',
-        descriptionKey: 'rewardRulesSettingDesc',
-        onTap: () => Get.toNamed(AppRoutes.EMPLOYEEREWARDRULESSCREEN),
-      ),
-      _SettingsItem(
-        icon: Icons.add_circle_outline,
-        iconColor: const Color(0xFF0F766E),
-        titleKey: 'adminFabOptionsSetting',
-        descriptionKey: 'adminFabOptionsSettingDesc',
-        onTap: _editAdminFabOptions,
-      ),
-      _SettingsItem(
-        icon: Icons.inventory_2_outlined,
-        iconColor: const Color(0xFF0369A1),
-        titleKey: 'stockInventorySettings',
-        descriptionKey: 'stockInventorySettingsDesc',
-        onTap: () => Get.toNamed(AppRoutes.STOCKINVENTORYSETTINGSSCREEN),
-      ),
-    ];
+    final stockInventoryItem = _SettingsItem(
+      icon: Icons.inventory_2_outlined,
+      iconColor: const Color(0xFF0369A1),
+      titleKey: 'stockInventorySettings',
+      descriptionKey: 'stockInventorySettingsDesc',
+      onTap: () => Get.toNamed(AppRoutes.STOCKINVENTORYSETTINGSSCREEN),
+    );
+    final items = userType == 'admin'
+        ? <_SettingsItem>[
+            _SettingsItem(
+              icon: Icons.how_to_reg_outlined,
+              iconColor: const Color(0xFFDC2626),
+              titleKey: 'attendanceSettings',
+              descriptionKey: 'attendanceSettingsDesc',
+              onTap: () => Get.toNamed(AppRoutes.ATTENDANCESETTINGSSCREEN),
+            ),
+            _SettingsItem(
+              icon: Icons.people_outline,
+              iconColor: const Color(0xFF059669),
+              titleKey: 'manageCustomers',
+              descriptionKey: 'manageCustomersDesc',
+              onTap: () => Get.toNamed(
+                AppRoutes.GENERALDATALISTSCREEN,
+                arguments: {'initialTab': 1},
+              ),
+            ),
+            _SettingsItem(
+              icon: Icons.storefront_outlined,
+              iconColor: const Color(0xFF7C3AED),
+              titleKey: 'manageMerchants',
+              descriptionKey: 'manageMerchantsDesc',
+              onTap: () => Get.toNamed(
+                AppRoutes.GENERALDATALISTSCREEN,
+                arguments: {'initialTab': 0},
+              ),
+            ),
+            _SettingsItem(
+              icon: Icons.category_outlined,
+              iconColor: const Color(0xFF6B65BD),
+              titleKey: 'contactCategoriesSettings',
+              descriptionKey: 'contactCategoriesSettingsDesc',
+              onTap: () =>
+                  Get.toNamed(AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN),
+            ),
+            _SettingsItem(
+              icon: Icons.account_balance_outlined,
+              iconColor: const Color(0xFF0D9488),
+              titleKey: 'banksManagement',
+              descriptionKey: 'banksManagementDesc',
+              onTap: () => Get.toNamed(AppRoutes.BANKSSETTINGSSCREEN),
+            ),
+            _SettingsItem(
+              icon: Icons.tune_rounded,
+              iconColor: const Color(0xFF2563EB),
+              titleKey: 'pointCategoriesSetting',
+              descriptionKey: 'pointCategoriesSettingDesc',
+              onTap: () => Get.toNamed(AppRoutes.EMPLOYEEPOINTCATEGORIESSCREEN),
+            ),
+            _SettingsItem(
+              icon: Icons.stars_rounded,
+              iconColor: const Color(0xFFEA580C),
+              titleKey: 'subtaskBonusDefaultSetting',
+              descriptionKey: 'subtaskBonusDefaultSettingDesc',
+              onTap: _editSubtaskBonusDefault,
+            ),
+            _SettingsItem(
+              icon: Icons.local_shipping_outlined,
+              iconColor: const Color(0xFF7C3AED),
+              titleKey: 'shiplySettingsTitle',
+              descriptionKey: 'shiplySettingsDesc',
+              onTap: _editShiplySettings,
+            ),
+            _SettingsItem(
+              icon: Icons.point_of_sale_outlined,
+              iconColor: const Color(0xFFBE123C),
+              titleKey: 'salesDailySettingsTitle',
+              descriptionKey: 'salesDailySettingsDesc',
+              onTap: _editSalesDailySettings,
+            ),
+            _SettingsItem(
+              icon: Icons.emoji_events_outlined,
+              iconColor: const Color(0xFFB45309),
+              titleKey: 'rewardRulesSetting',
+              descriptionKey: 'rewardRulesSettingDesc',
+              onTap: () => Get.toNamed(AppRoutes.EMPLOYEEREWARDRULESSCREEN),
+            ),
+            _SettingsItem(
+              icon: Icons.add_circle_outline,
+              iconColor: const Color(0xFF0F766E),
+              titleKey: 'adminFabOptionsSetting',
+              descriptionKey: 'adminFabOptionsSettingDesc',
+              onTap: _editAdminFabOptions,
+            ),
+            stockInventoryItem,
+          ]
+        : <_SettingsItem>[
+            if (canManageStockInventorySettings) stockInventoryItem,
+          ];
+    final showBiometricSettings = userType == 'admin';
 
     return Scaffold(
       backgroundColor: pageBg,
@@ -606,7 +614,7 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       body: ListView.separated(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         itemBuilder: (_, i) {
-          if (i == 0) {
+          if (showBiometricSettings && i == 0) {
             return _BiometricSettingsCard(
               enabled: _biometricEnabled,
               busy: _biometricBusy,
@@ -614,10 +622,11 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               onTestPressed: _testBiometricPrompt,
             );
           }
-          return _SettingsCard(item: items[i - 1]);
+          final itemIndex = showBiometricSettings ? i - 1 : i;
+          return _SettingsCard(item: items[itemIndex]);
         },
         separatorBuilder: (_, __) => SizedBox(height: 10.h),
-        itemCount: items.length + 1,
+        itemCount: items.length + (showBiometricSettings ? 1 : 0),
       ),
     );
   }

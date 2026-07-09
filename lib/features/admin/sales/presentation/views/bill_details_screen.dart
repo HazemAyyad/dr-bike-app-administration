@@ -6,8 +6,12 @@ import 'package:intl/intl.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
+import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../maintenance/data/repositories/maintenance_implement.dart';
+import '../../../maintenance/domain/usecases/get_maintenance_invoice_usecase.dart';
+import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
 import '../../../../employee/my_orders/widgets/row_text.dart';
 import '../../data/models/invoice_model.dart';
 import '../controllers/sales_controller.dart';
@@ -42,6 +46,13 @@ class BillDetailsScreen extends GetView<SalesController> {
                   child: _SalesOrderLinkCard(
                     orderId: invoice.salesOrderId!,
                     serial: invoice.salesOrderSerial,
+                  ),
+                ),
+              if (invoice.maintenanceId != null)
+                SliverToBoxAdapter(
+                  child: _MaintenanceInvoiceLinkCard(
+                    maintenanceId: invoice.maintenanceId!,
+                    invoiceNumber: invoice.maintenanceInvoiceNumber,
                   ),
                 ),
               SliverToBoxAdapter(
@@ -475,6 +486,96 @@ class _SalesOrderLinkCard extends StatelessWidget {
                 ),
                 Icon(Icons.chevron_left,
                     color: const Color(0xFF2563EB), size: 22.sp),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceInvoiceLinkCard extends StatelessWidget {
+  const _MaintenanceInvoiceLinkCard({
+    required this.maintenanceId,
+    this.invoiceNumber,
+  });
+
+  final int maintenanceId;
+  final String? invoiceNumber;
+
+  Future<void> _open(BuildContext context) async {
+    AppDependencyRegistry.ensureMaintenance();
+    final result = await GetMaintenanceInvoiceUsecase(
+      maintenanceRepository: Get.find<MaintenanceImplement>(),
+    ).call(maintenanceId: maintenanceId.toString());
+
+    result.fold(
+      (failure) => Get.snackbar(
+        'error'.tr,
+        failure.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      ),
+      (invoice) => showMaintenanceInvoiceSheet(context, invoice),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 0),
+      child: Material(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(10.r),
+        child: InkWell(
+          onTap: () => _open(context),
+          borderRadius: BorderRadius.circular(10.r),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.build_circle_outlined,
+                  size: 20.sp,
+                  color: const Color(0xFF16A34A),
+                ),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'maintenanceInvoice'.tr,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: const Color(0xFF15803D),
+                        ),
+                      ),
+                      Text(
+                        invoiceNumber?.trim().isNotEmpty == true
+                            ? invoiceNumber!.trim()
+                            : 'MNT-${maintenanceId.toString().padLeft(6, '0')}',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF14532D),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_left,
+                  color: const Color(0xFF16A34A),
+                  size: 22.sp,
+                ),
               ],
             ),
           ),

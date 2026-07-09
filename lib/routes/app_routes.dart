@@ -58,6 +58,7 @@ class AppRoutes {
 
   // Boxes Screen
   static const BOXESSCREEN = '/BoxesScreen';
+  static const DAILYBOXESSCREEN = '/DailyBoxesScreen';
   static const CREATEBOXESSCREEN = '/CreateBoxesScreen';
   static const EDITBOXESSCREEN = '/EditBoxesScreen';
 

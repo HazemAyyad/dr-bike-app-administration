@@ -37,6 +37,8 @@ abstract class SalesRepository {
     required String endPoint,
     String? customerId,
     String? sellerId,
+    String? search,
+    String? storeSectionId,
   });
 
   Future<Either<Failure, ProductPriceUpdateResult>> updateProductRetailPrice({

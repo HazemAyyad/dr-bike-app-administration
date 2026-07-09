@@ -8,6 +8,17 @@ import '../../data/repositories/sales_implement.dart';
 import '../widgets/suspended_invoice_dialog.dart';
 import 'sales_controller.dart';
 
+void _suspendedInvoiceDebug(String message, [Object? details]) {
+  assert(() {
+    debugPrint(
+      details == null
+          ? '[InstantSaleDebug][SuspendedInvoices] $message'
+          : '[InstantSaleDebug][SuspendedInvoices] $message | $details',
+    );
+    return true;
+  }());
+}
+
 class SuspendedInvoicesController extends GetxController {
   final SalesImplement salesRepository = Get.find<SalesImplement>();
 
@@ -33,16 +44,22 @@ class SuspendedInvoicesController extends GetxController {
   Future<void> loadItems() async {
     isLoading(true);
     try {
+      _suspendedInvoiceDebug('load requested', {
+        'search': searchController.text.trim(),
+        'isAdmin': isAdmin,
+      });
       final list = await salesRepository.getSuspendedInstantSales(
         search: searchController.text.trim().isEmpty
             ? null
             : searchController.text.trim(),
       );
+      _suspendedInvoiceDebug('load success', {'count': list.length});
       items.assignAll(list);
       if (Get.isRegistered<SalesController>()) {
         await Get.find<SalesController>().loadSuspendedInvoicesCount();
       }
     } catch (e) {
+      _suspendedInvoiceDebug('load failed', e);
       items.clear();
       final ctx = Get.context;
       if (ctx != null) {
@@ -62,8 +79,14 @@ class SuspendedInvoicesController extends GetxController {
 
     isLoading(true);
     try {
+      _suspendedInvoiceDebug('resume item requested', {
+        'id': item.id,
+        'currentStep': item.currentStep,
+        'payloadKeys': item.payload.keys.toList(),
+      });
       final sales = Get.find<SalesController>();
       await sales.resumeSuspendedInstantSale(item);
+      _suspendedInvoiceDebug('resume item finished', item.id);
     } finally {
       isLoading(false);
     }
@@ -82,11 +105,16 @@ class SuspendedInvoicesController extends GetxController {
 
     isLoading(true);
     try {
+      _suspendedInvoiceDebug('cancel item requested', {'id': item.id});
       final result = await salesRepository.cancelSuspendedInstantSale(
         suspendedInstantSaleId: item.id,
       );
       await result.fold(
         (failure) async {
+          _suspendedInvoiceDebug('cancel item failed', {
+            'message': failure.errMessage,
+            'data': failure.data,
+          });
           if (!context.mounted) return;
           Helpers.showCustomDialogError(
             context: context,
@@ -95,6 +123,7 @@ class SuspendedInvoicesController extends GetxController {
           );
         },
         (message) async {
+          _suspendedInvoiceDebug('cancel item success', message);
           await loadItems();
           if (!context.mounted) return;
           Helpers.showCustomDialogSuccess(

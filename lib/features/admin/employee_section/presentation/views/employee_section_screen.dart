@@ -77,6 +77,25 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
               );
             },
           ),
+          Obx(() {
+            if (controller.currentTab.value != 1) {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              tooltip: 'attendanceReportAction'.tr,
+              icon: Icon(
+                Icons.assessment_outlined,
+                size: 25.sp,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+              onPressed: () => showAttendanceReportFilterDialog(
+                context,
+                employees: controller.employeeService.workingTimesList.toList(),
+              ),
+            );
+          }),
         ],
       ),
       body: AppPullToRefresh(
@@ -90,36 +109,6 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                 currentTab: controller.currentTab,
                 changeTab: controller.changeTab,
               ),
-            ),
-            Obx(
-              () {
-                if (controller.currentTab.value != 1) {
-                  return const SliverToBoxAdapter(child: SizedBox.shrink());
-                }
-                return SliverToBoxAdapter(
-                  child: Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 24.w, vertical: 6.h),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: ThemeService.isDark.value
-                              ? AppColors.primaryColor
-                              : AppColors.secondaryColor,
-                        ),
-                        onPressed: () => showAttendanceReportFilterDialog(
-                          context,
-                          employees: controller.employeeService.workingTimesList
-                              .toList(),
-                        ),
-                        icon: const Icon(Icons.assessment_outlined),
-                        label: Text('attendanceReportAction'.tr),
-                      ),
-                    ),
-                  ),
-                );
-              },
             ),
             Obx(
               () {

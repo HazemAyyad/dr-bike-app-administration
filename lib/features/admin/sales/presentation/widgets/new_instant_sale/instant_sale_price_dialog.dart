@@ -17,7 +17,7 @@ class InstantSalePriceDialogResult {
   });
 }
 
-/// Retail + wholesale price entry — both required before adding to cart.
+/// Retail price is required before adding to cart.
 Future<InstantSalePriceDialogResult?> showInstantSalePriceDialog(
   ProductModel product,
 ) {
@@ -38,30 +38,25 @@ class _InstantSalePriceDialog extends StatefulWidget {
   final ProductModel product;
 
   @override
-  State<_InstantSalePriceDialog> createState() => _InstantSalePriceDialogState();
+  State<_InstantSalePriceDialog> createState() =>
+      _InstantSalePriceDialogState();
 }
 
 class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
   late final TextEditingController _retailCtrl;
-  late final TextEditingController _wholesaleCtrl;
 
   @override
   void initState() {
     super.initState();
     _retailCtrl = TextEditingController();
-    _wholesaleCtrl = TextEditingController();
     if (widget.product.unitPrice > 0) {
       _retailCtrl.text = _priceText(widget.product.unitPrice);
-    }
-    if (widget.product.wholesalePrice > 0) {
-      _wholesaleCtrl.text = _priceText(widget.product.wholesalePrice);
     }
   }
 
   @override
   void dispose() {
     _retailCtrl.dispose();
-    _wholesaleCtrl.dispose();
     super.dispose();
   }
 
@@ -76,15 +71,10 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
       Get.snackbar('error'.tr, 'instantSaleRetailPriceRequired'.tr);
       return;
     }
-    final wholesale = SalesAmountFormat.parse(_wholesaleCtrl.text.trim());
-    if (wholesale <= 0) {
-      Get.snackbar('error'.tr, 'instantSaleWholesalePriceRequired'.tr);
-      return;
-    }
     _close(
       InstantSalePriceDialogResult(
         retailPrice: retail,
-        wholesalePrice: wholesale,
+        wholesalePrice: 0,
       ),
     );
   }
@@ -92,7 +82,6 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
   @override
   Widget build(BuildContext context) {
     final missingRetail = widget.product.unitPrice <= 0;
-    final missingWholesale = widget.product.wholesalePrice <= 0;
 
     return InstantSaleDialogShell(
       child: Padding(
@@ -104,7 +93,7 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'instantSaleEnterProductPrices'.tr,
+                'instantSaleEnterRetailPrice'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16.sp,
@@ -114,7 +103,7 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
               ),
               SizedBox(height: 8.h),
               Text(
-                'instantSaleBothPricesRequiredHint'.tr,
+                'instantSaleRetailRequiredHint'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12.sp,
@@ -139,27 +128,13 @@ class _InstantSalePriceDialogState extends State<_InstantSalePriceDialog> {
                 controller: _retailCtrl,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _onSave(),
                 decoration: InstantSaleDialogShell.fieldDecoration(
                   context,
                   labelText: missingRetail
                       ? '${'instantSaleRetailPriceLabel'.tr} *'
                       : 'instantSaleRetailPriceLabel'.tr,
-                  hintText: '0',
-                ),
-              ),
-              SizedBox(height: 10.h),
-              TextField(
-                controller: _wholesaleCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _onSave(),
-                decoration: InstantSaleDialogShell.fieldDecoration(
-                  context,
-                  labelText: missingWholesale
-                      ? '${'instantSaleWholesalePriceLabel'.tr} *'
-                      : 'instantSaleWholesalePriceLabel'.tr,
                   hintText: '0',
                 ),
               ),

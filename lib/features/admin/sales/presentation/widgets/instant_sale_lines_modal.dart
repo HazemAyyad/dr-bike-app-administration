@@ -5,8 +5,12 @@ import 'package:get/get.dart';
 
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/show_net_image.dart';
+import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../maintenance/data/repositories/maintenance_implement.dart';
+import '../../../maintenance/domain/usecases/get_maintenance_invoice_usecase.dart';
+import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
 import '../../data/models/instant_sales_model.dart';
 import '../../data/models/invoice_model.dart';
 import '../controllers/sales_controller.dart';
@@ -82,6 +86,27 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
     }
   }
 
+  Future<void> _openMaintenanceInvoice() async {
+    final maintenanceId = _invoice?.maintenanceId;
+    if (maintenanceId == null) return;
+
+    AppDependencyRegistry.ensureMaintenance();
+    final result = await GetMaintenanceInvoiceUsecase(
+      maintenanceRepository: Get.find<MaintenanceImplement>(),
+    ).call(maintenanceId: maintenanceId.toString());
+
+    result.fold(
+      (failure) => Get.snackbar(
+        'error'.tr,
+        failure.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      ),
+      (invoice) => showMaintenanceInvoiceSheet(context, invoice),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
@@ -126,6 +151,12 @@ class _InstantSaleLinesSheetState extends State<_InstantSaleLinesSheet> {
                       ],
                     ),
                   ),
+                  if (_invoice?.maintenanceId != null)
+                    IconButton(
+                      tooltip: 'maintenanceInvoice'.tr,
+                      onPressed: _openMaintenanceInvoice,
+                      icon: const Icon(Icons.build_circle_outlined),
+                    ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),

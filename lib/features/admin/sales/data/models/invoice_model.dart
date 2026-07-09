@@ -55,6 +55,8 @@ class InvoiceModel {
   final int? sellerId;
   final int? salesOrderId;
   final String? salesOrderSerial;
+  final int? maintenanceId;
+  final String? maintenanceInvoiceNumber;
 
   InvoiceModel({
     required this.id,
@@ -107,6 +109,8 @@ class InvoiceModel {
     this.sellerId,
     this.salesOrderId,
     this.salesOrderSerial,
+    this.maintenanceId,
+    this.maintenanceInvoiceNumber,
   });
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
@@ -238,6 +242,13 @@ class InvoiceModel {
               ? json['sales_order_id'] as int
               : int.tryParse('${json['sales_order_id']}')),
       salesOrderSerial: asNullableString(json['sales_order_serial']),
+      maintenanceId: json['maintenance_id'] == null
+          ? null
+          : (json['maintenance_id'] is int
+              ? json['maintenance_id'] as int
+              : int.tryParse('${json['maintenance_id']}')),
+      maintenanceInvoiceNumber:
+          asNullableString(json['maintenance_invoice_number']),
     );
   }
 
@@ -339,6 +350,8 @@ class InvoiceModel {
         'address': buyerAddress,
         'id': buyerId,
       },
+      'maintenance_id': maintenanceId,
+      'maintenance_invoice_number': maintenanceInvoiceNumber,
     };
   }
 }

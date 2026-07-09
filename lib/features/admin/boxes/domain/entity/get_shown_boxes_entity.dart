@@ -4,6 +4,7 @@ class GetShownBoxesEntity {
   final double totalBalance;
   final bool isShown;
   final String currency;
+  final String type;
 
   const GetShownBoxesEntity({
     required this.boxId,
@@ -11,5 +12,6 @@ class GetShownBoxesEntity {
     required this.totalBalance,
     required this.isShown,
     required this.currency,
+    required this.type,
   });
 }

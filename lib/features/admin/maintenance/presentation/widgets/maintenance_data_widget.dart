@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../core/helpers/open_apps.dart';
 import '../../../../../core/helpers/phone_format_helper.dart';
 import '../../data/models/maintenances_model.dart';
@@ -141,212 +142,275 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                     // عرض العناصر
                     ...assets.map(
                       (item) {
-                        final displayName =
-                            (item.sellerName != null && item.sellerName!.isNotEmpty)
-                                ? item.sellerName!
-                                : item.customerName;
+                        final displayName = (item.sellerName != null &&
+                                item.sellerName!.isNotEmpty)
+                            ? item.sellerName!
+                            : item.customerName;
 
                         return GestureDetector(
-                        onLongPress: () async {
-                          controller.getAllCustomersAndSellers();
-                          final phone = _resolvePhone(item);
-                          if (phone == null || phone.isEmpty) {
-                            Get.snackbar(
-                              'error'.tr,
-                              'noPhoneNumber'.tr,
-                              snackPosition: SnackPosition.BOTTOM,
+                          onLongPress: () async {
+                            controller.getAllCustomersAndSellers();
+                            final phone = _resolvePhone(item);
+                            if (phone == null || phone.isEmpty) {
+                              Get.snackbar(
+                                'error'.tr,
+                                'noPhoneNumber'.tr,
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                              return;
+                            }
+                            await showModalBottomSheet<void>(
+                              context: context,
+                              builder: (ctx) => SafeArea(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ListTile(
+                                      leading: const Icon(Icons.phone),
+                                      title: Text('callCustomer'.tr),
+                                      subtitle: Text(phone),
+                                      onTap: () async {
+                                        Navigator.pop(ctx);
+                                        await launchDialer(phoneNumber: phone);
+                                      },
+                                    ),
+                                    ListTile(
+                                      leading: Image.asset(
+                                        AssetsManager.whatsapp,
+                                        width: 24.w,
+                                        height: 24.w,
+                                      ),
+                                      title: Text('whatsappCall'.tr),
+                                      subtitle: Text(phone),
+                                      onTap: () async {
+                                        Navigator.pop(ctx);
+                                        await launchWhatsApp(
+                                          phoneNumber: phone,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
                             );
-                            return;
-                          }
-                          await showModalBottomSheet<void>(
-                            context: context,
-                            builder: (ctx) => SafeArea(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: const Icon(Icons.phone),
-                                    title: Text('callCustomer'.tr),
-                                    subtitle: Text(phone),
-                                    onTap: () async {
-                                      Navigator.pop(ctx);
-                                      await launchDialer(phoneNumber: phone);
-                                    },
-                                  ),
-                                ],
-                              ),
+                          },
+                          onTap: () {
+                            controller.getMaintenancesDetails(
+                              maintenanceId: item.id.toString(),
+                            );
+                            Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+                          },
+                          child: Container(
+                            margin: EdgeInsets.symmetric(vertical: 5.h),
+                            decoration: BoxDecoration(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor4
+                                  : AppColors.whiteColor2,
+                              borderRadius: BorderRadius.circular(4.r),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withAlpha(32),
+                                  blurRadius: 5.r,
+                                  spreadRadius: 2.r,
+                                  offset: const Offset(0, 0),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                        onTap: () {
-                          controller.getMaintenancesDetails(
-                            maintenanceId: item.id.toString(),
-                          );
-                          Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
-                        },
-                        child: Container(
-                          margin: EdgeInsets.symmetric(vertical: 5.h),
-                          decoration: BoxDecoration(
-                            color: ThemeService.isDark.value
-                                ? AppColors.customGreyColor4
-                                : AppColors.whiteColor2,
-                            borderRadius: BorderRadius.circular(4.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withAlpha(32),
-                                blurRadius: 5.r,
-                                spreadRadius: 2.r,
-                                offset: const Offset(0, 0),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(5),
-                                  child: Row(
-                                    children: [
-                                      Flexible(
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(5.r),
-                                          child: CachedNetworkImage(
-                                            cacheManager: CacheManager(
-                                              Config(
-                                                'imagesCache',
-                                                stalePeriod:
-                                                    const Duration(days: 7),
-                                                maxNrOfCacheObjects: 100,
-                                              ),
-                                            ),
-                                            imageBuilder:
-                                                (context, imageProvider) =>
-                                                    Container(
-                                              height: 50.h,
-                                              width: 64.w,
-                                              decoration: BoxDecoration(
-                                                image: DecorationImage(
-                                                  image: imageProvider,
-                                                  fit: BoxFit.cover,
-                                                  filterQuality:
-                                                      FilterQuality.medium,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(5),
+                                    child: Row(
+                                      children: [
+                                        Flexible(
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(5.r),
+                                            child: CachedNetworkImage(
+                                              cacheManager: CacheManager(
+                                                Config(
+                                                  'imagesCache',
+                                                  stalePeriod:
+                                                      const Duration(days: 7),
+                                                  maxNrOfCacheObjects: 100,
                                                 ),
                                               ),
-                                            ),
-                                            imageUrl: item.mediaFiles,
-                                            placeholder: (context, url) =>
-                                                SizedBox(
-                                              height: 50.h,
-                                              width: 64.w,
-                                              child: const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
+                                              imageBuilder:
+                                                  (context, imageProvider) =>
+                                                      Container(
+                                                height: 50.h,
+                                                width: 64.w,
+                                                decoration: BoxDecoration(
+                                                  image: DecorationImage(
+                                                    image: imageProvider,
+                                                    fit: BoxFit.cover,
+                                                    filterQuality:
+                                                        FilterQuality.medium,
+                                                  ),
+                                                ),
                                               ),
+                                              imageUrl: item.mediaFiles,
+                                              placeholder: (context, url) =>
+                                                  SizedBox(
+                                                height: 50.h,
+                                                width: 64.w,
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(),
+                                                ),
+                                              ),
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      const Icon(Icons.error),
                                             ),
-                                            errorWidget:
-                                                (context, url, error) =>
-                                                    const Icon(Icons.error),
                                           ),
                                         ),
-                                      ),
-                                      SizedBox(width: 5.w),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            displayName,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium!
-                                                .copyWith(
-                                                  fontSize: 14.sp,
-                                                  fontWeight: FontWeight.w400,
-                                                  color: Colors.grey
-                                                      .withAlpha(500),
-                                                ),
-                                          ),
-                                          SizedBox(height: 5.h),
-                                          Text(
-                                            showData(item.receiptDate),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyMedium!
-                                                .copyWith(
-                                                  fontSize: 12.sp,
-                                                  color: Colors.grey
-                                                      .withAlpha(500),
-                                                ),
-                                          ),
-                                          if (item.invoiceTotal > 0)
+                                        SizedBox(width: 5.w),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
                                             Text(
-                                              '${'total'.tr}: ${item.invoiceTotal.toStringAsFixed(2)}',
+                                              displayName,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium!
+                                                  .copyWith(
+                                                    fontSize: 14.sp,
+                                                    fontWeight: FontWeight.w400,
+                                                    color: Colors.grey
+                                                        .withAlpha(500),
+                                                  ),
+                                            ),
+                                            SizedBox(height: 5.h),
+                                            Text(
+                                              showData(item.receiptDate),
                                               style: Theme.of(context)
                                                   .textTheme
                                                   .bodyMedium!
                                                   .copyWith(
                                                     fontSize: 12.sp,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: AppColors.primaryColor,
+                                                    color: Colors.grey
+                                                        .withAlpha(500),
                                                   ),
                                             ),
-                                        ],
+                                            if (item.invoiceTotal > 0)
+                                              Text(
+                                                '${'total'.tr}: ${item.invoiceTotal.toStringAsFixed(2)}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium!
+                                                    .copyWith(
+                                                      fontSize: 12.sp,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: AppColors
+                                                          .primaryColor,
+                                                    ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 42.w,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      IconButton(
+                                        tooltip: 'maintenanceInvoice'.tr,
+                                        visualDensity: VisualDensity.compact,
+                                        padding: EdgeInsets.zero,
+                                        constraints: BoxConstraints(
+                                          minWidth: 32.w,
+                                          minHeight: 28.h,
+                                        ),
+                                        icon: Icon(
+                                          Icons.receipt_long_outlined,
+                                          size: 20.sp,
+                                          color: AppColors.primaryColor,
+                                        ),
+                                        onPressed: () =>
+                                            controller.openMaintenanceInvoice(
+                                          context: context,
+                                          maintenanceId: item.id.toString(),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'maintenanceActivityLog'.tr,
+                                        visualDensity: VisualDensity.compact,
+                                        padding: EdgeInsets.zero,
+                                        constraints: BoxConstraints(
+                                          minWidth: 32.w,
+                                          minHeight: 28.h,
+                                        ),
+                                        icon: Icon(
+                                          Icons.history,
+                                          size: 20.sp,
+                                          color: AppColors.customGreyColor,
+                                        ),
+                                        onPressed: () =>
+                                            controller.openActivityLog(
+                                          context: context,
+                                          maintenanceId: item.id.toString(),
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ),
-                              Obx(
-                                () => Container(
-                                  padding:
-                                      EdgeInsets.symmetric(horizontal: 5.w),
-                                  width: 58.w,
-                                  height: 58.h,
-                                  decoration: BoxDecoration(
-                                    color: getStatusColor(
-                                      receiptDate: item.receiptDate,
-                                      receiptTime: item.receiptTime,
-                                      currentTab: controller.currentTab.value,
-                                    ),
-                                    borderRadius: Get.locale!.languageCode ==
-                                            'en'
-                                        ? BorderRadius.only(
-                                            topRight: Radius.circular(4.r),
-                                            bottomRight: Radius.circular(4.r),
-                                          )
-                                        : BorderRadius.only(
-                                            topLeft: Radius.circular(4.r),
-                                            bottomLeft: Radius.circular(4.r),
-                                          ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      controller.currentTab.value == 3
-                                          ? 'delivered'.tr
-                                          : getStatusText(
-                                              receiptDate: item.receiptDate,
-                                              receiptTime: item.receiptTime,
+                                Obx(
+                                  () => Container(
+                                    padding:
+                                        EdgeInsets.symmetric(horizontal: 5.w),
+                                    width: 58.w,
+                                    height: 58.h,
+                                    decoration: BoxDecoration(
+                                      color: getStatusColor(
+                                        receiptDate: item.receiptDate,
+                                        receiptTime: item.receiptTime,
+                                        currentTab: controller.currentTab.value,
+                                      ),
+                                      borderRadius: Get.locale!.languageCode ==
+                                              'en'
+                                          ? BorderRadius.only(
+                                              topRight: Radius.circular(4.r),
+                                              bottomRight: Radius.circular(4.r),
+                                            )
+                                          : BorderRadius.only(
+                                              topLeft: Radius.circular(4.r),
+                                              bottomLeft: Radius.circular(4.r),
                                             ),
-                                      textAlign: TextAlign.center,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium!
-                                          .copyWith(
-                                            fontSize: 17.sp,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        controller.currentTab.value == 3
+                                            ? 'delivered'.tr
+                                            : getStatusText(
+                                                receiptDate: item.receiptDate,
+                                                receiptTime: item.receiptTime,
+                                              ),
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium!
+                                            .copyWith(
+                                              fontSize: 17.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
+                        );
                       },
                     ),
                   ],

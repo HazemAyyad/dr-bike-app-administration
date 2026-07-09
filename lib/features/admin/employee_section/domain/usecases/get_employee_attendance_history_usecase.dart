@@ -10,11 +10,13 @@ class GetEmployeeAttendanceHistoryUsecase {
     required String employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    bool includeEmptyDays = false,
   }) {
     return employeeRepository.getEmployeeAttendanceHistory(
       employeeId: employeeId,
       fromDate: fromDate,
       toDate: toDate,
+      includeEmptyDays: includeEmptyDays,
     );
   }
 }

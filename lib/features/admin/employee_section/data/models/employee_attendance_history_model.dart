@@ -5,6 +5,8 @@ class EmployeeAttendanceHead {
   final String? name;
   final String? startWorkTime;
   final String? numberOfWorkHours;
+  final String? hourWorkPrice;
+
   /// From API; may be empty until backend sends it (or if not migrated).
   final List<String> weeklyDaysOff;
   final bool currentlyInToday;
@@ -14,6 +16,7 @@ class EmployeeAttendanceHead {
     required this.name,
     required this.startWorkTime,
     required this.numberOfWorkHours,
+    required this.hourWorkPrice,
     required this.weeklyDaysOff,
     this.currentlyInToday = false,
   });
@@ -25,6 +28,7 @@ class EmployeeAttendanceHead {
       name: asNullableString(j['name']),
       startWorkTime: asNullableString(j['start_work_time']),
       numberOfWorkHours: asNullableString(j['number_of_work_hours']),
+      hourWorkPrice: asNullableString(j['hour_work_price']),
       weeklyDaysOff: asStringList(j['weekly_days_off']),
       currentlyInToday: asBool(j['currently_in_today']),
     );
@@ -48,9 +52,8 @@ class EmployeeAttendanceScanRow {
     final j = Map<String, dynamic>.from(json);
     return EmployeeAttendanceScanRow(
       at: parseApiDateTime(j['device_at'] ?? j['at']),
-      serverAt: j['server_at'] == null
-          ? null
-          : parseApiDateTime(j['server_at']),
+      serverAt:
+          j['server_at'] == null ? null : parseApiDateTime(j['server_at']),
       source: asNullableString(j['source']),
       direction: asString(j['direction']),
     );
@@ -79,17 +82,17 @@ class EmployeeAttendanceSegmentRow {
     return EmployeeAttendanceSegmentRow(
       checkInAt:
           j['check_in_at'] == null ? null : parseApiDateTime(j['check_in_at']),
-      checkOutAt:
-          j['check_out_at'] == null ? null : parseApiDateTime(j['check_out_at']),
+      checkOutAt: j['check_out_at'] == null
+          ? null
+          : parseApiDateTime(j['check_out_at']),
       checkInServerAt: j['check_in_server_at'] == null
           ? null
           : parseApiDateTime(j['check_in_server_at']),
       checkOutServerAt: j['check_out_server_at'] == null
           ? null
           : parseApiDateTime(j['check_out_server_at']),
-      workedMinutes: j['worked_minutes'] == null
-          ? null
-          : asInt(j['worked_minutes']),
+      workedMinutes:
+          j['worked_minutes'] == null ? null : asInt(j['worked_minutes']),
       open: asBool(j['open']),
     );
   }
@@ -97,7 +100,8 @@ class EmployeeAttendanceSegmentRow {
 
 class EmployeeAttendanceDay {
   final String date;
-  final String? source; // qr|fingerprint|manual (nullable for backward compatibility)
+  final String?
+      source; // qr|fingerprint|manual (nullable for backward compatibility)
   final DateTime? firstCheckIn;
   final DateTime? firstCheckInServer;
   final String? firstCheckInSource;
@@ -126,6 +130,8 @@ class EmployeeAttendanceDay {
   final int overtimeRequestedMinutes;
   final int? overtimeApprovedMinutes;
   final bool canEditDay;
+  final String? attendanceStatus;
+  final String? attendanceStatusLabel;
 
   const EmployeeAttendanceDay({
     required this.date,
@@ -157,6 +163,8 @@ class EmployeeAttendanceDay {
     this.overtimeRequestedMinutes = 0,
     this.overtimeApprovedMinutes,
     this.canEditDay = false,
+    this.attendanceStatus,
+    this.attendanceStatusLabel,
   });
 
   factory EmployeeAttendanceDay.fromJson(Map<String, dynamic> json) {
@@ -196,17 +204,17 @@ class EmployeeAttendanceDay {
       normalSalary: asNullableString(j['normal_salary']),
       overtimeSalary: asNullableString(j['overtime_salary']),
       totalSalary: asNullableString(j['total_salary']),
-      contractOvertimeMinutes:
-          j['contract_overtime_minutes'] == null ? null : asInt(j['contract_overtime_minutes']),
+      contractOvertimeMinutes: j['contract_overtime_minutes'] == null
+          ? null
+          : asInt(j['contract_overtime_minutes']),
       segments: mapList(
         j['segments'],
-        (m) => EmployeeAttendanceSegmentRow.fromJson(
-            Map<String, dynamic>.from(m)),
+        (m) =>
+            EmployeeAttendanceSegmentRow.fromJson(Map<String, dynamic>.from(m)),
       ),
       scans: mapList(
         j['scans'],
-        (m) =>
-            EmployeeAttendanceScanRow.fromJson(Map<String, dynamic>.from(m)),
+        (m) => EmployeeAttendanceScanRow.fromJson(Map<String, dynamic>.from(m)),
       ),
       overtimeRequestId: j['overtime_request_id'] == null
           ? null
@@ -217,6 +225,8 @@ class EmployeeAttendanceDay {
           ? null
           : asInt(j['overtime_approved_minutes']),
       canEditDay: asBool(j['can_edit_day']),
+      attendanceStatus: asNullableString(j['attendance_status']),
+      attendanceStatusLabel: asNullableString(j['attendance_status_label']),
     );
   }
 }
@@ -287,24 +297,30 @@ class EmployeeAttendanceMonthlySummary {
       requiredWorkDaysInMonth: j['required_work_days_in_month'] == null
           ? null
           : asInt(j['required_work_days_in_month']),
-      monthlyWorkedMinutes:
-          j['monthly_worked_minutes'] == null ? null : asInt(j['monthly_worked_minutes']),
-      monthlyRequiredMinutes:
-          j['monthly_required_minutes'] == null ? null : asInt(j['monthly_required_minutes']),
-      monthlyOvertimeMinutes:
-          j['monthly_overtime_minutes'] == null ? null : asInt(j['monthly_overtime_minutes']),
+      monthlyWorkedMinutes: j['monthly_worked_minutes'] == null
+          ? null
+          : asInt(j['monthly_worked_minutes']),
+      monthlyRequiredMinutes: j['monthly_required_minutes'] == null
+          ? null
+          : asInt(j['monthly_required_minutes']),
+      monthlyOvertimeMinutes: j['monthly_overtime_minutes'] == null
+          ? null
+          : asInt(j['monthly_overtime_minutes']),
       monthlyWorkedHours: asNullableString(j['monthly_worked_hours']),
       monthlyRequiredHours: asNullableString(j['monthly_required_hours']),
       monthlyNormalHours: asNullableString(j['monthly_normal_hours']),
       monthlyOvertimeHours: asNullableString(j['monthly_overtime_hours']),
       rangeFrom: asNullableString(j['range_from']),
       rangeTo: asNullableString(j['range_to']),
-      rangeWorkedMinutes:
-          j['range_worked_minutes'] == null ? null : asInt(j['range_worked_minutes']),
-      rangeRequiredMinutes:
-          j['range_required_minutes'] == null ? null : asInt(j['range_required_minutes']),
-      rangeOvertimeMinutes:
-          j['range_overtime_minutes'] == null ? null : asInt(j['range_overtime_minutes']),
+      rangeWorkedMinutes: j['range_worked_minutes'] == null
+          ? null
+          : asInt(j['range_worked_minutes']),
+      rangeRequiredMinutes: j['range_required_minutes'] == null
+          ? null
+          : asInt(j['range_required_minutes']),
+      rangeOvertimeMinutes: j['range_overtime_minutes'] == null
+          ? null
+          : asInt(j['range_overtime_minutes']),
       rangeWorkedHours: asNullableString(j['range_worked_hours']),
       rangeRequiredHours: asNullableString(j['range_required_hours']),
       rangeNormalHours: asNullableString(j['range_normal_hours']),

@@ -236,12 +236,11 @@ class _TodayShiftSummaryCard extends StatelessWidget {
                 child: AttendanceDualTimeTile(
                   label: 'attendanceCheckIn'.tr,
                   deviceAt: day?.firstCheckIn,
-                  serverAt: day?.firstCheckInServer,
-                  source: day?.firstCheckInSource ?? day?.source,
+                  serverAt: null,
+                  source: null,
                   accent: AppColors.customGreen1,
-                  fallback: day?.firstCheckIn == null
-                      ? 'notCheckedInYet'.tr
-                      : null,
+                  fallback:
+                      day?.firstCheckIn == null ? 'notCheckedInYet'.tr : null,
                 ),
               ),
               SizedBox(width: 6.w),
@@ -249,10 +248,8 @@ class _TodayShiftSummaryCard extends StatelessWidget {
                 child: AttendanceDualTimeTile(
                   label: 'attendanceCheckOut'.tr,
                   deviceAt: day?.currentlyIn == true ? null : day?.lastCheckOut,
-                  serverAt: day?.currentlyIn == true
-                      ? null
-                      : day?.lastCheckOutServer,
-                  source: day?.lastCheckOutSource ?? day?.source,
+                  serverAt: null,
+                  source: null,
                   accent: AppColors.customOrange3,
                   fallback: _checkOutFallback(),
                 ),
@@ -456,7 +453,9 @@ class _WeeklyAggregate {
     }
     if (anchor == null) return null;
 
-    final weekStart = anchor.subtract(const Duration(days: 6));
+    final daysSinceSaturday = (anchor.weekday - DateTime.saturday + 7) % 7;
+    final weekStart = anchor.subtract(Duration(days: daysSinceSaturday));
+    final weekEnd = weekStart.add(const Duration(days: 6));
 
     var workedMinutes = 0;
     var requiredMinutes = 0;
@@ -466,7 +465,7 @@ class _WeeklyAggregate {
     for (final d in days) {
       final dt = parse(d.date);
       if (dt == null) continue;
-      if (dt.isBefore(weekStart) || dt.isAfter(anchor)) continue;
+      if (dt.isBefore(weekStart) || dt.isAfter(weekEnd)) continue;
       workedMinutes += d.workedMinutes;
       requiredMinutes += d.expectedWorkMinutes;
       workingDays += 1;
@@ -481,7 +480,7 @@ class _WeeklyAggregate {
 
     return _WeeklyAggregate(
       from: fmt(weekStart),
-      to: fmt(anchor),
+      to: fmt(weekEnd),
       workedMinutes: workedMinutes,
       requiredMinutes: requiredMinutes,
       overtimeMinutes:
@@ -775,8 +774,8 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                         ),
                         AttendanceDualTimeText(
                           deviceAt: day.firstCheckIn,
-                          serverAt: day.firstCheckInServer,
-                          source: day.firstCheckInSource ?? day.source,
+                          serverAt: null,
+                          source: null,
                           compact: true,
                           inline: true,
                           fallback: 'notCheckedInYet'.tr,
@@ -807,8 +806,8 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                               )
                             : AttendanceDualTimeText(
                                 deviceAt: day.lastCheckOut,
-                                serverAt: day.lastCheckOutServer,
-                                source: day.lastCheckOutSource ?? day.source,
+                                serverAt: null,
+                                source: null,
                                 compact: true,
                                 inline: true,
                                 fallback: 'notCheckedOutYet'.tr,
@@ -903,7 +902,8 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '${'attendanceCheckIn'.tr}:',
@@ -914,10 +914,8 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                                       ),
                                       AttendanceDualTimeText(
                                         deviceAt: s.checkInAt,
-                                        serverAt: s.checkInServerAt,
-                                        source: s.checkInServerAt != null
-                                            ? 'fingerprint'
-                                            : null,
+                                        serverAt: null,
+                                        source: null,
                                         compact: true,
                                         inline: true,
                                       ),
@@ -928,7 +926,8 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                                   SizedBox(width: 8.w),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           '${'attendanceCheckOut'.tr}:',
@@ -939,10 +938,8 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                                         ),
                                         AttendanceDualTimeText(
                                           deviceAt: s.checkOutAt,
-                                          serverAt: s.checkOutServerAt,
-                                          source: s.checkOutServerAt != null
-                                              ? 'fingerprint'
-                                              : null,
+                                          serverAt: null,
+                                          source: null,
                                           compact: true,
                                           inline: true,
                                         ),

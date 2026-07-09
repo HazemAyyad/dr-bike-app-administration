@@ -21,6 +21,7 @@ import '../../../general_data_list/domain/entity/add_person_entity.dart';
 import '../../../stock/data/models/offer_package_model.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
+import '../../../stock/domain/product_location_utils.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../stock/presentation/controllers/offer_packages_controller.dart';
 import '../../../sales_orders/data/models/sales_order_model.dart';
@@ -59,6 +60,17 @@ import 'sales_service.dart';
 const String kInstantSalePaymentTag = 'instant_sale_payment';
 const String kSalesOrderPaymentTag = 'sales_order_payment';
 const String kProfitSalePaymentTag = 'profit_sale_payment';
+
+void _instantSaleDebug(String message, [Object? details]) {
+  assert(() {
+    debugPrint(
+      details == null
+          ? '[InstantSaleDebug] $message'
+          : '[InstantSaleDebug] $message | $details',
+    );
+    return true;
+  }());
+}
 
 class SalesController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -393,6 +405,7 @@ class SalesController extends GetxController
             totalBalance: row.boxBalance,
             isShown: false,
             currency: row.currency,
+            type: 'daily_sales',
           ),
         )
         .toList();
@@ -520,6 +533,7 @@ class SalesController extends GetxController
   final RxBool productsLoading = false.obs;
   final RxBool instantSalePickerSearchLoading = false.obs;
   Timer? _instantSalePickerSearchDebounce;
+  int _productsFetchSerial = 0;
   final RxInt productsListVersion = 0.obs;
 
   /// عرض المحجوز على بطاقات المنتج (طلبية أو بيع فوري).
@@ -584,6 +598,10 @@ class SalesController extends GetxController
   bool productMatchesPickerLocation(ProductModel product) {
     final sectionId = pickerLocationSectionId.value;
     if (sectionId == null || sectionId.isEmpty) return true;
+    if (isUnassignedStoreSectionFilter(sectionId)) {
+      final productSection = product.storeSectionId?.trim();
+      return productSection == null || productSection.isEmpty;
+    }
     return (product.storeSectionId ?? '').trim() == sectionId.trim();
   }
 
@@ -591,13 +609,13 @@ class SalesController extends GetxController
     String? sectionId,
   }) async {
     pickerLocationSectionId.value = sectionId;
-    _bumpProductsList();
+    await getAllProducts(showLoading: false);
     update();
   }
 
   Future<void> clearPickerLocationFilter() async {
     pickerLocationSectionId.value = null;
-    _bumpProductsList();
+    await getAllProducts(showLoading: false);
     update();
   }
 
@@ -631,7 +649,7 @@ class SalesController extends GetxController
 
   final RxBool savingProductPrice = false.obs;
 
-  /// يتأكد أن المفرق والجملة معرّفان قبل إضافة المنتج للسلة.
+  /// يتأكد أن سعر المفرق معرّف قبل إضافة المنتج للسلة.
   Future<ProductModel?> ensureProductPricesForPicker(
       ProductModel product) async {
     if (product.hasCustomPrice &&
@@ -639,7 +657,7 @@ class SalesController extends GetxController
         product.customPrice! > 0) {
       return product;
     }
-    if (product.unitPrice > 0 && product.wholesalePrice > 0) return product;
+    if (product.unitPrice > 0) return product;
 
     final dialogResult = await showInstantSalePriceDialog(product);
     if (dialogResult == null) return null;
@@ -653,7 +671,8 @@ class SalesController extends GetxController
     final result = await updateProductRetailPriceUsecase.call(
       productId: product.id,
       normailPrice: dialogResult.retailPrice,
-      wholesalePrice: dialogResult.wholesalePrice,
+      wholesalePrice:
+          dialogResult.wholesalePrice > 0 ? dialogResult.wholesalePrice : null,
     );
     savingProductPrice(false);
 
@@ -676,7 +695,9 @@ class SalesController extends GetxController
         return productById(product.id) ??
             product.copyWith(
               unitPrice: prices.retail,
-              wholesalePrice: prices.wholesale,
+              wholesalePrice: prices.wholesale > 0
+                  ? prices.wholesale
+                  : product.wholesalePrice,
             );
       },
     );
@@ -714,16 +735,16 @@ class SalesController extends GetxController
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
       instantSalePickerSearchLoading(false);
-      _bumpProductsList();
+      getAllProducts(showLoading: false);
       return;
     }
 
     instantSalePickerSearchLoading(true);
     _instantSalePickerSearchDebounce = Timer(
       const Duration(milliseconds: 180),
-      () {
+      () async {
+        await getAllProducts(showLoading: false);
         instantSalePickerSearchLoading(false);
-        _bumpProductsList();
       },
     );
   }
@@ -1370,6 +1391,15 @@ class SalesController extends GetxController
     BuildContext context, {
     required String currentStep,
   }) async {
+    _instantSaleDebug('suspend requested', {
+      'currentStep': currentStep,
+      'activeSuspendedSaleId': activeSuspendedSaleId.value,
+      'activeEditInstantSaleId': activeEditInstantSaleId.value,
+      'cartLines': cartLines.length,
+      'items': items.length,
+      'hasPackage': hasSelectedPackage,
+      'totalCost': totalCost.value,
+    });
     if (activeEditInstantSaleId.value != null) return false;
     if (showSalesBlockedMessage()) return false;
 
@@ -1382,6 +1412,20 @@ class SalesController extends GetxController
     isLoading(true);
     try {
       final payload = buildInstantSaleSuspendPayload();
+      _instantSaleDebug('suspend payload built', {
+        'keys': payload.keys.toList(),
+        'productId': payload['product_id'],
+        'offerPackageId': payload['offer_package_id'],
+        'quantity': payload['quantity'],
+        'totalCost': payload['total_cost'],
+        'buyerType': payload['buyer_type'],
+        'buyerId': payload['buyer_id'],
+        'sellerId': payload['seller_id'],
+        'paymentBoxId': payload['payment_box_id'],
+        'otherProductsCount': payload['other_products'] is List
+            ? (payload['other_products'] as List).length
+            : 0,
+      });
       final result = await Get.find<SalesImplement>().suspendInstantSale(
         currentStep: currentStep,
         payload: payload,
@@ -1390,6 +1434,10 @@ class SalesController extends GetxController
 
       return await result.fold(
         (failure) async {
+          _instantSaleDebug('suspend failed', {
+            'message': failure.errMessage,
+            'data': failure.data,
+          });
           Helpers.showCustomDialogError(
             context: context,
             title: 'error'.tr,
@@ -1398,6 +1446,7 @@ class SalesController extends GetxController
           return false;
         },
         (message) async {
+          _instantSaleDebug('suspend success', message);
           await _leaveInstantSaleFlow();
           clearActiveSuspendedSale();
           resetInstantSaleForm();
@@ -1418,6 +1467,11 @@ class SalesController extends GetxController
   Future<bool> resumeSuspendedInstantSale(
     SuspendedInstantSaleModel sale,
   ) async {
+    _instantSaleDebug('resume requested', {
+      'suspendedId': sale.id,
+      'currentStep': sale.currentStep,
+      'payloadKeys': sale.payload.keys.toList(),
+    });
     try {
       clearActiveEditInstantSale();
       activeSuspendedSaleId.value = sale.id;
@@ -1443,6 +1497,7 @@ class SalesController extends GetxController
       }
       return true;
     } catch (e) {
+      _instantSaleDebug('resume failed', e);
       Get.snackbar(
         'error'.tr,
         e.toString(),
@@ -2584,6 +2639,14 @@ class SalesController extends GetxController
 
   /// Single step: قبض then create instant sale.
   Future<void> submitInstantSaleWithPayment(BuildContext context) async {
+    _instantSaleDebug('submit with payment requested', {
+      'hasPackage': hasSelectedPackage,
+      'cartLines': cartLines.length,
+      'items': items.length,
+      'activeSuspendedSaleId': activeSuspendedSaleId.value,
+      'activeEditInstantSaleId': activeEditInstantSaleId.value,
+      'totalCost': totalCost.value,
+    });
     if (!(instantSaleFormKey.currentState?.validate() ?? false)) return;
 
     final hasPackage = hasSelectedPackage;
@@ -2626,7 +2689,18 @@ class SalesController extends GetxController
 
     isLoading(true);
     try {
+      if (activeSuspendedSaleId.value != null) {
+        final buyer = payment.buildInstantSaleBuyerPayload();
+        _instantSaleDebug(
+            'suspended payment payload without pre-receive', buyer);
+        applyBuyerFromPayment(buyer);
+        // ignore: use_build_context_synchronously
+        await addInstantSale(context);
+        return;
+      }
+
       final buyer = await payment.submitReceiveForInstantSale(context);
+      _instantSaleDebug('payment result', buyer);
       if (buyer == null) return;
 
       applyBuyerFromPayment(buyer);
@@ -2965,6 +3039,18 @@ class SalesController extends GetxController
     isLoading(true);
     try {
       final payload = buildInstantSaleSuspendPayload();
+      _instantSaleDebug('complete suspended requested', {
+        'suspendedId': suspendedId,
+        'payloadKeys': payload.keys.toList(),
+        'productId': payload['product_id'],
+        'offerPackageId': payload['offer_package_id'],
+        'quantity': payload['quantity'],
+        'totalCost': payload['total_cost'],
+        'buyerType': payload['buyer_type'],
+        'buyerId': payload['buyer_id'],
+        'sellerId': payload['seller_id'],
+        'paymentBoxId': payload['payment_box_id'],
+      });
       final result =
           await Get.find<SalesImplement>().completeSuspendedInstantSale(
         suspendedInstantSaleId: suspendedId,
@@ -2973,6 +3059,10 @@ class SalesController extends GetxController
 
       await result.fold(
         (failure) async {
+          _instantSaleDebug('complete suspended failed', {
+            'message': failure.errMessage,
+            'data': failure.data,
+          });
           String errorMessages = failure.errMessage;
           final errors = failure.data?['errors'] as Map<String, dynamic>?;
           if (errors != null) {
@@ -2989,6 +3079,7 @@ class SalesController extends GetxController
           );
         },
         (success) async {
+          _instantSaleDebug('complete suspended success', success);
           FocusManager.instance.primaryFocus?.unfocus();
 
           while (Get.isBottomSheetOpen == true) {
@@ -3033,12 +3124,47 @@ class SalesController extends GetxController
   // add instant sale
   Future<void> addInstantSale(BuildContext context) async {
     if (activeSuspendedSaleId.value != null) {
+      _instantSaleDebug('addInstantSale redirected to complete suspended', {
+        'activeSuspendedSaleId': activeSuspendedSaleId.value,
+      });
       await completeActiveSuspendedInstantSale(context);
       return;
     }
 
     isLoading(true);
     try {
+      final cartPayload = cartLines.isNotEmpty
+          ? buildCartOtherProductsPayload()
+          : (hasSelectedPackage ? buildCartOtherProductsPayload() : null);
+      _instantSaleDebug('add instant sale requested', {
+        'mode': activeEditInstantSaleId.value == null ? 'create' : 'edit',
+        'activeEditInstantSaleId': activeEditInstantSaleId.value,
+        'hasPackage': isPackageSale.value,
+        'selectedPackageId': selectedPackageId.value,
+        'productId': isPackageSale.value
+            ? ''
+            : items.first.selectedItem.value.toString(),
+        'quantity': items.first.quantityController.text,
+        'cost': items.first.priceController.text,
+        'discount':
+            discountController.text.isEmpty ? '0' : discountController.text,
+        'totalCost': totalCost.value.toString(),
+        'type':
+            items.first.selectedCustomersSellers.value ? 'project' : 'normal',
+        'projectId': items.first.selectedCustomersSellers.value
+            ? items.first.selectedValue.value
+            : '',
+        'buyerType': _paymentBuyerType,
+        'buyerId': _paymentBuyerId,
+        'sellerId': _paymentSellerId,
+        'buyerName': _paymentBuyerName,
+        'paymentBoxId': _paymentBoxId,
+        'paymentBoxValue': _paymentBoxValue,
+        'cartPayloadCount': cartPayload?.length ?? 0,
+        'itemsCount': items.length,
+        'notesLength': instantSaleNotesText.length,
+        'additionalNotesCount': instantSaleNotes.length,
+      });
       final result = await addInstantSalesUsecase.call(
         productId: isPackageSale.value
             ? ''
@@ -3055,9 +3181,7 @@ class SalesController extends GetxController
             ? items.first.selectedValue.value!
             : '',
         otherProducts: hasSelectedPackage ? RxList<ItemModel>() : items,
-        cartOtherProducts: cartLines.isNotEmpty
-            ? buildCartOtherProductsPayload()
-            : (hasSelectedPackage ? buildCartOtherProductsPayload() : null),
+        cartOtherProducts: cartPayload,
         buyerType: _paymentBuyerType,
         buyerId: _paymentBuyerId,
         sellerId: _paymentSellerId,
@@ -3071,6 +3195,10 @@ class SalesController extends GetxController
       );
       await result.fold(
         (failure) async {
+          _instantSaleDebug('add instant sale failed', {
+            'message': failure.errMessage,
+            'data': failure.data,
+          });
           String errorMessages = '';
           bool permissionsAdded = false;
           final errors = failure.data?['errors'] as Map<String, dynamic>?;
@@ -3099,6 +3227,7 @@ class SalesController extends GetxController
           );
         },
         (success) async {
+          _instantSaleDebug('add instant sale success', success);
           FocusManager.instance.primaryFocus?.unfocus();
 
           while (Get.isBottomSheetOpen == true) {
@@ -3338,13 +3467,19 @@ class SalesController extends GetxController
 
   // get all products
   final List<ProductModel> products = [];
-  Future<void> getAllProducts() async {
-    productsLoading(true);
+  Future<void> getAllProducts({bool showLoading = true}) async {
+    final requestId = ++_productsFetchSerial;
+    if (showLoading) {
+      productsLoading(true);
+    }
     try {
       final result = await getAllProductsUsecase.call(
         customerId: pickerPersonType == 'customer' ? pickerPersonId : null,
         sellerId: pickerPersonType == 'seller' ? pickerPersonId : null,
+        search: instantSaleProductSearch.value,
+        storeSectionId: pickerLocationSectionId.value,
       );
+      if (requestId != _productsFetchSerial) return;
       products
         ..clear()
         ..addAll(result);
@@ -3358,13 +3493,17 @@ class SalesController extends GetxController
         syncCartToItems();
       }
     } catch (e) {
+      if (requestId != _productsFetchSerial) return;
       assert(() {
         debugPrint('[SalesController.getAllProducts] $e');
         return true;
       }());
     } finally {
-      productsLoading(false);
-      _bumpProductsList();
+      if (requestId == _productsFetchSerial) {
+        productsLoading(false);
+        instantSalePickerSearchLoading(false);
+        _bumpProductsList();
+      }
     }
   }
 

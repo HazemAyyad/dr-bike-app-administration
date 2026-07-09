@@ -43,6 +43,7 @@ import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_scre
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/create_boxes_screen.dart';
+import '../features/admin/boxes/presentation/views/daily_boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/edit_boxes_screen.dart';
 import '../features/admin/buying/presentation/binding/buying_binding.dart';
 import '../features/admin/buying/presentation/views/bills_screens/bills_screen.dart';
@@ -459,6 +460,7 @@ class AppPages {
           () => AttendanceHistoryController(
             employeeId: args['employeeId'] as String? ?? '',
             employeeName: args['employeeName'] as String? ?? '',
+            reportMode: args['reportMode'] == true,
             getHistory: GetEmployeeAttendanceHistoryUsecase(
               employeeRepository: Get.find<EmployeeImplement>(),
             ),
@@ -527,6 +529,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.STOCKINVENTORYSETTINGSSCREEN,
       page: () => const StockInventorySettingsScreen(),
+      binding: StockBinding(),
       transition: _transitionFadeIn,
     ),
     GetPage(
@@ -792,6 +795,12 @@ class AppPages {
     GetPage(
       name: AppRoutes.BOXESSCREEN,
       page: () => const BoxesScreen(),
+      binding: BoxesBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.DAILYBOXESSCREEN,
+      page: () => const DailyBoxesScreen(),
       binding: BoxesBinding(),
       transition: _transitionFadeIn,
     ),

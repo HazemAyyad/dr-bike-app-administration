@@ -315,6 +315,7 @@ class EmployeeImplement implements EmployeeRepository {
     required String employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    bool includeEmptyDays = false,
   }) async {
     if (await networkInfo.isConnected) {
       try {
@@ -322,6 +323,7 @@ class EmployeeImplement implements EmployeeRepository {
           employeeId: employeeId,
           fromDate: fromDate,
           toDate: toDate,
+          includeEmptyDays: includeEmptyDays,
         );
       } on ServerException catch (e) {
         throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
@@ -338,6 +340,8 @@ class EmployeeImplement implements EmployeeRepository {
     required int year,
     int? day,
     int? week,
+    String? dateFrom,
+    String? dateTo,
     List<int>? employeeIds,
   }) async {
     if (await networkInfo.isConnected) {
@@ -348,6 +352,8 @@ class EmployeeImplement implements EmployeeRepository {
           year: year,
           day: day,
           week: week,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
           employeeIds: employeeIds ?? const [],
         );
       } on ServerException catch (e) {

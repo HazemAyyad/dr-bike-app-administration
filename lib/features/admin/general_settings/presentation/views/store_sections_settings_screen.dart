@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/admin_ui_colors.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/outline_input_style.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../stock/data/datasources/stock_datasource.dart';
 import '../../../stock/data/models/store_section_model.dart';
 import '../../../stock/presentation/controllers/stock_controller.dart';
@@ -25,7 +26,9 @@ class _StoreSectionsSettingsScreenState
   StockDatasource get _ds => Get.find<StockDatasource>();
 
   Future<void> _notifyStockProductsRefresh() async {
-    if (Get.isRegistered<StockController>()) {
+    if ((userType == 'admin' ||
+            employeePermissions.contains(stockPermissionId)) &&
+        Get.isRegistered<StockController>()) {
       await Get.find<StockController>().refreshAfterStoreSectionsChanged();
     }
   }
@@ -44,7 +47,8 @@ class _StoreSectionsSettingsScreenState
         ..clear()
         ..addAll(list);
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -88,7 +92,8 @@ class _StoreSectionsSettingsScreenState
       Get.snackbar('success'.tr, 'settingsUpdated'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -119,7 +124,8 @@ class _StoreSectionsSettingsScreenState
       await _notifyStockProductsRefresh();
       Get.snackbar('success'.tr, 'OK', snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -156,102 +162,101 @@ class _StoreSectionsSettingsScreenState
                       color: AdminUiColors.cardBackground(context),
                       borderRadius: BorderRadius.circular(12.r),
                       child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 10.w,
-                            vertical: 8.h,
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 32.w,
-                                height: 32.w,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF0369A1)
-                                      .withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(8.r),
-                                ),
-                                child: Icon(
-                                  Icons.place_outlined,
-                                  color: const Color(0xFF0369A1),
-                                  size: 17.sp,
-                                ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 8.h,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32.w,
+                              height: 32.w,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0369A1)
+                                    .withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8.r),
                               ),
-                              SizedBox(width: 10.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
+                              child: Icon(
+                                Icons.place_outlined,
+                                color: const Color(0xFF0369A1),
+                                size: 17.sp,
+                              ),
+                            ),
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    section.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13.5.sp,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  SizedBox(height: 3.h),
+                                  Wrap(
+                                    spacing: 4.w,
+                                    runSpacing: 2.h,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      _SectionStatChip(
+                                        icon: Icons.inventory_2_outlined,
+                                        label: 'sectionStatProducts'.trParams({
+                                          'count':
+                                              section.productCount.toString(),
+                                        }),
+                                      ),
+                                      if (!section.isActive)
+                                        Text(
+                                          'inactive'.tr,
+                                          style: TextStyle(
+                                            fontSize: 10.sp,
+                                            color: Colors.orange.shade700,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  if (desc.isNotEmpty) ...[
+                                    SizedBox(height: 2.h),
                                     Text(
-                                      section.name,
+                                      desc,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        fontSize: 13.5.sp,
-                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11.sp,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withValues(alpha: 0.55),
                                         height: 1.2,
                                       ),
                                     ),
-                                    SizedBox(height: 3.h),
-                                    Wrap(
-                                      spacing: 4.w,
-                                      runSpacing: 2.h,
-                                      crossAxisAlignment:
-                                          WrapCrossAlignment.center,
-                                      children: [
-                                        _SectionStatChip(
-                                          icon: Icons.inventory_2_outlined,
-                                          label:
-                                              'sectionStatProducts'.trParams({
-                                            'count':
-                                                section.productCount.toString(),
-                                          }),
-                                        ),
-                                        if (!section.isActive)
-                                          Text(
-                                            'inactive'.tr,
-                                            style: TextStyle(
-                                              fontSize: 10.sp,
-                                              color: Colors.orange.shade700,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    if (desc.isNotEmpty) ...[
-                                      SizedBox(height: 2.h),
-                                      Text(
-                                        desc,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 11.sp,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.55),
-                                          height: 1.2,
-                                        ),
-                                      ),
-                                    ],
                                   ],
-                                ),
+                                ],
                               ),
-                              _SectionActionIcon(
-                                tooltip: 'edit'.tr,
-                                icon: Icons.edit_outlined,
-                                onPressed: () =>
-                                    _showSectionDialog(section: section),
-                              ),
-                              _SectionActionIcon(
-                                tooltip: 'delete'.tr,
-                                icon: Icons.delete_outline,
-                                color: Colors.red.shade700,
-                                onPressed: () => _confirmDelete(section),
-                              ),
-                            ],
-                          ),
+                            ),
+                            _SectionActionIcon(
+                              tooltip: 'edit'.tr,
+                              icon: Icons.edit_outlined,
+                              onPressed: () =>
+                                  _showSectionDialog(section: section),
+                            ),
+                            _SectionActionIcon(
+                              tooltip: 'delete'.tr,
+                              icon: Icons.delete_outline,
+                              color: Colors.red.shade700,
+                              onPressed: () => _confirmDelete(section),
+                            ),
+                          ],
                         ),
+                      ),
                     );
                   },
                 ),

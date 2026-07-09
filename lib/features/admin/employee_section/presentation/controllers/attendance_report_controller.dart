@@ -21,6 +21,7 @@ class AttendanceReportController extends GetxController {
       <WorkingTimesEntity>[].obs;
 
   final RxBool isLoading = false.obs;
+  final RxBool showDetailedView = false.obs;
   final Rxn<AttendanceReportResult> result = Rxn();
   final Rxn<String> errorMessage = Rxn();
 
@@ -105,6 +106,7 @@ class AttendanceReportController extends GetxController {
       final bytes = await AttendanceReportExportHelper.buildPdfBytes(
         result: r,
         filters: a,
+        simple: !showDetailedView.value,
       );
       final name = AttendanceReportExportHelper.fileBaseName(r, 'pdf');
       await Printing.sharePdf(bytes: bytes, filename: name);
@@ -130,6 +132,7 @@ class AttendanceReportController extends GetxController {
       final file = await AttendanceReportExportHelper.savePdfToFile(
         result: r,
         filters: a,
+        simple: !showDetailedView.value,
       );
       Get.snackbar(
         'fileDownloadedSuccessfully'.tr,
@@ -155,6 +158,7 @@ class AttendanceReportController extends GetxController {
         onLayout: (_) => AttendanceReportExportHelper.buildPdfBytes(
           result: r,
           filters: a,
+          simple: !showDetailedView.value,
         ),
       );
     } catch (e) {

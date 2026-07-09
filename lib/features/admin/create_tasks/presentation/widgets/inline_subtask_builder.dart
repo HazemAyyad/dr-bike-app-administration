@@ -33,9 +33,23 @@ class InlineSubtaskBuilder extends GetView<CreateTaskController> {
               final task = controller.subTasks[index] as Map;
               if (isSpecialTask) {
                 return _SimpleSubtaskCard(
-                  key: ValueKey('subtask_${index}_${task['subTaskId'] ?? index}'),
+                  key: ValueKey(_subtaskKey(task)),
                   index: index,
                   title: task['subTaskName']?.toString() ?? '',
+                  description: task['subTaskdescription']?.toString() ?? '',
+                  isCompleted: task['status'] == 'completed',
+                  onEdit: () {
+                    controller.startEditSubTask(index);
+                    Get.bottomSheet(
+                      _SpecialSubtaskEditorSheet(editIndex: index),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(20.r)),
+                      ),
+                      isScrollControlled: true,
+                    );
+                  },
                   onDelete: () => controller.subTasks.removeAt(index),
                 );
               }
@@ -91,6 +105,11 @@ class InlineSubtaskBuilder extends GetView<CreateTaskController> {
       ),
     );
   }
+}
+
+String _subtaskKey(Map task) {
+  return (task['subTaskId'] ?? task['clientKey'] ?? identityHashCode(task))
+      .toString();
 }
 
 Future<void> _showBonusPointsDialog(
@@ -269,8 +288,17 @@ class _AddSubtaskRowState extends State<_AddSubtaskRow> {
       return;
     }
     if (widget.isSpecialTask) {
-      controller.addSubTask(nameOverride: name);
+      controller.prepareNewSubTask();
+      controller.subTaskNameController.text = name;
       _nameCtrl.clear();
+      Get.bottomSheet(
+        const _SpecialSubtaskEditorSheet(),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        isScrollControlled: true,
+      );
       return;
     }
     controller.prepareNewSubTask();
@@ -353,68 +381,68 @@ class _SubtaskEditorSheet extends GetView<CreateTaskController> {
           children: [
             Text(
               editIndex == null ? 'addSubTask'.tr : 'editSubTask'.tr,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w800,
-              color: AppColors.operationalNavy,
-            ),
-          ),
-          SizedBox(height: 12.h),
-          TextField(
-            controller: controller.subTaskNameController,
-            decoration: InputDecoration(
-              labelText: 'subTaskName'.tr,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14.r),
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.operationalNavy,
               ),
             ),
-          ),
-          SizedBox(height: 8.h),
-          const SubtaskAdminMediaPicker(),
-          SizedBox(height: 12.h),
-          Obx(
-            () => ProofMediaTypeSelector(
-              value: controller.subTaskProofMediaType.value,
-              onChanged: controller.setSubTaskProofMediaType,
-            ),
-          ),
-          Obx(
-            () => SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('additionalPoints'.tr),
-              value: controller.subtaskBonusEnabled.value,
-              activeThumbColor: AppColors.operationalPurple,
-              onChanged: (v) => controller.subtaskBonusEnabled.value = v,
-            ),
-          ),
-          if (controller.subtaskBonusEnabled.value)
+            SizedBox(height: 12.h),
             TextField(
-              keyboardType: TextInputType.number,
+              controller: controller.subTaskNameController,
               decoration: InputDecoration(
-                labelText: 'bonusPointsValue'.tr,
+                labelText: 'subTaskName'.tr,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14.r),
                 ),
               ),
-              onChanged: (v) =>
-                  controller.subtaskBonusPoints.value = int.tryParse(v) ?? 0,
             ),
-          SizedBox(height: 12.h),
-          ElevatedButton(
-            onPressed: () {
-              controller.addSubTask();
-              controller.clearSubTaskForm();
-              Get.back();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.operationalPurple,
-              minimumSize: Size(double.infinity, 48.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14.r),
+            SizedBox(height: 8.h),
+            const SubtaskAdminMediaPicker(),
+            SizedBox(height: 12.h),
+            Obx(
+              () => ProofMediaTypeSelector(
+                value: controller.subTaskProofMediaType.value,
+                onChanged: controller.setSubTaskProofMediaType,
               ),
             ),
-            child: Text('save'.tr),
-          ),
+            Obx(
+              () => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('additionalPoints'.tr),
+                value: controller.subtaskBonusEnabled.value,
+                activeThumbColor: AppColors.operationalPurple,
+                onChanged: (v) => controller.subtaskBonusEnabled.value = v,
+              ),
+            ),
+            if (controller.subtaskBonusEnabled.value)
+              TextField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'bonusPointsValue'.tr,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14.r),
+                  ),
+                ),
+                onChanged: (v) =>
+                    controller.subtaskBonusPoints.value = int.tryParse(v) ?? 0,
+              ),
+            SizedBox(height: 12.h),
+            ElevatedButton(
+              onPressed: () {
+                controller.addSubTask();
+                controller.clearSubTaskForm();
+                Get.back();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.operationalPurple,
+                minimumSize: Size(double.infinity, 48.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+              ),
+              child: Text('save'.tr),
+            ),
           ],
         ),
       ),
@@ -567,16 +595,137 @@ class _SubtaskCard extends StatelessWidget {
   }
 }
 
+class _SpecialSubtaskEditorSheet extends GetView<CreateTaskController> {
+  const _SpecialSubtaskEditorSheet({this.editIndex});
+
+  final int? editIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16.w,
+        16.h,
+        16.w,
+        16.h + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              editIndex == null ? 'addSubTask'.tr : 'editSubTask'.tr,
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.operationalNavy,
+              ),
+            ),
+            SizedBox(height: 12.h),
+            TextField(
+              controller: controller.subTaskNameController,
+              decoration: InputDecoration(
+                labelText: 'subTaskName'.tr,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            TextField(
+              controller: controller.subTaskDescriptionController,
+              keyboardType: TextInputType.multiline,
+              textInputAction: TextInputAction.newline,
+              minLines: 2,
+              maxLines: 5,
+              decoration: InputDecoration(
+                labelText: 'subTaskDescription'.tr,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+              ),
+            ),
+            Obx(() {
+              final index = controller.editingSubTaskIndex.value;
+              if (index == null ||
+                  index < 0 ||
+                  index >= controller.subTasks.length) {
+                return const SizedBox.shrink();
+              }
+              final task = controller.subTasks[index] as Map;
+              if (task['status'] != 'completed') return const SizedBox.shrink();
+              return Container(
+                margin: EdgeInsets.only(top: 8.h),
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                decoration: BoxDecoration(
+                  color: AppColors.operationalPurple.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.operationalPurple.withValues(alpha: 0.24),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 18.sp,
+                      color: AppColors.operationalPurple,
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'completed'.tr,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.operationalPurple,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            SizedBox(height: 12.h),
+            ElevatedButton(
+              onPressed: () {
+                controller.addSubTask();
+                controller.clearSubTaskForm();
+                Get.back();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.operationalPurple,
+                minimumSize: Size(double.infinity, 48.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14.r),
+                ),
+              ),
+              child: Text('save'.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SimpleSubtaskCard extends StatelessWidget {
   const _SimpleSubtaskCard({
     Key? key,
     required this.index,
     required this.title,
+    required this.description,
+    required this.isCompleted,
+    required this.onEdit,
     required this.onDelete,
   }) : super(key: key);
 
   final int index;
   final String title;
+  final String description;
+  final bool isCompleted;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
@@ -602,25 +751,98 @@ class _SimpleSubtaskCard extends StatelessWidget {
           ),
           SizedBox(width: 6.w),
           Expanded(
-            child: Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13.sp,
-                color: AppColors.operationalNavy,
-                height: 1.15,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.sp,
+                          color: isCompleted
+                              ? AppColors.customGreyColor5
+                              : AppColors.operationalNavy,
+                          height: 1.15,
+                          decoration:
+                              isCompleted ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ),
+                    if (isCompleted) ...[
+                      SizedBox(width: 6.w),
+                      Icon(
+                        Icons.check_circle,
+                        size: 16.sp,
+                        color: AppColors.operationalPurple,
+                      ),
+                    ],
+                  ],
+                ),
+                if (description.trim().isNotEmpty) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: AppColors.customGreyColor5,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
+          PopupMenuButton<String>(
             padding: EdgeInsets.zero,
-            constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.w),
-            icon: const Icon(Icons.delete_outline, size: 18),
-            onPressed: onDelete,
-            color: Colors.red.shade400,
+            constraints: BoxConstraints(minWidth: 40.w, minHeight: 40.w),
+            icon: Icon(
+              Icons.more_vert,
+              size: 20.sp,
+              color: AppColors.customGreyColor5,
+            ),
+            onSelected: (value) {
+              if (value == 'edit') {
+                onEdit();
+              } else if (value == 'delete') {
+                onDelete();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 18.sp,
+                      color: AppColors.operationalPurple,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text('edit'.tr),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      size: 18.sp,
+                      color: Colors.red.shade400,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text('delete'.tr),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

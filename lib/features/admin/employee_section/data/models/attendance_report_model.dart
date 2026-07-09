@@ -7,6 +7,8 @@ class AttendanceReportArgs {
     required this.year,
     this.day,
     this.week,
+    this.dateFrom,
+    this.dateTo,
     required this.allEmployees,
     this.employeeIds = const [],
   });
@@ -16,6 +18,8 @@ class AttendanceReportArgs {
   final int year;
   final int? day;
   final int? week;
+  final String? dateFrom;
+  final String? dateTo;
   final bool allEmployees;
   final List<int> employeeIds;
 }

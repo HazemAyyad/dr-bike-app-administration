@@ -108,6 +108,8 @@ class SalesImplement implements SalesRepository {
     required String endPoint,
     String? customerId,
     String? sellerId,
+    String? search,
+    String? storeSectionId,
   }) async {
     if (!await networkInfo.isConnected) {
       throw NoConnectionFailure();
@@ -117,6 +119,8 @@ class SalesImplement implements SalesRepository {
         endPoint: endPoint,
         customerId: customerId,
         sellerId: sellerId,
+        search: search,
+        storeSectionId: storeSectionId,
       );
       return result;
     } on ServerException catch (e) {

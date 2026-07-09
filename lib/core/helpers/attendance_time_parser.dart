@@ -5,10 +5,13 @@ class AttendanceTimeParser {
   AttendanceTimeParser._();
 
   static DateTime? parseToday(String timeStr) {
+    return parseOnDate(timeStr, DateTime.now());
+  }
+
+  static DateTime? parseOnDate(String timeStr, DateTime date) {
     final raw = timeStr.trim();
     if (raw.isEmpty || raw == '0') return null;
 
-    final now = DateTime.now();
     try {
       late DateFormat fmt;
       final upper = raw.toUpperCase();
@@ -21,9 +24,9 @@ class AttendanceTimeParser {
       }
       final parsed = fmt.parse(raw);
       return DateTime(
-        now.year,
-        now.month,
-        now.day,
+        date.year,
+        date.month,
+        date.day,
         parsed.hour,
         parsed.minute,
         parsed.second,

@@ -24,6 +24,8 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
         return 'reportTypeWeekly'.tr;
       case 'monthly':
         return 'reportTypeMonthly'.tr;
+      case 'custom':
+        return 'reportTypeCustom'.tr;
       default:
         return code;
     }
@@ -43,10 +45,8 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
     final dataTextStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: isDark ? Colors.white70 : const Color(0xFF2A2A2A),
         );
-    final headerPrimary =
-        isDark ? Colors.white : const Color(0xFF1F1F1F);
-    final headerSecondary =
-        isDark ? Colors.white70 : const Color(0xFF616161);
+    final headerPrimary = isDark ? Colors.white : const Color(0xFF1F1F1F);
+    final headerSecondary = isDark ? Colors.white70 : const Color(0xFF616161);
 
     return Scaffold(
       backgroundColor: pageBg,
@@ -61,6 +61,22 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
             icon: Icon(Icons.tune_rounded, color: iconClr),
             onPressed: () => controller.openFilterDialog(context),
           ),
+          Obx(() {
+            final ready = controller.result.value != null;
+            return IconButton(
+              tooltip: controller.showDetailedView.value
+                  ? 'attendanceReportSimpleView'.tr
+                  : 'attendanceReportDetailedView'.tr,
+              icon: Icon(
+                controller.showDetailedView.value
+                    ? Icons.view_agenda_outlined
+                    : Icons.table_chart_outlined,
+                color: ready ? iconClr : iconClr.withValues(alpha: 0.4),
+              ),
+              onPressed:
+                  ready ? () => controller.showDetailedView.toggle() : null,
+            );
+          }),
           Obx(() {
             final ready = controller.result.value != null;
             return PopupMenuButton<String>(
@@ -155,10 +171,7 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
                 children: [
                   Text(
                     '${_reportTypeBadge(r.reportType)} · ${r.month}/${r.year}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: headerPrimary,
                         ),
@@ -205,116 +218,183 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
             Expanded(
               child: r.employees.isEmpty
                   ? Center(child: Text('reportEmptyState'.tr))
-                  : LayoutBuilder(
-                      builder: (context, _) {
-                        return SingleChildScrollView(
-                          padding: EdgeInsets.only(bottom: 24.h),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minWidth:
-                                    MediaQuery.sizeOf(context).width - 8.w,
-                              ),
-                              child: Card(
-                                margin: EdgeInsets.symmetric(
-                                  horizontal: 12.w,
-                                  vertical: 10.h,
-                                ),
-                                elevation: isDark ? 0 : 1,
-                                color: isDark ? AppColors.customGreyColor4 : Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12.r),
-                                  side: BorderSide(
-                                    color: isDark
-                                        ? Colors.white12
-                                        : Colors.grey.shade200,
-                                  ),
-                                ),
-                                child: DataTable(
-                                  headingTextStyle: headingTextStyle,
-                                  dataTextStyle: dataTextStyle,
-                                  headingRowColor:
-                                      WidgetStateProperty.resolveWith(
-                                    (_) => isDark
-                                        ? Colors.white10
-                                        : Colors.grey.shade50,
-                                  ),
-                                  dividerThickness: 0.8,
-                                  columnSpacing: 16.w,
-                                  horizontalMargin: 12.w,
-                                  columns: [
-                                    DataColumn(
-                                        label:
-                                            Text('employeeNameReportCol'.tr)),
-                                    DataColumn(
-                                        label:
-                                            Text('weeklyDaysOffTitle'.tr)),
-                                    DataColumn(
-                                      label: Text('hourWorkPriceReportCol'.tr),
-                                    ),
-                                    DataColumn(
-                                      label: Text(
-                                          'overtimeHourPriceEffectiveCol'.tr),
-                                    ),
-                                    DataColumn(
-                                        label: Text(
-                                            'requiredWorkingDaysCol'.tr)),
-                                    DataColumn(
-                                        label:
-                                            Text('requiredHoursLabel'.tr)),
-                                    DataColumn(
-                                        label: Text('workedHoursLabel'.tr)),
-                                    DataColumn(
-                                        label:
-                                            Text('normalHoursLabel'.tr)),
-                                    DataColumn(
-                                        label:
-                                            Text('overtimeHoursLabel'.tr)),
-                                    DataColumn(
-                                      label:
-                                          Text('normalSalaryReportCol'.tr),
-                                    ),
-                                    DataColumn(
-                                        label: Text(
-                                            'overtimeSalaryReportCol'.tr)),
-                                    DataColumn(
-                                      label: Text(
-                                          'salaryForWorkedHoursCol'.tr),
-                                    ),
-                                    DataColumn(
-                                      label: Text('earnedPointsCol'.tr),
-                                    ),
-                                    DataColumn(
-                                      label: Text('deductedPointsCol'.tr),
-                                    ),
-                                    DataColumn(
-                                      label: Text('netPointsCol'.tr),
-                                    ),
-                                    DataColumn(
-                                      label: Text('rewardAmountReportCol'.tr),
-                                    ),
-                                    DataColumn(
-                                      label: Text('finalSalaryReportCol'.tr),
-                                    ),
-                                    DataColumn(
-                                      label: Text('employeeDebtsReportCol'.tr),
-                                    ),
-                                  ],
-                                  rows: r.employees
-                                      .map((e) => _row(context, e))
-                                      .toList(),
-                                ),
-                              ),
-                            ),
-                          ),
+                  : Obx(() {
+                      if (controller.showDetailedView.value) {
+                        return _buildDetailedTable(
+                          context,
+                          r,
+                          isDark,
+                          headingTextStyle,
+                          dataTextStyle,
                         );
-                      },
-                    ),
+                      }
+                      return _buildSimpleTable(
+                        context,
+                        r,
+                        isDark,
+                        headingTextStyle,
+                        dataTextStyle,
+                      );
+                    }),
             ),
           ],
         );
       }),
+    );
+  }
+
+  Widget _buildSimpleTable(
+    BuildContext context,
+    AttendanceReportResult r,
+    bool isDark,
+    TextStyle? headingTextStyle,
+    TextStyle? dataTextStyle,
+  ) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: 24.h),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: MediaQuery.sizeOf(context).width - 8.w,
+          ),
+          child: Card(
+            margin: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            elevation: isDark ? 0 : 1,
+            color: isDark ? AppColors.customGreyColor4 : Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+              side: BorderSide(
+                color: isDark ? Colors.white12 : Colors.grey.shade200,
+              ),
+            ),
+            child: DataTable(
+              headingTextStyle: headingTextStyle,
+              dataTextStyle: dataTextStyle,
+              headingRowColor: WidgetStateProperty.resolveWith(
+                (_) => isDark ? Colors.white10 : Colors.grey.shade50,
+              ),
+              dividerThickness: 0.8,
+              columnSpacing: 18.w,
+              horizontalMargin: 12.w,
+              columns: [
+                DataColumn(label: Text('employeeNameReportCol'.tr)),
+                DataColumn(label: Text('hourWorkPriceReportCol'.tr)),
+                DataColumn(label: Text('requiredHoursLabel'.tr)),
+                DataColumn(label: Text('workedHoursLabel'.tr)),
+                DataColumn(label: Text('hoursDifferenceLabel'.tr)),
+                DataColumn(label: Text('salaryForWorkedHoursCol'.tr)),
+              ],
+              rows: r.employees.map((e) {
+                final worked = double.tryParse(e.workedHours) ?? 0;
+                final required = double.tryParse(e.requiredHours) ?? 0;
+                final diff = worked - required;
+                final diffColor = diff >= 0
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFDC2626);
+                return DataRow(
+                  cells: [
+                    DataCell(SizedBox(
+                      width: 120.w,
+                      child: Text(
+                        e.employeeName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )),
+                    DataCell(Text(e.hourWorkPrice)),
+                    DataCell(Text(e.requiredHours)),
+                    DataCell(Text(e.workedHours)),
+                    DataCell(Text(
+                      '${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: diffColor,
+                          ),
+                    )),
+                    DataCell(Text(
+                      e.totalSalary,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryColor,
+                          ),
+                    )),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailedTable(
+    BuildContext context,
+    AttendanceReportResult r,
+    bool isDark,
+    TextStyle? headingTextStyle,
+    TextStyle? dataTextStyle,
+  ) {
+    return LayoutBuilder(
+      builder: (context, _) {
+        return SingleChildScrollView(
+          padding: EdgeInsets.only(bottom: 24.h),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: MediaQuery.sizeOf(context).width - 8.w,
+              ),
+              child: Card(
+                margin: EdgeInsets.symmetric(
+                  horizontal: 12.w,
+                  vertical: 10.h,
+                ),
+                elevation: isDark ? 0 : 1,
+                color: isDark ? AppColors.customGreyColor4 : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                  side: BorderSide(
+                    color: isDark ? Colors.white12 : Colors.grey.shade200,
+                  ),
+                ),
+                child: DataTable(
+                  headingTextStyle: headingTextStyle,
+                  dataTextStyle: dataTextStyle,
+                  headingRowColor: WidgetStateProperty.resolveWith(
+                    (_) => isDark ? Colors.white10 : Colors.grey.shade50,
+                  ),
+                  dividerThickness: 0.8,
+                  columnSpacing: 16.w,
+                  horizontalMargin: 12.w,
+                  columns: [
+                    DataColumn(label: Text('employeeNameReportCol'.tr)),
+                    DataColumn(label: Text('weeklyDaysOffTitle'.tr)),
+                    DataColumn(label: Text('hourWorkPriceReportCol'.tr)),
+                    DataColumn(label: Text('overtimeHourPriceEffectiveCol'.tr)),
+                    DataColumn(label: Text('requiredWorkingDaysCol'.tr)),
+                    DataColumn(label: Text('requiredHoursLabel'.tr)),
+                    DataColumn(label: Text('workedHoursLabel'.tr)),
+                    DataColumn(label: Text('normalHoursLabel'.tr)),
+                    DataColumn(label: Text('overtimeHoursLabel'.tr)),
+                    DataColumn(label: Text('normalSalaryReportCol'.tr)),
+                    DataColumn(label: Text('overtimeSalaryReportCol'.tr)),
+                    DataColumn(label: Text('salaryForWorkedHoursCol'.tr)),
+                    DataColumn(label: Text('earnedPointsCol'.tr)),
+                    DataColumn(label: Text('deductedPointsCol'.tr)),
+                    DataColumn(label: Text('netPointsCol'.tr)),
+                    DataColumn(label: Text('rewardAmountReportCol'.tr)),
+                    DataColumn(label: Text('finalSalaryReportCol'.tr)),
+                    DataColumn(label: Text('employeeDebtsReportCol'.tr)),
+                  ],
+                  rows: r.employees.map((e) => _row(context, e)).toList(),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -360,9 +440,10 @@ class AttendanceReportScreen extends GetView<AttendanceReportController> {
         DataCell(Text(e.overtimeSalary)),
         DataCell(Text(
           e.totalSalary,
-          style:
-              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600),
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
         )),
         DataCell(Text(
           ps.earnedPoints.toString(),

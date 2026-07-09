@@ -9,12 +9,14 @@ class ShownBoxesModel extends GetShownBoxesEntity {
     required double totalBalance,
     required bool isShown,
     required String currency,
+    required String type,
   }) : super(
           boxId: boxId,
           boxName: boxName,
           totalBalance: totalBalance,
           isShown: isShown,
           currency: currency,
+          type: type,
         );
 
   factory ShownBoxesModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class ShownBoxesModel extends GetShownBoxesEntity {
       totalBalance: asDouble(j['total_balance']),
       isShown: asBool(j['is_shown']),
       currency: asString(j['currency']),
+      type: asString(j['type']),
     );
   }
 
@@ -35,6 +38,7 @@ class ShownBoxesModel extends GetShownBoxesEntity {
       'total_balance': totalBalance.toStringAsFixed(2),
       'is_shown': isShown ? '1' : '0',
       'currency': currency,
+      'type': type,
     };
   }
 }

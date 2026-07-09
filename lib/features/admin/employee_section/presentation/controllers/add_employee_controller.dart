@@ -145,6 +145,11 @@ class AddEmployeeController extends GetxController {
       'id': '46',
       'permission': false.obs
     },
+    {
+      'name': 'stockInventorySettingsPermission'.tr,
+      'id': '47',
+      'permission': false.obs
+    },
   ];
 
   final RxBool isAllPermissionsSelected = false.obs;

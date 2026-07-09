@@ -345,33 +345,32 @@ class CreateEmployeeTasksDatasource {
         if (subSpecialTasks[i]['subTaskId'] != null) {
           subSpecialTasksMap['sub_special_tasks[$i][id]'] =
               subSpecialTasks[i]['subTaskId'];
-        } else {
-          subSpecialTasksMap['sub_special_tasks[$i][name]'] =
-              subSpecialTasks[i]['subTaskName'];
-          if (subSpecialTasks[i]['subTaskImage'] != null) {
-            final compressedImg =
-                await compressImage(XFile(subSpecialTasks[i]['subTaskImage']));
-            if (specialTaskId == 0) {
-              subSpecialTasksMap[
-                      'sub_special_tasks[$i][admin_subtask__img][]'] =
-                  await MultipartFile.fromFile(
-                compressedImg.path,
-                filename: compressedImg.path.split('/').last,
-              );
-            } else {
-              subSpecialTasksMap['sub_special_tasks[$i][admin_subtask_img][]'] =
-                  await MultipartFile.fromFile(
-                compressedImg.path,
-                filename: compressedImg.path.split('/').last,
-              );
-            }
-          }
-          subSpecialTasksMap['sub_special_tasks[$i][description]'] =
-              subSpecialTasks[i]['subTaskdescription'];
-          subSpecialTasksMap[
-                  'sub_special_tasks[$i][force_employee_to_add_img_for_sub_task]'] =
-              subSpecialTasks[i]['imageIsRequired'] == true ? 1 : 0;
         }
+        subSpecialTasksMap['sub_special_tasks[$i][name]'] =
+            subSpecialTasks[i]['subTaskName'];
+        if (subSpecialTasks[i]['subTaskId'] == null &&
+            subSpecialTasks[i]['subTaskImage'] != null) {
+          final compressedImg =
+              await compressImage(XFile(subSpecialTasks[i]['subTaskImage']));
+          if (specialTaskId == 0) {
+            subSpecialTasksMap['sub_special_tasks[$i][admin_subtask__img][]'] =
+                await MultipartFile.fromFile(
+              compressedImg.path,
+              filename: compressedImg.path.split('/').last,
+            );
+          } else {
+            subSpecialTasksMap['sub_special_tasks[$i][admin_subtask_img][]'] =
+                await MultipartFile.fromFile(
+              compressedImg.path,
+              filename: compressedImg.path.split('/').last,
+            );
+          }
+        }
+        subSpecialTasksMap['sub_special_tasks[$i][description]'] =
+            subSpecialTasks[i]['subTaskdescription'];
+        subSpecialTasksMap[
+                'sub_special_tasks[$i][force_employee_to_add_img_for_sub_task]'] =
+            subSpecialTasks[i]['imageIsRequired'] == true ? 1 : 0;
       }
       final response = await api.post(
         specialTaskId != 0

@@ -551,9 +551,7 @@ class EmployeeDatasource {
       final data = asMap(response.data);
       final list = data['requests'];
       if (list is List) {
-        return list
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       }
       return [];
     } on DioException catch (e) {
@@ -584,7 +582,8 @@ class EmployeeDatasource {
         endpoint,
         data: {
           if (approvedMinutes != null) 'approved_minutes': approvedMinutes,
-          if (adminNote != null && adminNote.isNotEmpty) 'admin_note': adminNote,
+          if (adminNote != null && adminNote.isNotEmpty)
+            'admin_note': adminNote,
         },
       );
       return asMap(response.data);
@@ -606,6 +605,7 @@ class EmployeeDatasource {
     required String employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    bool includeEmptyDays = false,
   }) async {
     try {
       String? fmt(DateTime d) =>
@@ -616,6 +616,7 @@ class EmployeeDatasource {
           'employee_id': employeeId,
           if (fromDate != null) 'from_date': fmt(fromDate),
           if (toDate != null) 'to_date': fmt(toDate),
+          if (includeEmptyDays) 'include_empty_days': 1,
         },
       );
       final raw = response.data;
@@ -650,6 +651,8 @@ class EmployeeDatasource {
     required int year,
     int? day,
     int? week,
+    String? dateFrom,
+    String? dateTo,
     List<int> employeeIds = const [],
   }) async {
     try {
@@ -663,6 +666,12 @@ class EmployeeDatasource {
       }
       if (week != null) {
         parts.add('week=$week');
+      }
+      if (dateFrom != null && dateFrom.isNotEmpty) {
+        parts.add('date_from=${Uri.encodeQueryComponent(dateFrom)}');
+      }
+      if (dateTo != null && dateTo.isNotEmpty) {
+        parts.add('date_to=${Uri.encodeQueryComponent(dateTo)}');
       }
       for (final id in employeeIds) {
         parts.add('employee_ids[]=$id');
@@ -1364,7 +1373,8 @@ class EmployeeDatasource {
       final response = await api.get(
         EndPoints.adminUsers,
         queryParameters: {
-          if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
         },
       );
       return mapListFromResponseKey(

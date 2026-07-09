@@ -624,6 +624,8 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
   }
 
   Widget _itemsSection(SalesOrderDetailModel order) {
+    final displayItems = _displayItems(order.items);
+
     return Container(
       decoration: BoxDecoration(
         color: SalesOrdersController.cardGray,
@@ -648,7 +650,7 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
                   ),
                 ),
                 Text(
-                  '${order.items.length}',
+                  '${displayItems.length}',
                   style: TextStyle(
                     color: SalesOrdersController.textSecondary,
                     fontSize: 11.sp,
@@ -711,14 +713,53 @@ class _SalesOrderDetailScreenState extends State<SalesOrderDetailScreen> {
               ],
             ),
           ),
-          ...order.items.asMap().entries.map((entry) {
+          ...displayItems.asMap().entries.map((entry) {
             final item = entry.value;
-            final isLast = entry.key == order.items.length - 1;
+            final isLast = entry.key == displayItems.length - 1;
             return _compactItemRow(item, showDivider: !isLast);
           }),
         ],
       ),
     );
+  }
+
+  List<SalesOrderItemModel> _displayItems(List<SalesOrderItemModel> items) {
+    final grouped = <String, SalesOrderItemModel>{};
+
+    for (final item in items) {
+      final key = [
+        item.productId,
+        item.sizeId ?? '',
+        item.sizeColorId ?? '',
+        item.productName ?? '',
+        item.unitPrice,
+      ].join('|');
+
+      final current = grouped[key];
+      if (current == null) {
+        grouped[key] = item;
+        continue;
+      }
+
+      grouped[key] = SalesOrderItemModel(
+        id: current.id,
+        productId: current.productId,
+        productName: current.productName,
+        productImage: current.productImage ?? item.productImage,
+        sizeId: current.sizeId,
+        sizeColorId: current.sizeColorId,
+        sizeLabel: current.sizeLabel,
+        colorLabel: current.colorLabel,
+        quantity: current.quantity + item.quantity,
+        deliveredQty: current.deliveredQty + item.deliveredQty,
+        dispatchedQty: current.dispatchedQty + item.dispatchedQty,
+        returnedQty: current.returnedQty + item.returnedQty,
+        unitPrice: current.unitPrice,
+        lineTotal: current.lineTotal + item.lineTotal,
+      );
+    }
+
+    return grouped.values.toList();
   }
 
   Widget _compactItemRow(SalesOrderItemModel item, {bool showDivider = true}) {

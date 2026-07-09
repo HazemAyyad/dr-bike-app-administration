@@ -40,6 +40,7 @@ abstract class EmployeeRepository {
     required String employeeId,
     DateTime? fromDate,
     DateTime? toDate,
+    bool includeEmptyDays = false,
   });
 
   Future<AttendanceReportResult> getAttendanceReport({
@@ -48,6 +49,8 @@ abstract class EmployeeRepository {
     required int year,
     int? day,
     int? week,
+    String? dateFrom,
+    String? dateTo,
     List<int>? employeeIds,
   });
 
@@ -234,5 +237,6 @@ abstract class EmployeeRepository {
 
   Future<Either<Failure, String>> deleteAdminUser({required String adminId});
 
-  Future<Either<Failure, String>> toggleBlockAdminUser({required String adminId});
+  Future<Either<Failure, String>> toggleBlockAdminUser(
+      {required String adminId});
 }

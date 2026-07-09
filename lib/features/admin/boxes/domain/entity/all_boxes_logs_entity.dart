@@ -2,11 +2,13 @@ class Box {
   final int id;
   final String name;
   final double total;
+  final String type;
 
   const Box({
     required this.id,
     required this.name,
     required this.total,
+    required this.type,
   });
 }
 
@@ -21,6 +23,11 @@ class BoxLog {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? type;
+  final String? maintenanceId;
+  final String? instantSaleId;
+  final String? invoiceNumber;
+  final double? boxBalanceBefore;
+  final double? boxBalanceAfter;
 
   final Box? fromBox;
   final Box? toBox;
@@ -37,6 +44,11 @@ class BoxLog {
     required this.createdAt,
     required this.updatedAt,
     this.type,
+    this.maintenanceId,
+    this.instantSaleId,
+    this.invoiceNumber,
+    this.boxBalanceBefore,
+    this.boxBalanceAfter,
     this.fromBox,
     this.toBox,
     this.box,

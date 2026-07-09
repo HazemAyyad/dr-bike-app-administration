@@ -31,6 +31,7 @@ class EmployeeAttendancePersistentNotificationService {
   bool _iosBannerShown = false;
 
   List<String> _weeklyDaysOff = const [];
+  String _startWorkTime = '';
   String _endWorkTime = '';
   String _numberOfWorkHours = '';
   bool _isInside = false;
@@ -50,7 +51,8 @@ class EmployeeAttendancePersistentNotificationService {
     _foregroundActive = false;
     _iosBannerShown = false;
 
-    final plugin = NotificationFirebaseService.instance.localNotificationsPlugin;
+    final plugin =
+        NotificationFirebaseService.instance.localNotificationsPlugin;
     if (Platform.isAndroid) {
       final android = plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
@@ -74,6 +76,7 @@ class EmployeeAttendancePersistentNotificationService {
 
   Future<void> sync({
     required List<String> weeklyDaysOff,
+    required String startWorkTime,
     required String endWorkTime,
     required String numberOfWorkHours,
     required bool isInside,
@@ -82,6 +85,7 @@ class EmployeeAttendancePersistentNotificationService {
     if (kIsWeb || userType != 'employee') return;
 
     _weeklyDaysOff = weeklyDaysOff;
+    _startWorkTime = startWorkTime;
     _endWorkTime = endWorkTime;
     _numberOfWorkHours = numberOfWorkHours;
     _isInside = isInside;
@@ -91,7 +95,8 @@ class EmployeeAttendancePersistentNotificationService {
 
   Future<void> _ensureChannel() async {
     if (!Platform.isAndroid) return;
-    final android = NotificationFirebaseService.instance.localNotificationsPlugin
+    final android = NotificationFirebaseService
+        .instance.localNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     await android?.createNotificationChannel(
@@ -127,6 +132,7 @@ class EmployeeAttendancePersistentNotificationService {
     if (day != null) {
       return AttendanceNotificationContent.buildInsideContent(
         day: day,
+        startWorkTime: _startWorkTime,
         endWorkTime: _endWorkTime,
         numberOfWorkHours: _numberOfWorkHours,
         now: now,
@@ -150,22 +156,19 @@ class EmployeeAttendancePersistentNotificationService {
         title: 'attendancePersistentOvertimeTitle'.tr,
         summary:
             '${AttendanceNotificationContent.badge('attendanceNotifBadgeOvertime')} ${'attendancePersistentOvertimeBody'.tr}',
-        inboxLines: [
-          'attendanceNotifRowCheckout'.tr,
-        ],
+        inboxLines: const [],
         mode: 'overtime',
         accentArgb: AttendanceNotificationContent.accentOvertime,
       );
     }
 
-    final remaining = AttendanceTimeParser.formatDurationHms(end.difference(now));
+    final remaining =
+        AttendanceTimeParser.formatDurationHms(end.difference(now));
     return AttendanceNotificationBuiltContent(
       title: remaining,
       summary:
           '${AttendanceNotificationContent.badge('attendanceNotifBadgeWorking')} ${'attendancePersistentCountdownTitle'.tr}',
-      inboxLines: [
-        'attendanceNotifRowLeaveIn'.trParams({'time': remaining}),
-      ],
+      inboxLines: const [],
       mode: 'countdown',
       accentArgb: AttendanceNotificationContent.accentWorking,
     );
@@ -183,20 +186,6 @@ class EmployeeAttendancePersistentNotificationService {
   }
 
   StyleInformation? _buildStyle(AttendanceNotificationBuiltContent content) {
-    final expandedTitle =
-        '${'todayShiftSummaryTitle'.tr} · ${content.title}';
-
-    if (content.inboxLines.isNotEmpty) {
-      return InboxStyleInformation(
-        content.inboxLines,
-        contentTitle: expandedTitle,
-        summaryText: content.summary,
-        htmlFormatLines: false,
-        htmlFormatContentTitle: false,
-        htmlFormatSummaryText: false,
-      );
-    }
-
     return BigTextStyleInformation(
       content.summary,
       contentTitle: content.title,
@@ -229,7 +218,7 @@ class EmployeeAttendancePersistentNotificationService {
       visibility: NotificationVisibility.public,
       category: AndroidNotificationCategory.status,
       color: Color(content.accentArgb),
-      colorized: true,
+      colorized: false,
       styleInformation: _buildStyle(content),
     );
 
@@ -251,7 +240,8 @@ class EmployeeAttendancePersistentNotificationService {
       iOS: iosDetails,
     );
 
-    final plugin = NotificationFirebaseService.instance.localNotificationsPlugin;
+    final plugin =
+        NotificationFirebaseService.instance.localNotificationsPlugin;
     final title = content.title;
     final body = content.summary;
 

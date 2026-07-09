@@ -13,8 +13,7 @@ import '../../domain/usecases/add_payment_usecase.dart';
 
 class PaymentController extends GetxController {
   static bool isSuccessResult(dynamic value) {
-    return value == true ||
-        (value is Map && value['success'] == true);
+    return value == true || (value is Map && value['success'] == true);
   }
 
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
@@ -64,6 +63,7 @@ class PaymentController extends GetxController {
       totalBalance: 0,
       isShown: false,
       currency: currency,
+      type: 'daily_sales',
     );
   }
 
@@ -114,16 +114,14 @@ class PaymentController extends GetxController {
     if (id.isEmpty) return;
     final list =
         selectedCustomersSellers.value ? allCustomersList : allSellersList;
-    selectedPartner.value =
-        list.firstWhereOrNull((e) => e.id.toString() == id);
+    selectedPartner.value = list.firstWhereOrNull((e) => e.id.toString() == id);
   }
 
   String get partnerDropdownTitle =>
       selectedCustomersSellers.value ? 'customerName' : 'sellerName';
 
-  String get partnerDropdownHint => selectedCustomersSellers.value
-      ? 'customerNameExample'
-      : 'sellerName1';
+  String get partnerDropdownHint =>
+      selectedCustomersSellers.value ? 'customerNameExample' : 'sellerName1';
 
   Future<void> getAllCustomersAndSellers() async {
     final resultCustomers = await allCustomersSellersUsecase.call(
@@ -160,8 +158,7 @@ class PaymentController extends GetxController {
     required Set<int> previousIds,
   }) {
     final list = isCustomer ? allCustomersList : allSellersList;
-    final newcomers =
-        list.where((e) => !previousIds.contains(e.id)).toList();
+    final newcomers = list.where((e) => !previousIds.contains(e.id)).toList();
     if (newcomers.isEmpty) return;
     final pick = newcomers.length == 1
         ? newcomers.first
@@ -239,9 +236,8 @@ class PaymentController extends GetxController {
             .firstWhereOrNull((e) => e.id.toString() == id)
             ?.name;
       } else {
-        name = allSellersList
-            .firstWhereOrNull((e) => e.id.toString() == id)
-            ?.name;
+        name =
+            allSellersList.firstWhereOrNull((e) => e.id.toString() == id)?.name;
       }
     }
 
@@ -253,24 +249,22 @@ class PaymentController extends GetxController {
           ?.boxName;
     }
 
-    final cashRaw = cashValueController.text
-        .replaceAll(',', '')
-        .replaceAll('،', '')
-        .trim();
+    final cashRaw =
+        cashValueController.text.replaceAll(',', '').replaceAll('،', '').trim();
 
     final hasPartner = id.isNotEmpty;
 
     return {
       'success': true,
-      'buyer_type': hasPartner
-          ? (isCustomer ? 'customer' : 'seller')
-          : 'unknown',
+      'buyer_type':
+          hasPartner ? (isCustomer ? 'customer' : 'seller') : 'unknown',
       if (hasPartner && isCustomer) 'buyer_id': id,
       if (hasPartner && !isCustomer) 'seller_id': id,
       if (name != null && name.isNotEmpty) 'buyer_name': name,
       if (boxId.isNotEmpty) 'payment_box_id': boxId,
       if (boxName != null && boxName.isNotEmpty) 'payment_box_name': boxName,
-      if (boxId.isNotEmpty) 'payment_box_value': cashRaw.isEmpty ? '0' : cashRaw,
+      if (boxId.isNotEmpty)
+        'payment_box_value': cashRaw.isEmpty ? '0' : cashRaw,
     };
   }
 
@@ -286,9 +280,8 @@ class PaymentController extends GetxController {
             .firstWhereOrNull((e) => e.id.toString() == id)
             ?.name;
       } else {
-        name = allSellersList
-            .firstWhereOrNull((e) => e.id.toString() == id)
-            ?.name;
+        name =
+            allSellersList.firstWhereOrNull((e) => e.id.toString() == id)?.name;
       }
     }
 
@@ -300,15 +293,14 @@ class PaymentController extends GetxController {
           ?.boxName;
     }
 
-    final cashRaw = cashValueController.text
-        .replaceAll(',', '')
-        .replaceAll('،', '')
-        .trim();
+    final cashRaw =
+        cashValueController.text.replaceAll(',', '').replaceAll('،', '').trim();
     final normalizedCash = _normalizeAmountDigits(cashRaw);
 
     return {
       'success': true,
-      'buyer_type': hasPartner ? (isCustomer ? 'customer' : 'seller') : 'unknown',
+      'buyer_type':
+          hasPartner ? (isCustomer ? 'customer' : 'seller') : 'unknown',
       if (hasPartner && isCustomer) 'buyer_id': id,
       if (hasPartner && !isCustomer) 'seller_id': id,
       if (name != null && name.isNotEmpty) 'buyer_name': name,
@@ -435,9 +427,8 @@ class PaymentController extends GetxController {
         boxId: boxIdController.text,
         boxValue: sanitizedCash,
         checks: payments,
-        boxLogNote: forInstantSale && type == 'receive'
-            ? instantSaleBoxLogNote
-            : null,
+        boxLogNote:
+            forInstantSale && type == 'receive' ? instantSaleBoxLogNote : null,
       );
 
       Map<String, dynamic>? payload;
@@ -464,8 +455,8 @@ class PaymentController extends GetxController {
               }
             });
           } else {
-            errorMessages = failure.data?['message']?.toString() ??
-                failure.errMessage;
+            errorMessages =
+                failure.data?['message']?.toString() ?? failure.errMessage;
           }
           if (errorMessages.trim().isEmpty) {
             errorMessages = 'something_wrong'.tr;

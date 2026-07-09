@@ -26,6 +26,29 @@ class SalesDatasource {
 
   SalesDatasource({required this.api});
 
+  void _instantSaleDebug(String message, [Object? details]) {
+    if (!kDebugMode) return;
+    debugPrint(
+      details == null
+          ? '[InstantSaleDebug][Datasource] $message'
+          : '[InstantSaleDebug][Datasource] $message | $details',
+    );
+  }
+
+  void _instantSaleDioError(String scope, DioException e) {
+    if (!kDebugMode) return;
+    debugPrint('[InstantSaleDebug][Datasource] $scope DioException');
+    debugPrint('[InstantSaleDebug][Datasource] uri=${e.requestOptions.uri}');
+    debugPrint(
+        '[InstantSaleDebug][Datasource] method=${e.requestOptions.method}');
+    debugPrint(
+        '[InstantSaleDebug][Datasource] requestData=${e.requestOptions.data}');
+    debugPrint(
+        '[InstantSaleDebug][Datasource] status=${e.response?.statusCode}');
+    debugPrint('[InstantSaleDebug][Datasource] response=${e.response?.data}');
+    debugPrint('[InstantSaleDebug][Datasource] message=${e.message}');
+  }
+
   String _cleanAmount(String value) {
     const eastern = {
       '٠': '0',
@@ -176,6 +199,8 @@ class SalesDatasource {
     required String endPoint,
     String? customerId,
     String? sellerId,
+    String? search,
+    String? storeSectionId,
   }) async {
     try {
       final response = await api.get(
@@ -184,6 +209,10 @@ class SalesDatasource {
           if (customerId != null && customerId.isNotEmpty)
             'customer_id': customerId,
           if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
+          if (storeSectionId != null && storeSectionId.isNotEmpty)
+            'store_section_id': storeSectionId,
         },
       );
       final listKey = endPoint == 'get/all/categories'
@@ -435,52 +464,66 @@ class SalesDatasource {
         }
       }
 
+      final endpoint = instantSaleId != null && instantSaleId.isNotEmpty
+          ? EndPoints.editInstantSale
+          : EndPoints.createInstantSale;
+      final data = {
+        if (instantSaleId != null && instantSaleId.isNotEmpty)
+          'instant_sale_id': instantSaleId,
+        if (offerPackageId != null && offerPackageId.isNotEmpty)
+          'offer_package_id': offerPackageId
+        else
+          'product_id': resolvedProductId,
+        'quantity': resolvedQuantity,
+        'cost': resolvedCost,
+        if (resolvedSizeColorId != null && resolvedSizeColorId.isNotEmpty)
+          'size_color_id': resolvedSizeColorId,
+        if (resolvedSizeId != null && resolvedSizeId.isNotEmpty)
+          'size_id': resolvedSizeId,
+        'discount': discount,
+        'total_cost': totalCost,
+        'notes': note,
+        ...additionalNotesMap,
+        'type': type,
+        if (projectId.isNotEmpty) 'project_id': projectId,
+        'buyer_type': buyerType,
+        if (buyerId != null && buyerId.isNotEmpty) 'buyer_id': buyerId,
+        if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+        if (buyerName != null && buyerName.isNotEmpty) 'buyer_name': buyerName,
+        if (paymentBoxId != null && paymentBoxId.isNotEmpty)
+          'payment_box_id': paymentBoxId,
+        if (paymentBoxName != null && paymentBoxName.isNotEmpty)
+          'payment_box_name': paymentBoxName,
+        if (paymentBoxId != null && paymentBoxId.isNotEmpty)
+          'payment_box_value': paymentBoxValue ?? '0',
+        ...otherProductsMap,
+      };
+      _instantSaleDebug('POST addInstantSales', {
+        'endpoint': endpoint,
+        'mode': instantSaleId != null && instantSaleId.isNotEmpty
+            ? 'edit'
+            : 'create',
+        'data': data,
+        'otherProductsCount': otherProductsList.length,
+        'additionalNotesCount': additionalNotes.length,
+      });
       final response = await api.post(
-        instantSaleId != null && instantSaleId.isNotEmpty
-            ? EndPoints.editInstantSale
-            : EndPoints.createInstantSale,
-        data: {
-          if (instantSaleId != null && instantSaleId.isNotEmpty)
-            'instant_sale_id': instantSaleId,
-          if (offerPackageId != null && offerPackageId.isNotEmpty)
-            'offer_package_id': offerPackageId
-          else
-            'product_id': resolvedProductId,
-          'quantity': resolvedQuantity,
-          'cost': resolvedCost,
-          if (resolvedSizeColorId != null && resolvedSizeColorId.isNotEmpty)
-            'size_color_id': resolvedSizeColorId,
-          if (resolvedSizeId != null && resolvedSizeId.isNotEmpty)
-            'size_id': resolvedSizeId,
-          'discount': discount,
-          'total_cost': totalCost,
-          'notes': note,
-          ...additionalNotesMap,
-          'type': type,
-          if (projectId.isNotEmpty) 'project_id': projectId,
-          'buyer_type': buyerType,
-          if (buyerId != null && buyerId.isNotEmpty) 'buyer_id': buyerId,
-          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
-          if (buyerName != null && buyerName.isNotEmpty)
-            'buyer_name': buyerName,
-          if (paymentBoxId != null && paymentBoxId.isNotEmpty)
-            'payment_box_id': paymentBoxId,
-          if (paymentBoxName != null && paymentBoxName.isNotEmpty)
-            'payment_box_name': paymentBoxName,
-          if (paymentBoxId != null && paymentBoxId.isNotEmpty)
-            'payment_box_value': paymentBoxValue ?? '0',
-          ...otherProductsMap,
-        },
+        endpoint,
+        data: data,
         isFormData: true,
       );
+      _instantSaleDebug('addInstantSales response', response.data);
       return response.data;
     } on DioException catch (e) {
+      _instantSaleDioError('addInstantSales', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
         ),
       );
     }
@@ -924,6 +967,11 @@ class SalesDatasource {
     int? createdByUserId,
   }) async {
     try {
+      _instantSaleDebug('GET suspended list', {
+        'endpoint': EndPoints.suspendedInstantSales,
+        'search': search,
+        'createdByUserId': createdByUserId,
+      });
       final response = await api.get(
         EndPoints.suspendedInstantSales,
         queryParameters: {
@@ -932,6 +980,7 @@ class SalesDatasource {
           if (createdByUserId != null) 'created_by_user_id': createdByUserId,
         },
       );
+      _instantSaleDebug('suspended list response', response.data);
       final raw = response.data['suspended_instant_sales'];
       if (raw is! List) return [];
       return raw
@@ -940,6 +989,7 @@ class SalesDatasource {
               ))
           .toList();
     } on DioException catch (e) {
+      _instantSaleDioError('getSuspendedInstantSales', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
@@ -953,9 +1003,13 @@ class SalesDatasource {
 
   Future<int> getSuspendedInstantSalesCount() async {
     try {
+      _instantSaleDebug(
+          'GET suspended count', EndPoints.suspendedInstantSalesCount);
       final response = await api.get(EndPoints.suspendedInstantSalesCount);
+      _instantSaleDebug('suspended count response', response.data);
       return asInt(response.data['suspended_count']);
     } on DioException catch (e) {
+      _instantSaleDioError('getSuspendedInstantSalesCount', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
@@ -971,15 +1025,21 @@ class SalesDatasource {
     required int id,
   }) async {
     try {
+      _instantSaleDebug('GET suspended item', {
+        'endpoint': EndPoints.suspendedInstantSale,
+        'id': id,
+      });
       final response = await api.get(
         EndPoints.suspendedInstantSale,
         queryParameters: {'suspended_instant_sale_id': id},
       );
+      _instantSaleDebug('suspended item response', response.data);
       final raw = response.data['suspended_instant_sale'];
       return SuspendedInstantSaleModel.fromJson(
         Map<String, dynamic>.from(raw as Map),
       );
     } on DioException catch (e) {
+      _instantSaleDioError('getSuspendedInstantSale', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
@@ -997,17 +1057,24 @@ class SalesDatasource {
     int? suspendedInstantSaleId,
   }) async {
     try {
+      final data = {
+        'current_step': currentStep,
+        'payload': payload,
+        if (suspendedInstantSaleId != null)
+          'suspended_instant_sale_id': suspendedInstantSaleId,
+      };
+      _instantSaleDebug('POST suspend instant sale', {
+        'endpoint': EndPoints.suspendedInstantSale,
+        'data': data,
+      });
       final response = await api.post(
         EndPoints.suspendedInstantSale,
-        data: {
-          'current_step': currentStep,
-          'payload': payload,
-          if (suspendedInstantSaleId != null)
-            'suspended_instant_sale_id': suspendedInstantSaleId,
-        },
+        data: data,
       );
+      _instantSaleDebug('suspend instant sale response', response.data);
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
+      _instantSaleDioError('suspendInstantSale', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
@@ -1024,15 +1091,22 @@ class SalesDatasource {
     Map<String, dynamic>? payload,
   }) async {
     try {
+      final data = {
+        'suspended_instant_sale_id': suspendedInstantSaleId,
+        if (payload != null) 'payload': payload,
+      };
+      _instantSaleDebug('POST complete suspended instant sale', {
+        'endpoint': EndPoints.suspendedInstantSaleComplete,
+        'data': data,
+      });
       final response = await api.post(
         EndPoints.suspendedInstantSaleComplete,
-        data: {
-          'suspended_instant_sale_id': suspendedInstantSaleId,
-          if (payload != null) 'payload': payload,
-        },
+        data: data,
       );
+      _instantSaleDebug('complete suspended response', response.data);
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
+      _instantSaleDioError('completeSuspendedInstantSale', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
@@ -1048,12 +1122,19 @@ class SalesDatasource {
     required int suspendedInstantSaleId,
   }) async {
     try {
+      final data = {'suspended_instant_sale_id': suspendedInstantSaleId};
+      _instantSaleDebug('POST cancel suspended instant sale', {
+        'endpoint': EndPoints.suspendedInstantSaleCancel,
+        'data': data,
+      });
       final response = await api.post(
         EndPoints.suspendedInstantSaleCancel,
-        data: {'suspended_instant_sale_id': suspendedInstantSaleId},
+        data: data,
       );
+      _instantSaleDebug('cancel suspended response', response.data);
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
+      _instantSaleDioError('cancelSuspendedInstantSale', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(

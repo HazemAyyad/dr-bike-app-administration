@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/haptic_helper.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../stock/data/models/store_section_model.dart';
+import '../../../stock/domain/product_location_utils.dart';
 import '../controllers/sales_controller.dart';
 
 /// Sales product picker: long-press filter FAB = quarter-arc location filter.
@@ -38,26 +39,30 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
   static final List<_ArcRowConfig> _arcRows = _buildArcRows();
 
   static List<_ArcRowConfig> _buildArcRows() {
-    const baseRadius = 72.0;
-    const radiusStep = 46.0;
+    const baseRadius = 94.0;
+    const radiusStep = 58.0;
     const arcCount = 5;
-    const minBubble = 32.0;
-    const gap = 7.0;
-    const slotPitch = minBubble + gap;
+    const minChipWidth = 96.0;
+    const gap = 22.0;
+    const slotPitch = minChipWidth + gap;
 
     return List.generate(arcCount, (i) {
       final radius = baseRadius + i * radiusStep;
       final arcLength = radius * math.pi / 2;
-      final capacity = math.max(2, (arcLength / slotPitch).floor());
+      final capacity = math.max(1, (arcLength / slotPitch).floor());
       return _ArcRowConfig(capacity: capacity, radius: radius);
     });
   }
 
-  List<StoreSectionModel> get _activeSections =>
-      _sales.pickerStoreSections.where((s) => s.isActive).toList(growable: false);
+  List<StoreSectionModel> get _activeSections => [
+        StoreSectionModel(
+          id: kUnassignedStoreSectionFilterId,
+          name: 'noLocationAssigned'.tr,
+        ),
+        ..._sales.pickerStoreSections.where((s) => s.isActive),
+      ];
 
-  int get _itemsPerPage =>
-      _arcRows.fold(0, (sum, row) => sum + row.capacity);
+  int get _itemsPerPage => _arcRows.fold(0, (sum, row) => sum + row.capacity);
 
   List<StoreSectionModel> get _currentPageItems {
     final source = _activeSections;
@@ -221,23 +226,46 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
     return angle >= (start - margin) && angle <= (end + margin);
   }
 
+  static const double _arcEdgePadding = 0.07;
+
   double _angleForSlot(int index, int total) {
+    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
+    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
     final t = total <= 1 ? 0.5 : (index + 0.5) / total;
-    return _arcStartAngle() + t * _arcSweep;
+    return start + t * sweep;
   }
 
   int _localIndexFromAngle(double angle, int total) {
-    final start = _arcStartAngle();
-    final t = ((angle - start) / _arcSweep).clamp(0.0, 0.999999);
+    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
+    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
+    final t = ((angle - start) / sweep).clamp(0.0, 0.999999);
     return (t * total).floor().clamp(0, total - 1);
   }
 
   double _bubbleSize({required int rowCount}) {
-    if (rowCount >= 9) return 32;
-    if (rowCount >= 7) return 36;
-    if (rowCount >= 5) return 40;
-    if (rowCount >= 3) return 44;
-    return 48;
+    if (rowCount >= 5) return 34;
+    if (rowCount >= 3) return 38;
+    if (rowCount >= 2) return 42;
+    return 46;
+  }
+
+  double _chipMaxWidth({required int rowCount}) {
+    if (rowCount <= 1) return 124;
+    if (rowCount == 2) return 116;
+    if (rowCount <= 3) return 108;
+    if (rowCount <= 4) return 100;
+    return 92;
+  }
+
+  double _chipMinHeight({required int rowCount}) {
+    return _bubbleSize(rowCount: rowCount);
+  }
+
+  double _chipFontSize({required int rowCount}) {
+    if (rowCount >= 5) return 10;
+    if (rowCount >= 3) return 11;
+    if (rowCount >= 2) return 12;
+    return 13;
   }
 
   int? _rowFromDistance(double distance, int pageCount) {
@@ -247,11 +275,10 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
     for (var i = 0; i < rows.length; i++) {
       final row = rows[i];
       final radius = _radiusForRow(row);
-      final inner = i == 0
-          ? _minPickRadius
-          : (_radiusForRow(rows[i - 1]) + radius) / 2;
+      final inner =
+          i == 0 ? _minPickRadius : (_radiusForRow(rows[i - 1]) + radius) / 2;
       final outer = i == rows.length - 1
-          ? radius + 36
+          ? radius + 48
           : (radius + _radiusForRow(rows[i + 1])) / 2;
       if (distance >= inner && distance < outer) return row;
     }
@@ -300,8 +327,7 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
   Offset _slotPosition(_ArcSlot slot, Offset center) {
     final angle = _angleForSlot(slot.slotInRow, slot.rowCount);
     final radius = _radiusForRow(slot.row);
-    return center +
-        Offset(math.cos(angle) * radius, math.sin(angle) * radius);
+    return center + Offset(math.cos(angle) * radius, math.sin(angle) * radius);
   }
 
   String? _centerBannerLabel() {
@@ -394,17 +420,19 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
                       _segmentPage * _itemsPerPage + slot.localIndex;
                   final pos = _slotPosition(slot, anchor);
                   final selected = globalIndex == _highlightIndex;
-                  final bubbleSize =
-                      _bubbleSize(rowCount: slot.rowCount);
+                  final chipMaxWidth = _chipMaxWidth(rowCount: slot.rowCount);
+                  final chipMinHeight = _chipMinHeight(rowCount: slot.rowCount);
                   return Positioned(
-                    left: pos.dx - bubbleSize / 2,
-                    top: pos.dy - bubbleSize / 2,
+                    left: pos.dx - chipMaxWidth / 2,
+                    top: pos.dy - chipMinHeight / 2,
                     child: Transform.scale(
-                      scale: selected ? 1.16 : 0.94,
+                      scale: selected ? 1.08 : 0.96,
                       child: _SectionBubble(
                         name: _currentPageItems[slot.localIndex].name,
                         selected: selected,
-                        size: bubbleSize,
+                        maxWidth: chipMaxWidth,
+                        minHeight: chipMinHeight,
+                        fontSize: _chipFontSize(rowCount: slot.rowCount),
                       ),
                     ),
                   );
@@ -514,9 +542,8 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
                     _openLens();
                   }
                 },
-          backgroundColor: hasFilter
-              ? AppColors.primaryColor
-              : AppColors.secondaryColor,
+          backgroundColor:
+              hasFilter ? AppColors.primaryColor : AppColors.secondaryColor,
           elevation: 4.0,
           shape: const CircleBorder(),
           child: Icon(
@@ -623,37 +650,53 @@ class _SectionBubble extends StatelessWidget {
   const _SectionBubble({
     required this.name,
     required this.selected,
-    required this.size,
+    required this.maxWidth,
+    required this.minHeight,
+    required this.fontSize,
   });
 
   final String name;
   final bool selected;
-  final double size;
+  final double maxWidth;
+  final double minHeight;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
-    final initial = name.trim().isNotEmpty ? name.trim()[0] : '?';
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(
-          color: selected ? AppColors.secondaryColor : Colors.white,
-          width: selected ? 3 : 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 8),
-        ],
+    final label = name.trim().isNotEmpty ? name.trim() : '?';
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: minHeight,
+        maxWidth: maxWidth,
       ),
-      alignment: Alignment.center,
-      child: Text(
-        initial,
-        style: TextStyle(
-          color: AppColors.secondaryColor,
-          fontWeight: FontWeight.w800,
-          fontSize: size * 0.38,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: selected ? AppColors.secondaryColor : Colors.white,
+          border: Border.all(
+            color:
+                selected ? Colors.white : Colors.white.withValues(alpha: 0.9),
+            width: selected ? 2.4 : 1.4,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.white : AppColors.secondaryColor,
+            fontWeight: FontWeight.w800,
+            fontSize: fontSize.sp,
+          ),
         ),
       ),
     );

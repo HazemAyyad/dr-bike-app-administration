@@ -21,7 +21,7 @@ class AttendanceNotificationBuiltContent {
   /// Collapsed subtitle — badge + key info on one line.
   final String summary;
 
-  /// Expanded detail rows (Android Inbox style).
+  /// Optional expanded detail rows.
   final List<String> inboxLines;
   final String mode;
   final int accentArgb;
@@ -37,7 +37,7 @@ class AttendanceNotificationContent {
   static const accentOvertime = 0xFFFF9800;
   static const accentNeutral = 0xFF1565C0;
 
-  static String badge(String key) => '【${key.tr}】';
+  static String badge(String key) => key.tr;
 
   static int expectedMinutes(
     EmployeeAttendanceDay? day,
@@ -89,6 +89,28 @@ class AttendanceNotificationContent {
     return day.onTime! ? 'onTimeYes'.tr : 'onTimeNo'.tr;
   }
 
+  static String lateLabel(EmployeeAttendanceDay day, String startWorkTime) {
+    final firstCheckIn = day.firstCheckIn ?? day.firstCheckInServer;
+    if (firstCheckIn == null || startWorkTime.trim().isEmpty) {
+      return onTimeLabel(day);
+    }
+
+    final scheduled = AttendanceTimeParser.parseOnDate(
+      startWorkTime,
+      firstCheckIn,
+    );
+    if (scheduled == null || !firstCheckIn.isAfter(scheduled)) {
+      return onTimeLabel(day);
+    }
+
+    final lateMinutes = firstCheckIn.difference(scheduled).inMinutes;
+    if (lateMinutes <= 0) {
+      return onTimeLabel(day);
+    }
+
+    return '${'onTimeNo'.tr} ${formatWorkedDurationMinutes(lateMinutes)}';
+  }
+
   static AttendanceNotificationBuiltContent buildCheckInContent() {
     return AttendanceNotificationBuiltContent(
       title: 'attendancePersistentCheckInTitle'.tr,
@@ -102,77 +124,43 @@ class AttendanceNotificationContent {
 
   static AttendanceNotificationBuiltContent buildInsideContent({
     required EmployeeAttendanceDay day,
+    required String startWorkTime,
     required String endWorkTime,
     required String numberOfWorkHours,
     required DateTime now,
   }) {
-    final live = liveWorkedDuration(day);
     final expected = expectedMinutes(day, numberOfWorkHours);
     final overtimeMin = liveOvertimeMinutes(day, expected);
-    final liveClock = AttendanceTimeParser.formatDurationHms(live);
-    final workedFmt = formatWorkedDurationMinutes(live.inMinutes);
-    final requiredFmt = formatWorkedDurationMinutes(expected);
-    final overtimeFmt = formatWorkedDurationMinutes(overtimeMin);
-    final onTime = onTimeLabel(day);
+    final lateInfo = lateLabel(day, startWorkTime);
     final isLate = day.onTime == false;
     final hasOvertime = overtimeMin > 0;
 
     final statusBadge = hasOvertime
         ? badge('attendanceNotifBadgeOvertime')
-        : isLate
-            ? badge('attendanceNotifBadgeLate')
-            : badge('attendanceNotifBadgeWorking');
+        : badge('attendanceNotifBadgeWorking');
 
-    final accent = hasOvertime
-        ? accentOvertime
-        : isLate
-            ? accentLate
-            : accentWorking;
+    final accent = hasOvertime ? accentOvertime : accentWorking;
 
     final end = AttendanceTimeParser.parseToday(endWorkTime);
-    String? leaveCountdown;
     var mode = hasOvertime ? 'overtime' : 'inside';
 
     if (end != null && now.isBefore(end)) {
-      leaveCountdown =
-          AttendanceTimeParser.formatDurationHms(end.difference(now));
       mode = 'countdown';
     }
 
     final summaryParts = <String>[statusBadge];
-    if (leaveCountdown != null) {
-      summaryParts.add(
-        'attendanceNotifSummaryLeaveIn'.trParams({'time': leaveCountdown}),
-      );
-    } else if (end != null && !now.isBefore(end)) {
+    if (isLate && !hasOvertime) {
+      summaryParts.add(lateInfo);
+    }
+    if (end != null && !now.isBefore(end)) {
       summaryParts.add('attendancePersistentOvertimeBody'.tr);
       mode = 'overtime';
-    } else if (isLate) {
-      summaryParts.add(onTime);
-    }
-
-    final inboxLines = <String>[
-      'attendanceNotifRowWorked'.trParams({
-        'time': liveClock,
-        'duration': workedFmt,
-      }),
-      'attendanceNotifRowRequired'.trParams({'value': requiredFmt}),
-      'attendanceNotifRowOvertime'.trParams({'value': overtimeFmt}),
-      'attendanceNotifRowPunctuality'.trParams({'value': onTime}),
-    ];
-
-    if (leaveCountdown != null) {
-      inboxLines.add(
-        'attendanceNotifRowLeaveIn'.trParams({'time': leaveCountdown}),
-      );
-    } else if (end != null && !now.isBefore(end)) {
-      inboxLines.add('attendanceNotifRowCheckout'.tr);
     }
 
     return AttendanceNotificationBuiltContent(
-      title: liveClock,
+      title: 'attendancePersistentInsideTitle'.tr,
       summary: summaryParts.join(' · '),
-      inboxLines: inboxLines,
+      inboxLines: const [],
       mode: mode,
       accentArgb: accent,
     );
@@ -182,22 +170,15 @@ class AttendanceNotificationContent {
     EmployeeAttendanceDay day,
     String numberOfWorkHours,
   ) {
-    final expected = expectedMinutes(day, numberOfWorkHours);
     final workedFmt = formatWorkedDurationMinutes(day.workedMinutes);
-    final requiredFmt = formatWorkedDurationMinutes(expected);
-    final overtimeFmt =
-        formatWorkedDurationMinutes(math.max(0, day.overtimeMinutes));
 
     return AttendanceNotificationBuiltContent(
       title: 'attendancePersistentCheckInTitle'.tr,
       summary:
-          '${badge('attendanceNotifBadgeOutside')} ${'attendanceNotifSummaryWorkedToday'.trParams({'duration': workedFmt})}',
-      inboxLines: [
-        'attendanceNotifRowWorkedToday'.trParams({'value': workedFmt}),
-        'attendanceNotifRowRequired'.trParams({'value': requiredFmt}),
-        'attendanceNotifRowOvertime'.trParams({'value': overtimeFmt}),
-        'attendanceNotifRowTapCheckIn'.tr,
-      ],
+          '${badge('attendanceNotifBadgeOutside')} ${'attendanceNotifSummaryWorkedToday'.trParams({
+            'duration': workedFmt
+          })}',
+      inboxLines: const [],
       mode: 'check_in_partial',
       accentArgb: accentCheckIn,
     );

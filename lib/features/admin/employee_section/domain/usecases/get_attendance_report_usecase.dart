@@ -13,6 +13,8 @@ class GetAttendanceReportUsecase {
       year: args.year,
       day: args.day,
       week: args.week,
+      dateFrom: args.dateFrom,
+      dateTo: args.dateTo,
       employeeIds: args.allEmployees ? null : args.employeeIds,
     );
   }

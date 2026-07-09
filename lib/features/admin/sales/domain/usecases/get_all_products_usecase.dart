@@ -11,11 +11,15 @@ class GetAllProductsUsecase {
     String endPoint = '',
     String? customerId,
     String? sellerId,
+    String? search,
+    String? storeSectionId,
   }) async {
     return await salesRepository.getAllProducts(
       endPoint: endPoint,
       customerId: customerId,
       sellerId: sellerId,
+      search: search,
+      storeSectionId: storeSectionId,
     );
   }
 }

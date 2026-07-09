@@ -102,6 +102,7 @@ class EmployeeDashbordController extends GetxController
     unawaited(
       EmployeeAttendancePersistentNotificationService.instance.sync(
         weeklyDaysOff: employeeData.value?.weeklyDaysOff ?? const [],
+        startWorkTime: employeeData.value?.startWorkTime ?? '',
         endWorkTime: employeeData.value?.endWorkTime ?? '',
         numberOfWorkHours: employeeData.value?.numberOfWorkHours ?? '',
         isInside: isAttendanceInside,

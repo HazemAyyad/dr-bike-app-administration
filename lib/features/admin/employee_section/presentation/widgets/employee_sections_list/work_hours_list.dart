@@ -13,13 +13,13 @@ import '../../../domain/entities/working_times_entity.dart';
 
 // حالات الدوام
 enum _ShiftStatus {
-  beforeShift,        // قبل بداية الدوام
-  workingOnTime,      // مداوم في وقته
-  absentDuringShift,  // معطل = لم يأتِ أصلاً خلال الدوام
-  leftEarly,          // أتى وغادر قبل انتهاء الدوام
-  overtime,           // أوفر تايم (بعد انتهاء الدوام ولا يزال شغال)
-  leftWork,           // غادر بعد انتهاء الدوام
-  neverCame,          // لم يأتِ أصلاً وانتهى وقت الدوام
+  beforeShift, // قبل بداية الدوام
+  workingOnTime, // مداوم في وقته
+  absentDuringShift, // معطل = لم يأتِ أصلاً خلال الدوام
+  leftEarly, // أتى وغادر قبل انتهاء الدوام
+  overtime, // أوفر تايم (بعد انتهاء الدوام ولا يزال شغال)
+  leftWork, // غادر بعد انتهاء الدوام
+  neverCame, // لم يأتِ أصلاً وانتهى وقت الدوام
 }
 
 class WorkHoursList extends StatefulWidget {
@@ -64,14 +64,15 @@ class _WorkHoursListState extends State<WorkHoursList> {
       fmt = DateFormat('HH:mm');
     }
     final parsed = fmt.parse(timeStr);
-    return DateTime(now.year, now.month, now.day, parsed.hour, parsed.minute, parsed.second);
+    return DateTime(now.year, now.month, now.day, parsed.hour, parsed.minute,
+        parsed.second);
   }
 
   void _update() {
     try {
       final now = DateTime.now();
       final startTime = _parseTimeToday(widget.employee.startWorkTime);
-      final endTime   = _parseTimeToday(widget.employee.endWorkTime);
+      final endTime = _parseTimeToday(widget.employee.endWorkTime);
       final isWorking = widget.employee.isWorkingNow;
 
       _ShiftStatus newStatus;
@@ -79,9 +80,8 @@ class _WorkHoursListState extends State<WorkHoursList> {
 
       if (now.isBefore(startTime)) {
         // ─── قبل بداية الدوام ───
-        newStatus   = _ShiftStatus.beforeShift;
+        newStatus = _ShiftStatus.beforeShift;
         newDuration = startTime.difference(now);
-
       } else if (now.isBefore(endTime)) {
         // ─── خلال فترة الدوام ───
         if (isWorking) {
@@ -94,23 +94,22 @@ class _WorkHoursListState extends State<WorkHoursList> {
           newStatus = _ShiftStatus.absentDuringShift;
         }
         newDuration = endTime.difference(now);
-
       } else {
         // ─── بعد انتهاء وقت الدوام ───
         if (isWorking) {
-          newStatus   = _ShiftStatus.overtime;
+          newStatus = _ShiftStatus.overtime;
           newDuration = now.difference(endTime); // عداد تصاعدي
         } else if (widget.employee.hasAttendedToday) {
-          newStatus   = _ShiftStatus.leftWork;
+          newStatus = _ShiftStatus.leftWork;
           newDuration = Duration.zero;
         } else {
-          newStatus   = _ShiftStatus.neverCame;
+          newStatus = _ShiftStatus.neverCame;
           newDuration = Duration.zero;
         }
       }
 
       setState(() {
-        _status       = newStatus;
+        _status = newStatus;
         _timerDuration = newDuration;
       });
     } catch (_) {
@@ -154,7 +153,8 @@ class _WorkHoursListState extends State<WorkHoursList> {
   }
 
   bool get _showTimer {
-    return _status != _ShiftStatus.leftWork && _status != _ShiftStatus.neverCame;
+    return _status != _ShiftStatus.leftWork &&
+        _status != _ShiftStatus.neverCame;
   }
 
   String get _statusLabel {
@@ -241,140 +241,179 @@ class _WorkHoursListState extends State<WorkHoursList> {
       children: [
         // ─── صورة الموظف ───
         Expanded(
-          child: Row(
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
               Padding(
-                padding: const EdgeInsets.all(5),
-                child: GestureDetector(
-                  onTap: () {
-                    showGeneralDialog(
-                      context: context,
-                      barrierDismissible: true,
-                      barrierLabel: 'Dismiss',
-                      barrierColor: Colors.black.withAlpha(128),
-                      transitionDuration: const Duration(milliseconds: 300),
-                      pageBuilder: (context, anim1, anim2) {
-                        return FullScreenZoomImage(
-                          imageUrl: widget.employee.employeeImg,
-                        );
-                      },
-                    );
-                  },
-                  child: Container(
-                    height: 80.h,
-                    width: 80.w,
-                    decoration: const BoxDecoration(shape: BoxShape.circle),
-                    clipBehavior: Clip.antiAlias,
-                    child: CachedNetworkImage(
-                      cacheManager: CacheManager(
-                        Config(
-                          'imagesCache',
-                          stalePeriod: const Duration(days: 7),
-                          maxNrOfCacheObjects: 100,
+                padding: EdgeInsetsDirectional.only(end: 50.w),
+                child: Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(5),
+                      child: GestureDetector(
+                        onTap: () {
+                          showGeneralDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            barrierLabel: 'Dismiss',
+                            barrierColor: Colors.black.withAlpha(128),
+                            transitionDuration:
+                                const Duration(milliseconds: 300),
+                            pageBuilder: (context, anim1, anim2) {
+                              return FullScreenZoomImage(
+                                imageUrl: widget.employee.employeeImg,
+                              );
+                            },
+                          );
+                        },
+                        child: Container(
+                          height: 80.h,
+                          width: 80.w,
+                          decoration:
+                              const BoxDecoration(shape: BoxShape.circle),
+                          clipBehavior: Clip.antiAlias,
+                          child: CachedNetworkImage(
+                            cacheManager: CacheManager(
+                              Config(
+                                'imagesCache',
+                                stalePeriod: const Duration(days: 7),
+                                maxNrOfCacheObjects: 100,
+                              ),
+                            ),
+                            imageUrl: widget.employee.employeeImg,
+                            fit: BoxFit.cover,
+                            fadeInDuration: const Duration(milliseconds: 200),
+                            fadeOutDuration: const Duration(milliseconds: 200),
+                            placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator()),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error),
+                          ),
                         ),
                       ),
-                      imageUrl: widget.employee.employeeImg,
-                      fit: BoxFit.cover,
-                      fadeInDuration: const Duration(milliseconds: 200),
-                      fadeOutDuration: const Duration(milliseconds: 200),
-                      placeholder: (context, url) =>
-                          const Center(child: CircularProgressIndicator()),
-                      errorWidget: (context, url, error) =>
-                          const Icon(Icons.error),
                     ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // اسم الموظف + النجمة
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            widget.employee.employeeName,
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // اسم الموظف + النجمة
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.employee.employeeName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textStyle.copyWith(
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.customGreyColor5,
+                                  ),
+                                ),
+                              ),
+                              if (widget.employee.isCameOnTime)
+                                Padding(
+                                  padding:
+                                      EdgeInsets.symmetric(horizontal: 4.w),
+                                  child: Icon(Icons.star,
+                                      color: Colors.amber, size: 18.sp),
+                                ),
+                            ],
+                          ),
+                          SizedBox(height: 4.h),
+                          // بادج حالة الموظف
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6.w, vertical: 2.h),
+                            decoration: BoxDecoration(
+                              color:
+                                  _employeeStatusColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4.r),
+                              border: Border.all(
+                                  color: _employeeStatusColor, width: 0.5),
+                            ),
+                            child: Text(
+                              _employeeStatusText,
+                              style: textStyle.copyWith(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w600,
+                                color: _employeeStatusColor,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            '${'workStartTime'.tr} : ${widget.employee.startWorkTime}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textStyle.copyWith(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.customGreyColor5,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.grey.withValues(alpha: 0.7),
                             ),
                           ),
-                        ),
-                        if (widget.employee.isCameOnTime)
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 4.w),
-                            child: Icon(Icons.star,
-                                color: Colors.amber, size: 18.sp),
+                          Text(
+                            '${'workEndTime'.tr} : ${widget.employee.endWorkTime}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textStyle.copyWith(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.grey.withValues(alpha: 0.7),
+                            ),
                           ),
-                      ],
-                    ),
-                    SizedBox(height: 4.h),
-                    // بادج حالة الموظف
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 6.w, vertical: 2.h),
-                      decoration: BoxDecoration(
-                        color: _employeeStatusColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4.r),
-                        border: Border.all(
-                            color: _employeeStatusColor, width: 0.5),
-                      ),
-                      child: Text(
-                        _employeeStatusText,
-                        style: textStyle.copyWith(
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w600,
-                          color: _employeeStatusColor,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      '${'workStartTime'.tr} : ${widget.employee.startWorkTime}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textStyle.copyWith(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.grey.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    Text(
-                      '${'workEndTime'.tr} : ${widget.employee.endWorkTime}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textStyle.copyWith(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.grey.withValues(alpha: 0.7),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
+              PositionedDirectional(
+                top: 0,
+                end: 0,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .scaffoldBackgroundColor
+                        .withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: AppColors.primaryColor.withValues(alpha: 0.16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _MiniActionButton(
+                        icon: Icons.history,
+                        tooltip: 'employeeAttendanceHistory'.tr,
+                        onTap: () => Get.toNamed(
+                          AppRoutes.EMPLOYEEATTENDANCEHISTORY,
+                          arguments: {
+                            'employeeId': widget.employee.id.toString(),
+                            'employeeName': widget.employee.employeeName,
+                          },
+                        ),
+                      ),
+                      _MiniActionButton(
+                        icon: Icons.assignment_outlined,
+                        tooltip: 'attendanceReportAction'.tr,
+                        onTap: () => Get.toNamed(
+                          AppRoutes.EMPLOYEEATTENDANCEHISTORY,
+                          arguments: {
+                            'employeeId': widget.employee.id.toString(),
+                            'employeeName': widget.employee.employeeName,
+                            'reportMode': true,
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
-
-        // ─── زر التاريخ ───
-        IconButton(
-          padding: EdgeInsets.zero,
-          constraints: BoxConstraints(minWidth: 36.w, minHeight: 48.h),
-          onPressed: () => Get.toNamed(
-            AppRoutes.EMPLOYEEATTENDANCEHISTORY,
-            arguments: {
-              'employeeId': widget.employee.id.toString(),
-              'employeeName': widget.employee.employeeName,
-            },
-          ),
-          icon: Icon(Icons.history,
-              color: AppColors.primaryColor, size: 22.sp),
-          tooltip: 'employeeAttendanceHistory'.tr,
         ),
 
         // ─── مربع العداد التنازلي ───
@@ -444,6 +483,38 @@ class _WorkHoursListState extends State<WorkHoursList> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MiniActionButton extends StatelessWidget {
+  const _MiniActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 16.r,
+        child: SizedBox(
+          width: 26.w,
+          height: 28.h,
+          child: Icon(
+            icon,
+            color: AppColors.primaryColor,
+            size: 16.sp,
+          ),
+        ),
+      ),
     );
   }
 }

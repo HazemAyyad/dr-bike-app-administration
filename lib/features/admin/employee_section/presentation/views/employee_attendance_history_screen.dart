@@ -27,8 +27,10 @@ Future<void> _showEditDayDialog(
     int.parse(dateParts[2]),
   );
 
-  var checkInTime = parseTime(day.firstCheckIn, const TimeOfDay(hour: 9, minute: 0));
-  var checkOutTime = parseTime(day.lastCheckOut, const TimeOfDay(hour: 17, minute: 0));
+  var checkInTime =
+      parseTime(day.firstCheckIn, const TimeOfDay(hour: 9, minute: 0));
+  var checkOutTime =
+      parseTime(day.lastCheckOut, const TimeOfDay(hour: 17, minute: 0));
   var hasCheckout = day.lastCheckOut != null;
 
   final ok = await Get.dialog<bool>(
@@ -119,8 +121,7 @@ class EmployeeAttendanceHistoryScreen
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final pageBg =
-        isDark ? AppColors.darkColor : const Color(0xFFF5F5F5);
+    final pageBg = isDark ? AppColors.darkColor : const Color(0xFFF5F5F5);
     return Scaffold(
       backgroundColor: pageBg,
       appBar: AppBar(
@@ -129,52 +130,95 @@ class EmployeeAttendanceHistoryScreen
         elevation: 0,
         scrolledUnderElevation: 0,
         title: Text(
-          controller.employeeName.isNotEmpty
-              ? controller.employeeName
-              : 'employeeAttendanceHistory'.tr,
+          controller.reportMode
+              ? 'تقرير دوام ${controller.employeeName}'
+              : (controller.employeeName.isNotEmpty
+                  ? controller.employeeName
+                  : 'employeeAttendanceHistory'.tr),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-      ),
-      floatingActionButton: Obx(() {
-        if (!controller.canManualCheckoutToday) {
-          return const SizedBox.shrink();
-        }
-        final loading = controller.isCheckoutLoading.value;
-        return FloatingActionButton.extended(
-          onPressed: loading
-              ? null
-              : () async {
-                  final ok = await Get.dialog<bool>(
-                    AlertDialog(
-                      title: Text('manualCheckout'.tr),
-                      content: Text('manualCheckoutConfirm'.tr),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Get.back(result: false),
-                          child: Text('cancel'.tr),
-                        ),
-                        TextButton(
-                          onPressed: () => Get.back(result: true),
-                          child: Text('confirm'.tr),
-                        ),
-                      ],
+        actions: [
+          Obx(() {
+            final ready = controller.result.value != null &&
+                controller.result.value!.days.isNotEmpty;
+            final loading = controller.isExporting.value;
+            return PopupMenuButton<String>(
+              tooltip: 'attendanceReportAction'.tr,
+              enabled: ready && !loading,
+              icon: loading
+                  ? SizedBox(
+                      width: 20.w,
+                      height: 20.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      color: AppColors.primaryColor,
                     ),
-                  );
-                  if (ok == true) {
-                    await controller.manualCheckout();
-                  }
-                },
-          icon: loading
-              ? SizedBox(
-                  width: 20.w,
-                  height: 20.w,
-                  child: const CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.logout),
-          label: Text('manualCheckout'.tr),
-        );
-      }),
+              onSelected: (value) async {
+                if (value == 'share') {
+                  await controller.exportPdfShare();
+                } else if (value == 'save') {
+                  await controller.exportPdfSaveAndOpen();
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'share',
+                  child: Text('exportPdfShare'.tr),
+                ),
+                PopupMenuItem(
+                  value: 'save',
+                  child: Text('exportPdfSave'.tr),
+                ),
+              ],
+            );
+          }),
+          SizedBox(width: 6.w),
+        ],
+      ),
+      floatingActionButton: controller.reportMode
+          ? null
+          : Obx(() {
+              if (!controller.canManualCheckoutToday) {
+                return const SizedBox.shrink();
+              }
+              final loading = controller.isCheckoutLoading.value;
+              return FloatingActionButton.extended(
+                onPressed: loading
+                    ? null
+                    : () async {
+                        final ok = await Get.dialog<bool>(
+                          AlertDialog(
+                            title: Text('manualCheckout'.tr),
+                            content: Text('manualCheckoutConfirm'.tr),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Get.back(result: false),
+                                child: Text('cancel'.tr),
+                              ),
+                              TextButton(
+                                onPressed: () => Get.back(result: true),
+                                child: Text('confirm'.tr),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true) {
+                          await controller.manualCheckout();
+                        }
+                      },
+                icon: loading
+                    ? SizedBox(
+                        width: 20.w,
+                        height: 20.w,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.logout),
+                label: Text('manualCheckout'.tr),
+              );
+            }),
       body: Column(
         children: [
           // ── منتقي السنة والشهر ──
@@ -228,18 +272,271 @@ class EmployeeAttendanceHistoryScreen
                 );
               }
               final head = data.employee;
+              if (controller.reportMode) {
+                return _EmployeeAttendanceReportPreview(
+                  result: data,
+                  periodLabel: controller.periodLabel,
+                  isDark: isDark,
+                );
+              }
               return AttendanceHistoryBody(
                 employee: head,
                 monthlySummary: data.monthlySummary,
                 days: data.days,
                 showTodaySummary: controller.includesToday,
                 showAdminEdit: true,
-                onEditDay: (day) => _showEditDayDialog(context, controller, day),
+                onEditDay: (day) =>
+                    _showEditDayDialog(context, controller, day),
               );
             }),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EmployeeAttendanceReportPreview extends StatelessWidget {
+  const _EmployeeAttendanceReportPreview({
+    required this.result,
+    required this.periodLabel,
+    required this.isDark,
+  });
+
+  final EmployeeAttendanceHistoryResult result;
+  final String periodLabel;
+  final bool isDark;
+
+  static String _time(DateTime? value) {
+    if (value == null) return '-';
+    final local = value.toLocal();
+    final hour12 = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final h = hour12.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
+    final marker = local.hour < 12 ? 'صباحاً' : 'مساءً';
+    return '$h:$m $marker';
+  }
+
+  static String _dateWithDay(String value) {
+    final names = [
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
+    ];
+    try {
+      final date = DateTime.parse(value);
+      return '${names[date.weekday - 1]} - $value';
+    } catch (_) {
+      return value;
+    }
+  }
+
+  static String _dayWorkLabel(EmployeeAttendanceDay day) {
+    if (day.segments.isNotEmpty) {
+      return day.segments.map((segment) {
+        final from = _time(segment.checkInAt);
+        final to = segment.open ? 'داخل العمل' : _time(segment.checkOutAt);
+        return '$from - $to';
+      }).join('\n');
+    }
+    if (day.firstCheckIn != null || day.lastCheckOut != null) {
+      return '${_time(day.firstCheckIn)} - ${day.currentlyIn ? 'داخل العمل' : _time(day.lastCheckOut)}';
+    }
+    return day.attendanceStatusLabel ??
+        (day.expectedWorkMinutes <= 0 ? 'عطلة رسمية' : 'عدم حضور');
+  }
+
+  static String _hoursFromMinutes(int minutes) {
+    return (minutes / 60).toStringAsFixed(2);
+  }
+
+  static String _money(String? value) {
+    final n = double.tryParse(value ?? '');
+    if (n == null) return value?.isNotEmpty == true ? value! : '0.00';
+    return n.toStringAsFixed(2);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = result.monthlySummary;
+    final workedTotal = summary?.rangeWorkedHours ??
+        summary?.monthlyWorkedHours ??
+        _hoursFromMinutes(
+          result.days.fold<int>(0, (sum, day) => sum + day.workedMinutes),
+        );
+    final requiredTotal = summary?.rangeRequiredHours ??
+        summary?.monthlyRequiredHours ??
+        _hoursFromMinutes(
+          result.days.fold<int>(
+            0,
+            (sum, day) => sum + day.expectedWorkMinutes,
+          ),
+        );
+    final salaryTotal = _money(summary?.rangeTotalSalary);
+
+    final bg = isDark ? AppColors.customGreyColor4 : Colors.white;
+    final border = isDark ? Colors.white12 : const Color(0xFFE1E5EE);
+    final textColor = isDark ? Colors.white : const Color(0xFF1F2937);
+    final muted = isDark ? Colors.white70 : const Color(0xFF6B7280);
+
+    final rows = result.days.map((day) {
+      return DataRow(
+        cells: [
+          DataCell(Text(_dateWithDay(day.date))),
+          DataCell(Text(_dayWorkLabel(day))),
+          DataCell(
+              Text(day.workedHours ?? _hoursFromMinutes(day.workedMinutes))),
+          DataCell(Text(
+              day.requiredHours ?? _hoursFromMinutes(day.expectedWorkMinutes))),
+          DataCell(Text(_money(day.totalSalary))),
+        ],
+      );
+    }).toList()
+      ..add(
+        DataRow(
+          color: WidgetStateProperty.resolveWith(
+            (_) => AppColors.primaryColor.withValues(alpha: 0.08),
+          ),
+          cells: [
+            DataCell(Text(
+              'المجموع',
+              style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
+            )),
+            const DataCell(Text('-')),
+            DataCell(Text(
+              workedTotal,
+              style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
+            )),
+            DataCell(Text(
+              requiredTotal,
+              style: TextStyle(fontWeight: FontWeight.w800, color: textColor),
+            )),
+            DataCell(Text(
+              salaryTotal,
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryColor,
+              ),
+            )),
+          ],
+        ),
+      );
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 24.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(color: border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.employee.name ?? '-',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
+                ),
+                SizedBox(height: 8.h),
+                Wrap(
+                  spacing: 10.w,
+                  runSpacing: 6.h,
+                  children: [
+                    _MetaChip(
+                      label: 'الفترة',
+                      value: periodLabel,
+                      color: muted,
+                    ),
+                    _MetaChip(
+                      label: 'سعر ساعة العمل',
+                      value: _money(result.employee.hourWorkPrice),
+                      color: muted,
+                    ),
+                    _MetaChip(
+                      label: 'أيام التقرير',
+                      value: result.days.length.toString(),
+                      color: muted,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 12.h),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: MediaQuery.sizeOf(context).width - 28.w,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: border),
+                ),
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.resolveWith(
+                    (_) => AppColors.primaryColor,
+                  ),
+                  headingTextStyle: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  dataTextStyle: TextStyle(color: textColor),
+                  dividerThickness: 0.8,
+                  columnSpacing: 18.w,
+                  horizontalMargin: 10.w,
+                  columns: const [
+                    DataColumn(label: Text('اليوم والتاريخ')),
+                    DataColumn(label: Text('الدوام')),
+                    DataColumn(label: Text('الصافي')),
+                    DataColumn(label: Text('المطلوب')),
+                    DataColumn(label: Text('الحساب')),
+                  ],
+                  rows: rows,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '$label: $value',
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
     );
   }
 }
@@ -266,7 +563,7 @@ class _MonthYearPicker extends StatelessWidget {
         ),
       ),
       child: Obx(() {
-        final year  = controller.selectedYear.value;
+        final year = controller.selectedYear.value;
         final month = controller.selectedMonth.value;
         final isCustom = controller.isCustomRange;
 

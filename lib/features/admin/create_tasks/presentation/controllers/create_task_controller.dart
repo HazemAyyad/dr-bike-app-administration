@@ -225,6 +225,13 @@ class CreateTaskController extends GetxController {
     final editIndex = editingSubTaskIndex.value;
     if (editIndex != null && editIndex >= 0 && editIndex < subTasks.length) {
       final existing = subTasks[editIndex] as Map;
+      if (isSpecialTaskFlow) {
+        for (final key in ['clientKey', 'status']) {
+          if (existing[key] != null) {
+            data[key] = existing[key];
+          }
+        }
+      }
       if (existing['subTaskId'] != null) {
         data['subTaskId'] = existing['subTaskId'];
       }
@@ -232,11 +239,16 @@ class CreateTaskController extends GetxController {
           existing['subTaskImage'] != null) {
         data['subTaskImage'] = existing['subTaskImage'];
       }
-      if (!data.containsKey('subTaskAudio') && existing['subTaskAudio'] != null) {
+      if (!data.containsKey('subTaskAudio') &&
+          existing['subTaskAudio'] != null) {
         data['subTaskAudio'] = existing['subTaskAudio'];
       }
       subTasks[editIndex] = data;
     } else {
+      if (isSpecialTaskFlow) {
+        data['clientKey'] =
+            'special_new_${DateTime.now().microsecondsSinceEpoch}_${subTasks.length}';
+      }
       subTasks.add(data);
     }
     clearSubTaskForm();
@@ -331,8 +343,7 @@ class CreateTaskController extends GetxController {
       startDate.value.month,
       startDate.value.day,
     );
-    final daysUntilFriday =
-        (DateTime.friday - startDay.weekday + 7) % 7;
+    final daysUntilFriday = (DateTime.friday - startDay.weekday + 7) % 7;
     var friday = startDay.add(Duration(days: daysUntilFriday));
     var end = DateTime(friday.year, friday.month, friday.day);
     if (!end.isAfter(startDate.value)) {
@@ -869,6 +880,7 @@ class CreateTaskController extends GetxController {
     for (var element in data.subTasks) {
       subTasks.add({
         'subTaskId': element.subTaskId,
+        'clientKey': 'special_${element.subTaskId}',
         'subTaskName': element.subTaskName,
         'subTaskdescription': element.subTaskDescription,
         'subTaskImage': element.adminImg,
@@ -876,6 +888,7 @@ class CreateTaskController extends GetxController {
         'proofMediaType': element.forceEmployeeToAddImg
             ? ProofMediaType.both
             : ProofMediaType.none,
+        'status': element.status,
       });
     }
   }

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:printing/printing.dart';
 
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/errors/expentions.dart';
@@ -8,24 +10,28 @@ import '../../../../../core/errors/failure.dart';
 import '../../data/datasources/employee_datasource.dart';
 import '../../data/models/employee_attendance_history_model.dart';
 import '../../domain/usecases/get_employee_attendance_history_usecase.dart';
+import '../../utils/employee_attendance_history_pdf_helper.dart';
 
 class AttendanceHistoryController extends GetxController {
   AttendanceHistoryController({
     required this.employeeId,
     required this.employeeName,
     required this.getHistory,
+    this.reportMode = false,
   });
 
   final String employeeId;
   final String employeeName;
   final GetEmployeeAttendanceHistoryUsecase getHistory;
+  final bool reportMode;
 
   final RxBool isLoading = false.obs;
   final RxBool isCheckoutLoading = false.obs;
+  final RxBool isExporting = false.obs;
   final Rxn<EmployeeAttendanceHistoryResult> result = Rxn();
 
   // السنة والشهر المختاران — الافتراضي الشهر الحالي
-  final Rx<int> selectedYear  = DateTime.now().year.obs;
+  final Rx<int> selectedYear = DateTime.now().year.obs;
   final Rx<int> selectedMonth = DateTime.now().month.obs;
 
   // فلتر مدى الأيام (من / إلى) — يلغي وضع الشهر عند تفعيله
@@ -85,20 +91,24 @@ class AttendanceHistoryController extends GetxController {
       } else {
         from = DateTime(selectedYear.value, selectedMonth.value, 1);
         // آخر يوم في الشهر
-        to = DateTime(selectedYear.value, selectedMonth.value + 1, 0, 23, 59, 59);
+        to = DateTime(
+            selectedYear.value, selectedMonth.value + 1, 0, 23, 59, 59);
       }
 
       result.value = await getHistory.call(
         employeeId: employeeId,
         fromDate: from,
         toDate: to,
+        includeEmptyDays: reportMode,
       );
     } on Failure catch (e) {
       result.value = null;
-      Get.snackbar('error'.tr, e.errMessage, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, e.errMessage,
+          snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
       result.value = null;
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       if (!silent) isLoading.value = false;
     }
@@ -134,6 +144,89 @@ class AttendanceHistoryController extends GetxController {
       if (d.date == todayKey && d.currentlyIn) return true;
     }
     return false;
+  }
+
+  String get periodLabel {
+    if (isCustomRange) {
+      final f = customFrom.value!;
+      final t = customTo.value!;
+      return '${_dateKey(f)} - ${_dateKey(t)}';
+    }
+    return '${selectedYear.value}-${selectedMonth.value.toString().padLeft(2, '0')}';
+  }
+
+  String _dateKey(DateTime d) {
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<EmployeeAttendanceHistoryResult?> _ensureReportData() async {
+    if (result.value == null) {
+      await load();
+    }
+    return result.value;
+  }
+
+  Future<void> exportPdfShare() async {
+    if (isExporting.value) return;
+    try {
+      isExporting.value = true;
+      final data = await _ensureReportData();
+      if (data == null) return;
+      Get.snackbar(
+        'info'.tr,
+        'reportExportPreparing'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      final bytes = await EmployeeAttendanceHistoryPdfHelper.buildPdfBytes(
+        result: data,
+        periodLabel: periodLabel,
+      );
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename:
+            'employee_attendance_${employeeId}_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        '${'reportExportFailed'.tr}: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isExporting.value = false;
+    }
+  }
+
+  Future<void> exportPdfSaveAndOpen() async {
+    if (isExporting.value) return;
+    try {
+      isExporting.value = true;
+      final data = await _ensureReportData();
+      if (data == null) return;
+      Get.snackbar(
+        'info'.tr,
+        'reportExportPreparing'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      final file = await EmployeeAttendanceHistoryPdfHelper.savePdfToFile(
+        result: data,
+        periodLabel: periodLabel,
+      );
+      Get.snackbar(
+        'fileDownloadedSuccessfully'.tr,
+        file.path,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        '${'reportExportFailed'.tr}: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isExporting.value = false;
+    }
   }
 
   Future<bool> manualCheckout() async {
@@ -184,7 +277,8 @@ class AttendanceHistoryController extends GetxController {
   }) async {
     if (employeeId.isEmpty) return false;
     try {
-      final raw = await Get.find<EmployeeDatasource>().updateEmployeeAttendanceDay(
+      final raw =
+          await Get.find<EmployeeDatasource>().updateEmployeeAttendanceDay(
         employeeId: employeeId,
         workDate: workDate,
         checkInAt: checkInAt,
@@ -226,7 +320,7 @@ class AttendanceHistoryController extends GetxController {
   void changeMonth(int year, int month) {
     customFrom.value = null;
     customTo.value = null;
-    selectedYear.value  = year;
+    selectedYear.value = year;
     selectedMonth.value = month;
     load();
   }
@@ -262,7 +356,17 @@ class AttendanceHistoryController extends GetxController {
 
   /// أسماء الأشهر بالعربية
   static const List<String> monthNames = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
   ];
 }

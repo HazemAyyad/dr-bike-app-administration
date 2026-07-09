@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 
 class BuildActionButtons extends StatelessWidget {
   const BuildActionButtons({
@@ -20,7 +21,7 @@ class BuildActionButtons extends StatelessWidget {
     final filteredButtons = userType == 'admin'
         ? buttons
         : buttons
-            .where((x) => employeePermissions!.contains(int.parse(x['id'])))
+            .where((x) => _canShowButton(x, employeePermissions ?? const []))
             .toList();
 
     return Column(
@@ -80,6 +81,16 @@ class BuildActionButtons extends StatelessWidget {
         // ),
       ],
     );
+  }
+
+  bool _canShowButton(Map<String, dynamic> button, List<int> permissions) {
+    final route = button['route'];
+    if (route == AppRoutes.GENERALSETTINGSSCREEN) {
+      return canManageStockInventorySettings;
+    }
+
+    final id = int.tryParse(button['id']?.toString() ?? '');
+    return id != null && permissions.contains(id);
   }
 }
 

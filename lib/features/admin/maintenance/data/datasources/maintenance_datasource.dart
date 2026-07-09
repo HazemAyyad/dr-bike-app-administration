@@ -8,6 +8,8 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
+import '../models/maintenance_activity_log_model.dart';
+import '../models/maintenance_invoice_model.dart';
 import '../models/maintenance_product_model.dart';
 
 class MaintenanceDatasource {
@@ -167,6 +169,77 @@ class MaintenanceDatasource {
         },
       );
       return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<MaintenanceActivityLogModel>> getActivityLog({
+    required String maintenanceId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceActivityLog,
+        data: {'maintenance_id': maintenanceId},
+      );
+      final data = response.data;
+      if (data['status'] != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: data['message'] ?? 'Unknown error',
+            status: data['status'] ?? 500,
+            data: data,
+          ),
+        );
+      }
+      final logs = data['logs'];
+      return logs is List
+          ? logs
+              .map((e) => MaintenanceActivityLogModel.fromJson(
+                    Map<String, dynamic>.from(e as Map),
+                  ))
+              .toList()
+          : <MaintenanceActivityLogModel>[];
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<MaintenanceInvoiceModel> getMaintenanceInvoice({
+    required String maintenanceId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceInvoice,
+        data: {'maintenance_id': maintenanceId},
+      );
+      final data = response.data;
+      if (data['status'] != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: data['message'] ?? 'Unknown error',
+            status: data['status'] ?? 500,
+            data: data,
+          ),
+        );
+      }
+      return MaintenanceInvoiceModel.fromJson(
+        Map<String, dynamic>.from(data['invoice'] as Map),
+      );
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

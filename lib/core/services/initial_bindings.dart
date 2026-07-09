@@ -70,6 +70,23 @@ bool get canCloneEmployeeTasks =>
     userType == 'admin' ||
     employeePermissionNames.contains(cloneEmployeeTaskPermissionName);
 
+/// اسم صلاحية إعدادات المخزون (يطابق name_en في الباك إند).
+const String stockInventorySettingsPermissionName = 'Stock Inventory Settings';
+
+/// رقم صلاحية إعدادات المخزون في قائمة إنشاء/تعديل الموظف.
+const int stockInventorySettingsPermissionId = 47;
+
+/// رقم صلاحية المخزون.
+const int stockPermissionId = 16;
+
+/// هل يحق للمستخدم الحالي فتح إعدادات المخزون؟
+/// الأدمن دائماً، والموظف إذا معه صلاحية إعدادات المخزون أو صلاحية المخزون.
+bool get canManageStockInventorySettings =>
+    userType == 'admin' ||
+    employeePermissions.contains(stockInventorySettingsPermissionId) ||
+    employeePermissions.contains(stockPermissionId) ||
+    employeePermissionNames.contains(stockInventorySettingsPermissionName);
+
 void syncSessionIdentity({
   String? type,
   String? name,

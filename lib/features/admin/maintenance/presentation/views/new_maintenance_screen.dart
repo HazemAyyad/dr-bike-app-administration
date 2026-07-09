@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -10,10 +12,10 @@ import '../../../../../core/helpers/custom_calendar.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../core/helpers/custom_time_picker.dart';
-import '../../../../../core/helpers/custom_upload_button.dart';
 import '../../../../../core/helpers/show_image_or_video.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../controllers/maintenance_controller.dart';
 import '../widgets/custom_line_steps_widget.dart';
 import '../widgets/maintenance_products_section.dart';
@@ -184,59 +186,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                   SizedBox(height: 12.h),
                   MaintenanceProductsSection(controller: controller),
                   SizedBox(height: 10.h),
-                  if (controller.selectedMedia.isNotEmpty)
-                    SizedBox(
-                      height: 72.h,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: controller.selectedMedia.length,
-                        separatorBuilder: (_, __) => SizedBox(width: 6.w),
-                        itemBuilder: (_, index) {
-                          final file = controller.selectedMedia[index];
-                          return Stack(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(6.r),
-                                child: SizedBox(
-                                  width: 72.w,
-                                  height: 72.h,
-                                  child: ShowImageOrVideo(path: file.path),
-                                ),
-                              ),
-                              Positioned(
-                                right: 2,
-                                top: 2,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    controller.selectedMedia.removeAt(index);
-                                    controller.update();
-                                  },
-                                  child: Icon(
-                                    Icons.cancel,
-                                    color: Colors.red,
-                                    size: 20.sp,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  MediaUploadButton(
-                    title: 'uploadMedia',
-                    allowedType: MediaType.both,
-                    isShowPreview: false,
-                    onFilesChanged: (files) {
-                      for (var file in files) {
-                        if (!controller.selectedMedia
-                            .any((f) => f.path == file.path)) {
-                          controller.selectedMedia.add(file);
-                        }
-                      }
-                      controller.update();
-                    },
-                  ),
+                  _MaintenanceMediaPicker(controller: controller),
                   SizedBox(height: 20.h),
                   if (!controller.isDelivered.value)
                     AppButton(
@@ -250,22 +200,141 @@ class NewMaintenanceScreen extends StatelessWidget {
                         );
                       },
                     ),
-                  NextBackButton(
-                    isLoading: controller.isLoading,
-                    endTitle: 'delivered',
-                    totalSteps: controller.timeLineSteps.length.obs,
-                    selectedStep: controller.selectedStep,
-                    onPressedBack: controller.prevStep,
-                    onPressedNext: controller.isDelivered.value
-                        ? () {}
-                        : controller.nextStep,
-                  ),
+                  if (!controller.isDelivered.value)
+                    NextBackButton(
+                      isLoading: controller.isLoading,
+                      endTitle: 'delivered',
+                      totalSteps: controller.timeLineSteps.length.obs,
+                      selectedStep: controller.selectedStep,
+                      onPressedBack: controller.prevStep,
+                      onPressedNext: controller.nextStep,
+                    ),
                   SizedBox(height: 16.h),
                 ],
               ),
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceMediaPicker extends StatelessWidget {
+  const _MaintenanceMediaPicker({required this.controller});
+
+  final MaintenanceController controller;
+
+  Future<void> _capture() async {
+    final result = await Get.to<WhatsAppCapture>(
+      () => const WhatsAppCameraScreen(),
+    );
+    if (result == null) return;
+
+    final file = File(result.path);
+    if (!controller.selectedMedia.any((item) => item.path == file.path)) {
+      controller.selectedMedia.add(file);
+      controller.update();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.selectedMedia.isEmpty) {
+      return InkWell(
+        borderRadius: BorderRadius.circular(8.r),
+        onTap: _capture,
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: 18.h, horizontal: 12.w),
+          decoration: BoxDecoration(
+            color: AppColors.primaryColor.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(
+              color: AppColors.primaryColor.withValues(alpha: 0.24),
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.camera_alt_outlined,
+                color: AppColors.primaryColor,
+                size: 28.sp,
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                'uploadMedia'.tr,
+                style: TextStyle(
+                  color: AppColors.primaryColor,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 72.h,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: controller.selectedMedia.length + 1,
+        separatorBuilder: (_, __) => SizedBox(width: 6.w),
+        itemBuilder: (_, index) {
+          if (index == controller.selectedMedia.length) {
+            return InkWell(
+              borderRadius: BorderRadius.circular(6.r),
+              onTap: _capture,
+              child: Container(
+                width: 72.w,
+                height: 72.h,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6.r),
+                  border: Border.all(
+                    color: AppColors.primaryColor.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: Icon(
+                  Icons.add,
+                  color: AppColors.primaryColor,
+                  size: 28.sp,
+                ),
+              ),
+            );
+          }
+
+          final file = controller.selectedMedia[index];
+          return Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6.r),
+                child: SizedBox(
+                  width: 72.w,
+                  height: 72.h,
+                  child: ShowImageOrVideo(path: file.path),
+                ),
+              ),
+              Positioned(
+                right: 2,
+                top: 2,
+                child: GestureDetector(
+                  onTap: () {
+                    controller.selectedMedia.removeAt(index);
+                    controller.update();
+                  },
+                  child: Icon(
+                    Icons.cancel,
+                    color: Colors.red,
+                    size: 20.sp,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

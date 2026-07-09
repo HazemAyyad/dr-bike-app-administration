@@ -9,6 +9,8 @@ import '../../../../../core/connection/network_info.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../domain/repositories/maintenance_repository.dart';
+import '../models/maintenance_activity_log_model.dart';
+import '../models/maintenance_invoice_model.dart';
 import '../datasources/maintenance_datasource.dart';
 import '../models/maintenance_product_model.dart';
 
@@ -183,6 +185,42 @@ class MaintenanceImplement implements MaintenanceRepository {
       );
     } on DioException catch (e) {
       return Left(ServerFailure(e.message ?? 'error'.tr, {}));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<MaintenanceActivityLogModel>>> getActivityLog({
+    required String maintenanceId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      return Right(
+        await maintenanceDatasource.getActivityLog(
+          maintenanceId: maintenanceId,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, MaintenanceInvoiceModel>> getMaintenanceInvoice({
+    required String maintenanceId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      return Right(
+        await maintenanceDatasource.getMaintenanceInvoice(
+          maintenanceId: maintenanceId,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }
 }
