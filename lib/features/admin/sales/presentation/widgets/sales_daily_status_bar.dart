@@ -31,73 +31,76 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       return GestureDetector(
         onTap: () => Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN),
         child: Container(
-        margin: EdgeInsets.fromLTRB(24.w, 0, 24.w, 8.h),
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10.r),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.account_balance_wallet_outlined, color: color, size: 20.sp),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                  if (payload.blockedByOtherSession)
+          margin: EdgeInsets.fromLTRB(24.w, 0, 24.w, 8.h),
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.account_balance_wallet_outlined,
+                  color: color, size: 20.sp),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'salesDailyDrawerOpenByOther'.trParams({
-                        'employee': payload.blockedByEmployeeName ?? '',
-                      }),
-                      style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
-                    )
-                  else if (session != null)
-                    Text(
-                      '${'salesDailyBusinessDate'.tr}: ${session.businessDate}',
-                      style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
+                      label,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
                     ),
-                  if (!payload.blockedByOtherSession) _shekelSummary(payload),
-                ],
-              ),
-            ),
-            if (payload.canManageOtherSession &&
-                payload.manageableSessionId != null)
-              TextButton(
-                onPressed: () => Get.toNamed(
-                  AppRoutes.SALESDAILYCLOSESCREEN,
-                  arguments: payload.manageableSessionId,
+                    if (payload.blockedByOtherSession)
+                      Text(
+                        'salesDailySharedDrawerOpen'.trParams({
+                          'employee': payload.blockedByEmployeeName ?? '',
+                        }),
+                        style: TextStyle(
+                            fontSize: 11.sp, color: Colors.grey.shade700),
+                      )
+                    else if (session != null)
+                      Text(
+                        '${'salesDailyBusinessDate'.tr}: ${session.businessDate}',
+                        style: TextStyle(
+                            fontSize: 11.sp, color: Colors.grey.shade700),
+                      ),
+                    _shekelSummary(payload),
+                  ],
                 ),
-                child: Text('salesDailyCloseDay'.tr),
               ),
-            if (payload.canRequestOpen)
-              TextButton(
-                onPressed: () => _openDrawer(context),
-                child: Text('salesDailyOpenDrawer'.tr),
-              ),
-            if (payload.canRequestClosing)
-              TextButton(
-                onPressed: () => Get.toNamed(AppRoutes.SALESDAILYCLOSESCREEN),
-                child: Text('salesDailyCloseDay'.tr),
-              ),
-            if (payload.canRequestReopen)
-              TextButton(
-                onPressed: () => _showReopenDialog(context),
-                child: Text('salesDailyRequestReopen'.tr),
-              ),
-            Icon(Icons.chevron_left, color: color, size: 20.sp),
-          ],
+              if (payload.canManageOtherSession &&
+                  payload.manageableSessionId != null)
+                TextButton(
+                  onPressed: () => Get.toNamed(
+                    AppRoutes.SALESDAILYCLOSESCREEN,
+                    arguments: payload.manageableSessionId,
+                  ),
+                  child: Text('salesDailyCloseDay'.tr),
+                ),
+              if (payload.canRequestOpen)
+                TextButton(
+                  onPressed: () => _openDrawer(context),
+                  child: Text('salesDailyOpenDrawer'.tr),
+                ),
+              if (payload.canRequestClosing)
+                TextButton(
+                  onPressed: () => Get.toNamed(AppRoutes.SALESDAILYCLOSESCREEN),
+                  child: Text('salesDailyCloseDay'.tr),
+                ),
+              if (payload.canRequestReopen)
+                TextButton(
+                  onPressed: () => _showReopenDialog(context),
+                  child: Text('salesDailyRequestReopen'.tr),
+                ),
+              Icon(Icons.chevron_left, color: color, size: 20.sp),
+            ],
+          ),
         ),
-      ),
       );
     });
   }
@@ -113,7 +116,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
 
   Color _statusColor(String status, DailySessionPayload payload) {
     if (payload.isBlockingPreviousDay) return Colors.red;
-    if (payload.blockedByOtherSession) return Colors.deepOrange;
+    if (payload.blockedByOtherSession) return AppColors.primaryColor;
     if (payload.needsManualOpen) return Colors.blueGrey;
     if (status == 'closing_requested') return Colors.orange;
     if (status == 'closed') return Colors.grey;
@@ -125,7 +128,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       return 'salesDailyPreviousDayOpen'.tr;
     }
     if (payload.blockedByOtherSession) {
-      return 'salesDailyDrawerBusy'.tr;
+      return 'salesDailyDayOpen'.tr;
     }
     if (payload.needsManualOpen) {
       return 'salesDailyDrawerNotOpen'.tr;

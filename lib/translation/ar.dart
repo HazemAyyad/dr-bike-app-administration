@@ -2613,6 +2613,7 @@ const Map<String, String> ar = {
       'هل تريد فتح صندوق المبيعات اليومي؟ لن يتمكن موظف آخر من فتح صندوق حتى تغلقه.',
   'salesDailyDrawerBusy': 'صندوق المبيعات مشغول',
   'salesDailyDrawerOpenByOther': 'الصندوق مفتوح لدى @employee',
+  'salesDailySharedDrawerOpen': 'سيتم البيع على صندوق @employee',
   'salesDailyNoSessionOpen': 'يجب فتح صندوق المبيعات يدوياً قبل البيع',
   'salesDailyClosingPending': 'بانتظار موافقة الإدارة على الإغلاق',
   'salesDailyClosingPendingHint':

@@ -2640,6 +2640,7 @@ const Map<String, String> en = {
       'Open today\'s sales drawer? No other employee can open a drawer until you close it.',
   'salesDailyDrawerBusy': 'Sales drawer in use',
   'salesDailyDrawerOpenByOther': 'Drawer is open by @employee',
+  'salesDailySharedDrawerOpen': 'Sales will be posted to @employee\'s drawer',
   'salesDailyNoSessionOpen': 'Open the sales drawer manually before selling',
   'salesDailyClosingPending': 'Closing request pending admin approval',
   'salesDailyClosingPendingHint':
