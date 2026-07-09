@@ -40,7 +40,10 @@ class EmployeeTasksLists extends StatelessWidget {
             }
           },
           onTap: () => controller.openTaskDetails(order),
-          child: OperationalTaskCard(task: order),
+          child: OperationalTaskCard(
+            task: order,
+            searchQuery: controller.employeeNameController.text,
+          ),
         ),
       ],
     );
@@ -175,16 +178,15 @@ class EmployeeTasksLists extends StatelessWidget {
                       AppButton(
                         isSafeArea: false,
                         text: 'save',
-                        onPressed: () =>
-                            controller.deleteTask.value == false &&
-                                    controller.deleteTasDuplicate.value == false
-                                ? null
-                                : controller.cancelEmployeeTask(
-                                    taskId: order.taskId.toString(),
-                                    occurrenceId: order.occurrenceId,
-                                    cancelWithRepetition:
-                                        controller.deleteTasDuplicate.value,
-                                  ),
+                        onPressed: () => controller.deleteTask.value == false &&
+                                controller.deleteTasDuplicate.value == false
+                            ? null
+                            : controller.cancelEmployeeTask(
+                                taskId: order.taskId.toString(),
+                                occurrenceId: order.occurrenceId,
+                                cancelWithRepetition:
+                                    controller.deleteTasDuplicate.value,
+                              ),
                       ),
                     ],
                   ),

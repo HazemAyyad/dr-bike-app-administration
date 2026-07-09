@@ -67,6 +67,7 @@ class TasksList extends GetView<SpecialTasksController> {
                       return _SpecialTaskCard(
                         task: task,
                         archived: controller.currentTab.value == 2,
+                        searchQuery: controller.searchController.text,
                         checked: controller.currentTab.value == 2
                             ? true.obs
                             : controller.checkedMap[key]!,
@@ -329,6 +330,7 @@ class _SpecialTaskCard extends StatelessWidget {
   const _SpecialTaskCard({
     required this.task,
     required this.archived,
+    required this.searchQuery,
     required this.checked,
     required this.onComplete,
     required this.onTap,
@@ -337,6 +339,7 @@ class _SpecialTaskCard extends StatelessWidget {
 
   final SpecialTaskModel task;
   final bool archived;
+  final String searchQuery;
   final RxBool checked;
   final ValueChanged<bool?> onComplete;
   final VoidCallback onTap;
@@ -347,6 +350,7 @@ class _SpecialTaskCard extends StatelessWidget {
     final isDark = ThemeService.isDark.value;
     final progress = task.progress.clamp(0, 100);
     final showProgress = progress > 0 && task.status != 'completed';
+    final matchedSubtasks = task.matchingSubtaskNames(searchQuery);
 
     return Padding(
       padding: EdgeInsets.only(bottom: archived ? 3.h : 1.h),
@@ -425,6 +429,13 @@ class _SpecialTaskCard extends StatelessWidget {
                     ],
                   ],
                 ),
+                if (matchedSubtasks.isNotEmpty) ...[
+                  SizedBox(height: 3.h),
+                  Padding(
+                    padding: EdgeInsetsDirectional.only(start: 74.w),
+                    child: _SubtaskMatchLabel(names: matchedSubtasks),
+                  ),
+                ],
                 if (showProgress) ...[
                   SizedBox(height: 5.h),
                   Row(
@@ -523,6 +534,41 @@ class _DayHeader extends StatelessWidget {
           SizedBox(height: 2.h),
         ],
       ),
+    );
+  }
+}
+
+class _SubtaskMatchLabel extends StatelessWidget {
+  const _SubtaskMatchLabel({required this.names});
+
+  final List<String> names;
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = names.take(3).join(' · ');
+    final extra = names.length > 3 ? ' +${names.length - 3}' : '';
+    return Row(
+      children: [
+        Icon(
+          Icons.subdirectory_arrow_right,
+          size: 12.sp,
+          color: AppColors.operationalPurple,
+        ),
+        SizedBox(width: 3.w),
+        Expanded(
+          child: Text(
+            '${'subTasks'.tr}: $shown$extra',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10.sp,
+              height: 1.2,
+              fontWeight: FontWeight.w600,
+              color: AppColors.operationalPurple,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

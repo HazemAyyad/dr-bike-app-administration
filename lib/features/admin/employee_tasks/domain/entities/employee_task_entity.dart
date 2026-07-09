@@ -86,4 +86,12 @@ class EmployeeTaskEntity {
     }
     return false;
   }
+
+  List<String> matchingSubtaskNames(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    return subtaskNames
+        .where((subtask) => subtask.toLowerCase().contains(q))
+        .toList();
+  }
 }

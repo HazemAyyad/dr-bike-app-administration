@@ -12,6 +12,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
     required bool isCanceled,
     required String status,
     int progress = 0,
+    List<String> subtaskNames = const [],
   }) : super(
           id: id,
           name: name,
@@ -20,6 +21,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
           isCanceled: isCanceled,
           status: status,
           progress: progress,
+          subtaskNames: subtaskNames,
         );
 
   factory SpecialTaskModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,12 @@ class SpecialTaskModel extends SpecialTaskEntity {
       isCanceled: asBool(j[ApiKey.is_canceled]),
       status: asString(j[ApiKey.status]),
       progress: asInt(j['progress']),
+      subtaskNames: j['subtask_names'] is List
+          ? (j['subtask_names'] as List)
+              .map((e) => e.toString())
+              .where((e) => e.trim().isNotEmpty)
+              .toList()
+          : const [],
     );
   }
 
@@ -44,6 +52,7 @@ class SpecialTaskModel extends SpecialTaskEntity {
       ApiKey.is_canceled: isCanceled ? '1' : '0',
       ApiKey.status: status,
       'progress': progress,
+      'subtask_names': subtaskNames,
     };
   }
 }

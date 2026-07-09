@@ -304,10 +304,8 @@ class SpecialTasksController extends GetxController {
   void makeSubsSpecialTaskCompleted(
       BuildContext context, String subTaskId, String specialTaskId) async {
     final details = specialTasksService.specialTaskDetails.value;
-    final pendingSubtasks = details?.subTasks
-            .where((s) => s.status != 'completed')
-            .length ??
-        0;
+    final pendingSubtasks =
+        details?.subTasks.where((s) => s.status != 'completed').length ?? 0;
     final isLastSubtask = pendingSubtasks <= 1;
 
     isLoading(true);
@@ -382,7 +380,7 @@ class SpecialTasksController extends GetxController {
     final Map<String, List<SpecialTaskModel>> newMap = {};
     source.forEach((key, tasks) {
       final filteredList = tasks.where((task) {
-        if (query.isNotEmpty && !task.name.toLowerCase().contains(query)) {
+        if (query.isNotEmpty && !task.matchesSearchQuery(query)) {
           return false;
         }
         final start = task.startDate;

@@ -17,11 +17,13 @@ class OperationalTaskCard extends StatelessWidget {
     required this.task,
     this.onTap,
     this.trailing,
+    this.searchQuery = '',
   }) : super(key: key);
 
   final EmployeeTaskModel task;
   final VoidCallback? onTap;
   final Widget? trailing;
+  final String searchQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +31,7 @@ class OperationalTaskCard extends StatelessWidget {
     final imageUrl = task.employeePhoto ?? task.adminImg;
     final progress = task.progress.clamp(0, 100);
     final showProgress = progress > 0 && task.status != 'completed';
+    final matchedSubtasks = task.matchingSubtaskNames(searchQuery);
 
     return Material(
       color: Colors.transparent,
@@ -105,6 +108,10 @@ class OperationalTaskCard extends StatelessWidget {
                             parentId: task.parentId,
                           ),
                         ),
+                        if (matchedSubtasks.isNotEmpty) ...[
+                          SizedBox(height: 3.h),
+                          _SubtaskMatchLabel(names: matchedSubtasks),
+                        ],
                       ],
                     ),
                   ),
@@ -195,6 +202,41 @@ class OperationalTaskCard extends StatelessWidget {
       default:
         return AppColors.operationalPurple;
     }
+  }
+}
+
+class _SubtaskMatchLabel extends StatelessWidget {
+  const _SubtaskMatchLabel({required this.names});
+
+  final List<String> names;
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = names.take(3).join(' · ');
+    final extra = names.length > 3 ? ' +${names.length - 3}' : '';
+    return Row(
+      children: [
+        Icon(
+          Icons.subdirectory_arrow_right,
+          size: 12.sp,
+          color: AppColors.operationalPurple,
+        ),
+        SizedBox(width: 3.w),
+        Expanded(
+          child: Text(
+            '${'subTasks'.tr}: $shown$extra',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 10.sp,
+              height: 1.2,
+              fontWeight: FontWeight.w600,
+              color: AppColors.operationalPurple,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
