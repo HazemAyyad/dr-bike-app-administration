@@ -27,9 +27,17 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       final status = session?.status ?? 'none';
       final color = _statusColor(status, payload);
       final label = _statusLabel(status, payload);
+      final showClosingApproval =
+          payload.isClosingRequested && payload.canFinalizeClosing;
+      final showManagedClose = !showClosingApproval &&
+          payload.canManageOtherSession &&
+          payload.manageableSessionId != null;
+      final showDirectClose = payload.canRequestClosing &&
+          !showManagedClose &&
+          !showClosingApproval;
 
       return GestureDetector(
-        onTap: () => Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN),
+        onTap: () => _openStatusTarget(showClosingApproval),
         child: Container(
           margin: EdgeInsets.fromLTRB(24.w, 0, 24.w, 8.h),
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
@@ -55,7 +63,13 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                         color: color,
                       ),
                     ),
-                    if (payload.shouldWarnPreviousDaySale)
+                    if (payload.isClosingRequested)
+                      Text(
+                        'salesDailyClosingPendingHint'.tr,
+                        style: TextStyle(
+                            fontSize: 11.sp, color: Colors.grey.shade700),
+                      )
+                    else if (payload.shouldWarnPreviousDaySale)
                       Text(
                         'salesDailyPreviousDayOpenDetails'.trParams({
                           'date': payload.previousDayBusinessDate ?? '',
@@ -82,8 +96,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                   ],
                 ),
               ),
-              if (payload.canManageOtherSession &&
-                  payload.manageableSessionId != null)
+              if (showManagedClose)
                 TextButton(
                   onPressed: () => Get.toNamed(
                     AppRoutes.SALESDAILYCLOSESCREEN,
@@ -96,10 +109,15 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                   onPressed: () => _openDrawer(context),
                   child: Text('salesDailyOpenDrawer'.tr),
                 ),
-              if (payload.canRequestClosing)
+              if (showDirectClose)
                 TextButton(
                   onPressed: () => Get.toNamed(AppRoutes.SALESDAILYCLOSESCREEN),
                   child: Text('salesDailyCloseDay'.tr),
+                ),
+              if (showClosingApproval)
+                TextButton(
+                  onPressed: _openClosingRequests,
+                  child: Text('salesDailyReviewClosingRequest'.tr),
                 ),
               if (payload.canRequestReopen)
                 TextButton(
@@ -114,6 +132,21 @@ class SalesDailyStatusBar extends GetView<SalesController> {
     });
   }
 
+  void _openStatusTarget(bool showClosingApproval) {
+    if (showClosingApproval) {
+      _openClosingRequests();
+      return;
+    }
+    Get.toNamed(AppRoutes.SALESDAILYHISTORYSCREEN);
+  }
+
+  void _openClosingRequests() {
+    Get.toNamed(
+      AppRoutes.SALESDAILYADMINSCREEN,
+      arguments: {'initialTab': 1},
+    );
+  }
+
   Widget _shekelSummary(DailySessionPayload payload) {
     final row = payload.rowForCurrency('شيكل');
     if (row == null) return const SizedBox.shrink();
@@ -124,15 +157,18 @@ class SalesDailyStatusBar extends GetView<SalesController> {
   }
 
   Color _statusColor(String status, DailySessionPayload payload) {
+    if (status == 'closing_requested') return Colors.orange;
     if (payload.isBlockingPreviousDay) return Colors.red;
     if (payload.blockedByOtherSession) return AppColors.primaryColor;
     if (payload.needsManualOpen) return Colors.blueGrey;
-    if (status == 'closing_requested') return Colors.orange;
     if (status == 'closed') return Colors.grey;
     return AppColors.primaryColor;
   }
 
   String _statusLabel(String status, DailySessionPayload payload) {
+    if (status == 'closing_requested') {
+      return 'salesDailyClosingPending'.tr;
+    }
     if (payload.isBlockingPreviousDay) {
       return 'salesDailyPreviousDayOpen'.tr;
     }
@@ -146,8 +182,6 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       return 'salesDailyReopenPending'.tr;
     }
     switch (status) {
-      case 'closing_requested':
-        return 'salesDailyClosingPending'.tr;
       case 'closed':
         return 'salesDailyDayClosed'.tr;
       default:

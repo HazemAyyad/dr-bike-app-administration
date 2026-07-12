@@ -48,6 +48,7 @@ class InvoiceModel {
   final String? sizeColorId;
   final String? sizeId;
   final String? productId;
+  final String? productCode;
   final int? offerPackageId;
   final String? projectId;
   final String? lineType;
@@ -102,6 +103,7 @@ class InvoiceModel {
     this.sizeColorId,
     this.sizeId,
     this.productId,
+    this.productCode,
     this.offerPackageId,
     this.projectId,
     this.lineType,
@@ -223,6 +225,7 @@ class InvoiceModel {
       sizeColorId: asNullableString(json['size_color_id']),
       sizeId: asNullableString(json['size_id']),
       productId: asNullableString(json['product_id']?.toString()),
+      productCode: asNullableString(json['product_code']?.toString()),
       offerPackageId: json['offer_package_id'] == null
           ? null
           : (json['offer_package_id'] is int
@@ -352,6 +355,7 @@ class InvoiceModel {
       },
       'maintenance_id': maintenanceId,
       'maintenance_invoice_number': maintenanceInvoiceNumber,
+      'product_code': productCode,
     };
   }
 }
@@ -394,6 +398,7 @@ class SubProductModel {
   final String? colorLabel;
   final String? variantLabel;
   final String? productId;
+  final String? productCode;
   final String? sizeColorId;
   final String? sizeId;
   final String? lineType;
@@ -413,6 +418,7 @@ class SubProductModel {
     this.colorLabel,
     this.variantLabel,
     this.productId,
+    this.productCode,
     this.sizeColorId,
     this.sizeId,
     this.lineType,
@@ -448,6 +454,7 @@ class SubProductModel {
       colorLabel: parseVariantColorLabel(json),
       variantLabel: asNullableString(json['variant_label']),
       productId: asNullableString(json['product_id']?.toString()),
+      productCode: asNullableString(json['product_code']?.toString()),
       sizeColorId: asNullableString(json['size_color_id']?.toString()),
       sizeId: asNullableString(json['size_id']?.toString()),
       lineType: asNullableString(json['type']),
@@ -469,6 +476,7 @@ class SubProductModel {
       'id': id,
       'product_name': productName,
       'product_image': productImage,
+      'product_code': productCode,
       'cost': cost,
       'quantity': quantity,
       'subtotal': subtotal,

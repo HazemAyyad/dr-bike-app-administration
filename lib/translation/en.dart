@@ -2657,6 +2657,7 @@ const Map<String, String> en = {
   'salesDailyClosingPending': 'Closing request pending admin approval',
   'salesDailyClosingPendingHint':
       'Your closing request was sent. You cannot sell until it is approved.',
+  'salesDailyReviewClosingRequest': 'Review closing request',
   'salesDailyTransferTargetRequired':
       'Select a destination box for each currency with an amount to transfer',
   'salesDailyDayClosed': 'Sales day closed',

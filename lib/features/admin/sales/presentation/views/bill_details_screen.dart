@@ -553,7 +553,7 @@ class SalesInvoicePdfBuilder {
                   ),
                 ),
               ),
-              if (logo != null) pw.Image(logo, height: 62),
+              if (logo != null) pw.Image(logo, height: 88),
             ],
           ),
           pw.Container(
@@ -563,13 +563,14 @@ class SalesInvoicePdfBuilder {
           ),
           pw.Center(
             child: pw.Text(
-              'فاتورة مبيعات',
+              '${'instantSaleInvoice'.tr} ${invoice.invoiceNumber}',
               style: pw.TextStyle(font: bold, fontSize: 16),
             ),
           ),
-          pw.SizedBox(height: 10),
-          _detailsTable(
+          pw.SizedBox(height: 8),
+          _invoiceHeader(
             bold: bold,
+            regular: regular,
             rows: [
               ['billNumber'.tr, invoice.invoiceNumber, null],
               ['date'.tr, invoice.invoiceDate, null],
@@ -586,36 +587,10 @@ class SalesInvoicePdfBuilder {
                 null
               ],
               ['paymentMethod'.tr, invoice.paymentMethod ?? '-', null],
-              ['boxName'.tr, invoice.displayPaymentBox, null],
-              ['status'.tr, invoice.displaySaleStatus, null],
             ],
           ),
           pw.SizedBox(height: 12),
-          pw.TableHelper.fromTextArray(
-            headers: [
-              '#',
-              'productName'.tr,
-              'quantity'.tr,
-              'price'.tr,
-              'total'.tr
-            ],
-            data: rows,
-            headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
-            headerDecoration:
-                const pw.BoxDecoration(color: PdfColors.deepPurple600),
-            cellStyle: pw.TextStyle(font: regular, fontSize: 9),
-            cellAlignment: pw.Alignment.centerRight,
-            headerAlignment: pw.Alignment.centerRight,
-            cellPadding:
-                const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-            columnWidths: const {
-              0: pw.FixedColumnWidth(24),
-              1: pw.FlexColumnWidth(4),
-              2: pw.FixedColumnWidth(42),
-              3: pw.FixedColumnWidth(56),
-              4: pw.FixedColumnWidth(64),
-            },
-          ),
+          _itemsTable(rows: rows, regular: regular, bold: bold),
           if (invoice.additionalNotes.isNotEmpty) ...[
             pw.SizedBox(height: 10),
             pw.Text(
@@ -638,8 +613,10 @@ class SalesInvoicePdfBuilder {
             alignment: pw.Alignment.centerRight,
             child: pw.SizedBox(
               width: 220,
-              child: pw.TableHelper.fromTextArray(
-                data: [
+              child: _totalsTable(
+                regular: regular,
+                bold: bold,
+                rows: [
                   ['subtotal'.tr, _money(invoice.subtotal)],
                   ['discount'.tr, _money(invoice.discount)],
                   if ((double.tryParse(invoice.additionalNotesTotal) ?? 0) > 0)
@@ -649,10 +626,6 @@ class SalesInvoicePdfBuilder {
                   ['paidAmount'.tr, _money(invoice.paidAmount)],
                   ['remainingAmount'.tr, _money(invoice.remainingAmount)],
                 ],
-                cellAlignment: pw.Alignment.centerRight,
-                cellStyle: pw.TextStyle(font: regular),
-                cellPadding:
-                    const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
               ),
             ),
           ),
@@ -673,6 +646,7 @@ class SalesInvoicePdfBuilder {
     final rows = <List<String>>[];
 
     void addLine({
+      required String code,
       required String name,
       required String quantity,
       required String cost,
@@ -680,6 +654,7 @@ class SalesInvoicePdfBuilder {
     }) {
       rows.add([
         '${rows.length + 1}',
+        code.trim().isEmpty ? '-' : code,
         name,
         quantity,
         _money(cost),
@@ -689,6 +664,7 @@ class SalesInvoicePdfBuilder {
 
     if (invoice.isPackageSale) {
       addLine(
+        code: invoice.productCode ?? '-',
         name: invoice.displayProductTitle,
         quantity: invoice.quantity,
         cost: invoice.cost,
@@ -696,6 +672,7 @@ class SalesInvoicePdfBuilder {
       );
       for (final sub in invoice.additionalProductLines) {
         addLine(
+          code: sub.productCode ?? '-',
           name: sub.displayProductName,
           quantity: sub.quantity,
           cost: sub.cost,
@@ -704,6 +681,7 @@ class SalesInvoicePdfBuilder {
       }
     } else {
       addLine(
+        code: invoice.productCode ?? '-',
         name: invoice.displayProductTitle,
         quantity: invoice.quantity,
         cost: invoice.cost,
@@ -711,6 +689,7 @@ class SalesInvoicePdfBuilder {
       );
       for (final sub in invoice.subProducts) {
         addLine(
+          code: sub.productCode ?? '-',
           name: sub.displayProductName,
           quantity: sub.quantity,
           cost: sub.cost,
@@ -722,55 +701,150 @@ class SalesInvoicePdfBuilder {
     return rows;
   }
 
-  static pw.Widget _detailsTable({
+  static pw.Widget _itemsTable({
+    required List<List<String>> rows,
+    required pw.Font regular,
     required pw.Font bold,
-    required List<List<Object?>> rows,
   }) {
+    final headers = [
+      '#',
+      'productCode'.tr,
+      'productName'.tr,
+      'quantity'.tr,
+      'price'.tr,
+      'total'.tr,
+    ];
+
     return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.8),
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
       columnWidths: const {
-        0: pw.FlexColumnWidth(2),
-        1: pw.FlexColumnWidth(1),
+        0: pw.FixedColumnWidth(24),
+        1: pw.FixedColumnWidth(58),
+        2: pw.FlexColumnWidth(4),
+        3: pw.FixedColumnWidth(42),
+        4: pw.FixedColumnWidth(56),
+        5: pw.FixedColumnWidth(64),
       },
       children: [
         pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-          children: [
-            _cell('القيمة', bold: bold, align: pw.Alignment.centerLeft),
-            _cell('البيان', bold: bold, align: pw.Alignment.centerRight),
-          ],
+          decoration: const pw.BoxDecoration(color: PdfColors.deepPurple600),
+          children: headers
+              .map(
+                (text) => _tableCell(
+                  text,
+                  font: bold,
+                  color: PdfColors.white,
+                  alignment: pw.Alignment.centerRight,
+                ),
+              )
+              .toList(),
         ),
         ...rows.map(
           (row) => pw.TableRow(
-            children: [
-              _cell(
-                (row[1] as String?)?.trim().isEmpty == true
-                    ? '-'
-                    : (row[1] as String? ?? '-'),
-                align: pw.Alignment.centerLeft,
-                color: row[2] as PdfColor?,
-                bold: row[2] == null ? null : bold,
-              ),
-              _cell(row[0] as String, bold: bold),
-            ],
+            children: row
+                .map(
+                  (text) => _tableCell(
+                    text,
+                    font: regular,
+                    alignment: pw.Alignment.centerRight,
+                  ),
+                )
+                .toList(),
           ),
         ),
       ],
     );
   }
 
-  static pw.Widget _cell(
+  static pw.Widget _totalsTable({
+    required List<List<String>> rows,
+    required pw.Font regular,
+    required pw.Font bold,
+  }) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(1),
+        1: pw.FlexColumnWidth(1),
+      },
+      children: rows.map((row) {
+        final isTotal = row.first == 'totalBill'.tr;
+        return pw.TableRow(
+          decoration:
+              isTotal ? const pw.BoxDecoration(color: PdfColors.grey200) : null,
+          children: [
+            _tableCell(
+              row[0],
+              font: isTotal ? bold : regular,
+              alignment: pw.Alignment.centerRight,
+            ),
+            _tableCell(
+              row[1],
+              font: isTotal ? bold : regular,
+              alignment: pw.Alignment.centerLeft,
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  static pw.Widget _tableCell(
     String text, {
-    pw.Font? bold,
+    required pw.Font font,
     PdfColor? color,
-    pw.Alignment align = pw.Alignment.centerRight,
+    pw.Alignment alignment = pw.Alignment.centerRight,
   }) {
     return pw.Container(
-      alignment: align,
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      alignment: alignment,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
       child: pw.Text(
         text,
-        style: pw.TextStyle(font: bold, color: color, fontSize: 10),
+        textDirection: pw.TextDirection.rtl,
+        style: pw.TextStyle(font: font, color: color, fontSize: 9),
+      ),
+    );
+  }
+
+  static pw.Widget _invoiceHeader({
+    required pw.Font bold,
+    required pw.Font regular,
+    required List<List<Object?>> rows,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300, width: 0.8),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Wrap(
+        spacing: 12,
+        runSpacing: 6,
+        children: rows.map((row) {
+          final value = (row[1] as String?)?.trim().isEmpty == true
+              ? '-'
+              : (row[1] as String? ?? '-');
+          return pw.SizedBox(
+            width: 235,
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  '${row[0]}: ',
+                  textDirection: pw.TextDirection.rtl,
+                  style: pw.TextStyle(font: bold, fontSize: 9.5),
+                ),
+                pw.Expanded(
+                  child: pw.Text(
+                    value,
+                    textDirection: pw.TextDirection.rtl,
+                    style: pw.TextStyle(font: regular, fontSize: 9.5),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }

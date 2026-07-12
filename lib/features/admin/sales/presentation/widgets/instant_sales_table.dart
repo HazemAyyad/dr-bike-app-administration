@@ -115,7 +115,7 @@ class _TableHeaderRow extends StatelessWidget {
           _HeaderCell('total', flex: 2),
           _HeaderCell('instantSalePieces', flex: 2),
           _HeaderCell('instantSalePartner', flex: 2),
-          _HeaderCell('status', flex: 2),
+          _HeaderCell('status', flex: 1),
         ],
       ),
     );
@@ -205,18 +205,31 @@ class _InstantSaleTableRow extends StatelessWidget {
                         children: [
                           _SaleCompositionBadge(kind: sale.compositionKind),
                           SizedBox(height: 2.h),
-                          Text(
-                            sale.invoiceNumber,
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700,
-                              color: fromMaintenance
-                                  ? const Color(0xFFB45309)
-                                  : _invoiceColorForKind(sale.compositionKind),
-                              decoration: TextDecoration.underline,
-                              decorationColor: fromMaintenance
-                                  ? const Color(0xFFB45309)
-                                  : _invoiceColorForKind(sale.compositionKind),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: AlignmentDirectional.center,
+                              child: Text(
+                                sale.invoiceNumber,
+                                maxLines: 1,
+                                softWrap: false,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: fromMaintenance
+                                      ? const Color(0xFFB45309)
+                                      : _invoiceColorForKind(
+                                          sale.compositionKind,
+                                        ),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: fromMaintenance
+                                      ? const Color(0xFFB45309)
+                                      : _invoiceColorForKind(
+                                          sale.compositionKind,
+                                        ),
+                                ),
+                              ),
                             ),
                           ),
                           if (fromMaintenance) ...[
@@ -318,7 +331,7 @@ class _InstantSaleTableRow extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: 2,
+                flex: 1,
                 child: Center(child: _StatusChip(cancelled: cancelled)),
               ),
             ],
@@ -389,20 +402,26 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = cancelled ? Colors.red : const Color(0xFF1B8A4A);
     final label = cancelled ? 'cancelled'.tr : 'saleStatusActive'.tr;
+    final icon = cancelled ? Icons.cancel_outlined : Icons.check_circle_outline;
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10.sp,
-          fontWeight: FontWeight.w600,
-          color: color,
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        child: Container(
+          width: 26.w,
+          height: 26.w,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Icon(
+            icon,
+            size: 17.sp,
+            color: color,
+          ),
         ),
       ),
     );

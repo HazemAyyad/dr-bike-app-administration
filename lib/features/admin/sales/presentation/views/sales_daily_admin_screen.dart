@@ -17,6 +17,7 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 4,
+      initialIndex: _initialTabIndex(),
       child: Scaffold(
         appBar: CustomAppBar(
           title: 'salesDailyAdminTitle',
@@ -47,6 +48,18 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
         }),
       ),
     );
+  }
+
+  int _initialTabIndex() {
+    final args = Get.arguments;
+    final raw = args is Map
+        ? args['initialTab']
+        : args is int
+            ? args
+            : null;
+    final index = raw is int ? raw : int.tryParse('${raw ?? ''}') ?? 0;
+    if (index < 0 || index > 3) return 0;
+    return index;
   }
 }
 
@@ -141,7 +154,8 @@ class _ClosingList extends StatelessWidget {
             ),
             isThreeLine: true,
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => _ClosingList.showClosingSheet(context, controller, item),
+            onTap: () =>
+                _ClosingList.showClosingSheet(context, controller, item),
           ),
         );
       },
@@ -430,9 +444,8 @@ class _CancellationList extends StatelessWidget {
       separatorBuilder: (_, __) => SizedBox(height: 10.h),
       itemBuilder: (context, index) {
         final item = controller.cancellationRequests[index];
-        final typeLabel = item.saleType == 'instant'
-            ? 'instantSale'.tr
-            : 'cashProfit'.tr;
+        final typeLabel =
+            item.saleType == 'instant' ? 'instantSale'.tr : 'cashProfit'.tr;
         return Card(
           child: ListTile(
             title: Text('$typeLabel #${item.saleId}'),

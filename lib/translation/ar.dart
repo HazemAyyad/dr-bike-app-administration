@@ -2630,6 +2630,7 @@ const Map<String, String> ar = {
   'salesDailyClosingPending': 'بانتظار موافقة الإدارة على الإغلاق',
   'salesDailyClosingPendingHint':
       'تم إرسال طلب الإغلاق. لا يمكنك البيع حتى تتم الموافقة.',
+  'salesDailyReviewClosingRequest': 'مراجعة طلب الإغلاق',
   'salesDailyTransferTargetRequired':
       'حدد صندوق الوجهة لكل عملة يُرحّل منها مبلغ',
   'salesDailyDayClosed': 'يوم المبيعات مغلق',
