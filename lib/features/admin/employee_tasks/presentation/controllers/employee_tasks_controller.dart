@@ -626,6 +626,7 @@ class EmployeeTasksController extends GetxController {
     List<File>? files,
     String? reloadOccurrenceId,
     bool silentRefresh = true,
+    bool replaceEmployeeImg = false,
   }) async {
     final images = List<File>.from(
       files ?? (isSubTask ? selectedSubFile : selectedFile),
@@ -640,6 +641,7 @@ class EmployeeTasksController extends GetxController {
         image: images,
         isOccurrenceSubtask: isOccurrenceSubtask,
         isOccurrenceMain: isOccurrenceMain,
+        replaceEmployeeImg: replaceEmployeeImg,
       );
       final status = result is Map ? result['status'] : null;
       if (status != 'success') {
@@ -877,6 +879,87 @@ class EmployeeTasksController extends GetxController {
     } finally {
       isLoading(false);
     }
+  }
+
+  Future<bool> undoSubtaskCompletion({
+    required int subTaskId,
+    required String mainTaskId,
+    String? occurrenceId,
+  }) async {
+    final occ = occurrenceId ?? lastLoadedOccurrenceId;
+    final isOccurrence = occ != null && occ.isNotEmpty;
+
+    isLoading(true);
+    try {
+      final res = await _taskDs.undoSubtaskCompletion(
+        subTaskId: subTaskId,
+        isOccurrence: isOccurrence,
+      );
+      if (res['status'] == 'success') {
+        await getTaskDetails(
+          taskId: mainTaskId,
+          occurrenceId: occ,
+          showFullScreenLoader: false,
+        );
+        _refreshEmployeeHomeAfterTaskChange();
+        update(['taskDetails', 'subtasks']);
+        Get.snackbar(
+          'success'.tr,
+          'subtaskUndoSuccess'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+        return true;
+      }
+      Get.snackbar('error'.tr, '${res['message'] ?? ''}');
+      return false;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString());
+      return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<bool> replaceCompletedSubtaskProof({
+    required BuildContext context,
+    required SubTaskEntity sub,
+    required String mainTaskId,
+    String? occurrenceId,
+  }) async {
+    final file = await CameraCaptureHelper.captureProof(
+      context,
+      proofMediaType: sub.proofMediaType,
+    );
+    if (file == null) return false;
+
+    final occ = occurrenceId ?? lastLoadedOccurrenceId;
+    final isOccurrenceSubtask = occ != null && occ.isNotEmpty;
+
+    final uploaded = await uploadTaskImage(
+      taskId: sub.id.toString(),
+      isSubTask: true,
+      isOccurrenceSubtask: isOccurrenceSubtask,
+      files: [file],
+      reloadOccurrenceId: occ,
+      silentRefresh: true,
+      replaceEmployeeImg: true,
+    );
+    if (!uploaded) return false;
+
+    await getTaskDetails(
+      taskId: mainTaskId,
+      occurrenceId: occ,
+      showFullScreenLoader: false,
+    );
+    update(['taskDetails', 'subtasks']);
+    Get.snackbar(
+      'success'.tr,
+      'subtaskProofReplaced'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2),
+    );
+    return true;
   }
 
   final ImagePicker picker = ImagePicker();

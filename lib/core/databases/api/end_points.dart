@@ -35,6 +35,10 @@ class EndPoints {
       'change/sub/employee/task/to/completed';
   static const String changeSubEmployeeOccurrenceTaskToCompleted =
       'change/sub/employee/occurrence/task/to/completed';
+  static const String changeSubEmployeeTaskToPending =
+      'change/sub/employee/task/to/pending';
+  static const String changeSubEmployeeOccurrenceTaskToPending =
+      'change/sub/employee/occurrence/task/to/pending';
   static const String changeSubEmployeeTaskToRejected =
       'change/sub/employee/task/to/rejected';
   static const String changeSubEmployeeOccurrenceTaskToRejected =
@@ -390,6 +394,7 @@ class EndPoints {
   static const String suspendedInstantSalesCount =
       'suspended/instant/sales/count';
   static const String suspendedInstantSale = 'suspended/instant/sale';
+  static const String suspendedInstantSaleNote = 'suspended/instant/sale/note';
   static const String suspendedInstantSaleComplete =
       'suspended/instant/sale/complete';
   static const String suspendedInstantSaleCancel =

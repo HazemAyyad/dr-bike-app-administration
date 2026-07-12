@@ -1243,6 +1243,12 @@ const Map<String, String> ar = {
   'subtaskProofRequiredImage': 'يتطلب إثبات (صورة)',
   'subtaskProofRequiredVideo': 'يتطلب إثبات (فيديو)',
   'subtaskProofUploaded': 'تم رفع الإثبات',
+  'undoSubtaskCompletion': 'تراجع عن الإنجاز',
+  'undoSubtaskCompletionConfirm':
+      'سيتم إرجاع المهمة الفرعية لغير منجزة ويمكن إنجازها من جديد.',
+  'subtaskUndoSuccess': 'تم التراجع عن إنجاز المهمة الفرعية',
+  'replaceSubtaskProof': 'استبدال الإثبات',
+  'subtaskProofReplaced': 'تم استبدال إثبات المهمة الفرعية',
   'subtaskAdminMaterialsForEmployee': 'مرفقات للموظف (صور / فيديو / صوت)',
   'subtaskAdminVoiceNote': 'تسجيل صوتي للمهمة الفرعية',
   'subtaskEmployeeProofTitle': 'إثبات الموظف',
@@ -1866,6 +1872,7 @@ const Map<String, String> ar = {
   "maintenanceNumber": "رقم الصيانة",
   "invoiceStatus": "حالة الفاتورة",
   "pdf": "PDF",
+  "print": "طباعة",
 
   // قسم المخزون
   'clearance': 'التصفيات',
@@ -2600,6 +2607,10 @@ const Map<String, String> ar = {
   'suspendedInvoiceCancelMessage':
       'هل أنت متأكد من إلغاء هذه الفاتورة العالقة؟',
   'suspendedInvoiceResuming': 'استكمال فاتورة',
+  'suspendedInvoiceNotes': 'ملاحظات الفاتورة',
+  'suspendedInvoiceNotesEmpty': 'لا توجد ملاحظات بعد',
+  'suspendedInvoiceNoteHint': 'اكتب ملاحظة على الفاتورة',
+  'suspendedInvoiceNoteOnSuspendTitle': 'ملاحظة قبل تعليق الفاتورة',
   'instantSaleEditing': 'تعديل فاتورة بيع فوري',
   'suspendInvoice': 'تعليق الفاتورة',
   'operationCompletedSuccessfully': 'تمت العملية بنجاح',
@@ -2614,6 +2625,7 @@ const Map<String, String> ar = {
   'salesDailyDrawerBusy': 'صندوق المبيعات مشغول',
   'salesDailyDrawerOpenByOther': 'الصندوق مفتوح لدى @employee',
   'salesDailySharedDrawerOpen': 'سيتم البيع على صندوق @employee',
+  'salesDailyMovementBy': 'منفذ الحركة',
   'salesDailyNoSessionOpen': 'يجب فتح صندوق المبيعات يدوياً قبل البيع',
   'salesDailyClosingPending': 'بانتظار موافقة الإدارة على الإغلاق',
   'salesDailyClosingPendingHint':
@@ -2622,6 +2634,14 @@ const Map<String, String> ar = {
       'حدد صندوق الوجهة لكل عملة يُرحّل منها مبلغ',
   'salesDailyDayClosed': 'يوم المبيعات مغلق',
   'salesDailyPreviousDayOpen': 'يجب إغلاق يوم المبيعات السابق أولاً',
+  'salesDailyPreviousDaySaleWarningTitle': 'صندوق يوم سابق ما زال مفتوحاً',
+  'salesDailyPreviousDaySaleWarningBody':
+      'يوجد صندوق مبيعات مفتوح بتاريخ @date ومسؤوله @employee. يجب إغلاق هذا الصندوق، لكن يمكنك تأكيد المتابعة وترحيل الحركة عليه.',
+  'salesDailyPreviousDayOpenDetails':
+      'تاريخ الصندوق: @date - المسؤول: @employee',
+  'salesDailyInvoiceSuspendedNoDrawerTitle': 'تم تعليق الفاتورة',
+  'salesDailyInvoiceSuspendedNoDrawerBody':
+      'تم حفظ الفاتورة كمعلقة لأن صندوق المبيعات غير مفتوح. افتح صندوق مبيعات ثم استكمل العملية من نفس الفاتورة.',
   'salesDailyBusinessDate': 'تاريخ اليوم',
   'salesDailyCloseDay': 'إغلاق اليوم',
   'salesDailyBox': 'الصندوق اليومي',

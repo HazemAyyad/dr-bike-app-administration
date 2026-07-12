@@ -250,6 +250,7 @@ class EmployeeTasksDatasource {
     required List<File> image,
     bool isOccurrenceSubtask = false,
     bool isOccurrenceMain = false,
+    bool replaceEmployeeImg = false,
   }) async {
     try {
       final String endpoint;
@@ -269,7 +270,10 @@ class EmployeeTasksDatasource {
       }
 
       final formData = await buildEmployeeProofFormData(
-        fields: fields,
+        fields: {
+          ...fields,
+          if (replaceEmployeeImg) 'replace_employee_img': '1',
+        },
         files: image,
       );
 
@@ -345,6 +349,31 @@ class EmployeeTasksDatasource {
           'sub_task_id': subTaskId,
           'rejection_reason': reason,
         },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data?['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> undoSubtaskCompletion({
+    required int subTaskId,
+    bool isOccurrence = false,
+  }) async {
+    try {
+      final endpoint = isOccurrence
+          ? EndPoints.changeSubEmployeeOccurrenceTaskToPending
+          : EndPoints.changeSubEmployeeTaskToPending;
+      final response = await api.post(
+        endpoint,
+        data: {'sub_task_id': subTaskId},
       );
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {

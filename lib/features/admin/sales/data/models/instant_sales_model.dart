@@ -4,6 +4,10 @@ import '../utils/sale_variant_display.dart';
 
 class InstantSalesModel {
   final int id;
+  final String? invoiceNumberValue;
+  final String? serialNumber;
+  final int? maintenanceId;
+  final String? maintenanceInvoiceNumber;
   final String product;
   final String? productBase;
   final String cost;
@@ -40,6 +44,10 @@ class InstantSalesModel {
 
   const InstantSalesModel({
     required this.id,
+    this.invoiceNumberValue,
+    this.serialNumber,
+    this.maintenanceId,
+    this.maintenanceInvoiceNumber,
     required this.product,
     this.productBase,
     required this.cost,
@@ -123,7 +131,15 @@ class InstantSalesModel {
       ? (packageName ?? product)
       : (productBase?.trim().isNotEmpty == true ? productBase! : product);
 
-  String get invoiceNumber => '#$id';
+  bool get isFromMaintenance => maintenanceId != null;
+
+  String get invoiceNumber {
+    final invoice = invoiceNumberValue?.trim();
+    if (invoice != null && invoice.isNotEmpty) return invoice;
+    final serial = serialNumber?.trim();
+    if (serial != null && serial.isNotEmpty) return serial;
+    return 'SAL-${id.toString().padLeft(7, '0')}';
+  }
 
   /// Total piece count (package lines sum sub-qty; else main + extras).
   int get piecesCount {
@@ -222,6 +238,13 @@ class InstantSalesModel {
   factory InstantSalesModel.fromJson(Map<String, dynamic> json) {
     return InstantSalesModel(
       id: asInt(json['id']),
+      invoiceNumberValue: asNullableString(json['invoice_number']),
+      serialNumber: asNullableString(json['serial_number']),
+      maintenanceId: json['maintenance_id'] == null
+          ? null
+          : int.tryParse('${json['maintenance_id']}'),
+      maintenanceInvoiceNumber:
+          asNullableString(json['maintenance_invoice_number']),
       product: asString(json['product']),
       productBase: asNullableString(json['product_base']),
       cost: asString(json['cost'], '0'),
@@ -238,9 +261,8 @@ class InstantSalesModel {
       ),
       buyerType: asNullableString(json['buyer_type']),
       buyerTypeLabelAr: asNullableString(json['buyer_type_label_ar']),
-      buyerId: json['buyer_id'] == null
-          ? null
-          : int.tryParse('${json['buyer_id']}'),
+      buyerId:
+          json['buyer_id'] == null ? null : int.tryParse('${json['buyer_id']}'),
       buyerName: asNullableString(json['buyer_name']),
       buyerPhone: asNullableString(json['buyer_phone']),
       projectName: asNullableString(json['project_name']),
@@ -280,6 +302,10 @@ class InstantSalesModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'invoice_number': invoiceNumberValue,
+      'serial_number': serialNumber,
+      'maintenance_id': maintenanceId,
+      'maintenance_invoice_number': maintenanceInvoiceNumber,
       'product': product,
       'cost': cost,
       'total_cost': totalCost,

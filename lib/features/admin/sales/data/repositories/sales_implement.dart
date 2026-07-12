@@ -348,6 +348,7 @@ class SalesImplement implements SalesRepository {
     required String currentStep,
     required Map<String, dynamic> payload,
     int? suspendedInstantSaleId,
+    String? note,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -357,6 +358,7 @@ class SalesImplement implements SalesRepository {
         currentStep: currentStep,
         payload: payload,
         suspendedInstantSaleId: suspendedInstantSaleId,
+        note: note,
       );
       if (result['status'] == 'success') {
         return Right(result['message']?.toString() ?? 'success');
@@ -365,6 +367,26 @@ class SalesImplement implements SalesRepository {
         result['message'] ?? 'Unknown error',
         result,
       ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
+  @override
+  Future<Either<Failure, SuspendedInstantSaleModel>>
+      addSuspendedInstantSaleNote({
+    required int suspendedInstantSaleId,
+    required String note,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await salesDatasource.addSuspendedInstantSaleNote(
+        suspendedInstantSaleId: suspendedInstantSaleId,
+        note: note,
+      );
+      return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }

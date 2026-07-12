@@ -31,8 +31,11 @@ class AppShortcutService {
     _initialized = true;
 
     try {
+      debugPrint('[WidgetShortcutFlow] initialize route=${Get.currentRoute}');
       await _quickActions.initialize(_onShortcutSelected);
       await refreshShortcutItems();
+      debugPrint(
+          '[WidgetShortcutFlow] initialize done route=${Get.currentRoute}');
     } catch (e, st) {
       debugPrint('[AppShortcut] init failed: $e\n$st');
     }
@@ -58,6 +61,9 @@ class AppShortcutService {
   }
 
   void _onShortcutSelected(String type) {
+    debugPrint(
+      '[WidgetShortcutFlow] quick action selected type=$type route=${Get.currentRoute}',
+    );
     _pendingShortcut = type;
     if (_isAuthenticatedMainShell()) {
       scheduleConsumePending();
@@ -65,24 +71,49 @@ class AppShortcutService {
   }
 
   void scheduleConsumePending() {
+    debugPrint(
+      '[WidgetShortcutFlow] schedule consume pending=$_pendingShortcut route=${Get.currentRoute}',
+    );
     SchedulerBinding.instance.addPostFrameCallback((_) {
       consumePendingShortcutIfAny();
     });
   }
 
   void triggerAddSpecialTaskFromExternal() {
+    debugPrint(
+      '[WidgetShortcutFlow] external trigger add_special_task route=${Get.currentRoute}',
+    );
     _pendingShortcut = addSpecialTask;
     scheduleConsumePending();
   }
 
   Future<void> consumePendingShortcutIfAny() async {
     final type = _pendingShortcut;
-    if (type == null || type.isEmpty) return;
+    debugPrint(
+      '[WidgetShortcutFlow] consume start pending=$type route=${Get.currentRoute} '
+      'userType=$userType permissions=$employeePermissions',
+    );
+    if (type == null || type.isEmpty) {
+      debugPrint('[WidgetShortcutFlow] consume ignored empty pending');
+      return;
+    }
     _pendingShortcut = null;
 
-    if (type != addSpecialTask) return;
+    if (type != addSpecialTask) {
+      debugPrint('[WidgetShortcutFlow] consume ignored unknown type=$type');
+      return;
+    }
+
+    if (!_isAuthenticatedMainShell()) {
+      debugPrint(
+        '[WidgetShortcutFlow] app not ready, keep pending type=$type route=${Get.currentRoute}',
+      );
+      _pendingShortcut = type;
+      return;
+    }
 
     if (!canOpenAddSpecialTask) {
+      debugPrint('[WidgetShortcutFlow] permission denied for add_special_task');
       Get.snackbar(
         'error'.tr,
         'shortcutSpecialTaskNoPermission'.tr,
@@ -91,27 +122,43 @@ class AppShortcutService {
       return;
     }
 
-    if (!_isAuthenticatedMainShell()) {
-      _pendingShortcut = type;
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+
+    debugPrint(
+      '[WidgetShortcutFlow] after delay route=${Get.currentRoute} pending=$_pendingShortcut',
+    );
+
+    if (Get.currentRoute == AppRoutes.CREATETASKSCREEN) {
+      debugPrint('[WidgetShortcutFlow] already on create task screen');
       return;
     }
 
-    await Future<void>.delayed(const Duration(milliseconds: 350));
-
-    if (Get.currentRoute == AppRoutes.CREATETASKSCREEN) return;
-
+    debugPrint('[WidgetShortcutFlow] opening create special task screen');
     await Get.toNamed(
       AppRoutes.CREATETASKSCREEN,
       arguments: const {
         'title': 'addNewPravateTask',
         'isEdit': false,
+        'fromHomeWidget': true,
       },
     );
+    debugPrint(
+        '[WidgetShortcutFlow] create special task route completed route=${Get.currentRoute}');
   }
 
   bool _isAuthenticatedMainShell() {
-    if (userType.isEmpty) return false;
+    if (userType.isEmpty) {
+      debugPrint('[WidgetShortcutFlow] not authenticated: empty userType');
+      return false;
+    }
     final route = Get.currentRoute;
+    if (route.isEmpty ||
+        route == '/' ||
+        route.startsWith('/?') ||
+        route.contains('homeWidget=true')) {
+      debugPrint('[WidgetShortcutFlow] not ready: route=$route');
+      return false;
+    }
     const authBlocked = <String>{
       AppRoutes.SPLASHSCREEN,
       AppRoutes.LOGINSCREEN,
@@ -119,7 +166,11 @@ class AppShortcutService {
       AppRoutes.ONBOARDINGSCREEN,
       AppRoutes.NOINTERNETSCREEN,
     };
-    return !authBlocked.contains(route);
+    final ready = !authBlocked.contains(route);
+    if (!ready) {
+      debugPrint('[WidgetShortcutFlow] blocked route=$route');
+    }
+    return ready;
   }
 
   String _currentLangCode() {

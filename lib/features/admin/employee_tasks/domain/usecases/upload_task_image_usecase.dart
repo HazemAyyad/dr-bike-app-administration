@@ -13,6 +13,7 @@ class UploadTaskImageUsecase {
     required bool isSubTask,
     bool isOccurrenceSubtask = false,
     bool isOccurrenceMain = false,
+    bool replaceEmployeeImg = false,
   }) {
     return employeeTasksRepository.uplodeTaskImage(
       taskId: taskId,
@@ -20,6 +21,7 @@ class UploadTaskImageUsecase {
       isSubTask: isSubTask,
       isOccurrenceSubtask: isOccurrenceSubtask,
       isOccurrenceMain: isOccurrenceMain,
+      replaceEmployeeImg: replaceEmployeeImg,
     );
   }
 }

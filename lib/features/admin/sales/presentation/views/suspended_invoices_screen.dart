@@ -78,6 +78,8 @@ class SuspendedInvoicesScreen extends GetView<SuspendedInvoicesController> {
                         items: controller.items,
                         showOwner: controller.isAdmin,
                         onResume: controller.resumeItem,
+                        onNotes: (item) =>
+                            controller.openNotesDialog(context, item),
                         onCancel: (item) =>
                             controller.cancelItem(context, item),
                       ),

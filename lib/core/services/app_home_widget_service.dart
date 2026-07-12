@@ -28,13 +28,17 @@ class AppHomeWidgetService {
     _initialized = true;
 
     try {
+      debugPrint('[HomeWidgetFlow] initialize start route=${Get.currentRoute}');
       await HomeWidget.setAppGroupId(appGroupId);
       await syncPresentation();
 
       final initialUri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+      debugPrint(
+          '[HomeWidgetFlow] initialUri=$initialUri route=${Get.currentRoute}');
       _onWidgetUri(initialUri);
 
       HomeWidget.widgetClicked.listen(_onWidgetUri);
+      debugPrint('[HomeWidgetFlow] initialize done route=${Get.currentRoute}');
     } catch (e, st) {
       debugPrint('[AppHomeWidget] init failed: $e\n$st');
     }
@@ -45,8 +49,7 @@ class AppHomeWidgetService {
 
     final lang = _currentLangCode();
     final title = lang == 'ar' ? 'إضافة مهمة خاصة' : 'Add special task';
-    final subtitle =
-        lang == 'ar' ? 'اضغط لفتح التطبيق' : 'Tap to open the app';
+    final subtitle = lang == 'ar' ? 'اضغط لفتح التطبيق' : 'Tap to open the app';
 
     try {
       await HomeWidget.saveWidgetData<String>(_titleKey, title);
@@ -61,7 +64,12 @@ class AppHomeWidgetService {
   }
 
   void _onWidgetUri(Uri? uri) {
-    if (uri == null || !_isAddSpecialTaskUri(uri)) return;
+    debugPrint('[HomeWidgetFlow] widget uri=$uri route=${Get.currentRoute}');
+    if (uri == null || !_isAddSpecialTaskUri(uri)) {
+      debugPrint('[HomeWidgetFlow] ignored uri=$uri');
+      return;
+    }
+    debugPrint('[HomeWidgetFlow] accepted add_special_task uri');
     AppShortcutService.instance.triggerAddSpecialTaskFromExternal();
   }
 

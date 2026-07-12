@@ -33,25 +33,30 @@ class DailySessionPayload {
 
   bool get allowsSales => session?.allowsSales ?? false;
 
-  bool get isClosingRequested =>
-      session?.status == 'closing_requested';
+  bool get isClosingRequested => session?.status == 'closing_requested';
 
   bool get isClosed => session?.status == 'closed';
 
   bool get isReopenPending =>
       pendingReopenRequestId != null || (session?.hasPendingReopen ?? false);
 
-  bool get canRequestReopen =>
-      isClosed && !isReopenPending;
+  bool get canRequestReopen => isClosed && !isReopenPending;
 
-  bool get canRequestClosing =>
-      session?.canRequestClosing ?? false;
+  bool get canRequestClosing => session?.canRequestClosing ?? false;
 
   bool get requiresLateCloseReason =>
       (session?.requiresLateCloseReason ?? false) || isBlockingPreviousDay;
 
-  bool get isBlockingPreviousDay =>
-      session?.isBlockingPreviousDay ?? false;
+  bool get isBlockingPreviousDay => session?.isBlockingPreviousDay ?? false;
+
+  bool get shouldWarnPreviousDaySale =>
+      session?.previousDayWarning == true || isBlockingPreviousDay;
+
+  String? get previousDayOwnerName =>
+      session?.previousDayOwnerName ?? session?.employeeName;
+
+  String? get previousDayBusinessDate =>
+      session?.previousDayBusinessDate ?? session?.businessDate;
 
   bool get needsManualOpen =>
       session == null && canRequestOpen && !blockedByOtherSession;
@@ -85,8 +90,8 @@ class DailySessionPayload {
               Map<String, dynamic>.from(json['config'] as Map),
             )
           : const DailySessionConfig(),
-      canRequestOpen: json['can_request_open'] == true ||
-          json['can_request_open'] == 1,
+      canRequestOpen:
+          json['can_request_open'] == true || json['can_request_open'] == 1,
       blockedByOtherSession: json['blocked_by_other_session'] == true ||
           json['blocked_by_other_session'] == 1,
       blockedByEmployeeName: asNullableString(json['blocked_by_employee_name']),
@@ -109,6 +114,9 @@ class DailySessionInfo {
   final bool isBlockingPreviousDay;
   final bool canRequestClosing;
   final bool requiresLateCloseReason;
+  final bool previousDayWarning;
+  final String? previousDayOwnerName;
+  final String? previousDayBusinessDate;
   final bool closedOnNextDay;
   final String? employeeName;
   final String? openedAt;
@@ -123,6 +131,9 @@ class DailySessionInfo {
     this.isBlockingPreviousDay = false,
     this.canRequestClosing = false,
     this.requiresLateCloseReason = false,
+    this.previousDayWarning = false,
+    this.previousDayOwnerName,
+    this.previousDayBusinessDate,
     this.closedOnNextDay = false,
     this.employeeName,
     this.openedAt,
@@ -142,13 +153,18 @@ class DailySessionInfo {
           json['can_request_closing'] == 1,
       requiresLateCloseReason: json['requires_late_close_reason'] == true ||
           json['requires_late_close_reason'] == 1,
-      closedOnNextDay: json['closed_on_next_day'] == true ||
-          json['closed_on_next_day'] == 1,
+      previousDayWarning: json['previous_day_warning'] == true ||
+          json['previous_day_warning'] == 1,
+      previousDayOwnerName: asNullableString(json['previous_day_owner_name']),
+      previousDayBusinessDate:
+          asNullableString(json['previous_day_business_date']),
+      closedOnNextDay:
+          json['closed_on_next_day'] == true || json['closed_on_next_day'] == 1,
       employeeName: asNullableString(json['employee_name']),
       openedAt: asNullableString(json['opened_at']),
       closedAt: asNullableString(json['closed_at']),
-      hasPendingReopen: json['has_pending_reopen'] == true ||
-          json['has_pending_reopen'] == 1,
+      hasPendingReopen:
+          json['has_pending_reopen'] == true || json['has_pending_reopen'] == 1,
     );
   }
 }
@@ -291,8 +307,7 @@ class DailyClosingRequestModel {
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),
       cashCounts: counts,
-      isLateClose:
-          json['is_late_close'] == true || json['is_late_close'] == 1,
+      isLateClose: json['is_late_close'] == true || json['is_late_close'] == 1,
       lateCloseReason: asNullableString(json['late_close_reason']),
     );
   }
@@ -404,8 +419,8 @@ class DailySessionSummaryModel {
       status: asString(json['status']),
       openedAt: asNullableString(json['opened_at']),
       closedAt: asNullableString(json['closed_at']),
-      closedOnNextDay: json['closed_on_next_day'] == true ||
-          json['closed_on_next_day'] == 1,
+      closedOnNextDay:
+          json['closed_on_next_day'] == true || json['closed_on_next_day'] == 1,
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),
       currencies: mapList(
@@ -522,8 +537,7 @@ class DailyClosingHistoryModel {
         (Map<String, dynamic> m) => DailyCashCountRow.fromJson(m),
       ),
       transfers: transfers,
-      isLateClose:
-          json['is_late_close'] == true || json['is_late_close'] == 1,
+      isLateClose: json['is_late_close'] == true || json['is_late_close'] == 1,
       lateCloseReason: asNullableString(json['late_close_reason']),
     );
   }
@@ -533,6 +547,10 @@ class DailySessionSaleLogRow {
   final int id;
   final String saleType;
   final String label;
+  final String? invoiceNumber;
+  final String? serialNumber;
+  final int? maintenanceId;
+  final String? maintenanceInvoiceNumber;
   final double totalCost;
   final double paidAmount;
   final double remainingAmount;
@@ -540,6 +558,7 @@ class DailySessionSaleLogRow {
   final String status;
   final String? createdAt;
   final String? buyerName;
+  final String? createdByName;
   final String? paymentBoxName;
   final String? notes;
   final bool isPackageSale;
@@ -551,6 +570,10 @@ class DailySessionSaleLogRow {
     required this.id,
     required this.saleType,
     required this.label,
+    this.invoiceNumber,
+    this.serialNumber,
+    this.maintenanceId,
+    this.maintenanceInvoiceNumber,
     this.totalCost = 0,
     this.paidAmount = 0,
     this.remainingAmount = 0,
@@ -558,6 +581,7 @@ class DailySessionSaleLogRow {
     this.status = 'active',
     this.createdAt,
     this.buyerName,
+    this.createdByName,
     this.paymentBoxName,
     this.notes,
     this.isPackageSale = false,
@@ -572,11 +596,32 @@ class DailySessionSaleLogRow {
 
   bool get isSalesOrderDelivery => saleType == 'sales_order';
 
+  bool get isFromMaintenance => maintenanceId != null;
+
+  String get displayInvoiceNumber {
+    if (isSalesOrderDelivery) {
+      return salesOrderSerial ?? '#${salesOrderId ?? id}';
+    }
+    final invoice = invoiceNumber?.trim();
+    if (invoice != null && invoice.isNotEmpty) return invoice;
+    final serial = serialNumber?.trim();
+    if (serial != null && serial.isNotEmpty) return serial;
+    if (isInstant) return 'SAL-${id.toString().padLeft(7, '0')}';
+    return '#$id';
+  }
+
   factory DailySessionSaleLogRow.fromJson(Map<String, dynamic> json) {
     return DailySessionSaleLogRow(
       id: asInt(json['id']),
       saleType: asString(json['sale_type'], 'instant'),
       label: asString(json['label']),
+      invoiceNumber: asNullableString(json['invoice_number']),
+      serialNumber: asNullableString(json['serial_number']),
+      maintenanceId: json['maintenance_id'] == null
+          ? null
+          : int.tryParse('${json['maintenance_id']}'),
+      maintenanceInvoiceNumber:
+          asNullableString(json['maintenance_invoice_number']),
       totalCost: asDouble(json['total_cost']),
       paidAmount: asDouble(json['paid_amount']),
       remainingAmount: asDouble(json['remaining_amount']),
@@ -584,12 +629,13 @@ class DailySessionSaleLogRow {
       status: asString(json['status'], 'active'),
       createdAt: asNullableString(json['created_at']),
       buyerName: asNullableString(json['buyer_name']),
+      createdByName: asNullableString(json['created_by_name']),
       paymentBoxName: asNullableString(json['payment_box_name']),
       notes: asNullableString(json['notes']),
       isPackageSale:
           json['is_package_sale'] == true || json['is_package_sale'] == 1,
-      isFromSalesOrder:
-          json['is_from_sales_order'] == true || json['is_from_sales_order'] == 1,
+      isFromSalesOrder: json['is_from_sales_order'] == true ||
+          json['is_from_sales_order'] == 1,
       salesOrderId: json['sales_order_id'] as int?,
       salesOrderSerial: asNullableString(json['sales_order_serial']),
     );

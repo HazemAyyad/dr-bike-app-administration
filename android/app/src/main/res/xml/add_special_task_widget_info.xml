@@ -3,11 +3,11 @@
     android:description="@string/widget_add_special_task_description"
     android:initialLayout="@layout/add_special_task_widget"
     android:label="@string/widget_add_special_task_label"
-    android:minWidth="180dp"
+    android:minWidth="48dp"
     android:minHeight="48dp"
     android:previewLayout="@layout/add_special_task_widget"
     android:resizeMode="horizontal|vertical"
-    android:targetCellWidth="3"
+    android:targetCellWidth="1"
     android:targetCellHeight="1"
     android:updatePeriodMillis="43200000"
     android:widgetCategory="home_screen" />

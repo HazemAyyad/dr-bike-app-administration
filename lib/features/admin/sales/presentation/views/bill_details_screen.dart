@@ -1,7 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
@@ -55,6 +61,9 @@ class BillDetailsScreen extends GetView<SalesController> {
                     invoiceNumber: invoice.maintenanceInvoiceNumber,
                   ),
                 ),
+              SliverToBoxAdapter(
+                child: _InvoicePrintActions(invoice: invoice),
+              ),
               SliverToBoxAdapter(
                 child: _InvoiceHeaderCard(
                   invoiceNumber: _dash(invoice.invoiceNumber),
@@ -188,6 +197,67 @@ class BillDetailsScreen extends GetView<SalesController> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _InvoicePrintActions extends StatelessWidget {
+  const _InvoicePrintActions({required this.invoice});
+
+  final InvoiceModel invoice;
+
+  String get _fileName {
+    final safeNumber = invoice.invoiceNumber
+        .replaceAll(RegExp(r'[^A-Za-z0-9_\-]+'), '_')
+        .replaceAll(RegExp(r'_+'), '_');
+    return 'sales_invoice_$safeNumber.pdf';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 0),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor2,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              invoice.invoiceNumber,
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryColor,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'pdf'.tr,
+            onPressed: () async {
+              final bytes = await SalesInvoicePdfBuilder.build(invoice);
+              await Printing.sharePdf(bytes: bytes, filename: _fileName);
+            },
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+          ),
+          IconButton(
+            tooltip: 'print'.tr,
+            onPressed: () async {
+              final bytes = await SalesInvoicePdfBuilder.build(invoice);
+              await Printing.layoutPdf(
+                name: _fileName,
+                onLayout: (_) async => bytes,
+              );
+            },
+            icon: const Icon(Icons.print_outlined),
+          ),
+        ],
       ),
     );
   }
@@ -423,6 +493,284 @@ class _InvoiceTotalsSection extends StatelessWidget {
                 ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class SalesInvoicePdfBuilder {
+  SalesInvoicePdfBuilder._();
+
+  static Future<pw.Font> _regular() async {
+    final data =
+        await rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf');
+    return pw.Font.ttf(data);
+  }
+
+  static Future<pw.Font> _bold() async {
+    final data = await rootBundle.load('assets/fonts/Almarai/Almarai-Bold.ttf');
+    return pw.Font.ttf(data);
+  }
+
+  static Future<pw.MemoryImage?> _logo() async {
+    try {
+      final data = await rootBundle.load('assets/images/dark_Logo.png');
+      return pw.MemoryImage(data.buffer.asUint8List());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String _money(dynamic value) {
+    final parsed = value is num ? value.toDouble() : double.tryParse('$value');
+    return NumberFormat('#,##0.00').format(parsed ?? 0);
+  }
+
+  static Future<Uint8List> build(InvoiceModel invoice) async {
+    final regular = await _regular();
+    final bold = await _bold();
+    final logo = await _logo();
+    final rows = _lineRows(invoice);
+
+    final doc = pw.Document();
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
+        theme: pw.ThemeData.withFont(base: regular, bold: bold),
+        margin: const pw.EdgeInsets.fromLTRB(28, 26, 28, 26),
+        build: (_) => [
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.Expanded(
+                child: pw.Text(
+                  'دكتور بايك - فاتورة مبيعات',
+                  style: pw.TextStyle(
+                    font: bold,
+                    fontSize: 21,
+                    color: PdfColors.deepPurple600,
+                  ),
+                ),
+              ),
+              if (logo != null) pw.Image(logo, height: 62),
+            ],
+          ),
+          pw.Container(
+            margin: const pw.EdgeInsets.only(top: 8, bottom: 10),
+            height: 1.3,
+            color: PdfColors.deepPurple600,
+          ),
+          pw.Center(
+            child: pw.Text(
+              'فاتورة مبيعات',
+              style: pw.TextStyle(font: bold, fontSize: 16),
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          _detailsTable(
+            bold: bold,
+            rows: [
+              ['billNumber'.tr, invoice.invoiceNumber, null],
+              ['date'.tr, invoice.invoiceDate, null],
+              ['buyerTypeSale'.tr, invoice.displayBuyerTypeLabel, null],
+              ['buyerName'.tr, invoice.displayTraderName, null],
+              [
+                'phoneNumberTitle'.tr,
+                invoice.buyerPhone ?? invoice.phone ?? '-',
+                null
+              ],
+              [
+                'address'.tr,
+                invoice.buyerAddress ?? invoice.address ?? '-',
+                null
+              ],
+              ['paymentMethod'.tr, invoice.paymentMethod ?? '-', null],
+              ['boxName'.tr, invoice.displayPaymentBox, null],
+              ['status'.tr, invoice.displaySaleStatus, null],
+            ],
+          ),
+          pw.SizedBox(height: 12),
+          pw.TableHelper.fromTextArray(
+            headers: [
+              '#',
+              'productName'.tr,
+              'quantity'.tr,
+              'price'.tr,
+              'total'.tr
+            ],
+            data: rows,
+            headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
+            headerDecoration:
+                const pw.BoxDecoration(color: PdfColors.deepPurple600),
+            cellStyle: pw.TextStyle(font: regular, fontSize: 9),
+            cellAlignment: pw.Alignment.centerRight,
+            headerAlignment: pw.Alignment.centerRight,
+            cellPadding:
+                const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+            columnWidths: const {
+              0: pw.FixedColumnWidth(24),
+              1: pw.FlexColumnWidth(4),
+              2: pw.FixedColumnWidth(42),
+              3: pw.FixedColumnWidth(56),
+              4: pw.FixedColumnWidth(64),
+            },
+          ),
+          if (invoice.additionalNotes.isNotEmpty) ...[
+            pw.SizedBox(height: 10),
+            pw.Text(
+              'additionalNotes'.tr,
+              style: pw.TextStyle(font: bold, fontSize: 12),
+            ),
+            pw.SizedBox(height: 4),
+            ...invoice.additionalNotes.map(
+              (note) => pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Expanded(child: pw.Text(note.text)),
+                  pw.Text(_money(note.amount), style: pw.TextStyle(font: bold)),
+                ],
+              ),
+            ),
+          ],
+          pw.SizedBox(height: 12),
+          pw.Align(
+            alignment: pw.Alignment.centerRight,
+            child: pw.SizedBox(
+              width: 220,
+              child: pw.TableHelper.fromTextArray(
+                data: [
+                  ['subtotal'.tr, _money(invoice.subtotal)],
+                  ['discount'.tr, _money(invoice.discount)],
+                  if ((double.tryParse(invoice.additionalNotesTotal) ?? 0) > 0)
+                    ['notesTotal'.tr, _money(invoice.additionalNotesTotal)],
+                  ['tax'.tr, _money(invoice.tax)],
+                  ['totalBill'.tr, _money(invoice.totalCost)],
+                  ['paidAmount'.tr, _money(invoice.paidAmount)],
+                  ['remainingAmount'.tr, _money(invoice.remainingAmount)],
+                ],
+                cellAlignment: pw.Alignment.centerRight,
+                cellStyle: pw.TextStyle(font: regular),
+                cellPadding:
+                    const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+              ),
+            ),
+          ),
+          if (invoice.notes?.trim().isNotEmpty == true) ...[
+            pw.SizedBox(height: 10),
+            pw.Text(
+              '${'notes'.tr}: ${invoice.notes}',
+              style: pw.TextStyle(font: regular, fontSize: 10),
+            ),
+          ],
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  static List<List<String>> _lineRows(InvoiceModel invoice) {
+    final rows = <List<String>>[];
+
+    void addLine({
+      required String name,
+      required String quantity,
+      required String cost,
+      required String total,
+    }) {
+      rows.add([
+        '${rows.length + 1}',
+        name,
+        quantity,
+        _money(cost),
+        _money(total),
+      ]);
+    }
+
+    if (invoice.isPackageSale) {
+      addLine(
+        name: invoice.displayProductTitle,
+        quantity: invoice.quantity,
+        cost: invoice.cost,
+        total: invoice.subtotal,
+      );
+      for (final sub in invoice.additionalProductLines) {
+        addLine(
+          name: sub.displayProductName,
+          quantity: sub.quantity,
+          cost: sub.cost,
+          total: sub.subtotal,
+        );
+      }
+    } else {
+      addLine(
+        name: invoice.displayProductTitle,
+        quantity: invoice.quantity,
+        cost: invoice.cost,
+        total: invoice.subtotal,
+      );
+      for (final sub in invoice.subProducts) {
+        addLine(
+          name: sub.displayProductName,
+          quantity: sub.quantity,
+          cost: sub.cost,
+          total: sub.subtotal,
+        );
+      }
+    }
+
+    return rows;
+  }
+
+  static pw.Widget _detailsTable({
+    required pw.Font bold,
+    required List<List<Object?>> rows,
+  }) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.8),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(2),
+        1: pw.FlexColumnWidth(1),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+          children: [
+            _cell('القيمة', bold: bold, align: pw.Alignment.centerLeft),
+            _cell('البيان', bold: bold, align: pw.Alignment.centerRight),
+          ],
+        ),
+        ...rows.map(
+          (row) => pw.TableRow(
+            children: [
+              _cell(
+                (row[1] as String?)?.trim().isEmpty == true
+                    ? '-'
+                    : (row[1] as String? ?? '-'),
+                align: pw.Alignment.centerLeft,
+                color: row[2] as PdfColor?,
+                bold: row[2] == null ? null : bold,
+              ),
+              _cell(row[0] as String, bold: bold),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _cell(
+    String text, {
+    pw.Font? bold,
+    PdfColor? color,
+    pw.Alignment align = pw.Alignment.centerRight,
+  }) {
+    return pw.Container(
+      alignment: align,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(font: bold, color: color, fontSize: 10),
       ),
     );
   }

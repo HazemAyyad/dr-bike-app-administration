@@ -100,6 +100,13 @@ abstract class SalesRepository {
     required String currentStep,
     required Map<String, dynamic> payload,
     int? suspendedInstantSaleId,
+    String? note,
+  });
+
+  Future<Either<Failure, SuspendedInstantSaleModel>>
+      addSuspendedInstantSaleNote({
+    required int suspendedInstantSaleId,
+    required String note,
   });
 
   Future<Either<Failure, String>> completeSuspendedInstantSale({

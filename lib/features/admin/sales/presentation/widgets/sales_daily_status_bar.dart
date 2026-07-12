@@ -55,7 +55,16 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                         color: color,
                       ),
                     ),
-                    if (payload.blockedByOtherSession)
+                    if (payload.shouldWarnPreviousDaySale)
+                      Text(
+                        'salesDailyPreviousDayOpenDetails'.trParams({
+                          'date': payload.previousDayBusinessDate ?? '',
+                          'employee': payload.previousDayOwnerName ?? '',
+                        }),
+                        style: TextStyle(
+                            fontSize: 11.sp, color: Colors.grey.shade700),
+                      )
+                    else if (payload.blockedByOtherSession)
                       Text(
                         'salesDailySharedDrawerOpen'.trParams({
                           'employee': payload.blockedByEmployeeName ?? '',

@@ -456,6 +456,8 @@ class OperationalChecklist extends StatelessWidget {
     this.compact = false,
     this.onSubtaskTap,
     this.onSubtaskReject,
+    this.onSubtaskUndo,
+    this.onSubtaskReplaceProof,
   }) : super(key: key);
 
   final TaskDetailsModel data;
@@ -463,6 +465,8 @@ class OperationalChecklist extends StatelessWidget {
   final bool compact;
   final void Function(SubTaskEntity sub)? onSubtaskTap;
   final void Function(SubTaskEntity sub)? onSubtaskReject;
+  final void Function(SubTaskEntity sub)? onSubtaskUndo;
+  final void Function(SubTaskEntity sub)? onSubtaskReplaceProof;
 
   @override
   Widget build(BuildContext context) {
@@ -478,6 +482,9 @@ class OperationalChecklist extends StatelessWidget {
         final rejected = sub.status == 'rejected';
         final needsProof = sub.isForcedToUploadImg;
         final canReject = interactive && !done && !rejected;
+        final canUndo = interactive && done && onSubtaskUndo != null;
+        final canReplaceProof =
+            interactive && done && needsProof && onSubtaskReplaceProof != null;
         final hasAdminMedia = (sub.adminImg?.isNotEmpty ?? false) ||
             (sub.adminVideos?.isNotEmpty ?? false) ||
             hasPlayableAudio(sub.adminAudio);
@@ -666,20 +673,81 @@ class OperationalChecklist extends StatelessWidget {
                 ),
                 if (needsProof && !rejected) ...[
                   SizedBox(width: 6.w),
+                  if (canReplaceProof)
+                    Tooltip(
+                      message: 'replaceSubtaskProof'.tr,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => onSubtaskReplaceProof?.call(sub),
+                          borderRadius: BorderRadius.circular(8.r),
+                          child: Container(
+                            width: compact ? 26.w : 32.w,
+                            height: compact ? 26.w : 32.w,
+                            decoration: BoxDecoration(
+                              color: AppColors.operationalPurple
+                                  .withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(
+                                color: AppColors.operationalPurple
+                                    .withValues(alpha: 0.45),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.swap_horizontal_circle_outlined,
+                              size: compact ? 16.sp : 20.sp,
+                              color: AppColors.operationalPurple,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Tooltip(
+                      message: done && hasEmployeeProof
+                          ? 'subtaskProofUploaded'.tr
+                          : ProofMediaType.subtaskRequiredHintKey(
+                                  sub.proofMediaType)
+                              .tr,
+                      child: Icon(
+                        done && hasEmployeeProof
+                            ? Icons.verified_outlined
+                            : Icons.camera_alt_outlined,
+                        size: compact ? 16.sp : 20.sp,
+                        color: done && hasEmployeeProof
+                            ? AppColors.customGreen1
+                            : AppColors.operationalPurple,
+                      ),
+                    ),
+                ],
+                if (canUndo) ...[
+                  SizedBox(width: 6.w),
                   Tooltip(
-                    message: done && hasEmployeeProof
-                        ? 'subtaskProofUploaded'.tr
-                        : ProofMediaType.subtaskRequiredHintKey(
-                                sub.proofMediaType)
-                            .tr,
-                    child: Icon(
-                      done && hasEmployeeProof
-                          ? Icons.verified_outlined
-                          : Icons.camera_alt_outlined,
-                      size: compact ? 16.sp : 20.sp,
-                      color: done && hasEmployeeProof
-                          ? AppColors.customGreen1
-                          : AppColors.operationalPurple,
+                    message: 'undoSubtaskCompletion'.tr,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onSubtaskUndo?.call(sub),
+                        borderRadius: BorderRadius.circular(8.r),
+                        child: Container(
+                          width: compact ? 26.w : 32.w,
+                          height: compact ? 26.w : 32.w,
+                          decoration: BoxDecoration(
+                            color: AppColors.customGreyColor5
+                                .withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: AppColors.customGreyColor5
+                                  .withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.undo_rounded,
+                            size: compact ? 16.sp : 20.sp,
+                            color: AppColors.customGreyColor5,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

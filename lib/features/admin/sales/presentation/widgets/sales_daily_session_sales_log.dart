@@ -10,6 +10,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../data/models/daily_session_model.dart';
 import '../binding/sales_binding.dart';
 import '../controllers/sales_controller.dart';
+
 class SalesDailySessionSalesLog extends StatelessWidget {
   const SalesDailySessionSalesLog({
     Key? key,
@@ -91,7 +92,8 @@ class _SalesList extends StatelessWidget {
     );
   }
 
-  Future<void> _onSaleTap(BuildContext context, DailySessionSaleLogRow sale) async {
+  Future<void> _onSaleTap(
+      BuildContext context, DailySessionSaleLogRow sale) async {
     if (sale.isSalesOrderDelivery && sale.salesOrderId != null) {
       await Get.toNamed(
         AppRoutes.SALESORDERDETAILSCREEN,
@@ -125,6 +127,8 @@ class _SalesList extends StatelessWidget {
             SizedBox(height: 8.h),
             if (sale.buyerName?.isNotEmpty ?? false)
               Text('${'buyerName'.tr}: ${sale.buyerName}'),
+            if (sale.createdByName?.isNotEmpty ?? false)
+              Text('${'salesDailyMovementBy'.tr}: ${sale.createdByName}'),
             Text('${'totalCost'.tr}: ${sale.totalCost.toStringAsFixed(2)}'),
             if (sale.paymentBoxName?.isNotEmpty ?? false)
               Text('${'boxName'.tr}: ${sale.paymentBoxName}'),
@@ -167,6 +171,17 @@ class _SaleRow extends StatelessWidget {
         : sale.isInstant
             ? 'instantSale'.tr
             : 'cashProfit'.tr;
+    final fromMaintenance = sale.isFromMaintenance;
+    final borderColor = cancelled
+        ? Colors.red.shade200
+        : fromMaintenance
+            ? const Color(0xFFF59E0B)
+            : Colors.grey.shade300;
+    final rowColor = cancelled
+        ? Colors.red.withValues(alpha: 0.04)
+        : fromMaintenance
+            ? const Color(0xFFFFF7E6)
+            : null;
 
     return Material(
       color: Colors.transparent,
@@ -177,14 +192,8 @@ class _SaleRow extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8.r),
-            border: Border.all(
-              color: cancelled
-                  ? Colors.red.shade200
-                  : Colors.grey.shade300,
-            ),
-            color: cancelled
-                ? Colors.red.withValues(alpha: 0.04)
-                : null,
+            border: Border.all(color: borderColor),
+            color: rowColor,
           ),
           child: Row(
             children: [
@@ -195,13 +204,13 @@ class _SaleRow extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          sale.isSalesOrderDelivery
-                              ? (sale.salesOrderSerial ?? '#${sale.salesOrderId ?? sale.id}')
-                              : '#${sale.id}',
+                          sale.displayInvoiceNumber,
                           style: TextStyle(
                             fontSize: 11.sp,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.primaryColor,
+                            color: fromMaintenance
+                                ? const Color(0xFFB45309)
+                                : AppColors.primaryColor,
                           ),
                         ),
                         SizedBox(width: 6.w),
@@ -229,6 +238,27 @@ class _SaleRow extends StatelessWidget {
                                 fontSize: 8.sp,
                                 color: const Color(0xFF2563EB),
                                 fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (fromMaintenance) ...[
+                          SizedBox(width: 6.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 5.w,
+                              vertical: 1.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEDD5),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                            child: Text(
+                              sale.maintenanceInvoiceNumber ?? 'maintenance'.tr,
+                              style: TextStyle(
+                                fontSize: 8.sp,
+                                color: const Color(0xFFB45309),
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -270,6 +300,19 @@ class _SaleRow extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (sale.createdByName?.isNotEmpty ?? false) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        '${'salesDailyMovementBy'.tr}: ${sale.createdByName}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     if (sale.createdAt != null) ...[
                       SizedBox(height: 2.h),
                       Text(
@@ -307,7 +350,8 @@ class _SaleRow extends StatelessWidget {
                 ],
               ),
               SizedBox(width: 4.w),
-              Icon(Icons.chevron_left, size: 18.sp, color: Colors.grey.shade400),
+              Icon(Icons.chevron_left,
+                  size: 18.sp, color: Colors.grey.shade400),
             ],
           ),
         ),

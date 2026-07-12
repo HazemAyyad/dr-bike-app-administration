@@ -1173,6 +1173,12 @@ const Map<String, String> en = {
   'subtaskProofRequiredImage': 'Proof required (photo)',
   'subtaskProofRequiredVideo': 'Proof required (video)',
   'subtaskProofUploaded': 'Proof uploaded',
+  'undoSubtaskCompletion': 'Undo completion',
+  'undoSubtaskCompletionConfirm':
+      'This will move the subtask back to pending so it can be completed again.',
+  'subtaskUndoSuccess': 'Subtask completion has been undone',
+  'replaceSubtaskProof': 'Replace proof',
+  'subtaskProofReplaced': 'Subtask proof has been replaced',
   'subtaskAdminMaterialsForEmployee':
       'Attachments for employee (photo / video / audio)',
   'subtaskAdminVoiceNote': 'Voice note for this subtask',
@@ -1808,6 +1814,7 @@ const Map<String, String> en = {
   "maintenanceNumber": "Maintenance number",
   "invoiceStatus": "Invoice status",
   "pdf": "PDF",
+  "print": "Print",
 
   // قسم المخزون
   'clearance': 'Clearance',
@@ -2546,6 +2553,10 @@ const Map<String, String> en = {
   'suspendedInvoiceCancelMessage':
       'Are you sure you want to cancel this suspended invoice?',
   'suspendedInvoiceResuming': 'Resuming invoice',
+  'suspendedInvoiceNotes': 'Invoice notes',
+  'suspendedInvoiceNotesEmpty': 'No notes yet',
+  'suspendedInvoiceNoteHint': 'Write a note on this invoice',
+  'suspendedInvoiceNoteOnSuspendTitle': 'Note before suspending invoice',
   'instantSaleEditing': 'Editing instant sale',
   'suspendInvoice': 'Suspend invoice',
   'operationCompletedSuccessfully': 'Operation completed successfully',
@@ -2641,6 +2652,7 @@ const Map<String, String> en = {
   'salesDailyDrawerBusy': 'Sales drawer in use',
   'salesDailyDrawerOpenByOther': 'Drawer is open by @employee',
   'salesDailySharedDrawerOpen': 'Sales will be posted to @employee\'s drawer',
+  'salesDailyMovementBy': 'Movement by',
   'salesDailyNoSessionOpen': 'Open the sales drawer manually before selling',
   'salesDailyClosingPending': 'Closing request pending admin approval',
   'salesDailyClosingPendingHint':
@@ -2649,6 +2661,13 @@ const Map<String, String> en = {
       'Select a destination box for each currency with an amount to transfer',
   'salesDailyDayClosed': 'Sales day closed',
   'salesDailyPreviousDayOpen': 'Close the previous sales day first',
+  'salesDailyPreviousDaySaleWarningTitle': 'A previous sales day is still open',
+  'salesDailyPreviousDaySaleWarningBody':
+      'There is an open sales drawer for @date owned by @employee. This drawer should be closed, but you can confirm and continue posting this movement to it.',
+  'salesDailyPreviousDayOpenDetails': 'Drawer date: @date - owner: @employee',
+  'salesDailyInvoiceSuspendedNoDrawerTitle': 'Invoice suspended',
+  'salesDailyInvoiceSuspendedNoDrawerBody':
+      'The invoice was saved as suspended because the sales drawer is not open. Open a sales drawer, then continue from the same invoice.',
   'salesDailyBusinessDate': 'Business date',
   'salesDailyCloseDay': 'Close day',
   'salesDailyBox': 'Daily box',

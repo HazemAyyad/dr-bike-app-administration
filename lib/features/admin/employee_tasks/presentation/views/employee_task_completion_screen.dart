@@ -109,9 +109,13 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
                       child: OperationalChecklist(
                         data: data,
                         compact: true,
-                        interactive: !_isLocked(data),
+                        interactive: _canEditSubtasks(data),
                         onSubtaskTap: (sub) => _onSubtaskTap(context, sub),
-                        onSubtaskReject: (sub) => _onSubtaskReject(context, sub),
+                        onSubtaskReject: (sub) =>
+                            _onSubtaskReject(context, sub),
+                        onSubtaskUndo: (sub) => _onSubtaskUndo(context, sub),
+                        onSubtaskReplaceProof: (sub) =>
+                            _onSubtaskReplaceProof(context, sub),
                       ),
                     ),
                     if (_showsMainProofSection(data, controller)) ...[
@@ -142,6 +146,10 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     return data.status == 'completed' ||
         data.status == 'waiting_review' ||
         data.status == 'canceled';
+  }
+
+  bool _canEditSubtasks(TaskDetailsModel data) {
+    return data.status != 'completed' && data.status != 'canceled';
   }
 
   Future<void> _onSubtaskTap(BuildContext context, SubTaskEntity sub) async {
@@ -187,8 +195,8 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
     }
 
     final refreshed = controller.employeeTaskService.taskDetails.value;
-    final allDone = refreshed?.subTasks.every(
-            (s) => s.status == 'completed' || s.status == 'rejected') ??
+    final allDone = refreshed?.subTasks
+            .every((s) => s.status == 'completed' || s.status == 'rejected') ??
         false;
     if (!allDone || !context.mounted) return;
 
@@ -364,6 +372,93 @@ class EmployeeTaskCompletionScreen extends GetView<EmployeeTasksController> {
       'subtaskDeclined'.tr,
       snackPosition: SnackPosition.BOTTOM,
       duration: const Duration(seconds: 2),
+    );
+  }
+
+  Future<void> _onSubtaskUndo(BuildContext context, SubTaskEntity sub) async {
+    if (sub.status != 'completed') return;
+
+    final details = controller.employeeTaskService.taskDetails.value;
+    if (details == null) return;
+
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        backgroundColor: const Color(0xFFF0F0F0),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14.r),
+        ),
+        title: Text(
+          'undoSubtaskCompletion'.tr,
+          style: TextStyle(
+            fontSize: 15.sp,
+            fontWeight: FontWeight.w800,
+            color: AppColors.operationalNavy,
+          ),
+        ),
+        content: Text(
+          'undoSubtaskCompletionConfirm'.tr,
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: AppColors.customGreyColor5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(
+              'cancel'.tr,
+              style: const TextStyle(color: AppColors.customGreyColor5),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(
+              'confirm'.tr,
+              style: const TextStyle(
+                color: AppColors.operationalPurple,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final args = Get.arguments is Map<String, dynamic>
+        ? Get.arguments as Map<String, dynamic>
+        : <String, dynamic>{};
+    final occurrenceId =
+        args['occurrence_id']?.toString() ?? controller.lastLoadedOccurrenceId;
+
+    await controller.undoSubtaskCompletion(
+      subTaskId: sub.id,
+      mainTaskId: details.taskId.toString(),
+      occurrenceId: occurrenceId,
+    );
+  }
+
+  Future<void> _onSubtaskReplaceProof(
+    BuildContext context,
+    SubTaskEntity sub,
+  ) async {
+    if (sub.status != 'completed') return;
+
+    final details = controller.employeeTaskService.taskDetails.value;
+    if (details == null) return;
+
+    final args = Get.arguments is Map<String, dynamic>
+        ? Get.arguments as Map<String, dynamic>
+        : <String, dynamic>{};
+    final occurrenceId =
+        args['occurrence_id']?.toString() ?? controller.lastLoadedOccurrenceId;
+
+    await controller.replaceCompletedSubtaskProof(
+      context: context,
+      sub: sub,
+      mainTaskId: details.taskId.toString(),
+      occurrenceId: occurrenceId,
     );
   }
 

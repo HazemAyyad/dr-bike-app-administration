@@ -1055,6 +1055,7 @@ class SalesDatasource {
     required String currentStep,
     required Map<String, dynamic> payload,
     int? suspendedInstantSaleId,
+    String? note,
   }) async {
     try {
       final data = {
@@ -1062,6 +1063,7 @@ class SalesDatasource {
         'payload': payload,
         if (suspendedInstantSaleId != null)
           'suspended_instant_sale_id': suspendedInstantSaleId,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       };
       _instantSaleDebug('POST suspend instant sale', {
         'endpoint': EndPoints.suspendedInstantSale,
@@ -1075,6 +1077,73 @@ class SalesDatasource {
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
       _instantSaleDioError('suspendInstantSale', e);
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<SuspendedInstantSaleModel> addSuspendedInstantSaleNote({
+    required int suspendedInstantSaleId,
+    required String note,
+  }) async {
+    try {
+      final data = {
+        'suspended_instant_sale_id': suspendedInstantSaleId,
+        'note': note.trim(),
+      };
+      _instantSaleDebug('POST suspended note', {
+        'endpoint': EndPoints.suspendedInstantSaleNote,
+        'id': suspendedInstantSaleId,
+      });
+      final response = await api.post(
+        EndPoints.suspendedInstantSaleNote,
+        data: data,
+      );
+      _instantSaleDebug('suspended note response', response.data);
+      final body = response.data;
+      if (body is! Map) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: 'Invalid suspended invoice note response',
+            status: 500,
+            data: const {},
+          ),
+        );
+      }
+      final map = Map<String, dynamic>.from(body);
+      if (map['status'] == 'error') {
+        final validation = _validationMessage(map);
+        throw ServerException(
+          ErrorModel(
+            errorMessage: validation.isNotEmpty
+                ? validation
+                : asString(map['message'], 'Unknown error'),
+            status: 500,
+            data: map,
+          ),
+        );
+      }
+      final raw = map['suspended_instant_sale'];
+      if (raw is! Map) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: 'Invalid suspended invoice note response',
+            status: 500,
+            data: map,
+          ),
+        );
+      }
+      return SuspendedInstantSaleModel.fromJson(
+        Map<String, dynamic>.from(raw),
+      );
+    } on DioException catch (e) {
+      _instantSaleDioError('addSuspendedInstantSaleNote', e);
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(

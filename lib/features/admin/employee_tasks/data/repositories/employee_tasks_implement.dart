@@ -150,6 +150,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
     required List<File> image,
     bool isOccurrenceSubtask = false,
     bool isOccurrenceMain = false,
+    bool replaceEmployeeImg = false,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -161,6 +162,7 @@ class EmployeeTasksImplement implements EmployeeTasksRepository {
         isSubTask: isSubTask,
         isOccurrenceSubtask: isOccurrenceSubtask,
         isOccurrenceMain: isOccurrenceMain,
+        replaceEmployeeImg: replaceEmployeeImg,
       );
       return result;
     } on ServerException catch (e) {

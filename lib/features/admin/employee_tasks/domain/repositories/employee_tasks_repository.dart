@@ -44,5 +44,6 @@ abstract class EmployeeTasksRepository {
     required bool isSubTask,
     bool isOccurrenceSubtask = false,
     bool isOccurrenceMain = false,
+    bool replaceEmployeeImg = false,
   });
 }

@@ -27,30 +27,31 @@ class InstantSalesTable extends GetView<SalesController> {
       }
 
       return Column(
-      key: ValueKey<int>(filterMode),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _TableHeaderRow(),
-        for (var i = 0; i < groups.length; i++) ...[
-          if (i > 0) SizedBox(height: 14.h),
-          _DateGroupHeader(
-            label: formatInstantSalesDateHeader(
-              groups[i].key,
-              invoiceCount: groups[i].value.length,
+        key: ValueKey<int>(filterMode),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _TableHeaderRow(),
+          for (var i = 0; i < groups.length; i++) ...[
+            if (i > 0) SizedBox(height: 14.h),
+            _DateGroupHeader(
+              label: formatInstantSalesDateHeader(
+                groups[i].key,
+                invoiceCount: groups[i].value.length,
+              ),
             ),
-          ),
-          ...groups[i].value.map(
-            (sale) => _InstantSaleTableRow(
-              sale: sale,
-              onInvoiceTap: () => showInstantSaleLinesModal(context, sale),
-              onLongPress: () =>
-                  controller.showInstantSaleActionsSheet(context, sale),
-            ),
-          ),
+            ...groups[i].value.map(
+                  (sale) => _InstantSaleTableRow(
+                    sale: sale,
+                    onInvoiceTap: () =>
+                        showInstantSaleLinesModal(context, sale),
+                    onLongPress: () =>
+                        controller.showInstantSaleActionsSheet(context, sale),
+                  ),
+                ),
+          ],
+          SizedBox(height: 4.h),
         ],
-        SizedBox(height: 4.h),
-      ],
-    );
+      );
     });
   }
 }
@@ -107,8 +108,8 @@ class _TableHeaderRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
         border: Border.all(color: Colors.grey.shade300),
       ),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           _HeaderCell('instantSaleInvoice', flex: 2),
           _HeaderCell('instantSaleAudit', flex: 2),
           _HeaderCell('total', flex: 2),
@@ -159,9 +160,12 @@ class _InstantSaleTableRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final cancelled = sale.isCancelled;
+    final fromMaintenance = sale.isFromMaintenance;
     final bg = cancelled
         ? Colors.red.withValues(alpha: 0.06)
-        : (isDark ? AppColors.customGreyColor4 : Colors.white);
+        : fromMaintenance
+            ? (isDark ? const Color(0xFF3B2A11) : const Color(0xFFFFF7E6))
+            : (isDark ? AppColors.customGreyColor4 : Colors.white);
 
     return Material(
       color: bg,
@@ -172,7 +176,11 @@ class _InstantSaleTableRow extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 11.h),
           decoration: BoxDecoration(
             border: Border(
-              left: BorderSide(color: Colors.grey.shade300),
+              left: BorderSide(
+                color: fromMaintenance
+                    ? const Color(0xFFF59E0B)
+                    : Colors.grey.shade300,
+              ),
               right: BorderSide(color: Colors.grey.shade300),
               bottom: BorderSide(color: Colors.grey.shade300),
             ),
@@ -202,12 +210,37 @@ class _InstantSaleTableRow extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 13.sp,
                               fontWeight: FontWeight.w700,
-                              color: _invoiceColorForKind(sale.compositionKind),
+                              color: fromMaintenance
+                                  ? const Color(0xFFB45309)
+                                  : _invoiceColorForKind(sale.compositionKind),
                               decoration: TextDecoration.underline,
-                              decorationColor:
-                                  _invoiceColorForKind(sale.compositionKind),
+                              decorationColor: fromMaintenance
+                                  ? const Color(0xFFB45309)
+                                  : _invoiceColorForKind(sale.compositionKind),
                             ),
                           ),
+                          if (fromMaintenance) ...[
+                            SizedBox(height: 2.h),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 5.w,
+                                vertical: 1.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEDD5),
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: Text(
+                                sale.maintenanceInvoiceNumber ??
+                                    'maintenance'.tr,
+                                style: TextStyle(
+                                  fontSize: 8.sp,
+                                  color: const Color(0xFFB45309),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),

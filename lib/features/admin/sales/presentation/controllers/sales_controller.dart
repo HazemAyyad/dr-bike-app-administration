@@ -432,6 +432,163 @@ class SalesController extends GetxController
     return true;
   }
 
+  Future<bool> confirmPreviousDaySaleIfNeeded() async {
+    await loadDailySession();
+    final payload = dailySessionPayload.value;
+
+    if (payload == null || !payload.allowsSales) {
+      showSalesBlockedMessage();
+      return false;
+    }
+
+    if (!payload.shouldWarnPreviousDaySale) {
+      return true;
+    }
+
+    final dialogContext = Get.overlayContext ?? Get.context;
+    if (dialogContext == null) {
+      return false;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: dialogContext,
+      builder: (ctx) => AlertDialog(
+        title: Text('salesDailyPreviousDaySaleWarningTitle'.tr),
+        content: Text(
+          'salesDailyPreviousDaySaleWarningBody'.trParams({
+            'date': payload.previousDayBusinessDate ?? '',
+            'employee': payload.previousDayOwnerName ?? '',
+          }),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('continue'.tr),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed == true;
+  }
+
+  Future<bool> ensureInstantSaleCanBeFinalized() async {
+    await loadDailySession();
+    final payload = dailySessionPayload.value;
+
+    if (payload != null && payload.allowsSales) {
+      if (!payload.shouldWarnPreviousDaySale) {
+        return true;
+      }
+      final dialogContext = Get.overlayContext ?? Get.context;
+      if (dialogContext == null) return false;
+      final confirmed = await showDialog<bool>(
+        context: dialogContext,
+        builder: (ctx) => AlertDialog(
+          title: Text('salesDailyPreviousDaySaleWarningTitle'.tr),
+          content: Text(
+            'salesDailyPreviousDaySaleWarningBody'.trParams({
+              'date': payload.previousDayBusinessDate ?? '',
+              'employee': payload.previousDayOwnerName ?? '',
+            }),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('cancel'.tr),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('continue'.tr),
+            ),
+          ],
+        ),
+      );
+      return confirmed == true;
+    }
+
+    final suspended =
+        await _saveCurrentInstantSaleAsHiddenSuspended(currentStep: 'checkout');
+    if (!suspended) {
+      return false;
+    }
+    await _showSuspendedBecauseNoDrawerDialog();
+    return false;
+  }
+
+  Future<bool> _saveCurrentInstantSaleAsHiddenSuspended({
+    required String currentStep,
+  }) async {
+    try {
+      final result = await Get.find<SalesDatasource>().suspendInstantSale(
+        currentStep: currentStep,
+        payload: buildInstantSaleSuspendPayload(),
+        suspendedInstantSaleId: activeSuspendedSaleId.value,
+      );
+
+      if (result['status'] == 'success') {
+        final raw = result['suspended_instant_sale'];
+        if (raw is Map) {
+          final id = int.tryParse('${raw['id']}');
+          if (id != null) {
+            activeSuspendedSaleId.value = id;
+            _activeSuspendedSaleIsAuto = true;
+          }
+        }
+        final count = int.tryParse('${result['suspended_count']}');
+        if (count != null) {
+          suspendedInvoicesCount.value = count;
+        }
+        return true;
+      }
+
+      Get.snackbar(
+        'error'.tr,
+        result['message']?.toString() ?? 'Unknown error',
+        backgroundColor: Colors.red,
+      );
+      return false;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+      return false;
+    }
+  }
+
+  Future<void> _showSuspendedBecauseNoDrawerDialog() async {
+    final dialogContext = Get.overlayContext ?? Get.context;
+    if (dialogContext == null) return;
+
+    final openDrawer = await showDialog<bool>(
+      context: dialogContext,
+      builder: (ctx) => AlertDialog(
+        title: Text('salesDailyInvoiceSuspendedNoDrawerTitle'.tr),
+        content: Text('salesDailyInvoiceSuspendedNoDrawerBody'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('salesDailyOpenDrawer'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (openDrawer != true) return;
+
+    try {
+      await requestDailyOpen();
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
+    }
+  }
+
   Future<void> requestDailyOpen() async {
     final ds = Get.find<SalesDatasource>();
     final message = await ds.openDailySession();
@@ -623,7 +780,82 @@ class SalesController extends GetxController
     pickerLocationSectionId.value = null;
   }
 
-  void bumpCartRevision() => cartRevision.value++;
+  static const int _autoSuspendLineThreshold = 10;
+  Timer? _autoSuspendDebounce;
+  bool _isAutoSuspendingInstantSale = false;
+  bool _activeSuspendedSaleIsAuto = false;
+
+  void bumpCartRevision() {
+    cartRevision.value++;
+    _scheduleAutoSuspendLargeInstantSale();
+  }
+
+  int get _instantSaleLineCount {
+    if (cartLines.isNotEmpty) {
+      return cartLines.length + (hasSelectedPackage ? 1 : 0);
+    }
+    return items.where((item) {
+      final productId = item.selectedItem.value.toString().trim();
+      return productId.isNotEmpty;
+    }).length;
+  }
+
+  void _scheduleAutoSuspendLargeInstantSale() {
+    _autoSuspendDebounce?.cancel();
+
+    if (activeEditInstantSaleId.value != null) return;
+    if (_instantSaleLineCount <= _autoSuspendLineThreshold) return;
+    if (activeSuspendedSaleId.value != null && !_activeSuspendedSaleIsAuto) {
+      return;
+    }
+
+    _autoSuspendDebounce = Timer(
+      const Duration(milliseconds: 900),
+      _autoSuspendLargeInstantSale,
+    );
+  }
+
+  Future<void> _autoSuspendLargeInstantSale() async {
+    if (_isAutoSuspendingInstantSale) return;
+    if (activeEditInstantSaleId.value != null) return;
+    if (_instantSaleLineCount <= _autoSuspendLineThreshold) return;
+    if (!canContinueFromPicker) return;
+    if (activeSuspendedSaleId.value != null && !_activeSuspendedSaleIsAuto) {
+      return;
+    }
+
+    _isAutoSuspendingInstantSale = true;
+    try {
+      final result = await Get.find<SalesDatasource>().suspendInstantSale(
+        currentStep: Get.currentRoute == AppRoutes.NEWINSTANTSALESCREEN
+            ? 'checkout'
+            : 'product_picker',
+        payload: buildInstantSaleSuspendPayload(),
+        suspendedInstantSaleId: activeSuspendedSaleId.value,
+      );
+      if (result['status'] == 'success') {
+        final raw = result['suspended_instant_sale'];
+        if (raw is Map) {
+          final id = int.tryParse('${raw['id']}');
+          if (id != null) {
+            activeSuspendedSaleId.value = id;
+            _activeSuspendedSaleIsAuto = true;
+          }
+        }
+        final count = int.tryParse('${result['suspended_count']}');
+        if (count != null) {
+          suspendedInvoicesCount.value = count;
+        }
+      }
+    } catch (e) {
+      assert(() {
+        debugPrint('[SalesController.autoSuspendLargeInstantSale] $e');
+        return true;
+      }());
+    } finally {
+      _isAutoSuspendingInstantSale = false;
+    }
+  }
 
   void _bumpProductsList() => productsListVersion.value++;
 
@@ -1142,8 +1374,6 @@ class SalesController extends GetxController
   }
 
   void openInstantSaleCheckout({bool fromResume = false}) {
-    if (!fromResume && showSalesBlockedMessage()) return;
-
     final hasPackage = hasSelectedPackage;
     final hasProducts = cartLines.isNotEmpty;
 
@@ -1216,7 +1446,7 @@ class SalesController extends GetxController
   final RxnInt activeEditInstantSaleId = RxnInt();
 
   String? get activeSuspendedReferenceCode =>
-      activeSuspendedSaleId.value == null
+      activeSuspendedSaleId.value == null || _activeSuspendedSaleIsAuto
           ? null
           : 'ع-${activeSuspendedSaleId.value}';
 
@@ -1238,6 +1468,7 @@ class SalesController extends GetxController
 
   void clearActiveSuspendedSale() {
     activeSuspendedSaleId.value = null;
+    _activeSuspendedSaleIsAuto = false;
   }
 
   void clearActiveEditInstantSale() {
@@ -1401,13 +1632,14 @@ class SalesController extends GetxController
       'totalCost': totalCost.value,
     });
     if (activeEditInstantSaleId.value != null) return false;
-    if (showSalesBlockedMessage()) return false;
 
     if (!canContinueFromPicker) {
       Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
           backgroundColor: Colors.red);
       return false;
     }
+
+    final suspendNote = await _askSuspendedInvoiceNote(context);
 
     isLoading(true);
     try {
@@ -1430,6 +1662,7 @@ class SalesController extends GetxController
         currentStep: currentStep,
         payload: payload,
         suspendedInstantSaleId: activeSuspendedSaleId.value,
+        note: suspendNote,
       );
 
       return await result.fold(
@@ -1464,6 +1697,60 @@ class SalesController extends GetxController
     }
   }
 
+  Future<String?> _askSuspendedInvoiceNote(BuildContext context) async {
+    final noteCtrl = TextEditingController();
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: Text(
+          'suspendedInvoiceNoteOnSuspendTitle'.tr,
+          style: const TextStyle(color: Color(0xFF374151)),
+        ),
+        content: TextField(
+          controller: noteCtrl,
+          minLines: 2,
+          maxLines: 4,
+          textInputAction: TextInputAction.newline,
+          decoration: InputDecoration(
+            hintText: 'suspendedInvoiceNoteHint'.tr,
+            hintStyle: const TextStyle(color: Color(0xFF6B7280)),
+            filled: true,
+            fillColor: const Color(0xFFF8FAFC),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+          ),
+          style: const TextStyle(color: Color(0xFF374151)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: Text(
+              'skip'.tr,
+              style: const TextStyle(color: Color(0xFF374151)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, noteCtrl.text.trim()),
+            child: Text(
+              'save'.tr,
+              style: const TextStyle(color: Color(0xFF374151)),
+            ),
+          ),
+        ],
+      ),
+    );
+    noteCtrl.dispose();
+
+    return result == null || result.trim().isEmpty ? null : result.trim();
+  }
+
   Future<bool> resumeSuspendedInstantSale(
     SuspendedInstantSaleModel sale,
   ) async {
@@ -1475,6 +1762,7 @@ class SalesController extends GetxController
     try {
       clearActiveEditInstantSale();
       activeSuspendedSaleId.value = sale.id;
+      _activeSuspendedSaleIsAuto = false;
       resetInstantSaleForm(renewFormKey: true);
       await loadOfferPackagesForSale();
       if (products.isEmpty) {
@@ -1855,7 +2143,6 @@ class SalesController extends GetxController
   }
 
   Future<void> startNewInstantSaleFlow() async {
-    if (showSalesBlockedMessage()) return;
     clearActiveSuspendedSale();
     clearActiveEditInstantSale();
     resetInstantSaleForm();
@@ -2682,6 +2969,8 @@ class SalesController extends GetxController
       }
     }
 
+    if (!await ensureInstantSaleCanBeFinalized()) return;
+
     final payment = _instantSalePayment;
     if (payment == null) return;
 
@@ -2695,7 +2984,7 @@ class SalesController extends GetxController
             'suspended payment payload without pre-receive', buyer);
         applyBuyerFromPayment(buyer);
         // ignore: use_build_context_synchronously
-        await addInstantSale(context);
+        await addInstantSale(context, previousDayWarningConfirmed: true);
         return;
       }
 
@@ -2705,7 +2994,7 @@ class SalesController extends GetxController
 
       applyBuyerFromPayment(buyer);
       // ignore: use_build_context_synchronously
-      await addInstantSale(context);
+      await addInstantSale(context, previousDayWarningConfirmed: true);
     } finally {
       isLoading(false);
     }
@@ -2925,8 +3214,13 @@ class SalesController extends GetxController
   Future<bool> addProfitSale(
     BuildContext context, {
     Map<String, dynamic>? paymentPayload,
+    bool previousDayWarningConfirmed = false,
   }) async {
     if (formKey.currentState!.validate()) {
+      if (!previousDayWarningConfirmed &&
+          !await confirmPreviousDaySaleIfNeeded()) {
+        return false;
+      }
       isLoading(true);
       final result = await addProfitSaleUsecase.call(
         notes: noteController.text,
@@ -2999,6 +3293,7 @@ class SalesController extends GetxController
 
   Future<bool> submitProfitSaleWithPayment(BuildContext context) async {
     if (!(formKey.currentState?.validate() ?? false)) return false;
+    if (!await confirmPreviousDaySaleIfNeeded()) return false;
     if (!Get.isRegistered<PaymentController>(tag: kProfitSalePaymentTag)) {
       return false;
     }
@@ -3021,8 +3316,11 @@ class SalesController extends GetxController
     isLoading(true);
     try {
       final paymentPayload = payment.buildOptionalProfitSalePayload();
-      final saved =
-          await addProfitSale(context, paymentPayload: paymentPayload);
+      final saved = await addProfitSale(
+        context,
+        paymentPayload: paymentPayload,
+        previousDayWarningConfirmed: true,
+      );
       if (saved) {
         payment.clearPaymentForm();
       }
@@ -3122,7 +3420,15 @@ class SalesController extends GetxController
   }
 
   // add instant sale
-  Future<void> addInstantSale(BuildContext context) async {
+  Future<void> addInstantSale(
+    BuildContext context, {
+    bool previousDayWarningConfirmed = false,
+  }) async {
+    if (!previousDayWarningConfirmed &&
+        !await confirmPreviousDaySaleIfNeeded()) {
+      return;
+    }
+
     if (activeSuspendedSaleId.value != null) {
       _instantSaleDebug('addInstantSale redirected to complete suspended', {
         'activeSuspendedSaleId': activeSuspendedSaleId.value,
@@ -3808,6 +4114,7 @@ class SalesController extends GetxController
     _instantSalesSearchDebounce?.cancel();
     _profitSalesSearchDebounce?.cancel();
     _instantSalePickerSearchDebounce?.cancel();
+    _autoSuspendDebounce?.cancel();
     super.onClose();
   }
 

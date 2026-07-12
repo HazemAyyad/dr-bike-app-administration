@@ -137,4 +137,43 @@ class SuspendedInvoicesController extends GetxController {
       isLoading(false);
     }
   }
+
+  Future<void> openNotesDialog(
+    BuildContext context,
+    SuspendedInstantSaleModel item,
+  ) async {
+    final note = await SuspendedInvoiceDialog.showNotes(
+      context: context,
+      item: item,
+    );
+    if (note == null || note.trim().isEmpty) return;
+
+    isLoading(true);
+    try {
+      final result = await salesRepository.addSuspendedInstantSaleNote(
+        suspendedInstantSaleId: item.id,
+        note: note,
+      );
+      await result.fold(
+        (failure) async {
+          if (!context.mounted) return;
+          Helpers.showCustomDialogError(
+            context: context,
+            title: 'error'.tr,
+            message: failure.errMessage,
+          );
+        },
+        (updated) async {
+          final index = items.indexWhere((row) => row.id == updated.id);
+          if (index >= 0) {
+            items[index] = updated;
+          } else {
+            await loadItems();
+          }
+        },
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
 }

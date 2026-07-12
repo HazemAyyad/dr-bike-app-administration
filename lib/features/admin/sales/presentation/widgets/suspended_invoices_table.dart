@@ -14,12 +14,14 @@ class SuspendedInvoicesTable extends StatelessWidget {
     required this.items,
     required this.showOwner,
     required this.onResume,
+    required this.onNotes,
     required this.onCancel,
   }) : super(key: key);
 
   final List<SuspendedInstantSaleModel> items;
   final bool showOwner;
   final ValueChanged<SuspendedInstantSaleModel> onResume;
+  final ValueChanged<SuspendedInstantSaleModel> onNotes;
   final ValueChanged<SuspendedInstantSaleModel> onCancel;
 
   @override
@@ -33,6 +35,7 @@ class SuspendedInvoicesTable extends StatelessWidget {
             item: items[i],
             showOwner: showOwner,
             onResume: () => onResume(items[i]),
+            onNotes: () => onNotes(items[i]),
             onCancel: () => onCancel(items[i]),
           ),
           if (i < items.length - 1)
@@ -64,8 +67,7 @@ class _SuspendedTableHeader extends StatelessWidget {
       child: Row(
         children: [
           const _HeaderCell('instantSaleInvoice', flex: 2),
-          if (showOwner)
-            const _HeaderCell('suspendedInvoiceOwner', flex: 2),
+          if (showOwner) const _HeaderCell('suspendedInvoiceOwner', flex: 2),
           const _HeaderCell('total', flex: 2),
           const _HeaderCell('date', flex: 2),
           const _HeaderCell('actions', flex: 3),
@@ -80,12 +82,14 @@ class _SuspendedTableRow extends StatelessWidget {
     required this.item,
     required this.showOwner,
     required this.onResume,
+    required this.onNotes,
     required this.onCancel,
   });
 
   final SuspendedInstantSaleModel item;
   final bool showOwner;
   final VoidCallback onResume;
+  final VoidCallback onNotes;
   final VoidCallback onCancel;
 
   @override
@@ -97,9 +101,7 @@ class _SuspendedTableRow extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: ThemeService.isDark.value
-            ? AppColors.darkColor
-            : Colors.white,
+        color: ThemeService.isDark.value ? AppColors.darkColor : Colors.white,
         border: Border(
           left: BorderSide(color: borderColor),
           right: BorderSide(color: borderColor),
@@ -176,6 +178,15 @@ class _SuspendedTableRow extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    _ActionTap(
+                      tooltip: 'suspendedInvoiceNotes'.tr,
+                      icon: item.noteCount > 0
+                          ? Icons.speaker_notes_rounded
+                          : Icons.note_add_rounded,
+                      color: Colors.blueGrey.shade700,
+                      onTap: onNotes,
+                    ),
+                    SizedBox(width: 2.w),
                     _ActionTap(
                       tooltip: 'suspendedInvoiceResume'.tr,
                       icon: Icons.play_arrow_rounded,

@@ -1,8 +1,6 @@
 import 'package:doctorbike/core/services/app_shortcut_service.dart';
 import 'package:doctorbike/core/services/app_startup.dart';
-import 'dart:async';
 
-import 'package:doctorbike/core/services/employee_attendance_persistent_notification_service.dart';
 import 'package:doctorbike/core/services/employee_attendance_persistent_notification_service.dart';
 import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/services/session_service.dart';
@@ -46,22 +44,26 @@ class SplashController extends GetxController {
       );
 
       if (!supabase) {
+        debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN supabase=false');
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
         return;
       }
 
       if (!connected) {
+        debugPrint('[Splash] navigate -> NOINTERNETSCREEN connected=false');
         Get.offAllNamed(AppRoutes.NOINTERNETSCREEN);
         return;
       }
 
       if (isFirstTime) {
+        debugPrint('[Splash] navigate -> ONBOARDINGSCREEN firstTime=true');
         Get.offAllNamed(AppRoutes.ONBOARDINGSCREEN);
         return;
       }
 
       final token = await UserData.getUserToken();
       if (token.isEmpty) {
+        debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN empty token');
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
         return;
       }
@@ -84,18 +86,18 @@ class SplashController extends GetxController {
       }
 
       if (validation.isValid) {
+        debugPrint('[Splash] navigate -> BOTTOMNAVBARSCREEN valid session');
         Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
         AppShortcutService.instance.scheduleConsumePending();
         if (userType == 'employee') {
-          unawaited(
-            EmployeeAttendancePersistentNotificationService.instance
-                .initializeForEmployee(),
-          );
+          EmployeeAttendancePersistentNotificationService.instance
+              .initializeForEmployee();
         }
         return;
       }
 
       if (validation.isAuthFailure) {
+        debugPrint('[Splash] auth failure -> clear session and login');
         await SessionService.clearSessionAndGoToLogin(showMessage: false);
         return;
       }
@@ -103,19 +105,20 @@ class SplashController extends GetxController {
       final cachedUser = await UserData.getSavedUser();
       if (cachedUser != null) {
         await SessionService.restoreGlobalsFromStorage();
+        debugPrint('[Splash] navigate -> BOTTOMNAVBARSCREEN cached user');
         Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
         AppShortcutService.instance.scheduleConsumePending();
         if (userType == 'employee') {
-          unawaited(
-            EmployeeAttendancePersistentNotificationService.instance
-                .initializeForEmployee(),
-          );
+          EmployeeAttendancePersistentNotificationService.instance
+              .initializeForEmployee();
         }
       } else {
+        debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN no cached user');
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
       }
     } catch (e, st) {
       debugPrint('[Splash] navigation failed: $e\n$st');
+      debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN catch');
       Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
     }
   }

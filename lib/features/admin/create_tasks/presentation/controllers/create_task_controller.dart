@@ -736,79 +736,88 @@ class CreateTaskController extends GetxController {
         return;
       }
       isLoding(true);
+      try {
+        final result = await creatSpecialTasksUsecase.call(
+          specialTaskId: specialTaskId,
+          name: taskNameController.text,
+          description: taskDescriptionController.text,
+          notes: taskNotesController.text,
+          startDate: startDate.value,
+          endDate: endDate.value,
+          taskRecurrence:
+              selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
+          taskRecurrenceTime: selectedDaysList,
+          subSpecialTasks: subTasks,
+          notShownForEmployee: hideTask.value ? '1' : '0',
+          forceEmployeeToAddImg: requireImage.value,
+          adminImg: selectedFile,
+          audio: hasPlayableAudio(recordedPath.value)
+              ? File(recordedPath.value)
+              : File(''),
+        );
+        result.fold(
+          (failure) {
+            final errors = failure.data != null ? failure.data['errors'] : null;
 
-      final result = await creatSpecialTasksUsecase.call(
-        specialTaskId: specialTaskId,
-        name: taskNameController.text,
-        description: taskDescriptionController.text,
-        notes: taskNotesController.text,
-        startDate: startDate.value,
-        endDate: endDate.value,
-        taskRecurrence:
-            selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
-        taskRecurrenceTime: selectedDaysList,
-        subSpecialTasks: subTasks,
-        notShownForEmployee: hideTask.value ? '1' : '0',
-        forceEmployeeToAddImg: requireImage.value,
-        adminImg: selectedFile,
-        audio: hasPlayableAudio(recordedPath.value)
-            ? File(recordedPath.value)
-            : File(''),
-      );
-      result.fold(
-        (failure) {
-          final errors = failure.data != null ? failure.data['errors'] : null;
+            if (errors is Map<String, dynamic>) {
+              final messages = errors.values
+                  .expand((list) => list)
+                  .cast<String>()
+                  .join('')
+                  .replaceAll('.', '- \n');
 
-          if (errors is Map<String, dynamic>) {
-            final messages = errors.values
-                .expand((list) => list)
-                .cast<String>()
-                .join('')
-                .replaceAll('.', '- \n');
-
-            Helpers.showCustomDialogError(
-              context: context,
-              title: failure.errMessage,
-              message: messages,
-            );
-          } else {
-            Helpers.showCustomDialogError(
-              context: context,
-              title: failure.errMessage,
-              message: "Unexpected error occurred",
-            );
-          }
-        },
-        (success) {
-          Get.find<SpecialTasksController>().getSpecialTasks();
-          if (isEdit) {
-            Future.delayed(
-              const Duration(milliseconds: 500),
-              () {
-                Get.find<SpecialTasksController>().getSpecialTasksDetails(
-                  specialTaskId: specialTaskId.toString(),
+              Helpers.showCustomDialogError(
+                context: context,
+                title: failure.errMessage,
+                message: messages,
+              );
+            } else {
+              Helpers.showCustomDialogError(
+                context: context,
+                title: failure.errMessage,
+                message: "Unexpected error occurred",
+              );
+            }
+          },
+          (success) {
+            if (Get.isRegistered<SpecialTasksController>()) {
+              final specialTasksController = Get.find<SpecialTasksController>();
+              specialTasksController.getSpecialTasks();
+              if (isEdit) {
+                Future.delayed(
+                  const Duration(milliseconds: 500),
+                  () {
+                    if (Get.isRegistered<SpecialTasksController>()) {
+                      specialTasksController.getSpecialTasksDetails(
+                        specialTaskId: specialTaskId.toString(),
+                      );
+                    }
+                  },
                 );
+              }
+            }
+            Future.delayed(
+              const Duration(milliseconds: 650),
+              () {
+                if (isEdit) {
+                  AppNavigation.popToRoute(AppRoutes.SPECIALTASKDETAILSSCREEN);
+                } else if (isOpenedFromHomeWidget) {
+                  Get.offNamed(AppRoutes.PRIVATETASKSSCREEN);
+                } else {
+                  AppNavigation.popToRoute(AppRoutes.PRIVATETASKSSCREEN);
+                }
               },
             );
-          }
-          Future.delayed(
-            const Duration(milliseconds: 650),
-            () {
-              if (isEdit) {
-                AppNavigation.popToRoute(AppRoutes.SPECIALTASKDETAILSSCREEN);
-              } else {
-                AppNavigation.popToRoute(AppRoutes.PRIVATETASKSSCREEN);
-              }
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-        },
-      );
-      isLoding(false);
+            Helpers.showCustomDialogSuccess(
+              context: context,
+              title: 'success'.tr,
+              message: success,
+            );
+          },
+        );
+      } finally {
+        isLoding(false);
+      }
     } else {
       Get.snackbar(
         'info'.tr,
@@ -859,6 +868,7 @@ class CreateTaskController extends GetxController {
 
   final bool isEdit = Get.arguments?['isEdit'] == true;
   final String title = Get.arguments?['title']?.toString() ?? '';
+  final bool isOpenedFromHomeWidget = Get.arguments?['fromHomeWidget'] == true;
   bool get isSpecialTaskFlow =>
       title == 'addNewPravateTask' || title == 'editSpecialTask';
 
@@ -1046,6 +1056,10 @@ class CreateTaskController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    debugPrint(
+      '[WidgetShortcutFlow] CreateTaskController.onInit route=${Get.currentRoute} '
+      'title=$title isEdit=$isEdit args=${Get.arguments}',
+    );
     AppSettingsService.instance.ensureLoaded();
     getEmployee();
     if (isEdit) {
@@ -1076,6 +1090,10 @@ class CreateTaskController extends GetxController {
 
   @override
   void onClose() {
+    debugPrint(
+      '[WidgetShortcutFlow] CreateTaskController.onClose route=${Get.currentRoute} '
+      'title=$title isEdit=$isEdit',
+    );
     _closed = true;
     taskNameController.dispose();
     taskDescriptionController.dispose();
