@@ -14,6 +14,7 @@ class DailySessionPayload {
   final bool canManageOtherSession;
   final int? manageableSessionId;
   final bool canFinalizeClosing;
+  final List<DailyExpectedOpeningCount> expectedOpeningCounts;
 
   const DailySessionPayload({
     this.session,
@@ -29,6 +30,7 @@ class DailySessionPayload {
     this.canManageOtherSession = false,
     this.manageableSessionId,
     this.canFinalizeClosing = false,
+    this.expectedOpeningCounts = const [],
   });
 
   bool get allowsSales => session?.allowsSales ?? false;
@@ -37,10 +39,9 @@ class DailySessionPayload {
 
   bool get isClosed => session?.status == 'closed';
 
-  bool get isReopenPending =>
-      pendingReopenRequestId != null || (session?.hasPendingReopen ?? false);
+  bool get isReopenPending => false;
 
-  bool get canRequestReopen => isClosed && !isReopenPending;
+  bool get canRequestReopen => false;
 
   bool get canRequestClosing => session?.canRequestClosing ?? false;
 
@@ -102,6 +103,38 @@ class DailySessionPayload {
           : int.tryParse('${json['manageable_session_id']}'),
       canFinalizeClosing: json['can_finalize_closing'] == true ||
           json['can_finalize_closing'] == 1,
+      expectedOpeningCounts: mapList(
+        json['expected_opening_counts'],
+        (Map<String, dynamic> m) => DailyExpectedOpeningCount.fromJson(m),
+      ),
+    );
+  }
+}
+
+class DailyExpectedOpeningCount {
+  final String currency;
+  final double expectedAmount;
+  final String? previousEmployeeName;
+  final int? previousSessionId;
+  final String? previousBusinessDate;
+
+  const DailyExpectedOpeningCount({
+    required this.currency,
+    this.expectedAmount = 0,
+    this.previousEmployeeName,
+    this.previousSessionId,
+    this.previousBusinessDate,
+  });
+
+  factory DailyExpectedOpeningCount.fromJson(Map<String, dynamic> json) {
+    return DailyExpectedOpeningCount(
+      currency: asString(json['currency']),
+      expectedAmount: double.tryParse('${json['expected_amount'] ?? 0}') ?? 0,
+      previousEmployeeName: asNullableString(json['previous_employee_name']),
+      previousSessionId: json['previous_session_id'] == null
+          ? null
+          : int.tryParse('${json['previous_session_id']}'),
+      previousBusinessDate: asNullableString(json['previous_business_date']),
     );
   }
 }

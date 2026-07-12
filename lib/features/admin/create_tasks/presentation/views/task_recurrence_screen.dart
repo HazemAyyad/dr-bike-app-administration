@@ -28,6 +28,7 @@ class TaskRecurrenceScreen extends StatefulWidget {
 
   static const recurrenceTypes = [
     'noRepeat',
+    'oneTimePersistent',
     'daily',
     'weekly',
     'monthly',

@@ -42,6 +42,10 @@ class RecurrenceArabicSummary {
       return 'recurrenceSummaryNoRepeat'.tr;
     }
 
+    if (recurrenceType == 'oneTimePersistent') {
+      return 'recurrenceSummaryOneTimePersistent'.tr;
+    }
+
     final parts = <String>[_typeLabel(recurrenceType)];
 
     if (recurrenceType == 'weekly' && weekdays.isNotEmpty) {
@@ -64,7 +68,8 @@ class RecurrenceArabicSummary {
     }
 
     if (durationType != 'forever') {
-      parts.add(_durationPhrase(recurrenceType, durationType, endAfterCount, endDate));
+      parts.add(_durationPhrase(
+          recurrenceType, durationType, endAfterCount, endDate));
     }
 
     if (reminderWhen != 'none') {
@@ -84,6 +89,8 @@ class RecurrenceArabicSummary {
         return 'recurrenceTypeMonthly'.tr;
       case 'yearly':
         return 'recurrenceTypeYearly'.tr;
+      case 'oneTimePersistent':
+        return 'recurrenceTypeOneTimePersistent'.tr;
       default:
         return 'recurrenceTypeDaily'.tr;
     }
@@ -136,7 +143,8 @@ class RecurrenceArabicSummary {
     }
     if (durationType == 'end_after_count' && count > 0) {
       final unit = RecurrenceConfigHelper.countUnitLabel(recurrenceType, count);
-      return 'recurrenceUntilCountUnit'.trParams({'count': '$count', 'unit': unit});
+      return 'recurrenceUntilCountUnit'
+          .trParams({'count': '$count', 'unit': unit});
     }
     return 'recurrenceForever'.tr;
   }
@@ -144,11 +152,12 @@ class RecurrenceArabicSummary {
   static String _reminderPhrase(String when, String channel) {
     if (when == 'none') return '';
     final whenLabel = {
-      'at_time': 'reminderAtTime'.tr,
-      'before_10m': 'reminderBefore10m'.tr,
-      'before_1h': 'reminderBefore1h'.tr,
-      'before_1d': 'reminderBefore1d'.tr,
-    }[when] ?? 'reminderAtTime'.tr;
+          'at_time': 'reminderAtTime'.tr,
+          'before_10m': 'reminderBefore10m'.tr,
+          'before_1h': 'reminderBefore1h'.tr,
+          'before_1d': 'reminderBefore1d'.tr,
+        }[when] ??
+        'reminderAtTime'.tr;
     final ch = channel == 'email' ? 'reminderEmail'.tr : 'reminderPush'.tr;
     return '$whenLabel ($ch)';
   }

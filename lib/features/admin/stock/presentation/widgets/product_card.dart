@@ -89,14 +89,21 @@ class BuildProductCard extends GetView<StockController> {
     return Obx(() {
       final tab = controller.currentTab.value;
       final canSelectLocation = !isCloseouts && (tab == 0 || tab == 3);
+      final deleteSelection = !isCloseouts &&
+          controller.deleteSelectionActive.value &&
+          controller.canDeleteProducts;
       final inGroupA = canSelectLocation &&
           controller.isProductInSwapGroupA(product.productId);
       final inGroupB = canSelectLocation &&
           controller.isProductInSwapGroupB(product.productId);
-      final isSelected = inGroupA || inGroupB;
-      final selectionColor = inGroupB
-          ? AppColors.customOrange3
-          : AppColors.operationalPurple;
+      final isSelected = deleteSelection
+          ? controller.selectedProductIds.contains(product.productId)
+          : inGroupA || inGroupB;
+      final selectionColor = deleteSelection
+          ? Colors.red
+          : inGroupB
+              ? AppColors.customOrange3
+              : AppColors.operationalPurple;
 
       return GestureDetector(
         onTap: isCloseouts
@@ -126,6 +133,10 @@ class BuildProductCard extends GetView<StockController> {
                 controller.update();
               }
             : () async {
+                if (deleteSelection) {
+                  controller.toggleProductSelection(product.productId);
+                  return;
+                }
                 if (canSelectLocation &&
                     controller.locationSelectionActive.value) {
                   controller.toggleProductSelection(product.productId);
@@ -248,22 +259,36 @@ class BuildProductCard extends GetView<StockController> {
                       child: Padding(
                         padding: EdgeInsets.all(4.w),
                         child: Container(
+                          width: deleteSelection ? 24.w : null,
+                          height: deleteSelection ? 24.w : null,
+                          alignment: Alignment.center,
                           padding: EdgeInsets.symmetric(
-                            horizontal: 5.w,
+                            horizontal: deleteSelection ? 0 : 5.w,
                             vertical: 2.h,
                           ),
                           decoration: BoxDecoration(
                             color: selectionColor,
-                            borderRadius: BorderRadius.circular(6.r),
+                            shape: deleteSelection
+                                ? BoxShape.circle
+                                : BoxShape.rectangle,
+                            borderRadius: deleteSelection
+                                ? null
+                                : BorderRadius.circular(6.r),
                           ),
-                          child: Text(
-                            inGroupB ? 'B' : 'A',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          child: deleteSelection
+                              ? Icon(
+                                  Icons.delete_outline,
+                                  size: 15.sp,
+                                  color: Colors.white,
+                                )
+                              : Text(
+                                  inGroupB ? 'B' : 'A',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
                         ),
                       ),
                     ),

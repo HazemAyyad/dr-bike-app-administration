@@ -29,6 +29,7 @@ import '../../../../admin/employee_tasks/presentation/controllers/employee_tasks
 import '../../../../../core/helpers/camera_capture_helper.dart';
 import '../../../../admin/employee_tasks/presentation/binding/employee_tasks_binding.dart';
 import '../../../../../core/helpers/task_recurrence_rules.dart';
+import '../helpers/employee_task_visibility.dart';
 import '../helpers/employee_recurring_task_expander.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../../domain/usecases/change_task_completed_uasecase.dart';
@@ -689,6 +690,12 @@ class EmployeeDashbordController extends GetxController
   final Map<String, List<Task>> tasksDataFilter = {};
   final List<Task> _allTasksRaw = [];
   final RxInt tasksFilterEpoch = 0.obs;
+
+  List<Task> get pinnedPersistentTasks {
+    final result = _allTasksRaw.where(isPinnedPersistentTask).toList()
+      ..sort((a, b) => a.endTime.compareTo(b.endTime));
+    return result;
+  }
 
   void _rebuildTasksMaps() {
     tasksData.clear();

@@ -119,11 +119,6 @@ class SalesDailyStatusBar extends GetView<SalesController> {
                   onPressed: _openClosingRequests,
                   child: Text('salesDailyReviewClosingRequest'.tr),
                 ),
-              if (payload.canRequestReopen)
-                TextButton(
-                  onPressed: () => _showReopenDialog(context),
-                  child: Text('salesDailyRequestReopen'.tr),
-                ),
               Icon(Icons.chevron_left, color: color, size: 20.sp),
             ],
           ),
@@ -190,69 +185,158 @@ class SalesDailyStatusBar extends GetView<SalesController> {
   }
 
   Future<void> _openDrawer(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('salesDailyOpenDrawer'.tr),
-        content: Text('salesDailyOpenDrawerConfirm'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('cancel'.tr),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('salesDailyOpenDrawer'.tr),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    try {
-      await controller.requestDailyOpen();
-    } catch (e) {
-      Get.snackbar('error'.tr, e.toString());
-    }
-  }
-
-  Future<void> _showReopenDialog(BuildContext context) async {
-    final reasonCtrl = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('salesDailyRequestReopen'.tr),
-        content: TextField(
-          controller: reasonCtrl,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: 'salesDailyReopenReasonHint'.tr,
-            border: const OutlineInputBorder(),
-          ),
+    final payload = controller.dailySessionPayload.value;
+    final expectedRows = payload?.expectedOpeningCounts.isNotEmpty == true
+        ? payload!.expectedOpeningCounts
+        : const [DailyExpectedOpeningCount(currency: 'شيكل')];
+    final controllers = {
+      for (final row in expectedRows)
+        row.currency: TextEditingController(
+          text: row.expectedAmount == 0
+              ? ''
+              : row.expectedAmount.toStringAsFixed(0),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('cancel'.tr),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('salesDailySubmitReopen'.tr),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    final reason = reasonCtrl.text.trim();
-    if (reason.isEmpty) {
-      Get.snackbar('error'.tr, 'salesDailyReopenReasonRequired'.tr);
-      return;
-    }
+    };
+
     try {
-      await controller.requestDailyReopen(reason: reason);
+      final counts = await showDialog<List<Map<String, dynamic>>>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('salesDailyOpeningCountTitle'.tr),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('salesDailyOpeningCountHint'.tr),
+                SizedBox(height: 12.h),
+                ...expectedRows.map((row) {
+                  final previous = row.previousEmployeeName?.trim();
+                  return Padding(
+                    padding: EdgeInsets.only(bottom: 12.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          row.currency,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'salesDailyExpectedOpening'.trParams({
+                            'amount': row.expectedAmount.toStringAsFixed(0),
+                            'currency': row.currency,
+                            'employee':
+                                previous?.isNotEmpty == true ? previous! : '—',
+                            'date': row.previousBusinessDate ?? '—',
+                          }),
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                        SizedBox(height: 6.h),
+                        TextField(
+                          controller: controllers[row.currency],
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: 'salesDailyCountedOpening'.tr,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('cancel'.tr),
+            ),
+            TextButton(
+              onPressed: () {
+                final counts = expectedRows
+                    .map(
+                      (row) => {
+                        'currency': row.currency,
+                        'physical_count': double.tryParse(
+                              controllers[row.currency]?.text.trim() ?? '',
+                            ) ??
+                            0,
+                      },
+                    )
+                    .toList();
+                Navigator.pop(ctx, counts);
+              },
+              child: Text('salesDailyOpenDrawer'.tr),
+            ),
+          ],
+        ),
+      );
+      if (counts == null) return;
+
+      final varianceRows = expectedRows.where((row) {
+        final input = counts.firstWhere(
+          (item) => item['currency'] == row.currency,
+          orElse: () => {'physical_count': 0},
+        );
+        final counted = (input['physical_count'] as num).toDouble();
+        return (counted - row.expectedAmount).abs() > 0.0001;
+      }).toList();
+
+      var confirmVariance = false;
+      if (varianceRows.isNotEmpty) {
+        if (!context.mounted) return;
+        final row = varianceRows.first;
+        final input = counts.firstWhere(
+          (item) => item['currency'] == row.currency,
+          orElse: () => {'physical_count': 0},
+        );
+        final counted = (input['physical_count'] as num).toDouble();
+        confirmVariance = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: Text('salesDailyOpeningVarianceTitle'.tr),
+                content: Text(
+                  'salesDailyOpeningVarianceBody'.trParams({
+                    'expected': row.expectedAmount.toStringAsFixed(0),
+                    'counted': counted.toStringAsFixed(0),
+                    'currency': row.currency,
+                    'employee': row.previousEmployeeName ?? '—',
+                    'date': row.previousBusinessDate ?? '—',
+                  }),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: Text('cancel'.tr),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: Text('continue'.tr),
+                  ),
+                ],
+              ),
+            ) ==
+            true;
+        if (!confirmVariance) return;
+      }
+
+      await controller.requestDailyOpen(
+        openingCounts: counts,
+        confirmOpeningVariance: confirmVariance,
+      );
     } catch (e) {
       Get.snackbar('error'.tr, e.toString());
     } finally {
-      reasonCtrl.dispose();
+      for (final ctrl in controllers.values) {
+        ctrl.dispose();
+      }
     }
   }
 }

@@ -11,13 +11,17 @@ class StockProductSelectionBar extends GetView<StockController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (!controller.locationSelectionActive.value) {
+      if (!controller.productSelectionActive) {
         return const SizedBox.shrink();
       }
+      final deleteMode = controller.deleteSelectionActive.value;
       final countA = controller.swapGroupAIds.length;
       final countB = controller.swapGroupBIds.length;
-      final total = countA + countB;
-      final busy = controller.isLocationActionBusy.value;
+      final total =
+          deleteMode ? controller.selectedProductIds.length : countA + countB;
+      final busy = deleteMode
+          ? controller.isProductDeleteBusy.value
+          : controller.isLocationActionBusy.value;
       final pickingB = controller.pickingSwapGroupB.value;
 
       return Material(
@@ -28,10 +32,11 @@ class StockProductSelectionBar extends GetView<StockController> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (pickingB)
+              if (pickingB && !deleteMode)
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   color: AppColors.customOrange3.withValues(alpha: 0.12),
                   child: Text(
                     'swapPickGroupB'.tr,
@@ -48,7 +53,11 @@ class StockProductSelectionBar extends GetView<StockController> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: busy ? null : controller.exitLocationSelection,
+                      onPressed: busy
+                          ? null
+                          : deleteMode
+                              ? controller.exitDeleteSelection
+                              : controller.exitLocationSelection,
                       icon: const Icon(Icons.close),
                       tooltip: 'cancelSelection'.tr,
                     ),
@@ -68,15 +77,27 @@ class StockProductSelectionBar extends GetView<StockController> {
                               color: AppColors.operationalNavy,
                             ),
                           ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            '${'swapGroupA'.tr}: $countA  •  ${'swapGroupB'.tr}: $countB',
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: AppColors.customGreyColor5,
-                              fontWeight: FontWeight.w600,
+                          if (deleteMode) ...[
+                            SizedBox(height: 2.h),
+                            Text(
+                              'deleteSelectionHint'.tr,
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                color: AppColors.customGreyColor5,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
+                          ] else ...[
+                            SizedBox(height: 2.h),
+                            Text(
+                              '${'swapGroupA'.tr}: $countA  •  ${'swapGroupB'.tr}: $countB',
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                color: AppColors.customGreyColor5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -86,7 +107,23 @@ class StockProductSelectionBar extends GetView<StockController> {
                         height: 24.w,
                         child: const CircularProgressIndicator(strokeWidth: 2),
                       )
-                    else ...[
+                    else if (deleteMode) ...[
+                      TextButton.icon(
+                        onPressed: total == 0
+                            ? null
+                            : () => controller.confirmDeleteSelectedProducts(
+                                  context,
+                                ),
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        label: Text(
+                          'deleteSelectedProducts'.tr,
+                          style: TextStyle(fontSize: 11.sp),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                      ),
+                    ] else ...[
                       if (!pickingB && countA > 0)
                         TextButton(
                           onPressed: controller.startSwapGroupBPicking,
@@ -99,7 +136,8 @@ class StockProductSelectionBar extends GetView<StockController> {
                         onPressed: total == 0
                             ? null
                             : () => controller.openMoveSelectedDialog(context),
-                        icon: const Icon(Icons.drive_file_move_outline, size: 16),
+                        icon:
+                            const Icon(Icons.drive_file_move_outline, size: 16),
                         label: Text(
                           'moveProductLocation'.tr,
                           style: TextStyle(fontSize: 11.sp),

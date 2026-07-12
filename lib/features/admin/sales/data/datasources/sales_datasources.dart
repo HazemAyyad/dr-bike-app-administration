@@ -611,8 +611,17 @@ class SalesDatasource {
     return DailySessionPayload.fromJson(Map<String, dynamic>.from(raw));
   }
 
-  Future<String> openDailySession() async {
-    final response = await api.post(EndPoints.salesDailySessionOpen);
+  Future<String> openDailySession({
+    List<Map<String, dynamic>> openingCounts = const [],
+    bool confirmOpeningVariance = false,
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailySessionOpen,
+      data: {
+        'opening_counts': openingCounts,
+        'confirm_opening_variance': confirmOpeningVariance,
+      },
+    );
     return _messageFromResponse(response.data);
   }
 
@@ -705,6 +714,25 @@ class SalesDatasource {
           'late_close_reason': lateCloseReason.trim(),
         if (sessionId != null) 'session_id': sessionId,
         if (transfers != null) 'transfers': transfers,
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'review_notes': reviewNotes.trim(),
+      },
+    );
+    return _messageFromResponse(response.data);
+  }
+
+  Future<String> directCloseDailySession({
+    required List<Map<String, dynamic>> cashCounts,
+    required int sessionId,
+    List<Map<String, dynamic>> transfers = const [],
+    String? reviewNotes,
+  }) async {
+    final response = await api.post(
+      EndPoints.salesDailyClosingDirect,
+      data: {
+        'cash_counts': cashCounts,
+        'session_id': sessionId,
+        'transfers': transfers,
         if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
           'review_notes': reviewNotes.trim(),
       },

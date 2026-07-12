@@ -92,6 +92,10 @@ class TodayTasksSummary {
   }) {
     final now = DateTime.now();
     final todayTasks = tasks.where((t) {
+      if (t.taskRecurrence == TaskRecurrenceRules.oneTimePersistent &&
+          _isSummaryActive(t.status)) {
+        return true;
+      }
       if (TaskRecurrenceRules.sameDay(t.startTime, now)) {
         if (t.taskRecurrence == 'daily' &&
             !TaskRecurrenceRules.isEmployeeWorkingDay(now, weeklyDaysOff)) {
@@ -139,6 +143,17 @@ class TodayTasksSummary {
       return 0;
     }
     return task.displayProgress;
+  }
+
+  static bool _isSummaryActive(String status) {
+    const active = {
+      'ongoing',
+      'pending',
+      'in_progress',
+      'waiting_review',
+      'overdue',
+    };
+    return active.contains(status);
   }
 }
 
@@ -237,9 +252,8 @@ class Task {
 
   factory Task.fromJson(Map<String, dynamic> json) {
     final trt = json['task_recurrence_time'];
-    final List<String> recurrenceTimes = trt is List
-        ? trt.map((e) => e.toString()).toList()
-        : const [];
+    final List<String> recurrenceTimes =
+        trt is List ? trt.map((e) => e.toString()).toList() : const [];
 
     return Task(
       id: asInt(json['id']),
@@ -270,7 +284,8 @@ class Task {
       parentId: asNullableString(json['parent_id']),
       taskRecurrence: asString(json['task_recurrence'], 'noRepeat'),
       taskRecurrenceTime: recurrenceTimes,
-      templateId: json['template_id'] != null ? asInt(json['template_id']) : null,
+      templateId:
+          json['template_id'] != null ? asInt(json['template_id']) : null,
     );
   }
 
@@ -360,6 +375,5 @@ class Task {
     );
   }
 
-  String get calendarDayKey =>
-      TaskRecurrenceRules.dateKeyFrom(startTime);
+  String get calendarDayKey => TaskRecurrenceRules.dateKeyFrom(startTime);
 }

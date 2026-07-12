@@ -143,6 +143,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   void changeTab(int index) {
     if (index != currentTab.value) {
       exitLocationSelection();
+      exitDeleteSelection();
     }
     currentTab.value = index;
     if (index == 3) {
@@ -183,20 +184,28 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   int locationProductsLastPage = 1;
 
   final RxBool locationSelectionActive = false.obs;
+  final RxBool deleteSelectionActive = false.obs;
   final RxList<String> selectedProductIds = <String>[].obs;
   final RxList<String> swapGroupAIds = <String>[].obs;
   final RxList<String> swapGroupBIds = <String>[].obs;
   final RxBool pickingSwapGroupB = false.obs;
   final RxBool isLocationActionBusy = false.obs;
+  final RxBool isProductDeleteBusy = false.obs;
 
   bool get canPickProductLocation =>
       currentTab.value == 0 || currentTab.value == 3;
 
+  bool get canDeleteProducts => currentTab.value == 0;
+
+  bool get productSelectionActive =>
+      locationSelectionActive.value || deleteSelectionActive.value;
+
   bool get canExecuteSwap =>
       swapGroupAIds.isNotEmpty && swapGroupBIds.isNotEmpty;
 
-  bool isProductSelected(String productId) =>
-      swapGroupAIds.contains(productId) || swapGroupBIds.contains(productId);
+  bool isProductSelected(String productId) => deleteSelectionActive.value
+      ? selectedProductIds.contains(productId)
+      : swapGroupAIds.contains(productId) || swapGroupBIds.contains(productId);
 
   bool isProductInSwapGroupA(String productId) =>
       swapGroupAIds.contains(productId);
@@ -209,6 +218,17 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void toggleProductSelection(String productId) {
+    if (deleteSelectionActive.value) {
+      if (selectedProductIds.contains(productId)) {
+        selectedProductIds.remove(productId);
+        if (selectedProductIds.isEmpty) {
+          exitDeleteSelection();
+        }
+      } else {
+        selectedProductIds.add(productId);
+      }
+      return;
+    }
     if (swapGroupAIds.contains(productId)) {
       swapGroupAIds.remove(productId);
       _syncSelectedProductIds();
@@ -236,6 +256,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   void startLocationSelection(String productId) {
     if (!canPickProductLocation) return;
+    exitDeleteSelection();
     locationSelectionActive.value = true;
     if (!isProductSelected(productId)) {
       swapGroupAIds.add(productId);
@@ -253,6 +274,100 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     swapGroupAIds.clear();
     swapGroupBIds.clear();
     pickingSwapGroupB.value = false;
+  }
+
+  void startDeleteSelection([String? productId]) {
+    if (!canDeleteProducts) return;
+    exitLocationSelection();
+    deleteSelectionActive.value = true;
+    if (productId != null &&
+        productId.isNotEmpty &&
+        !selectedProductIds.contains(productId)) {
+      selectedProductIds.add(productId);
+    }
+  }
+
+  void exitDeleteSelection() {
+    deleteSelectionActive.value = false;
+    if (!locationSelectionActive.value) {
+      selectedProductIds.clear();
+    }
+  }
+
+  Future<void> confirmDeleteSelectedProducts(BuildContext context) async {
+    if (selectedProductIds.isEmpty || isProductDeleteBusy.value) return;
+
+    final count = selectedProductIds.length;
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('deleteSelectedProducts'.tr),
+        content: Text(
+          'deleteSelectedProductsConfirm'.tr.replaceAll(
+                '@count',
+                count.toString(),
+              ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text(
+              'delete'.tr,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final ids = selectedProductIds
+        .map((id) => int.tryParse(id))
+        .whereType<int>()
+        .toList();
+    if (ids.isEmpty) return;
+
+    try {
+      isProductDeleteBusy(true);
+      final deleted = await stockDatasource.deleteProducts(productIds: ids);
+      final idSet = ids.map((id) => id.toString()).toSet();
+      allProducts.removeWhere((product) => idSet.contains(product.productId));
+      final remainingTotal = productListTotalCount.value - deleted;
+      productListTotalCount.value = remainingTotal < 0 ? 0 : remainingTotal;
+      exitDeleteSelection();
+      Get.snackbar(
+        'success'.tr,
+        'productsDeletedSuccessfully'.tr.replaceAll(
+              '@count',
+              deleted.toString(),
+            ),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isProductDeleteBusy(false);
+      update();
+    }
   }
 
   Future<void> showLocationActionSheetForProduct(

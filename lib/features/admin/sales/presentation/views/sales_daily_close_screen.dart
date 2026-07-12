@@ -57,8 +57,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   Color get _borderColor =>
       _isDark ? Colors.white12 : AppColors.operationalCardBorder;
 
-  Color get _titleColor =>
-      _isDark ? Colors.white : AppColors.operationalNavy;
+  Color get _titleColor => _isDark ? Colors.white : AppColors.operationalNavy;
 
   Color get _mutedColor =>
       _isDark ? AppColors.customGreyColor5 : AppColors.customGreyColor2;
@@ -177,8 +176,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     super.dispose();
   }
 
-  double _parse(String? text) =>
-      SalesAmountFormat.parse(text?.trim() ?? '');
+  double _parse(String? text) => SalesAmountFormat.parse(text?.trim() ?? '');
 
   void _showSuccess(String message) {
     final overlayContext = Get.overlayContext;
@@ -212,7 +210,8 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   Widget _scaffold(Widget body, {PreferredSizeWidget? appBar}) {
     return Scaffold(
       backgroundColor: _pageBg,
-      appBar: appBar ?? CustomAppBar(title: 'salesDailyCloseDay', action: false),
+      appBar: appBar ??
+          const CustomAppBar(title: 'salesDailyCloseDay', action: false),
       body: body,
     );
   }
@@ -263,7 +262,8 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
               Text(
                 'salesDailyClosingPendingHint'.tr,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13.sp, height: 1.5, color: _mutedColor),
+                style:
+                    TextStyle(fontSize: 13.sp, height: 1.5, color: _mutedColor),
               ),
               SizedBox(height: 24.h),
               AppButton(text: 'back'.tr, onPressed: Get.back),
@@ -550,13 +550,16 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: isPrimary ? null : () => _toggleCurrencyExpanded(row.currency),
+                onTap: isPrimary
+                    ? null
+                    : () => _toggleCurrencyExpanded(row.currency),
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(14.r),
                   bottom: isExpanded ? Radius.zero : Radius.circular(14.r),
                 ),
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
                   decoration: BoxDecoration(
                     color: _isDark
                         ? Colors.white.withValues(alpha: 0.04)
@@ -710,8 +713,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
   }
 
   Widget _transferPicker(String currency, double transferAmount) {
-    final boxes =
-        _shownBoxes.where((box) => box.currency == currency).toList();
+    final boxes = _shownBoxes.where((box) => box.currency == currency).toList();
     final selectedId = _transferTargets[currency];
     ShownBoxesModel? selected;
     if (selectedId != null) {
@@ -737,9 +739,7 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: _isDark
-            ? Colors.black26
-            : const Color(0xFFF9FAFB),
+        color: _isDark ? Colors.black26 : const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: _borderColor),
       ),
@@ -904,15 +904,25 @@ class _SalesDailyCloseScreenState extends State<SalesDailyCloseScreen> {
 
     setState(() => _submitting = true);
     try {
-      final lateReason = payload.requiresLateCloseReason
-          ? _lateReasonCtrl.text.trim()
-          : null;
-      final message = await controller.submitDailyClosing(
-        cashCounts: counts,
-        lateCloseReason: lateReason,
-        sessionId: _targetSessionId ?? payload.session?.id,
-        transfers: _canFinalizeClosing ? transfers : null,
-      );
+      final lateReason =
+          payload.requiresLateCloseReason ? _lateReasonCtrl.text.trim() : null;
+      final sessionId = _targetSessionId ?? payload.session?.id;
+      if (sessionId == null) {
+        Get.snackbar('error'.tr, 'salesDailyNoSessionOpen'.tr);
+        return;
+      }
+
+      final message = _canFinalizeClosing
+          ? await controller.directCloseDailySession(
+              cashCounts: counts,
+              sessionId: sessionId,
+              transfers: transfers,
+            )
+          : await controller.submitDailyClosing(
+              cashCounts: counts,
+              lateCloseReason: lateReason,
+              sessionId: sessionId,
+            );
       if (!mounted) return;
       Get.back();
       _showSuccess(message);

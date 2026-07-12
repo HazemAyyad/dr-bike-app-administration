@@ -40,8 +40,8 @@ class SalesDailyAdminController extends GetxController {
       shownBoxes.assignAll(boxes);
       openSessions.assignAll(await datasource.getOpenDailySessions());
       closingRequests.assignAll(await datasource.getPendingDailyClosing());
-      reopenRequests.assignAll(await datasource.getPendingDailyReopen());
-      cancellationRequests.assignAll(await datasource.getPendingCancellations());
+      cancellationRequests
+          .assignAll(await datasource.getPendingCancellations());
     } catch (e) {
       Helpers.showCustomDialogError(
         context: Get.context!,
@@ -193,6 +193,7 @@ class SalesDailyAdminController extends GetxController {
       isLoading(false);
     }
   }
+
   void openSessionClose(int sessionId) {
     Get.toNamed(
       AppRoutes.SALESDAILYCLOSESCREEN,

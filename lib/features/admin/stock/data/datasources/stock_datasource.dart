@@ -25,6 +25,7 @@ import '../models/products_by_tag_result.dart';
 import '../models/products_by_location_result.dart';
 import '../models/product_stock_movement_model.dart';
 import '../models/store_section_model.dart';
+
 class StockDatasource {
   final ApiConsumer api;
 
@@ -149,7 +150,8 @@ class StockDatasource {
               ? 'closeoutes'
               : 'products';
       final raw = response.data;
-      final map = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final map =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
       final products = mapListFromResponseKey(
         map,
         key,
@@ -184,7 +186,10 @@ class StockDatasource {
       }
       final list = raw['sizes'];
       if (list is! List) return [];
-      return list.map((e) => e.toString().trim()).where((s) => s.isNotEmpty).toList();
+      return list
+          .map((e) => e.toString().trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -219,7 +224,10 @@ class StockDatasource {
       }
       final list = raw['sizes'];
       if (list is! List) return sizes;
-      return list.map((e) => e.toString().trim()).where((s) => s.isNotEmpty).toList();
+      return list
+          .map((e) => e.toString().trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -879,7 +887,8 @@ class StockDatasource {
       StoreSectionModel? section;
       final sectionMap = map['section'];
       if (sectionMap is Map) {
-        section = StoreSectionModel.fromJson(Map<String, dynamic>.from(sectionMap));
+        section =
+            StoreSectionModel.fromJson(Map<String, dynamic>.from(sectionMap));
       }
       final products = mapListFromResponseKey(
         map,
@@ -1061,6 +1070,45 @@ class StockDatasource {
       return raw['updated'] is int
           ? raw['updated'] as int
           : int.tryParse('${raw['updated']}') ?? productIds.length;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<int> deleteProducts({
+    required List<int> productIds,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.deleteProducts,
+        data: {
+          'product_ids': productIds,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map || raw['status']?.toString() != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: raw is Map
+                ? (raw['message']?.toString() ?? 'Unknown error')
+                : 'Unknown error',
+            status: 422,
+            data: raw is Map ? Map<String, dynamic>.from(raw) : {},
+          ),
+        );
+      }
+      return raw['deleted'] is int
+          ? raw['deleted'] as int
+          : int.tryParse('${raw['deleted']}') ?? productIds.length;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

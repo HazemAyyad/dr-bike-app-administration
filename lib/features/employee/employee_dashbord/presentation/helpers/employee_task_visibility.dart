@@ -18,6 +18,10 @@ bool isEmployeeTaskOnToday(DateTime dateTime) {
   return TaskRecurrenceRules.sameDay(dateTime.toLocal(), DateTime.now());
 }
 
+bool isPinnedPersistentTask(Task task) =>
+    task.taskRecurrence == TaskRecurrenceRules.oneTimePersistent &&
+    isEmployeeTaskActive(task.status);
+
 bool _shouldExpandTask(Task task) => TaskRecurrenceRules.shouldExpand(
       source: task.source,
       parentId: task.parentId,
@@ -29,6 +33,8 @@ bool isTaskVisibleOnDay(
   DateTime day, {
   List<String> weeklyDaysOff = const [],
 }) {
+  if (isPinnedPersistentTask(task)) return true;
+
   if (TaskRecurrenceRules.sameDay(task.startTime, day)) {
     if (task.taskRecurrence == 'daily' &&
         !TaskRecurrenceRules.isEmployeeWorkingDay(day, weeklyDaysOff)) {
@@ -53,8 +59,9 @@ bool isEmployeeTaskActiveForDay(
   DateTime day, {
   List<String> weeklyDaysOff = const [],
 }) {
-  if (TaskRecurrenceRules.isRepeatedCopy(task.parentId) ||
-      task.isOccurrence) {
+  if (isPinnedPersistentTask(task)) return true;
+
+  if (TaskRecurrenceRules.isRepeatedCopy(task.parentId) || task.isOccurrence) {
     return isEmployeeTaskActive(task.status);
   }
   if (_shouldExpandTask(task) &&
@@ -76,7 +83,8 @@ bool isDashboardTask(
   Task task, {
   List<String> weeklyDaysOff = const [],
 }) =>
-    isEmployeeTaskActiveForDay(task, DateTime.now(), weeklyDaysOff: weeklyDaysOff) &&
+    isEmployeeTaskActiveForDay(task, DateTime.now(),
+        weeklyDaysOff: weeklyDaysOff) &&
     isTaskVisibleOnDay(task, DateTime.now(), weeklyDaysOff: weeklyDaysOff);
 
 /// One card per logical task on the home screen, with today's start/end times.
@@ -97,9 +105,16 @@ List<Task> dashboardTasksForToday(
     }
   }
 
-  final result = bestByGroup.values.toList()
-    ..sort((a, b) => a.endTime.compareTo(b.endTime));
+  final result = bestByGroup.values.toList()..sort(_comparePinnedThenDue);
   return result;
+}
+
+int _comparePinnedThenDue(Task a, Task b) {
+  final aPinned = isPinnedPersistentTask(a);
+  final bPinned = isPinnedPersistentTask(b);
+  if (aPinned && !bPinned) return -1;
+  if (!aPinned && bPinned) return 1;
+  return a.endTime.compareTo(b.endTime);
 }
 
 String _dashboardGroupKey(Task task) {
@@ -113,14 +128,16 @@ String _dashboardGroupKey(Task task) {
 }
 
 Task _normalizeTaskForToday(Task task, DateTime today, List<Task> allTasks) {
-  if (task.isRepeatedCopy && TaskRecurrenceRules.sameDay(task.startTime, today)) {
+  if (task.isRepeatedCopy &&
+      TaskRecurrenceRules.sameDay(task.startTime, today)) {
     return task;
   }
   if (task.isOccurrence && TaskRecurrenceRules.sameDay(task.startTime, today)) {
     return task;
   }
   if (_shouldExpandTask(task)) {
-    return EmployeeRecurringTaskExpander.resolveDayInstance(allTasks, task, today);
+    return EmployeeRecurringTaskExpander.resolveDayInstance(
+        allTasks, task, today);
   }
   if (!TaskRecurrenceRules.sameDay(task.startTime, today)) {
     return task.copyWithDisplayDate(today);

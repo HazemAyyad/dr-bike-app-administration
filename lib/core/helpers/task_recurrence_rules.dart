@@ -1,5 +1,7 @@
 /// Shared recurrence matching for legacy employee tasks (admin + employee apps).
 class TaskRecurrenceRules {
+  static const oneTimePersistent = 'oneTimePersistent';
+
   static const weekdays = [
     'monday',
     'tuesday',
@@ -18,7 +20,7 @@ class TaskRecurrenceRules {
     if (source == 'occurrence') return false;
     if (isRepeatedCopy(parentId)) return false;
     final r = recurrence.trim();
-    return r.isNotEmpty && r != 'noRepeat';
+    return r.isNotEmpty && r != 'noRepeat' && r != oneTimePersistent;
   }
 
   static bool isRecurringParent({
@@ -54,6 +56,8 @@ class TaskRecurrenceRules {
     }
 
     switch (recurrence) {
+      case oneTimePersistent:
+        return true;
       case 'daily':
         return true;
       case 'weekly':

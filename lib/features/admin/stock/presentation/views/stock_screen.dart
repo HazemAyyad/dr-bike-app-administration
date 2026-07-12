@@ -25,6 +25,22 @@ class StockScreen extends GetView<StockController> {
       appBar: CustomAppBar(
         title: 'stock',
         actions: [
+          Obx(() {
+            if (!controller.canDeleteProducts) {
+              return const SizedBox.shrink();
+            }
+            final active = controller.deleteSelectionActive.value;
+            return IconButton(
+              icon: Icon(
+                active ? Icons.delete : Icons.delete_outline,
+                color: active ? Colors.red : null,
+              ),
+              tooltip: 'deleteProducts'.tr,
+              onPressed: active
+                  ? controller.exitDeleteSelection
+                  : () => controller.startDeleteSelection(),
+            );
+          }),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'stockInventorySettings'.tr,

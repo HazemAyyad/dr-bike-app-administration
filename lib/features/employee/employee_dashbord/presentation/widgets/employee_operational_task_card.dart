@@ -10,6 +10,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../../admin/employee_tasks/presentation/widgets/task_status_badge.dart';
 import '../../data/models/dashbord_employee_details_model.dart';
 import '../controllers/employee_dashbord_controller.dart';
+import '../helpers/employee_task_visibility.dart';
 
 /// Employee task row — same operational look as admin [OperationalTaskCard].
 class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
@@ -29,6 +30,7 @@ class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
     final blockedByOther = !task.canExecute;
     final progress = task.displayProgress;
     final showProgress = progress > 0 && !isCompleted;
+    final isPinned = isPinnedPersistentTask(task);
 
     return Material(
       color: Colors.transparent,
@@ -67,26 +69,27 @@ class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
                     );
                   }
                   return Transform.scale(
-                  scale: 1.15,
-                  child: Checkbox(
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    activeColor: AppColors.operationalPurple,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4.r),
+                    scale: 1.15,
+                    child: Checkbox(
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      activeColor: AppColors.operationalPurple,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                      side: BorderSide(
+                        color:
+                            AppColors.operationalPurple.withValues(alpha: 0.6),
+                      ),
+                      value: isCompleted,
+                      onChanged: isCompleted || blockedByOther
+                          ? null
+                          : (v) {
+                              if (v == true) {
+                                _onMarkComplete(context);
+                              }
+                            },
                     ),
-                    side: BorderSide(
-                      color: AppColors.operationalPurple.withValues(alpha: 0.6),
-                    ),
-                    value: isCompleted,
-                    onChanged: isCompleted || blockedByOther
-                        ? null
-                        : (v) {
-                            if (v == true) {
-                              _onMarkComplete(context);
-                            }
-                          },
-                  ),
-                );
+                  );
                 }),
                 SizedBox(width: 4.w),
               ],
@@ -119,13 +122,47 @@ class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
                             ),
                           ),
                         ),
-                        if (!isCompleted) _TimeLeftChip(endTime: task.endTime),
+                        if (!isCompleted && !isPinned)
+                          _TimeLeftChip(endTime: task.endTime),
                       ],
                     ),
                     SizedBox(height: 4.h),
                     Row(
                       children: [
                         TaskStatusBadge(status: task.status, compact: true),
+                        if (isPinned) ...[
+                          SizedBox(width: 6.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.operationalPurple
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.push_pin_outlined,
+                                  size: 11.sp,
+                                  color: AppColors.operationalPurple,
+                                ),
+                                SizedBox(width: 3.w),
+                                Text(
+                                  'pinnedTaskBadge'.tr,
+                                  style: TextStyle(
+                                    fontSize: 9.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.operationalPurple,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         if (task.isForcedToUploadImg) ...[
                           SizedBox(width: 6.w),
                           Icon(
@@ -138,6 +175,15 @@ class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
                         if (showProgress)
                           Text(
                             '$progress%',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.operationalPurple,
+                            ),
+                          )
+                        else if (isPinned)
+                          Text(
+                            'oneTimePersistent'.tr,
                             style: TextStyle(
                               fontSize: 10.sp,
                               fontWeight: FontWeight.w700,
@@ -178,14 +224,15 @@ class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
                           vertical: 5.h,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.customOrange3.withValues(alpha: 0.12),
+                          color:
+                              AppColors.customOrange3.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Text(
                           'taskCompletedBy'.tr.replaceAll(
-                            '@name',
-                            task.completedByName!,
-                          ),
+                                '@name',
+                                task.completedByName!,
+                              ),
                           style: TextStyle(
                             fontSize: 10.sp,
                             fontWeight: FontWeight.w600,
@@ -249,7 +296,8 @@ class EmployeeOperationalTaskCard extends GetView<EmployeeDashbordController> {
         backgroundColor: ThemeService.isDark.value
             ? AppColors.darkColor
             : AppColors.whiteColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
         child: Padding(
           padding: EdgeInsets.all(14.w),
           child: Column(

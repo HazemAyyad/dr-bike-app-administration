@@ -332,6 +332,11 @@ const Map<String, String> ar = {
   'exportProductsSettingDesc': 'تصدير جميع المنتجات كملف CSV',
   'importProductsSettingDesc': 'استيراد المنتجات من ملف CSV',
   'moveProductLocation': 'نقل',
+  'deleteProducts': 'حذف المنتجات',
+  'deleteSelectedProducts': 'حذف المحدد',
+  'deleteSelectedProductsConfirm': 'هل تريد حذف @count منتج من المخزون؟',
+  'deleteSelectionHint': 'اضغط على المنتجات لتحديدها أو إلغاء تحديدها',
+  'productsDeletedSuccessfully': 'تم حذف @count منتج بنجاح',
   'swapProductLocation': 'استبدال',
   'moveProductsTitle': 'نقل المنتجات',
   'swapProductsTitle': 'استبدال الأماكن',
@@ -534,6 +539,8 @@ const Map<String, String> ar = {
   'tasksViewDaily': 'يومي',
   'tasksViewWeekly': 'أسبوعي',
   'tasksViewMonthly': 'شهري',
+  'pinnedTasks': 'مهام مثبتة',
+  'pinnedTaskBadge': 'مثبتة',
   'today': 'اليوم',
   'errorLoadingTaskDetails': 'تعذر تحميل تفاصيل المهمة',
   'recurrenceSettings': 'التكرار',
@@ -556,10 +563,13 @@ const Map<String, String> ar = {
   'yearly': 'سنوي',
   'recurrenceSummaryPrefix': 'سيتم جدولة هذه المهمة @details',
   'recurrenceSummaryNoRepeat': 'بدون تكرار',
+  'recurrenceSummaryOneTimePersistent':
+      'مهمة مرة واحدة تبقى مثبتة حتى يتم تنفيذها',
   'recurrenceTypeDaily': 'يوميًا',
   'recurrenceTypeWeekly': 'أسبوعيًا',
   'recurrenceTypeMonthly': 'شهريًا',
   'recurrenceTypeYearly': 'سنويًا',
+  'recurrenceTypeOneTimePersistent': 'مرة واحدة مثبتة',
   'recurrenceOnDay': 'كل @day',
   'recurrenceOnDays': 'كل @days',
   'recurrenceUntilCount': 'حتى @count مرات',
@@ -783,6 +793,7 @@ const Map<String, String> ar = {
   'evening': 'مساءً',
 
   'noRepeat': 'لا يوجد تكرار',
+  'oneTimePersistent': 'مرة واحدة مثبتة',
   'daily': 'يوميًا',
   'weekly': 'اسبوعياً',
   'monthly': 'شهرياً',
@@ -2613,6 +2624,15 @@ const Map<String, String> ar = {
   'suspendedInvoiceNoteOnSuspendTitle': 'ملاحظة قبل تعليق الفاتورة',
   'instantSaleEditing': 'تعديل فاتورة بيع فوري',
   'suspendInvoice': 'تعليق الفاتورة',
+  'restore': 'استرجاع',
+  'discard': 'تجاهل',
+  'instantSaleDraftRestoreTitle': 'استرجاع الفاتورة السابقة؟',
+  'instantSaleDraftRestoreBody':
+      'يوجد فاتورة بيع فوري كنت تعمل عليها محفوظة على هذا الجهاز. هل تريد استرجاعها؟',
+  'instantSaleLeaveWarningTitle': 'الخروج من الفاتورة',
+  'instantSaleLeaveWarningBody':
+      'إذا خرجت الآن ستبقى الفاتورة محفوظة محلياً على هذا الجهاز فقط. إذا تريد حفظها كفاتورة معلقة اضغط تعليق.',
+  'instantSaleLeaveKeepLocal': 'خروج وحفظ محلي',
   'operationCompletedSuccessfully': 'تمت العملية بنجاح',
 
   'salesDailyDayOpen': 'يوم المبيعات مفتوح',
@@ -2622,6 +2642,15 @@ const Map<String, String> ar = {
   'salesDailyFinalizeClosing': 'إغلاق وترحيل',
   'salesDailyOpenDrawerConfirm':
       'هل تريد فتح صندوق المبيعات اليومي؟ لن يتمكن موظف آخر من فتح صندوق حتى تغلقه.',
+  'salesDailyOpeningCountTitle': 'عدّ كاش افتتاح الصندوق',
+  'salesDailyOpeningCountHint':
+      'اكتب الكاش الذي استلمته فعلياً قبل فتح الصندوق.',
+  'salesDailyExpectedOpening':
+      'المتوقع: @amount @currency من صندوق @employee بتاريخ @date',
+  'salesDailyCountedOpening': 'الكاش المستلم',
+  'salesDailyOpeningVarianceTitle': 'فرق في كاش الافتتاح',
+  'salesDailyOpeningVarianceBody':
+      'المتوقع من صندوق @employee بتاريخ @date هو @expected @currency، والمدخل @counted @currency. هل تريد فتح الصندوق بهذا الفرق؟',
   'salesDailyDrawerBusy': 'صندوق المبيعات مشغول',
   'salesDailyDrawerOpenByOther': 'الصندوق مفتوح لدى @employee',
   'salesDailySharedDrawerOpen': 'سيتم البيع على صندوق @employee',

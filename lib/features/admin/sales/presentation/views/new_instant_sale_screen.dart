@@ -37,7 +37,8 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
-        final payment = Get.find<PaymentController>(tag: kInstantSalePaymentTag);
+        final payment =
+            Get.find<PaymentController>(tag: kInstantSalePaymentTag);
         if (controller.activeSuspendedSaleId.value == null &&
             controller.activeEditInstantSaleId.value == null) {
           payment.clearPaymentForm();
@@ -64,6 +65,11 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
           await payment.getAllCustomersAndSellers();
           controller.applySuspendedPaymentToController(payment);
         }
+      }
+      if (mounted &&
+          controller.activeSuspendedSaleId.value == null &&
+          controller.activeEditInstantSaleId.value == null) {
+        await controller.promptRestoreLocalInstantSaleDraft(context);
       }
     });
   }
@@ -108,8 +114,16 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
     }
 
     return PopScope(
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) _releasePaymentController();
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) {
+          _releasePaymentController();
+          return;
+        }
+        final canLeave = await controller.confirmLeaveInstantSaleFlow(context);
+        if (!mounted || !canLeave) return;
+        _releasePaymentController();
+        Get.back();
       },
       child: Scaffold(
         appBar: CustomAppBar(
@@ -185,7 +199,8 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
                 SizedBox(height: 20.h),
                 Obx(
                   () {
-                    final suspendedRef = controller.activeSuspendedReferenceCode;
+                    final suspendedRef =
+                        controller.activeSuspendedReferenceCode;
                     if (suspendedRef != null) {
                       return Padding(
                         padding: EdgeInsets.only(bottom: 10.h),

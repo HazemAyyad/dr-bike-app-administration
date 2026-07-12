@@ -16,7 +16,7 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 3,
       initialIndex: _initialTabIndex(),
       child: Scaffold(
         appBar: CustomAppBar(
@@ -28,7 +28,6 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
             tabs: [
               Tab(text: 'salesDailyOpenDrawersTab'.tr),
               Tab(text: 'salesDailyClosingRequests'.tr),
-              Tab(text: 'salesDailyReopenRequests'.tr),
               Tab(text: 'salesDailyCancelRequests'.tr),
             ],
           ),
@@ -41,7 +40,6 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
             children: [
               _OpenSessionsList(controller: controller),
               _ClosingList(controller: controller),
-              _ReopenList(controller: controller),
               _CancellationList(controller: controller),
             ],
           );
@@ -58,7 +56,7 @@ class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
             ? args
             : null;
     final index = raw is int ? raw : int.tryParse('${raw ?? ''}') ?? 0;
-    if (index < 0 || index > 3) return 0;
+    if (index < 0 || index > 2) return 0;
     return index;
   }
 }
@@ -351,76 +349,6 @@ class _ClosingList extends StatelessWidget {
                 ),
               );
             },
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ReopenList extends StatelessWidget {
-  const _ReopenList({required this.controller});
-
-  final SalesDailyAdminController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    if (controller.reopenRequests.isEmpty) {
-      return Center(child: Text('noData'.tr));
-    }
-    return ListView.separated(
-      padding: EdgeInsets.all(12.w),
-      itemCount: controller.reopenRequests.length,
-      separatorBuilder: (_, __) => SizedBox(height: 8.h),
-      itemBuilder: (context, index) {
-        final item = controller.reopenRequests[index];
-        return Card(
-          child: Padding(
-            padding: EdgeInsets.all(12.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.employeeName ?? '—',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  item.businessDate ?? '',
-                  style: TextStyle(fontSize: 11.sp, color: Colors.grey),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  item.reason,
-                  style: TextStyle(fontSize: 12.sp, height: 1.3),
-                ),
-                SizedBox(height: 10.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: controller.isProcessing.value
-                            ? null
-                            : () => controller.rejectReopen(item.id),
-                        child: Text('reject'.tr),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: controller.isProcessing.value
-                            ? null
-                            : () => controller.approveReopen(item.id),
-                        child: Text('approve'.tr),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
           ),
         );
       },

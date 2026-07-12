@@ -364,6 +364,7 @@ class EndPoints {
   /// نفس حقول صفحة اختبار Laravel: multipart + save_scope
   static const String createProductFull = 'create/product';
   static const String updateProductFull = 'update/product/full';
+  static const String deleteProducts = 'delete/products';
   static const String productStockAdjust = 'product/stock/adjust';
   static const String productStockMovements = 'product/stock/movements';
 
@@ -443,6 +444,7 @@ class EndPoints {
       'sales/daily-sessions/$sessionId/close-payload';
   static const String salesDailyClosingRequest = 'sales/daily-closing/request';
   static const String salesDailyClosingPending = 'sales/daily-closing/pending';
+  static const String salesDailyClosingDirect = 'sales/daily-closing/direct';
   static const String salesDailyClosingApprove = 'sales/daily-closing/approve';
   static const String salesDailyClosingReject = 'sales/daily-closing/reject';
   static const String salesDailyReopenRequest = 'sales/daily-reopen/request';

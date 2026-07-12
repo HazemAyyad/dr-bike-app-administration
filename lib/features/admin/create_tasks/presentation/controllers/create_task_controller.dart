@@ -452,7 +452,9 @@ class CreateTaskController extends GetxController {
   RxString reminderChannel = 'push'.obs;
 
   bool get showRecurrenceDuration =>
-      selectedDays.value.isNotEmpty && selectedDays.value != 'noRepeat';
+      selectedDays.value.isNotEmpty &&
+      selectedDays.value != 'noRepeat' &&
+      selectedDays.value != 'oneTimePersistent';
 
   String get durationCountLabelKey {
     switch (selectedDays.value) {
@@ -475,7 +477,8 @@ class CreateTaskController extends GetxController {
   void setRecurrenceType(String type) {
     selectedDays.value = type;
     isRecurrenceVisible.value = type != 'noRepeat';
-    if (type == 'noRepeat') {
+    selectedDaysList.clear();
+    if (type == 'noRepeat' || type == 'oneTimePersistent') {
       durationType.value = 'forever';
     } else {
       endAfterCount.value = 1;
@@ -571,6 +574,7 @@ class CreateTaskController extends GetxController {
 
   final weekDays = [
     'noRepeat',
+    'oneTimePersistent',
     'daily',
     'weekly',
     'monthly',

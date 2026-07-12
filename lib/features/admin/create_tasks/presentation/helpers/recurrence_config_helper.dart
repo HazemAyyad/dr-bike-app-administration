@@ -41,7 +41,9 @@ class RecurrenceConfigHelper {
       cfg['reminder_channel'] = reminderChannel;
     }
 
-    if (recurrenceType.isEmpty || recurrenceType == 'noRepeat') {
+    if (recurrenceType.isEmpty ||
+        recurrenceType == 'noRepeat' ||
+        recurrenceType == 'oneTimePersistent') {
       return cfg;
     }
 
@@ -189,6 +191,7 @@ class RecurrenceConfigHelper {
         out[path] = value;
       }
     }
+
     nested.forEach((k, v) => walk(v, '$prefix[$k]'));
     return out;
   }

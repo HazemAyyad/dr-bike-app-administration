@@ -5,9 +5,11 @@ import 'package:doctorbike/features/admin/sales/data/models/profit_sale_model.da
 import 'package:doctorbike/features/admin/sales/domain/usecases/add_instant_sales_usecase.dart';
 import 'package:doctorbike/features/admin/sales/domain/usecases/get_instant_sales_usecase.dart';
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
@@ -60,6 +62,7 @@ import 'sales_service.dart';
 const String kInstantSalePaymentTag = 'instant_sale_payment';
 const String kSalesOrderPaymentTag = 'sales_order_payment';
 const String kProfitSalePaymentTag = 'profit_sale_payment';
+const String kInstantSaleLocalDraftKey = 'instant_sale_local_draft_v1';
 
 void _instantSaleDebug(String message, [Object? details]) {
   assert(() {
@@ -589,9 +592,15 @@ class SalesController extends GetxController
     }
   }
 
-  Future<void> requestDailyOpen() async {
+  Future<void> requestDailyOpen({
+    List<Map<String, dynamic>> openingCounts = const [],
+    bool confirmOpeningVariance = false,
+  }) async {
     final ds = Get.find<SalesDatasource>();
-    final message = await ds.openDailySession();
+    final message = await ds.openDailySession(
+      openingCounts: openingCounts,
+      confirmOpeningVariance: confirmOpeningVariance,
+    );
     await loadDailySession();
     final overlayContext = Get.overlayContext ?? Get.context;
     if (overlayContext != null) {
@@ -630,6 +639,23 @@ class SalesController extends GetxController
     final message = await ds.requestDailyClosing(
       cashCounts: cashCounts,
       lateCloseReason: lateCloseReason,
+      sessionId: sessionId,
+      transfers: transfers,
+      reviewNotes: reviewNotes,
+    );
+    await loadDailySession();
+    return message;
+  }
+
+  Future<String> directCloseDailySession({
+    required List<Map<String, dynamic>> cashCounts,
+    required int sessionId,
+    required List<Map<String, dynamic>> transfers,
+    String? reviewNotes,
+  }) async {
+    final ds = Get.find<SalesDatasource>();
+    final message = await ds.directCloseDailySession(
+      cashCounts: cashCounts,
       sessionId: sessionId,
       transfers: transfers,
       reviewNotes: reviewNotes,
@@ -782,12 +808,15 @@ class SalesController extends GetxController
 
   static const int _autoSuspendLineThreshold = 10;
   Timer? _autoSuspendDebounce;
+  Timer? _localDraftDebounce;
   bool _isAutoSuspendingInstantSale = false;
   bool _activeSuspendedSaleIsAuto = false;
+  bool _isRestoringLocalInstantSaleDraft = false;
 
   void bumpCartRevision() {
     cartRevision.value++;
     _scheduleAutoSuspendLargeInstantSale();
+    _scheduleLocalInstantSaleDraftSave();
   }
 
   int get _instantSaleLineCount {
@@ -855,6 +884,172 @@ class SalesController extends GetxController
     } finally {
       _isAutoSuspendingInstantSale = false;
     }
+  }
+
+  bool get _shouldKeepLocalInstantSaleDraft =>
+      activeEditInstantSaleId.value == null &&
+      activeSuspendedSaleId.value == null &&
+      canContinueFromPicker &&
+      _instantSaleLineCount <= _autoSuspendLineThreshold;
+
+  void _scheduleLocalInstantSaleDraftSave() {
+    _localDraftDebounce?.cancel();
+    if (_isRestoringLocalInstantSaleDraft) return;
+
+    if (!_shouldKeepLocalInstantSaleDraft) {
+      if (_instantSaleLineCount > _autoSuspendLineThreshold) {
+        clearLocalInstantSaleDraft();
+      }
+      return;
+    }
+
+    _localDraftDebounce = Timer(
+      const Duration(milliseconds: 500),
+      saveLocalInstantSaleDraft,
+    );
+  }
+
+  Future<void> saveLocalInstantSaleDraft() async {
+    if (_isRestoringLocalInstantSaleDraft) return;
+    if (!_shouldKeepLocalInstantSaleDraft) return;
+
+    final payload = buildInstantSaleSuspendPayload();
+    if (payload['product_id'] == null && payload['offer_package_id'] == null) {
+      return;
+    }
+
+    await GetStorage().write(
+      kInstantSaleLocalDraftKey,
+      jsonEncode({
+        'saved_at': DateTime.now().toIso8601String(),
+        'payload': payload,
+      }),
+    );
+  }
+
+  Future<void> clearLocalInstantSaleDraft() async {
+    await GetStorage().remove(kInstantSaleLocalDraftKey);
+  }
+
+  Map<String, dynamic>? _readLocalInstantSaleDraftPayload() {
+    final raw = GetStorage().read(kInstantSaleLocalDraftKey);
+    if (raw == null) return null;
+
+    try {
+      final decoded = raw is String ? jsonDecode(raw) : raw;
+      if (decoded is! Map) return null;
+      final payload = decoded['payload'];
+      if (payload is Map) {
+        return Map<String, dynamic>.from(payload);
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
+  bool get hasLocalInstantSaleDraft =>
+      _readLocalInstantSaleDraftPayload() != null;
+
+  bool get hasUnsavedInstantSaleWork =>
+      activeEditInstantSaleId.value == null &&
+      activeSuspendedSaleId.value == null &&
+      canContinueFromPicker;
+
+  Future<bool> promptRestoreLocalInstantSaleDraft(BuildContext context) async {
+    if (activeSuspendedSaleId.value != null ||
+        activeEditInstantSaleId.value != null ||
+        canContinueFromPicker) {
+      return false;
+    }
+
+    final payload = _readLocalInstantSaleDraftPayload();
+    if (payload == null) return false;
+
+    final restore = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('instantSaleDraftRestoreTitle'.tr),
+        content: Text('instantSaleDraftRestoreBody'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('discard'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('restore'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (restore != true) {
+      await clearLocalInstantSaleDraft();
+      return false;
+    }
+
+    _isRestoringLocalInstantSaleDraft = true;
+    try {
+      resetInstantSaleForm(renewFormKey: true);
+      await loadOfferPackagesForSale();
+      if (products.isEmpty) {
+        final list = await getAllProductsUsecase.call();
+        products
+          ..clear()
+          ..addAll(list);
+      }
+      await hydrateFromSuspendedPayload(payload);
+      await clearLocalInstantSaleDraft();
+      return true;
+    } finally {
+      _isRestoringLocalInstantSaleDraft = false;
+    }
+  }
+
+  Future<bool> confirmLeaveInstantSaleFlow(BuildContext context) async {
+    if (!hasUnsavedInstantSaleWork) return true;
+
+    await saveLocalInstantSaleDraft();
+    if (!context.mounted) return false;
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('instantSaleLeaveWarningTitle'.tr),
+        content: Text('instantSaleLeaveWarningBody'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'stay'),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'leave'),
+            child: Text('instantSaleLeaveKeepLocal'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'suspend'),
+            child: Text('suspendInvoice'.tr),
+          ),
+        ],
+      ),
+    );
+
+    if (action == 'suspend') {
+      if (!context.mounted) return false;
+      final saved = await suspendInstantSale(
+        context,
+        currentStep: Get.currentRoute == AppRoutes.NEWINSTANTSALESCREEN
+            ? 'checkout'
+            : 'product_picker',
+      );
+      if (saved) {
+        await clearLocalInstantSaleDraft();
+      }
+      return false;
+    }
+
+    return action == 'leave';
   }
 
   void _bumpProductsList() => productsListVersion.value++;
@@ -1681,6 +1876,7 @@ class SalesController extends GetxController
         (message) async {
           _instantSaleDebug('suspend success', message);
           await _leaveInstantSaleFlow();
+          await clearLocalInstantSaleDraft();
           clearActiveSuspendedSale();
           resetInstantSaleForm();
           await loadSuspendedInvoicesCount();
@@ -1746,7 +1942,6 @@ class SalesController extends GetxController
         ],
       ),
     );
-    noteCtrl.dispose();
 
     return result == null || result.trim().isEmpty ? null : result.trim();
   }
@@ -3386,6 +3581,7 @@ class SalesController extends GetxController
 
           await _leaveInstantSaleFlow();
           await Future<void>.delayed(const Duration(milliseconds: 350));
+          await clearLocalInstantSaleDraft();
 
           if (!isClosed) {
             _instantSalePayment?.clearPaymentForm();
@@ -3542,6 +3738,7 @@ class SalesController extends GetxController
 
           await _leaveInstantSaleFlow();
           await Future<void>.delayed(const Duration(milliseconds: 350));
+          await clearLocalInstantSaleDraft();
 
           if (!isClosed) {
             _instantSalePayment?.clearPaymentForm();
@@ -4097,6 +4294,7 @@ class SalesController extends GetxController
       }
     });
     ever(items, (_) => calculateGrandTotal());
+    discountController.addListener(_scheduleLocalInstantSaleDraftSave);
   }
 
   @override
@@ -4115,6 +4313,7 @@ class SalesController extends GetxController
     _profitSalesSearchDebounce?.cancel();
     _instantSalePickerSearchDebounce?.cancel();
     _autoSuspendDebounce?.cancel();
+    _localDraftDebounce?.cancel();
     super.onClose();
   }
 
@@ -4130,6 +4329,7 @@ class SalesController extends GetxController
 
   void addInstantSaleNoteLine() {
     instantSaleNotes.add(InstantSaleNoteLine());
+    _scheduleLocalInstantSaleDraftSave();
   }
 
   void saveInstantSaleNoteLine({
@@ -4145,6 +4345,7 @@ class SalesController extends GetxController
       instantSaleNotes.add(InstantSaleNoteLine(text: text, amount: amount));
     }
     calculateGrandTotal();
+    _scheduleLocalInstantSaleDraftSave();
   }
 
   void removeInstantSaleNoteLine(int index) {
@@ -4152,6 +4353,7 @@ class SalesController extends GetxController
     final line = instantSaleNotes.removeAt(index);
     line.dispose();
     calculateGrandTotal();
+    _scheduleLocalInstantSaleDraftSave();
   }
 
   void clearInstantSaleNotes({bool dispose = true}) {

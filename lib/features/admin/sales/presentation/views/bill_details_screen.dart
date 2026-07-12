@@ -714,21 +714,23 @@ class SalesInvoicePdfBuilder {
       'price'.tr,
       'total'.tr,
     ];
+    final visualHeaders = headers.reversed.toList();
+    final visualRows = rows.map((row) => row.reversed.toList()).toList();
 
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
       columnWidths: const {
-        0: pw.FixedColumnWidth(24),
-        1: pw.FixedColumnWidth(58),
-        2: pw.FlexColumnWidth(4),
-        3: pw.FixedColumnWidth(42),
-        4: pw.FixedColumnWidth(56),
-        5: pw.FixedColumnWidth(64),
+        0: pw.FixedColumnWidth(64),
+        1: pw.FixedColumnWidth(56),
+        2: pw.FixedColumnWidth(42),
+        3: pw.FlexColumnWidth(4),
+        4: pw.FixedColumnWidth(58),
+        5: pw.FixedColumnWidth(24),
       },
       children: [
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: PdfColors.deepPurple600),
-          children: headers
+          children: visualHeaders
               .map(
                 (text) => _tableCell(
                   text,
@@ -739,7 +741,7 @@ class SalesInvoicePdfBuilder {
               )
               .toList(),
         ),
-        ...rows.map(
+        ...visualRows.map(
           (row) => pw.TableRow(
             children: row
                 .map(
@@ -774,14 +776,14 @@ class SalesInvoicePdfBuilder {
               isTotal ? const pw.BoxDecoration(color: PdfColors.grey200) : null,
           children: [
             _tableCell(
-              row[0],
-              font: isTotal ? bold : regular,
-              alignment: pw.Alignment.centerRight,
-            ),
-            _tableCell(
               row[1],
               font: isTotal ? bold : regular,
               alignment: pw.Alignment.centerLeft,
+            ),
+            _tableCell(
+              row[0],
+              font: isTotal ? bold : regular,
+              alignment: pw.Alignment.centerRight,
             ),
           ],
         );
