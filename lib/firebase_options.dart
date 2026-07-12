@@ -33,10 +33,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -64,5 +61,15 @@ class DefaultFirebaseOptions {
     projectId: 'doctorbike-6e1b9',
     storageBucket: 'doctorbike-6e1b9.firebasestorage.app',
     iosBundleId: 'com.nofal.doctorbikee',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDlkFQ3tyFYXo4EI1Z2qBIlaAGaPRa0wvQ',
+    appId: '1:960923193223:web:8995a7a8ef96a8e224cd22',
+    messagingSenderId: '960923193223',
+    projectId: 'drbike-7fa3a',
+    authDomain: 'drbike-7fa3a.firebaseapp.com',
+    storageBucket: 'drbike-7fa3a.firebasestorage.app',
+    measurementId: 'G-J3MK6B3RQ3',
   );
 }

@@ -38,7 +38,8 @@ const String kDrBikeAdminLoginChannelId = 'dr_bike_admin_login_alerts';
 const String kDrBikeAdminLoginChannelName = 'تسجيل دخول الموظفين';
 
 /// Must match Laravel [FirebaseService::ADMIN_ATTENDANCE_CHANNEL_ID] (logout).
-const String kDrBikeAdminAttendanceChannelId = 'dr_bike_admin_attendance_alerts';
+const String kDrBikeAdminAttendanceChannelId =
+    'dr_bike_admin_attendance_alerts';
 const String kDrBikeAdminAttendanceChannelName = 'تنبيهات خروج الموظفين';
 
 /// Must match Laravel [FirebaseService::TASK_SUCCESS_CHANNEL_ID] and res/raw/task_success.
@@ -54,11 +55,13 @@ const String kDrBikeShiplyStuckChannelId = 'dr_bike_shiply_stuck_alert';
 const String kDrBikeShiplyStuckChannelName = 'شبلي — عالقة';
 
 /// Must match Laravel [FirebaseService::SHIPLY_RETURNED_CHANNEL_ID].
-const String kDrBikeShiplyReturnedChannelId = 'dr_bike_shiply_returned_ambulance';
+const String kDrBikeShiplyReturnedChannelId =
+    'dr_bike_shiply_returned_ambulance';
 const String kDrBikeShiplyReturnedChannelName = 'شبلي — راجع';
 
 /// Must match Laravel [FirebaseService::SHIPLY_DELIVERED_CHANNEL_ID].
-const String kDrBikeShiplyDeliveredChannelId = 'dr_bike_shiply_delivered_finale';
+const String kDrBikeShiplyDeliveredChannelId =
+    'dr_bike_shiply_delivered_finale';
 const String kDrBikeShiplyDeliveredChannelName = 'توصيل شبلي';
 
 /// Must match Laravel [FirebaseService::SALES_ORDER_STATUS_CHANNEL_ID].
@@ -196,7 +199,11 @@ bool isShiplyDeliveredNotificationType(String? type) =>
 bool isSalesOrderStatusNotificationType(String? type) =>
     type != null && kSalesOrderStatusNotificationTypes.contains(type);
 
-_TrayAlertStyle? resolveShiplyTrayStyle(String type, Map<String, dynamic> data) {
+bool get _supportsFirebaseMessaging =>
+    !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
+_TrayAlertStyle? resolveShiplyTrayStyle(
+    String type, Map<String, dynamic> data) {
   if (isShiplyDeliveredNotificationType(type)) {
     return _TrayAlertStyle.shiplyDelivered;
   }
@@ -264,6 +271,19 @@ class NotificationFirebaseService {
     await _requestNotificationPermissions();
     await setupFlutterNotifications();
     await _logAndroidChannelDiagnostics();
+
+    if (!_supportsFirebaseMessaging) {
+      debugPrint(
+        '[FCM] ${Platform.operatingSystem} platform — skipping Firebase Messaging APIs',
+      );
+      finalToken = 'no_token';
+      await GetStorage().write('fcmToken', finalToken);
+      debugPrint(
+        '[FCM] Notification service ready without FCM token on ${Platform.operatingSystem}',
+      );
+      return;
+    }
+
     await _refreshFcmToken();
 
     firebaseMessaging.onTokenRefresh.listen((String newToken) async {
@@ -346,13 +366,15 @@ class NotificationFirebaseService {
         'sound=${notificationSettings.sound}',
       );
 
-      _notificationsDenied = afterStatus.isDenied || afterStatus.isPermanentlyDenied;
+      _notificationsDenied =
+          afterStatus.isDenied || afterStatus.isPermanentlyDenied;
       if (_notificationsDenied) {
         debugPrint(
           '[FCM] Notifications are denied. Enable them from app settings.',
         );
         if (afterStatus.isPermanentlyDenied) {
-          debugPrint('[FCM] Permission permanently denied — call openAppSettings()');
+          debugPrint(
+              '[FCM] Permission permanently denied — call openAppSettings()');
         }
       }
     }
@@ -400,8 +422,8 @@ class NotificationFirebaseService {
     if (kIsWeb || !Platform.isAndroid) {
       return;
     }
-    final androidPlugin = _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final androidPlugin =
+        _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     try {
       final channels = await androidPlugin?.getNotificationChannels();
@@ -426,8 +448,11 @@ class NotificationFirebaseService {
   }
 
   Future<void> _refreshFcmToken() async {
-    if (kIsWeb) {
-      debugPrint('[FCM] Web platform — skipping device token');
+    if (!_supportsFirebaseMessaging) {
+      debugPrint(
+        '[FCM] ${kIsWeb ? "web" : Platform.operatingSystem} platform — skipping device token',
+      );
+      finalToken = 'no_token';
       return;
     }
     try {
@@ -467,7 +492,7 @@ class NotificationFirebaseService {
   Future<String> resolveTokenForLogin({
     Duration timeout = const Duration(seconds: 12),
   }) async {
-    if (kIsWeb) {
+    if (!_supportsFirebaseMessaging) {
       return 'no_token';
     }
 
@@ -494,7 +519,10 @@ class NotificationFirebaseService {
 
   /// مزامنة التوكن مع السيرفر (موظف أو أدمن) بعد توفره.
   Future<void> syncFcmTokenToServer({required String source}) async {
-    if (kIsWeb) {
+    if (!_supportsFirebaseMessaging) {
+      debugPrint(
+        '[FCM] Skip sync ($source): Firebase Messaging unsupported on ${kIsWeb ? "web" : Platform.operatingSystem}',
+      );
       return;
     }
 
@@ -553,8 +581,10 @@ class NotificationFirebaseService {
   }
 
   Future<void> registerAdminDeviceTokenIfReady({required String source}) async {
-    if (kIsWeb) {
-      debugPrint('[FCM] Skip admin device-token ($source): web');
+    if (!_supportsFirebaseMessaging) {
+      debugPrint(
+        '[FCM] Skip admin device-token ($source): Firebase Messaging unsupported on ${kIsWeb ? "web" : Platform.operatingSystem}',
+      );
       return;
     }
 
@@ -609,8 +639,8 @@ class NotificationFirebaseService {
       return;
     }
 
-    final androidPlugin = _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
+    final androidPlugin =
+        _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
 
     const adminChannel = AndroidNotificationChannel(
@@ -671,7 +701,8 @@ class NotificationFirebaseService {
       description: 'صوت نجاح عند إتمام المهام',
       importance: Importance.max,
       playSound: true,
-      sound: const RawResourceAndroidNotificationSound(kTaskSuccessSoundResource),
+      sound:
+          const RawResourceAndroidNotificationSound(kTaskSuccessSoundResource),
       enableVibration: true,
       vibrationPattern: kTaskSuccessVibrationPattern,
       showBadge: true,
@@ -699,7 +730,8 @@ class NotificationFirebaseService {
       description: 'صوت حادث عند تعثر الطرد مع شبلي',
       importance: Importance.max,
       playSound: true,
-      sound: const RawResourceAndroidNotificationSound(kShiplyStuckSoundResource),
+      sound:
+          const RawResourceAndroidNotificationSound(kShiplyStuckSoundResource),
       enableVibration: true,
       vibrationPattern: kShiplyStuckVibrationPattern,
       showBadge: true,
@@ -727,7 +759,8 @@ class NotificationFirebaseService {
       description: 'عملات معدنية + صفارة نهاية عند توصيل شبلي',
       importance: Importance.max,
       playSound: true,
-      sound: const RawResourceAndroidNotificationSound(kShiplyDeliveredSoundResource),
+      sound: const RawResourceAndroidNotificationSound(
+          kShiplyDeliveredSoundResource),
       enableVibration: true,
       vibrationPattern: kShiplyDeliveredVibrationPattern,
       showBadge: true,
@@ -764,9 +797,16 @@ class NotificationFirebaseService {
 
     const initializationSettingsDarwin = DarwinInitializationSettings();
 
+    const initializationSettingsWindows = WindowsInitializationSettings(
+      appName: 'doctorbike',
+      appUserModelId: 'com.doctorbike.admin',
+      guid: '8f9f0b8c-6f3b-4c7a-9d0d-2f8f4d0f7b21',
+    );
+
     const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
+      windows: initializationSettingsWindows,
     );
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
@@ -1190,6 +1230,13 @@ class NotificationFirebaseService {
   }
 
   Future<void> _setupMessageHandler() async {
+    if (!_supportsFirebaseMessaging) {
+      debugPrint(
+        '[FCM] ${Platform.operatingSystem} platform — skipping message stream handlers',
+      );
+      return;
+    }
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint(
         '[FCM] foreground message title=${message.notification?.title} '
