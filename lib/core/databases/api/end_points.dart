@@ -164,6 +164,10 @@ class EndPoints {
   static const String qrGeneration = 'qr-generation';
   static const String qrHistory = 'qr-history';
   static const String employeeAttendanceHistory = 'employee/attendance/history';
+  static const String weeklyOffAttendanceImportCandidates =
+      'employee/attendance/weekly-off-import-candidates';
+  static const String importWeeklyOffAttendanceDay =
+      'employee/attendance/import-weekly-off-day';
   static String adminEmployeeManualCheckout(String employeeId) =>
       'admin/employees/$employeeId/attendance/manual-checkout';
   static String adminEmployeeUpdateAttendanceDay(String employeeId) =>
@@ -246,6 +250,8 @@ class EndPoints {
   static const String employeeTaskReopen = 'employee/task/reopen';
   static const String employeeTaskTimeline = 'employee/task/timeline';
   static const String employeeTaskPerformance = 'employee/task/performance';
+  static const String convertEmployeeTaskToSpecial =
+      'convert/employee/task/to/special';
   // special tasks
   static const String createSpecialTask = 'create/special/task';
   static const String getOngoingSpecialTasks = 'ongoing/special/tasks';
@@ -261,6 +267,8 @@ class EndPoints {
   static const String changeSubSpecialTaskToCompleted =
       'change/sub/special/task/to/completed';
   static const String updateSpecialTask = 'update/special/task';
+  static const String convertSpecialTaskToEmployee =
+      'convert/special/task/to/employee';
 
   // Boxes
   static const String addBox = 'add/box';

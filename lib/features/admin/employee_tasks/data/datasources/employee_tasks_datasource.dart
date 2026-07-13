@@ -194,6 +194,32 @@ class EmployeeTasksDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> convertEmployeeTaskToSpecial({
+    required String employeeTaskId,
+    int? occurrenceId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.convertEmployeeTaskToSpecial,
+        data: {
+          if (occurrenceId != null && occurrenceId > 0)
+            'occurrence_id': occurrenceId,
+          if (employeeTaskId.isNotEmpty) 'employee_task_id': employeeTaskId,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   // get task details
   Future<dynamic> getTaskDetails({
     required String taskId,

@@ -74,15 +74,26 @@ class EmployeeAttendanceHistoryPdfHelper {
   }
 
   static String _dayWorkLabel(EmployeeAttendanceDay day) {
+    final holidayNotice = day.attendanceStatus == 'present_on_weekly_day_off'
+        ? (day.attendanceStatusLabel ?? 'حضور في يوم عطلة رسمية')
+        : null;
+
     if (day.segments.isNotEmpty) {
-      return day.segments.map((segment) {
+      final workedSegments = day.segments.map((segment) {
         final from = _time(segment.checkInAt);
         final to = segment.open ? 'داخل العمل' : _time(segment.checkOutAt);
         return '$from - $to';
       }).join('\n');
+
+      return holidayNotice == null
+          ? workedSegments
+          : '$workedSegments\n$holidayNotice';
     }
     if (day.firstCheckIn != null || day.lastCheckOut != null) {
-      return '${_time(day.firstCheckIn)} - ${day.currentlyIn ? 'داخل العمل' : _time(day.lastCheckOut)}';
+      final workedTime =
+          '${_time(day.firstCheckIn)} - ${day.currentlyIn ? 'داخل العمل' : _time(day.lastCheckOut)}';
+
+      return holidayNotice == null ? workedTime : '$workedTime\n$holidayNotice';
     }
     return day.attendanceStatusLabel ??
         (day.expectedWorkMinutes <= 0 ? 'عطلة رسمية' : 'عدم حضور');

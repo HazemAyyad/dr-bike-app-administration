@@ -133,6 +133,37 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                         ],
                       ),
                     ),
+                    if (!_isSpecialTask)
+                      TaskFormSectionCard(
+                        compact: _compact,
+                        title: 'taskOptions',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            CustomCheckBox(
+                              title: 'pinTaskUntilDone',
+                              value: controller.pinUntilDone,
+                              onChanged: (v) =>
+                                  controller.setPinUntilDone(v ?? false),
+                            ),
+                            Padding(
+                              padding: EdgeInsetsDirectional.only(
+                                start: 38.w,
+                                end: 4.w,
+                              ),
+                              child: Text(
+                                'pinTaskUntilDoneHint'.tr,
+                                style: TextStyle(
+                                  fontSize: 10.5.sp,
+                                  height: 1.35,
+                                  color: AppColors.customGreyColor5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     TaskFormSectionCard(
                       compact: _compact,
                       title: 'taskRepeat',
@@ -142,53 +173,60 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                         size: 20.sp,
                       ),
                       child: Obx(
-                        () => InkWell(
-                          onTap: () async {
-                            await showModalBottomSheet<void>(
-                              context: context,
-                              isScrollControlled: true,
-                              useSafeArea: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (ctx) => Padding(
-                                padding: EdgeInsets.only(top: 8.h),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: Radius.circular(16.r),
-                                  ),
-                                  child: SizedBox(
-                                    height: MediaQuery.of(context).size.height *
-                                        0.92,
-                                    child: const TaskRecurrenceScreen(),
+                        () {
+                          final isPinned = controller.pinUntilDone.value;
+                          return InkWell(
+                            onTap: isPinned
+                                ? null
+                                : () async {
+                                    await showModalBottomSheet<void>(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      useSafeArea: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (ctx) => Padding(
+                                        padding: EdgeInsets.only(top: 8.h),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.vertical(
+                                            top: Radius.circular(16.r),
+                                          ),
+                                          child: SizedBox(
+                                            height: MediaQuery.of(context)
+                                                    .size
+                                                    .height *
+                                                0.92,
+                                            child: const TaskRecurrenceScreen(),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                    controller.updateRecurrenceSummary();
+                                  },
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.repeat,
+                                  size: 18.sp,
+                                  color: AppColors.operationalPurple,
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: Text(
+                                    controller.formRecurrenceSummary,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11.5.sp,
+                                      color: isPinned
+                                          ? AppColors.customGreyColor5
+                                          : AppColors.operationalNavy,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                            controller.updateRecurrenceSummary();
-                          },
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.repeat,
-                                size: 18.sp,
-                                color: AppColors.operationalPurple,
-                              ),
-                              SizedBox(width: 8.w),
-                              Expanded(
-                                child: Text(
-                                  controller.recurrenceSummary.value.isEmpty
-                                      ? 'recurrenceNoRepeat'.tr
-                                      : controller.recurrenceSummary.value,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11.5.sp,
-                                    color: AppColors.operationalNavy,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const TaskFormSectionCard(
@@ -199,120 +237,121 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                     TaskFormSectionCard(
                       compact: _compact,
                       title: 'subTasks',
-                      child: InlineSubtaskBuilder(isSpecialTask: _isSpecialTask),
+                      child:
+                          InlineSubtaskBuilder(isSpecialTask: _isSpecialTask),
                     ),
                     if (!_isSpecialTask)
                       TaskFormSectionCard(
-                      compact: _compact,
-                      title: 'attachments',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: AudioRecorderButton(
-                                  label: 'recordAudio',
-                                  recordedPath: controller.recordedPath,
+                        compact: _compact,
+                        title: 'attachments',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: AudioRecorderButton(
+                                    label: 'recordAudio',
+                                    recordedPath: controller.recordedPath,
+                                  ),
                                 ),
-                              ),
-                              SizedBox(width: 8.w),
-                              Expanded(
-                                child: MediaUploadButton(
-                                  isShowPreview: !_isEdit,
-                                  onFilesChanged: (files) {
-                                    for (final file in files) {
-                                      if (!controller.selectedFile
-                                          .contains(file)) {
-                                        controller.selectedFile.add(file);
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: MediaUploadButton(
+                                    isShowPreview: !_isEdit,
+                                    onFilesChanged: (files) {
+                                      for (final file in files) {
+                                        if (!controller.selectedFile
+                                            .contains(file)) {
+                                          controller.selectedFile.add(file);
+                                        }
                                       }
-                                    }
-                                    controller.update();
-                                  },
-                                  title: 'uploadImage',
+                                      controller.update();
+                                    },
+                                    title: 'uploadImage',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (_isEdit &&
+                                controller.selectedFile.isNotEmpty) ...[
+                              SizedBox(height: 6.h),
+                              SizedBox(
+                                height: 64.h,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  children: controller.selectedFile
+                                      .asMap()
+                                      .entries
+                                      .map((entry) {
+                                    final index = entry.key;
+                                    final file = entry.value;
+                                    return Padding(
+                                      padding: EdgeInsets.only(left: 6.w),
+                                      child: Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(8.r),
+                                            child: file.path.contains('http')
+                                                ? CachedNetworkImage(
+                                                    imageUrl: file.path,
+                                                    height: 64.h,
+                                                    width: 64.w,
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : Image.file(
+                                                    file,
+                                                    height: 64.h,
+                                                    width: 64.w,
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                          ),
+                                          Positioned(
+                                            top: 0,
+                                            left: 0,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                controller.selectedFile
+                                                    .removeAt(index);
+                                                controller.update();
+                                              },
+                                              child: Icon(
+                                                Icons.cancel,
+                                                size: 18.sp,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
                               ),
                             ],
-                          ),
-                          if (_isEdit &&
-                              controller.selectedFile.isNotEmpty) ...[
-                            SizedBox(height: 6.h),
-                            SizedBox(
-                              height: 64.h,
-                              child: ListView(
-                                scrollDirection: Axis.horizontal,
-                                children: controller.selectedFile
-                                    .asMap()
-                                    .entries
-                                    .map((entry) {
-                                  final index = entry.key;
-                                  final file = entry.value;
-                                  return Padding(
-                                    padding: EdgeInsets.only(left: 6.w),
-                                    child: Stack(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8.r),
-                                          child: file.path.contains('http')
-                                              ? CachedNetworkImage(
-                                                  imageUrl: file.path,
-                                                  height: 64.h,
-                                                  width: 64.w,
-                                                  fit: BoxFit.cover,
-                                                )
-                                              : Image.file(
-                                                  file,
-                                                  height: 64.h,
-                                                  width: 64.w,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                        ),
-                                        Positioned(
-                                          top: 0,
-                                          left: 0,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              controller.selectedFile
-                                                  .removeAt(index);
-                                              controller.update();
-                                            },
-                                            child: Icon(
-                                              Icons.cancel,
-                                              size: 18.sp,
-                                              color: Colors.red,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
+                            SizedBox(height: 4.h),
+                            Obx(
+                              () => ProofMediaTypeSelector(
+                                value: controller.proofMediaType.value,
+                                onChanged: controller.setMainProofMediaType,
                               ),
                             ),
-                          ],
-                          SizedBox(height: 4.h),
-                          Obx(
-                            () => ProofMediaTypeSelector(
-                              value: controller.proofMediaType.value,
-                              onChanged: controller.setMainProofMediaType,
+                            CustomCheckBox(
+                              title: 'requireAdminReview',
+                              value: controller.requireAdminReview,
+                              onChanged: (v) =>
+                                  controller.requireAdminReview.value = v!,
                             ),
-                          ),
-                          CustomCheckBox(
-                            title: 'requireAdminReview',
-                            value: controller.requireAdminReview,
-                            onChanged: (v) =>
-                                controller.requireAdminReview.value = v!,
-                          ),
-                          CustomCheckBox(
-                            title: 'hideTask',
-                            value: controller.hideTask,
-                            onChanged: (v) => controller.hideTask.value = v!,
-                          ),
-                        ],
+                            CustomCheckBox(
+                              title: 'hideTask',
+                              value: controller.hideTask,
+                              onChanged: (v) => controller.hideTask.value = v!,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                     SizedBox(height: 64.h),
                   ],
                 ),

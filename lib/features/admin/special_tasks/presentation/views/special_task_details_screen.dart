@@ -15,6 +15,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../employee_section/domain/entities/employee_entity.dart';
 import '../../../employee_tasks/presentation/widgets/audio_player.dart';
 import '../controllers/special_tasks_controller.dart';
 
@@ -29,6 +30,18 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
         title: 'privateTaskDetails',
         action: false,
         actions: [
+          if (userType == 'admin')
+            IconButton(
+              tooltip: 'convertToEmployeeTask'.tr,
+              icon: Icon(
+                Icons.swap_horiz_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+                size: 24.sp,
+              ),
+              onPressed: () => _showConvertToEmployeeSheet(context),
+            ),
           userType == 'admin'
               ? TextButton.icon(
                   icon: Icon(
@@ -411,6 +424,92 @@ class SpecialTaskDetailsScreen extends GetView<SpecialTasksController> {
           );
         },
       ),
+    );
+  }
+
+  void _showConvertToEmployeeSheet(BuildContext context) {
+    final details = controller.specialTasksService.specialTaskDetails.value;
+    if (details == null) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'convertToEmployeeTask'.tr,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'convertToEmployeeTaskHint'.tr,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.customGreyColor5,
+                      ),
+                ),
+                SizedBox(height: 12.h),
+                FutureBuilder<List<EmployeeEntity>>(
+                  future: controller.employeesForConversion(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final employees = snapshot.data ?? [];
+                    if (employees.isEmpty) {
+                      return Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.h),
+                        child: Text('noData'.tr, textAlign: TextAlign.center),
+                      );
+                    }
+                    return ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: 420.h),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: employees.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, index) {
+                          final employee = employees[index];
+                          return Obx(
+                            () => ListTile(
+                              enabled: !controller.isConvertingTask.value,
+                              leading: const Icon(Icons.person_outline),
+                              title: Text(employee.employeeName),
+                              trailing: controller.isConvertingTask.value
+                                  ? SizedBox(
+                                      width: 18.w,
+                                      height: 18.w,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.chevron_left),
+                              onTap: () {
+                                controller.convertSpecialTaskToEmployee(
+                                  specialTaskId: details.taskId.toString(),
+                                  employeeId: employee.id,
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

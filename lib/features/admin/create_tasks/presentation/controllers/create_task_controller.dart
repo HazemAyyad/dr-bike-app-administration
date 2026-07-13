@@ -427,6 +427,7 @@ class CreateTaskController extends GetxController {
   // متغيرات للخيارات
   RxBool hideTask = false.obs;
   RxBool requireAdminReview = true.obs;
+  RxBool pinUntilDone = false.obs;
 
   // التكرار ايام الاسبوع
   RxString selectedDays = ''.obs;
@@ -456,6 +457,19 @@ class CreateTaskController extends GetxController {
       selectedDays.value != 'noRepeat' &&
       selectedDays.value != 'oneTimePersistent';
 
+  String get effectiveRecurrenceType =>
+      pinUntilDone.value ? 'oneTimePersistent' : _normalizedRecurrenceType;
+
+  String get _normalizedRecurrenceType =>
+      selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value;
+
+  String get formRecurrenceSummary {
+    if (pinUntilDone.value) return 'recurrenceNoRepeat'.tr;
+    return recurrenceSummary.value.isEmpty
+        ? 'recurrenceNoRepeat'.tr
+        : recurrenceSummary.value;
+  }
+
   String get durationCountLabelKey {
     switch (selectedDays.value) {
       case 'daily':
@@ -475,6 +489,9 @@ class CreateTaskController extends GetxController {
       selectedDays.value, endAfterCount.value);
 
   void setRecurrenceType(String type) {
+    if (type != 'oneTimePersistent') {
+      pinUntilDone.value = false;
+    }
     selectedDays.value = type;
     isRecurrenceVisible.value = type != 'noRepeat';
     selectedDaysList.clear();
@@ -482,6 +499,20 @@ class CreateTaskController extends GetxController {
       durationType.value = 'forever';
     } else {
       endAfterCount.value = 1;
+    }
+    updateRecurrenceSummary();
+  }
+
+  void setPinUntilDone(bool value) {
+    pinUntilDone.value = value;
+    selectedDaysList.clear();
+    durationType.value = 'forever';
+    if (value) {
+      selectedDays.value = 'oneTimePersistent';
+      isRecurrenceVisible.value = false;
+    } else if (selectedDays.value == 'oneTimePersistent') {
+      selectedDays.value = 'noRepeat';
+      isRecurrenceVisible.value = false;
     }
     updateRecurrenceSummary();
   }
@@ -523,8 +554,7 @@ class CreateTaskController extends GetxController {
 
   Map<String, dynamic> buildRecurrenceConfigMap() {
     return RecurrenceConfigHelper.build(
-      recurrenceType:
-          selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
+      recurrenceType: effectiveRecurrenceType,
       durationType: durationType.value,
       endAfterCount: endAfterCount.value,
       anchorStart: startDate.value,
@@ -545,8 +575,7 @@ class CreateTaskController extends GetxController {
 
   void updateRecurrenceSummary() {
     recurrenceSummary.value = RecurrenceArabicSummary.build(
-      recurrenceType:
-          selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
+      recurrenceType: effectiveRecurrenceType,
       weekdays: selectedDaysList.toList(),
       durationType: durationType.value,
       endAfterCount: endAfterCount.value,
@@ -574,7 +603,6 @@ class CreateTaskController extends GetxController {
 
   final weekDays = [
     'noRepeat',
-    'oneTimePersistent',
     'daily',
     'weekly',
     'monthly',
@@ -664,8 +692,7 @@ class CreateTaskController extends GetxController {
         points: pointsController.text.isEmpty ? '0' : pointsController.text,
         startTime: startDate.value,
         endTime: endDate.value,
-        taskRecurrence:
-            selectedDays.value.isEmpty ? 'noRepeat' : selectedDays.value,
+        taskRecurrence: effectiveRecurrenceType,
         taskRecurrenceTime: selectedDaysList,
         subEmployeeTasks: subTasks,
         notShownForEmployee: hideTask.value ? '1' : '0',
@@ -882,6 +909,7 @@ class CreateTaskController extends GetxController {
     taskDescriptionController.text = data.taskDescription;
     taskNotesController.text = data.notes;
     selectedDays.value = data.taskRecurrence;
+    pinUntilDone.value = data.taskRecurrence == 'oneTimePersistent';
     for (var element in data.taskRecurrenceTime) {
       selectedDaysList.add(element);
     }
@@ -999,7 +1027,9 @@ class CreateTaskController extends GetxController {
     priority.value = data.priority;
     if (data.taskRecurrence.isNotEmpty) {
       selectedDays.value = data.taskRecurrence;
-      isRecurrenceVisible.value = data.taskRecurrence != 'noRepeat';
+      pinUntilDone.value = data.taskRecurrence == 'oneTimePersistent';
+      isRecurrenceVisible.value =
+          data.taskRecurrence != 'noRepeat' && !pinUntilDone.value;
     }
     if (data.recurrenceConfig != null && data.recurrenceConfig!.isNotEmpty) {
       _applyRecurrenceConfigFromDetails(data.recurrenceConfig!);
@@ -1040,6 +1070,7 @@ class CreateTaskController extends GetxController {
     endTime.value = TimeOfDay.fromDateTime(data.endTime);
     hideTask.value = data.notShownForEmployee;
     selectedDays.value = data.taskRecurrence;
+    pinUntilDone.value = data.taskRecurrence == 'oneTimePersistent';
     selectedDaysList
       ..clear()
       ..addAll(data.taskRecurrenceTime);
@@ -1049,8 +1080,9 @@ class CreateTaskController extends GetxController {
     proofMediaType.value = data.proofMediaType;
     requireAdminReview.value = data.requiresAdminReview;
     priority.value = data.priority;
-    isRecurrenceVisible.value =
-        data.taskRecurrence.isNotEmpty && data.taskRecurrence != 'noRepeat';
+    isRecurrenceVisible.value = data.taskRecurrence.isNotEmpty &&
+        data.taskRecurrence != 'noRepeat' &&
+        !pinUntilDone.value;
     if (data.recurrenceConfig != null && data.recurrenceConfig!.isNotEmpty) {
       _applyRecurrenceConfigFromDetails(data.recurrenceConfig!);
     }

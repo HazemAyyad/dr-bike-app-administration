@@ -44,6 +44,16 @@ class EmployeeTaskDetailsOperationalScreen
           ),
         ),
         actions: [
+          if (canManageEmployeeTasks)
+            IconButton(
+              tooltip: 'convertToSpecialTask'.tr,
+              icon: Icon(
+                Icons.swap_horiz_rounded,
+                color: AppColors.operationalPurple,
+                size: 21.sp,
+              ),
+              onPressed: () => _confirmConvertToSpecial(context),
+            ),
           // النسخ محصور على الأدمن أو من يملك صلاحية "نسخ مهمة موظف".
           if (canCloneEmployeeTasks)
             IconButton(
@@ -157,6 +167,31 @@ class EmployeeTaskDetailsOperationalScreen
           ],
         );
       }),
+    );
+  }
+
+  void _confirmConvertToSpecial(BuildContext context) {
+    Get.dialog(
+      AlertDialog(
+        title: Text('convertToSpecialTask'.tr),
+        content: Text('convertToSpecialTaskConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: Get.back,
+            child: Text('cancel'.tr),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.operationalPurple,
+            ),
+            onPressed: () {
+              Get.back();
+              controller.convertCurrentTaskToSpecial(context);
+            },
+            child: Text('confirm'.tr),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -17,6 +17,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../employee/employee_dashbord/data/repositories/employee_dashbord_implement.dart';
 import '../../../../employee/employee_dashbord/domain/usecases/change_task_completed_uasecase.dart';
 import '../../../../employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
+import '../../../special_tasks/presentation/controllers/special_tasks_controller.dart';
 import '../../data/datasources/employee_tasks_datasource.dart';
 import '../../data/models/employee_task_model.dart';
 import '../../data/models/task_details_model.dart';
@@ -1556,6 +1557,43 @@ class EmployeeTasksController extends GetxController {
     } catch (e) {
       Get.snackbar('error'.tr, e.toString());
       return false;
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> convertCurrentTaskToSpecial(BuildContext context) async {
+    final data = employeeTaskService.taskDetails.value;
+    if (data == null) return;
+
+    isLoading(true);
+    try {
+      final res = await _taskDs.convertEmployeeTaskToSpecial(
+        employeeTaskId: data.taskId.toString(),
+        occurrenceId: data.occurrenceId,
+      );
+      if (res['status'] == 'success') {
+        await getEmployeeTasks(scrollToTodayb: false);
+        if (Get.isRegistered<SpecialTasksController>()) {
+          await Get.find<SpecialTasksController>()
+              .getSpecialTasks(scrollToTodayb: false);
+        }
+        Get.back();
+        Get.snackbar(
+          'success'.tr,
+          '${res['message'] ?? 'taskConvertedToSpecial'.tr}',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      Get.snackbar(
+        'error'.tr,
+        '${res['message'] ?? ''}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading(false);
     }

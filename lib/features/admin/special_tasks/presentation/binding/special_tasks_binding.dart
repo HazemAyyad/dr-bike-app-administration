@@ -1,6 +1,9 @@
 import 'package:doctorbike/features/admin/special_tasks/data/repositories/special_tasks_implement.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/services/app_dependency_registry.dart';
+import '../../../employee_section/data/repositorie_imp/employee_implement.dart';
+import '../../../employee_section/domain/usecases/get_all_employee.dart';
 import '../../domain/usecases/subs_pecial_task_completed_usecase.dart';
 import '../../domain/usecases/cancel_special_task_usecase.dart';
 import '../../domain/usecases/completed_special_tasks_usecase.dart';
@@ -12,6 +15,12 @@ import '../controllers/special_tasks_service.dart';
 class SpecialTasksBinding extends Bindings {
   @override
   void dependencies() {
+    AppDependencyRegistry.ensureEmployeeSection();
+    Get.lazyPut(
+      () => GetAllEmployeeUsecase(
+        employeeRepository: Get.find<EmployeeImplement>(),
+      ),
+    );
     Get.lazyPut(
       () => SpecialTasksController(
         specialTasksUsecase: SpecialTasksUsecase(

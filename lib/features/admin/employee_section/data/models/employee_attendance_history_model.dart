@@ -367,3 +367,36 @@ class EmployeeAttendanceHistoryResult {
     );
   }
 }
+
+class WeeklyOffAttendanceImportCandidate {
+  final String date;
+  final int logsCount;
+  final DateTime? firstScanAt;
+  final DateTime? lastScanAt;
+  final String deviceUserId;
+
+  const WeeklyOffAttendanceImportCandidate({
+    required this.date,
+    required this.logsCount,
+    required this.firstScanAt,
+    required this.lastScanAt,
+    required this.deviceUserId,
+  });
+
+  factory WeeklyOffAttendanceImportCandidate.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final j = Map<String, dynamic>.from(json);
+    return WeeklyOffAttendanceImportCandidate(
+      date: asString(j['date']),
+      logsCount: asInt(j['logs_count']),
+      firstScanAt: j['first_scan_at'] == null
+          ? null
+          : parseApiDateTime(j['first_scan_at']),
+      lastScanAt: j['last_scan_at'] == null
+          ? null
+          : parseApiDateTime(j['last_scan_at']),
+      deviceUserId: asString(j['device_user_id']),
+    );
+  }
+}

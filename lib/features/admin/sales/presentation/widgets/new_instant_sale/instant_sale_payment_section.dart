@@ -147,8 +147,14 @@ class InstantSalePaymentSection extends StatelessWidget {
                     hintText: 'totalExample',
                     controller: controller.cashValueController,
                     keyboardType: TextInputType.number,
-                    onChanged: (_) =>
-                        sales.refreshInstantSalePaymentSummaryForTag(paymentTag),
+                    onChanged: (_) {
+                      if (paymentTag == kInstantSalePaymentTag) {
+                        sales.markInstantSalePaymentAmountTouched();
+                      } else {
+                        sales
+                            .refreshInstantSalePaymentSummaryForTag(paymentTag);
+                      }
+                    },
                   ),
                 ],
               );
@@ -178,8 +184,14 @@ class InstantSalePaymentSection extends StatelessWidget {
                     hintText: 'totalExample',
                     controller: controller.cashValueController,
                     keyboardType: TextInputType.number,
-                    onChanged: (_) =>
-                        sales.refreshInstantSalePaymentSummaryForTag(paymentTag),
+                    onChanged: (_) {
+                      if (paymentTag == kInstantSalePaymentTag) {
+                        sales.markInstantSalePaymentAmountTouched();
+                      } else {
+                        sales
+                            .refreshInstantSalePaymentSummaryForTag(paymentTag);
+                      }
+                    },
                   ),
                 ),
               ],

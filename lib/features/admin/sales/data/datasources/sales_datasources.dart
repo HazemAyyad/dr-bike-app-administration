@@ -49,6 +49,15 @@ class SalesDatasource {
     debugPrint('[InstantSaleDebug][Datasource] message=${e.message}');
   }
 
+  void _instantSaleEditZeroDebug(String message, [Object? details]) {
+    if (!kDebugMode) return;
+    debugPrint(
+      details == null
+          ? '[InstantSaleEditZeroDebug][Datasource] $message'
+          : '[InstantSaleEditZeroDebug][Datasource] $message | $details',
+    );
+  }
+
   String _cleanAmount(String value) {
     const eastern = {
       '٠': '0',
@@ -467,6 +476,7 @@ class SalesDatasource {
       final endpoint = instantSaleId != null && instantSaleId.isNotEmpty
           ? EndPoints.editInstantSale
           : EndPoints.createInstantSale;
+      final isEdit = instantSaleId != null && instantSaleId.isNotEmpty;
       final data = {
         if (instantSaleId != null && instantSaleId.isNotEmpty)
           'instant_sale_id': instantSaleId,
@@ -498,11 +508,23 @@ class SalesDatasource {
           'payment_box_value': paymentBoxValue ?? '0',
         ...otherProductsMap,
       };
+      if (isEdit) {
+        _instantSaleEditZeroDebug('POST edit instant sale payload', {
+          'endpoint': endpoint,
+          'instantSaleId': instantSaleId,
+          'paymentBoxId': paymentBoxId,
+          'paymentBoxName': paymentBoxName,
+          'paymentBoxValueArg': paymentBoxValue,
+          'paymentBoxValueSent': data['payment_box_value'],
+          'totalCost': totalCost,
+          'quantity': resolvedQuantity,
+          'cost': resolvedCost,
+          'data': data,
+        });
+      }
       _instantSaleDebug('POST addInstantSales', {
         'endpoint': endpoint,
-        'mode': instantSaleId != null && instantSaleId.isNotEmpty
-            ? 'edit'
-            : 'create',
+        'mode': isEdit ? 'edit' : 'create',
         'data': data,
         'otherProductsCount': otherProductsList.length,
         'additionalNotesCount': additionalNotes.length,
@@ -512,9 +534,18 @@ class SalesDatasource {
         data: data,
         isFormData: true,
       );
+      if (isEdit) {
+        _instantSaleEditZeroDebug('edit instant sale response', response.data);
+      }
       _instantSaleDebug('addInstantSales response', response.data);
       return response.data;
     } on DioException catch (e) {
+      _instantSaleEditZeroDebug('addInstantSales DioException', {
+        'message': e.message,
+        'requestData': e.requestOptions.data,
+        'status': e.response?.statusCode,
+        'response': e.response?.data,
+      });
       _instantSaleDioError('addInstantSales', e);
       final data = e.response?.data;
       throw ServerException(

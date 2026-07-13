@@ -7,7 +7,12 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/app_navigation.dart';
+import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../employee_section/domain/entities/employee_entity.dart';
+import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../../employee_section/presentation/controllers/employee_service.dart';
+import '../../data/datasources/special_tasks_datasource.dart';
 import '../../data/models/special_task_model.dart';
 import '../../domain/usecases/cancel_special_task_usecase.dart';
 import '../../domain/usecases/completed_special_tasks_usecase.dart';
@@ -46,6 +51,27 @@ class SpecialTasksController extends GetxController {
   final RxString tasksViewMode = tasksViewWeekly.obs;
 
   final isLoading = false.obs;
+  final isConvertingTask = false.obs;
+
+  EmployeeService get _employeeService {
+    AppDependencyRegistry.ensureEmployeeSection();
+    return Get.find<EmployeeService>();
+  }
+
+  SpecialTasksDatasource get _specialDs {
+    AppDependencyRegistry.ensureSpecialTasks();
+    return Get.find<SpecialTasksDatasource>();
+  }
+
+  Future<List<EmployeeEntity>> employeesForConversion() async {
+    AppDependencyRegistry.ensureEmployeeSection();
+    if (_employeeService.employeeList.isNotEmpty) {
+      return _employeeService.employeeList;
+    }
+    final employees = await Get.find<GetAllEmployeeUsecase>().call();
+    _employeeService.employeeList.assignAll(employees);
+    return employees;
+  }
 
   void changeTab(int index) {
     currentTab.value = index;
@@ -298,6 +324,40 @@ class SpecialTasksController extends GetxController {
     );
     isLoading(false);
     update();
+  }
+
+  Future<void> convertSpecialTaskToEmployee({
+    required String specialTaskId,
+    required int employeeId,
+  }) async {
+    isConvertingTask(true);
+    try {
+      final res = await _specialDs.convertSpecialTaskToEmployee(
+        specialTaskId: specialTaskId,
+        employeeId: employeeId,
+      );
+      if (res['status'] == 'success') {
+        specialTasksService.specialTaskDetails.value = null;
+        await getSpecialTasks(scrollToTodayb: false);
+        Get.back();
+        Get.snackbar(
+          'success'.tr,
+          '${res['message'] ?? 'taskConvertedToEmployee'.tr}',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      Get.snackbar(
+        'error'.tr,
+        '${res['message'] ?? ''}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isConvertingTask(false);
+    }
   }
 
   // تحديث المهمة الخاصة

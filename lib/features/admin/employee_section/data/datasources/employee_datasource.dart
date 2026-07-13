@@ -89,6 +89,14 @@ class EmployeeDatasource {
           }
         }),
       );
+      final weeklyDaysOffFields = <String, dynamic>{};
+      if (weeklyDaysOff.isEmpty) {
+        weeklyDaysOffFields['weekly_days_off_empty'] = 1;
+        weeklyDaysOffFields[ApiKey.weekly_days_off] = <String>[];
+      } else {
+        weeklyDaysOffFields['${ApiKey.weekly_days_off}[]'] = weeklyDaysOff;
+      }
+
       final response = await api.post(
         employeeId != null ? EndPoints.editEmployee : EndPoints.createEmployee,
         data: {
@@ -109,8 +117,7 @@ class EmployeeDatasource {
           ...employeeImgList,
           ...documentsImageList,
           'permissions[]': permissions,
-          if (weeklyDaysOff.isNotEmpty)
-            '${ApiKey.weekly_days_off}[]': weeklyDaysOff,
+          ...weeklyDaysOffFields,
         },
         isFormData: true,
       );
@@ -631,6 +638,80 @@ class EmployeeDatasource {
           ),
         );
       }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<WeeklyOffAttendanceImportCandidate>>
+      getWeeklyOffAttendanceImportCandidates({
+    required String employeeId,
+    DateTime? fromDate,
+    DateTime? toDate,
+  }) async {
+    try {
+      String? fmt(DateTime d) =>
+          '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      final response = await api.get(
+        EndPoints.weeklyOffAttendanceImportCandidates,
+        queryParameters: {
+          'employee_id': employeeId,
+          if (fromDate != null) 'from_date': fmt(fromDate),
+          if (toDate != null) 'to_date': fmt(toDate),
+        },
+      );
+      final raw = asMap(response.data);
+      if (asString(raw['status']).toLowerCase() == 'error') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: asString(raw['message'], 'Request failed'),
+            status: 400,
+            data: raw,
+          ),
+        );
+      }
+      return mapList(
+        raw['days'],
+        (m) => WeeklyOffAttendanceImportCandidate.fromJson(
+          Map<String, dynamic>.from(m),
+        ),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> importWeeklyOffAttendanceDay({
+    required String employeeId,
+    required String date,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.importWeeklyOffAttendanceDay,
+        data: {
+          'employee_id': employeeId,
+          'date': date,
+        },
+      );
+      return asMap(response.data);
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

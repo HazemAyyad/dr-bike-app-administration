@@ -28,7 +28,11 @@ class AttendanceHistoryController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isCheckoutLoading = false.obs;
   final RxBool isExporting = false.obs;
+  final RxBool isWeeklyOffImportLoading = false.obs;
+  final RxString importingWeeklyOffDate = ''.obs;
   final Rxn<EmployeeAttendanceHistoryResult> result = Rxn();
+  final RxList<WeeklyOffAttendanceImportCandidate> weeklyOffImportCandidates =
+      <WeeklyOffAttendanceImportCandidate>[].obs;
 
   // السنة والشهر المختاران — الافتراضي الشهر الحالي
   final Rx<int> selectedYear = DateTime.now().year.obs;
@@ -157,6 +161,22 @@ class AttendanceHistoryController extends GetxController {
 
   String _dateKey(DateTime d) {
     return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+
+  _AttendanceHistoryRange get _currentRange {
+    if (isCustomRange) {
+      final f = customFrom.value!;
+      final t = customTo.value!;
+      return _AttendanceHistoryRange(
+        DateTime(f.year, f.month, f.day),
+        DateTime(t.year, t.month, t.day, 23, 59, 59),
+      );
+    }
+
+    return _AttendanceHistoryRange(
+      DateTime(selectedYear.value, selectedMonth.value, 1),
+      DateTime(selectedYear.value, selectedMonth.value + 1, 0, 23, 59, 59),
+    );
   }
 
   Future<EmployeeAttendanceHistoryResult?> _ensureReportData() async {
@@ -316,6 +336,83 @@ class AttendanceHistoryController extends GetxController {
     }
   }
 
+  Future<void> loadWeeklyOffImportCandidates() async {
+    if (employeeId.isEmpty || isWeeklyOffImportLoading.value) return;
+    try {
+      isWeeklyOffImportLoading.value = true;
+      final range = _currentRange;
+      weeklyOffImportCandidates.value = await Get.find<EmployeeDatasource>()
+          .getWeeklyOffAttendanceImportCandidates(
+        employeeId: employeeId,
+        fromDate: range.fromDate,
+        toDate: range.toDate,
+      );
+    } on ServerException catch (e) {
+      weeklyOffImportCandidates.clear();
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      weeklyOffImportCandidates.clear();
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isWeeklyOffImportLoading.value = false;
+    }
+  }
+
+  Future<bool> importWeeklyOffAttendanceDay(String date) async {
+    if (employeeId.isEmpty || importingWeeklyOffDate.value.isNotEmpty) {
+      return false;
+    }
+    try {
+      importingWeeklyOffDate.value = date;
+      final raw =
+          await Get.find<EmployeeDatasource>().importWeeklyOffAttendanceDay(
+        employeeId: employeeId,
+        date: date,
+      );
+      if (raw['status']?.toString() != 'success') {
+        Get.snackbar(
+          'error'.tr,
+          raw['message']?.toString() ?? 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      }
+
+      Get.snackbar(
+        'success'.tr,
+        'weeklyOffImportSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      weeklyOffImportCandidates.removeWhere((d) => d.date == date);
+      await load(silent: true);
+      return true;
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
+    } finally {
+      importingWeeklyOffDate.value = '';
+    }
+  }
+
   /// تغيير الشهر والسنة وإعادة التحميل (يلغي فلتر المدى المخصص)
   void changeMonth(int year, int month) {
     customFrom.value = null;
@@ -369,4 +466,11 @@ class AttendanceHistoryController extends GetxController {
     'نوفمبر',
     'ديسمبر',
   ];
+}
+
+class _AttendanceHistoryRange {
+  final DateTime fromDate;
+  final DateTime toDate;
+
+  const _AttendanceHistoryRange(this.fromDate, this.toDate);
 }

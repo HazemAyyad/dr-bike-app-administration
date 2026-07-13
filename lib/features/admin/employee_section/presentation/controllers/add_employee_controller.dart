@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/phone_format_helper.dart';
 import '../../../../../core/helpers/showtime.dart';
+import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/user_data.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
 import '../../domain/usecases/add_points_usecase.dart';
 import 'employee_section_controller.dart';
@@ -70,16 +72,15 @@ class AddEmployeeController extends GetxController {
         }
       }
 
-      // Old employees fallback: default Friday off if none configured
-      if (existing.isEmpty) {
-        weeklyDaysOff['friday']!.value = true;
-      }
-
       // Fingerprint
       fingerprintEnabled.value =
           employeeService.employeeDetails.value!.fingerprintEnabled;
       deviceUserIdController.text =
           employeeService.employeeDetails.value!.deviceUserId ?? '';
+      if (userType == 'employee') {
+        canEditPermissionAssignments.value = false;
+      }
+      _loadPermissionEditContext();
     } else {
       // Default weekly day off: Friday (week starts Saturday)
       weeklyDaysOff['friday']!.value = true;
@@ -106,6 +107,13 @@ class AddEmployeeController extends GetxController {
 
   final List<File> documentsImageList = [];
   final List<File> employeeImageList = [];
+
+  static const Set<String> employeeHiddenPermissionIds = {
+    '1', // Debts
+    '6', // Special Tasks
+    '11', // Boxes Section
+    '14', // Checks
+  };
 
   final List<Map<String, dynamic>> permissionsList = [
     {'name': 'debts'.tr, 'id': '1', 'permission': false.obs},
@@ -150,12 +158,39 @@ class AddEmployeeController extends GetxController {
       'id': '47',
       'permission': false.obs
     },
+    {'name': 'dailyBoxes'.tr, 'id': '48', 'permission': false.obs},
   ];
 
   final RxBool isAllPermissionsSelected = false.obs;
+  final RxBool canEditPermissionAssignments = true.obs;
+
+  List<Map<String, dynamic>> get visiblePermissionsList {
+    if (userType != 'employee') {
+      return permissionsList;
+    }
+
+    return permissionsList
+        .where((permission) =>
+            !employeeHiddenPermissionIds.contains(permission['id'].toString()))
+        .toList();
+  }
+
+  Future<void> _loadPermissionEditContext() async {
+    if (userType != 'employee') {
+      canEditPermissionAssignments.value = true;
+      return;
+    }
+
+    final savedUser = await UserData.getSavedUser();
+    final currentEmployeeId = savedUser?.user.employee.id;
+    final editedEmployeeId = employeeService.employeeDetails.value?.id;
+    canEditPermissionAssignments.value =
+        currentEmployeeId == null || currentEmployeeId != editedEmployeeId;
+  }
 
   void setAllPermissionsTrue() {
-    for (var permission in permissionsList) {
+    if (!canEditPermissionAssignments.value) return;
+    for (var permission in visiblePermissionsList) {
       isAllPermissionsSelected.value = true;
       if (permission['permission'].value == true) {
         continue;
@@ -166,7 +201,8 @@ class AddEmployeeController extends GetxController {
   }
 
   void setAllPermissionsFalse() {
-    for (var permission in permissionsList) {
+    if (!canEditPermissionAssignments.value) return;
+    for (var permission in visiblePermissionsList) {
       permission['permission'].value = false;
       isAllPermissionsSelected.value = false;
     }

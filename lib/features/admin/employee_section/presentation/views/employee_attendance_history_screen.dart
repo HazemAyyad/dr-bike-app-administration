@@ -114,6 +114,104 @@ Future<void> _showEditDayDialog(
   );
 }
 
+Future<void> _showWeeklyOffImportDialog(
+  BuildContext context,
+  AttendanceHistoryController controller,
+) async {
+  await controller.loadWeeklyOffImportCandidates();
+  if (!context.mounted) return;
+
+  String timeLabel(DateTime? dt) {
+    if (dt == null) return '-';
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  await Get.dialog<void>(
+    AlertDialog(
+      title: Text('weeklyOffImportsTitle'.tr),
+      content: SizedBox(
+        width: 520.w,
+        child: Obx(() {
+          if (controller.isWeeklyOffImportLoading.value) {
+            return SizedBox(
+              height: 120.h,
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          final days = controller.weeklyOffImportCandidates;
+          if (days.isEmpty) {
+            return SizedBox(
+              height: 110.h,
+              child: Center(
+                child: Text(
+                  'weeklyOffImportsEmpty'.tr,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: 420.h),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: days.length,
+              separatorBuilder: (_, __) => Divider(height: 1.h),
+              itemBuilder: (ctx, index) {
+                final day = days[index];
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.event_available_outlined,
+                    color: AppColors.primaryColor,
+                  ),
+                  title: Text(day.date),
+                  subtitle: Text(
+                    '${'attendanceCheckIn'.tr}: ${timeLabel(day.firstScanAt)}  •  '
+                    '${'attendanceCheckOut'.tr}: ${timeLabel(day.lastScanAt)}  •  '
+                    '${day.logsCount} ${'fingerprintLogs'.tr}',
+                  ),
+                  trailing: Obx(() {
+                    final loading =
+                        controller.importingWeeklyOffDate.value == day.date;
+                    return TextButton.icon(
+                      onPressed: loading
+                          ? null
+                          : () async {
+                              await controller
+                                  .importWeeklyOffAttendanceDay(day.date);
+                            },
+                      icon: loading
+                          ? SizedBox(
+                              width: 16.w,
+                              height: 16.w,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.download_done_outlined),
+                      label: Text('importAttendanceDay'.tr),
+                    );
+                  }),
+                );
+              },
+            ),
+          );
+        }),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: Text('cancel'.tr),
+        ),
+      ],
+    ),
+  );
+}
+
 class EmployeeAttendanceHistoryScreen
     extends GetView<AttendanceHistoryController> {
   const EmployeeAttendanceHistoryScreen({Key? key}) : super(key: key);
@@ -139,6 +237,15 @@ class EmployeeAttendanceHistoryScreen
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          if (!controller.reportMode)
+            IconButton(
+              tooltip: 'weeklyOffImportsTitle'.tr,
+              onPressed: () => _showWeeklyOffImportDialog(context, controller),
+              icon: const Icon(
+                Icons.event_repeat_outlined,
+                color: AppColors.primaryColor,
+              ),
+            ),
           Obx(() {
             final ready = controller.result.value != null &&
                 controller.result.value!.days.isNotEmpty;
@@ -336,15 +443,26 @@ class _EmployeeAttendanceReportPreview extends StatelessWidget {
   }
 
   static String _dayWorkLabel(EmployeeAttendanceDay day) {
+    final holidayNotice = day.attendanceStatus == 'present_on_weekly_day_off'
+        ? (day.attendanceStatusLabel ?? 'حضور في يوم عطلة رسمية')
+        : null;
+
     if (day.segments.isNotEmpty) {
-      return day.segments.map((segment) {
+      final workedSegments = day.segments.map((segment) {
         final from = _time(segment.checkInAt);
         final to = segment.open ? 'داخل العمل' : _time(segment.checkOutAt);
         return '$from - $to';
       }).join('\n');
+
+      return holidayNotice == null
+          ? workedSegments
+          : '$workedSegments\n$holidayNotice';
     }
     if (day.firstCheckIn != null || day.lastCheckOut != null) {
-      return '${_time(day.firstCheckIn)} - ${day.currentlyIn ? 'داخل العمل' : _time(day.lastCheckOut)}';
+      final workedTime =
+          '${_time(day.firstCheckIn)} - ${day.currentlyIn ? 'داخل العمل' : _time(day.lastCheckOut)}';
+
+      return holidayNotice == null ? workedTime : '$workedTime\n$holidayNotice';
     }
     return day.attendanceStatusLabel ??
         (day.expectedWorkMinutes <= 0 ? 'عطلة رسمية' : 'عدم حضور');

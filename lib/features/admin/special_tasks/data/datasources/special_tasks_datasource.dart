@@ -119,6 +119,31 @@ class SpecialTasksDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> convertSpecialTaskToEmployee({
+    required String specialTaskId,
+    required int employeeId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.convertSpecialTaskToEmployee,
+        data: {
+          'special_task_id': specialTaskId,
+          'employee_id': employeeId,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   // change sub special task to completed
   Future<Map<String, dynamic>> subSpecialTaskCompleted(
       {required String subTaskId}) async {

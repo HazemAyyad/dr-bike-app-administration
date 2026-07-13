@@ -9,13 +9,12 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_attendance_history_model.dart';
 import '../controllers/attendance_history_controller.dart';
 
-List<String> _effectiveWeeklyDaysOff(List<String> stored) =>
-    stored.isEmpty ? <String>['friday'] : stored;
+String _weeklyDaysOffLabel(List<String> stored) => stored.isEmpty
+    ? 'noWeeklyDaysOff'.tr
+    : stored.map((d) => 'day_${d.toLowerCase()}'.tr).join(' · ');
 
-String _weeklyDaysOffLabel(List<String> stored) =>
-    _effectiveWeeklyDaysOff(stored)
-        .map((d) => 'day_${d.toLowerCase()}'.tr)
-        .join(' · ');
+bool _isPresentOnWeeklyDayOff(EmployeeAttendanceDay day) =>
+    day.attendanceStatus == 'present_on_weekly_day_off';
 
 String _todayDateKey() {
   final now = DateTime.now();
@@ -835,6 +834,12 @@ class _CompactAttendanceDayCard extends StatelessWidget {
                       color: day.onTime!
                           ? AppColors.customGreen1
                           : Colors.red.shade400,
+                      compact: true,
+                    ),
+                  if (_isPresentOnWeeklyDayOff(day))
+                    _StatusChip(
+                      label: 'workedOnWeeklyDayOff'.tr,
+                      color: AppColors.customOrange3,
                       compact: true,
                     ),
                   if (day.overtimeMinutes > 0)

@@ -443,46 +443,82 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
                         ),
                   ),
                   const Spacer(),
-                  TextButton(
-                    onPressed: () => controller.isAllPermissionsSelected.value
-                        ? controller.setAllPermissionsFalse()
-                        : controller.setAllPermissionsTrue(),
-                    child: Obx(
-                      () => Text(
-                        controller.isAllPermissionsSelected.value
-                            ? 'unselectAll'.tr
-                            : 'selectAll'.tr,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor6
-                                  : AppColors.customGreyColor,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                              decoration: TextDecoration.underline,
-                              decorationStyle: TextDecorationStyle.solid,
+                  Obx(
+                    () => controller.canEditPermissionAssignments.value
+                        ? TextButton(
+                            onPressed: () =>
+                                controller.isAllPermissionsSelected.value
+                                    ? controller.setAllPermissionsFalse()
+                                    : controller.setAllPermissionsTrue(),
+                            child: Text(
+                              controller.isAllPermissionsSelected.value
+                                  ? 'unselectAll'.tr
+                                  : 'selectAll'.tr,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium!
+                                  .copyWith(
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.customGreyColor6
+                                        : AppColors.customGreyColor,
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w700,
+                                    decoration: TextDecoration.underline,
+                                    decorationStyle: TextDecorationStyle.solid,
+                                  ),
                             ),
-                      ),
-                    ),
+                          )
+                        : const SizedBox.shrink(),
                   )
                 ],
               ),
-              ...List.generate(
-                controller.permissionsList.length,
-                (index) => CustomCheckBox(
-                  title: controller.permissionsList[index]['name'],
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor6
-                            : AppColors.customGreyColor2,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
+              Obx(
+                () {
+                  if (!controller.canEditPermissionAssignments.value) {
+                    return Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.only(top: 8.h),
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.customOrange3.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color:
+                              AppColors.customOrange3.withValues(alpha: 0.35),
+                        ),
                       ),
-                  value: controller.permissionsList[index]['permission'],
-                  onChanged: (value) {
-                    controller.permissionsList[index]['permission'].value =
-                        value;
-                  },
-                ),
+                      child: Text(
+                        'cannotEditOwnPermissions'.tr,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: AppColors.customOrange3,
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    );
+                  }
+
+                  final permissions = controller.visiblePermissionsList;
+                  return Column(
+                    children: List.generate(
+                      permissions.length,
+                      (index) => CustomCheckBox(
+                        title: permissions[index]['name'],
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor6
+                                  : AppColors.customGreyColor2,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                        value: permissions[index]['permission'],
+                        onChanged: (value) {
+                          permissions[index]['permission'].value = value;
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
               SizedBox(height: 20.h),
               AppButton(
@@ -634,7 +670,8 @@ class _FingerprintSettingsCard extends StatelessWidget {
         } catch (_) {}
       }
     } catch (e) {
-      Get.snackbar('error'.tr, e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -693,7 +730,8 @@ class _FingerprintSettingsCard extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'deviceUserId'.tr,
                     filled: true,
-                    fillColor: isDark ? Colors.white10 : const Color(0xFFF9FAFB),
+                    fillColor:
+                        isDark ? Colors.white10 : const Color(0xFFF9FAFB),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
                     ),
@@ -751,14 +789,11 @@ class _DeviceUserPickerSheetState extends State<_DeviceUserPickerSheet> {
     final linked = u['status']?.toString().toLowerCase() == 'linked';
     if (!linked) return 'fingerprintUnlinked'.tr;
 
-    final linkedEmpId =
-        int.tryParse(u['linked_employee_id']?.toString() ?? '');
+    final linkedEmpId = int.tryParse(u['linked_employee_id']?.toString() ?? '');
     final empName = u['linked_employee_name']?.toString().trim() ?? '';
     final currentId = widget.currentEmployeeId;
 
-    if (currentId != null &&
-        linkedEmpId != null &&
-        linkedEmpId == currentId) {
+    if (currentId != null && linkedEmpId != null && linkedEmpId == currentId) {
       return 'fingerprintLinkedToCurrentEmployee'.tr;
     }
     if (empName.isNotEmpty) {
@@ -837,11 +872,12 @@ class _DeviceUserPickerSheetState extends State<_DeviceUserPickerSheet> {
                       final linked =
                           u['status']?.toString().toLowerCase() == 'linked';
                       final linkLabel = _linkLabel(u);
-                      final linkedEmpId =
-                          int.tryParse(u['linked_employee_id']?.toString() ?? '');
-                      final isCurrentEmployee = widget.currentEmployeeId != null &&
-                          linkedEmpId != null &&
-                          linkedEmpId == widget.currentEmployeeId;
+                      final linkedEmpId = int.tryParse(
+                          u['linked_employee_id']?.toString() ?? '');
+                      final isCurrentEmployee =
+                          widget.currentEmployeeId != null &&
+                              linkedEmpId != null &&
+                              linkedEmpId == widget.currentEmployeeId;
 
                       return ListTile(
                         tileColor: Colors.white,
@@ -912,7 +948,9 @@ class _DeviceUserPickerSheetState extends State<_DeviceUserPickerSheet> {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
-                            linked ? 'fingerprintLinked'.tr : 'fingerprintUnlinked'.tr,
+                            linked
+                                ? 'fingerprintLinked'.tr
+                                : 'fingerprintUnlinked'.tr,
                             style: TextStyle(
                               fontSize: 10.sp,
                               fontWeight: FontWeight.w800,

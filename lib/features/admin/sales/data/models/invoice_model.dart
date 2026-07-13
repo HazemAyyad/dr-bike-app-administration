@@ -204,8 +204,10 @@ class InvoiceModel {
       additionalNotesTotal: asString(json['additional_notes_total'], '0'),
       subtotal: asString(json['subtotal'], asString(json['total_cost'], '0')),
       tax: asString(json['tax'], '0'),
-      paidAmount:
-          asString(json['paid_amount'], asString(json['total_cost'], '0')),
+      paidAmount: asString(
+        json['paid_amount'],
+        asString(json['payment_box_value'], '0'),
+      ),
       remainingAmount: asString(json['remaining_amount'], '0'),
       projectName: legacyProject,
       buyerType: buyerType.isEmpty ? 'unknown' : buyerType,
