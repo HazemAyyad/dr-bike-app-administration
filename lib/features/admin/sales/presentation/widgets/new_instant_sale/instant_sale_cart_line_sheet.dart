@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/admin_ui_colors.dart';
+import '../../../../../../core/helpers/product_image_utils.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../data/utils/sale_variant_display.dart';
@@ -74,7 +75,7 @@ class _InstantSaleCartLineSheet extends StatelessWidget {
                   SizedBox(width: 12.w),
                   Expanded(
                     child: Text(
-                      line.productName,
+                      line.displayName,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w900,
                             height: 1.35,
@@ -115,7 +116,8 @@ class _InstantSaleCartLineSheet extends StatelessWidget {
                     child: _infoTile(
                       context,
                       label: 'quantity'.tr,
-                      value: line.quantityText.isEmpty ? '—' : line.quantityText,
+                      value:
+                          line.quantityText.isEmpty ? '—' : line.quantityText,
                     ),
                   ),
                   SizedBox(width: 8.w),
@@ -155,10 +157,10 @@ class _InstantSaleCartLineSheet extends StatelessWidget {
 
   Widget _image(BuildContext context) {
     final url = ShowNetImage.getThumbnailPhoto(line.imageUrl);
-    final ok = url.isNotEmpty && line.imageUrl != 'no image';
+    final ok = ProductImageUtils.isValidUrl(line.imageUrl);
 
     return GestureDetector(
-      onTap: () => openProductImageViewer(context, line.imageUrl),
+      onTap: ok ? () => openProductImageViewer(context, line.imageUrl) : null,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10.r),
         child: SizedBox(

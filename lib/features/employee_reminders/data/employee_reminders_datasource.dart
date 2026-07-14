@@ -19,10 +19,16 @@ class EmployeeRemindersDatasource {
     );
   }
 
-  Future<List<EmployeeReminderItem>> getMyReminders({String? status}) async {
+  Future<List<EmployeeReminderItem>> getMyReminders({
+    String? status,
+    bool dueOnly = false,
+  }) async {
     final response = await api.get(
       EndPoints.employeeMyReminders,
-      queryParameters: {if (status != null) 'status': status},
+      queryParameters: {
+        if (status != null) 'status': status,
+        if (dueOnly) 'due_only': '1',
+      },
     );
     return _items(
       response.data,

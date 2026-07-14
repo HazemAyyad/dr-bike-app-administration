@@ -64,6 +64,20 @@ const String kSalesOrderPaymentTag = 'sales_order_payment';
 const String kProfitSalePaymentTag = 'profit_sale_payment';
 const String kInstantSaleLocalDraftKey = 'instant_sale_local_draft_v1';
 
+class PastedInstantSaleProductRequest {
+  const PastedInstantSaleProductRequest({
+    required this.rawLine,
+    required this.searchText,
+    required this.quantity,
+    this.suggestions = const [],
+  });
+
+  final String rawLine;
+  final String searchText;
+  final int quantity;
+  final List<ProductPasteSuggestion> suggestions;
+}
+
 void _instantSaleDebug(String message, [Object? details]) {
   assert(() {
     debugPrint(
@@ -73,6 +87,87 @@ void _instantSaleDebug(String message, [Object? details]) {
     );
     return true;
   }());
+}
+
+void _suspendedInstantSaleDebug(String message, [Object? details]) {
+  assert(() {
+    debugPrint(
+      details == null
+          ? '[SuspendedInstantSaleDebug][Controller] $message'
+          : '[SuspendedInstantSaleDebug][Controller] $message | $details',
+    );
+    return true;
+  }());
+}
+
+Map<String, dynamic> _cartLineSuspendedDebugSnapshot(
+  InstantSaleCartLine line,
+) {
+  return {
+    'product_id': line.productId,
+    'product_name': line.productName,
+    'display_name': line.displayName,
+    'image_url': line.imageUrl,
+    'size_color_id': line.sizeColorId,
+    'size_id': line.sizeId,
+    'size_label': line.sizeLabel,
+    'color_label': line.colorLabel,
+    'quantity': line.quantityText,
+    'cost': line.priceText,
+    'type': line.isProjectSale.value ? 'project' : 'normal',
+  };
+}
+
+Map<String, dynamic> _payloadLineSuspendedDebugSnapshot(
+  Map<String, dynamic> line,
+) {
+  return {
+    'product_id': line['product_id'],
+    'product_name': line['product_name'],
+    'product_image': line['product_image'],
+    'image_url': line['image_url'],
+    'size_color_id': line['size_color_id'],
+    'size_id': line['size_id'],
+    'size_label': line['size_label'],
+    'color_label': line['color_label'],
+    'quantity': line['quantity'],
+    'cost': line['cost'],
+    'type': line['type'],
+    'project_id': line['project_id'],
+  };
+}
+
+List<Map<String, dynamic>> _payloadSuspendedLinesDebugSnapshot(
+  Map<String, dynamic> payload,
+) {
+  final rows = <Map<String, dynamic>>[];
+  if (payload['product_id'] != null) {
+    rows.add(_payloadLineSuspendedDebugSnapshot({
+      'product_id': payload['product_id'],
+      'product_name': payload['product_name'],
+      'product_image': payload['product_image'],
+      'image_url': payload['image_url'],
+      'size_color_id': payload['size_color_id'],
+      'size_id': payload['size_id'],
+      'size_label': payload['size_label'],
+      'color_label': payload['color_label'],
+      'quantity': payload['quantity'],
+      'cost': payload['cost'],
+      'type': payload['type'],
+      'project_id': payload['project_id'],
+    }));
+  }
+  final otherProducts = payload['other_products'];
+  if (otherProducts is List) {
+    for (final raw in otherProducts) {
+      if (raw is Map) {
+        rows.add(_payloadLineSuspendedDebugSnapshot(
+          Map<String, dynamic>.from(raw),
+        ));
+      }
+    }
+  }
+  return rows;
 }
 
 void _instantSaleEditZeroDebug(String message, [Object? details]) {
@@ -608,19 +703,34 @@ class SalesController extends GetxController
     bool confirmOpeningVariance = false,
   }) async {
     final ds = Get.find<SalesDatasource>();
-    final message = await ds.openDailySession(
-      openingCounts: openingCounts,
-      confirmOpeningVariance: confirmOpeningVariance,
+    debugPrint(
+      '[SalesDailyOpenDebug][Controller] start openingCounts=$openingCounts confirmOpeningVariance=$confirmOpeningVariance currentPayload=${dailySessionPayload.value?.session?.id}/${dailySessionPayload.value?.session?.status}',
     );
-    await loadDailySession();
-    final overlayContext = Get.overlayContext ?? Get.context;
-    if (overlayContext != null) {
-      Helpers.showCustomDialogSuccess(
-        context: overlayContext,
-        title: 'success'.tr,
-        message: message,
-        autoCloseAfter: const Duration(seconds: 2),
+    try {
+      final message = await ds.openDailySession(
+        openingCounts: openingCounts,
+        confirmOpeningVariance: confirmOpeningVariance,
       );
+      debugPrint('[SalesDailyOpenDebug][Controller] apiMessage=$message');
+      await loadDailySession();
+      debugPrint(
+        '[SalesDailyOpenDebug][Controller] afterLoad session=${dailySessionPayload.value?.session?.id}/${dailySessionPayload.value?.session?.status} canCreate=$canCreateSales',
+      );
+      final overlayContext = Get.overlayContext ?? Get.context;
+      debugPrint(
+        '[SalesDailyOpenDebug][Controller] overlayContext=${overlayContext != null}',
+      );
+      if (overlayContext != null) {
+        Helpers.showCustomDialogSuccess(
+          context: overlayContext,
+          title: 'success'.tr,
+          message: message,
+          autoCloseAfter: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      debugPrint('[SalesDailyOpenDebug][Controller] error=$e');
+      rethrow;
     }
   }
 
@@ -1219,6 +1329,105 @@ class SalesController extends GetxController
     return true;
   }
 
+  List<String> _pickerSearchAliasesForToken(String token) {
+    switch (_normalizePickerSearchText(token)) {
+      case 'لوحه':
+      case 'لوحة':
+        return const [
+          'لوحة',
+          'لوحه',
+          'كومبيوتر',
+          'كمبيوتر',
+          'كنترولر',
+          'controller',
+        ];
+      case 'w':
+      case 'وات':
+      case 'واط':
+        return const ['w', 'وات', 'واط'];
+      case 'فحمات':
+      case 'فحمه':
+      case 'فحمة':
+        return const ['فحمات', 'فحمة', 'فحمه', 'فرامل', 'بريك', 'brake'];
+      case 'مربع':
+        return const ['مربع', 'مربعة', 'square'];
+      case 'ضوء':
+        return const ['ضوء', 'ضو', 'ليت', 'لمبة', 'لمبه', 'كشاف', 'light'];
+      case 'مدور':
+        return const ['مدور', 'دائري', 'دائرة', 'round'];
+      case 'مجوز':
+        return const ['مجوز', 'زوج', 'جوز', 'مزدوج', 'double'];
+      case 'اكس':
+      case 'أكس':
+        return const ['اكس', 'أكس', 'محور', 'اكسل', 'axle', 'motor'];
+      case 'قاعدة':
+        return const ['قاعدة', 'حامل', 'بيت', 'base', 'holder'];
+      case 'بطارية':
+        return const ['بطارية', 'بطاريه', 'battery'];
+      case 'بلحة':
+      case 'بلحه':
+        return const ['بلحة', 'بلحه', 'فيشة', 'فيشه', 'مدخل', 'سوكت', 'socket'];
+      case 'شاحن':
+        return const ['شاحن', 'شحن', 'charger'];
+      case 'انثى':
+      case 'انتى':
+        return const ['انثى', 'انتى', 'female', 'f'];
+      case 'حساسات':
+      case 'حساس':
+        return const ['حساسات', 'حساس', 'sensor'];
+      case 'ماطور':
+      case 'ماتور':
+      case 'موتور':
+        return const ['ماطور', 'ماتور', 'موتور', 'motor'];
+      case 'ضروس':
+      case 'ضرس':
+        return const ['ضروس', 'ضرس', 'ترس', 'تروس', 'مسنن', 'gear'];
+      case 'مستقيم':
+        return const ['مستقيم', 'سنتر', 'straight'];
+      case 'دعسات':
+      case 'دعسه':
+      case 'دعسة':
+        return const ['دعسات', 'دعسة', 'دعسه', 'دواسات', 'دواسة', 'pedal'];
+      default:
+        return [token];
+    }
+  }
+
+  List<String> _pickerSearchTokens(String query) {
+    final normalized = _normalizePickerSearchText(
+      _normalizePastedDigits(query),
+    );
+    const softWords = {
+      'عادي',
+      'كبير',
+      'كبيرة',
+      'صغير',
+      'صغيرة',
+      'جديد',
+      'جديدة',
+      'قديم',
+      'قديمة',
+    };
+    return normalized
+        .split(RegExp(r'[\s,،/\\\-]+'))
+        .map((token) => token.trim())
+        .where((token) => !softWords.contains(token))
+        .where((token) => token.length > 1 || RegExp(r'\d').hasMatch(token))
+        .toList();
+  }
+
+  bool _pickerTokenMatchesAnyAlias(String token, List<String> fields) {
+    final aliases = _pickerSearchAliasesForToken(token);
+    for (final alias in aliases) {
+      for (final field in fields) {
+        if (_pickerSearchMatches(alias, field)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   bool productMatchesPickerSearch(ProductModel product, String query) {
     if (query.isEmpty) return true;
 
@@ -1237,7 +1446,26 @@ class SalesController extends GetxController
       }
     }
 
-    return fields.any((field) => _pickerSearchMatches(query, field));
+    if (fields.any((field) => _pickerSearchMatches(query, field))) {
+      return true;
+    }
+
+    final tokens = _pickerSearchTokens(query);
+    if (tokens.isEmpty) return false;
+    final numericTokens =
+        tokens.where((token) => RegExp(r'\d').hasMatch(token)).toList();
+    for (final token in numericTokens) {
+      if (!_pickerTokenMatchesAnyAlias(token, fields)) {
+        return false;
+      }
+    }
+
+    final matched = tokens
+        .where((token) => _pickerTokenMatchesAnyAlias(token, fields))
+        .length;
+    final requiredMatches =
+        (tokens.length * 0.6).ceil().clamp(1, tokens.length);
+    return matched >= requiredMatches;
   }
 
   bool packageMatchesPickerSearch(OfferPackageModel package, String query) {
@@ -1288,9 +1516,12 @@ class SalesController extends GetxController
   }
 
   List<Map<String, dynamic>> buildCartOtherProductsPayload() {
-    return cartLines.map((line) {
+    final payload = cartLines.map((line) {
       final map = <String, dynamic>{
         'product_id': line.productId,
+        'product_name': line.productName,
+        'product_image': line.imageUrl,
+        'image_url': line.imageUrl,
         'cost': line.priceText,
         'quantity': line.quantityText,
         'type': line.isProjectSale.value ? 'project' : 'normal',
@@ -1305,8 +1536,19 @@ class SalesController extends GetxController
       if (line.sizeId != null && line.sizeId!.isNotEmpty) {
         map['size_id'] = line.sizeId;
       }
+      if (line.sizeLabel != null && line.sizeLabel!.isNotEmpty) {
+        map['size_label'] = line.sizeLabel;
+      }
+      if (line.colorLabel != null && line.colorLabel!.isNotEmpty) {
+        map['color_label'] = line.colorLabel;
+      }
       return map;
     }).toList();
+    _suspendedInstantSaleDebug('buildCartOtherProductsPayload', {
+      'cartLines': cartLines.map(_cartLineSuspendedDebugSnapshot).toList(),
+      'payload': payload.map(_payloadLineSuspendedDebugSnapshot).toList(),
+    });
+    return payload;
   }
 
   void _clearPackageSelection() {
@@ -1771,12 +2013,35 @@ class SalesController extends GetxController
       if (mainLine['size_id'] != null) {
         map['size_id'] = mainLine['size_id'];
       }
+      if (mainLine['product_name'] != null) {
+        map['product_name'] = mainLine['product_name'];
+      }
+      if (mainLine['product_image'] != null) {
+        map['product_image'] = mainLine['product_image'];
+      }
+      if (mainLine['image_url'] != null) {
+        map['image_url'] = mainLine['image_url'];
+      }
+      if (mainLine['size_label'] != null) {
+        map['size_label'] = mainLine['size_label'];
+      }
+      if (mainLine['color_label'] != null) {
+        map['color_label'] = mainLine['color_label'];
+      }
       if (otherProductsList.isNotEmpty) {
         map['other_products'] = otherProductsList;
       }
     }
 
     _mergeLiveCheckoutPaymentIntoPayload(map);
+
+    _suspendedInstantSaleDebug('buildInstantSaleSuspendPayload', {
+      'hasPackage': hasPackage,
+      'cartLines': cartLines.map(_cartLineSuspendedDebugSnapshot).toList(),
+      'payloadKeys': map.keys.toList(),
+      'payloadLines': _payloadSuspendedLinesDebugSnapshot(map),
+      'otherProductsRaw': map['other_products'],
+    });
 
     return map;
   }
@@ -1864,6 +2129,12 @@ class SalesController extends GetxController
             ? (payload['other_products'] as List).length
             : 0,
       });
+      _suspendedInstantSaleDebug('suspend payload built', {
+        'currentStep': currentStep,
+        'activeSuspendedSaleId': activeSuspendedSaleId.value,
+        'payloadLines': _payloadSuspendedLinesDebugSnapshot(payload),
+        'rawOtherProducts': payload['other_products'],
+      });
       final result = await Get.find<SalesImplement>().suspendInstantSale(
         currentStep: currentStep,
         payload: payload,
@@ -1886,6 +2157,7 @@ class SalesController extends GetxController
         },
         (message) async {
           _instantSaleDebug('suspend success', message);
+          _suspendedInstantSaleDebug('suspend success', message);
           await _leaveInstantSaleFlow();
           await clearLocalInstantSaleDraft();
           clearActiveSuspendedSale();
@@ -1965,6 +2237,15 @@ class SalesController extends GetxController
       'currentStep': sale.currentStep,
       'payloadKeys': sale.payload.keys.toList(),
     });
+    _suspendedInstantSaleDebug('resume requested', {
+      'suspendedId': sale.id,
+      'referenceCode': sale.referenceCode,
+      'currentStep': sale.currentStep,
+      'summaryLabel': sale.summaryLabel,
+      'payloadKeys': sale.payload.keys.toList(),
+      'payloadLines': _payloadSuspendedLinesDebugSnapshot(sale.payload),
+      'rawOtherProducts': sale.payload['other_products'],
+    });
     try {
       clearActiveEditInstantSale();
       activeSuspendedSaleId.value = sale.id;
@@ -2003,6 +2284,11 @@ class SalesController extends GetxController
   }
 
   Future<void> hydrateFromSuspendedPayload(Map<String, dynamic> payload) async {
+    _suspendedInstantSaleDebug('hydrate start', {
+      'payloadKeys': payload.keys.toList(),
+      'payloadLines': _payloadSuspendedLinesDebugSnapshot(payload),
+      'rawOtherProducts': payload['other_products'],
+    });
     discountController.text = payload['discount']?.toString() ?? '0';
 
     clearInstantSaleNotes(dispose: true);
@@ -2048,6 +2334,11 @@ class SalesController extends GetxController
         'project_id': payload['project_id'],
         'size_color_id': payload['size_color_id'],
         'size_id': payload['size_id'],
+        'product_name': payload['product_name'],
+        'product_image': payload['product_image'],
+        'image_url': payload['image_url'],
+        'size_label': payload['size_label'],
+        'color_label': payload['color_label'],
       });
     }
     final otherProducts = payload['other_products'];
@@ -2058,6 +2349,11 @@ class SalesController extends GetxController
         }
       }
     }
+
+    _suspendedInstantSaleDebug('hydrate line maps', {
+      'count': lineMaps.length,
+      'lines': lineMaps.map(_payloadLineSuspendedDebugSnapshot).toList(),
+    });
 
     clearCartLines(deferDispose: false);
     for (final line in lineMaps) {
@@ -2093,6 +2389,11 @@ class SalesController extends GetxController
 
     calculateGrandTotal();
     bumpCartRevision();
+    _suspendedInstantSaleDebug('hydrate finished', {
+      'cartLines': cartLines.map(_cartLineSuspendedDebugSnapshot).toList(),
+      'items': items.length,
+      'totalCost': totalCost.value,
+    });
   }
 
   void _addHydratedCartLine(Map<String, dynamic> line) {
@@ -2107,6 +2408,56 @@ class SalesController extends GetxController
           projects: const [],
         );
 
+    var sizeColorId = line['size_color_id']?.toString();
+    if (sizeColorId != null && sizeColorId.isEmpty) sizeColorId = null;
+    var sizeId = line['size_id']?.toString();
+    if (sizeId != null && sizeId.isEmpty) sizeId = null;
+    var sizeLabel = line['size_label']?.toString();
+    if (sizeLabel != null && sizeLabel.isEmpty) sizeLabel = null;
+    var colorLabel = line['color_label']?.toString();
+    if (colorLabel != null && colorLabel.isEmpty) colorLabel = null;
+    var variantImageUrl =
+        (line['product_image'] ?? line['image_url'])?.toString();
+    if (variantImageUrl != null && variantImageUrl.isEmpty) {
+      variantImageUrl = null;
+    }
+    int? variantStock;
+
+    if (sizeColorId != null && product.sizes.isNotEmpty) {
+      for (final size in product.sizes) {
+        for (final color in size.colorSizes) {
+          if (color.id == sizeColorId) {
+            sizeId ??= size.id;
+            sizeLabel ??= size.size;
+            colorLabel ??= color.colorAr;
+            if (color.imageUrl.isNotEmpty) {
+              variantImageUrl ??= color.imageUrl;
+            }
+            variantStock = color.stock;
+            break;
+          }
+        }
+        if (variantStock != null) break;
+      }
+    }
+
+    _suspendedInstantSaleDebug('add hydrated cart line', {
+      'raw': _payloadLineSuspendedDebugSnapshot(line),
+      'productFound': products.any((p) => p.id == productId),
+      'productHasVariants': product.hasVariants,
+      'resolved': {
+        'product_id': product.id,
+        'product_name': product.nameAr,
+        'product_image': product.imageUrl,
+        'size_color_id': sizeColorId,
+        'size_id': sizeId,
+        'size_label': sizeLabel,
+        'color_label': colorLabel,
+        'variant_image_url': variantImageUrl,
+        'variant_stock': variantStock,
+      },
+    });
+
     addCartLine(
       InstantSaleCartLine.fromProduct(
         product,
@@ -2114,10 +2465,12 @@ class SalesController extends GetxController
         unitPrice: line['cost']?.toString(),
         projectSale: line['type']?.toString() == 'project',
         projectId: line['project_id']?.toString(),
-        sizeColorId: line['size_color_id']?.toString(),
-        sizeId: line['size_id']?.toString(),
-        sizeLabel: line['size_label']?.toString(),
-        colorLabel: line['color_label']?.toString(),
+        sizeColorId: sizeColorId,
+        sizeId: sizeId,
+        sizeLabel: sizeLabel,
+        colorLabel: colorLabel,
+        variantStock: variantStock,
+        variantImageUrl: variantImageUrl,
       ),
     );
   }
@@ -4055,6 +4408,274 @@ class SalesController extends GetxController
 
   // get all products
   final List<ProductModel> products = [];
+  final RxList<PastedInstantSaleProductRequest> pastedProductRequests =
+      <PastedInstantSaleProductRequest>[].obs;
+  final RxInt activePastedProductRequestIndex = 0.obs;
+  final RxMap<int, String> pastedProductSelections = <int, String>{}.obs;
+
+  bool get hasPastedProductRequests => pastedProductRequests.isNotEmpty;
+
+  PastedInstantSaleProductRequest? get activePastedProductRequest {
+    if (pastedProductRequests.isEmpty) return null;
+    final index = activePastedProductRequestIndex.value;
+    if (index < 0 || index >= pastedProductRequests.length) {
+      return pastedProductRequests.first;
+    }
+    return pastedProductRequests[index];
+  }
+
+  String _normalizePastedDigits(String raw) {
+    const digits = {
+      '٠': '0',
+      '١': '1',
+      '٢': '2',
+      '٣': '3',
+      '٤': '4',
+      '٥': '5',
+      '٦': '6',
+      '٧': '7',
+      '٨': '8',
+      '٩': '9',
+      '۰': '0',
+      '۱': '1',
+      '۲': '2',
+      '۳': '3',
+      '۴': '4',
+      '۵': '5',
+      '۶': '6',
+      '۷': '7',
+      '۸': '8',
+      '۹': '9',
+    };
+    var text = raw;
+    digits.forEach((from, to) {
+      text = text.replaceAll(from, to);
+    });
+    return text;
+  }
+
+  PastedInstantSaleProductRequest? _parsePastedProductLine(String raw) {
+    final normalized = _normalizePastedDigits(raw).trim();
+    if (normalized.isEmpty) return null;
+
+    var quantity = 1;
+    var searchText = normalized;
+    final qtyPatterns = <RegExp>[
+      RegExp(r'(?:عدد|كمية|qty|quantity)\s*[:：]?\s*(\d+)',
+          caseSensitive: false),
+      RegExp(r'[xX×]\s*(\d+)\s*$'),
+      RegExp(r'(\d+)\s*(?:حبة|قطع|قطعة)\s*$', caseSensitive: false),
+    ];
+
+    for (final pattern in qtyPatterns) {
+      final match = pattern.firstMatch(searchText);
+      if (match == null) continue;
+      quantity = int.tryParse(match.group(1) ?? '') ?? 1;
+      searchText = searchText.replaceFirst(match.group(0) ?? '', '').trim();
+      break;
+    }
+
+    searchText = searchText
+        .replaceAll(RegExp(r'[-–—]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (searchText.isEmpty) return null;
+
+    return PastedInstantSaleProductRequest(
+      rawLine: raw.trim(),
+      searchText: searchText,
+      quantity: quantity < 1 ? 1 : quantity,
+    );
+  }
+
+  Future<void> applyPastedProductList(String text) async {
+    final serverLines = await previewPastedProductList(text);
+    if (serverLines) return;
+
+    final parsed = text
+        .split(RegExp(r'\r?\n'))
+        .map(_parsePastedProductLine)
+        .whereType<PastedInstantSaleProductRequest>()
+        .toList();
+    if (parsed.isEmpty) {
+      Get.snackbar('error'.tr, 'instantSalePasteListEmpty'.tr);
+      return;
+    }
+
+    pastedProductRequests.assignAll(parsed);
+    pastedProductSelections.clear();
+    activePastedProductRequestIndex.value = 0;
+    instantSaleProductSearch.value = parsed.first.searchText;
+    await getAllProducts(showLoading: false);
+  }
+
+  Future<bool> previewPastedProductList(String text) async {
+    if (text.trim().isEmpty) return false;
+    try {
+      final ds = Get.find<SalesDatasource>();
+      final lines = await ds.getProductPasteSuggestions(
+        text: text,
+        customerId: pickerPersonType == 'customer' ? pickerPersonId : null,
+        sellerId: pickerPersonType == 'seller' ? pickerPersonId : null,
+      );
+      if (lines.isEmpty) return false;
+      pastedProductRequests.assignAll(
+        lines.map(
+          (line) => PastedInstantSaleProductRequest(
+            rawLine: line.rawLine,
+            searchText: line.searchText,
+            quantity: line.quantity,
+            suggestions: line.suggestions,
+          ),
+        ),
+      );
+      pastedProductSelections.clear();
+      activePastedProductRequestIndex.value = 0;
+      instantSaleProductSearch.value = pastedProductRequests.first.searchText;
+      final productsById = <String, ProductModel>{};
+      for (final line in lines) {
+        for (final suggestion in line.suggestions) {
+          productsById[suggestion.product.id] = suggestion.product;
+        }
+      }
+      if (productsById.isNotEmpty) {
+        products
+          ..clear()
+          ..addAll(productsById.values);
+        _bumpProductsList();
+      } else {
+        await getAllProducts(showLoading: false);
+      }
+      return true;
+    } catch (e) {
+      assert(() {
+        debugPrint('[SalesController.previewPastedProductList] $e');
+        return true;
+      }());
+      return false;
+    }
+  }
+
+  Future<void> selectPastedProductRequest(int index) async {
+    if (index < 0 || index >= pastedProductRequests.length) return;
+    activePastedProductRequestIndex.value = index;
+    instantSaleProductSearch.value = pastedProductRequests[index].searchText;
+    final suggestedProducts = <String, ProductModel>{};
+    for (final suggestion in pastedProductRequests[index].suggestions) {
+      suggestedProducts[suggestion.product.id] = suggestion.product;
+    }
+    if (suggestedProducts.isNotEmpty) {
+      products
+        ..clear()
+        ..addAll(suggestedProducts.values);
+      _bumpProductsList();
+      return;
+    }
+    await getAllProducts(showLoading: false);
+  }
+
+  void clearPastedProductRequests() {
+    pastedProductRequests.clear();
+    pastedProductSelections.clear();
+    activePastedProductRequestIndex.value = 0;
+  }
+
+  bool pastedRequestHasSelection(int index) {
+    final productId = pastedProductSelections[index];
+    return productId != null && productId.isNotEmpty;
+  }
+
+  bool pastedRequestSelectedProduct(ProductModel product) {
+    final productId =
+        pastedProductSelections[activePastedProductRequestIndex.value];
+    return productId != null && productId == product.id;
+  }
+
+  bool productMatchesActivePastedRequest(ProductModel product) {
+    final request = activePastedProductRequest;
+    if (request == null) return false;
+    return productMatchesPickerSearch(product, request.searchText);
+  }
+
+  String? pastedRequestLabelForProduct(ProductModel product) {
+    final request = activePastedProductRequest;
+    if (request == null ||
+        !productMatchesPickerSearch(product, request.searchText)) {
+      return null;
+    }
+    return '${request.searchText} × ${request.quantity}';
+  }
+
+  Future<void> addProductFromPastedSuggestion(
+    ProductModel product, {
+    BuildContext? context,
+  }) async {
+    final request = activePastedProductRequest;
+    if (request == null) {
+      await toggleProductInCart(product, context: context);
+      return;
+    }
+
+    if (product.hasVariants && product.sizes.isNotEmpty) {
+      await _pickVariantAndAddToCart(product, context: context);
+      return;
+    }
+
+    var resolved = await ensureProductPricesForPicker(product);
+    if (resolved == null) return;
+    resolved = productById(resolved.id) ?? resolved;
+
+    final stock = int.tryParse(resolved.stock) ?? 0;
+    if (stock < 1) {
+      Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
+          backgroundColor: Colors.red);
+      return;
+    }
+
+    final qty = request.quantity.clamp(1, stock);
+    final existingIdx =
+        cartLines.indexWhere((l) => l.productId == resolved!.id);
+    final requestedQty = existingIdx >= 0
+        ? (int.tryParse(cartLines[existingIdx].quantityText) ?? 0) + qty
+        : qty;
+    if (!await _confirmSalesOrderReservedStock(
+      product: resolved,
+      requestedQty: requestedQty,
+    )) {
+      return;
+    }
+
+    if (existingIdx >= 0) {
+      cartLines[existingIdx].quantityController.text =
+          requestedQty.clamp(1, stock).toString();
+      cartLines[existingIdx].recalculateTotal();
+      calculateGrandTotal();
+    } else {
+      final unitPrice = await resolveDefaultUnitPrice(resolved);
+      addCartLine(
+        InstantSaleCartLine.fromProduct(
+          resolved,
+          quantity: qty.toString(),
+          unitPrice: unitPrice,
+        ),
+      );
+    }
+    pastedProductSelections[activePastedProductRequestIndex.value] =
+        resolved.id;
+    try {
+      await Get.find<SalesDatasource>().saveProductPasteAlias(
+        aliasText: request.searchText,
+        productId: resolved.id,
+      );
+    } catch (e) {
+      assert(() {
+        debugPrint('[SalesController.saveProductPasteAlias] $e');
+        return true;
+      }());
+    }
+    bumpCartRevision();
+  }
+
   Future<void> getAllProducts({bool showLoading = true}) async {
     final requestId = ++_productsFetchSerial;
     if (showLoading) {
@@ -4064,14 +4685,20 @@ class SalesController extends GetxController
       final result = await getAllProductsUsecase.call(
         customerId: pickerPersonType == 'customer' ? pickerPersonId : null,
         sellerId: pickerPersonType == 'seller' ? pickerPersonId : null,
-        search: instantSaleProductSearch.value,
+        search:
+            hasPastedProductRequests ? null : instantSaleProductSearch.value,
         storeSectionId: pickerLocationSectionId.value,
       );
       if (requestId != _productsFetchSerial) return;
       products
         ..clear()
         ..addAll(result);
-      if (hasPickerPartner && cartLines.isNotEmpty) {
+      final isFilteredSearch = instantSaleProductSearch.value.trim().isNotEmpty;
+      final shouldPruneCartLines = hasPickerPartner &&
+          cartLines.isNotEmpty &&
+          !isFilteredSearch &&
+          activeEditInstantSaleId.value == null;
+      if (shouldPruneCartLines) {
         final availableIds = products.map((product) => product.id).toSet();
         for (var i = cartLines.length - 1; i >= 0; i--) {
           if (!availableIds.contains(cartLines[i].productId)) {

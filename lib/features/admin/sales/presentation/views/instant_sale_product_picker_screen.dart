@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -100,6 +102,11 @@ class _InstantSaleProductPickerScreenState
           action: false,
           actions: [
             const InstantSalePickerPartnerIcon(),
+            IconButton(
+              tooltip: 'instantSalePasteProductList'.tr,
+              onPressed: _openPasteProductListDialog,
+              icon: const Icon(Icons.content_paste_search_outlined),
+            ),
             _CartAppBarButton(
               onTap: () => showInstantSaleCartSheet(context),
             ),
@@ -111,22 +118,123 @@ class _InstantSaleProductPickerScreenState
               children: [
                 Padding(
                   padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'instantSaleSearchProductsAndPackages'.tr,
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'instantSaleSearchProductsAndPackages'.tr,
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 10.h,
+                            ),
+                          ),
+                          onChanged:
+                              controller.onInstantSaleProductSearchChanged,
+                        ),
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 10.h,
+                      SizedBox(width: 8.w),
+                      SizedBox(
+                        height: 48.h,
+                        width: 48.h,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                          ),
+                          onPressed: _openPasteProductListDialog,
+                          child: Icon(
+                            Icons.content_paste_search_outlined,
+                            size: 22.sp,
+                          ),
+                        ),
                       ),
-                    ),
-                    onChanged: controller.onInstantSaleProductSearchChanged,
+                    ],
                   ),
                 ),
+                Obx(() {
+                  if (!controller.hasPastedProductRequests) {
+                    return const SizedBox.shrink();
+                  }
+                  return SizedBox(
+                    height: 44.h,
+                    child: ListView.separated(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      scrollDirection: Axis.horizontal,
+                      itemBuilder: (_, index) {
+                        final request = controller.pastedProductRequests[index];
+                        final selected =
+                            controller.activePastedProductRequestIndex.value ==
+                                index;
+                        final picked =
+                            controller.pastedRequestHasSelection(index);
+                        return ChoiceChip(
+                          selected: selected,
+                          avatar: picked
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: Color(0xFF15803D),
+                                  size: 18,
+                                )
+                              : null,
+                          label: Text(
+                            '${request.searchText} × ${request.quantity}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onSelected: (_) async {
+                            await controller.selectPastedProductRequest(index);
+                            _searchController.text = request.searchText;
+                          },
+                        );
+                      },
+                      separatorBuilder: (_, __) => SizedBox(width: 6.w),
+                      itemCount: controller.pastedProductRequests.length,
+                    ),
+                  );
+                }),
+                Obx(() {
+                  if (!controller.hasPastedProductRequests) {
+                    return const SizedBox.shrink();
+                  }
+                  final request = controller.activePastedProductRequest;
+                  if (request == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${'instantSaleActivePastedLine'.tr}: ${request.rawLine}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              color: const Color(0xFF1565C0),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            controller.clearPastedProductRequests();
+                            _searchController.clear();
+                            controller.onInstantSaleProductSearchChanged('');
+                          },
+                          icon: const Icon(Icons.close, size: 16),
+                          label: Text('clear'.tr),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 Obx(() {
                   final suspendedRef = controller.activeSuspendedReferenceCode;
                   if (suspendedRef != null) {
@@ -467,6 +575,210 @@ class _InstantSaleProductPickerScreenState
         }),
       ),
     );
+  }
+
+  Future<void> _openPasteProductListDialog() async {
+    final textController = TextEditingController();
+    Timer? previewDebounce;
+    var previewLoading = false;
+    final pasted = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          Future<void> runPreview(String value) async {
+            final text = value.trim();
+            if (text.isEmpty) return;
+            setDialogState(() => previewLoading = true);
+            await controller.previewPastedProductList(text);
+            if (ctx.mounted) {
+              setDialogState(() => previewLoading = false);
+            }
+          }
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            title: Text(
+              'instantSalePasteProductList'.tr,
+              style: const TextStyle(
+                color: Color(0xFF111827),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            content: SizedBox(
+              width: 620.w,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: textController,
+                      minLines: 5,
+                      maxLines: 8,
+                      textInputAction: TextInputAction.newline,
+                      style: const TextStyle(color: Color(0xFF111827)),
+                      onChanged: (value) {
+                        previewDebounce?.cancel();
+                        previewDebounce = Timer(
+                          const Duration(milliseconds: 450),
+                          () => runPreview(value),
+                        );
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'instantSalePasteProductListHint'.tr,
+                        hintStyle: const TextStyle(color: Color(0xFF6B7280)),
+                        filled: true,
+                        fillColor: Colors.white,
+                        enabledBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFFD1D5DB)),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: Color(0xFF2563EB),
+                            width: 1.4,
+                          ),
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    if (previewLoading)
+                      const LinearProgressIndicator(minHeight: 2),
+                    Obx(() {
+                      if (!controller.hasPastedProductRequests) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        children: List.generate(
+                          controller.pastedProductRequests.length,
+                          (index) {
+                            final line =
+                                controller.pastedProductRequests[index];
+                            final picked =
+                                controller.pastedRequestHasSelection(index);
+                            return Container(
+                              margin: EdgeInsets.only(top: 8.h),
+                              padding: EdgeInsets.all(10.w),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: picked
+                                      ? const Color(0xFF15803D)
+                                      : const Color(0xFFE5E7EB),
+                                ),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    children: [
+                                      if (picked)
+                                        const Icon(
+                                          Icons.check_circle,
+                                          color: Color(0xFF15803D),
+                                          size: 18,
+                                        ),
+                                      if (picked) SizedBox(width: 6.w),
+                                      Expanded(
+                                        child: Text(
+                                          '${line.rawLine}  × ${line.quantity}',
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: const Color(0xFF111827),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12.sp,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8.h),
+                                  if (line.suggestions.isEmpty)
+                                    Text(
+                                      'noData'.tr,
+                                      style: const TextStyle(
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                    )
+                                  else
+                                    Wrap(
+                                      spacing: 6.w,
+                                      runSpacing: 6.h,
+                                      children: line.suggestions.map((s) {
+                                        return ActionChip(
+                                          backgroundColor:
+                                              const Color(0xFFF8FAFC),
+                                          side: const BorderSide(
+                                            color: Color(0xFFD1D5DB),
+                                          ),
+                                          avatar: const Icon(
+                                            Icons.inventory_2_outlined,
+                                            size: 16,
+                                            color: Color(0xFF374151),
+                                          ),
+                                          label: Text(
+                                            s.product.nameAr,
+                                            style: const TextStyle(
+                                              color: Color(0xFF111827),
+                                            ),
+                                          ),
+                                          onPressed: () async {
+                                            await controller
+                                                .selectPastedProductRequest(
+                                                    index);
+                                            await controller
+                                                .addProductFromPastedSuggestion(
+                                              s.product,
+                                            );
+                                          },
+                                        );
+                                      }).toList(),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF374151),
+                ),
+                child: Text('cancel'.tr),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(ctx, textController.text),
+                icon: const Icon(Icons.search),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF111827),
+                  side: const BorderSide(color: Color(0xFF9CA3AF)),
+                ),
+                label: Text('instantSaleSuggestProducts'.tr),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    previewDebounce?.cancel();
+    if (pasted == null || pasted.trim().isEmpty) return;
+    if (!controller.hasPastedProductRequests) {
+      await controller.applyPastedProductList(pasted);
+    }
+    final request = controller.activePastedProductRequest;
+    if (request != null) {
+      _searchController.text = request.searchText;
+    }
   }
 }
 

@@ -210,6 +210,7 @@ class EmployeeDashbordController extends GetxController
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       refreshTodayAttendance(silent: true);
+      loadDashboardReminders();
       _syncPersistentAttendanceNotification();
     }
   }
@@ -770,7 +771,7 @@ class EmployeeDashbordController extends GetxController
       remindersLoading.value = true;
       final datasource =
           EmployeeRemindersDatasource(api: Get.find<DioConsumer>());
-      final items = await datasource.getMyReminders();
+      final items = await datasource.getMyReminders(dueOnly: true);
       dashboardReminders.assignAll(items.take(3));
     } catch (_) {
       dashboardReminders.clear();

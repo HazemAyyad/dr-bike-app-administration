@@ -545,7 +545,7 @@ class SalesInvoicePdfBuilder {
             children: [
               pw.Expanded(
                 child: pw.Text(
-                  'دكتور بايك - فاتورة مبيعات',
+                  'دكتور بايك - ${'salesInvoiceNonTaxTitle'.tr}',
                   style: pw.TextStyle(
                     font: bold,
                     fontSize: 21,
@@ -563,7 +563,7 @@ class SalesInvoicePdfBuilder {
           ),
           pw.Center(
             child: pw.Text(
-              '${'instantSaleInvoice'.tr} ${invoice.invoiceNumber}',
+              '${'salesInvoiceNonTaxTitle'.tr} ${invoice.invoiceNumber}',
               style: pw.TextStyle(font: bold, fontSize: 16),
             ),
           ),

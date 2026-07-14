@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../../core/helpers/product_image_utils.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
@@ -29,7 +30,8 @@ class InstantSaleCartTable extends GetView<SalesController> {
   Widget build(BuildContext context) {
     return Obx(() {
       final _ = controller.cartRevision.value;
-      final __ = controller.selectedPackageId.value;
+      final selectedPackageMarker = controller.selectedPackageId.value;
+      selectedPackageMarker;
       final hasPackage = controller.hasSelectedPackage;
       final productLines = controller.cartLines;
 
@@ -45,9 +47,8 @@ class InstantSaleCartTable extends GetView<SalesController> {
       }
 
       final isDark = ThemeService.isDark.value;
-      final headerBg = isDark
-          ? AppColors.customGreyColor
-          : const Color(0xFFEEF4FF);
+      final headerBg =
+          isDark ? AppColors.customGreyColor : const Color(0xFFEEF4FF);
 
       return DecoratedBox(
         decoration: BoxDecoration(
@@ -102,8 +103,9 @@ class InstantSaleCartTable extends GetView<SalesController> {
                           vertical: 6.h,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              isDark ? AppColors.customGreyColor4 : Colors.white,
+                          color: isDark
+                              ? AppColors.customGreyColor4
+                              : Colors.white,
                           border: isLast
                               ? null
                               : Border(
@@ -128,7 +130,7 @@ class InstantSaleCartTable extends GetView<SalesController> {
                                         line,
                                       ),
                                       child: Text(
-                                        line.productName,
+                                        line.displayName,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
@@ -137,9 +139,9 @@ class InstantSaleCartTable extends GetView<SalesController> {
                                           height: 1.2,
                                           color: AppColors.primaryColor,
                                           decoration: TextDecoration.underline,
-                                          decorationColor:
-                                              AppColors.primaryColor
-                                                  .withValues(alpha: 0.45),
+                                          decorationColor: AppColors
+                                              .primaryColor
+                                              .withValues(alpha: 0.45),
                                         ),
                                       ),
                                     ),
@@ -245,10 +247,10 @@ class InstantSaleCartTable extends GetView<SalesController> {
 
   Widget _thumb(BuildContext context, String imageUrl) {
     final url = ShowNetImage.getThumbnailPhoto(imageUrl);
-    final ok = url.isNotEmpty && imageUrl != 'no image';
+    final ok = ProductImageUtils.isValidUrl(imageUrl);
 
     return GestureDetector(
-      onTap: () => openProductImageViewer(context, imageUrl),
+      onTap: ok ? () => openProductImageViewer(context, imageUrl) : null,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4.r),
         child: SizedBox(

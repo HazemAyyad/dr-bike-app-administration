@@ -2520,6 +2520,7 @@ const Map<String, String> en = {
   'editInstantSale': 'Edit sale',
   'instantSalePaidExceedsTotal': 'Paid amount cannot exceed the invoice total',
   'instantSaleAlreadyCancelled': 'This sale is already cancelled',
+  'salesInvoiceNonTaxTitle': 'Non-tax sales invoice',
   'instantSaleInvoice': 'Invoice',
   'instantSaleInvoicePartialLoad':
       'Could not load full invoice details — showing summary from list.',
@@ -2538,6 +2539,12 @@ const Map<String, String> en = {
   'instantSaleAddMoreProducts': 'Add products',
   'instantSaleSearchProduct': 'Search product...',
   'instantSaleSearchProductsAndPackages': 'Search product or offer package...',
+  'instantSalePasteProductList': 'Paste product list',
+  'instantSalePasteProductListHint':
+      'Paste the list here, one product per line, for example:\n350w panel qty 1\nregular square pads qty 15',
+  'instantSaleSuggestProducts': 'Suggest products',
+  'instantSaleActivePastedLine': 'Requested line',
+  'instantSalePasteListEmpty': 'No products were found in the pasted text',
   'instantSalePackageBadge': 'Package',
   'instantSalePackageAndProducts': 'Package + products',
   'instantSaleSwipeProducts': 'Swipe left or right to see more products',

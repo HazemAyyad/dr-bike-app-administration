@@ -57,12 +57,13 @@ class ProductColorVariant {
     return ProductColorVariant(
       id: asString(j['id']),
       sizeId: asString(j['size_id'] ?? j['sizeId']),
-      colorAr: asString(j['colorAr']),
-      colorEn: asNullableString(j['colorEn']),
-      colorAbbr: asNullableString(j['colorAbbr']),
+      colorAr: asString(j['colorAr'] ?? j['color_ar'] ?? j['color_name']),
+      colorEn: asNullableString(j['colorEn'] ?? j['color_en']),
+      colorAbbr: asNullableString(j['colorAbbr'] ?? j['color_abbr']),
       stock: asInt(j['stock']),
       normailPrice: asDouble(j['normailPrice'] ?? j['normail_price'] ?? 0),
-      wholesalePrice: asDouble(j['wholesalePrice'] ?? j['wholesale_price'] ?? 0),
+      wholesalePrice:
+          asDouble(j['wholesalePrice'] ?? j['wholesale_price'] ?? 0),
       discount: asDouble(j['discount'] ?? 0),
       imageUrl: asString(j['image_url'] ?? j['imageUrl'], ''),
     );

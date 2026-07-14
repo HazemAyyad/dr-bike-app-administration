@@ -21,6 +21,63 @@ import '../models/daily_session_model.dart';
 import '../models/invoice_model.dart';
 import '../models/product_model.dart';
 
+class ProductPasteSuggestion {
+  const ProductPasteSuggestion({
+    required this.product,
+    required this.score,
+    required this.reason,
+  });
+
+  final ProductModel product;
+  final int score;
+  final String reason;
+
+  factory ProductPasteSuggestion.fromJson(Map<String, dynamic> json) {
+    final rawProduct = json['product'];
+    return ProductPasteSuggestion(
+      product: ProductModel.fromJson(
+        rawProduct is Map<String, dynamic>
+            ? rawProduct
+            : Map<String, dynamic>.from(rawProduct as Map),
+      ),
+      score: asInt(json['score']),
+      reason: asString(json['reason']),
+    );
+  }
+}
+
+class ProductPasteLineSuggestion {
+  const ProductPasteLineSuggestion({
+    required this.index,
+    required this.rawLine,
+    required this.searchText,
+    required this.quantity,
+    required this.normalizedAlias,
+    required this.suggestions,
+  });
+
+  final int index;
+  final String rawLine;
+  final String searchText;
+  final int quantity;
+  final String normalizedAlias;
+  final List<ProductPasteSuggestion> suggestions;
+
+  factory ProductPasteLineSuggestion.fromJson(Map<String, dynamic> json) {
+    return ProductPasteLineSuggestion(
+      index: asInt(json['index']),
+      rawLine: asString(json['raw_line']),
+      searchText: asString(json['search_text']),
+      quantity: asInt(json['quantity'], 1),
+      normalizedAlias: asString(json['normalized_alias']),
+      suggestions: mapList(
+        json['suggestions'],
+        (m) => ProductPasteSuggestion.fromJson(m),
+      ),
+    );
+  }
+}
+
 class SalesDatasource {
   final ApiConsumer api;
 
@@ -33,6 +90,61 @@ class SalesDatasource {
           ? '[InstantSaleDebug][Datasource] $message'
           : '[InstantSaleDebug][Datasource] $message | $details',
     );
+  }
+
+  void _suspendedInstantSaleDebug(String message, [Object? details]) {
+    if (!kDebugMode) return;
+    debugPrint(
+      details == null
+          ? '[SuspendedInstantSaleDebug][Datasource] $message'
+          : '[SuspendedInstantSaleDebug][Datasource] $message | $details',
+    );
+  }
+
+  List<Map<String, dynamic>> _suspendedPayloadLinesDebugSnapshot(
+    Map<String, dynamic> payload,
+  ) {
+    final rows = <Map<String, dynamic>>[];
+    void addLine(Map<String, dynamic> line) {
+      rows.add({
+        'product_id': line['product_id'],
+        'product_name': line['product_name'],
+        'product_image': line['product_image'],
+        'image_url': line['image_url'],
+        'size_color_id': line['size_color_id'],
+        'size_id': line['size_id'],
+        'size_label': line['size_label'],
+        'color_label': line['color_label'],
+        'quantity': line['quantity'],
+        'cost': line['cost'],
+        'type': line['type'],
+        'project_id': line['project_id'],
+      });
+    }
+
+    if (payload['product_id'] != null) {
+      addLine({
+        'product_id': payload['product_id'],
+        'product_name': payload['product_name'],
+        'product_image': payload['product_image'],
+        'image_url': payload['image_url'],
+        'size_color_id': payload['size_color_id'],
+        'size_id': payload['size_id'],
+        'size_label': payload['size_label'],
+        'color_label': payload['color_label'],
+        'quantity': payload['quantity'],
+        'cost': payload['cost'],
+        'type': payload['type'],
+        'project_id': payload['project_id'],
+      });
+    }
+    final otherProducts = payload['other_products'];
+    if (otherProducts is List) {
+      for (final raw in otherProducts) {
+        if (raw is Map) addLine(Map<String, dynamic>.from(raw));
+      }
+    }
+    return rows;
   }
 
   void _instantSaleDioError(String scope, DioException e) {
@@ -251,6 +363,65 @@ class SalesDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<ProductPasteLineSuggestion>> getProductPasteSuggestions({
+    required String text,
+    String? customerId,
+    String? sellerId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productPasteSuggestions,
+        data: {
+          'text': text,
+          if (customerId != null && customerId.isNotEmpty)
+            'customer_id': customerId,
+          if (sellerId != null && sellerId.isNotEmpty) 'seller_id': sellerId,
+        },
+      );
+      return mapList(
+        response.data['lines'],
+        (m) => ProductPasteLineSuggestion.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<void> saveProductPasteAlias({
+    required String aliasText,
+    required String productId,
+  }) async {
+    try {
+      await api.post(
+        EndPoints.productPasteAlias,
+        data: {
+          'alias_text': aliasText,
+          'product_id': int.tryParse(productId) ?? productId,
+        },
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
         ),
       );
     }
@@ -646,14 +817,35 @@ class SalesDatasource {
     List<Map<String, dynamic>> openingCounts = const [],
     bool confirmOpeningVariance = false,
   }) async {
-    final response = await api.post(
-      EndPoints.salesDailySessionOpen,
-      data: {
-        'opening_counts': openingCounts,
-        'confirm_opening_variance': confirmOpeningVariance,
-      },
+    final normalizedOpeningCounts = openingCounts
+        .map((row) => {
+              'currency': '${row['currency'] ?? ''}',
+              'physical_count': asDouble(row['physical_count']),
+            })
+        .where((row) => (row['currency'] as String).trim().isNotEmpty)
+        .toList();
+    final data = {
+      'opening_counts': normalizedOpeningCounts,
+      'confirm_opening_variance': confirmOpeningVariance,
+    };
+    debugPrint(
+      '[SalesDailyOpenDebug][Datasource] POST ${EndPoints.salesDailySessionOpen} rawOpeningCounts=$openingCounts normalizedData=$data',
     );
-    return _messageFromResponse(response.data);
+    try {
+      final response = await api.post(
+        EndPoints.salesDailySessionOpen,
+        data: data,
+      );
+      debugPrint(
+        '[SalesDailyOpenDebug][Datasource] response statusCode=${response.statusCode} data=${response.data}',
+      );
+      final message = _messageFromResponse(response.data);
+      debugPrint('[SalesDailyOpenDebug][Datasource] parsedMessage=$message');
+      return message;
+    } catch (e) {
+      debugPrint('[SalesDailyOpenDebug][Datasource] error=$e');
+      rethrow;
+    }
   }
 
   Future<List<DailySessionSummaryModel>> getOpenDailySessions() async {
@@ -1042,11 +1234,26 @@ class SalesDatasource {
       _instantSaleDebug('suspended list response', response.data);
       final raw = response.data['suspended_instant_sales'];
       if (raw is! List) return [];
-      return raw
+      final list = raw
           .map((e) => SuspendedInstantSaleModel.fromJson(
                 Map<String, dynamic>.from(e as Map),
               ))
           .toList();
+      _suspendedInstantSaleDebug('GET suspended list parsed', {
+        'count': list.length,
+        'items': list
+            .map((item) => {
+                  'id': item.id,
+                  'referenceCode': item.referenceCode,
+                  'currentStep': item.currentStep,
+                  'payloadKeys': item.payload.keys.toList(),
+                  'payloadLines':
+                      _suspendedPayloadLinesDebugSnapshot(item.payload),
+                  'rawOtherProducts': item.payload['other_products'],
+                })
+            .toList(),
+      });
+      return list;
     } on DioException catch (e) {
       _instantSaleDioError('getSuspendedInstantSales', e);
       final data = e.response?.data;
@@ -1094,9 +1301,18 @@ class SalesDatasource {
       );
       _instantSaleDebug('suspended item response', response.data);
       final raw = response.data['suspended_instant_sale'];
-      return SuspendedInstantSaleModel.fromJson(
+      final item = SuspendedInstantSaleModel.fromJson(
         Map<String, dynamic>.from(raw as Map),
       );
+      _suspendedInstantSaleDebug('GET suspended item parsed', {
+        'id': item.id,
+        'referenceCode': item.referenceCode,
+        'currentStep': item.currentStep,
+        'payloadKeys': item.payload.keys.toList(),
+        'payloadLines': _suspendedPayloadLinesDebugSnapshot(item.payload),
+        'rawOtherProducts': item.payload['other_products'],
+      });
+      return item;
     } on DioException catch (e) {
       _instantSaleDioError('getSuspendedInstantSale', e);
       final data = e.response?.data;
@@ -1124,6 +1340,14 @@ class SalesDatasource {
           'suspended_instant_sale_id': suspendedInstantSaleId,
         if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       };
+      _suspendedInstantSaleDebug('POST suspend instant sale payload', {
+        'endpoint': EndPoints.suspendedInstantSale,
+        'currentStep': currentStep,
+        'suspendedInstantSaleId': suspendedInstantSaleId,
+        'payloadKeys': payload.keys.toList(),
+        'payloadLines': _suspendedPayloadLinesDebugSnapshot(payload),
+        'rawOtherProducts': payload['other_products'],
+      });
       _instantSaleDebug('POST suspend instant sale', {
         'endpoint': EndPoints.suspendedInstantSale,
         'data': data,
@@ -1133,6 +1357,10 @@ class SalesDatasource {
         data: data,
       );
       _instantSaleDebug('suspend instant sale response', response.data);
+      _suspendedInstantSaleDebug(
+        'POST suspend instant sale response',
+        response.data,
+      );
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
       _instantSaleDioError('suspendInstantSale', e);

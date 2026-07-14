@@ -378,6 +378,8 @@ class EndPoints {
 
   // sales
   static const String allProducts = 'all/products';
+  static const String productPasteSuggestions = 'products/paste-suggestions';
+  static const String productPasteAlias = 'products/paste-alias';
   static const String personProductSettings = 'person-product-settings';
   static const String deletePersonProductSetting =
       'person-product-settings/delete';

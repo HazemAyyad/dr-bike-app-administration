@@ -34,10 +34,10 @@ class InstantSaleProductCard extends StatelessWidget {
     );
 
     return Obx(() {
-      final _ = controller.cartRevision.value;
-      final __ = controller.pickerBuyerIdRx.value;
-      final ___ = controller.pickerSellerIdRx.value;
-      final ____ = controller.pickerPartnerIsCustomer.value;
+      controller.cartRevision.value;
+      controller.pickerBuyerIdRx.value;
+      controller.pickerSellerIdRx.value;
+      controller.pickerPartnerIsCustomer.value;
       final pickerStockEnabled = controller.pickerReservedStockEnabled.value;
       final stockUiActive = showOrderStock ||
           pickerStockEnabled ||
@@ -45,22 +45,19 @@ class InstantSaleProductCard extends StatelessWidget {
       final ordersCtrl = stockUiActive ? _resolveOrdersController() : null;
       if (ordersCtrl != null) {
         // يحدّث البطاقة بعد جلب بيانات المحجوز من السيرفر.
-        final _ = ordersCtrl.stockAvailabilityVersion.value;
+        ordersCtrl.stockAvailabilityVersion.value;
         final productId = int.tryParse(product.id);
         if (productId != null) {
-          final __ = ordersCtrl.productStockAvailability['$productId'];
+          ordersCtrl.productStockAvailability['$productId'];
           ordersCtrl.requestStockAvailabilityIfMissing(productId);
         }
       }
-      final orderStock =
-          ordersCtrl?.availabilityForProduct(product.id);
-      final physicalStock = orderStock?.physicalStock ??
-          int.tryParse(product.stock) ??
-          0;
+      final orderStock = ordersCtrl?.availabilityForProduct(product.id);
+      final physicalStock =
+          orderStock?.physicalStock ?? int.tryParse(product.stock) ?? 0;
       final displayStock = orderStock?.availableQty ?? physicalStock;
-      final badgeReserved = orderStock?.totalReservedQty ??
-          orderStock?.reservedQty ??
-          0;
+      final badgeReserved =
+          orderStock?.totalReservedQty ?? orderStock?.reservedQty ?? 0;
       final effectiveReserved = badgeReserved > 0
           ? badgeReserved
           : (physicalStock - displayStock).clamp(0, physicalStock);
@@ -80,6 +77,20 @@ class InstantSaleProductCard extends StatelessWidget {
         product,
         cartLinePrice: linePrice,
       );
+      final pastedLabel = controller.pastedRequestLabelForProduct(product);
+      final pastedSelected = controller.pastedRequestSelectedProduct(product);
+      final usePastedAction = pastedLabel != null;
+      final tapAction = outOfStock
+          ? null
+          : () => usePastedAction
+              ? controller.addProductFromPastedSuggestion(
+                  product,
+                  context: context,
+                )
+              : controller.toggleProductInCart(
+                  product,
+                  context: context,
+                );
 
       return Material(
         color: Colors.white,
@@ -88,10 +99,12 @@ class InstantSaleProductCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color: inCart
-                  ? AppColors.primaryColor
-                  : Colors.grey.shade300,
-              width: inCart ? 1.5 : 1,
+              color: pastedSelected
+                  ? const Color(0xFF15803D)
+                  : inCart
+                      ? AppColors.primaryColor
+                      : Colors.grey.shade300,
+              width: (inCart || pastedSelected) ? 1.5 : 1,
             ),
             borderRadius: BorderRadius.circular(10.r),
           ),
@@ -101,12 +114,7 @@ class InstantSaleProductCard extends StatelessWidget {
               Expanded(
                 flex: 5,
                 child: InkWell(
-                  onTap: outOfStock
-                      ? null
-                      : () => controller.toggleProductInCart(
-                            product,
-                            context: context,
-                          ),
+                  onTap: tapAction,
                   onLongPress: () =>
                       showInstantSaleProductDetailSheet(context, product),
                   child: Stack(
@@ -185,6 +193,52 @@ class InstantSaleProductCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      if (pastedLabel != null)
+                        Positioned(
+                          right: 3.w,
+                          left: 3.w,
+                          bottom: 20.h,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 4.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1565C0)
+                                  .withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(5.r),
+                            ),
+                            child: Text(
+                              pastedLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 6.5.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (pastedSelected)
+                        Positioned(
+                          top: 3.h,
+                          right: 3.w,
+                          child: Container(
+                            width: 18.w,
+                            height: 18.w,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF15803D),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 13.sp,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -198,12 +252,7 @@ class InstantSaleProductCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: InkWell(
-                          onTap: outOfStock
-                              ? null
-                              : () => controller.toggleProductInCart(
-                                    product,
-                                    context: context,
-                                  ),
+                          onTap: tapAction,
                           onLongPress: () => showInstantSaleProductDetailSheet(
                             context,
                             product,
@@ -343,7 +392,9 @@ class _StockBadge extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                hasReservation ? Icons.lock_outline : Icons.inventory_2_outlined,
+                hasReservation
+                    ? Icons.lock_outline
+                    : Icons.inventory_2_outlined,
                 size: 8.sp,
                 color: Colors.white,
               ),

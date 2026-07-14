@@ -1600,7 +1600,13 @@ class EmployeeTasksController extends GetxController {
   }
 
   int subtaskProgress(TaskDetailsModel data) {
-    if (data.subTasks.isEmpty) return data.progress;
+    if (data.subTasks.isEmpty) {
+      if (data.progress > 0) return data.progress.clamp(0, 100);
+      if (data.status == 'completed') return 100;
+      if (data.status == 'waiting_review') return 90;
+      if (data.status == 'in_progress' || data.status == 'started') return 50;
+      return 0;
+    }
     // Declined subtasks are considered resolved so progress can reach 100%.
     final resolved = data.subTasks
         .where((s) => s.status == 'completed' || s.status == 'rejected')

@@ -2576,6 +2576,7 @@ const Map<String, String> ar = {
   'instantSalePaidExceedsTotal':
       'المبلغ المدفوع لا يمكن أن يكون أكبر من إجمالي الفاتورة',
   'instantSaleAlreadyCancelled': 'هذا البيع ملغى مسبقاً',
+  'salesInvoiceNonTaxTitle': 'فاتورة مبيعات غير ضريبية',
   'instantSaleInvoice': 'فاتورة',
   'instantSaleInvoicePartialLoad':
       'تعذّر تحميل تفاصيل الفاتورة كاملة — عرض الملخص من القائمة.',
@@ -2594,6 +2595,12 @@ const Map<String, String> ar = {
   'instantSaleAddMoreProducts': 'إضافة منتجات',
   'instantSaleSearchProduct': 'بحث عن منتج...',
   'instantSaleSearchProductsAndPackages': 'بحث منتج أو باكيج عرض...',
+  'instantSalePasteProductList': 'لصق قائمة منتجات',
+  'instantSalePasteProductListHint':
+      'الصق القائمة هنا، كل منتج بسطر مثل:\nلوحة ٣٥٠ w عدد ١\nفحمات مربع عادي عدد ١٥',
+  'instantSaleSuggestProducts': 'رشح المنتجات',
+  'instantSaleActivePastedLine': 'السطر المطلوب',
+  'instantSalePasteListEmpty': 'لم يتم العثور على منتجات في النص الملصق',
   'instantSalePackageBadge': 'بكيج',
   'instantSalePackageAndProducts': 'باكيج + منتجات',
   'instantSaleSwipeProducts': 'اسحب يميناً أو يساراً لعرض المزيد',

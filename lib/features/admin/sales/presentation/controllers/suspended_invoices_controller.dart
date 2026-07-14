@@ -19,6 +19,63 @@ void _suspendedInvoiceDebug(String message, [Object? details]) {
   }());
 }
 
+void _suspendedInstantSaleDebug(String message, [Object? details]) {
+  assert(() {
+    debugPrint(
+      details == null
+          ? '[SuspendedInstantSaleDebug][SuspendedInvoices] $message'
+          : '[SuspendedInstantSaleDebug][SuspendedInvoices] $message | $details',
+    );
+    return true;
+  }());
+}
+
+List<Map<String, dynamic>> _suspendedPayloadLinesDebugSnapshot(
+  Map<String, dynamic> payload,
+) {
+  final rows = <Map<String, dynamic>>[];
+  void addLine(Map<String, dynamic> line) {
+    rows.add({
+      'product_id': line['product_id'],
+      'product_name': line['product_name'],
+      'product_image': line['product_image'],
+      'image_url': line['image_url'],
+      'size_color_id': line['size_color_id'],
+      'size_id': line['size_id'],
+      'size_label': line['size_label'],
+      'color_label': line['color_label'],
+      'quantity': line['quantity'],
+      'cost': line['cost'],
+      'type': line['type'],
+      'project_id': line['project_id'],
+    });
+  }
+
+  if (payload['product_id'] != null) {
+    addLine({
+      'product_id': payload['product_id'],
+      'product_name': payload['product_name'],
+      'product_image': payload['product_image'],
+      'image_url': payload['image_url'],
+      'size_color_id': payload['size_color_id'],
+      'size_id': payload['size_id'],
+      'size_label': payload['size_label'],
+      'color_label': payload['color_label'],
+      'quantity': payload['quantity'],
+      'cost': payload['cost'],
+      'type': payload['type'],
+      'project_id': payload['project_id'],
+    });
+  }
+  final otherProducts = payload['other_products'];
+  if (otherProducts is List) {
+    for (final raw in otherProducts) {
+      if (raw is Map) addLine(Map<String, dynamic>.from(raw));
+    }
+  }
+  return rows;
+}
+
 class SuspendedInvoicesController extends GetxController {
   final SalesImplement salesRepository = Get.find<SalesImplement>();
 
@@ -54,6 +111,19 @@ class SuspendedInvoicesController extends GetxController {
             : searchController.text.trim(),
       );
       _suspendedInvoiceDebug('load success', {'count': list.length});
+      _suspendedInstantSaleDebug('load success', {
+        'count': list.length,
+        'items': list
+            .map((item) => {
+                  'id': item.id,
+                  'referenceCode': item.referenceCode,
+                  'currentStep': item.currentStep,
+                  'summaryLabel': item.summaryLabel,
+                  'payloadLines':
+                      _suspendedPayloadLinesDebugSnapshot(item.payload),
+                })
+            .toList(),
+      });
       items.assignAll(list);
       if (Get.isRegistered<SalesController>()) {
         await Get.find<SalesController>().loadSuspendedInvoicesCount();
@@ -83,6 +153,15 @@ class SuspendedInvoicesController extends GetxController {
         'id': item.id,
         'currentStep': item.currentStep,
         'payloadKeys': item.payload.keys.toList(),
+      });
+      _suspendedInstantSaleDebug('resume item requested', {
+        'id': item.id,
+        'referenceCode': item.referenceCode,
+        'currentStep': item.currentStep,
+        'summaryLabel': item.summaryLabel,
+        'payloadKeys': item.payload.keys.toList(),
+        'payloadLines': _suspendedPayloadLinesDebugSnapshot(item.payload),
+        'rawOtherProducts': item.payload['other_products'],
       });
       final sales = Get.find<SalesController>();
       await sales.resumeSuspendedInstantSale(item);

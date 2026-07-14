@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../data/models/product_model.dart';
+import '../../data/utils/sale_variant_display.dart';
 import '../utils/sales_amount_format.dart';
 
 /// One product line in the instant-sale cart (table + modal).
@@ -23,19 +24,16 @@ class InstantSaleCartLine {
 
   bool get isDisposed => _disposed;
 
-  String get cartLineKey =>
-      sizeColorId != null && sizeColorId!.isNotEmpty
-          ? '$productId::$sizeColorId'
-          : productId;
+  String get cartLineKey => sizeColorId != null && sizeColorId!.isNotEmpty
+      ? '$productId::$sizeColorId'
+      : productId;
 
   String get displayName {
-    if (sizeLabel != null &&
-        sizeLabel!.isNotEmpty &&
-        colorLabel != null &&
-        colorLabel!.isNotEmpty) {
-      return '$productName — $sizeLabel / $colorLabel';
-    }
-    return productName;
+    return formatProductWithVariant(
+      productName: productName,
+      sizeLabel: sizeLabel,
+      colorLabel: colorLabel,
+    );
   }
 
   InstantSaleCartLine({
@@ -51,7 +49,8 @@ class InstantSaleCartLine {
     String? initialPrice,
     bool projectSale = false,
     String? initialProjectId,
-  })  : quantityController = TextEditingController(text: initialQuantity ?? '1'),
+  })  : quantityController =
+            TextEditingController(text: initialQuantity ?? '1'),
         priceController = TextEditingController(text: initialPrice ?? ''),
         isProjectSale = projectSale.obs,
         projectId = RxnString(initialProjectId),
@@ -75,13 +74,12 @@ class InstantSaleCartLine {
     String? variantImageUrl,
   }) {
     final price = unitPrice ??
-        (product.unitPrice > 0
-            ? _formatUnitPrice(product.unitPrice)
-            : '');
+        (product.unitPrice > 0 ? _formatUnitPrice(product.unitPrice) : '');
     final resolvedStock = variantStock ?? (int.tryParse(product.stock) ?? 0);
-    final resolvedImage = (variantImageUrl != null && variantImageUrl.isNotEmpty)
-        ? variantImageUrl
-        : product.imageUrl;
+    final resolvedImage =
+        (variantImageUrl != null && variantImageUrl.isNotEmpty)
+            ? variantImageUrl
+            : product.imageUrl;
 
     return InstantSaleCartLine(
       productId: product.id,
@@ -113,8 +111,7 @@ class InstantSaleCartLine {
     lineTotal.value = qty * unit;
   }
 
-  String get quantityText =>
-      _disposed ? '' : quantityController.text.trim();
+  String get quantityText => _disposed ? '' : quantityController.text.trim();
 
   String get priceText => _disposed ? '' : priceController.text.trim();
 
