@@ -223,6 +223,9 @@ class BuildAddMenuItem extends StatelessWidget {
           if (item?['freshInstantSale'] == 'true') {
             args['freshInstantSale'] = true;
           }
+          if (item?['saleKind'] != null) {
+            args['saleKind'] = item!['saleKind'];
+          }
           if (item?['freshSalesOrder'] == 'true') {
             args['freshSalesOrder'] = true;
           }

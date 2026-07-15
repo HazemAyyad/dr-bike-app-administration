@@ -730,6 +730,20 @@ class AppPages {
           : _transitionRightToLeft,
     ),
     GetPage(
+      name: AppRoutes.ADJUSTMENTSALEPRODUCTPICKER,
+      page: () => const InstantSaleProductPickerScreen(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.NEWADJUSTMENTSALESCREEN,
+      page: () => const NewInstantSaleScreen(),
+      transition: Get.locale == const Locale('ar')
+          ? _transitionLeftToRight
+          : _transitionRightToLeft,
+    ),
+    GetPage(
       name: AppRoutes.INSTANTSALEBILLDETAILSSCREEN,
       page: () => const instant_sale_bill.BillDetailsScreen(),
       binding: SalesBinding(),

@@ -606,6 +606,7 @@ class SalesDatasource {
     String? offerPackageId,
     List<Map<String, dynamic>>? cartOtherProducts,
     String? instantSaleId,
+    String saleKind = kInstantSaleKindRegular,
   }) async {
     try {
       String resolvedProductId = productId;
@@ -699,6 +700,7 @@ class SalesDatasource {
         'notes': note,
         ...additionalNotesMap,
         'type': type,
+        'sale_kind': saleKind,
         if (projectId.isNotEmpty) 'project_id': projectId,
         'buyer_type': buyerType,
         if (buyerId != null && buyerId.isNotEmpty) 'buyer_id': buyerId,

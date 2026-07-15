@@ -1,4 +1,5 @@
 import 'package:doctorbike/core/helpers/json_safe_parser.dart';
+import 'package:get/get.dart';
 
 import '../utils/sale_variant_display.dart';
 
@@ -15,6 +16,8 @@ class InvoiceModel {
 
   final String invoiceNumber;
   final String invoiceDate;
+  final String saleKind;
+  final String? saleKindLabelAr;
   final String? traderName;
   final String? customerName;
   final String? phone;
@@ -71,6 +74,8 @@ class InvoiceModel {
     required this.subProducts,
     required this.invoiceNumber,
     required this.invoiceDate,
+    this.saleKind = 'regular',
+    this.saleKindLabelAr,
     this.traderName,
     this.customerName,
     this.phone,
@@ -114,6 +119,12 @@ class InvoiceModel {
     this.maintenanceId,
     this.maintenanceInvoiceNumber,
   });
+
+  bool get isAdjustmentSale => saleKind == 'adjustment';
+
+  String get displaySaleKindLabel => saleKindLabelAr?.trim().isNotEmpty == true
+      ? saleKindLabelAr!.trim()
+      : (isAdjustmentSale ? 'adjustmentSale'.tr : 'instantSale'.tr);
 
   factory InvoiceModel.fromJson(Map<String, dynamic> json) {
     final buyerRaw = json['buyer'];
@@ -187,6 +198,8 @@ class InvoiceModel {
       ),
       invoiceNumber: asString(json['invoice_number'], asString(json['id'])),
       invoiceDate: asString(json['invoice_date']),
+      saleKind: asString(json['sale_kind'], 'regular'),
+      saleKindLabelAr: asNullableString(json['sale_kind_label_ar']),
       traderName: legacyTrader,
       customerName: legacyCustomer,
       phone: buyerPhone ?? legacyPhone,

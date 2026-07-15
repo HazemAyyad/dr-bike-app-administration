@@ -7,6 +7,7 @@ import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
 import '../../../boxes/data/repositories/boxes_implement.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
@@ -33,6 +34,11 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
   @override
   void initState() {
     super.initState();
+    final args = Get.arguments;
+    final adjustmentFlow =
+        Get.currentRoute == AppRoutes.NEWADJUSTMENTSALESCREEN ||
+            (args is Map && args['saleKind'] == kInstantSaleKindAdjustment);
+    controller.setInstantSaleAdjustmentMode(adjustmentFlow);
     _ensurePaymentController();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -44,13 +50,19 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
           payment.clearPaymentForm();
         }
       }
-      await controller.loadDailySession();
-      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
-        controller.applyDailyBoxToPayment(
-          Get.find<PaymentController>(tag: kInstantSalePaymentTag),
-        );
+      if (!controller.isAdjustmentInstantSale) {
+        await controller.loadDailySession();
       }
-      controller.loadOfferPackagesForSale();
+      if (Get.isRegistered<PaymentController>(tag: kInstantSalePaymentTag)) {
+        if (!controller.isAdjustmentInstantSale) {
+          controller.applyDailyBoxToPayment(
+            Get.find<PaymentController>(tag: kInstantSalePaymentTag),
+          );
+        }
+      }
+      if (!controller.isAdjustmentInstantSale) {
+        controller.loadOfferPackagesForSale();
+      }
       controller.syncCartToItems();
       controller.syncPaymentCashFromTotal();
       controller.refreshInstantSalePaymentSummary();
@@ -127,7 +139,9 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
       },
       child: Scaffold(
         appBar: CustomAppBar(
-          title: 'newInstantSale',
+          title: controller.isAdjustmentInstantSale
+              ? 'newAdjustmentSale'
+              : 'newInstantSale',
           action: false,
           actions: [
             Obx(() {
@@ -179,6 +193,31 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
             child: Column(
               children: [
                 SizedBox(height: 5.h),
+                Obx(
+                  () => controller.isAdjustmentInstantSale
+                      ? Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.only(bottom: 12.h),
+                          padding: EdgeInsets.all(12.w),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF7ED),
+                            borderRadius: BorderRadius.circular(8.r),
+                            border: Border.all(
+                              color: const Color(0xFFF97316),
+                            ),
+                          ),
+                          child: Text(
+                            'adjustmentSaleNotice'.tr,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF9A3412),
+                              height: 1.35,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                ),
                 const AddNewInstantSaleWidget(),
                 Divider(
                   color: ThemeService.isDark.value
@@ -195,7 +234,9 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
                   height: 1,
                 ),
                 SizedBox(height: 12.h),
-                const InstantSalePaymentSection(),
+                InstantSalePaymentSection(
+                  showPaymentFields: !controller.isAdjustmentInstantSale,
+                ),
                 SizedBox(height: 20.h),
                 Obx(
                   () {
@@ -246,7 +287,9 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
                 SizedBox(height: 12.h),
                 AppButton(
                   isLoading: controller.isLoading,
-                  text: 'complete'.tr,
+                  text: controller.isAdjustmentInstantSale
+                      ? 'saveAdjustmentSale'.tr
+                      : 'complete'.tr,
                   textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w700,

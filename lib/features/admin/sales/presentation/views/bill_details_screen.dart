@@ -68,6 +68,8 @@ class BillDetailsScreen extends GetView<SalesController> {
                 child: _InvoiceHeaderCard(
                   invoiceNumber: _dash(invoice.invoiceNumber),
                   invoiceDate: _dash(invoice.invoiceDate),
+                  saleKindLabel: invoice.displaySaleKindLabel,
+                  isAdjustmentSale: invoice.isAdjustmentSale,
                   buyerTypeLabel: invoice.displayBuyerTypeLabel,
                   buyerName: _dash(invoice.buyerName),
                   phone: _dash(invoice.buyerPhone ?? invoice.phone),
@@ -267,6 +269,8 @@ class _InvoiceHeaderCard extends StatelessWidget {
   const _InvoiceHeaderCard({
     required this.invoiceNumber,
     required this.invoiceDate,
+    required this.saleKindLabel,
+    required this.isAdjustmentSale,
     required this.buyerTypeLabel,
     required this.buyerName,
     required this.phone,
@@ -280,6 +284,8 @@ class _InvoiceHeaderCard extends StatelessWidget {
 
   final String invoiceNumber;
   final String invoiceDate;
+  final String saleKindLabel;
+  final bool isAdjustmentSale;
   final String buyerTypeLabel;
   final String buyerName;
   final String phone;
@@ -312,6 +318,12 @@ class _InvoiceHeaderCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _metaRow(context, 'billNumber'.tr, invoiceNumber),
+          _metaRow(
+            context,
+            'invoiceKind'.tr,
+            saleKindLabel,
+            highlight: isAdjustmentSale,
+          ),
           _metaRow(context, 'date'.tr, invoiceDate),
           _metaRow(
             context,

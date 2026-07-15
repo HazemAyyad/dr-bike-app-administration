@@ -161,11 +161,14 @@ class _InstantSaleTableRow extends StatelessWidget {
     final isDark = ThemeService.isDark.value;
     final cancelled = sale.isCancelled;
     final fromMaintenance = sale.isFromMaintenance;
+    final adjustment = sale.isAdjustmentSale;
     final bg = cancelled
         ? Colors.red.withValues(alpha: 0.06)
-        : fromMaintenance
-            ? (isDark ? const Color(0xFF3B2A11) : const Color(0xFFFFF7E6))
-            : (isDark ? AppColors.customGreyColor4 : Colors.white);
+        : adjustment
+            ? (isDark ? const Color(0xFF3A2513) : const Color(0xFFFFF7ED))
+            : fromMaintenance
+                ? (isDark ? const Color(0xFF3B2A11) : const Color(0xFFFFF7E6))
+                : (isDark ? AppColors.customGreyColor4 : Colors.white);
 
     return Material(
       color: bg,
@@ -177,9 +180,11 @@ class _InstantSaleTableRow extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               left: BorderSide(
-                color: fromMaintenance
-                    ? const Color(0xFFF59E0B)
-                    : Colors.grey.shade300,
+                color: adjustment
+                    ? const Color(0xFFF97316)
+                    : fromMaintenance
+                        ? const Color(0xFFF59E0B)
+                        : Colors.grey.shade300,
               ),
               right: BorderSide(color: Colors.grey.shade300),
               bottom: BorderSide(color: Colors.grey.shade300),
@@ -204,6 +209,13 @@ class _InstantSaleTableRow extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _SaleCompositionBadge(kind: sale.compositionKind),
+                          if (adjustment) ...[
+                            SizedBox(height: 2.h),
+                            _AdjustmentSaleBadge(
+                              label:
+                                  sale.saleKindLabelAr ?? 'adjustmentSale'.tr,
+                            ),
+                          ],
                           SizedBox(height: 2.h),
                           SizedBox(
                             width: double.infinity,
@@ -383,6 +395,33 @@ class _SaleCompositionBadge extends StatelessWidget {
       ),
       child: Text(
         labelKey.tr,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 8.sp,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _AdjustmentSaleBadge extends StatelessWidget {
+  const _AdjustmentSaleBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF97316),
+        borderRadius: BorderRadius.circular(4.r),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: Colors.white,
           fontSize: 8.sp,

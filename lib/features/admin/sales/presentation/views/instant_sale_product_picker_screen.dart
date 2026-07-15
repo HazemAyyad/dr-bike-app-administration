@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../stock/data/models/offer_package_model.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../data/datasources/sales_datasources.dart';
 import '../controllers/sales_controller.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
@@ -33,6 +34,7 @@ class _InstantSaleProductPickerScreenState
   SalesController get controller => Get.find<SalesController>();
   final _searchController = TextEditingController();
   bool _maintenanceFlow = false;
+  bool _adjustmentFlow = false;
 
   static const int _maxRows = 4;
   static const int _minRows = 2;
@@ -43,7 +45,12 @@ class _InstantSaleProductPickerScreenState
     super.initState();
     final args = Get.arguments;
     final maintenanceFlow = args is Map && args['maintenanceFlow'] == true;
+    final adjustmentFlow =
+        Get.currentRoute == AppRoutes.ADJUSTMENTSALEPRODUCTPICKER ||
+            (args is Map && args['saleKind'] == kInstantSaleKindAdjustment);
     _maintenanceFlow = maintenanceFlow;
+    _adjustmentFlow = adjustmentFlow;
+    controller.setInstantSaleAdjustmentMode(adjustmentFlow);
 
     if (maintenanceFlow) {
       controller.setMaintenancePickerFlow(true);
@@ -54,12 +61,15 @@ class _InstantSaleProductPickerScreenState
     if (!maintenanceFlow && args is Map && args['freshInstantSale'] == true) {
       controller.resetInstantSaleForm();
       controller.isPackageSale.value = false;
+      controller.setInstantSaleAdjustmentMode(adjustmentFlow);
     }
     _searchController.text = controller.instantSaleProductSearch.value;
     if (controller.products.isEmpty) {
       controller.getAllProducts();
     }
-    controller.loadOfferPackagesForSale();
+    if (!adjustmentFlow) {
+      controller.loadOfferPackagesForSale();
+    }
     controller.ensurePickerStoreSectionsLoaded();
     controller.ensurePickerPartnersLoaded();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -101,7 +111,9 @@ class _InstantSaleProductPickerScreenState
       },
       child: Scaffold(
         appBar: CustomAppBar(
-          title: 'instantSalePickProducts',
+          title: _adjustmentFlow
+              ? 'adjustmentSalePickProducts'
+              : 'instantSalePickProducts',
           action: false,
           actions: [
             const InstantSalePickerPartnerIcon(),
@@ -332,7 +344,8 @@ class _InstantSaleProductPickerScreenState
                     final hasLocationFilter =
                         locationFilter != null && locationFilter.isNotEmpty;
                     final packages = hasLocationFilter ||
-                            controller.maintenancePickerFlow.value
+                            controller.maintenancePickerFlow.value ||
+                            _adjustmentFlow
                         ? <OfferPackageModel>[]
                         : controller.filteredPackagesForPicker;
                     final products = controller.filteredProductsForPicker;
@@ -420,7 +433,7 @@ class _InstantSaleProductPickerScreenState
                                 return InstantSaleProductCard(
                                   key: ValueKey('picker_${product.id}'),
                                   product: product,
-                                  showOrderStock: true,
+                                  showOrderStock: !_adjustmentFlow,
                                 );
                               },
                             );

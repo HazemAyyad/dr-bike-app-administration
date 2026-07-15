@@ -61,7 +61,8 @@ class InstantSaleProductCard extends StatelessWidget {
       final effectiveReserved = badgeReserved > 0
           ? badgeReserved
           : (physicalStock - displayStock).clamp(0, physicalStock);
-      final outOfStock = physicalStock < 1;
+      final outOfStock =
+          physicalStock < 1 && !controller.isAdjustmentInstantSale;
       final qty = controller.cartQtyForProduct(product.id);
       final inCart = qty > 0;
       final simpleLineIdx = controller.cartLines.indexWhere(

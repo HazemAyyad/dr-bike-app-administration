@@ -8,6 +8,8 @@ class InstantSalesModel {
   final String? serialNumber;
   final int? maintenanceId;
   final String? maintenanceInvoiceNumber;
+  final String saleKind;
+  final String? saleKindLabelAr;
   final String product;
   final String? productBase;
   final String cost;
@@ -48,6 +50,8 @@ class InstantSalesModel {
     this.serialNumber,
     this.maintenanceId,
     this.maintenanceInvoiceNumber,
+    this.saleKind = 'regular',
+    this.saleKindLabelAr,
     required this.product,
     this.productBase,
     required this.cost,
@@ -84,6 +88,7 @@ class InstantSalesModel {
   });
 
   bool get isCancelled => status == 'cancelled';
+  bool get isAdjustmentSale => saleKind == 'adjustment';
 
   double get paidAmountValue =>
       double.tryParse(paidAmount) ??
@@ -245,6 +250,8 @@ class InstantSalesModel {
           : int.tryParse('${json['maintenance_id']}'),
       maintenanceInvoiceNumber:
           asNullableString(json['maintenance_invoice_number']),
+      saleKind: asString(json['sale_kind'], 'regular'),
+      saleKindLabelAr: asNullableString(json['sale_kind_label_ar']),
       product: asString(json['product']),
       productBase: asNullableString(json['product_base']),
       cost: asString(json['cost'], '0'),
@@ -306,6 +313,8 @@ class InstantSalesModel {
       'serial_number': serialNumber,
       'maintenance_id': maintenanceId,
       'maintenance_invoice_number': maintenanceInvoiceNumber,
+      'sale_kind': saleKind,
+      'sale_kind_label_ar': saleKindLabelAr,
       'product': product,
       'cost': cost,
       'total_cost': totalCost,

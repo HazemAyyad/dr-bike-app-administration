@@ -63,6 +63,8 @@ const String kInstantSalePaymentTag = 'instant_sale_payment';
 const String kSalesOrderPaymentTag = 'sales_order_payment';
 const String kProfitSalePaymentTag = 'profit_sale_payment';
 const String kInstantSaleLocalDraftKey = 'instant_sale_local_draft_v1';
+const String kInstantSaleKindRegular = 'regular';
+const String kInstantSaleKindAdjustment = 'adjustment';
 
 class PastedInstantSaleProductRequest {
   const PastedInstantSaleProductRequest({
@@ -451,6 +453,23 @@ class SalesController extends GetxController
   }
 
   final currentTab = 0.obs;
+  final isAdjustmentInstantSaleMode = false.obs;
+
+  bool get isAdjustmentInstantSale => isAdjustmentInstantSaleMode.value;
+
+  String get currentInstantSaleKind => isAdjustmentInstantSale
+      ? kInstantSaleKindAdjustment
+      : kInstantSaleKindRegular;
+
+  void setInstantSaleAdjustmentMode(bool value) {
+    isAdjustmentInstantSaleMode.value = value;
+    if (value) {
+      _paymentBoxId = null;
+      _paymentBoxName = null;
+      _paymentBoxValue = '0';
+      instantSalePaidAmount.value = 0;
+    }
+  }
 
   final Rxn<DailySessionPayload> dailySessionPayload =
       Rxn<DailySessionPayload>();
@@ -586,6 +605,10 @@ class SalesController extends GetxController
   }
 
   Future<bool> ensureInstantSaleCanBeFinalized() async {
+    if (activeEditInstantSaleId.value != null) {
+      return true;
+    }
+
     await loadDailySession();
     final payload = dailySessionPayload.value;
 
@@ -1661,7 +1684,7 @@ class SalesController extends GetxController
     )) {
       return;
     }
-    if (next > stock) {
+    if (next > stock && !isAdjustmentInstantSale) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
           backgroundColor: Colors.red);
       return;
@@ -1710,7 +1733,7 @@ class SalesController extends GetxController
       )) {
         return;
       }
-      if (next > pick.variant.stock) {
+      if (next > pick.variant.stock && !isAdjustmentInstantSale) {
         Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
             backgroundColor: Colors.red);
         return;
@@ -1756,7 +1779,7 @@ class SalesController extends GetxController
     if (resolved == null) return;
 
     final stock = int.tryParse(resolved.stock) ?? 0;
-    if (stock < 1) {
+    if (stock < 1 && !isAdjustmentInstantSale) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
           backgroundColor: Colors.red);
       return;
@@ -1793,7 +1816,9 @@ class SalesController extends GetxController
     if (index < 0 || index >= cartLines.length) return;
     final line = cartLines[index];
     final stock = line.stock;
-    final safe = qty.clamp(1, stock > 0 ? stock : qty);
+    final safe = isAdjustmentInstantSale
+        ? qty.clamp(1, qty)
+        : qty.clamp(1, stock > 0 ? stock : qty);
     line.quantityController.text = safe.toString();
     line.recalculateTotal();
     calculateGrandTotal();
@@ -1810,7 +1835,7 @@ class SalesController extends GetxController
       bumpCartRevision();
       return;
     }
-    if (next > line.stock) {
+    if (next > line.stock && !isAdjustmentInstantSale) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
           backgroundColor: Colors.red);
       return;
@@ -1844,7 +1869,7 @@ class SalesController extends GetxController
     if (hasProducts && activeEditInstantSaleId.value == null) {
       for (final line in cartLines) {
         final qty = int.tryParse(line.quantityText) ?? 0;
-        if (qty > line.stock) {
+        if (qty > line.stock && !isAdjustmentInstantSale) {
           Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
               backgroundColor: Colors.red);
           return;
@@ -1856,7 +1881,9 @@ class SalesController extends GetxController
       syncCartToItems();
     }
 
-    Get.toNamed(AppRoutes.NEWINSTANTSALESCREEN);
+    Get.toNamed(isAdjustmentInstantSale
+        ? AppRoutes.NEWADJUSTMENTSALESCREEN
+        : AppRoutes.NEWINSTANTSALESCREEN);
   }
 
   void openSalesOrderCheckout() {
@@ -1883,6 +1910,7 @@ class SalesController extends GetxController
   }
 
   void openInstantSaleProductPicker() {
+    setInstantSaleAdjustmentMode(false);
     if (products.isEmpty) {
       getAllProducts();
     }
@@ -1963,6 +1991,7 @@ class SalesController extends GetxController
       'notes': instantSaleNotesText,
       'additional_notes': instantSaleNotesPayload(),
       'type': items.first.selectedCustomersSellers.value ? 'project' : 'normal',
+      'sale_kind': currentInstantSaleKind,
       'buyer_type': _paymentBuyerType,
     };
 
@@ -2034,6 +2063,11 @@ class SalesController extends GetxController
     }
 
     _mergeLiveCheckoutPaymentIntoPayload(map);
+    if (isAdjustmentInstantSale) {
+      map.remove('payment_box_id');
+      map.remove('payment_box_name');
+      map['payment_box_value'] = '0';
+    }
 
     _suspendedInstantSaleDebug('buildInstantSaleSuspendPayload', {
       'hasPackage': hasPackage,
@@ -2251,6 +2285,9 @@ class SalesController extends GetxController
       activeSuspendedSaleId.value = sale.id;
       _activeSuspendedSaleIsAuto = false;
       resetInstantSaleForm(renewFormKey: true);
+      setInstantSaleAdjustmentMode(
+        sale.payload['sale_kind'] == kInstantSaleKindAdjustment,
+      );
       await loadOfferPackagesForSale();
       if (products.isEmpty) {
         final list = await getAllProductsUsecase.call();
@@ -2268,7 +2305,9 @@ class SalesController extends GetxController
       if (sale.isCheckoutStep) {
         openInstantSaleCheckout(fromResume: true);
       } else {
-        await Get.toNamed(AppRoutes.INSTANTSALEPRODUCTPICKER);
+        await Get.toNamed(isAdjustmentInstantSale
+            ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+            : AppRoutes.INSTANTSALEPRODUCTPICKER);
       }
       return true;
     } catch (e) {
@@ -3194,7 +3233,7 @@ class SalesController extends GetxController
 
     final resolved = productById(product.id) ?? product;
     final stock = int.tryParse(resolved.stock) ?? 0;
-    if (stock < 1) {
+    if (stock < 1 && !isAdjustmentInstantSale) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
           backgroundColor: Colors.red);
       return;
@@ -3207,9 +3246,10 @@ class SalesController extends GetxController
     final result = await showInstantSaleQuantityDialog(
       context,
       initialQuantity: current,
-      maxQuantity: stock,
-      stockHint:
-          SalesOrderStockContext.controller?.stockHintForProduct(resolved.id),
+      maxQuantity: isAdjustmentInstantSale ? 999999 : stock,
+      stockHint: isAdjustmentInstantSale
+          ? 'adjustmentSaleNoStockCheck'.tr
+          : SalesOrderStockContext.controller?.stockHintForProduct(resolved.id),
     );
     if (result == null) return;
 
@@ -3449,6 +3489,8 @@ class SalesController extends GetxController
     const saleRoutes = {
       AppRoutes.NEWINSTANTSALESCREEN,
       AppRoutes.INSTANTSALEPRODUCTPICKER,
+      AppRoutes.NEWADJUSTMENTSALESCREEN,
+      AppRoutes.ADJUSTMENTSALEPRODUCTPICKER,
     };
     var guard = 0;
     while (guard < 4 && saleRoutes.contains(Get.currentRoute)) {
@@ -3488,6 +3530,10 @@ class SalesController extends GetxController
   }
 
   void syncPaymentCashFromTotal({bool onlyIfCashEmpty = false}) {
+    if (isAdjustmentInstantSale) {
+      instantSalePaidAmount.value = 0;
+      return;
+    }
     final payment = _instantSalePayment;
     if (payment == null) return;
 
@@ -3521,6 +3567,7 @@ class SalesController extends GetxController
       'items': items.length,
       'activeSuspendedSaleId': activeSuspendedSaleId.value,
       'activeEditInstantSaleId': activeEditInstantSaleId.value,
+      'saleKind': currentInstantSaleKind,
       'totalCost': totalCost.value,
     });
     if (!(instantSaleFormKey.currentState?.validate() ?? false)) return;
@@ -3538,13 +3585,15 @@ class SalesController extends GetxController
       final qtyError = validatePackageSaleQuantity(
         items.first.quantityController.text,
       );
-      if (qtyError != null) {
+      if (qtyError != null && !isAdjustmentInstantSale) {
         Get.snackbar('error'.tr, qtyError, backgroundColor: Colors.red);
         return;
       }
     }
 
-    if (hasProducts && activeEditInstantSaleId.value == null) {
+    if (hasProducts &&
+        activeEditInstantSaleId.value == null &&
+        !isAdjustmentInstantSale) {
       for (final line in cartLines) {
         final qty = int.tryParse(line.quantityText) ?? 0;
         if (qty > line.stock) {
@@ -3560,7 +3609,9 @@ class SalesController extends GetxController
       syncCartToItems();
     }
 
-    if (!await ensureInstantSaleCanBeFinalized()) return;
+    if (!isAdjustmentInstantSale && !await ensureInstantSaleCanBeFinalized()) {
+      return;
+    }
 
     final payment = _instantSalePayment;
     if (payment == null) return;
@@ -3569,6 +3620,16 @@ class SalesController extends GetxController
 
     isLoading(true);
     try {
+      if (isAdjustmentInstantSale) {
+        final buyer = payment.buildInstantSaleBuyerPayload();
+        buyer.remove('payment_box_id');
+        buyer.remove('payment_box_name');
+        buyer['payment_box_value'] = '0';
+        applyBuyerFromPayment(buyer);
+        await addInstantSale(context, previousDayWarningConfirmed: true);
+        return;
+      }
+
       final rawPaidText = payment.cashValueController.text;
       final paidAmount = SalesAmountFormat.parse(
         rawPaidText,
@@ -3831,6 +3892,13 @@ class SalesController extends GetxController
       'freshInstantSale': 'true',
     },
     {
+      'title': 'adjustmentSale',
+      'icon': AssetsManager.invoiceIcon,
+      'route': AppRoutes.ADJUSTMENTSALEPRODUCTPICKER,
+      'freshInstantSale': 'true',
+      'saleKind': kInstantSaleKindAdjustment,
+    },
+    {
       'title': 'salesOrderNew',
       'icon': AssetsManager.invoiceIcon,
       'route': AppRoutes.NEWSALESORDERSCREEN,
@@ -4058,12 +4126,14 @@ class SalesController extends GetxController
     BuildContext context, {
     bool previousDayWarningConfirmed = false,
   }) async {
-    if (!previousDayWarningConfirmed &&
+    if (activeEditInstantSaleId.value == null &&
+        !previousDayWarningConfirmed &&
         !await confirmPreviousDaySaleIfNeeded()) {
       return;
     }
 
-    if (activeSuspendedSaleId.value != null) {
+    if (activeEditInstantSaleId.value == null &&
+        activeSuspendedSaleId.value != null) {
       _instantSaleDebug('addInstantSale redirected to complete suspended', {
         'activeSuspendedSaleId': activeSuspendedSaleId.value,
       });
@@ -4129,6 +4199,7 @@ class SalesController extends GetxController
         paymentBoxId: _paymentBoxId,
         paymentBoxName: _paymentBoxName,
         paymentBoxValue: _paymentBoxValue,
+        saleKind: currentInstantSaleKind,
         offerPackageId:
             isPackageSale.value ? selectedPackageId.value?.toString() : null,
         instantSaleId: activeEditInstantSaleId.value?.toString(),
@@ -4703,13 +4774,15 @@ class SalesController extends GetxController
     resolved = productById(resolved.id) ?? resolved;
 
     final stock = int.tryParse(resolved.stock) ?? 0;
-    if (stock < 1) {
+    if (stock < 1 && !isAdjustmentInstantSale) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
           backgroundColor: Colors.red);
       return;
     }
 
-    final qty = request.quantity.clamp(1, stock);
+    final qty = isAdjustmentInstantSale
+        ? request.quantity.clamp(1, request.quantity)
+        : request.quantity.clamp(1, stock);
     final existingIdx =
         cartLines.indexWhere((l) => l.productId == resolved!.id);
     final requestedQty = existingIdx >= 0
@@ -4723,8 +4796,10 @@ class SalesController extends GetxController
     }
 
     if (existingIdx >= 0) {
-      cartLines[existingIdx].quantityController.text =
-          requestedQty.clamp(1, stock).toString();
+      cartLines[existingIdx].quantityController.text = (isAdjustmentInstantSale
+              ? requestedQty.clamp(1, requestedQty)
+              : requestedQty.clamp(1, stock))
+          .toString();
       cartLines[existingIdx].recalculateTotal();
       calculateGrandTotal();
     } else {

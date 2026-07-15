@@ -54,6 +54,8 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
   final _qtyController = TextEditingController(text: '1');
 
   List<ProductSizeVariant> get sizes => widget.product.sizes;
+  bool get _isAdjustmentSale =>
+      Get.find<SalesController>().isAdjustmentInstantSale;
 
   @override
   void initState() {
@@ -123,7 +125,7 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
       Get.snackbar('error'.tr, 'invalidQuantity'.tr);
       return;
     }
-    if (qty > color.stock) {
+    if (qty > color.stock && !_isAdjustmentSale) {
       Get.snackbar('error'.tr, 'out_of_stock_products'.tr);
       return;
     }
@@ -264,7 +266,7 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
                 runSpacing: 8.h,
                 children: (_selectedSize?.colorSizes ?? []).map((color) {
                   final selected = _selectedColor?.id == color.id;
-                  final out = color.stock < 1;
+                  final out = color.stock < 1 && !_isAdjustmentSale;
                   return FilterChip(
                     avatar: color.imageUrl.isNotEmpty
                         ? ClipRRect(
@@ -353,7 +355,7 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
             Padding(
               padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
               child: FilledButton(
-                onPressed: _stock > 0 ? _confirm : null,
+                onPressed: (_stock > 0 || _isAdjustmentSale) ? _confirm : null,
                 style: FilledButton.styleFrom(
                   minimumSize: Size(double.infinity, 46.h),
                   shape: RoundedRectangleBorder(
@@ -362,7 +364,8 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
                 ),
                 child: Text(
                   'addToCart'.tr,
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.sp),
+                  style:
+                      TextStyle(fontWeight: FontWeight.w800, fontSize: 15.sp),
                 ),
               ),
             ),

@@ -1720,6 +1720,13 @@ const Map<String, String> ar = {
   'salesOrderShiplyFeeDifference': 'فرق السعر',
   'total': 'الإجمالي',
   'newInstantSale': 'بيع فوري جديد',
+  'adjustmentSale': 'تعويض فواتير',
+  'newAdjustmentSale': 'تعويض فاتورة محذوفة',
+  'adjustmentSalePickProducts': 'اختيار أصناف التعويض',
+  'adjustmentSaleNotice':
+      'هذه فاتورة تعويض: تضيف دين فقط، ولا تخصم من المخزون، ولا تدخل صندوق المبيعات اليومي.',
+  'adjustmentSaleNoStockCheck': 'التعويض لا يتحقق من المخزون ولا يخصم منه',
+  'saveAdjustmentSale': 'حفظ فاتورة تعويض',
   'saleForProject': 'بيع لمشروع',
   'instantSale': 'بيع فوري',
 
@@ -1907,6 +1914,7 @@ const Map<String, String> ar = {
   "maintenanceInvoice": "فاتورة صيانة",
   "maintenanceNumber": "رقم الصيانة",
   "invoiceStatus": "حالة الفاتورة",
+  "invoiceKind": "نوع الفاتورة",
   "pdf": "PDF",
   "print": "طباعة",
 

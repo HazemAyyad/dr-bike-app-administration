@@ -68,6 +68,7 @@ abstract class SalesRepository {
     String? offerPackageId,
     List<Map<String, dynamic>>? cartOtherProducts,
     String? instantSaleId,
+    String saleKind = kInstantSaleKindRegular,
   });
 
   Future<Either<Failure, String>> cancelInstantSale(

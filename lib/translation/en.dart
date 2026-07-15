@@ -1661,6 +1661,14 @@ const Map<String, String> en = {
   'salesOrderShiplyFeeDifference': 'Price difference',
   'total': 'Total',
   'newInstantSale': 'New Instant Sale',
+  'adjustmentSale': 'Invoice adjustment',
+  'newAdjustmentSale': 'Deleted invoice adjustment',
+  'adjustmentSalePickProducts': 'Select adjustment items',
+  'adjustmentSaleNotice':
+      'This is an adjustment invoice: it adds debt only, does not deduct stock, and does not enter the daily sales drawer.',
+  'adjustmentSaleNoStockCheck':
+      'Adjustment does not check stock and does not deduct it',
+  'saveAdjustmentSale': 'Save adjustment invoice',
   'saleForProject': 'Sale for Project',
   'instantSale': 'Instant Sale',
 
@@ -1850,6 +1858,7 @@ const Map<String, String> en = {
   "maintenanceInvoice": "Maintenance invoice",
   "maintenanceNumber": "Maintenance number",
   "invoiceStatus": "Invoice status",
+  "invoiceKind": "Invoice type",
   "pdf": "PDF",
   "print": "Print",
 

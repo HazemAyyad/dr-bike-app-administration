@@ -30,6 +30,7 @@ class AddInstantSalesUsecase {
     String? offerPackageId,
     List<Map<String, dynamic>>? cartOtherProducts,
     String? instantSaleId,
+    String saleKind = kInstantSaleKindRegular,
   }) async {
     return await salesRepository.addInstantSales(
       productId: productId,
@@ -52,6 +53,7 @@ class AddInstantSalesUsecase {
       offerPackageId: offerPackageId,
       cartOtherProducts: cartOtherProducts,
       instantSaleId: instantSaleId,
+      saleKind: saleKind,
     );
   }
 }
