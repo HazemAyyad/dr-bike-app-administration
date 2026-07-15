@@ -23,6 +23,7 @@ import '../../domain/stock_product_filters.dart';
 import '../models/offer_package_model.dart';
 import '../models/products_by_tag_result.dart';
 import '../models/products_by_location_result.dart';
+import '../models/product_assembly_model.dart';
 import '../models/product_stock_movement_model.dart';
 import '../models/store_section_model.dart';
 
@@ -444,6 +445,170 @@ class StockDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<ProductModel>> getAssemblyProductPicker({
+    String? search,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.allProducts,
+        queryParameters: {
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
+        },
+      );
+      final raw = response.data;
+      final map = raw is Map<String, dynamic>
+          ? raw
+          : Map<String, dynamic>.from(raw as Map);
+      return mapList(
+        map['products'],
+        (m) => ProductModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map && data['status'] is int
+              ? data['status'] as int
+              : 500,
+          data: data is Map && data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<ProductAssemblyRecipeModel>> getAssemblyRecipes() async {
+    try {
+      final response = await api.get(EndPoints.productAssemblyRecipes);
+      final raw = response.data;
+      final map = raw is Map<String, dynamic>
+          ? raw
+          : Map<String, dynamic>.from(raw as Map);
+      return mapList(
+        map['recipes'],
+        (m) => ProductAssemblyRecipeModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map && data['status'] is int
+              ? data['status'] as int
+              : 500,
+          data: data is Map && data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : {},
+        ),
+      );
+    }
+  }
+
+  Future<ProductAssemblyOperationModel> executeAssembly({
+    required String targetProductId,
+    required int quantity,
+    required List<Map<String, dynamic>> components,
+    String? note,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productAssemblyExecute,
+        data: {
+          'target_product_id': targetProductId,
+          'quantity': quantity,
+          'components': components,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        },
+      );
+      final raw = response.data;
+      final map = raw is Map<String, dynamic>
+          ? raw
+          : Map<String, dynamic>.from(raw as Map);
+      if (map['status'] != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: map['message'] ?? 'Unknown error',
+            status: 500,
+            data: Map<String, dynamic>.from(map['errors'] ?? {}),
+          ),
+        );
+      }
+      return ProductAssemblyOperationModel.fromJson(
+        Map<String, dynamic>.from(map['operation'] as Map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map && data['status'] is int
+              ? data['status'] as int
+              : 500,
+          data: data is Map && data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : {},
+        ),
+      );
+    }
+  }
+
+  Future<ProductAssemblyOperationModel> disassembleAssembly({
+    required int recipeId,
+    required int quantity,
+    String? note,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productAssemblyDisassemble,
+        data: {
+          'recipe_id': recipeId,
+          'quantity': quantity,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        },
+      );
+      final raw = response.data;
+      final map = raw is Map<String, dynamic>
+          ? raw
+          : Map<String, dynamic>.from(raw as Map);
+      if (map['status'] != 'success') {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: map['message'] ?? 'Unknown error',
+            status: 500,
+            data: Map<String, dynamic>.from(map['errors'] ?? {}),
+          ),
+        );
+      }
+      return ProductAssemblyOperationModel.fromJson(
+        Map<String, dynamic>.from(map['operation'] as Map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map && data['status'] is int
+              ? data['status'] as int
+              : 500,
+          data: data is Map && data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : {},
         ),
       );
     }

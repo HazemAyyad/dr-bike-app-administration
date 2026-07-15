@@ -381,6 +381,10 @@ class EndPoints {
   static const String deleteProducts = 'delete/products';
   static const String productStockAdjust = 'product/stock/adjust';
   static const String productStockMovements = 'product/stock/movements';
+  static const String productAssemblyRecipes = 'product/assembly/recipes';
+  static const String productAssemblyExecute = 'product/assembly/execute';
+  static const String productAssemblyDisassemble =
+      'product/assembly/disassemble';
 
   // sales
   static const String allProducts = 'all/products';
