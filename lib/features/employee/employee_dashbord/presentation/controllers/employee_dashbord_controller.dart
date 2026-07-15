@@ -328,6 +328,11 @@ class EmployeeDashbordController extends GetxController
       'title': 'employeeReminders',
       'route': AppRoutes.MYEMPLOYEEREMINDERSSCREEN
     },
+    {
+      'id': 'employee_suggestions',
+      'title': 'suggestionBox',
+      'route': AppRoutes.MYEMPLOYEESUGGESTIONSSCREEN
+    },
     {'id': '6', 'title': 'privateTasks', 'route': AppRoutes.PRIVATETASKSSCREEN},
     {
       'id': '5',

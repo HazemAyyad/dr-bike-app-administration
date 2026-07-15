@@ -1438,6 +1438,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       categoryId: base.categoryId,
       subCategoryId: base.subCategoryId,
       storeSectionId: sectionId,
+      costPriceStatus: base.costPriceStatus,
       dateFrom: base.dateFrom,
       dateTo: base.dateTo,
       sortBy: base.sortBy,
@@ -1455,6 +1456,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         search: base.search,
         categoryId: base.categoryId,
         subCategoryId: base.subCategoryId,
+        costPriceStatus: base.costPriceStatus,
         dateFrom: base.dateFrom,
         dateTo: base.dateTo,
         sortBy: base.sortBy,
@@ -1840,6 +1842,45 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         note: note,
       );
       await getProductDetails(productId: productId);
+      Get.snackbar(
+        'success'.tr,
+        'productUpdatedSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.secondaryColor,
+        colorText: Colors.white,
+      );
+      return true;
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.redColor,
+        colorText: Colors.white,
+      );
+      return false;
+    } catch (_) {
+      Get.snackbar(
+        'error'.tr,
+        'somethingWrong'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.redColor,
+        colorText: Colors.white,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateProductCostPrice({
+    required String productId,
+    required double costPrice,
+  }) async {
+    try {
+      await stockDatasource.updateProductCostPrice(
+        productId: productId,
+        costPrice: costPrice,
+      );
+      await reloadProductsList();
       Get.snackbar(
         'success'.tr,
         'productUpdatedSuccess'.tr,

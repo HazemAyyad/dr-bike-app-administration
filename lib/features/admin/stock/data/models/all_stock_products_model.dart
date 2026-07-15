@@ -20,6 +20,8 @@ class AllStockProductsModel {
   final List<ProductTagModel> tags;
   final String? storeSectionId;
   final String? storeSectionName;
+  final double? costPrice;
+  final bool hasCostPrice;
 
   AllStockProductsModel({
     required this.closeoutId,
@@ -38,6 +40,8 @@ class AllStockProductsModel {
     this.tags = const [],
     this.storeSectionId,
     this.storeSectionName,
+    this.costPrice,
+    this.hasCostPrice = false,
   });
 
   factory AllStockProductsModel.fromJson(Map<String, dynamic> json) {
@@ -70,6 +74,9 @@ class AllStockProductsModel {
       tags: tags,
       storeSectionId: asNullableString(json['store_section_id']),
       storeSectionName: asNullableString(json['store_section_name']),
+      costPrice:
+          json['cost_price'] == null ? null : asDouble(json['cost_price']),
+      hasCostPrice: json['has_cost_price'] == true,
     );
   }
 
@@ -90,10 +97,13 @@ class AllStockProductsModel {
       'tags': tags.map((e) => e.toJson()).toList(),
       'store_section_id': storeSectionId,
       'store_section_name': storeSectionName,
+      'cost_price': costPrice,
+      'has_cost_price': hasCostPrice,
     };
   }
 
-  List<String> get allImageUrlsInPriority => ProductImageUtils.allValidUrlsInPriority(
+  List<String> get allImageUrlsInPriority =>
+      ProductImageUtils.allValidUrlsInPriority(
         viewImages: viewImageUrls,
         normalImages: normalImageUrls,
         image3d: image3dUrls,

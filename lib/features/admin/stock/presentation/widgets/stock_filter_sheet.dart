@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../sales/data/models/product_model.dart';
@@ -23,6 +24,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
   String? categoryId;
   String? subCategoryId;
   String? storeSectionId;
+  String? costPriceStatus;
   DateTime? dateFrom;
   DateTime? dateTo;
   String sortKey = 'latest';
@@ -34,6 +36,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
     categoryId = f.categoryId;
     subCategoryId = f.subCategoryId;
     storeSectionId = f.storeSectionId;
+    costPriceStatus = f.costPriceStatus;
     dateFrom = f.dateFrom;
     dateTo = f.dateTo;
     if (f.sortBy == 'name') {
@@ -69,6 +72,7 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
       categoryId: categoryId,
       subCategoryId: subCategoryId,
       storeSectionId: storeSectionId,
+      costPriceStatus: userType == 'admin' ? costPriceStatus : null,
       dateFrom: dateFrom,
       dateTo: dateTo,
       sortBy: sortBy,
@@ -97,7 +101,8 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h + MediaQuery.paddingOf(context).bottom),
+      padding: EdgeInsets.fromLTRB(
+          20.w, 16.h, 20.w, 24.h + MediaQuery.paddingOf(context).bottom),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -155,19 +160,39 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
                     value: kUnassignedStoreSectionFilterId,
                     child: Text('noLocationAssigned'.tr),
                   ),
-                  ...controller.storeSections
-                      .where((s) => s.isActive)
-                      .map(
-                    (s) => DropdownMenuItem(
-                      value: s.id,
-                      child: Text(s.name),
-                    ),
-                  ),
+                  ...controller.storeSections.where((s) => s.isActive).map(
+                        (s) => DropdownMenuItem(
+                          value: s.id,
+                          child: Text(s.name),
+                        ),
+                      ),
                 ],
                 onChanged: (v) => setState(() => storeSectionId = v),
               ),
             ),
             SizedBox(height: 12.h),
+            if (userType == 'admin') ...[
+              _dropdown<String?>(
+                label: 'costPriceStatus'.tr,
+                value: costPriceStatus,
+                items: [
+                  DropdownMenuItem<String?>(
+                    value: null,
+                    child: Text('all'.tr),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'with',
+                    child: Text('withCostPrice'.tr),
+                  ),
+                  DropdownMenuItem<String?>(
+                    value: 'without',
+                    child: Text('withoutCostPrice'.tr),
+                  ),
+                ],
+                onChanged: (v) => setState(() => costPriceStatus = v),
+              ),
+              SizedBox(height: 12.h),
+            ],
             Row(
               children: [
                 Expanded(

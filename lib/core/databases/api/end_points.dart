@@ -82,6 +82,11 @@ class EndPoints {
   static String employeeReminderDone(int id) => 'employee/reminders/$id/done';
   static String employeeReminderSnooze(int id) =>
       'employee/reminders/$id/snooze';
+  static const String employeeSuggestions = 'employee/suggestions';
+  static String employeeSuggestion(int id) => 'employee/suggestions/$id';
+  static const String adminEmployeeSuggestions = 'admin/employee-suggestions';
+  static String adminEmployeeSuggestion(int id) =>
+      'admin/employee-suggestions/$id';
 
   // banks (checks)
   static const String banks = 'banks';
@@ -332,6 +337,7 @@ class EndPoints {
 
   // stock
   static const String getProductsList = 'get/products/list';
+  static const String productCostPrice = 'product/cost-price';
   static const String exportProductsCsv = 'products/export-csv';
   static const String previewImportProductsCsv = 'products/import-csv/preview';
   static const String importProductsCsv = 'products/import-csv';
@@ -380,6 +386,7 @@ class EndPoints {
   static const String allProducts = 'all/products';
   static const String productPasteSuggestions = 'products/paste-suggestions';
   static const String productPasteAlias = 'products/paste-alias';
+  static const String productOcrText = 'products/ocr-text';
   static const String personProductSettings = 'person-product-settings';
   static const String deletePersonProductSetting =
       'person-product-settings/delete';

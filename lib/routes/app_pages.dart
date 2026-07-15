@@ -39,6 +39,7 @@ import '../features/admin/meta_catalog/presentation/views/meta_catalog_sync_scre
 import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
 import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
 import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
+import '../features/employee_suggestions/presentation/employee_suggestions_screen.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
@@ -329,6 +330,11 @@ class AppPages {
       page: () => const EmployeeRemindersScreen(isAdmin: true),
       transition: _transitionFadeIn,
     ),
+    GetPage(
+      name: AppRoutes.EMPLOYEESUGGESTIONSSCREEN,
+      page: () => const EmployeeSuggestionsScreen(isAdmin: true),
+      transition: _transitionFadeIn,
+    ),
 
     // Employee Dashboard
     GetPage(
@@ -340,6 +346,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.MYEMPLOYEEREMINDERSSCREEN,
       page: () => const EmployeeRemindersScreen(isAdmin: false),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.MYEMPLOYEESUGGESTIONSSCREEN,
+      page: () => const EmployeeSuggestionsScreen(isAdmin: false),
       transition: _transitionFadeIn,
     ),
 

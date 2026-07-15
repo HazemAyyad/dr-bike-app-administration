@@ -4,6 +4,7 @@ class StockProductFilters {
     this.categoryId,
     this.subCategoryId,
     this.storeSectionId,
+    this.costPriceStatus,
     this.dateFrom,
     this.dateTo,
     this.sortBy = 'created_at',
@@ -14,6 +15,7 @@ class StockProductFilters {
   final String? categoryId;
   final String? subCategoryId;
   final String? storeSectionId;
+  final String? costPriceStatus;
   final DateTime? dateFrom;
   final DateTime? dateTo;
   final String sortBy;
@@ -26,6 +28,7 @@ class StockProductFilters {
       (categoryId != null && categoryId!.isNotEmpty) ||
       (subCategoryId != null && subCategoryId!.isNotEmpty) ||
       (storeSectionId != null && storeSectionId!.isNotEmpty) ||
+      (costPriceStatus != null && costPriceStatus!.isNotEmpty) ||
       dateFrom != null ||
       dateTo != null ||
       sortBy != 'created_at' ||
@@ -37,6 +40,7 @@ class StockProductFilters {
     if (categoryId != null && categoryId!.isNotEmpty) n++;
     if (subCategoryId != null && subCategoryId!.isNotEmpty) n++;
     if (storeSectionId != null && storeSectionId!.isNotEmpty) n++;
+    if (costPriceStatus != null && costPriceStatus!.isNotEmpty) n++;
     if (dateFrom != null) n++;
     if (dateTo != null) n++;
     if (sortBy != 'created_at') n++;
@@ -49,6 +53,7 @@ class StockProductFilters {
     String? categoryId,
     String? subCategoryId,
     String? storeSectionId,
+    String? costPriceStatus,
     DateTime? dateFrom,
     DateTime? dateTo,
     String? sortBy,
@@ -57,6 +62,7 @@ class StockProductFilters {
     bool clearCategoryId = false,
     bool clearSubCategoryId = false,
     bool clearStoreSectionId = false,
+    bool clearCostPriceStatus = false,
     bool clearDateFrom = false,
     bool clearDateTo = false,
   }) {
@@ -65,9 +71,11 @@ class StockProductFilters {
       categoryId: clearCategoryId ? null : (categoryId ?? this.categoryId),
       subCategoryId:
           clearSubCategoryId ? null : (subCategoryId ?? this.subCategoryId),
-      storeSectionId: clearStoreSectionId
+      storeSectionId:
+          clearStoreSectionId ? null : (storeSectionId ?? this.storeSectionId),
+      costPriceStatus: clearCostPriceStatus
           ? null
-          : (storeSectionId ?? this.storeSectionId),
+          : (costPriceStatus ?? this.costPriceStatus),
       dateFrom: clearDateFrom ? null : (dateFrom ?? this.dateFrom),
       dateTo: clearDateTo ? null : (dateTo ?? this.dateTo),
       sortBy: sortBy ?? this.sortBy,
@@ -92,6 +100,9 @@ class StockProductFilters {
     }
     if (storeSectionId != null && storeSectionId!.isNotEmpty) {
       params['store_section_id'] = storeSectionId;
+    }
+    if (costPriceStatus != null && costPriceStatus!.isNotEmpty) {
+      params['cost_price_status'] = costPriceStatus;
     }
     if (dateFrom != null) {
       params['date_from'] = formatDate(dateFrom!);

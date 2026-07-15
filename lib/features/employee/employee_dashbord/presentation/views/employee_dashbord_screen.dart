@@ -239,15 +239,13 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                         },
                       ),
                       const EmployeeDashboardReminders(),
-                      controller.employeeData.value!.permissions.isNotEmpty
-                          ? BuildActionButtons(
-                              buttons: controller.buttons,
-                              employeePermissions: controller
-                                  .employeeData.value?.permissions
-                                  .map((e) => e.id)
-                                  .toList(),
-                            )
-                          : const SizedBox.shrink(),
+                      BuildActionButtons(
+                        buttons: controller.buttons,
+                        employeePermissions: controller
+                            .employeeData.value?.permissions
+                            .map((e) => e.id)
+                            .toList(),
+                      ),
                     ],
                   );
                 },

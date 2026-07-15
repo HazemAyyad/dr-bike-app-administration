@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,9 @@ import 'package:photo_view/photo_view.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import 'task_media_paths.dart';
 import 'video_view.dart';
@@ -88,6 +92,62 @@ class FullScreenZoomImage extends StatelessWidget {
     }
   }
 
+  Future<void> _printImage(BuildContext context) async {
+    if (isVideoMediaPath(imageUrl)) {
+      Get.snackbar(
+        "تنبيه",
+        "الطباعة متاحة للصور فقط",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
+    try {
+      Get.snackbar(
+        "تنبيه",
+        "جاري تجهيز الصورة للطباعة...",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+
+      final response = await Dio().get<List<int>>(
+        imageUrl,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final data = response.data;
+      if (data == null || data.isEmpty) {
+        throw Exception('empty image');
+      }
+
+      final bytes = Uint8List.fromList(data);
+      final doc = pw.Document();
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(18),
+          build: (context) {
+            return pw.Center(
+              child: pw.Image(
+                pw.MemoryImage(bytes),
+                fit: pw.BoxFit.contain,
+              ),
+            );
+          },
+        ),
+      );
+
+      await Printing.layoutPdf(onLayout: (_) async => doc.save());
+    } catch (e) {
+      Get.snackbar(
+        "خطأ",
+        "فشل تجهيز الطباعة: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    }
+  }
+
   void _close(BuildContext context) {
     if (Get.isSnackbarOpen) {
       Get.closeAllSnackbars();
@@ -152,17 +212,31 @@ class FullScreenZoomImage extends StatelessWidget {
             onPressed: () => _close(context),
           ),
         ),
-        // زرار تحميل
+        // أزرار التحميل والطباعة
         Positioned(
           top: 80.h,
           left: 20.w,
-          child: IconButton(
-            icon: Icon(
-              Icons.download,
-              color: Colors.green,
-              size: 30.sp,
-            ),
-            onPressed: () => _downloadImage(context),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.download,
+                  color: Colors.green,
+                  size: 30.sp,
+                ),
+                onPressed: () => _downloadImage(context),
+              ),
+              if (!isVideoMediaPath(imageUrl))
+                IconButton(
+                  icon: Icon(
+                    Icons.print,
+                    color: Colors.white,
+                    size: 30.sp,
+                  ),
+                  onPressed: () => _printImage(context),
+                ),
+            ],
           ),
         ),
       ],

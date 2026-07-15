@@ -114,6 +114,11 @@ class AdminDashboardController extends GetxController
       'title': 'employeeReminders',
       'route': AppRoutes.EMPLOYEEREMINDERSSCREEN
     },
+    {
+      'id': '24',
+      'title': 'suggestionBox',
+      'route': AppRoutes.EMPLOYEESUGGESTIONSSCREEN
+    },
     {'id': '17', 'title': 'whatsappCenter', 'route': AppRoutes.WHATSAPPCENTER},
     {
       'id': '16',

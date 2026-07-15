@@ -3,10 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../stock/data/models/offer_package_model.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/datasources/sales_datasources.dart';
 import '../controllers/sales_controller.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
@@ -169,15 +172,45 @@ class _InstantSaleProductPickerScreenState
                       padding: EdgeInsets.symmetric(horizontal: 16.w),
                       scrollDirection: Axis.horizontal,
                       itemBuilder: (_, index) {
-                        final request = controller.pastedProductRequests[index];
+                        if (index == 0) {
+                          final allSelected =
+                              controller.isShowingAllPastedProductRequests;
+                          final pickedCount =
+                              controller.pastedProductSelections.length;
+                          return ChoiceChip(
+                            selected: allSelected,
+                            avatar: allSelected
+                                ? const Icon(
+                                    Icons.check_circle,
+                                    color: Color(0xFF6B5DD3),
+                                    size: 18,
+                                  )
+                                : null,
+                            label: Text(
+                              '${'all'.tr} ($pickedCount/${controller.pastedProductRequests.length})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            onSelected: (_) async {
+                              await controller
+                                  .showAllPastedProductSuggestions();
+                              _searchController.clear();
+                            },
+                          );
+                        }
+                        final lineIndex = index - 1;
+                        final request =
+                            controller.pastedProductRequests[lineIndex];
                         final selected =
                             controller.activePastedProductRequestIndex.value ==
-                                index;
+                                lineIndex;
                         final picked =
-                            controller.pastedRequestHasSelection(index);
+                            controller.pastedRequestHasSelection(lineIndex);
+                        final pickedProductName = controller
+                            .pastedRequestSelectedProductName(lineIndex);
                         return ChoiceChip(
                           selected: selected,
-                          avatar: picked
+                          avatar: selected || picked
                               ? const Icon(
                                   Icons.check_circle,
                                   color: Color(0xFF15803D),
@@ -185,18 +218,21 @@ class _InstantSaleProductPickerScreenState
                                 )
                               : null,
                           label: Text(
-                            '${request.searchText} × ${request.quantity}',
+                            pickedProductName == null
+                                ? '${request.searchText} × ${request.quantity}'
+                                : '${request.searchText} × ${request.quantity} - $pickedProductName',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           onSelected: (_) async {
-                            await controller.selectPastedProductRequest(index);
+                            await controller
+                                .selectPastedProductRequest(lineIndex);
                             _searchController.text = request.searchText;
                           },
                         );
                       },
                       separatorBuilder: (_, __) => SizedBox(width: 6.w),
-                      itemCount: controller.pastedProductRequests.length,
+                      itemCount: controller.pastedProductRequests.length + 1,
                     ),
                   );
                 }),
@@ -205,14 +241,15 @@ class _InstantSaleProductPickerScreenState
                     return const SizedBox.shrink();
                   }
                   final request = controller.activePastedProductRequest;
-                  if (request == null) return const SizedBox.shrink();
                   return Padding(
                     padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
                     child: Row(
                       children: [
                         Expanded(
                           child: Text(
-                            '${'instantSaleActivePastedLine'.tr}: ${request.rawLine}',
+                            request == null
+                                ? '${'instantSaleActivePastedLine'.tr}: ${'all'.tr}'
+                                : '${'instantSaleActivePastedLine'.tr}: ${request.rawLine}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -581,6 +618,7 @@ class _InstantSaleProductPickerScreenState
     final textController = TextEditingController();
     Timer? previewDebounce;
     var previewLoading = false;
+    var ocrLoading = false;
     final pasted = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -592,6 +630,31 @@ class _InstantSaleProductPickerScreenState
             await controller.previewPastedProductList(text);
             if (ctx.mounted) {
               setDialogState(() => previewLoading = false);
+            }
+          }
+
+          Future<void> runOcr(ImageSource source) async {
+            setDialogState(() => ocrLoading = true);
+            try {
+              final text = await _readProductListTextFromImage(source);
+              if (!ctx.mounted) return;
+              if (text == null || text.trim().isEmpty) {
+                Get.snackbar('error'.tr, 'instantSaleOcrNoText'.tr);
+                return;
+              }
+              textController.text = text.trim();
+              textController.selection = TextSelection.collapsed(
+                offset: textController.text.length,
+              );
+              await runPreview(textController.text);
+            } catch (e) {
+              if (ctx.mounted) {
+                Get.snackbar('error'.tr, 'instantSaleOcrFailed'.tr);
+              }
+            } finally {
+              if (ctx.mounted) {
+                setDialogState(() => ocrLoading = false);
+              }
             }
           }
 
@@ -612,6 +675,46 @@ class _InstantSaleProductPickerScreenState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 8.h,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: ocrLoading
+                              ? null
+                              : () => runOcr(ImageSource.camera),
+                          icon: const Icon(Icons.photo_camera_outlined),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF111827),
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                          ),
+                          label: Text('instantSaleOcrCamera'.tr),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: ocrLoading
+                              ? null
+                              : () => runOcr(ImageSource.gallery),
+                          icon: const Icon(Icons.photo_library_outlined),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF111827),
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                          ),
+                          label: Text('instantSaleOcrGallery'.tr),
+                        ),
+                        if (ocrLoading)
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 9.h),
+                            child: Text(
+                              'instantSaleOcrReading'.tr,
+                              style: const TextStyle(
+                                color: Color(0xFF2563EB),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: 10.h),
                     TextField(
                       controller: textController,
                       minLines: 5,
@@ -708,16 +811,27 @@ class _InstantSaleProductPickerScreenState
                                       spacing: 6.w,
                                       runSpacing: 6.h,
                                       children: line.suggestions.map((s) {
+                                        final selectedProduct =
+                                            controller.pastedProductSelections[
+                                                    index] ==
+                                                s.product.id;
                                         return ActionChip(
-                                          backgroundColor:
-                                              const Color(0xFFF8FAFC),
-                                          side: const BorderSide(
-                                            color: Color(0xFFD1D5DB),
+                                          backgroundColor: selectedProduct
+                                              ? const Color(0xFFEAF7EE)
+                                              : const Color(0xFFF8FAFC),
+                                          side: BorderSide(
+                                            color: selectedProduct
+                                                ? const Color(0xFF15803D)
+                                                : const Color(0xFFD1D5DB),
                                           ),
-                                          avatar: const Icon(
-                                            Icons.inventory_2_outlined,
+                                          avatar: Icon(
+                                            selectedProduct
+                                                ? Icons.check_circle
+                                                : Icons.inventory_2_outlined,
                                             size: 16,
-                                            color: Color(0xFF374151),
+                                            color: selectedProduct
+                                                ? const Color(0xFF15803D)
+                                                : const Color(0xFF374151),
                                           ),
                                           label: Text(
                                             s.product.nameAr,
@@ -727,10 +841,8 @@ class _InstantSaleProductPickerScreenState
                                           ),
                                           onPressed: () async {
                                             await controller
-                                                .selectPastedProductRequest(
-                                                    index);
-                                            await controller
-                                                .addProductFromPastedSuggestion(
+                                                .addProductFromPastedSuggestionAt(
+                                              index,
                                               s.product,
                                             );
                                           },
@@ -778,6 +890,36 @@ class _InstantSaleProductPickerScreenState
     final request = controller.activePastedProductRequest;
     if (request != null) {
       _searchController.text = request.searchText;
+    }
+  }
+
+  Future<String?> _readProductListTextFromImage(ImageSource source) async {
+    final image = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 92,
+    );
+    if (image == null) return null;
+
+    try {
+      final serverText = await Get.find<SalesDatasource>()
+          .extractProductListTextFromImage(image: image);
+      if (serverText.trim().isNotEmpty) {
+        return serverText;
+      }
+    } catch (e) {
+      assert(() {
+        debugPrint('[InstantSaleOCR.server] $e');
+        return true;
+      }());
+    }
+
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    try {
+      final inputImage = InputImage.fromFilePath(image.path);
+      final recognizedText = await recognizer.processImage(inputImage);
+      return recognizedText.text;
+    } finally {
+      await recognizer.close();
     }
   }
 }

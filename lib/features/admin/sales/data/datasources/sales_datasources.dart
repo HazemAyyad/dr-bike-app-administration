@@ -427,6 +427,39 @@ class SalesDatasource {
     }
   }
 
+  Future<String> extractProductListTextFromImage({
+    required XFile image,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productOcrText,
+        data: {
+          'image': await MultipartFile.fromFile(
+            image.path,
+            filename: image.name,
+          ),
+        },
+        isFormData: true,
+      );
+      final data = response.data;
+      if (data is Map) {
+        return asString(data['text']);
+      }
+      return '';
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
   Future<List<OfferPackageModel>> getOfferPackagesForSale() async {
     try {
       final response = await api.get(EndPoints.offerPackagesForSale);

@@ -88,6 +88,9 @@ class BuildActionButtons extends StatelessWidget {
     if (route == AppRoutes.GENERALSETTINGSSCREEN) {
       return canManageStockInventorySettings;
     }
+    if (route == AppRoutes.MYEMPLOYEESUGGESTIONSSCREEN) {
+      return true;
+    }
 
     final id = int.tryParse(button['id']?.toString() ?? '');
     return id != null && permissions.contains(id);

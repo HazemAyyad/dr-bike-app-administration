@@ -4407,17 +4407,22 @@ class SalesController extends GetxController
   }
 
   // get all products
+  static const int allPastedProductRequestsIndex = -1;
   final List<ProductModel> products = [];
   final RxList<PastedInstantSaleProductRequest> pastedProductRequests =
       <PastedInstantSaleProductRequest>[].obs;
-  final RxInt activePastedProductRequestIndex = 0.obs;
+  final RxInt activePastedProductRequestIndex =
+      allPastedProductRequestsIndex.obs;
   final RxMap<int, String> pastedProductSelections = <int, String>{}.obs;
 
   bool get hasPastedProductRequests => pastedProductRequests.isNotEmpty;
+  bool get isShowingAllPastedProductRequests =>
+      activePastedProductRequestIndex.value == allPastedProductRequestsIndex;
 
   PastedInstantSaleProductRequest? get activePastedProductRequest {
     if (pastedProductRequests.isEmpty) return null;
     final index = activePastedProductRequestIndex.value;
+    if (index == allPastedProductRequestsIndex) return null;
     if (index < 0 || index >= pastedProductRequests.length) {
       return pastedProductRequests.first;
     }
@@ -4504,8 +4509,8 @@ class SalesController extends GetxController
 
     pastedProductRequests.assignAll(parsed);
     pastedProductSelections.clear();
-    activePastedProductRequestIndex.value = 0;
-    instantSaleProductSearch.value = parsed.first.searchText;
+    activePastedProductRequestIndex.value = allPastedProductRequestsIndex;
+    instantSaleProductSearch.value = '';
     await getAllProducts(showLoading: false);
   }
 
@@ -4530,8 +4535,8 @@ class SalesController extends GetxController
         ),
       );
       pastedProductSelections.clear();
-      activePastedProductRequestIndex.value = 0;
-      instantSaleProductSearch.value = pastedProductRequests.first.searchText;
+      activePastedProductRequestIndex.value = allPastedProductRequestsIndex;
+      instantSaleProductSearch.value = '';
       final productsById = <String, ProductModel>{};
       for (final line in lines) {
         for (final suggestion in line.suggestions) {
@@ -4574,10 +4579,40 @@ class SalesController extends GetxController
     await getAllProducts(showLoading: false);
   }
 
+  Future<void> addProductFromPastedSuggestionAt(
+    int index,
+    ProductModel product, {
+    BuildContext? context,
+  }) async {
+    await selectPastedProductRequest(index);
+    if (context != null && !context.mounted) return;
+    await addProductFromPastedSuggestion(product, context: context);
+  }
+
+  Future<void> showAllPastedProductSuggestions() async {
+    if (pastedProductRequests.isEmpty) return;
+    activePastedProductRequestIndex.value = allPastedProductRequestsIndex;
+    instantSaleProductSearch.value = '';
+    final suggestedProducts = <String, ProductModel>{};
+    for (final line in pastedProductRequests) {
+      for (final suggestion in line.suggestions) {
+        suggestedProducts[suggestion.product.id] = suggestion.product;
+      }
+    }
+    if (suggestedProducts.isNotEmpty) {
+      products
+        ..clear()
+        ..addAll(suggestedProducts.values);
+      _bumpProductsList();
+      return;
+    }
+    await getAllProducts(showLoading: false);
+  }
+
   void clearPastedProductRequests() {
     pastedProductRequests.clear();
     pastedProductSelections.clear();
-    activePastedProductRequestIndex.value = 0;
+    activePastedProductRequestIndex.value = allPastedProductRequestsIndex;
   }
 
   bool pastedRequestHasSelection(int index) {
@@ -4585,10 +4620,28 @@ class SalesController extends GetxController
     return productId != null && productId.isNotEmpty;
   }
 
+  String? pastedRequestSelectedProductName(int index) {
+    final productId = pastedProductSelections[index];
+    if (productId == null || productId.isEmpty) return null;
+    if (index >= 0 && index < pastedProductRequests.length) {
+      for (final suggestion in pastedProductRequests[index].suggestions) {
+        if (suggestion.product.id == productId) {
+          return suggestion.product.nameAr;
+        }
+      }
+    }
+    for (final product in products) {
+      if (product.id == productId) return product.nameAr;
+    }
+    return productById(productId)?.nameAr;
+  }
+
   bool pastedRequestSelectedProduct(ProductModel product) {
-    final productId =
-        pastedProductSelections[activePastedProductRequestIndex.value];
-    return productId != null && productId == product.id;
+    final index = activePastedProductRequestIndex.value;
+    if (index != allPastedProductRequestsIndex) {
+      return pastedProductSelections[index] == product.id;
+    }
+    return pastedProductSelections.values.contains(product.id);
   }
 
   bool productMatchesActivePastedRequest(ProductModel product) {
@@ -4599,18 +4652,42 @@ class SalesController extends GetxController
 
   String? pastedRequestLabelForProduct(ProductModel product) {
     final request = activePastedProductRequest;
-    if (request == null ||
-        !productMatchesPickerSearch(product, request.searchText)) {
-      return null;
+    if (request != null) {
+      if (!productMatchesPickerSearch(product, request.searchText)) {
+        return null;
+      }
+      return '${request.searchText} × ${request.quantity}';
     }
-    return '${request.searchText} × ${request.quantity}';
+
+    final labels = <String>[];
+    for (var i = 0; i < pastedProductRequests.length; i++) {
+      final line = pastedProductRequests[i];
+      final suggested = line.suggestions.any((s) => s.product.id == product.id);
+      if (suggested || pastedProductSelections[i] == product.id) {
+        labels.add('${line.searchText} × ${line.quantity}');
+      }
+    }
+    return labels.isEmpty ? null : labels.take(2).join(' / ');
   }
 
   Future<void> addProductFromPastedSuggestion(
     ProductModel product, {
     BuildContext? context,
   }) async {
-    final request = activePastedProductRequest;
+    var request = activePastedProductRequest;
+    if (request == null && hasPastedProductRequests) {
+      final matchingIndexes = <int>[];
+      for (var i = 0; i < pastedProductRequests.length; i++) {
+        final line = pastedProductRequests[i];
+        if (line.suggestions.any((s) => s.product.id == product.id)) {
+          matchingIndexes.add(i);
+        }
+      }
+      if (matchingIndexes.isNotEmpty) {
+        activePastedProductRequestIndex.value = matchingIndexes.first;
+        request = activePastedProductRequest;
+      }
+    }
     if (request == null) {
       await toggleProductInCart(product, context: context);
       return;
@@ -4660,8 +4737,10 @@ class SalesController extends GetxController
         ),
       );
     }
-    pastedProductSelections[activePastedProductRequestIndex.value] =
-        resolved.id;
+    final activeIndex = activePastedProductRequestIndex.value;
+    if (activeIndex != allPastedProductRequestsIndex) {
+      pastedProductSelections[activeIndex] = resolved.id;
+    }
     try {
       await Get.find<SalesDatasource>().saveProductPasteAlias(
         aliasText: request.searchText,
