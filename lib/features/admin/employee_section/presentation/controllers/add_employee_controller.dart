@@ -143,6 +143,7 @@ class AddEmployeeController extends GetxController {
       'permission': false.obs
     },
     {'name': 'costPricePermission'.tr, 'id': '44', 'permission': false.obs},
+    {'name': 'technicalSupport'.tr, 'id': '49', 'permission': false.obs},
     {
       'name': 'editEmployeeTaskPermission'.tr,
       'id': '45',

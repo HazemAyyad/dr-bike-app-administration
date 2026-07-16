@@ -79,6 +79,9 @@ const String technicalSupportPermissionName = 'Technical Support';
 /// رقم صلاحية إعدادات المخزون في قائمة إنشاء/تعديل الموظف.
 const int stockInventorySettingsPermissionId = 47;
 
+/// رقم صلاحية إدارة محادثات الدعم الفني.
+const int technicalSupportPermissionId = 49;
+
 /// رقم صلاحية المخزون.
 const int stockPermissionId = 16;
 
@@ -92,6 +95,7 @@ bool get canManageStockInventorySettings =>
 
 bool get canManageTechnicalSupport =>
     userType == 'admin' ||
+    employeePermissions.contains(technicalSupportPermissionId) ||
     employeePermissionNames.contains(technicalSupportPermissionName);
 
 void syncSessionIdentity({

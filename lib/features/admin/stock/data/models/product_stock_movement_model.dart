@@ -28,6 +28,8 @@ class ProductStockMovementModel {
   final int quantity;
   final int stockBefore;
   final int stockAfter;
+  final double? unitCost;
+  final double? totalCost;
   final String? size;
   final String? colorAr;
   final String? note;
@@ -43,6 +45,8 @@ class ProductStockMovementModel {
     required this.quantity,
     required this.stockBefore,
     required this.stockAfter,
+    this.unitCost,
+    this.totalCost,
     this.size,
     this.colorAr,
     this.note,
@@ -53,8 +57,7 @@ class ProductStockMovementModel {
     this.createdAt,
   });
 
-  bool get isSaleRelated =>
-      type == 'sale' || type == 'sale_cancel';
+  bool get isSaleRelated => type == 'sale' || type == 'sale_cancel';
 
   bool get hasInvoiceLink =>
       isSaleRelated &&
@@ -77,6 +80,10 @@ class ProductStockMovementModel {
       'manual_add': 'stockMoveTypeManualAdd',
       'manual_set': 'stockMoveTypeManualSet',
       'import': 'stockMoveTypeImport',
+      'assembly_component': 'stockMoveTypeAssemblyComponent',
+      'assembly_output': 'stockMoveTypeAssemblyOutput',
+      'disassembly_component': 'stockMoveTypeDisassemblyComponent',
+      'disassembly_output': 'stockMoveTypeDisassemblyOutput',
     };
     final key = keys[type];
     return key != null ? key.tr : type;
@@ -90,6 +97,8 @@ class ProductStockMovementModel {
       quantity: asInt(j['quantity']),
       stockBefore: asInt(j['stock_before']),
       stockAfter: asInt(j['stock_after']),
+      unitCost: j['unit_cost'] == null ? null : asDouble(j['unit_cost']),
+      totalCost: j['total_cost'] == null ? null : asDouble(j['total_cost']),
       size: asNullableString(j['size']),
       colorAr: asNullableString(j['color_ar']),
       note: asNullableString(j['note']),

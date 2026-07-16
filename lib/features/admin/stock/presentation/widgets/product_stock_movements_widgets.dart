@@ -183,6 +183,7 @@ class StockMovementsTable extends StatelessWidget {
             DataColumn(label: Text('quantity'.tr)),
             DataColumn(label: Text('stockMoveColBefore'.tr)),
             DataColumn(label: Text('stockMoveColAfter'.tr)),
+            DataColumn(label: Text('stockMoveColCost'.tr)),
             DataColumn(label: Text('instantSaleInvoice'.tr)),
             DataColumn(label: Text('notes'.tr)),
             DataColumn(label: Text('date'.tr)),
@@ -222,6 +223,7 @@ class StockMovementsTable extends StatelessWidget {
         ),
         DataCell(Text('${m.stockBefore}')),
         DataCell(Text('${m.stockAfter}')),
+        DataCell(Text(stockMovementCostText(m))),
         DataCell(
           m.hasInvoiceLink
               ? InkWell(
@@ -248,7 +250,9 @@ class StockMovementsTable extends StatelessWidget {
           ),
         ),
         DataCell(Text(m.createdAt ?? '—')),
-        DataCell(Text(m.createdByName?.trim().isNotEmpty == true ? m.createdByName! : '—')),
+        DataCell(Text(m.createdByName?.trim().isNotEmpty == true
+            ? m.createdByName!
+            : '—')),
       ],
     );
   }
@@ -319,6 +323,17 @@ class StockMovementListTile extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (stockMovementCostText(movement) != '—')
+                  Padding(
+                    padding: EdgeInsets.only(top: 2.h),
+                    child: Text(
+                      stockMovementCostText(movement),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: AppColors.primaryColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
                 if (movement.note != null && movement.note!.trim().isNotEmpty)
                   Padding(
                     padding: EdgeInsets.only(top: 2.h),
@@ -353,6 +368,26 @@ class StockMovementListTile extends StatelessWidget {
       ),
     );
   }
+}
+
+String stockMovementCostText(ProductStockMovementModel m) {
+  if (m.unitCost == null && m.totalCost == null) return '—';
+  final parts = <String>[];
+  if (m.unitCost != null) {
+    parts.add('${'stockMoveUnitCost'.tr}: ${_stockMovementMoney(m.unitCost!)}');
+  }
+  if (m.totalCost != null) {
+    parts.add(
+        '${'stockMoveTotalCost'.tr}: ${_stockMovementMoney(m.totalCost!)}');
+  }
+  return parts.join(' | ');
+}
+
+String _stockMovementMoney(double value) {
+  if (value == value.roundToDouble()) {
+    return value.toInt().toString();
+  }
+  return value.toStringAsFixed(2);
 }
 
 Future<void> exportStockMovementsPdf({

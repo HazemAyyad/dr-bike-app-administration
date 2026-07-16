@@ -52,6 +52,7 @@ class EndPoints {
 
   // admin dashboard
   static const String adminLogs = 'all/logs';
+  static const String activitySummary = 'activity/summary';
   static const String adminHomeData = 'admin/home/page/data';
 
   static const String adminNotifications = 'admin/notifications';
@@ -392,6 +393,8 @@ class EndPoints {
   static const String productStockAdjust = 'product/stock/adjust';
   static const String productStockMovements = 'product/stock/movements';
   static const String productAssemblyRecipes = 'product/assembly/recipes';
+  static const String productAssemblyOperations = 'product/assembly/operations';
+  static const String productAssemblyProducts = 'product/assembly/products';
   static const String productAssemblyExecute = 'product/assembly/execute';
   static const String productAssemblyDisassemble =
       'product/assembly/disassemble';
@@ -564,6 +567,7 @@ class EndPoints {
   static const String getReadyMaintenances = 'get/ready/maintenances';
   static const String getDeliveredMaintenances = 'get/delivered/maintenances';
   static const String showMaintenance = 'show/maintenance';
+  static const String deleteMaintenance = 'delete/maintenance';
   static const String maintenanceSyncProducts = 'maintenance/sync/products';
   static const String maintenanceDeliver = 'maintenance/deliver';
   static const String maintenanceActivityLog = 'maintenance/activity-log';

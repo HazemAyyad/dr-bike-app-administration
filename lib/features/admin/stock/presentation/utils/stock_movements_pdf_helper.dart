@@ -65,6 +65,7 @@ class StockMovementsPdfHelper {
       'quantity'.tr,
       'stockMoveColBefore'.tr,
       'stockMoveColAfter'.tr,
+      'stockMoveColCost'.tr,
       'instantSaleInvoice'.tr,
       'notes'.tr,
       'date'.tr,
@@ -84,6 +85,7 @@ class StockMovementsPdfHelper {
         qtyText,
         '${m.stockBefore}',
         '${m.stockAfter}',
+        _costText(m),
         m.hasInvoiceLink ? m.displayInvoiceNumber : '—',
         m.note?.trim().isNotEmpty == true ? m.note! : '—',
         m.createdAt ?? '—',
@@ -121,7 +123,7 @@ class StockMovementsPdfHelper {
           ],
         ),
         build: (ctx) => [
-          pw.Table.fromTextArray(
+          pw.TableHelper.fromTextArray(
             headers: headers,
             data: rows,
             headerStyle: pw.TextStyle(font: bold, fontSize: 8),
@@ -130,7 +132,7 @@ class StockMovementsPdfHelper {
             cellAlignment: pw.Alignment.centerRight,
             cellAlignments: {
               0: pw.Alignment.centerRight,
-              5: pw.Alignment.center,
+              6: pw.Alignment.center,
             },
           ),
         ],
@@ -158,5 +160,24 @@ class StockMovementsPdfHelper {
       ),
     );
     return file;
+  }
+
+  static String _costText(ProductStockMovementModel m) {
+    if (m.unitCost == null && m.totalCost == null) return '—';
+    final parts = <String>[];
+    if (m.unitCost != null) {
+      parts.add('${'stockMoveUnitCost'.tr}: ${_money(m.unitCost!)}');
+    }
+    if (m.totalCost != null) {
+      parts.add('${'stockMoveTotalCost'.tr}: ${_money(m.totalCost!)}');
+    }
+    return parts.join(' | ');
+  }
+
+  static String _money(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toInt().toString();
+    }
+    return value.toStringAsFixed(2);
   }
 }

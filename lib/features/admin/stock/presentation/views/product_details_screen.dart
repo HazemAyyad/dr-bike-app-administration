@@ -23,6 +23,7 @@ import '../widgets/product_stock_movements_link.dart';
 import '../widgets/stock_skeleton_widgets.dart';
 import '../widgets/stock_quick_adjust_sheet.dart';
 import '../widgets/stock_variant_adjust_sheet.dart';
+import 'product_assembly_operations_screen.dart';
 
 class _ProductDetailsHero extends StatelessWidget {
   const _ProductDetailsHero({required this.product});
@@ -356,6 +357,7 @@ class ProductDetailsScreen extends GetView<StockController> {
         product: product,
       );
       if (target == null) return;
+      if (!context.mounted) return;
       final pick = await showStockQuickAdjustSheet(
         context: context,
         title: product.nameAr,
@@ -467,6 +469,8 @@ class ProductDetailsScreen extends GetView<StockController> {
                         hasVariants: _productHasVariants(product),
                       ),
                       SizedBox(height: 12.h),
+                      _ProductAssemblyOperationsLink(product: product),
+                      SizedBox(height: 12.h),
                       _ProductMediaSection(product: product),
                       SizedBox(height: 32.h),
                     ],
@@ -488,6 +492,73 @@ bool _productHasVariants(ProductDetailsModel product) {
     if ((sz.colorSizes ?? []).isNotEmpty) return true;
   }
   return false;
+}
+
+class _ProductAssemblyOperationsLink extends StatelessWidget {
+  const _ProductAssemblyOperationsLink({required this.product});
+
+  final ProductDetailsModel product;
+
+  void _open() {
+    Get.toNamed(
+      AppRoutes.PRODUCTASSEMBLYOPERATIONSSCREEN,
+      arguments: ProductAssemblyOperationsArgs(
+        productId: product.id,
+        productName: product.nameAr,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Material(
+      color: AdminUiColors.cardBackground(context),
+      borderRadius: BorderRadius.circular(16.r),
+      child: InkWell(
+        onTap: _open,
+        borderRadius: BorderRadius.circular(16.r),
+        child: Padding(
+          padding: EdgeInsets.all(14.w),
+          child: Row(
+            children: [
+              Icon(
+                Icons.precision_manufacturing_outlined,
+                size: 23.sp,
+                color: cs.primary,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'سجل التركيب',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'عمليات التركيب والمكونات والتكلفة',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.55),
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_left,
+                color: cs.onSurface.withValues(alpha: 0.45),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SizeColorDetailsTable extends StatefulWidget {
@@ -781,7 +852,8 @@ class _ColorSizeLine extends StatelessWidget {
                 width: 36.w,
                 height: 36.w,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => SizedBox(width: 36.w, height: 36.w),
+                errorBuilder: (_, __, ___) =>
+                    SizedBox(width: 36.w, height: 36.w),
               ),
             ),
             SizedBox(width: 8.w),

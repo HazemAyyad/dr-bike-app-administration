@@ -455,7 +455,7 @@ class StockDatasource {
   }) async {
     try {
       final response = await api.get(
-        EndPoints.allProducts,
+        EndPoints.productAssemblyProducts,
         queryParameters: {
           if (search != null && search.trim().isNotEmpty)
             'search': search.trim(),
@@ -465,6 +465,7 @@ class StockDatasource {
       final map = raw is Map<String, dynamic>
           ? raw
           : Map<String, dynamic>.from(raw as Map);
+      _debugAssemblyPickerRawProducts(map['products'], search: search);
       return mapList(
         map['products'],
         (m) => ProductModel.fromJson(m),
@@ -483,6 +484,39 @@ class StockDatasource {
               ? Map<String, dynamic>.from(data['data'] as Map)
               : {},
         ),
+      );
+    }
+  }
+
+  void _debugAssemblyPickerRawProducts(dynamic rawProducts, {String? search}) {
+    if (rawProducts is! List) {
+      debugPrint(
+        '[AssemblyCostDebug] products is not List. '
+        'search="$search" type=${rawProducts.runtimeType}',
+      );
+      return;
+    }
+
+    debugPrint(
+      '[AssemblyCostDebug] loaded ${rawProducts.length} products '
+      'search="${search ?? ''}"',
+    );
+    for (final item in rawProducts.take(5)) {
+      if (item is! Map) {
+        debugPrint('[AssemblyCostDebug] raw item type=${item.runtimeType}');
+        continue;
+      }
+      final product = Map<String, dynamic>.from(item);
+      final mapped = ProductModel.fromJson(product);
+      debugPrint(
+        '[AssemblyCostDebug] raw product '
+        'id=${product['id'] ?? product['product_id']} '
+        'name=${product['nameAr'] ?? product['product_name'] ?? product['name']} '
+        'purchase_cost=${product['purchase_cost']} '
+        'cost_price=${product['cost_price']} '
+        'purchase_price=${product['purchase_price']} '
+        'mappedPurchaseCost=${mapped.purchaseCost} '
+        'keys=${product.keys.toList()}',
       );
     }
   }
@@ -516,10 +550,51 @@ class StockDatasource {
     }
   }
 
+  Future<List<ProductAssemblyOperationModel>> getAssemblyOperationsForProduct({
+    required String productId,
+    int limit = 50,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.productAssemblyOperations,
+        queryParameters: {
+          'product_id': productId,
+          'limit': limit,
+        },
+      );
+      final raw = response.data;
+      final map = raw is Map<String, dynamic>
+          ? raw
+          : Map<String, dynamic>.from(raw as Map);
+      if (map['status'] != 'success') return [];
+      return mapList(
+        map['operations'],
+        (m) => ProductAssemblyOperationModel.fromJson(m),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map && data['status'] is int
+              ? data['status'] as int
+              : 500,
+          data: data is Map && data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : {},
+        ),
+      );
+    }
+  }
+
   Future<ProductAssemblyOperationModel> executeAssembly({
     required String targetProductId,
+    String? targetSizeColorId,
     required int quantity,
     required List<Map<String, dynamic>> components,
+    double additionalCost = 0,
     String? note,
   }) async {
     try {
@@ -527,7 +602,10 @@ class StockDatasource {
         EndPoints.productAssemblyExecute,
         data: {
           'target_product_id': targetProductId,
+          if (targetSizeColorId != null && targetSizeColorId.isNotEmpty)
+            'target_size_color_id': targetSizeColorId,
           'quantity': quantity,
+          'additional_cost': additionalCost,
           'components': components,
           if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
         },

@@ -397,10 +397,29 @@ class DailyCashCountRow {
   }) {
     return {
       'currency': currency,
-      'physical_count': physical,
-      'float_to_keep': floatKeep,
+      'physical_count': cleanRequestAmount(physical),
+      'float_to_keep': cleanRequestAmount(floatKeep),
       if (note != null && note.trim().isNotEmpty) 'employee_note': note.trim(),
     };
+  }
+
+  static String cleanRequestAmount(String value) {
+    var text = value.replaceAll(' ', '').trim();
+    text = text.replaceAll('٬', ',').replaceAll('،', ',');
+
+    final hasDot = text.contains('.');
+    final commaCount = ','.allMatches(text).length;
+    if (!hasDot && commaCount == 1 && RegExp(r',\d{1,2}$').hasMatch(text)) {
+      return text.replaceAll(',', '.');
+    }
+
+    if (hasDot &&
+        commaCount > 0 &&
+        text.lastIndexOf(',') > text.lastIndexOf('.')) {
+      return text.replaceAll('.', '').replaceAll(',', '.');
+    }
+
+    return text.replaceAll(',', '');
   }
 }
 
@@ -417,6 +436,7 @@ class DailySessionSummaryModel {
   final int instantSalesCount;
   final int profitSalesCount;
   final List<DailyCurrencyRow> currencies;
+  final List<DailyExpectedOpeningCount> expectedOpeningCounts;
   final bool canClose;
   final int? pendingClosingRequestId;
 
@@ -433,6 +453,7 @@ class DailySessionSummaryModel {
     this.instantSalesCount = 0,
     this.profitSalesCount = 0,
     this.currencies = const [],
+    this.expectedOpeningCounts = const [],
     this.canClose = false,
     this.pendingClosingRequestId,
   });
@@ -459,6 +480,10 @@ class DailySessionSummaryModel {
       currencies: mapList(
         json['currencies'],
         (Map<String, dynamic> m) => DailyCurrencyRow.fromJson(m),
+      ),
+      expectedOpeningCounts: mapList(
+        json['expected_opening_counts'],
+        (Map<String, dynamic> m) => DailyExpectedOpeningCount.fromJson(m),
       ),
       canClose: json['can_close'] == true || json['can_close'] == 1,
       pendingClosingRequestId: json['pending_closing_request_id'] == null
@@ -723,6 +748,7 @@ class DailySessionOrderLogRow {
 class DailySessionDetailModel {
   final DailySessionInfo session;
   final List<DailyCurrencyRow> currencies;
+  final List<DailyExpectedOpeningCount> expectedOpeningCounts;
   final int instantSalesCount;
   final int profitSalesCount;
   final List<DailySessionSaleLogRow> instantSales;
@@ -734,6 +760,7 @@ class DailySessionDetailModel {
   const DailySessionDetailModel({
     required this.session,
     this.currencies = const [],
+    this.expectedOpeningCounts = const [],
     this.instantSalesCount = 0,
     this.profitSalesCount = 0,
     this.instantSales = const [],
@@ -758,6 +785,10 @@ class DailySessionDetailModel {
       currencies: mapList(
         json['currencies'],
         (Map<String, dynamic> m) => DailyCurrencyRow.fromJson(m),
+      ),
+      expectedOpeningCounts: mapList(
+        json['expected_opening_counts'],
+        (Map<String, dynamic> m) => DailyExpectedOpeningCount.fromJson(m),
       ),
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),

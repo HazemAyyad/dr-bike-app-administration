@@ -408,6 +408,8 @@ const Map<String, String> ar = {
   'maintenanceLaborCost': 'أجرة الصيانة',
   'maintenancePartsTotal': 'إجمالي القطع',
   'maintenanceDeliverAndPay': 'تسليم ودفع',
+  'deleteMaintenance': 'حذف طلب الصيانة',
+  'deleteMaintenanceConfirm': 'هل تريد حذف طلب الصيانة؟',
   'noBoxesAvailable': 'لا توجد صناديق متاحة',
   'checksandCommitments': 'ادارة الشيكات',
   'countersAndStatisticsAndReports': 'العدادات والاحصائيات والتقارير',
@@ -2085,6 +2087,13 @@ const Map<String, String> ar = {
   'stockMoveTypeManualAdd': 'إضافة يدوية',
   'stockMoveTypeManualSet': 'خصم يدوي',
   'stockMoveTypeImport': 'استيراد',
+  'stockMoveTypeAssemblyComponent': 'تركيب منتج - خصم مكوّن',
+  'stockMoveTypeAssemblyOutput': 'تركيب منتج - إضافة المنتج المركّب',
+  'stockMoveTypeDisassemblyComponent': 'فك تركيب - إرجاع مكوّن',
+  'stockMoveTypeDisassemblyOutput': 'فك تركيب - خصم المنتج المركّب',
+  'stockMoveColCost': 'التكلفة',
+  'stockMoveUnitCost': 'تكلفة الوحدة',
+  'stockMoveTotalCost': 'الإجمالي',
   'stockMoveFilterType': 'نوع الحركة',
   'stockMoveFilterAllTypes': 'كل الأنواع',
   'stockMovementsPdf': 'تصدير PDF',
@@ -2615,13 +2624,6 @@ const Map<String, String> ar = {
   'instantSaleSuggestProducts': 'رشح المنتجات',
   'instantSaleActivePastedLine': 'السطر المطلوب',
   'instantSalePasteListEmpty': 'لم يتم العثور على منتجات في النص الملصق',
-  'instantSaleOcrCamera': 'تصوير ورقة',
-  'instantSaleOcrGallery': 'اختيار صورة',
-  'instantSaleOcrReading': 'جاري قراءة النص...',
-  'instantSaleOcrNoText':
-      'لم يتم العثور على نص واضح في الصورة. للصور العربية يجب تفعيل OCR السحابي.',
-  'instantSaleOcrFailed':
-      'تعذر قراءة النص من الصورة. تأكد من تفعيل مفتاح OCR العربي على السيرفر.',
   'instantSalePackageBadge': 'بكيج',
   'instantSalePackageAndProducts': 'باكيج + منتجات',
   'instantSaleSwipeProducts': 'اسحب يميناً أو يساراً لعرض المزيد',
@@ -2691,6 +2693,9 @@ const Map<String, String> ar = {
   'salesDailyOpenDrawerConfirm':
       'هل تريد فتح صندوق المبيعات اليومي؟ لن يتمكن موظف آخر من فتح صندوق حتى تغلقه.',
   'salesDailyOpeningCountTitle': 'عدّ كاش افتتاح الصندوق',
+  'salesDailyExpectedOpeningShort': 'المفروض',
+  'salesDailyReceivedOpeningShort': 'استلم',
+  'salesDailyReceivedOpening': 'الكاش المستلم عند الفتح',
   'salesDailyOpeningCountHint':
       'اكتب الكاش الذي استلمته فعلياً قبل فتح الصندوق.',
   'salesDailyExpectedOpening':

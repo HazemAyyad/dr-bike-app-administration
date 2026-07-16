@@ -1690,6 +1690,7 @@ class SalesController extends GetxController
       return;
     }
     line.quantityController.text = next.toString();
+    _refreshTierPriceForCartLine(line);
     line.recalculateTotal();
     calculateGrandTotal();
     bumpCartRevision();
@@ -1739,6 +1740,7 @@ class SalesController extends GetxController
         return;
       }
       line.quantityController.text = next.toString();
+      _refreshTierPriceForCartLine(line);
       line.recalculateTotal();
       calculateGrandTotal();
       bumpCartRevision();
@@ -1759,6 +1761,7 @@ class SalesController extends GetxController
         quantity: pick.quantity.toString(),
         unitPrice: await resolveDefaultUnitPrice(
           resolved,
+          quantity: pick.quantity,
           sizeColorId: pick.variant.id,
           variantRetailPrice: pick.variant.normailPrice,
           variantWholesalePrice: pick.variant.wholesalePrice,
@@ -1806,6 +1809,7 @@ class SalesController extends GetxController
       removeCartLine(idx);
     } else {
       line.quantityController.text = (current - 1).toString();
+      _refreshTierPriceForCartLine(line);
       line.recalculateTotal();
       calculateGrandTotal();
     }
@@ -1820,6 +1824,7 @@ class SalesController extends GetxController
         ? qty.clamp(1, qty)
         : qty.clamp(1, stock > 0 ? stock : qty);
     line.quantityController.text = safe.toString();
+    _refreshTierPriceForCartLine(line);
     line.recalculateTotal();
     calculateGrandTotal();
     bumpCartRevision();
@@ -1841,6 +1846,7 @@ class SalesController extends GetxController
       return;
     }
     line.quantityController.text = next.toString();
+    _refreshTierPriceForCartLine(line);
     line.recalculateTotal();
     calculateGrandTotal();
     bumpCartRevision();
@@ -1994,6 +2000,10 @@ class SalesController extends GetxController
       'sale_kind': currentInstantSaleKind,
       'buyer_type': _paymentBuyerType,
     };
+    final editInstantSaleId = activeEditInstantSaleId.value;
+    if (editInstantSaleId != null) {
+      map['source_instant_sale_id'] = editInstantSaleId;
+    }
 
     final projectId = items.first.selectedValue.value;
     if (items.first.selectedCustomersSellers.value &&
@@ -2674,13 +2684,15 @@ class SalesController extends GetxController
       );
       return;
     }
-    if (showSalesBlockedMessage()) return;
+    setInstantSaleAdjustmentMode(sale.isAdjustmentSale);
+    if (!sale.isAdjustmentSale && showSalesBlockedMessage()) return;
 
     isLoading(true);
     try {
       clearActiveSuspendedSale();
       clearActiveEditInstantSale();
       resetInstantSaleForm();
+      setInstantSaleAdjustmentMode(sale.isAdjustmentSale);
 
       final invoice =
           await invoiceModelUsecase.call(invoiceId: sale.id.toString());
@@ -2700,9 +2712,12 @@ class SalesController extends GetxController
 
       activeEditInstantSaleId.value = sale.id;
       await hydrateFromInvoice(invoice);
+      setInstantSaleAdjustmentMode(invoice.isAdjustmentSale);
 
       isLoading(false);
-      await Get.toNamed(AppRoutes.INSTANTSALEPRODUCTPICKER);
+      await Get.toNamed(invoice.isAdjustmentSale
+          ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+          : AppRoutes.INSTANTSALEPRODUCTPICKER);
     } catch (e) {
       clearActiveEditInstantSale();
       Helpers.showCustomDialogError(
@@ -3129,9 +3144,14 @@ class SalesController extends GetxController
 
   double catalogUnitPriceForProduct(
     ProductModel product, {
+    int quantity = 1,
     double? variantRetailPrice,
     double? variantWholesalePrice,
   }) {
+    final tierPrice = product.tierPriceForQuantity(quantity);
+    if (tierPrice != null && tierPrice > 0) {
+      return tierPrice;
+    }
     if (product.hasCustomPrice &&
         product.customPrice != null &&
         product.customPrice! > 0) {
@@ -3162,6 +3182,7 @@ class SalesController extends GetxController
     }
     final unit = catalogUnitPriceForProduct(
       product,
+      quantity: 1,
       variantRetailPrice: variantRetailPrice,
       variantWholesalePrice: variantWholesalePrice,
     );
@@ -3197,6 +3218,32 @@ class SalesController extends GetxController
     return null;
   }
 
+  Future<void> _refreshTierPriceForCartLine(InstantSaleCartLine line) async {
+    if (line.isDisposed) return;
+    final product = productById(line.productId);
+    if (product == null || product.priceTiers.isEmpty) return;
+    final quantity = int.tryParse(line.quantityText) ?? 1;
+    final price = await resolveDefaultUnitPrice(
+      product,
+      quantity: quantity,
+      sizeColorId: line.sizeColorId,
+      variantRetailPrice: variantRetailPriceForLine(
+        product: product,
+        sizeColorId: line.sizeColorId,
+      ),
+      variantWholesalePrice: variantWholesalePriceForLine(
+        product: product,
+        sizeColorId: line.sizeColorId,
+      ),
+    );
+    if (line.isDisposed || price == null || price.isEmpty) return;
+    if (line.priceController.text.trim() == price) return;
+    line.priceController.text = price;
+    line.recalculateTotal();
+    calculateGrandTotal();
+    syncCartToItems();
+  }
+
   Future<void> refreshCartPricesForPartner() async {
     if (cartLines.isEmpty) return;
     for (final line in cartLines) {
@@ -3205,6 +3252,7 @@ class SalesController extends GetxController
       if (product == null) continue;
       final price = await resolveDefaultUnitPrice(
         product,
+        quantity: int.tryParse(line.quantityText) ?? 1,
         sizeColorId: line.sizeColorId,
         variantRetailPrice: variantRetailPriceForLine(
           product: product,
@@ -3264,7 +3312,10 @@ class SalesController extends GetxController
       final priced = await ensureProductPricesForPicker(resolved);
       if (priced == null) return;
 
-      final unitPrice = await resolveDefaultUnitPrice(priced);
+      final unitPrice = await resolveDefaultUnitPrice(
+        priced,
+        quantity: result,
+      );
       addCartLine(
         InstantSaleCartLine.fromProduct(
           priced,
@@ -3287,6 +3338,7 @@ class SalesController extends GetxController
 
   Future<String?> resolveDefaultUnitPrice(
     ProductModel product, {
+    int quantity = 1,
     String? sizeColorId,
     double? variantRetailPrice,
     double? variantWholesalePrice,
@@ -3297,6 +3349,11 @@ class SalesController extends GetxController
     if (!hasPartner) {
       if (product.unitPrice > 0) return _formatUnitPrice(product.unitPrice);
       return null;
+    }
+
+    final tierPrice = product.tierPriceForQuantity(quantity);
+    if (tierPrice != null && tierPrice > 0) {
+      return _formatUnitPrice(tierPrice);
     }
 
     if (product.hasCustomPrice &&
@@ -3394,6 +3451,7 @@ class SalesController extends GetxController
       final incomingQty = int.tryParse(line.quantityText) ?? 0;
       final nextQty = existingQty + (incomingQty > 0 ? incomingQty : 1);
       existing.quantityController.text = nextQty.toString();
+      _refreshTierPriceForCartLine(existing);
       if (existing.priceText.trim().isEmpty &&
           line.priceText.trim().isNotEmpty) {
         existing.priceController.text = line.priceText;
@@ -4252,11 +4310,9 @@ class SalesController extends GetxController
           if (!isClosed) {
             _instantSalePayment?.clearPaymentForm();
             _releaseInstantSalePaymentController();
+            resetInstantSaleForm();
             clearActiveEditInstantSale();
-            isPackageSale.value = false;
-            selectedPackageId.value = null;
-            packageLineTotal.value = 0;
-            bumpCartRevision();
+            clearActiveSuspendedSale();
           }
 
           await refreshAllSalesData(showLoading: false);
@@ -4796,14 +4852,19 @@ class SalesController extends GetxController
     }
 
     if (existingIdx >= 0) {
-      cartLines[existingIdx].quantityController.text = (isAdjustmentInstantSale
+      final line = cartLines[existingIdx];
+      line.quantityController.text = (isAdjustmentInstantSale
               ? requestedQty.clamp(1, requestedQty)
               : requestedQty.clamp(1, stock))
           .toString();
-      cartLines[existingIdx].recalculateTotal();
+      _refreshTierPriceForCartLine(line);
+      line.recalculateTotal();
       calculateGrandTotal();
     } else {
-      final unitPrice = await resolveDefaultUnitPrice(resolved);
+      final unitPrice = await resolveDefaultUnitPrice(
+        resolved,
+        quantity: qty,
+      );
       addCartLine(
         InstantSaleCartLine.fromProduct(
           resolved,

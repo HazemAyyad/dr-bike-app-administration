@@ -145,15 +145,26 @@ class StockScreen extends GetView<StockController> {
           onTap: controller.toggleAddMenu,
           sizeAnimation: controller.sizeAnimation,
           opacityAnimation: controller.opacityAnimation,
-          customWidget: BuildAddMenuItem(
-            title: 'addProduct',
-            iconAsset: AssetsManager.invoiceIcon,
-            route: '',
-            onTap: () {
-              controller.toggleAddMenu();
-              controller.prepareCreateProduct();
-              Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
-            },
+          customWidget: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              BuildAddMenuItem(
+                title: 'addProduct',
+                iconAsset: AssetsManager.invoiceIcon,
+                route: '',
+                onTap: () {
+                  controller.toggleAddMenu();
+                  controller.prepareCreateProduct();
+                  Get.toNamed(AppRoutes.EDITPRODUCTSCREEN);
+                },
+              ),
+              BuildAddMenuItem(
+                title: 'newProductComposition',
+                iconAsset: AssetsManager.invoiceIcon,
+                route: AppRoutes.ADDCOMBINATIONSCREEN,
+                onTap: controller.toggleAddMenu,
+              ),
+            ],
           ),
         );
       }),

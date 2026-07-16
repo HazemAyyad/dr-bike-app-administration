@@ -18,6 +18,38 @@ import '../controllers/maintenance_controller.dart';
 class MaintenanceDataWidget extends GetView<MaintenanceController> {
   const MaintenanceDataWidget({Key? key}) : super(key: key);
 
+  Future<void> _confirmDelete(
+    BuildContext context,
+    MaintenanceDataModel item,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('deleteMaintenance'.tr),
+        content: Text('deleteMaintenanceConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'delete'.tr,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await controller.deleteMaintenance(
+        maintenanceId: item.id.toString(),
+      );
+    }
+  }
+
   String? _resolvePhone(MaintenanceDataModel item) {
     final fromApi = item.contactPhone?.trim();
     if (fromApi != null && fromApi.isNotEmpty) {
@@ -151,44 +183,60 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                           onLongPress: () async {
                             controller.getAllCustomersAndSellers();
                             final phone = _resolvePhone(item);
-                            if (phone == null || phone.isEmpty) {
-                              Get.snackbar(
-                                'error'.tr,
-                                'noPhoneNumber'.tr,
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                              return;
-                            }
+                            final canDelete =
+                                controller.currentTab.value == 0 ||
+                                    controller.currentTab.value == 1;
                             await showModalBottomSheet<void>(
                               context: context,
                               builder: (ctx) => SafeArea(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    ListTile(
-                                      leading: const Icon(Icons.phone),
-                                      title: Text('callCustomer'.tr),
-                                      subtitle: Text(phone),
-                                      onTap: () async {
-                                        Navigator.pop(ctx);
-                                        await launchDialer(phoneNumber: phone);
-                                      },
-                                    ),
-                                    ListTile(
-                                      leading: Image.asset(
-                                        AssetsManager.whatsapp,
-                                        width: 24.w,
-                                        height: 24.w,
+                                    if (phone != null && phone.isNotEmpty) ...[
+                                      ListTile(
+                                        leading: const Icon(Icons.phone),
+                                        title: Text('callCustomer'.tr),
+                                        subtitle: Text(phone),
+                                        onTap: () async {
+                                          Navigator.pop(ctx);
+                                          await launchDialer(
+                                            phoneNumber: phone,
+                                          );
+                                        },
                                       ),
-                                      title: Text('whatsappCall'.tr),
-                                      subtitle: Text(phone),
-                                      onTap: () async {
-                                        Navigator.pop(ctx);
-                                        await launchWhatsApp(
-                                          phoneNumber: phone,
-                                        );
-                                      },
-                                    ),
+                                      ListTile(
+                                        leading: Image.asset(
+                                          AssetsManager.whatsapp,
+                                          width: 24.w,
+                                          height: 24.w,
+                                        ),
+                                        title: Text('whatsappCall'.tr),
+                                        subtitle: Text(phone),
+                                        onTap: () async {
+                                          Navigator.pop(ctx);
+                                          await launchWhatsApp(
+                                            phoneNumber: phone,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                    if (canDelete)
+                                      ListTile(
+                                        leading: const Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.red,
+                                        ),
+                                        title: Text(
+                                          'deleteMaintenance'.tr,
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                        onTap: () async {
+                                          Navigator.pop(ctx);
+                                          await _confirmDelete(context, item);
+                                        },
+                                      ),
                                   ],
                                 ),
                               ),

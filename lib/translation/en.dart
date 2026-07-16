@@ -407,6 +407,8 @@ const Map<String, String> en = {
   'maintenanceLaborCost': 'Labor cost',
   'maintenancePartsTotal': 'Parts total',
   'maintenanceDeliverAndPay': 'Deliver & pay',
+  'deleteMaintenance': 'Delete maintenance request',
+  'deleteMaintenanceConfirm': 'Delete this maintenance request?',
   'noBoxesAvailable': 'No boxes available',
   'checksandCommitments': 'Check Management',
   'countersAndStatisticsAndReports': 'Counters and Statistics and Reports',
@@ -2032,6 +2034,13 @@ const Map<String, String> en = {
   'stockMoveTypeManualAdd': 'Manual add',
   'stockMoveTypeManualSet': 'Manual remove',
   'stockMoveTypeImport': 'Import',
+  'stockMoveTypeAssemblyComponent': 'Product assembly - component deducted',
+  'stockMoveTypeAssemblyOutput': 'Product assembly - output added',
+  'stockMoveTypeDisassemblyComponent': 'Disassembly - component returned',
+  'stockMoveTypeDisassemblyOutput': 'Disassembly - assembled product deducted',
+  'stockMoveColCost': 'Cost',
+  'stockMoveUnitCost': 'Unit cost',
+  'stockMoveTotalCost': 'Total cost',
   'stockMoveFilterType': 'Movement type',
   'stockMoveFilterAllTypes': 'All types',
   'stockMovementsPdf': 'Export PDF',
@@ -2560,13 +2569,6 @@ const Map<String, String> en = {
   'instantSaleSuggestProducts': 'Suggest products',
   'instantSaleActivePastedLine': 'Requested line',
   'instantSalePasteListEmpty': 'No products were found in the pasted text',
-  'instantSaleOcrCamera': 'Scan paper',
-  'instantSaleOcrGallery': 'Choose image',
-  'instantSaleOcrReading': 'Reading text...',
-  'instantSaleOcrNoText':
-      'No clear text was found in the image. Arabic images require cloud OCR.',
-  'instantSaleOcrFailed':
-      'Could not read text from the image. Make sure Arabic OCR is enabled on the server.',
   'instantSalePackageBadge': 'Package',
   'instantSalePackageAndProducts': 'Package + products',
   'instantSaleSwipeProducts': 'Swipe left or right to see more products',
@@ -2720,6 +2722,9 @@ const Map<String, String> en = {
   'salesDailyOpenDrawerConfirm':
       'Open today\'s sales drawer? No other employee can open a drawer until you close it.',
   'salesDailyOpeningCountTitle': 'Count opening cash',
+  'salesDailyExpectedOpeningShort': 'Expected',
+  'salesDailyReceivedOpeningShort': 'Received',
+  'salesDailyReceivedOpening': 'Cash received at opening',
   'salesDailyOpeningCountHint':
       'Enter the cash you physically received before opening the drawer.',
   'salesDailyExpectedOpening':

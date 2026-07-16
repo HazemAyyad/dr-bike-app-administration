@@ -6,6 +6,7 @@ import '../../../checks/data/repositories/checks_implement.dart';
 import '../../../checks/domain/usecases/all_customers_sellers_usecase.dart';
 import '../../data/repositories/maintenance_implement.dart';
 import '../../domain/usecases/creat_maintenance_usecase.dart';
+import '../../domain/usecases/delete_maintenance_usecase.dart';
 import '../../domain/usecases/deliver_maintenance_usecase.dart';
 import '../../domain/usecases/get_maintenance_activity_log_usecase.dart';
 import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
@@ -23,6 +24,9 @@ class MaintenanceBinding extends Bindings {
           maintenanceRepository: Get.find<MaintenanceImplement>(),
         ),
         creatMaintenanceUsecase: CreatMaintenanceUsecase(
+          maintenanceRepository: Get.find<MaintenanceImplement>(),
+        ),
+        deleteMaintenanceUsecase: DeleteMaintenanceUsecase(
           maintenanceRepository: Get.find<MaintenanceImplement>(),
         ),
         allCustomersSellersUsecase: AllCustomersSellersUsecase(

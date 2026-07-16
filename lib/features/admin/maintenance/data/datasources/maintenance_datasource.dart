@@ -121,6 +121,27 @@ class MaintenanceDatasource {
     }
   }
 
+  Future<dynamic> deleteMaintenance({
+    required String maintenanceId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.deleteMaintenance,
+        data: {'maintenance_id': maintenanceId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
   Future<dynamic> syncMaintenanceProducts({
     required String maintenanceId,
     required List<MaintenanceProductModel> products,

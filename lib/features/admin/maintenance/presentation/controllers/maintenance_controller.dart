@@ -20,6 +20,7 @@ import '../../../sales/presentation/utils/sales_amount_format.dart';
 import '../../data/models/maintenance_product_model.dart';
 import '../../data/models/maintenances_model.dart';
 import '../../domain/usecases/creat_maintenance_usecase.dart';
+import '../../domain/usecases/delete_maintenance_usecase.dart';
 import '../../domain/usecases/deliver_maintenance_usecase.dart';
 import '../../domain/usecases/get_maintenance_activity_log_usecase.dart';
 import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
@@ -34,6 +35,7 @@ import '../widgets/maintenance_invoice_sheet.dart';
 class MaintenanceController extends GetxController {
   final MaintenanceUsecase maintenanceUsecase;
   final CreatMaintenanceUsecase creatMaintenanceUsecase;
+  final DeleteMaintenanceUsecase deleteMaintenanceUsecase;
   final AllCustomersSellersUsecase allCustomersSellersUsecase;
   final GetMaintenancesDetailsUsecase getMaintenancesDetailsUsecase;
   final SyncMaintenanceProductsUsecase syncMaintenanceProductsUsecase;
@@ -45,6 +47,7 @@ class MaintenanceController extends GetxController {
   MaintenanceController({
     required this.maintenanceUsecase,
     required this.creatMaintenanceUsecase,
+    required this.deleteMaintenanceUsecase,
     required this.allCustomersSellersUsecase,
     required this.getMaintenancesDetailsUsecase,
     required this.syncMaintenanceProductsUsecase,
@@ -378,7 +381,44 @@ class MaintenanceController extends GetxController {
     );
   }
 
-  void getMaintenancesData() async {
+  Future<bool> deleteMaintenance({
+    required String maintenanceId,
+  }) async {
+    isLoading(true);
+    update();
+
+    final result = await deleteMaintenanceUsecase.call(
+      maintenanceId: maintenanceId,
+    );
+
+    var deleted = false;
+    await result.fold(
+      (failure) async {
+        Get.snackbar(
+          'error'.tr,
+          failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      },
+      (message) async {
+        deleted = true;
+        await getMaintenancesData();
+        Get.snackbar(
+          'success'.tr,
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
+    );
+
+    isLoading(false);
+    update();
+    return deleted;
+  }
+
+  Future<void> getMaintenancesData() async {
     if (MaintenanceServes().maintenancesList.isEmpty) isLoading(true);
     update();
 

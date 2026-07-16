@@ -34,7 +34,7 @@ class SalesDailyStatusBar extends GetView<SalesController> {
       '۸': '8',
       '۹': '9',
     };
-    var text = (value ?? '').trim().replaceAll(',', '').replaceAll('،', '');
+    var text = DailyCashCountRow.cleanRequestAmount(value ?? '');
     eastern.forEach((from, to) {
       text = text.replaceAll(from, to);
     });

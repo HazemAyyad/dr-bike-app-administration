@@ -150,10 +150,12 @@ class SupportConversationListResult {
 }
 
 class SupportConversationDetailResult {
+  final bool canManage;
   final SupportConversation conversation;
   final List<SupportMessage> messages;
 
   const SupportConversationDetailResult({
+    required this.canManage,
     required this.conversation,
     required this.messages,
   });
@@ -199,6 +201,7 @@ class SupportService {
         .toList();
 
     return SupportConversationDetailResult(
+      canManage: raw['can_manage_support'] == true,
       conversation: SupportConversation.fromJson(
         Map<String, dynamic>.from(raw['conversation'] as Map),
       ),

@@ -121,6 +121,33 @@ class MaintenanceImplement implements MaintenanceRepository {
   }
 
   @override
+  Future<Either<Failure, String>> deleteMaintenance({
+    required String maintenanceId,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await maintenanceDatasource.deleteMaintenance(
+        maintenanceId: maintenanceId,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message']?.toString() ?? '');
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'error'.tr, {}));
+    }
+  }
+
+  @override
   Future<Either<Failure, MaintenanceBillingModel>> syncMaintenanceProducts({
     required String maintenanceId,
     required List<MaintenanceProductModel> products,

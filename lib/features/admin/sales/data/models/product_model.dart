@@ -3,6 +3,38 @@ import 'package:doctorbike/core/helpers/product_image_utils.dart';
 
 import 'product_variant_model.dart';
 
+class ProductPriceTier {
+  final int minQty;
+  final int? maxQty;
+  final double unitPrice;
+
+  const ProductPriceTier({
+    required this.minQty,
+    required this.maxQty,
+    required this.unitPrice,
+  });
+
+  factory ProductPriceTier.fromJson(Map<String, dynamic> json) {
+    return ProductPriceTier(
+      minQty: asInt(json['min_qty'], 0),
+      maxQty: json['max_qty'] == null ? null : asInt(json['max_qty']),
+      unitPrice: asDouble(json['unit_price'] ?? 0),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'min_qty': minQty,
+      'max_qty': maxQty,
+      'unit_price': unitPrice,
+    };
+  }
+
+  bool matches(int qty) {
+    return qty >= minQty && (maxQty == null || qty <= maxQty!);
+  }
+}
+
 class ProductModel {
   final String id;
   final String nameAr;
@@ -12,6 +44,7 @@ class ProductModel {
   final double wholesalePrice;
   final double? customPrice;
   final bool hasCustomPrice;
+  final List<ProductPriceTier> priceTiers;
   final double rate;
   final double purchaseCost;
   final String imageUrl;
@@ -37,6 +70,7 @@ class ProductModel {
     this.wholesalePrice = 0,
     this.customPrice,
     this.hasCustomPrice = false,
+    this.priceTiers = const [],
     this.rate = 0,
     this.purchaseCost = 0,
     this.imageUrl = '',
@@ -73,6 +107,17 @@ class ProductModel {
     return id.trim();
   }
 
+  double? tierPriceForQuantity(int quantity) {
+    if (priceTiers.isEmpty) return null;
+    final safeQty = quantity < 1 ? 1 : quantity;
+    for (final tier in priceTiers) {
+      if (tier.unitPrice > 0 && tier.matches(safeQty)) {
+        return tier.unitPrice;
+      }
+    }
+    return null;
+  }
+
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
 
@@ -101,8 +146,19 @@ class ProductModel {
       customPrice:
           j['custom_price'] == null ? null : asDouble(j['custom_price']),
       hasCustomPrice: j['has_custom_price'] == true,
+      priceTiers: mapList(
+        j['price_tiers'],
+        (m) => ProductPriceTier.fromJson(m),
+      ),
       rate: asDouble(j['rate'] ?? 0),
-      purchaseCost: asDouble(j['purchase_cost'] ?? j['purchaseCost'] ?? 0),
+      purchaseCost: asDouble(
+        j['purchase_cost'] ??
+            j['purchaseCost'] ??
+            j['cost_price'] ??
+            j['costPrice'] ??
+            j['purchase_price'] ??
+            0,
+      ),
       imageUrl: asString(
         j['product_image'] ?? j['image'] ?? j['imageUrl'],
         '',
@@ -136,6 +192,7 @@ class ProductModel {
     double? wholesalePrice,
     double? customPrice,
     bool? hasCustomPrice,
+    List<ProductPriceTier>? priceTiers,
     double? purchaseCost,
     String? productCode,
     String? storeSectionId,
@@ -150,6 +207,7 @@ class ProductModel {
       wholesalePrice: wholesalePrice ?? this.wholesalePrice,
       customPrice: customPrice ?? this.customPrice,
       hasCustomPrice: hasCustomPrice ?? this.hasCustomPrice,
+      priceTiers: priceTiers ?? this.priceTiers,
       rate: rate,
       purchaseCost: purchaseCost ?? this.purchaseCost,
       imageUrl: imageUrl,
@@ -174,6 +232,7 @@ class ProductModel {
       'normail_price': unitPrice,
       if (customPrice != null) 'custom_price': customPrice,
       'has_custom_price': hasCustomPrice,
+      'price_tiers': priceTiers.map((tier) => tier.toJson()).toList(),
       'rate': rate,
       'product_image': imageUrl,
       'product_viewImages': viewImageUrls,

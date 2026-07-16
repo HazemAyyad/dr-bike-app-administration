@@ -7,6 +7,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/error_model.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../employee_section/data/models/logs_model.dart';
+import '../models/activity_summary_model.dart';
 import '../models/main_dashboard_mata_model.dart';
 
 class AdminDashboardDatasource {
@@ -19,6 +20,33 @@ class AdminDashboardDatasource {
       final response = await api.get(EndPoints.adminLogs);
       final data = response.data['logs'] as List;
       return data.map((e) => LogsModel.fromJson(e)).toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<ActivitySummaryModel> getActivitySummary({
+    String? dateFrom,
+    String? dateTo,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.activitySummary,
+        queryParameters: {
+          if (dateFrom != null) 'date_from': dateFrom,
+          if (dateTo != null) 'date_to': dateTo,
+        },
+      );
+      final data = response.data['data'];
+      return ActivitySummaryModel.fromJson(
+          (data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(

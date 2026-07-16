@@ -12,6 +12,10 @@ abstract class MaintenanceRepository {
 
   Future<dynamic> getMaintenancesDetails({required String maintenanceId});
 
+  Future<Either<Failure, String>> deleteMaintenance({
+    required String maintenanceId,
+  });
+
   Future<Either<Failure, Map<String, String>>> creatMaintenance({
     String? maintenanceId,
     required String customerId,

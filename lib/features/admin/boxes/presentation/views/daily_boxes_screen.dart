@@ -29,38 +29,64 @@ class DailyBoxesScreen extends StatefulWidget {
 class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
   final BoxesController controller = Get.find<BoxesController>();
   String _filter = 'all';
-  DailySessionPayload? _salesDailyPayload;
-  bool _loadingSalesDailyPayload = false;
+  List<DailySessionSummaryModel> _salesSessions = const [];
+  bool _loadingSalesSessions = false;
+  _DailyBoxLogScope _salesSessionScope = _DailyBoxLogScope.today;
+  DateTime? _salesSessionCustomDate;
 
   @override
   void initState() {
     super.initState();
-    _loadSalesDailyPayload();
+    _loadSalesSessions();
   }
 
-  Future<void> _loadSalesDailyPayload() async {
-    setState(() => _loadingSalesDailyPayload = true);
+  DateTime _dateOnly(DateTime date) {
+    final local = date.toLocal();
+    return DateTime(local.year, local.month, local.day);
+  }
+
+  String _apiDate(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
+
+  Future<void> _loadSalesSessions() async {
+    setState(() => _loadingSalesSessions = true);
     try {
       AppDependencyRegistry.ensureSales();
       final ds = Get.find<SalesDatasource>();
-      final payload = await ds.getDailySessionCurrent();
+      final today = _dateOnly(DateTime.now());
+      String? fromDate;
+      String? toDate;
+      switch (_salesSessionScope) {
+        case _DailyBoxLogScope.today:
+          fromDate = _apiDate(today);
+          toDate = fromDate;
+          break;
+        case _DailyBoxLogScope.yesterday:
+          final target = today.subtract(const Duration(days: 1));
+          fromDate = _apiDate(target);
+          toDate = fromDate;
+          break;
+        case _DailyBoxLogScope.custom:
+          final target = _salesSessionCustomDate == null
+              ? today
+              : _dateOnly(_salesSessionCustomDate!);
+          fromDate = _apiDate(target);
+          toDate = fromDate;
+          break;
+        case _DailyBoxLogScope.all:
+          break;
+      }
+      final sessions = await ds.getDailySessionsHistory(
+        fromDate: fromDate,
+        toDate: toDate,
+      );
       if (!mounted) return;
-      setState(() => _salesDailyPayload = payload);
+      setState(() => _salesSessions = sessions);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _salesDailyPayload = null);
+      setState(() => _salesSessions = const []);
     } finally {
-      if (mounted) setState(() => _loadingSalesDailyPayload = false);
+      if (mounted) setState(() => _loadingSalesSessions = false);
     }
-  }
-
-  Set<int> get _todaySalesDailyBoxIds {
-    final rows = _salesDailyPayload?.currencies ?? const <DailyCurrencyRow>[];
-    return rows
-        .where((row) => row.currency.trim() == 'شيكل')
-        .map((row) => row.dailyBoxId)
-        .where((id) => id > 0)
-        .toSet();
   }
 
   List<ShownBoxesModel> _dailyBoxes() {
@@ -85,7 +111,7 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
     final type = box.type.toLowerCase();
     final name = box.boxName.toLowerCase();
     if (type == 'daily_sales') {
-      return _todaySalesDailyBoxIds.contains(box.boxId);
+      return false;
     }
 
     return type == 'daily_maintenance' ||
@@ -137,6 +163,69 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
   String _date(DateTime date) {
     final locale = Get.locale?.languageCode == 'ar' ? 'ar' : 'en';
     return DateFormat('d/M/yyyy hh:mm a', locale).format(date.toLocal());
+  }
+
+  Future<void> _pickSalesSessionDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _salesSessionCustomDate ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (picked == null) return;
+    setState(() {
+      _salesSessionCustomDate = picked;
+      _salesSessionScope = _DailyBoxLogScope.custom;
+    });
+    await _loadSalesSessions();
+  }
+
+  Future<void> _showSalesSessionDetails(
+    BuildContext context,
+    DailySessionSummaryModel session,
+  ) async {
+    AppDependencyRegistry.ensureSales();
+    final ds = Get.find<SalesDatasource>();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .82,
+          minChildSize: .45,
+          maxChildSize: .95,
+          builder: (context, scrollController) {
+            return FutureBuilder<DailySessionDetailModel>(
+              future: ds.getDailySessionDetail(session.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Center(child: Text('noData'.tr));
+                }
+                return _SalesSessionDetailSheet(
+                  detail: snapshot.data!,
+                  amount: _amount,
+                  dateText: _dateText,
+                  scrollController: scrollController,
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _dateText(String? value) {
+    if (value == null || value.trim().isEmpty) return '-';
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) return value;
+    return _date(parsed);
   }
 
   String _kindLabel(ShownBoxesModel box) {
@@ -208,8 +297,11 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
       ),
       body: Obx(() {
         final boxes = _dailyBoxes();
-        if ((controller.isLoading.value || _loadingSalesDailyPayload) &&
-            boxes.isEmpty) {
+        final showSalesSessions = _filter == 'all' || _filter == 'sales';
+        final hasSalesSessions = showSalesSessions && _salesSessions.isNotEmpty;
+        if ((controller.isLoading.value || _loadingSalesSessions) &&
+            boxes.isEmpty &&
+            !hasSalesSessions) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -217,7 +309,7 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
           onRefresh: () async {
             await Future.wait([
               controller.pullToRefresh(),
-              _loadSalesDailyPayload(),
+              _loadSalesSessions(),
             ]);
           },
           child: ListView(
@@ -229,7 +321,24 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
                 onChanged: (value) => setState(() => _filter = value),
               ),
               SizedBox(height: 12.h),
-              if (boxes.isEmpty)
+              if (showSalesSessions)
+                _SalesSessionsSection(
+                  sessions: _salesSessions,
+                  loading: _loadingSalesSessions,
+                  scope: _salesSessionScope,
+                  customDate: _salesSessionCustomDate,
+                  amount: _amount,
+                  dateText: _dateText,
+                  onScopeChanged: (scope) async {
+                    setState(() => _salesSessionScope = scope);
+                    await _loadSalesSessions();
+                  },
+                  onPickDate: () => _pickSalesSessionDate(context),
+                  onOpenDetails: (session) =>
+                      _showSalesSessionDetails(context, session),
+                ),
+              if (showSalesSessions && boxes.isNotEmpty) SizedBox(height: 12.h),
+              if (boxes.isEmpty && !hasSalesSessions)
                 SizedBox(height: 360.h, child: const ShowNoData())
               else
                 ...boxes.map((box) => _DailyBoxCard(
@@ -308,6 +417,633 @@ class _FilterBar extends StatelessWidget {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _SalesSessionsSection extends StatelessWidget {
+  const _SalesSessionsSection({
+    required this.sessions,
+    required this.loading,
+    required this.scope,
+    required this.customDate,
+    required this.amount,
+    required this.dateText,
+    required this.onScopeChanged,
+    required this.onPickDate,
+    required this.onOpenDetails,
+  });
+
+  final List<DailySessionSummaryModel> sessions;
+  final bool loading;
+  final _DailyBoxLogScope scope;
+  final DateTime? customDate;
+  final String Function(double value) amount;
+  final String Function(String? value) dateText;
+  final ValueChanged<_DailyBoxLogScope> onScopeChanged;
+  final VoidCallback onPickDate;
+  final ValueChanged<DailySessionSummaryModel> onOpenDetails;
+
+  Map<String, List<DailySessionSummaryModel>> _groupByDay() {
+    final groups = <String, List<DailySessionSummaryModel>>{};
+    for (final session in sessions) {
+      groups
+          .putIfAbsent(session.businessDate, () => <DailySessionSummaryModel>[])
+          .add(session);
+    }
+    return groups;
+  }
+
+  String _dayTitle(String key) {
+    final date = DateTime.tryParse(key);
+    if (date == null) return key;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final current = DateTime(date.year, date.month, date.day);
+    if (current == today) return 'today'.tr;
+    if (current == today.subtract(const Duration(days: 1))) {
+      return 'yesterday'.tr;
+    }
+    final locale = Get.locale?.languageCode == 'ar' ? 'ar' : 'en';
+    return DateFormat('EEEE d/M/yyyy', locale).format(current);
+  }
+
+  Map<String, double> _salesTotalsByCurrency(
+    Iterable<DailySessionSummaryModel> rows,
+  ) {
+    final totals = <String, double>{};
+    for (final session in rows) {
+      for (final row in session.currencies) {
+        totals[row.currency] = (totals[row.currency] ?? 0) + row.salesCollected;
+      }
+    }
+    return totals;
+  }
+
+  String _totalsText(Map<String, double> totals) {
+    if (totals.isEmpty) return amount(0);
+    return totals.entries
+        .map((entry) => '${amount(entry.value)} ${entry.key}')
+        .join(' | ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = ThemeService.isDark.value
+        ? AppColors.whiteColor
+        : AppColors.secondaryColor;
+    final cardColor = ThemeService.isDark.value
+        ? AppColors.customGreyColor
+        : AppColors.whiteColor;
+    final grouped = _groupByDay();
+    final allTotal = _totalsText(_salesTotalsByCurrency(sessions));
+
+    return Card(
+      elevation: 0,
+      color: cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.r),
+        side: BorderSide(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor4
+              : AppColors.operationalCardBorder,
+        ),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          tilePadding: EdgeInsets.all(12.w),
+          childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+          leading: Icon(
+            Icons.point_of_sale_outlined,
+            color: AppColors.primaryColor,
+            size: 22.sp,
+          ),
+          title: Text(
+            'salesDailyHistoryTitle'.tr,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          subtitle: Text(
+            '${'salesDailySalesCollected'.tr}: $allTotal',
+            style: TextStyle(
+              color: AppColors.greyColor,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          trailing: loading
+              ? SizedBox(
+                  width: 18.w,
+                  height: 18.w,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              : null,
+          children: [
+            _DailyBoxLogFilterBar(
+              scope: scope,
+              customDate: customDate,
+              onChanged: onScopeChanged,
+              onPickDate: onPickDate,
+            ),
+            SizedBox(height: 10.h),
+            if (!loading && sessions.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                child: Text(
+                  'noData'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.greyColor, fontSize: 12.sp),
+                ),
+              )
+            else
+              ...grouped.entries.map(
+                (entry) => _SalesDayGroup(
+                  title: _dayTitle(entry.key),
+                  sessions: entry.value,
+                  totalText: _totalsText(_salesTotalsByCurrency(entry.value)),
+                  amount: amount,
+                  dateText: dateText,
+                  onOpenDetails: onOpenDetails,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SalesDayGroup extends StatelessWidget {
+  const _SalesDayGroup({
+    required this.title,
+    required this.sessions,
+    required this.totalText,
+    required this.amount,
+    required this.dateText,
+    required this.onOpenDetails,
+  });
+
+  final String title;
+  final List<DailySessionSummaryModel> sessions;
+  final String totalText;
+  final String Function(double value) amount;
+  final String Function(String? value) dateText;
+  final ValueChanged<DailySessionSummaryModel> onOpenDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: AppColors.operationalCardBorder),
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: true,
+        tilePadding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+        childrenPadding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
+        title: Text(
+          title,
+          style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+        ),
+        subtitle: Text(
+          '${'salesDailySalesCollected'.tr}: $totalText',
+          style: TextStyle(
+            color: AppColors.greyColor,
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        children: sessions
+            .map(
+              (session) => _SalesSessionTile(
+                session: session,
+                amount: amount,
+                dateText: dateText,
+                onOpenDetails: () => onOpenDetails(session),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _SalesSessionTile extends StatelessWidget {
+  const _SalesSessionTile({
+    required this.session,
+    required this.amount,
+    required this.dateText,
+    required this.onOpenDetails,
+  });
+
+  final DailySessionSummaryModel session;
+  final String Function(double value) amount;
+  final String Function(String? value) dateText;
+  final VoidCallback onOpenDetails;
+
+  DailyExpectedOpeningCount? _expectedFor(String currency) {
+    return session.expectedOpeningCounts.firstWhereOrNull(
+      (row) => row.currency == currency,
+    );
+  }
+
+  String get _sessionSalesTotal {
+    if (session.currencies.isEmpty) return amount(0);
+    return session.currencies
+        .map((row) => '${amount(row.salesCollected)} ${row.currency}')
+        .join(' | ');
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'open':
+        return 'salesDailyStatusOpen'.tr;
+      case 'closing_requested':
+        return 'salesDailyStatusPending'.tr;
+      case 'closed':
+        return 'salesDailyStatusClosed'.tr;
+      default:
+        return status;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = ThemeService.isDark.value
+        ? AppColors.whiteColor
+        : AppColors.secondaryColor;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: AppColors.operationalCardBorder),
+      ),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+        childrenPadding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 10.h),
+        leading: CircleAvatar(
+          radius: 18.r,
+          backgroundColor: AppColors.primaryColor.withValues(alpha: .12),
+          child: Icon(
+            Icons.person_outline,
+            color: AppColors.primaryColor,
+            size: 20.sp,
+          ),
+        ),
+        title: Text(
+          session.employeeName ?? '-',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        subtitle: Padding(
+          padding: EdgeInsets.only(top: 3.h),
+          child: Wrap(
+            spacing: 8.w,
+            runSpacing: 3.h,
+            children: [
+              Text(session.businessDate, style: TextStyle(fontSize: 11.sp)),
+              Text(_statusLabel(session.status),
+                  style: TextStyle(
+                    color: AppColors.primaryColor,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                  )),
+              Text(
+                '${'instant_sales'.tr}: ${session.instantSalesCount}',
+                style: TextStyle(fontSize: 11.sp),
+              ),
+              Text(
+                '${'cashProfit'.tr}: ${session.profitSalesCount}',
+                style: TextStyle(fontSize: 11.sp),
+              ),
+              Text(
+                '${'salesDailySalesCollected'.tr}: $_sessionSalesTotal',
+                style: TextStyle(
+                  color: AppColors.secondaryColor,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Wrap(
+              spacing: 8.w,
+              runSpacing: 6.h,
+              children: [
+                _DailyBoxMetric(
+                  label: 'salesDailySalesCollected'.tr,
+                  value: _sessionSalesTotal,
+                ),
+                _DailyBoxMetric(
+                  label: 'salesDailyOpenedAt'.tr,
+                  value: dateText(session.openedAt),
+                ),
+                _DailyBoxMetric(
+                  label: 'salesDailyClosedAt'.tr,
+                  value: dateText(session.closedAt),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 8.h),
+          ...session.currencies.map((row) {
+            final expected = _expectedFor(row.currency)?.expectedAmount ?? 0;
+            return Padding(
+              padding: EdgeInsets.only(bottom: 6.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      row.currency,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${'salesDailyExpectedOpeningShort'.tr}: ${amount(expected)}',
+                    style:
+                        TextStyle(color: AppColors.greyColor, fontSize: 11.sp),
+                  ),
+                  SizedBox(width: 10.w),
+                  Text(
+                    '${'salesDailyReceivedOpeningShort'.tr}: ${amount(row.openingFloat)}',
+                    style: TextStyle(
+                      color: AppColors.secondaryColor,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          SizedBox(height: 8.h),
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: OutlinedButton.icon(
+              onPressed: onOpenDetails,
+              icon: Icon(Icons.receipt_long_outlined, size: 18.sp),
+              label: Text('details'.tr),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SalesSessionDetailSheet extends StatelessWidget {
+  const _SalesSessionDetailSheet({
+    required this.detail,
+    required this.amount,
+    required this.dateText,
+    required this.scrollController,
+  });
+
+  final DailySessionDetailModel detail;
+  final String Function(double value) amount;
+  final String Function(String? value) dateText;
+  final ScrollController scrollController;
+
+  DailyExpectedOpeningCount? _expectedFor(String currency) {
+    return detail.expectedOpeningCounts.firstWhereOrNull(
+      (row) => row.currency == currency,
+    );
+  }
+
+  String get _salesTotal {
+    if (detail.currencies.isEmpty) return amount(0);
+    return detail.currencies
+        .map((row) => '${amount(row.salesCollected)} ${row.currency}')
+        .join(' | ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = detail.session;
+    final sales = [...detail.instantSales, ...detail.profitSales];
+
+    return ListView(
+      controller: scrollController,
+      padding: EdgeInsets.all(16.w),
+      children: [
+        Text(
+          session.employeeName ?? '-',
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w900),
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          '${session.businessDate} | ${dateText(session.openedAt)} - ${dateText(session.closedAt)}',
+          style: TextStyle(color: AppColors.greyColor, fontSize: 12.sp),
+        ),
+        SizedBox(height: 12.h),
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: [
+            _DailyBoxMetric(
+              label: 'instant_sales'.tr,
+              value: detail.instantSalesCount.toString(),
+            ),
+            _DailyBoxMetric(
+              label: 'cashProfit'.tr,
+              value: detail.profitSalesCount.toString(),
+            ),
+            _DailyBoxMetric(
+              label: 'salesDailyOrdersSection'.tr,
+              value: detail.salesOrdersCount.toString(),
+            ),
+            _DailyBoxMetric(
+              label: 'salesDailySalesCollected'.tr,
+              value: _salesTotal,
+            ),
+          ],
+        ),
+        SizedBox(height: 14.h),
+        Text(
+          'salesDailyOpeningCountTitle'.tr,
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+        ),
+        SizedBox(height: 8.h),
+        ...detail.currencies.map(
+          (row) {
+            final expected = _expectedFor(row.currency)?.expectedAmount ?? 0;
+            return Card(
+              elevation: 0,
+              child: Padding(
+                padding: EdgeInsets.all(10.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(row.currency,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w900,
+                        )),
+                    SizedBox(height: 6.h),
+                    _DetailLine(
+                      label: 'salesDailyExpectedOpeningShort'.tr,
+                      value: amount(expected),
+                    ),
+                    _DetailLine(
+                      label: 'salesDailyReceivedOpening'.tr,
+                      value: amount(row.openingFloat),
+                    ),
+                    _DetailLine(
+                      label: 'salesDailySalesCollected'.tr,
+                      value: amount(row.salesCollected),
+                    ),
+                    _DetailLine(
+                      label: 'salesDailySystemBalance'.tr,
+                      value: amount(row.systemBalance),
+                    ),
+                    _DetailLine(
+                      label: 'salesDailyBoxBalance'.tr,
+                      value: amount(row.boxBalance),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        SizedBox(height: 14.h),
+        Text(
+          'salesDailySalesLog'.tr,
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+        ),
+        SizedBox(height: 8.h),
+        if (sales.isEmpty)
+          Text('noData'.tr)
+        else
+          ...sales.map(
+            (sale) => ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                sale.isCancelled
+                    ? Icons.cancel_outlined
+                    : Icons.receipt_long_outlined,
+                color: sale.isCancelled
+                    ? AppColors.redColor
+                    : AppColors.primaryColor,
+              ),
+              title: Text(
+                '${sale.displayInvoiceNumber} - ${sale.label}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                [
+                  if (sale.createdByName != null)
+                    '${'salesDailyMovementBy'.tr}: ${sale.createdByName}',
+                  if (sale.buyerName != null) sale.buyerName!,
+                  dateText(sale.createdAt),
+                ].join('\n'),
+              ),
+              trailing: Text(
+                amount(sale.paidAmount),
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: sale.isCancelled
+                      ? AppColors.redColor
+                      : AppColors.secondaryColor,
+                ),
+              ),
+            ),
+          ),
+        if (detail.closingRequests.isNotEmpty) ...[
+          SizedBox(height: 14.h),
+          Text(
+            'salesDailyClosingHistory'.tr,
+            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+          ),
+          SizedBox(height: 8.h),
+          ...detail.closingRequests.map(
+            (request) => Card(
+              elevation: 0,
+              child: Padding(
+                padding: EdgeInsets.all(10.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DetailLine(
+                      label: 'status'.tr,
+                      value: request.status,
+                    ),
+                    _DetailLine(
+                      label: 'salesDailyRequestedAt'.tr,
+                      value: dateText(request.requestedAt),
+                    ),
+                    ...request.cashCounts.map(
+                      (row) => _DetailLine(
+                        label: row.currency,
+                        value:
+                            '${'salesDailyPhysicalCount'.tr}: ${amount(row.physicalCount)} | ${'salesDailyVariance'.tr}: ${amount(row.variance)}',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _DetailLine extends StatelessWidget {
+  const _DetailLine({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4.h),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: AppColors.greyColor, fontSize: 12.sp),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+          ),
+        ],
       ),
     );
   }
@@ -786,11 +1522,20 @@ class _DailyBoxLogTile extends StatelessWidget {
   bool get _hasMaintenanceInvoice =>
       log.maintenanceId != null && log.maintenanceId!.trim().isNotEmpty;
 
+  String? get _noteText {
+    final note = log.note?.trim();
+    if (note == null || note.isEmpty || note == log.description.trim()) {
+      return null;
+    }
+    return note;
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _isOut ? AppColors.redColor : AppColors.customGreen1;
     final value = log.value.abs();
     final invoiceNumber = log.invoiceNumber?.trim();
+    final note = _noteText;
 
     return InkWell(
       onTap: _hasMaintenanceInvoice ? () => onOpenInvoice(log) : null,
@@ -825,6 +1570,20 @@ class _DailyBoxLogTile extends StatelessWidget {
                       fontSize: 11.sp,
                     ),
                   ),
+                  if (note != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: 2.h),
+                      child: Text(
+                        note,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.greyColor,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   if (invoiceNumber != null && invoiceNumber.isNotEmpty)
                     Text(
                       '${'billNumber'.tr}: $invoiceNumber',

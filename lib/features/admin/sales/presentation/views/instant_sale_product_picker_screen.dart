@@ -3,14 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../stock/data/models/offer_package_model.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../data/datasources/sales_datasources.dart';
 import '../controllers/sales_controller.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../widgets/new_instant_sale/instant_sale_cart_sheet.dart';
@@ -631,7 +628,6 @@ class _InstantSaleProductPickerScreenState
     final textController = TextEditingController();
     Timer? previewDebounce;
     var previewLoading = false;
-    var ocrLoading = false;
     final pasted = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -643,31 +639,6 @@ class _InstantSaleProductPickerScreenState
             await controller.previewPastedProductList(text);
             if (ctx.mounted) {
               setDialogState(() => previewLoading = false);
-            }
-          }
-
-          Future<void> runOcr(ImageSource source) async {
-            setDialogState(() => ocrLoading = true);
-            try {
-              final text = await _readProductListTextFromImage(source);
-              if (!ctx.mounted) return;
-              if (text == null || text.trim().isEmpty) {
-                Get.snackbar('error'.tr, 'instantSaleOcrNoText'.tr);
-                return;
-              }
-              textController.text = text.trim();
-              textController.selection = TextSelection.collapsed(
-                offset: textController.text.length,
-              );
-              await runPreview(textController.text);
-            } catch (e) {
-              if (ctx.mounted) {
-                Get.snackbar('error'.tr, 'instantSaleOcrFailed'.tr);
-              }
-            } finally {
-              if (ctx.mounted) {
-                setDialogState(() => ocrLoading = false);
-              }
             }
           }
 
@@ -688,46 +659,6 @@ class _InstantSaleProductPickerScreenState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Wrap(
-                      spacing: 8.w,
-                      runSpacing: 8.h,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: ocrLoading
-                              ? null
-                              : () => runOcr(ImageSource.camera),
-                          icon: const Icon(Icons.photo_camera_outlined),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF111827),
-                            side: const BorderSide(color: Color(0xFFD1D5DB)),
-                          ),
-                          label: Text('instantSaleOcrCamera'.tr),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: ocrLoading
-                              ? null
-                              : () => runOcr(ImageSource.gallery),
-                          icon: const Icon(Icons.photo_library_outlined),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF111827),
-                            side: const BorderSide(color: Color(0xFFD1D5DB)),
-                          ),
-                          label: Text('instantSaleOcrGallery'.tr),
-                        ),
-                        if (ocrLoading)
-                          Padding(
-                            padding: EdgeInsets.symmetric(vertical: 9.h),
-                            child: Text(
-                              'instantSaleOcrReading'.tr,
-                              style: const TextStyle(
-                                color: Color(0xFF2563EB),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 10.h),
                     TextField(
                       controller: textController,
                       minLines: 5,
@@ -903,36 +834,6 @@ class _InstantSaleProductPickerScreenState
     final request = controller.activePastedProductRequest;
     if (request != null) {
       _searchController.text = request.searchText;
-    }
-  }
-
-  Future<String?> _readProductListTextFromImage(ImageSource source) async {
-    final image = await ImagePicker().pickImage(
-      source: source,
-      imageQuality: 92,
-    );
-    if (image == null) return null;
-
-    try {
-      final serverText = await Get.find<SalesDatasource>()
-          .extractProductListTextFromImage(image: image);
-      if (serverText.trim().isNotEmpty) {
-        return serverText;
-      }
-    } catch (e) {
-      assert(() {
-        debugPrint('[InstantSaleOCR.server] $e');
-        return true;
-      }());
-    }
-
-    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-    try {
-      final inputImage = InputImage.fromFilePath(image.path);
-      final recognizedText = await recognizer.processImage(inputImage);
-      return recognizedText.text;
-    } finally {
-      await recognizer.close();
     }
   }
 }

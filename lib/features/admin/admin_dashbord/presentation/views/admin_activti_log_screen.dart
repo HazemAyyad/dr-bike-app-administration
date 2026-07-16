@@ -7,6 +7,7 @@ import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../data/models/activity_summary_model.dart';
 import '../../../employee_section/data/models/logs_model.dart';
 import '../../../employee_section/presentation/views/activity_log_screen.dart';
 import '../controllers/admin_dashboard_controller.dart';
@@ -27,6 +28,7 @@ class _AdminActivtiLogScreenState extends State<AdminActivtiLogScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: controller.logsSearchQuery);
+    controller.getActivitySummary();
   }
 
   @override
@@ -41,7 +43,7 @@ class _AdminActivtiLogScreenState extends State<AdminActivtiLogScreen> {
       appBar: const CustomAppBar(title: 'activityLog', action: false),
       body: RefreshIndicator(
         color: AppColors.primaryColor,
-        onRefresh: () async => controller.getLogs(),
+        onRefresh: controller.refreshActivityLogData,
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 18.w),
           child: CustomScrollView(
@@ -57,6 +59,14 @@ class _AdminActivtiLogScreenState extends State<AdminActivtiLogScreen> {
                 ),
               ),
               SliverToBoxAdapter(child: SizedBox(height: 12.h)),
+              SliverToBoxAdapter(
+                child: GetBuilder<AdminDashboardController>(
+                  builder: (controller) => _ActivitySummarySection(
+                    controller: controller,
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(child: SizedBox(height: 14.h)),
               GetBuilder<AdminDashboardController>(
                 builder: (controller) {
                   if (controller.isLogsLoading.value) {
@@ -674,6 +684,424 @@ class _IconFilterButton extends StatelessWidget {
             size: 18.sp,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ActivitySummarySection extends StatelessWidget {
+  const _ActivitySummarySection({required this.controller});
+
+  final AdminDashboardController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller.isActivitySummaryLoading.value &&
+        controller.activitySummaryModel == null) {
+      return const _ActivitySummarySkeleton();
+    }
+
+    final summary = controller.activitySummaryModel;
+    if (summary == null) return const SizedBox.shrink();
+
+    final totals = summary.totals;
+    final metrics = [
+      _MetricData(
+        icon: Icons.receipt_long_rounded,
+        label: 'الفواتير',
+        value: totals.invoicesCount.toString(),
+      ),
+      _MetricData(
+        icon: Icons.groups_rounded,
+        label: 'الزباين',
+        value: totals.customersCount.toString(),
+      ),
+      _MetricData(
+        icon: Icons.point_of_sale_rounded,
+        label: 'المبيعات',
+        value: _formatMoney(totals.salesAmount),
+      ),
+      _MetricData(
+        icon: Icons.payments_rounded,
+        label: 'المدفوع',
+        value: _formatMoney(totals.paidAmount),
+      ),
+      _MetricData(
+        icon: Icons.account_balance_wallet_rounded,
+        label: 'المتبقي',
+        value: _formatMoney(totals.remainingAmount),
+      ),
+      _MetricData(
+        icon: Icons.handshake_rounded,
+        label: 'قيود الدين',
+        value: totals.debtTransactionsCount.toString(),
+        subValue: _formatMoney(totals.debtAmount),
+      ),
+      _MetricData(
+        icon: Icons.inventory_2_rounded,
+        label: 'كمية مباعة',
+        value: _formatQuantity(totals.soldItemsQuantity),
+      ),
+      _MetricData(
+        icon: Icons.category_rounded,
+        label: 'أنواع النشاط',
+        value: totals.logTypesCount.toString(),
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: metrics.map((metric) => _SummaryMetric(metric)).toList(),
+        ),
+        SizedBox(height: 12.h),
+        _SummaryList<ActivityTypeCountModel>(
+          title: 'أنواع النشاط',
+          icon: Icons.view_list_rounded,
+          items: summary.logTypeCounts,
+          emptyText: 'لا يوجد نشاط',
+          itemBuilder: (item) => _SummaryLine(
+            title: item.type,
+            value: item.count.toString(),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        _SummaryList<ActivityDebtPersonModel>(
+          title: 'تقرير الديون',
+          icon: Icons.account_balance_rounded,
+          items: summary.debtPeople,
+          emptyText: 'لا توجد ديون ضمن الفلتر',
+          itemBuilder: (item) => _SummaryLine(
+            title: item.name,
+            value: _formatMoney(item.amount),
+            subtitle:
+                '${item.transactionsCount} حركة | لنا ${_formatMoney(item.givenAmount)} | علينا ${_formatMoney(item.takenAmount)}',
+          ),
+        ),
+        SizedBox(height: 8.h),
+        _SummaryList<ActivitySalesPersonModel>(
+          title: 'تقرير المبيعات',
+          icon: Icons.shopping_bag_rounded,
+          items: summary.salesPeople,
+          emptyText: 'لا توجد مبيعات ضمن الفلتر',
+          itemBuilder: (item) => _SummaryLine(
+            title: item.name,
+            value: _formatMoney(item.salesAmount),
+            subtitle:
+                '${item.invoicesCount} فاتورة | مدفوع ${_formatMoney(item.paidAmount)} | متبقي ${_formatMoney(item.remainingAmount)}',
+          ),
+        ),
+        SizedBox(height: 8.h),
+        _SummaryList<ActivitySoldProductModel>(
+          title: 'المنتجات المباعة',
+          icon: Icons.inventory_rounded,
+          items: summary.soldProducts,
+          emptyText: 'لا توجد منتجات مباعة ضمن الفلتر',
+          itemBuilder: (item) => _SummaryLine(
+            title: item.name,
+            value: _formatQuantity(item.quantity),
+            subtitle:
+                '${item.linesCount} سطر | ${_formatMoney(item.salesAmount)}',
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _formatMoney(double value) {
+    final code = Get.locale?.languageCode ?? 'ar';
+    return NumberFormat.decimalPattern(code == 'ar' ? 'ar' : 'en')
+        .format(value);
+  }
+
+  static String _formatQuantity(double value) {
+    if (value == value.roundToDouble()) return value.toInt().toString();
+    return value.toStringAsFixed(2);
+  }
+}
+
+class _MetricData {
+  const _MetricData({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.subValue,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? subValue;
+}
+
+class _SummaryMetric extends StatelessWidget {
+  const _SummaryMetric(this.metric);
+
+  final _MetricData metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final background =
+        isDark ? AppColors.customGreyColor : AppColors.whiteColor;
+    final borderColor =
+        isDark ? AppColors.customGreyColor4 : AppColors.operationalCardBorder;
+    final titleColor = isDark ? AppColors.whiteColor : AppColors.secondaryColor;
+    final bodyColor =
+        isDark ? AppColors.customGreyColor6 : AppColors.customGreyColor5;
+
+    return Container(
+      width: 0.43.sw,
+      constraints: BoxConstraints(minHeight: 70.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+      decoration: BoxDecoration(
+        color: background,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30.w,
+            height: 30.w,
+            decoration: BoxDecoration(
+              color: AppColors.customOrange2.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(
+              metric.icon,
+              color: AppColors.customOrange2,
+              size: 17.sp,
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  metric.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: bodyColor,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                SizedBox(height: 3.h),
+                Text(
+                  metric.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: titleColor,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                if (metric.subValue != null) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    metric.subValue!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          color: bodyColor,
+                          fontSize: 9.5.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryList<T> extends StatelessWidget {
+  const _SummaryList({
+    required this.title,
+    required this.icon,
+    required this.items,
+    required this.emptyText,
+    required this.itemBuilder,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<T> items;
+  final String emptyText;
+  final Widget Function(T item) itemBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final background =
+        isDark ? AppColors.customGreyColor : AppColors.whiteColor;
+    final borderColor =
+        isDark ? AppColors.customGreyColor4 : AppColors.operationalCardBorder;
+    final titleColor = isDark ? AppColors.whiteColor : AppColors.secondaryColor;
+    final bodyColor =
+        isDark ? AppColors.customGreyColor6 : AppColors.customGreyColor5;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: background,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 2.h),
+          childrenPadding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 9.h),
+          initiallyExpanded: false,
+          iconColor: AppColors.primaryColor,
+          collapsedIconColor: AppColors.primaryColor,
+          title: Row(
+            children: [
+              Icon(icon, color: AppColors.primaryColor, size: 17.sp),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: titleColor,
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  items.length.toString(),
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: AppColors.primaryColor,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          children: [
+            if (items.isEmpty)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  emptyText,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: bodyColor,
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              )
+            else
+              ...items.take(5).map((item) => itemBuilder(item)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryLine extends StatelessWidget {
+  const _SummaryLine({
+    required this.title,
+    required this.value,
+    this.subtitle,
+  });
+
+  final String title;
+  final String value;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final titleColor = isDark ? AppColors.whiteColor : AppColors.secondaryColor;
+    final bodyColor =
+        isDark ? AppColors.customGreyColor6 : AppColors.customGreyColor5;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 6.h),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                        color: titleColor,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                if (subtitle != null) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          color: bodyColor,
+                          fontSize: 9.5.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                  color: AppColors.customOrange2,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivitySummarySkeleton extends StatelessWidget {
+  const _ActivitySummarySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8.w,
+      runSpacing: 8.h,
+      children: List.generate(
+        4,
+        (_) => _SkeletonBox(width: 0.43.sw, height: 70.h),
       ),
     );
   }

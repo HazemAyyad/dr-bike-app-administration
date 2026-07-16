@@ -125,10 +125,11 @@ class NewMaintenanceScreen extends StatelessWidget {
                                     arguments: {
                                       'sellerId': '',
                                       'employeeId': '',
+                                      'popOnceOnSuccess': true,
                                       'employeeType':
                                           controller.selectedSellers.value
-                                              ? 'customer'
-                                              : 'seller',
+                                              ? 'seller'
+                                              : 'customer',
                                     },
                                   )?.then((_) {
                                     controller.getAllCustomersAndSellers();

@@ -102,10 +102,11 @@ class _PersonProductSettingsScreenState
         );
       } else {
         final priceText = result['custom_price']?.toString() ?? '';
-        if (priceText.isEmpty && result['is_hidden'] != true) {
+        final tiers = (result['price_tiers'] as List?) ?? const [];
+        if (priceText.isEmpty && result['is_hidden'] != true && tiers.isEmpty) {
           Get.snackbar(
             'تنبيه',
-            'أدخل سعراً خاصاً أو فعّل إخفاء المنتج.',
+            'أدخل سعراً خاصاً أو أضف شرائح أسعار أو فعّل إخفاء المنتج.',
             snackPosition: SnackPosition.BOTTOM,
           );
           return;
@@ -117,6 +118,7 @@ class _PersonProductSettingsScreenState
             'product_id': product.id,
             'custom_price': priceText.isEmpty ? null : priceText,
             'is_hidden': result['is_hidden'] == true,
+            'price_tiers': tiers,
           },
         );
       }
@@ -200,6 +202,10 @@ class _PersonProductSettingsScreenState
                                   : [
                                       if (setting['custom_price'] != null)
                                         'السعر الخاص: ${setting['custom_price']} ₪',
+                                      if (((setting['price_tiers'] as List?) ??
+                                              const [])
+                                          .isNotEmpty)
+                                        'شرائح جملة: ${((setting['price_tiers'] as List?) ?? const []).length}',
                                       if (hidden) 'مخفي',
                                     ].join(' • '),
                             ),
@@ -232,6 +238,7 @@ class _ProductSettingDialog extends StatefulWidget {
 
 class _ProductSettingDialogState extends State<_ProductSettingDialog> {
   late final TextEditingController _price;
+  late final List<_TierDraft> _tiers;
   late bool _hidden;
 
   @override
@@ -240,6 +247,10 @@ class _ProductSettingDialogState extends State<_ProductSettingDialog> {
     _price = TextEditingController(
       text: widget.current?['custom_price']?.toString() ?? '',
     );
+    _tiers = (((widget.current?['price_tiers'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((raw) => _TierDraft.fromJson(Map<String, dynamic>.from(raw)))
+        .toList());
     _hidden = widget.current?['is_hidden'] == true ||
         widget.current?['is_hidden']?.toString() == '1';
   }
@@ -247,7 +258,82 @@ class _ProductSettingDialogState extends State<_ProductSettingDialog> {
   @override
   void dispose() {
     _price.dispose();
+    for (final tier in _tiers) {
+      tier.dispose();
+    }
     super.dispose();
+  }
+
+  void _addTier() {
+    setState(() => _tiers.add(_TierDraft()));
+  }
+
+  void _removeTier(int index) {
+    final tier = _tiers.removeAt(index);
+    tier.dispose();
+    setState(() {});
+  }
+
+  List<Map<String, dynamic>>? _collectTiers() {
+    final rows = <Map<String, dynamic>>[];
+    for (final tier in _tiers) {
+      final minText = tier.min.text.trim();
+      final maxText = tier.max.text.trim();
+      final priceText = tier.price.text.trim();
+      if (minText.isEmpty && maxText.isEmpty && priceText.isEmpty) continue;
+      final min = int.tryParse(minText);
+      final max = maxText.isEmpty ? null : int.tryParse(maxText);
+      final price = double.tryParse(priceText);
+      if (min == null ||
+          min < 1 ||
+          (maxText.isNotEmpty && max == null) ||
+          (max != null && max < min) ||
+          price == null ||
+          price <= 0) {
+        Get.snackbar(
+          'تنبيه',
+          'تأكد من شرائح الكمية: من، إلى، والسعر.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return null;
+      }
+      rows.add({
+        'min_qty': min,
+        'max_qty': max,
+        'unit_price': priceText,
+      });
+    }
+
+    rows.sort((a, b) => (a['min_qty'] as int).compareTo(b['min_qty'] as int));
+    var previousMax = 0;
+    var openEndedSeen = false;
+    for (var i = 0; i < rows.length; i++) {
+      final min = rows[i]['min_qty'] as int;
+      final max = rows[i]['max_qty'] as int?;
+      if (openEndedSeen || min <= previousMax) {
+        Get.snackbar(
+          'تنبيه',
+          'شرائح الكميات لا يمكن أن تتداخل.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return null;
+      }
+      if (max == null) {
+        openEndedSeen = true;
+        if (i != rows.length - 1) {
+          Get.snackbar(
+            'تنبيه',
+            'الشريحة المفتوحة يجب أن تكون آخر شريحة.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return null;
+        }
+      } else {
+        previousMax = max;
+      }
+    }
+
+    return rows;
   }
 
   @override
@@ -315,6 +401,39 @@ class _ProductSettingDialogState extends State<_ProductSettingDialog> {
                 value: _hidden,
                 onChanged: (value) => setState(() => _hidden = value),
               ),
+              const Divider(height: 24),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'أسعار جملة حسب الكمية',
+                      style: TextStyle(
+                        color: darkText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'إضافة شريحة',
+                    onPressed: _addTier,
+                    icon: const Icon(Icons.add_circle_outline),
+                  ),
+                ],
+              ),
+              if (_tiers.isEmpty)
+                const Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'مثال: من 1 إلى 3 بسعر، ومن 4 إلى 9 بسعر آخر.',
+                    style: TextStyle(color: Color(0xFF5F6368), fontSize: 12),
+                  ),
+                ),
+              for (var i = 0; i < _tiers.length; i++)
+                _TierEditor(
+                  key: ValueKey(_tiers[i]),
+                  tier: _tiers[i],
+                  onRemove: () => _removeTier(i),
+                ),
             ],
           ),
         ),
@@ -340,11 +459,112 @@ class _ProductSettingDialogState extends State<_ProductSettingDialog> {
               backgroundColor: const Color(0xFFD7E8FF),
               foregroundColor: const Color(0xFF0D47A1),
             ),
-            onPressed: () => Navigator.pop(context, <String, dynamic>{
-              'custom_price': _price.text.trim(),
-              'is_hidden': _hidden,
-            }),
+            onPressed: () {
+              final tiers = _collectTiers();
+              if (tiers == null) return;
+              Navigator.pop(context, <String, dynamic>{
+                'custom_price': _price.text.trim(),
+                'is_hidden': _hidden,
+                'price_tiers': tiers,
+              });
+            },
             child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TierDraft {
+  _TierDraft({
+    String min = '',
+    String max = '',
+    String price = '',
+  })  : min = TextEditingController(text: min),
+        max = TextEditingController(text: max),
+        price = TextEditingController(text: price);
+
+  factory _TierDraft.fromJson(Map<String, dynamic> json) {
+    return _TierDraft(
+      min: json['min_qty']?.toString() ?? '',
+      max: json['max_qty']?.toString() ?? '',
+      price: json['unit_price']?.toString() ?? '',
+    );
+  }
+
+  final TextEditingController min;
+  final TextEditingController max;
+  final TextEditingController price;
+
+  void dispose() {
+    min.dispose();
+    max.dispose();
+    price.dispose();
+  }
+}
+
+class _TierEditor extends StatelessWidget {
+  const _TierEditor({
+    Key? key,
+    required this.tier,
+    required this.onRemove,
+  }) : super(key: key);
+
+  final _TierDraft tier;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: tier.min,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                labelText: 'من',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: tier.max,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                labelText: 'إلى',
+                hintText: 'وأكثر',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: tier.price,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                labelText: 'السعر',
+                suffixText: '₪',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'حذف الشريحة',
+            onPressed: onRemove,
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
           ),
         ],
       ),

@@ -10,7 +10,9 @@ import '../../../notifications/presentation/controllers/admin_notification_badge
 import '../../../employee_section/data/models/logs_model.dart';
 import '../../../employee_section/domain/usecases/cancel_log_usecase.dart';
 import '../../../employee_section/domain/usecases/get_all_employee.dart';
+import '../../data/models/activity_summary_model.dart';
 import '../../data/models/main_dashboard_mata_model.dart';
+import '../../domain/usecases/get_activity_summary_usecase.dart';
 import '../../domain/usecases/get_admin_logs_usecase.dart';
 import '../../domain/usecases/get_main_dashboard_data_usecase.dart';
 
@@ -18,12 +20,14 @@ class AdminDashboardController extends GetxController
     with GetTickerProviderStateMixin {
   final GetAllEmployeeUsecase getAllEmployeeUsecase;
   final GetAdminLogsUsecase getAdminLogsUsecase;
+  final GetActivitySummaryUsecase getActivitySummaryUsecase;
   final CancelLogUsecase cancelLogUsecase;
   final GetMainDashboardDataUsecase getMainDashboardDataUsecase;
 
   AdminDashboardController({
     required this.getAllEmployeeUsecase,
     required this.getAdminLogsUsecase,
+    required this.getActivitySummaryUsecase,
     required this.cancelLogUsecase,
     required this.getMainDashboardDataUsecase,
   });
@@ -118,6 +122,11 @@ class AdminDashboardController extends GetxController
       'id': '24',
       'title': 'suggestionBox',
       'route': AppRoutes.EMPLOYEESUGGESTIONSSCREEN
+    },
+    {
+      'id': '49',
+      'title': 'technicalSupport',
+      'route': AppRoutes.TECHNICALSUPPORT
     },
     {'id': '17', 'title': 'whatsappCenter', 'route': AppRoutes.WHATSAPPCENTER},
     {
@@ -235,8 +244,10 @@ class AdminDashboardController extends GetxController
 
   final RxBool isLoading = false.obs;
   final RxBool isLogsLoading = false.obs;
+  final RxBool isActivitySummaryLoading = false.obs;
 
   final Map<String, List<LogsModel>> logsMap = {};
+  ActivitySummaryModel? activitySummaryModel;
   String logsSearchQuery = '';
   DateTime? logsFilterDate;
   DateTimeRange? logsFilterRange;
@@ -250,12 +261,14 @@ class AdminDashboardController extends GetxController
   void setLogsFilterDate(DateTime? value) {
     logsFilterDate = value;
     if (value != null) logsFilterRange = null;
+    getActivitySummary();
     update();
   }
 
   void setLogsFilterRange(DateTimeRange? value) {
     logsFilterRange = value;
     if (value != null) logsFilterDate = null;
+    getActivitySummary();
     update();
   }
 
@@ -263,6 +276,7 @@ class AdminDashboardController extends GetxController
     logsSearchQuery = '';
     logsFilterDate = null;
     logsFilterRange = null;
+    getActivitySummary();
     update();
   }
 
@@ -273,7 +287,7 @@ class AdminDashboardController extends GetxController
   }
 
   // Get Logs
-  void getLogs() async {
+  Future<void> getLogs() async {
     isLogsLoading(true);
     update();
     logsMap.clear();
@@ -293,6 +307,45 @@ class AdminDashboardController extends GetxController
     _sortLogsMap();
     isLogsLoading(false);
     update();
+  }
+
+  Future<void> getActivitySummary() async {
+    isActivitySummaryLoading(true);
+    update();
+    try {
+      String? dateFrom;
+      String? dateTo;
+      if (logsFilterDate != null) {
+        final date = _formatApiDate(logsFilterDate!);
+        dateFrom = date;
+        dateTo = date;
+      } else if (logsFilterRange != null) {
+        dateFrom = _formatApiDate(logsFilterRange!.start);
+        dateTo = _formatApiDate(logsFilterRange!.end);
+      }
+      activitySummaryModel = await getActivitySummaryUsecase.call(
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      );
+    } catch (_) {
+      activitySummaryModel = null;
+    }
+    isActivitySummaryLoading(false);
+    update();
+  }
+
+  Future<void> refreshActivityLogData() async {
+    await Future.wait([
+      getLogs(),
+      getActivitySummary(),
+    ]);
+  }
+
+  String _formatApiDate(DateTime value) {
+    final year = value.year.toString().padLeft(4, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 
   int _compareLogsByDate(LogsModel a, LogsModel b) {

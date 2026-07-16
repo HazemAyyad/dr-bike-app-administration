@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../admin/admin_dashbord/data/repositories/admin_dashboard_implement.dart';
+import '../../admin/admin_dashbord/domain/usecases/get_activity_summary_usecase.dart';
 import '../../admin/admin_dashbord/domain/usecases/get_admin_logs_usecase.dart';
 import '../../admin/admin_dashbord/domain/usecases/get_main_dashboard_data_usecase.dart';
 import '../../admin/admin_dashbord/presentation/controllers/admin_dashboard_controller.dart';
@@ -73,6 +74,9 @@ class BottomNavBarController extends GetxController {
                   employeeRepository: Get.find<EmployeeImplement>(),
                 ),
                 getAdminLogsUsecase: GetAdminLogsUsecase(
+                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+                ),
+                getActivitySummaryUsecase: GetActivitySummaryUsecase(
                   adminDashboardRepository: Get.find<AdminDashboardImplement>(),
                 ),
                 cancelLogUsecase: CancelLogUsecase(
