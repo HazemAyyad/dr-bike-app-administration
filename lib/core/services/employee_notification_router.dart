@@ -27,6 +27,17 @@ class EmployeeNotificationRouter {
         return;
       }
     }
+    if (type == 'support_message') {
+      final id = int.tryParse(
+        raw['conversation_id']?.toString() ??
+            raw['support_conversation_id']?.toString() ??
+            '',
+      );
+      if (id != null && id > 0) {
+        Get.toNamed('/TechnicalSupport/$id');
+        return;
+      }
+    }
     switch (type) {
       case typeReopenApproved:
         openSalesAndRefreshDailySession(

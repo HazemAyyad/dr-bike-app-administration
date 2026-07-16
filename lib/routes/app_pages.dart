@@ -36,6 +36,7 @@ import '../features/admin/whatsapp_center/presentation/views/whatsapp_center_scr
 import '../features/admin/whatsapp_center/presentation/views/whatsapp_conversation_screen.dart';
 import '../features/admin/meta_catalog/presentation/bindings/meta_catalog_binding.dart';
 import '../features/admin/meta_catalog/presentation/views/meta_catalog_sync_screen.dart';
+import '../features/technical_support/presentation/technical_support_screen.dart';
 import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
 import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
 import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
@@ -317,6 +318,18 @@ class AppPages {
       name: AppRoutes.WHATSAPPCONVERSATION,
       page: () => const WhatsAppConversationScreen(),
       binding: WhatsAppConversationBinding(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.TECHNICALSUPPORT,
+      page: () => const TechnicalSupportScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.TECHNICALSUPPORTCONVERSATION,
+      page: () => TechnicalSupportScreen(
+        conversationId: int.tryParse(Get.parameters['id'] ?? ''),
+      ),
       transition: _transitionFadeIn,
     ),
     GetPage(

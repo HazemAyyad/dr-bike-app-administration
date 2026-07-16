@@ -61,6 +61,11 @@ class AdminNotificationRouter {
             return;
           }
           break;
+        case 'support_message':
+          if (_openSupportConversation(raw)) {
+            return;
+          }
+          break;
         default:
           break;
       }
@@ -161,6 +166,17 @@ class AdminNotificationRouter {
     final id = int.tryParse(raw['conversation_id']?.toString() ?? '');
     if (id == null || id <= 0) return false;
     Get.toNamed('/WhatsAppConversation/$id');
+    return true;
+  }
+
+  static bool _openSupportConversation(Map<String, dynamic> raw) {
+    final id = int.tryParse(
+      raw['conversation_id']?.toString() ??
+          raw['support_conversation_id']?.toString() ??
+          '',
+    );
+    if (id == null || id <= 0) return false;
+    Get.toNamed('/TechnicalSupport/$id');
     return true;
   }
 

@@ -87,6 +87,16 @@ class EndPoints {
   static const String adminEmployeeSuggestions = 'admin/employee-suggestions';
   static String adminEmployeeSuggestion(int id) =>
       'admin/employee-suggestions/$id';
+  static const String supportConversations = 'support/conversations';
+  static const String supportConversationsUnreadCount =
+      'support/conversations/unread-count';
+  static String supportConversation(int id) => 'support/conversations/$id';
+  static String supportConversationMessages(int id) =>
+      'support/conversations/$id/messages';
+  static String supportConversationRead(int id) =>
+      'support/conversations/$id/read';
+  static String supportConversationStatus(int id) =>
+      'support/conversations/$id/status';
 
   // banks (checks)
   static const String banks = 'banks';

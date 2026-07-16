@@ -1,6 +1,7 @@
 const Map<String, String> en = {
   'whatsappCenter': 'WhatsApp Center',
   'whatsappCatalog': 'WhatsApp Catalog',
+  'technicalSupport': 'Technical Support',
   'homeTitle': 'Doctorbike',
   'tryAgain': 'Try again',
   'noInternet': "No internet connection",

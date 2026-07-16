@@ -333,6 +333,11 @@ class EmployeeDashbordController extends GetxController
       'title': 'suggestionBox',
       'route': AppRoutes.MYEMPLOYEESUGGESTIONSSCREEN
     },
+    {
+      'id': 'technical_support',
+      'title': 'technicalSupport',
+      'route': AppRoutes.TECHNICALSUPPORT
+    },
     {'id': '6', 'title': 'privateTasks', 'route': AppRoutes.PRIVATETASKSSCREEN},
     {
       'id': '5',
