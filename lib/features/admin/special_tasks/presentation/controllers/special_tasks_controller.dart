@@ -122,6 +122,31 @@ class SpecialTasksController extends GetxController {
     transferTask.value = key == 'transferTask';
     deleteTask.value = key == 'deleteTask';
     deleteRepeatedTask.value = key == 'deleteRepeatedTask';
+    if (transferTask.value) {
+      final firstAvailable = transferWeekDays.firstWhere(
+        (day) => !isPastTransferDay(day),
+        orElse: () => transferWeekDays.last,
+      );
+      selectTransferWeekDay(firstAvailable);
+    }
+  }
+
+  DateTime get transferWeekStart => getStartOfWeek(startDate);
+
+  List<DateTime> get transferWeekDays => List.generate(
+        7,
+        (index) => transferWeekStart.add(Duration(days: index)),
+      );
+
+  void selectTransferWeekDay(DateTime day) {
+    selectedDay.value = DateTime(day.year, day.month, day.day);
+  }
+
+  bool isPastTransferDay(DateTime day) {
+    final selected = DateTime(day.year, day.month, day.day);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return selected.isBefore(today);
   }
 
   Map<String, List<SpecialTaskModel>> sortByDate(
@@ -278,7 +303,7 @@ class SpecialTasksController extends GetxController {
   // cancel special Tasks
   void cancelSpecialTasks({required String specialTaskId}) async {
     if (transferTask.value) {
-      if (selectedDay.value.isBefore(DateTime.now())) {
+      if (isPastTransferDay(selectedDay.value)) {
         Get.snackbar(
           'error'.tr,
           'transferTaskError'.tr,

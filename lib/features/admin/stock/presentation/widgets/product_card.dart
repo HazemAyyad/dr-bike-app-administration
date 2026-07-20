@@ -202,16 +202,6 @@ class BuildProductCard extends GetView<StockController> {
       sectionName: product.storeSectionName,
       productCode: product.productCode,
     );
-    final metaStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
-          color: ThemeService.isDark.value
-              ? AppColors.whiteColor.withValues(alpha: 0.85)
-              : AppColors.secondaryColor.withValues(alpha: 0.85),
-          fontWeight: FontWeight.w600,
-          fontSize: 9.sp,
-          letterSpacing: 0.3,
-          height: 1.15,
-        );
-
     return Obx(() {
       final tab = controller.currentTab.value;
       final canSelectLocation = !isCloseouts && (tab == 0 || tab == 3);
@@ -342,66 +332,98 @@ class BuildProductCard extends GetView<StockController> {
           ),
           child: Stack(
             children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withAlpha(80),
-                      spreadRadius: 1,
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
+              Material(
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
+                clipBehavior: Clip.antiAlias,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: isSelected
+                          ? selectionColor
+                          : Colors.grey.withValues(alpha: 0.28),
+                      width: isSelected ? 1.5 : 1,
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Center(
-                      child: _buildProductImage(
-                        context,
-                        compact: userType == 'admin' && tab == 0,
-                      ),
-                    ),
-                    SizedBox(height: 2.h),
-                    Text(
-                      product.name,
-                      style: nameStyle,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (locationCodeLabel != null) ...[
-                      SizedBox(height: 2.h),
-                      Text(
-                        locationCodeLabel,
-                        style: metaStyle,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    borderRadius: BorderRadius.circular(10.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        spreadRadius: 0,
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
                       ),
                     ],
-                    if (tab != 0) ...[
-                      SizedBox(height: 2.h),
-                      _buildStockLine(context),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 5,
+                        child: _buildProductImage(
+                          context,
+                          locationCodeLabel: locationCodeLabel,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(5.w, 3.h, 5.w, 3.h),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return ClipRect(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.center,
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxWidth: constraints.maxWidth,
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Text(
+                                                product.name,
+                                                style: nameStyle,
+                                                textAlign: TextAlign.center,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              SizedBox(height: 2.h),
+                                              _buildStockLine(context),
+                                              if (userType == 'admin' &&
+                                                  tab == 0) ...[
+                                                SizedBox(height: 1.h),
+                                                _buildCostPriceLine(context),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
-                    if (userType == 'admin' && tab == 0) ...[
-                      SizedBox(height: 1.h),
-                      _buildCostPriceLine(context),
-                    ],
-                  ],
+                  ),
                 ),
               ),
               if (isSelected)
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10.r),
                       border: Border.all(
                         color: selectionColor,
                         width: 2.5,
@@ -456,114 +478,196 @@ class BuildProductCard extends GetView<StockController> {
   }
 
   Widget _buildStockLine(BuildContext context) {
-    final lineStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
-          color: ThemeService.isDark.value
-              ? AppColors.whiteColor
-              : AppColors.secondaryColor,
-          fontWeight: FontWeight.w500,
-          fontSize: 8.sp,
-        );
-
     if (controller.currentTab.value == 2) {
-      return Text(
-        '${'numberOfProductsUsed'.tr} : ${product.numberOfUsedProducts}',
-        style: lineStyle,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      return _InfoPill(
+        icon: Icons.build_outlined,
+        text: '${'numberOfProductsUsed'.tr} : ${product.numberOfUsedProducts}',
       );
     }
     if (controller.currentTab.value == 1) {
-      return Text(
-        '${'minimumSale'.tr} : ${product.productMinSalePrice}',
-        style: lineStyle,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      return _InfoPill(
+        icon: Icons.sell_outlined,
+        text: '${'minimumSale'.tr} : ${product.productMinSalePrice}',
       );
     }
-    return Text(
-      '${'stock'.tr} : ${product.stock}',
-      style: lineStyle,
-      textAlign: TextAlign.center,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    return _InfoPill(
+      icon: Icons.sell_outlined,
+      text: '${'instantSaleRetailPriceLabel'.tr} : ${_formatRetailPrice()}',
     );
   }
 
   Widget _buildCostPriceLine(BuildContext context) {
-    final lineStyle = Theme.of(context).textTheme.bodySmall!.copyWith(
-          color: ThemeService.isDark.value
-              ? AppColors.whiteColor.withValues(alpha: 0.9)
-              : AppColors.secondaryColor.withValues(alpha: 0.9),
-          fontWeight: FontWeight.w600,
-          fontSize: 8.sp,
-        );
-
-    return Text(
-      '${'costPrice'.tr} : ${_formatCostPrice()}',
-      style: lineStyle,
-      textAlign: TextAlign.center,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    return _InfoPill(
+      icon: Icons.payments_outlined,
+      text: '${'costPrice'.tr} : ${_formatCostPrice()}',
     );
   }
 
-  Widget _buildProductImage(BuildContext context, {bool compact = false}) {
-    final imageHeight = compact ? 36.h : 44.h;
+  String _formatRetailPrice() {
+    final value = product.normailPrice;
+    if (value <= 0) return '-';
+    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+    return value.toStringAsFixed(2);
+  }
+
+  Widget _buildProductImage(
+    BuildContext context, {
+    String? locationCodeLabel,
+  }) {
     final canZoom = product.allImageUrlsInPriority.isNotEmpty;
 
-    return SizedBox(
-      height: imageHeight,
-      width: double.infinity,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          ProductPriorityImage(
-            imageUrls: product.allImageUrlsInPriority,
-            height: imageHeight,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            borderRadius: BorderRadius.circular(8.r),
-            placeholder: SizedBox(
-              height: imageHeight,
-              child: const Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            missingPlaceholder: Image.asset(
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ProductPriorityImage(
+          imageUrls: product.allImageUrlsInPriority,
+          height: double.infinity,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(10.r),
+          ),
+          placeholder: const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          missingPlaceholder: Container(
+            color: Colors.grey.shade100,
+            alignment: Alignment.center,
+            child: Image.asset(
               AssetsManager.stockImage,
-              height: imageHeight,
-              width: double.infinity,
               fit: BoxFit.contain,
+              width: 28.w,
+              height: 28.w,
             ),
           ),
-          if (controller.currentTab.value == 0)
-            Positioned(
-              bottom: 3.h,
-              right: 3.w,
-              child: _ImageBadge(
-                text: product.stock,
-                icon: Icons.inventory_2_outlined,
+        ),
+        if (locationCodeLabel != null)
+          Positioned(
+            top: 3.h,
+            left: canZoom ? 24.w : 3.w,
+            right: 3.w,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.62),
+                borderRadius: BorderRadius.circular(4.r),
               ),
-            ),
-          if (canZoom)
-            Positioned(
-              top: 3.h,
-              left: 3.w,
-              child: Container(
-                padding: EdgeInsets.all(3.w),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.58),
-                  borderRadius: BorderRadius.circular(5.r),
-                ),
-                child: Icon(
-                  Icons.zoom_in,
-                  size: 12.sp,
+              child: Text(
+                locationCodeLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
                   color: Colors.white,
+                  fontSize: 6.5.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.05,
                 ),
               ),
             ),
+          ),
+        Positioned(
+          bottom: 3.h,
+          right: 3.w,
+          child: _ImageBadge(
+            text: _imageBadgeText(),
+            icon: _imageBadgeIcon(),
+          ),
+        ),
+        if (canZoom)
+          Positioned(
+            top: 3.h,
+            left: 3.w,
+            child: Container(
+              padding: EdgeInsets.all(3.w),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.58),
+                borderRadius: BorderRadius.circular(5.r),
+              ),
+              child: Icon(
+                Icons.zoom_in,
+                size: 12.sp,
+                color: Colors.white,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _imageBadgeText() {
+    if (controller.currentTab.value == 2) {
+      return product.numberOfUsedProducts;
+    }
+    if (controller.currentTab.value == 1) {
+      return product.productMinSalePrice;
+    }
+    return product.stock;
+  }
+
+  IconData _imageBadgeIcon() {
+    if (controller.currentTab.value == 2) {
+      return Icons.build_outlined;
+    }
+    if (controller.currentTab.value == 1) {
+      return Icons.sell_outlined;
+    }
+    return Icons.inventory_2_outlined;
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 19.h,
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 5.w),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(6.r),
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 9.sp,
+            color: ThemeService.isDark.value
+                ? Colors.white.withValues(alpha: 0.82)
+                : AppColors.secondaryColor.withValues(alpha: 0.78),
+          ),
+          SizedBox(width: 2.w),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: ThemeService.isDark.value
+                    ? Colors.white.withValues(alpha: 0.9)
+                    : AppColors.secondaryColor.withValues(alpha: 0.88),
+                fontSize: 7.5.sp,
+                fontWeight: FontWeight.w700,
+                height: 1,
+              ),
+            ),
+          ),
         ],
       ),
     );

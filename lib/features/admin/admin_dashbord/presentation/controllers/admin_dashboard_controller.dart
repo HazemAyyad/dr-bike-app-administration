@@ -36,13 +36,20 @@ class AdminDashboardController extends GetxController
     {
       'id': '7',
       'title': 'employeeTasks',
-      'route': AppRoutes.EMPLOYEETASKSSCREEN
+      'route': AppRoutes.EMPLOYEETASKSSCREEN,
+      'badgeKey': 'employee_tasks_today_pending',
     },
-    {'id': '6', 'title': 'privateTasks', 'route': AppRoutes.PRIVATETASKSSCREEN},
+    {
+      'id': '6',
+      'title': 'privateTasks',
+      'route': AppRoutes.PRIVATETASKSSCREEN,
+      'badgeKey': 'special_tasks_today_pending',
+    },
     {
       'id': '5',
       'title': 'employeeDepartment',
-      'route': AppRoutes.EMPLOYEESECTIONSCREEN
+      'route': AppRoutes.EMPLOYEESECTIONSCREEN,
+      'badgeKey': 'employees_absent_today',
     },
     {
       'id': '4',
@@ -58,10 +65,16 @@ class AdminDashboardController extends GetxController
     {
       'id': '2',
       'title': 'followUpDepartment',
-      'route': AppRoutes.CURRENTFOLLOWUPSCREEN
+      'route': AppRoutes.CURRENTFOLLOWUPSCREEN,
+      'badgeKey': 'follow_up',
     },
     {'id': '1', 'title': 'debts', 'route': AppRoutes.DEBTSSCREEN},
-    {'id': '8', 'title': 'sales', 'route': AppRoutes.SALESSCREEN},
+    {
+      'id': '8',
+      'title': 'sales',
+      'route': AppRoutes.SALESSCREEN,
+      'badgeKey': 'sales',
+    },
     {
       'id': '9',
       'title': 'generalData',
@@ -82,7 +95,12 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.FINANCIALAFFAIRSSCREEN
     },
 
-    {'id': '15', 'title': 'maintenance', 'route': AppRoutes.MAINTENANCESCREEN},
+    {
+      'id': '15',
+      'title': 'maintenance',
+      'route': AppRoutes.MAINTENANCESCREEN,
+      'badgeKey': 'maintenance',
+    },
     {
       'id': '18',
       'title': 'productManagement',
@@ -91,7 +109,29 @@ class AdminDashboardController extends GetxController
     {
       'id': '14',
       'title': 'checksandCommitments',
-      'route': AppRoutes.CHECKSSCREEN
+      'route': AppRoutes.CHECKSSCREEN,
+      'badgeDescriptors': [
+        {
+          'key': 'checks_incoming_red',
+          'label': 'وارد مستحق أو متأخر',
+          'color': 'red'
+        },
+        {
+          'key': 'checks_incoming_yellow',
+          'label': 'وارد قريب الاستحقاق',
+          'color': 'yellow'
+        },
+        {
+          'key': 'checks_outgoing_red',
+          'label': 'صادر مستحق أو متأخر',
+          'color': 'red'
+        },
+        {
+          'key': 'checks_outgoing_yellow',
+          'label': 'صادر قريب الاستحقاق',
+          'color': 'yellow'
+        },
+      ],
     },
     {
       'id': '19',
@@ -121,12 +161,14 @@ class AdminDashboardController extends GetxController
     {
       'id': '24',
       'title': 'suggestionBox',
-      'route': AppRoutes.EMPLOYEESUGGESTIONSSCREEN
+      'route': AppRoutes.EMPLOYEESUGGESTIONSSCREEN,
+      'badgeKey': 'suggestions',
     },
     {
       'id': '49',
       'title': 'technicalSupport',
-      'route': AppRoutes.TECHNICALSUPPORT
+      'route': AppRoutes.TECHNICALSUPPORT,
+      'badgeKey': 'technical_support',
     },
     {'id': '17', 'title': 'whatsappCenter', 'route': AppRoutes.WHATSAPPCENTER},
     {

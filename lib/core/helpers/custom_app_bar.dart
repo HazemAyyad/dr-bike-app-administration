@@ -18,6 +18,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.employeeNameController,
     this.onPressedFilter,
     this.onPressedAdd,
+    this.onPressedBack,
     this.label,
     this.action = true,
     this.dsibalBack = false,
@@ -31,6 +32,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final TextEditingController? employeeNameController;
   final void Function()? onPressedFilter;
   final VoidCallback? onPressedAdd;
+  final VoidCallback? onPressedBack;
   final bool? action;
   final List<Widget>? actions;
   final bool dsibalBack;
@@ -82,7 +84,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ? AppColors.primaryColor
                     : AppColors.secondaryColor,
               ),
-              onPressed: _safeBack,
+              onPressed: onPressedBack ?? _safeBack,
             ),
       actions: actions ??
           [

@@ -24,7 +24,8 @@ Future<void> showInstantSaleAddProductModal(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => _AddProductSheet(editLine: editLine, editIndex: editIndex),
+    builder: (ctx) =>
+        _AddProductSheet(editLine: editLine, editIndex: editIndex),
   );
 }
 
@@ -79,9 +80,10 @@ class _AddProductSheetState extends State<_AddProductSheet> {
     setState(() {
       _selected = product;
       if (product != null && product.unitPrice > 0) {
-        _priceController.text = product.unitPrice == product.unitPrice.roundToDouble()
-            ? product.unitPrice.toInt().toString()
-            : product.unitPrice.toStringAsFixed(2);
+        _priceController.text =
+            product.unitPrice == product.unitPrice.roundToDouble()
+                ? product.unitPrice.toInt().toString()
+                : product.unitPrice.toStringAsFixed(2);
       }
     });
     _recalc();
@@ -337,7 +339,7 @@ class _AddProductSheetState extends State<_AddProductSheet> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _selected == null) {
       return;
     }
@@ -350,13 +352,14 @@ class _AddProductSheetState extends State<_AddProductSheet> {
     }
 
     final stock = int.tryParse(_selected!.stock) ?? 0;
-    if (qty > stock) {
-      Get.snackbar(
-        'error'.tr,
-        'out_of_stock_products'.tr,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+    final ok = await controller.confirmInstantSaleNegativeStockIfNeeded(
+      context: context,
+      productName: _selected!.nameAr,
+      stock: stock,
+      requestedQty: qty,
+    );
+    if (!mounted) return;
+    if (!ok) {
       return;
     }
 

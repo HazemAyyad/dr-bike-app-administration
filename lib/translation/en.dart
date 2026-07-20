@@ -2287,6 +2287,9 @@ const Map<String, String> en = {
   'instantSaleCompositionMixed': 'Mixed',
   'instantSaleCompositionProduct': 'Product',
   'instantSaleAdditionalProducts': 'Additional products with package',
+  'instantSaleOperationBox': 'Operation box',
+  'instantSaleCreatedTime': 'Invoice time',
+  'instantSaleOperationDetails': 'Operation details',
   'saleTypeOfferPackage': 'Offer package',
   'packageContents': 'Package contents',
   'packageContentsCount': '@count product(s) in package',
@@ -2587,6 +2590,9 @@ const Map<String, String> en = {
   'instantSaleRetailPriceRequired': 'Enter a retail price greater than zero',
   'instantSaleWholesalePriceRequired':
       'Enter a wholesale price greater than zero',
+  'instantSaleNegativeStockWarningTitle': 'Stock warning',
+  'instantSaleNegativeStockWarningBody':
+      '@product stock is currently @stock, and the requested quantity is @quantity. If you continue, stock will become negative and admin will be notified.',
   'instantSaleRetailPriceSaved': 'Retail price saved to product',
   'instantSaleProductPricesSaved': 'Product prices saved',
   'instantSaleNoRetailPrice': 'No retail price set',
@@ -2629,8 +2635,10 @@ const Map<String, String> en = {
       'There is an instant-sale invoice draft saved on this device. Restore it?',
   'instantSaleLeaveWarningTitle': 'Leave invoice',
   'instantSaleLeaveWarningBody':
-      'If you leave now, the invoice will stay saved locally on this device only. To save it as a suspended invoice, press Suspend.',
+      'You have an unfinished invoice. Suspend it on the system, save it locally on this device, or discard it.',
   'instantSaleLeaveKeepLocal': 'Leave and keep local',
+  'instantSaleLeaveDiscard': 'Discard invoice',
+  'instantSaleLeaveStay': 'Keep editing',
   'operationCompletedSuccessfully': 'Operation completed successfully',
   'attendanceSettings': 'Attendance Settings',
   'attendanceSettingsDesc': 'Enable/disable QR & fingerprint and control sync',
@@ -2647,6 +2655,8 @@ const Map<String, String> en = {
   'manualCheckoutConfirm':
       'Record check-out for this employee now? Use if they forgot fingerprint or QR.',
   'manualCheckoutSuccess': 'Check-out recorded successfully',
+  'addAttendanceDay': 'Add attendance day',
+  'attendanceDayDate': 'Attendance date',
   'editAttendanceDay': 'Edit day attendance',
   'hasCheckout': 'Has check-out time',
   'overtimePendingApproval': 'Overtime pending approval',
@@ -2863,4 +2873,16 @@ const Map<String, String> en = {
   'suggestionStatus_new': 'New',
   'suggestionStatus_reviewed': 'Reviewed',
   'suggestionStatus_closed': 'Closed',
+  'appUpdateSettingsTitle': 'App updates',
+  'appUpdateSettingsDesc': 'Control Android and iOS updates and download links',
+  'appUpdateActive': 'Enable update check for this platform',
+  'appUpdateForce': 'Force update',
+  'appUpdateLatestVersion': 'Latest version',
+  'appUpdateLatestBuild': 'Latest build',
+  'appUpdateMinimumBuild': 'Minimum allowed build',
+  'appUpdateUrl': 'Update link',
+  'appUpdateDialogTitle': 'Update dialog title',
+  'appUpdateDialogMessage': 'Update dialog message',
+  'appUpdateBuildHint':
+      'Increase latest build to show an update, and increase minimum build to block older versions.',
 };

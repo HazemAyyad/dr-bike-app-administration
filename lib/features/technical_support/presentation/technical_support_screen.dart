@@ -7,7 +7,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 import 'package:path_provider/path_provider.dart';
@@ -17,6 +16,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/services/initial_bindings.dart';
 import '../../../core/utils/app_colors.dart';
+import '../../admin/whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../data/support_service.dart';
 
 class TechnicalSupportScreen extends StatefulWidget {
@@ -34,8 +34,8 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   final searchController = TextEditingController();
   final subjectController = TextEditingController();
   final messageController = TextEditingController();
+  final messagesScrollController = ScrollController();
   final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
-  final imagePicker = ImagePicker();
   late final RecorderController recorder;
 
   bool loading = true;
@@ -46,6 +46,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   Duration recordingDuration = Duration.zero;
   String status = 'all';
   String? recordingPath;
+  bool openedAtLatestMessage = false;
   List<SupportConversation> conversations = [];
   SupportConversation? conversation;
   List<SupportMessage> messages = [];
@@ -84,6 +85,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     poller?.cancel();
     recordingTimer?.cancel();
     recorder.dispose();
+    messagesScrollController.dispose();
     searchController.dispose();
     subjectController.dispose();
     messageController.dispose();
@@ -107,6 +109,10 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   }
 
   Future<void> _loadConversation({bool silent = false}) async {
+    final wasNearBottom = !messagesScrollController.hasClients ||
+        messagesScrollController.position.maxScrollExtent -
+                messagesScrollController.position.pixels <
+            140;
     if (!silent) setState(() => loading = true);
     try {
       final result = await service.getConversation(widget.conversationId!);
@@ -114,12 +120,27 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
       conversation = result.conversation;
       messages = result.messages;
       await service.markRead(widget.conversationId!);
+      if (!openedAtLatestMessage || wasNearBottom) {
+        openedAtLatestMessage = true;
+        _scrollToLatest();
+      }
     } catch (e) {
       if (!silent) _message(e.toString());
     } finally {
       if (mounted && !silent) setState(() => loading = false);
       if (mounted && silent) setState(() {});
     }
+  }
+
+  void _scrollToLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!messagesScrollController.hasClients) return;
+      messagesScrollController.animateTo(
+        messagesScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   Future<void> _createConversation() async {
@@ -200,20 +221,40 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     if (paths.isNotEmpty) await _sendMessage(files: paths);
   }
 
-  Future<void> _pickImage({required bool camera}) async {
-    final picked = await imagePicker.pickImage(
-      source: camera ? ImageSource.camera : ImageSource.gallery,
-      imageQuality: 92,
+  Future<void> _pickMediaFromGallery() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'heic',
+        'heif',
+        'mp4',
+        'mov',
+        'webm',
+        '3gp',
+        'm4v',
+        'avi',
+      ],
     );
-    if (picked != null) await _sendMessage(files: [picked.path]);
+    final paths = result?.files
+            .map((file) => file.path)
+            .whereType<String>()
+            .where((path) => path.isNotEmpty)
+            .toList() ??
+        const [];
+    if (paths.isNotEmpty) await _sendMessage(files: paths);
   }
 
-  Future<void> _pickVideo({required bool camera}) async {
-    final picked = await imagePicker.pickVideo(
-      source: camera ? ImageSource.camera : ImageSource.gallery,
-      maxDuration: const Duration(minutes: 3),
-    );
-    if (picked != null) await _sendMessage(files: [picked.path]);
+  Future<void> _openCameraCapture() async {
+    final capture =
+        await Get.to<WhatsAppCapture>(() => const WhatsAppCameraScreen());
+    if (capture != null && capture.path.isNotEmpty) {
+      await _sendMessage(files: [capture.path]);
+    }
   }
 
   Future<void> _startRecording() async {
@@ -314,6 +355,22 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
     try {
       await service.updateStatus(conversation!.id, value);
       await _loadConversation();
+    } catch (e) {
+      _message(e.toString());
+    }
+  }
+
+  Future<void> _reactToMessage(SupportMessage message, String reaction) async {
+    try {
+      final updated = await service.reactToMessage(
+        conversationId: message.conversationId,
+        messageId: message.id,
+        reaction: message.myReaction == reaction ? null : reaction,
+      );
+      final index = messages.indexWhere((item) => item.id == updated.id);
+      if (index >= 0 && mounted) {
+        setState(() => messages[index] = updated);
+      }
     } catch (e) {
       _message(e.toString());
     }
@@ -580,6 +637,7 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
           child: messages.isEmpty
               ? const Center(child: Text('لا توجد رسائل بعد'))
               : ListView.builder(
+                  controller: messagesScrollController,
                   padding: EdgeInsets.all(10.w),
                   itemCount: messages.length,
                   itemBuilder: (context, index) => _messageBubble(
@@ -646,51 +704,140 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
   Widget _messageBubble(SupportMessage message, bool mine) {
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: Get.width * 0.8),
-        margin: EdgeInsets.only(bottom: 8.h),
-        padding: EdgeInsets.all(10.w),
-        decoration: BoxDecoration(
-          color: mine ? bubbleMine : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(10.r),
-            topRight: Radius.circular(10.r),
-            bottomLeft: Radius.circular(mine ? 10.r : 2.r),
-            bottomRight: Radius.circular(mine ? 2.r : 10.r),
+      child: GestureDetector(
+        onLongPress: () => _showReactionPicker(message),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: Get.width * 0.8),
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.all(10.w),
+          decoration: BoxDecoration(
+            color: mine ? bubbleMine : Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(10.r),
+              topRight: Radius.circular(10.r),
+              bottomLeft: Radius.circular(mine ? 10.r : 2.r),
+              bottomRight: Radius.circular(mine ? 2.r : 10.r),
+            ),
+            border: Border.all(color: mine ? bubbleMine : borderColor),
           ),
-          border: Border.all(color: mine ? bubbleMine : borderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (message.senderName.isNotEmpty)
-              Text(
-                message.senderName,
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: mine ? actionColor : mutedColor,
-                  fontWeight: FontWeight.w700,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (message.senderName.isNotEmpty)
+                Text(
+                  message.senderName,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: mine ? actionColor : mutedColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              if (message.body.isNotEmpty) ...[
+                SizedBox(height: 3.h),
+                Text(message.body, style: TextStyle(fontSize: 14.sp)),
+              ],
+              if (message.attachments.isNotEmpty) ...[
+                SizedBox(height: 8.h),
+                ...message.attachments.map(_attachmentTile),
+              ],
+              if (message.reactions.isNotEmpty) ...[
+                SizedBox(height: 7.h),
+                _reactionSummary(message),
+              ],
+              SizedBox(height: 5.h),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Text(
+                  message.createdAt == null
+                      ? ''
+                      : dateFormat.format(message.createdAt!),
+                  style: TextStyle(fontSize: 10.sp, color: mutedColor),
                 ),
               ),
-            if (message.body.isNotEmpty) ...[
-              SizedBox(height: 3.h),
-              Text(message.body, style: TextStyle(fontSize: 14.sp)),
             ],
-            if (message.attachments.isNotEmpty) ...[
-              SizedBox(height: 8.h),
-              ...message.attachments.map(_attachmentTile),
-            ],
-            SizedBox(height: 5.h),
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _reactionSummary(SupportMessage message) {
+    return Wrap(
+      spacing: 4.w,
+      runSpacing: 4.h,
+      children: message.reactions
+          .map(
+            (reaction) => Container(
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+              decoration: BoxDecoration(
+                color: reaction.reacted ? bubbleMine : pageColor,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: reaction.reacted ? actionColor : borderColor,
+                ),
+              ),
               child: Text(
-                message.createdAt == null
-                    ? ''
-                    : dateFormat.format(message.createdAt!),
+                '${reaction.reaction} ${reaction.count}',
+                textDirection: ui.TextDirection.ltr,
                 style: TextStyle(fontSize: 10.sp, color: mutedColor),
               ),
             ),
-          ],
+          )
+          .toList(),
+    );
+  }
+
+  void _showReactionPicker(SupportMessage message) {
+    const reactions = ['👍', '😂', '✅', '❌', '👎', '❤️', '😮'];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SafeArea(
+        child: Container(
+          margin: EdgeInsets.all(12.w),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.14),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: reactions
+                .map(
+                  (reaction) => InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _reactToMessage(message, reaction);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 140),
+                      padding: EdgeInsets.all(8.w),
+                      decoration: BoxDecoration(
+                        color: message.myReaction == reaction
+                            ? bubbleMine
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: message.myReaction == reaction
+                            ? Border.all(color: actionColor)
+                            : null,
+                      ),
+                      child: Text(
+                        reaction,
+                        style: TextStyle(fontSize: 26.sp),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
         ),
       ),
     );
@@ -964,37 +1111,15 @@ class _TechnicalSupportScreenState extends State<TechnicalSupportScreen> {
                 Expanded(
                   child: _attachAction(
                     icon: Icons.photo_library_outlined,
-                    label: 'صورة',
-                    onTap: () => _closeSheetAndRun(
-                      () => _pickImage(camera: false),
-                    ),
+                    label: 'الاستديو',
+                    onTap: () => _closeSheetAndRun(_pickMediaFromGallery),
                   ),
                 ),
                 Expanded(
                   child: _attachAction(
                     icon: Icons.photo_camera_outlined,
-                    label: 'تصوير',
-                    onTap: () => _closeSheetAndRun(
-                      () => _pickImage(camera: true),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: _attachAction(
-                    icon: Icons.video_library_outlined,
-                    label: 'فيديو',
-                    onTap: () => _closeSheetAndRun(
-                      () => _pickVideo(camera: false),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: _attachAction(
-                    icon: Icons.videocam_outlined,
-                    label: 'تصوير فيديو',
-                    onTap: () => _closeSheetAndRun(
-                      () => _pickVideo(camera: true),
-                    ),
+                    label: 'الكاميرا',
+                    onTap: () => _closeSheetAndRun(_openCameraCapture),
                   ),
                 ),
               ],

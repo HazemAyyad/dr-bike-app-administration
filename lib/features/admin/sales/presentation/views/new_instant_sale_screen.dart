@@ -132,10 +132,7 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
           _releasePaymentController();
           return;
         }
-        final canLeave = await controller.confirmLeaveInstantSaleFlow(context);
-        if (!mounted || !canLeave) return;
-        _releasePaymentController();
-        Get.back();
+        await _handleBackPressed();
       },
       child: Scaffold(
         appBar: CustomAppBar(
@@ -143,6 +140,7 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
               ? 'newAdjustmentSale'
               : 'newInstantSale',
           action: false,
+          onPressedBack: _handleBackPressed,
           actions: [
             Obx(() {
               final _ = controller.cartRevision.value;
@@ -305,5 +303,11 @@ class _NewInstantSaleScreenState extends State<NewInstantSaleScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _handleBackPressed() async {
+    if (!mounted) return;
+    _releasePaymentController();
+    Get.back();
   }
 }

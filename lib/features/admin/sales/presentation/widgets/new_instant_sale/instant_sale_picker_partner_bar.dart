@@ -108,7 +108,8 @@ class _PickerPartnerSheet extends StatelessWidget {
                 SizedBox(height: 4.h),
                 Text(
                   'instantSalePickerPartnerHint'.tr,
-                  style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
+                  style:
+                      TextStyle(fontSize: 11.sp, color: Colors.grey.shade600),
                 ),
                 SizedBox(height: 12.h),
                 Row(
@@ -135,9 +136,8 @@ class _PickerPartnerSheet extends StatelessWidget {
                 SizedBox(height: 12.h),
                 CustomDropdownFieldWithSearch(
                   tital: isCustomer ? 'customer'.tr : 'seller'.tr,
-                  hint: isCustomer
-                      ? 'customerNameExample'.tr
-                      : 'sellerName1'.tr,
+                  hint:
+                      isCustomer ? 'customerNameExample'.tr : 'sellerName1'.tr,
                   isRequired: false,
                   items: items,
                   value: selected,
@@ -158,9 +158,7 @@ class _PickerPartnerSheet extends StatelessWidget {
                     ),
                     icon: Icon(Icons.person_add_alt_1, size: 18.sp),
                     label: Text(
-                      isCustomer
-                          ? 'quickAddCustomer'.tr
-                          : 'quickAddSeller'.tr,
+                      isCustomer ? 'quickAddCustomer'.tr : 'quickAddSeller'.tr,
                     ),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.primaryColor,
@@ -258,6 +256,7 @@ class _QuickAddPartnerDialogState extends State<_QuickAddPartnerDialog> {
       textDirection: TextDirection.rtl,
       child: AlertDialog(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14.r),
         ),

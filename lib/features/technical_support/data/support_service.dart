@@ -35,6 +35,31 @@ class SupportAttachment {
       );
 }
 
+class SupportMessageReaction {
+  final String reaction;
+  final int count;
+  final bool reacted;
+  final List<String> users;
+
+  const SupportMessageReaction({
+    required this.reaction,
+    required this.count,
+    required this.reacted,
+    required this.users,
+  });
+
+  factory SupportMessageReaction.fromJson(Map<String, dynamic> json) =>
+      SupportMessageReaction(
+        reaction: json['reaction']?.toString() ?? '',
+        count: int.tryParse(json['count']?.toString() ?? '') ?? 0,
+        reacted: json['reacted'] == true,
+        users: (json['users'] is List ? json['users'] as List : const [])
+            .map((e) => e.toString())
+            .where((e) => e.isNotEmpty)
+            .toList(),
+      );
+}
+
 class SupportMessage {
   final int id;
   final int conversationId;
@@ -45,6 +70,8 @@ class SupportMessage {
   final String messageType;
   final String body;
   final List<SupportAttachment> attachments;
+  final List<SupportMessageReaction> reactions;
+  final String myReaction;
   final DateTime? createdAt;
 
   const SupportMessage({
@@ -57,6 +84,8 @@ class SupportMessage {
     required this.messageType,
     required this.body,
     required this.attachments,
+    required this.reactions,
+    required this.myReaction,
     required this.createdAt,
   });
 
@@ -79,6 +108,15 @@ class SupportMessage {
             .map(
                 (e) => SupportAttachment.fromJson(Map<String, dynamic>.from(e)))
             .toList(),
+        reactions: (json['reactions'] is List
+                ? json['reactions'] as List
+                : const [])
+            .whereType<Map>()
+            .map((e) =>
+                SupportMessageReaction.fromJson(Map<String, dynamic>.from(e)))
+            .where((e) => e.reaction.isNotEmpty && e.count > 0)
+            .toList(),
+        myReaction: json['my_reaction']?.toString() ?? '',
         createdAt: _parseDate(json['created_at']),
       );
 }
@@ -244,6 +282,20 @@ class SupportService {
   Future<void> updateStatus(int id, String status) async {
     await _api
         .put(EndPoints.supportConversationStatus(id), data: {'status': status});
+  }
+
+  Future<SupportMessage> reactToMessage({
+    required int conversationId,
+    required int messageId,
+    String? reaction,
+  }) async {
+    final response = await _api.post(
+      EndPoints.supportMessageReaction(conversationId, messageId),
+      data: {'reaction': reaction},
+    );
+    return SupportMessage.fromJson(
+      Map<String, dynamic>.from(response.data['support_message'] as Map),
+    );
   }
 
   Future<FormData> _formData({

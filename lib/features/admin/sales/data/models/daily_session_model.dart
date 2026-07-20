@@ -297,6 +297,8 @@ class DailyClosingRequestModel {
   final int instantSalesCount;
   final int profitSalesCount;
   final List<DailyCashCountRow> cashCounts;
+  final List<DailySessionSaleLogRow> instantSales;
+  final List<DailySessionSaleLogRow> profitSales;
   final bool isLateClose;
   final String? lateCloseReason;
 
@@ -314,6 +316,8 @@ class DailyClosingRequestModel {
     this.instantSalesCount = 0,
     this.profitSalesCount = 0,
     this.cashCounts = const [],
+    this.instantSales = const [],
+    this.profitSales = const [],
     this.isLateClose = false,
     this.lateCloseReason,
   });
@@ -340,6 +344,14 @@ class DailyClosingRequestModel {
       instantSalesCount: asInt(json['instant_sales_count']),
       profitSalesCount: asInt(json['profit_sales_count']),
       cashCounts: counts,
+      instantSales: mapList(
+        json['instant_sales'],
+        (Map<String, dynamic> m) => DailySessionSaleLogRow.fromJson(m),
+      ),
+      profitSales: mapList(
+        json['profit_sales'],
+        (Map<String, dynamic> m) => DailySessionSaleLogRow.fromJson(m),
+      ),
       isLateClose: json['is_late_close'] == true || json['is_late_close'] == 1,
       lateCloseReason: asNullableString(json['late_close_reason']),
     );

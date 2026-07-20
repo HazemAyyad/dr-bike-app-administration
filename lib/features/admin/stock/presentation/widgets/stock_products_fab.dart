@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -12,7 +11,7 @@ import '../../data/models/store_section_model.dart';
 import '../../domain/product_location_utils.dart';
 import '../controllers/stock_controller.dart';
 
-/// Products FAB: tap = add menu; long-press = quarter-arc location filter.
+/// Products FAB: tap = add menu; long-press = full-screen location filter.
 class StockProductsFab extends StatefulWidget {
   const StockProductsFab({
     Key? key,
@@ -42,33 +41,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
 
   int _highlightIndex = -1;
   Offset? _anchorCenter;
-  bool _fabOnLeft = false;
-  int _segmentPage = 0;
-  double _pageDragAccum = 0;
-
-  static const double _centerHit = 34;
-  static const double _minPickRadius = 44;
-  static const double _pageSwipeThreshold = 52;
-  static const double _arcSweep = math.pi / 2;
-
-  static final List<_ArcRowConfig> _arcRows = _buildArcRows();
-
-  static List<_ArcRowConfig> _buildArcRows() {
-    const baseRadius = 94.0;
-    const radiusStep = 58.0;
-    const arcCount = 5;
-    // Pill labels need more arc length than the old single-letter circles.
-    const minChipWidth = 96.0;
-    const gap = 22.0;
-    const slotPitch = minChipWidth + gap;
-
-    return List.generate(arcCount, (i) {
-      final radius = baseRadius + i * radiusStep;
-      final arcLength = radius * math.pi / 2;
-      final capacity = math.max(1, (arcLength / slotPitch).floor());
-      return _ArcRowConfig(capacity: capacity, radius: radius);
-    });
-  }
+  final Set<String> _selectedIds = <String>{};
 
   List<StoreSectionModel> get _activeSections =>
       _stock.storeSections.where((s) => s.isActive).toList(growable: false);
@@ -84,23 +57,6 @@ class _StockProductsFabState extends State<StockProductsFab> {
         (s) => _LocationFilterOption(id: s.id, label: s.name),
       ),
     ];
-  }
-
-  int get _itemsPerPage =>
-      _arcRows.fold(0, (sum, row) => sum + row.capacity);
-
-  List<_LocationFilterOption> get _currentPageItems {
-    final source = _locationFilterOptions;
-    if (source.isEmpty) return const [];
-    final start = _segmentPage * _itemsPerPage;
-    final end = math.min(start + _itemsPerPage, source.length);
-    return source.sublist(start, end);
-  }
-
-  int get _pageCount {
-    final total = _locationFilterOptions.length;
-    if (total <= 0) return 1;
-    return ((total + _itemsPerPage - 1) ~/ _itemsPerPage);
   }
 
   bool get _lensEnabled => _stock.currentTab.value == 0;
@@ -127,7 +83,6 @@ class _StockProductsFabState extends State<StockProductsFab> {
     final center = _readFabCenter(overlayContext);
     if (center == null) return;
     _anchorCenter = center;
-    _fabOnLeft = center.dx < MediaQuery.sizeOf(overlayContext).width * 0.5;
   }
 
   Future<void> _loadSections() async {
@@ -150,8 +105,10 @@ class _StockProductsFabState extends State<StockProductsFab> {
     }
     HapticHelper.selection();
     _highlightIndex = -1;
-    _segmentPage = 0;
-    _pageDragAccum = 0;
+    _selectedIds
+      ..clear()
+      ..addAll(
+          _splitLocationIds(_stock.productListFilters.value.storeSectionId));
     _anchorCenter = _readFabCenter();
     _overlay = OverlayEntry(builder: _buildOverlay);
     Overlay.of(context, rootOverlay: true).insert(_overlay!);
@@ -171,14 +128,10 @@ class _StockProductsFabState extends State<StockProductsFab> {
   }
 
   void _commitCurrentSelection() {
-    if (_highlightIndex < 0) {
+    if (_selectedIds.isEmpty) {
       _stock.clearStoreLocationFilterFromFab();
     } else {
-      final options = _locationFilterOptions;
-      if (options.isNotEmpty) {
-        final i = _highlightIndex.clamp(0, options.length - 1);
-        _stock.applyStoreLocationFilterFromFab(sectionId: options[i].id);
-      }
+      _stock.applyStoreLocationFilterFromFab(sectionId: _selectedIds.join(','));
     }
   }
 
@@ -186,181 +139,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
     if (index == _highlightIndex) return;
     if (vibrate) HapticHelper.confirm();
     _highlightIndex = index;
-    _schedulePreview();
     _overlay?.markNeedsBuild();
-  }
-
-  void _schedulePreview() {
-    // Apply filter only when the lens closes — not while dragging (avoids
-    // rebuilding the FAB/parent and leaving a stuck overlay).
-    _overlay?.markNeedsBuild();
-  }
-
-  void _handlePageSwipe(double deltaX) {
-    if (_pageCount <= 1) return;
-    _pageDragAccum += deltaX;
-    if (_pageDragAccum >= _pageSwipeThreshold) {
-      if (_segmentPage < _pageCount - 1) {
-        _segmentPage++;
-        HapticHelper.selection();
-      }
-      _pageDragAccum = 0;
-      _overlay?.markNeedsBuild();
-      return;
-    }
-    if (_pageDragAccum <= -_pageSwipeThreshold) {
-      if (_segmentPage > 0) {
-        _segmentPage--;
-        HapticHelper.selection();
-      }
-      _pageDragAccum = 0;
-      _overlay?.markNeedsBuild();
-    }
-  }
-
-  List<_ArcSlot> _layoutSlots(int count) {
-    if (count <= 0) return const [];
-    final slots = <_ArcSlot>[];
-    var local = 0;
-    for (var row = 0; row < _arcRows.length && local < count; row++) {
-      final inRow = math.min(_arcRows[row].capacity, count - local);
-      for (var slot = 0; slot < inRow; slot++) {
-        slots.add(
-          _ArcSlot(
-            localIndex: local,
-            row: row,
-            slotInRow: slot,
-            rowCount: inRow,
-          ),
-        );
-        local++;
-      }
-    }
-    return slots;
-  }
-
-  List<int> _activeRows(int count) {
-    return _layoutSlots(count).map((s) => s.row).toSet().toList()..sort();
-  }
-
-  double _radiusForRow(int row) =>
-      _arcRows[row.clamp(0, _arcRows.length - 1)].radius;
-
-  double _arcStartAngle() => _fabOnLeft ? -math.pi / 2 : -math.pi;
-
-  double _arcEndAngle() => _fabOnLeft ? 0.0 : -math.pi / 2;
-
-  bool _angleInArc(double angle) {
-    const margin = 0.22;
-    final start = _arcStartAngle();
-    final end = _arcEndAngle();
-    return angle >= (start - margin) && angle <= (end + margin);
-  }
-
-  static const double _arcEdgePadding = 0.07;
-
-  double _angleForSlot(int index, int total) {
-    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
-    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
-    final t = total <= 1 ? 0.5 : (index + 0.5) / total;
-    return start + t * sweep;
-  }
-
-  int _localIndexFromAngle(double angle, int total) {
-    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
-    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
-    final t = ((angle - start) / sweep).clamp(0.0, 0.999999);
-    return (t * total).floor().clamp(0, total - 1);
-  }
-
-  double _bubbleSize({required int rowCount}) {
-    if (rowCount >= 5) return 34;
-    if (rowCount >= 3) return 38;
-    if (rowCount >= 2) return 42;
-    return 46;
-  }
-
-  double _chipMaxWidth({required int rowCount}) {
-    if (rowCount <= 1) return 124;
-    if (rowCount == 2) return 116;
-    if (rowCount <= 3) return 108;
-    if (rowCount <= 4) return 100;
-    return 92;
-  }
-
-  double _chipMinHeight({required int rowCount}) {
-    return _bubbleSize(rowCount: rowCount);
-  }
-
-  double _chipFontSize({required int rowCount}) {
-    if (rowCount >= 5) return 10;
-    if (rowCount >= 3) return 11;
-    if (rowCount >= 2) return 12;
-    return 13;
-  }
-
-  int? _rowFromDistance(double distance, int pageCount) {
-    final rows = _activeRows(pageCount);
-    if (rows.isEmpty) return null;
-
-    for (var i = 0; i < rows.length; i++) {
-      final row = rows[i];
-      final radius = _radiusForRow(row);
-      final inner = i == 0
-          ? _minPickRadius
-          : (_radiusForRow(rows[i - 1]) + radius) / 2;
-      final outer = i == rows.length - 1
-          ? radius + 48
-          : (radius + _radiusForRow(rows[i + 1])) / 2;
-      if (distance >= inner && distance < outer) return row;
-    }
-
-    int? bestRow;
-    var bestDiff = double.infinity;
-    for (final row in rows) {
-      final diff = (distance - _radiusForRow(row)).abs();
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestRow = row;
-      }
-    }
-    return bestRow;
-  }
-
-  int _indexFromPointer(Offset global, BuildContext overlayContext) {
-    _syncAnchor(overlayContext);
-    final center = _anchorCenter;
-    if (center == null) return -1;
-
-    final delta = global - center;
-    if (delta.distance <= _centerHit) return -1;
-    if (delta.distance < _minPickRadius) return _highlightIndex;
-
-    final pageItems = _currentPageItems;
-    if (pageItems.isEmpty) return -1;
-
-    final angle = math.atan2(delta.dy, delta.dx);
-    if (!_angleInArc(angle)) return _highlightIndex;
-
-    final row = _rowFromDistance(delta.distance, pageItems.length);
-    if (row == null) return _highlightIndex;
-
-    final rowSlots = _layoutSlots(pageItems.length)
-        .where((s) => s.row == row)
-        .toList()
-      ..sort((a, b) => a.slotInRow.compareTo(b.slotInRow));
-    if (rowSlots.isEmpty) return _highlightIndex;
-
-    final slotInRow = _localIndexFromAngle(angle, rowSlots.length);
-    return _segmentPage * _itemsPerPage +
-        rowSlots[slotInRow.clamp(0, rowSlots.length - 1)].localIndex;
-  }
-
-  Offset _slotPosition(_ArcSlot slot, Offset center) {
-    final angle = _angleForSlot(slot.slotInRow, slot.rowCount);
-    final radius = _radiusForRow(slot.row);
-    return center +
-        Offset(math.cos(angle) * radius, math.sin(angle) * radius);
   }
 
   String? _centerBannerLabel() {
@@ -370,44 +149,46 @@ class _StockProductsFabState extends State<StockProductsFab> {
     return options[_highlightIndex.clamp(0, options.length - 1)].label;
   }
 
-  void _onPointerUp() {
-    _removeOverlay(applySelection: true);
+  List<String> _splitLocationIds(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return const [];
+    return value
+        .split(',')
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  void _toggleGridItem(int index) {
+    _setHighlight(index);
+    final options = _locationFilterOptions;
+    if (options.isEmpty) return;
+    final id = options[index.clamp(0, options.length - 1)].id;
+    if (_selectedIds.contains(id)) {
+      _selectedIds.remove(id);
+    } else {
+      _selectedIds.add(id);
+    }
+    _overlay?.markNeedsBuild();
   }
 
   Widget _buildOverlay(BuildContext context) {
     _syncAnchor(context);
     final anchor = _anchorCenter;
-    final pageItems = _currentPageItems;
-    final onPage = pageItems.length;
-    final slots = _layoutSlots(onPage);
-    final guideRadii = _activeRows(onPage).map(_radiusForRow).toList();
-    final maxArcRadius =
-        guideRadii.isEmpty ? 180.0 : guideRadii.reduce(math.max);
+    final options = _locationFilterOptions;
     final bannerLabel = _centerBannerLabel();
-    final totalCount = _locationFilterOptions.length;
-    final clearSelected = _highlightIndex < 0;
+    final totalCount = options.length;
+    final clearSelected = _selectedIds.isEmpty;
 
     return Material(
       color: Colors.transparent,
-      child: Listener(
+      child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) {
-          _pageDragAccum = 0;
-          _syncAnchor(context);
-        },
-        onPointerMove: (e) {
-          _handlePageSwipe(e.delta.dx);
-          _setHighlight(_indexFromPointer(e.position, context));
-        },
-        onPointerUp: (_) => _onPointerUp(),
-        onPointerCancel: (_) => _removeOverlay(applySelection: false),
+        onTap: () => _removeOverlay(applySelection: true),
         child: Stack(
           children: [
             Positioned.fill(
-              child: GestureDetector(
-                onTap: () => _removeOverlay(applySelection: true),
-                child: Container(color: Colors.black.withValues(alpha: 0.45)),
-              ),
+              child: Container(color: Colors.black.withValues(alpha: 0.45)),
             ),
             if (!_loading && bannerLabel != null)
               Positioned.fill(
@@ -418,22 +199,11 @@ class _StockProductsFabState extends State<StockProductsFab> {
                       subtitle: 'storeLocationFabChooseSection'.tr,
                       index: _highlightIndex + 1,
                       total: totalCount,
-                      pageCount: _pageCount,
-                      currentPage: _segmentPage,
                     ),
                   ),
                 ),
               ),
             if (anchor != null) ...[
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _QuarterArcGuidePainter(
-                    center: anchor,
-                    fabOnLeft: _fabOnLeft,
-                    radii: guideRadii,
-                  ),
-                ),
-              ),
               if (_loading)
                 Positioned(
                   left: anchor.dx - 18,
@@ -447,76 +217,34 @@ class _StockProductsFabState extends State<StockProductsFab> {
                     ),
                   ),
                 ),
-              if (!_loading && onPage > 0)
-                ...slots.map((slot) {
-                  final globalIndex =
-                      _segmentPage * _itemsPerPage + slot.localIndex;
-                  final pos = _slotPosition(slot, anchor);
-                  final selected = globalIndex == _highlightIndex;
-                  final chipMaxWidth = _chipMaxWidth(rowCount: slot.rowCount);
-                  final chipMinHeight = _chipMinHeight(rowCount: slot.rowCount);
-                  return Positioned(
-                    left: pos.dx - chipMaxWidth / 2,
-                    top: pos.dy - chipMinHeight / 2,
-                    child: Transform.scale(
-                      scale: selected ? 1.08 : 0.96,
-                      child: _SectionBubble(
-                        name: _currentPageItems[slot.localIndex].label,
-                        selected: selected,
-                        maxWidth: chipMaxWidth,
-                        minHeight: chipMinHeight,
-                        fontSize: _chipFontSize(rowCount: slot.rowCount),
-                      ),
-                    ),
-                  );
-                }),
-              if (!_loading && _pageCount > 1 && onPage > 0)
-                Positioned(
-                  left: _fabOnLeft ? anchor.dx + 8 : anchor.dx - 168,
-                  top: anchor.dy - maxArcRadius - 48,
-                  width: 160,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_pageCount, (i) {
-                          final active = i == _segmentPage;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: active ? 16 : 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: active
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          );
-                        }),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'storeLocationFabSwipeHint'.tr,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w600,
-                          shadows: const [
-                            Shadow(color: Colors.black54, blurRadius: 4),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               Positioned(
                 left: anchor.dx - 28,
                 top: anchor.dy - 28,
                 child: IgnorePointer(
                   child: clearSelected
-                      ? const _CenterClearBubble(selected: true)
+                      ? Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(
+                              color: AppColors.secondaryColor,
+                              width: 3,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.22),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.filter_alt_off_outlined,
+                            color: AppColors.secondaryColor,
+                            size: 26.sp,
+                          ),
+                        )
                       : Container(
                           width: 56,
                           height: 56,
@@ -540,15 +268,25 @@ class _StockProductsFabState extends State<StockProductsFab> {
                 ),
               ),
             ],
-            if (!_loading && _locationFilterOptions.isEmpty && anchor != null)
-              Positioned(
-                left: anchor.dx - 80,
-                top: anchor.dy - 120,
-                width: 160,
-                child: Text(
-                  'noStoreSectionsYet'.tr,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+            if (!_loading)
+              SafeArea(
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: _LocationGridPanel(
+                      options: options,
+                      highlightedIndex: _highlightIndex,
+                      selectedIds: _selectedIds,
+                      clearSelected: clearSelected,
+                      onClear: () {
+                        _highlightIndex = -1;
+                        _selectedIds.clear();
+                        _overlay?.markNeedsBuild();
+                      },
+                      onSelect: _toggleGridItem,
+                      onApply: () => _removeOverlay(applySelection: true),
+                    ),
+                  ),
                 ),
               ),
           ],
@@ -632,9 +370,7 @@ class _StockProductsFabState extends State<StockProductsFab> {
                       : null,
                   child: FloatingActionButton(
                     key: _fabKey,
-                    onPressed: _overlay != null
-                        ? null
-                        : widget.onTap,
+                    onPressed: _overlay != null ? null : widget.onTap,
                     backgroundColor: AppColors.secondaryColor,
                     elevation: 2.0,
                     shape: const CircleBorder(),
@@ -670,16 +406,12 @@ class _CenterSelectionBanner extends StatelessWidget {
     required this.subtitle,
     required this.index,
     required this.total,
-    required this.pageCount,
-    required this.currentPage,
   });
 
   final String title;
   final String subtitle;
   final int index;
   final int total;
-  final int pageCount;
-  final int currentPage;
 
   @override
   Widget build(BuildContext context) {
@@ -730,27 +462,121 @@ class _CenterSelectionBanner extends StatelessWidget {
               ),
             ),
           ],
-          if (pageCount > 1) ...[
-            SizedBox(height: 8.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(pageCount, (i) {
-                final active = i == currentPage;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: active ? 16 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? AppColors.secondaryColor
-                        : Colors.white.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                );
-              }),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationGridPanel extends StatelessWidget {
+  const _LocationGridPanel({
+    required this.options,
+    required this.highlightedIndex,
+    required this.selectedIds,
+    required this.clearSelected,
+    required this.onClear,
+    required this.onSelect,
+    required this.onApply,
+  });
+
+  final List<_LocationFilterOption> options;
+  final int highlightedIndex;
+  final Set<String> selectedIds;
+  final bool clearSelected;
+  final VoidCallback onClear;
+  final ValueChanged<int> onSelect;
+  final VoidCallback onApply;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = width >= 720
+        ? 4
+        : width >= 430
+            ? 3
+            : 2;
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
+      constraints: BoxConstraints(
+        maxWidth: 720,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.72,
+      ),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.24),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _GridClearTile(
+            selected: clearSelected,
+            onTap: onClear,
+          ),
+          SizedBox(height: 10.h),
+          if (options.isEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 28.h),
+              child: Text(
+                'noStoreSectionsYet'.tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.secondaryColor,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            )
+          else
+            Flexible(
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: 8.h,
+                  crossAxisSpacing: 8.w,
+                  childAspectRatio: columns == 2 ? 2.55 : 2.35,
+                ),
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options[index];
+                  return _SectionBubble(
+                    name: option.label,
+                    selected: selectedIds.contains(option.id),
+                    highlighted: highlightedIndex == index,
+                    onTap: () => onSelect(index),
+                  );
+                },
+              ),
             ),
-          ],
+          SizedBox(height: 10.h),
+          SizedBox(
+            height: 42.h,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.secondaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              onPressed: onApply,
+              child: Text(
+                'apply'.tr,
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -761,56 +587,68 @@ class _SectionBubble extends StatelessWidget {
   const _SectionBubble({
     required this.name,
     required this.selected,
-    required this.maxWidth,
-    required this.minHeight,
-    required this.fontSize,
+    required this.highlighted,
+    required this.onTap,
   });
 
   final String name;
   final bool selected;
-  final double maxWidth;
-  final double minHeight;
-  final double fontSize;
+  final bool highlighted;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final label = name.trim().isNotEmpty ? name.trim() : '?';
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        maxWidth: maxWidth,
-        minWidth: minHeight,
-        minHeight: minHeight,
-      ),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: Colors.white,
-          border: Border.all(
-            color: selected ? AppColors.secondaryColor : Colors.white,
-            width: selected ? 2.5 : 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 8,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8.r),
+        onTap: onTap,
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8.r),
+            color: selected
+                ? AppColors.secondaryColor.withValues(alpha: 0.12)
+                : Colors.grey.shade100,
+            border: Border.all(
+              color: selected || highlighted
+                  ? AppColors.secondaryColor
+                  : Colors.grey.shade300,
+              width: selected ? 2 : 1,
             ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            softWrap: true,
-            style: TextStyle(
-              color: AppColors.secondaryColor,
-              fontWeight: FontWeight.w800,
-              fontSize: fontSize.sp,
-              height: 1.2,
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (selected) ...[
+                  Icon(
+                    Icons.check_circle,
+                    color: AppColors.secondaryColor,
+                    size: 16.sp,
+                  ),
+                  SizedBox(width: 5.w),
+                ],
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      softWrap: true,
+                      style: TextStyle(
+                        color: AppColors.secondaryColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.sp,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -819,94 +657,60 @@ class _SectionBubble extends StatelessWidget {
   }
 }
 
-class _CenterClearBubble extends StatelessWidget {
-  const _CenterClearBubble({required this.selected});
+class _GridClearTile extends StatelessWidget {
+  const _GridClearTile({
+    required this.selected,
+    required this.onTap,
+  });
 
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(
-          color: selected ? AppColors.secondaryColor : Colors.white70,
-          width: selected ? 3 : 1.5,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8.r),
+        onTap: onTap,
+        child: Ink(
+          height: 44.h,
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8.r),
+            color: selected
+                ? AppColors.secondaryColor.withValues(alpha: 0.12)
+                : Colors.grey.shade100,
+            border: Border.all(
+              color: selected ? AppColors.secondaryColor : Colors.grey.shade300,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.filter_alt_off_outlined,
+                color: AppColors.secondaryColor,
+                size: 21.sp,
+              ),
+              SizedBox(width: 8.w),
+              Flexible(
+                child: Text(
+                  'all'.tr,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.secondaryColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.sp,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 8),
-        ],
-      ),
-      child: Icon(
-        Icons.filter_alt_off_outlined,
-        color: selected ? AppColors.secondaryColor : Colors.grey.shade600,
-        size: 26,
       ),
     );
-  }
-}
-
-class _ArcRowConfig {
-  const _ArcRowConfig({required this.capacity, required this.radius});
-
-  final int capacity;
-  final double radius;
-}
-
-class _ArcSlot {
-  const _ArcSlot({
-    required this.localIndex,
-    required this.row,
-    required this.slotInRow,
-    required this.rowCount,
-  });
-
-  final int localIndex;
-  final int row;
-  final int slotInRow;
-  final int rowCount;
-}
-
-class _QuarterArcGuidePainter extends CustomPainter {
-  const _QuarterArcGuidePainter({
-    required this.center,
-    required this.fabOnLeft,
-    required this.radii,
-  });
-
-  final Offset center;
-  final bool fabOnLeft;
-  final List<double> radii;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (radii.isEmpty) return;
-
-    final startAngle = fabOnLeft ? -math.pi / 2 : -math.pi;
-    const sweep = math.pi / 2;
-
-    for (final radius in radii) {
-      final rect = Rect.fromCircle(center: center, radius: radius);
-      final fillPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.07)
-        ..style = PaintingStyle.fill;
-      canvas.drawArc(rect, startAngle, sweep, true, fillPaint);
-
-      final strokePaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.3)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4;
-      canvas.drawArc(rect, startAngle, sweep, false, strokePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _QuarterArcGuidePainter oldDelegate) {
-    return oldDelegate.center != center ||
-        oldDelegate.fabOnLeft != fabOnLeft ||
-        oldDelegate.radii != radii;
   }
 }

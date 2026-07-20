@@ -44,6 +44,11 @@ class AppSettingsService {
   }.obs;
   final RxBool shiplyEnabled = true.obs;
   final RxBool shiplyIsTestMode = true.obs;
+  final RxMap<String, AppUpdatePlatformSettings> appUpdateSettings =
+      <String, AppUpdatePlatformSettings>{
+    'android': AppUpdatePlatformSettings.defaults('android'),
+    'ios': AppUpdatePlatformSettings.defaults('ios'),
+  }.obs;
   bool _loaded = false;
 
   ApiConsumer? get _api =>
@@ -117,6 +122,10 @@ class AppSettingsService {
             shiplyEnabled.value = shiply['shiply_enabled'] == true;
             shiplyIsTestMode.value = shiply['shiply_is_test'] != false &&
                 (shiply['shiply_mode']?.toString() != 'live');
+          }
+          final appUpdate = settings['app_update'];
+          if (appUpdate is Map) {
+            _applyAppUpdateSettings(appUpdate);
           }
         }
       }
@@ -203,6 +212,42 @@ class AppSettingsService {
     return false;
   }
 
+  Future<bool> updateAppUpdateSettings({
+    required AppUpdatePlatformSettings android,
+    required AppUpdatePlatformSettings ios,
+  }) async {
+    final api = _api;
+    if (api == null) return false;
+
+    try {
+      final response = await api.put(
+        EndPoints.appSettings,
+        data: {
+          'app_update': {
+            'admin': {
+              'android': android.toJson(),
+              'ios': ios.toJson(),
+            },
+          },
+        },
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        final settings = data['settings'];
+        if (settings is Map && settings['app_update'] is Map) {
+          _applyAppUpdateSettings(settings['app_update'] as Map);
+        } else {
+          appUpdateSettings.assignAll({
+            'android': android,
+            'ios': ios,
+          });
+        }
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   void _applyMaxFloatMap(Map<dynamic, dynamic> raw) {
     for (final entry in raw.entries) {
       final key = entry.key.toString();
@@ -245,8 +290,112 @@ class AppSettingsService {
     return values;
   }
 
+  void _applyAppUpdateSettings(Map<dynamic, dynamic> raw) {
+    final admin = raw['admin'];
+    if (admin is! Map) return;
+
+    final next = <String, AppUpdatePlatformSettings>{};
+    for (final platform in const ['android', 'ios']) {
+      final data = admin[platform];
+      next[platform] = data is Map
+          ? AppUpdatePlatformSettings.fromJson(platform, data)
+          : AppUpdatePlatformSettings.defaults(platform);
+    }
+    appUpdateSettings.assignAll(next);
+  }
+
   dynamic _responseData(dynamic response) {
     if (response is dio.Response) return response.data;
     return response;
+  }
+}
+
+class AppUpdatePlatformSettings {
+  AppUpdatePlatformSettings({
+    required this.platform,
+    required this.isActive,
+    required this.latestVersion,
+    required this.latestBuild,
+    required this.minimumBuild,
+    required this.forceUpdate,
+    required this.url,
+    required this.title,
+    required this.message,
+  });
+
+  final String platform;
+  final bool isActive;
+  final String latestVersion;
+  final int latestBuild;
+  final int minimumBuild;
+  final bool forceUpdate;
+  final String url;
+  final String title;
+  final String message;
+
+  factory AppUpdatePlatformSettings.defaults(String platform) {
+    return AppUpdatePlatformSettings(
+      platform: platform,
+      isActive: false,
+      latestVersion: '1.0.0',
+      latestBuild: 0,
+      minimumBuild: 0,
+      forceUpdate: false,
+      url: '',
+      title: 'تحديث جديد متاح',
+      message: 'يرجى تحديث التطبيق للحصول على آخر التحسينات.',
+    );
+  }
+
+  factory AppUpdatePlatformSettings.fromJson(
+    String platform,
+    Map<dynamic, dynamic> json,
+  ) {
+    return AppUpdatePlatformSettings(
+      platform: platform,
+      isActive: json['is_active'] == true,
+      latestVersion: json['latest_version']?.toString() ?? '1.0.0',
+      latestBuild: int.tryParse(json['latest_build']?.toString() ?? '') ?? 0,
+      minimumBuild: int.tryParse(json['minimum_build']?.toString() ?? '') ?? 0,
+      forceUpdate: json['force_update'] == true,
+      url: json['url']?.toString() ?? '',
+      title: json['title']?.toString() ?? 'تحديث جديد متاح',
+      message: json['message']?.toString() ??
+          'يرجى تحديث التطبيق للحصول على آخر التحسينات.',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'is_active': isActive,
+        'latest_version': latestVersion,
+        'latest_build': latestBuild,
+        'minimum_build': minimumBuild,
+        'force_update': forceUpdate,
+        'url': url,
+        'title': title,
+        'message': message,
+      };
+
+  AppUpdatePlatformSettings copyWith({
+    bool? isActive,
+    String? latestVersion,
+    int? latestBuild,
+    int? minimumBuild,
+    bool? forceUpdate,
+    String? url,
+    String? title,
+    String? message,
+  }) {
+    return AppUpdatePlatformSettings(
+      platform: platform,
+      isActive: isActive ?? this.isActive,
+      latestVersion: latestVersion ?? this.latestVersion,
+      latestBuild: latestBuild ?? this.latestBuild,
+      minimumBuild: minimumBuild ?? this.minimumBuild,
+      forceUpdate: forceUpdate ?? this.forceUpdate,
+      url: url ?? this.url,
+      title: title ?? this.title,
+      message: message ?? this.message,
+    );
   }
 }

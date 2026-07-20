@@ -63,6 +63,8 @@ class InstantSaleProductCard extends StatelessWidget {
           : (physicalStock - displayStock).clamp(0, physicalStock);
       final outOfStock =
           physicalStock < 1 && !controller.isAdjustmentInstantSale;
+      final blockedOutOfStock =
+          outOfStock && controller.salesOrderStockMode.value;
       final qty = controller.cartQtyForProduct(product.id);
       final inCart = qty > 0;
       final simpleLineIdx = controller.cartLines.indexWhere(
@@ -81,7 +83,7 @@ class InstantSaleProductCard extends StatelessWidget {
       final pastedLabel = controller.pastedRequestLabelForProduct(product);
       final pastedSelected = controller.pastedRequestSelectedProduct(product);
       final usePastedAction = pastedLabel != null;
-      final tapAction = outOfStock
+      final tapAction = blockedOutOfStock
           ? null
           : () => usePastedAction
               ? controller.addProductFromPastedSuggestion(
@@ -313,7 +315,7 @@ class InstantSaleProductCard extends StatelessWidget {
                             compact: true,
                             quantity: qty,
                             canDecrement: inCart,
-                            canIncrement: physicalStock > 0,
+                            canIncrement: !blockedOutOfStock,
                             onQuantityTap: product.hasVariants
                                 ? null
                                 : () => controller.promptProductQuantity(
@@ -325,7 +327,7 @@ class InstantSaleProductCard extends StatelessWidget {
                                       product.id,
                                     )
                                 : null,
-                            onIncrement: physicalStock > 0
+                            onIncrement: !blockedOutOfStock
                                 ? () => controller.incrementProductInCart(
                                       product,
                                       context: context,

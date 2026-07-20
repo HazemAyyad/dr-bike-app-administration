@@ -241,6 +241,9 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                       const EmployeeDashboardReminders(),
                       BuildActionButtons(
                         buttons: controller.buttons,
+                        badges:
+                            controller.employeeData.value?.dashboardBadges ??
+                                {},
                         employeePermissions: controller
                             .employeeData.value?.permissions
                             .map((e) => e.id)

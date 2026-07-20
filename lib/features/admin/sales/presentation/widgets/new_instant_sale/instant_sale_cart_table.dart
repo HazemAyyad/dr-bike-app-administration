@@ -8,6 +8,7 @@ import '../../../../../../core/helpers/product_image_utils.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../routes/app_routes.dart';
 import '../../../data/utils/sale_variant_display.dart';
 import '../../controllers/sales_controller.dart';
 import '../../models/instant_sale_cart_line.dart';
@@ -87,6 +88,7 @@ class InstantSaleCartTable extends GetView<SalesController> {
                           _headerCell('quantity', 56),
                           _headerCell('price', 108),
                           _headerCell('total', 72),
+                          SizedBox(width: 34.w),
                         ],
                       ),
                     ),
@@ -192,6 +194,37 @@ class InstantSaleCartTable extends GetView<SalesController> {
                               center: true,
                               bold: true,
                             ),
+                            SizedBox(
+                              width: 34.w,
+                              child: IconButton(
+                                tooltip: 'delete'.tr,
+                                padding: EdgeInsets.zero,
+                                constraints:
+                                    BoxConstraints.tight(Size(28.w, 28.w)),
+                                icon: Icon(
+                                  Icons.close,
+                                  size: 17.sp,
+                                  color: Colors.red.shade600,
+                                ),
+                                onPressed: () async {
+                                  final confirmed =
+                                      await _confirmRemoveLine(context, line);
+                                  if (confirmed != true) return;
+
+                                  controller.removeCartLine(index);
+                                  controller.syncCartToItems();
+                                  if (!controller.hasSelectedPackage &&
+                                      controller.cartLines.isEmpty) {
+                                    Get.offNamed(
+                                      controller.isAdjustmentInstantSale
+                                          ? AppRoutes
+                                              .ADJUSTMENTSALEPRODUCTPICKER
+                                          : AppRoutes.INSTANTSALEPRODUCTPICKER,
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -204,6 +237,55 @@ class InstantSaleCartTable extends GetView<SalesController> {
         ),
       );
     });
+  }
+
+  Future<bool?> _confirmRemoveLine(
+    BuildContext context,
+    InstantSaleCartLine line,
+  ) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'confirmDelete'.tr,
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w800,
+              color: Colors.red.shade700,
+            ),
+          ),
+          content: Text(
+            '${'delete'.tr}: ${line.displayName}',
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: Colors.grey.shade800,
+              height: 1.35,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text(
+                'cancel'.tr,
+                style: TextStyle(color: Colors.grey.shade700),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white,
+                elevation: 0,
+              ),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: Text('delete'.tr),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _headerCell(String key, double width) {

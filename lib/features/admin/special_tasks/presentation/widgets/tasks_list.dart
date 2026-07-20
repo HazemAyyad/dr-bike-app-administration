@@ -1,7 +1,5 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
-import 'package:doctorbike/core/helpers/scroll_date_picker_sheet.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
-import 'package:doctorbike/core/helpers/showtime.dart';
 import 'package:doctorbike/features/admin/special_tasks/data/models/special_task_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -205,9 +203,7 @@ class TasksList extends GetView<SpecialTasksController> {
                 if (controller.currentTab.value == 0)
                   Obx(
                     () => controller.transferTask.value
-                        ? _TransferDateField(
-                            selectedDay: controller.selectedDay,
-                          )
+                        ? _TransferWeekDayPicker(controller: controller)
                         : const SizedBox.shrink(),
                   ),
                 CustomCheckBox(
@@ -250,74 +246,61 @@ class TasksList extends GetView<SpecialTasksController> {
   }
 }
 
-class _TransferDateField extends StatelessWidget {
-  const _TransferDateField({required this.selectedDay});
+class _TransferWeekDayPicker extends StatelessWidget {
+  const _TransferWeekDayPicker({required this.controller});
 
-  final Rx<DateTime> selectedDay;
-
-  Future<void> _pick(BuildContext context) async {
-    final picked = await ScrollDatePickerSheet.show(
-      context,
-      initial: selectedDay.value,
-      title: 'date',
-      minimumDate: DateTime.now(),
-    );
-    if (picked != null) {
-      selectedDay.value = picked;
-    }
-  }
+  final SpecialTasksController controller;
 
   @override
   Widget build(BuildContext context) {
+    final days = controller.transferWeekDays
+        .where((day) => !controller.isPastTransferDay(day))
+        .toList();
     return Padding(
       padding: EdgeInsets.only(bottom: 8.h),
-      child: Obx(
-        () => Material(
-          color: AppColors.whiteColor,
-          borderRadius: BorderRadius.circular(8.r),
-          child: InkWell(
-            onTap: () => _pick(context),
+      child: Material(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(8.r),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8.r),
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(color: AppColors.operationalCardBorder),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 18.sp,
-                    color: AppColors.primaryColor,
+            border: Border.all(color: AppColors.operationalCardBorder),
+          ),
+          child: Obx(
+            () => Wrap(
+              spacing: 6.w,
+              runSpacing: 6.h,
+              children: days.map((day) {
+                final selected = DateUtils.isSameDay(
+                  controller.selectedDay.value,
+                  day,
+                );
+                return ChoiceChip(
+                  label: Text(
+                    DateFormat('EEEE', Get.locale?.languageCode).format(day),
                   ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'date'.tr,
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: AppColors.customGreyColor5,
-                          ),
-                        ),
-                        SizedBox(height: 2.h),
-                        Text(
-                          showData(selectedDay.value),
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.operationalNavy,
-                          ),
-                        ),
-                      ],
+                  selected: selected,
+                  onSelected: (_) => controller.selectTransferWeekDay(day),
+                  selectedColor: AppColors.primaryColor,
+                  backgroundColor: AppColors.whiteColor,
+                  labelStyle: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : AppColors.operationalNavy,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                    side: BorderSide(
+                      color: selected
+                          ? AppColors.primaryColor
+                          : AppColors.operationalCardBorder,
                     ),
                   ),
-                ],
-              ),
+                  visualDensity: VisualDensity.compact,
+                );
+              }).toList(),
             ),
           ),
         ),

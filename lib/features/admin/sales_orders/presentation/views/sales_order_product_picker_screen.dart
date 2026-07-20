@@ -67,7 +67,7 @@ class _SalesOrderProductPickerScreenState
 
   @override
   void dispose() {
-    sales.disablePickerReservedStock();
+    sales.disablePickerReservedStockAfterFrame();
     _searchController.dispose();
     super.dispose();
   }
@@ -77,7 +77,7 @@ class _SalesOrderProductPickerScreenState
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
-          sales.disablePickerReservedStock();
+          sales.disablePickerReservedStockAfterFrame();
           if (orders.isEditingOrder) {
             orders.clearActiveEditSalesOrder();
             sales.resetInstantSaleForm();

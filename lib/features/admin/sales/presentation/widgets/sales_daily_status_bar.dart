@@ -216,15 +216,12 @@ class SalesDailyStatusBar extends GetView<SalesController> {
 
   Future<void> _openDrawer(BuildContext context) async {
     final payload = controller.dailySessionPayload.value;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final dialogBg = dark ? const Color(0xFF1F2937) : Colors.white;
-    final dialogTitleColor = dark ? Colors.white : const Color(0xFF111827);
-    final dialogTextColor =
-        dark ? const Color(0xFFE5E7EB) : const Color(0xFF374151);
-    final dialogMutedColor =
-        dark ? const Color(0xFFD1D5DB) : const Color(0xFF6B7280);
+    const dialogBg = Colors.white;
+    const dialogTitleColor = Color(0xFF111827);
+    const dialogTextColor = Color(0xFF374151);
+    const dialogMutedColor = Color(0xFF6B7280);
     final dialogButtonStyle = TextButton.styleFrom(
-      foregroundColor: dark ? const Color(0xFFE5E7EB) : AppColors.primaryColor,
+      foregroundColor: AppColors.primaryColor,
     );
     final expectedRows = payload?.expectedOpeningCounts.isNotEmpty == true
         ? payload!.expectedOpeningCounts

@@ -25,32 +25,9 @@ class GlobalData extends GetView<GeneralDataListController> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      padding: EdgeInsets.only(bottom: 10.h),
       child: GestureDetector(
-        onTap: () {
-          controller.clearForm();
-          controller.isEdit.value = true;
-          controller.getPersonData(
-            customerId: controller.currentTab.value == 1
-                ? employee.id.toString()
-                : employee.type == 'customer'
-                    ? employee.id.toString()
-                    : '',
-            sellerId: controller.currentTab.value == 0
-                ? employee.id.toString()
-                : employee.type == 'seller'
-                    ? employee.id.toString()
-                    : '',
-          );
-          Get.toNamed(
-            AppRoutes.ADDNEWCUSTOMERSCREEN,
-            arguments: {
-              'employeeType': employee.type,
-              'employeeId': employee.id.toString(),
-              'sellerId': employee.id.toString(),
-            },
-          );
-        },
+        onTap: () => _openEditor(),
         onLongPress: () {
           Get.dialog(
             AlertDialog(
@@ -214,118 +191,129 @@ class GlobalData extends GetView<GeneralDataListController> {
             ),
           );
         },
-        child: Container(
-          margin: EdgeInsets.only(bottom: 12.h),
-          decoration: BoxDecoration(
-            color: ThemeService.isDark.value
-                ? AppColors.customGreyColor4
-                : AppColors.whiteColor2,
-            borderRadius: BorderRadius.circular(10.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withAlpha(32),
-                blurRadius: 5.r,
-                offset: const Offset(0, 2),
+        child: Material(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor4
+              : AppColors.whiteColor,
+          borderRadius: BorderRadius.circular(8.r),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : Colors.grey.shade300,
               ),
-            ],
-          ),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: PersonAvatarHelper.isPlaceholder(employee.idImage)
-                    ? null
-                    : () {
-                        showGeneralDialog(
-                          context: context,
-                          barrierDismissible: true,
-                          barrierLabel: 'Dismiss',
-                          barrierColor: Colors.black.withAlpha(128),
-                          transitionDuration: const Duration(milliseconds: 300),
-                          pageBuilder: (context, anim1, anim2) {
-                            return FullScreenZoomImage(
-                              imageUrl: employee.idImage!,
-                            );
-                          },
-                        );
-                      },
-                child: PersonAvatarImage(
-                  imageUrl: employee.idImage,
-                  height: 70.h,
-                  width: 70.w,
-                  fit: BoxFit.cover,
-                  borderRadius: BorderRadius.circular(5.r),
-                ),
-              ),
-              // SizedBox(width: 20.w),
-              Flexible(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8.r),
+              onTap: _openEditor,
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 620;
+                    final avatar = _AvatarButton(
+                      imageUrl: employee.idImage,
+                      onTap: () => _showIdImage(context),
+                    );
+                    final identity = _IdentityBlock(
+                      employee: employee,
+                      isComplete: controller.currentTab.value != 2,
+                    );
+                    final phone = _InfoCell(
+                      label: employee.phone.isEmpty ? '-' : employee.phone,
+                    );
+                    final job = _InfoCell(
+                      label:
+                          employee.jobTitle.isEmpty ? '-' : employee.jobTitle,
+                    );
+                    final actions = _RowActions(
+                      onHistory: () => _showPersonHistory(context),
+                    );
+
+                    if (compact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              avatar,
+                              SizedBox(width: 10.w),
+                              Expanded(child: identity),
+                              actions,
+                            ],
+                          ),
+                          SizedBox(height: 5.h),
+                          Wrap(
+                            spacing: 8.w,
+                            runSpacing: 4.h,
+                            children: [phone, job],
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
                       children: [
-                        SizedBox(height: 20.h),
-                        SizedBox(
-                          width: 100.w,
-                          child: Text(
-                            employee.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium!
-                                .copyWith(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.customGreyColor5,
-                                ),
-                          ),
-                        ),
-                        SizedBox(height: 10.h),
-                        Text(
-                          employee.jobTitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w400,
-                                    color: AppColors.customGreyColor5,
-                                  ),
-                        ),
+                        avatar,
+                        SizedBox(width: 10.w),
+                        Expanded(flex: 3, child: identity),
+                        Expanded(flex: 2, child: phone),
+                        SizedBox(width: 8.w),
+                        Expanded(flex: 2, child: job),
+                        SizedBox(width: 8.w),
+                        actions,
                       ],
-                    ),
-                    IconButton(
-                      tooltip: 'ledgerActivityLog'.tr,
-                      onPressed: () => _showPersonHistory(context),
-                      icon: Icon(
-                        Icons.history_rounded,
-                        color: AppColors.primaryColor,
-                        size: 24.sp,
-                      ),
-                    ),
-                    Text(
-                      employee.phone,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.customGreyColor5,
-                          ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  void _openEditor() {
+    controller.clearForm();
+    controller.isEdit.value = true;
+    controller.getPersonData(
+      customerId: controller.currentTab.value == 1
+          ? employee.id.toString()
+          : employee.type == 'customer'
+              ? employee.id.toString()
+              : '',
+      sellerId: controller.currentTab.value == 0
+          ? employee.id.toString()
+          : employee.type == 'seller'
+              ? employee.id.toString()
+              : '',
+    );
+    Get.toNamed(
+      AppRoutes.ADDNEWCUSTOMERSCREEN,
+      arguments: {
+        'employeeType': employee.type,
+        'employeeId': employee.id.toString(),
+        'sellerId': employee.id.toString(),
+      },
+    );
+  }
+
+  void _showIdImage(BuildContext context) {
+    if (PersonAvatarHelper.isPlaceholder(employee.idImage)) return;
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withAlpha(128),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, anim1, anim2) {
+        return FullScreenZoomImage(
+          imageUrl: employee.idImage!,
+        );
+      },
     );
   }
 
@@ -356,6 +344,162 @@ class GlobalData extends GetView<GeneralDataListController> {
       builder: (_) => _PersonHistorySheet(
         title: employee.name,
         loadHistory: _loadHistory,
+      ),
+    );
+  }
+}
+
+class _AvatarButton extends StatelessWidget {
+  const _AvatarButton({
+    required this.imageUrl,
+    required this.onTap,
+  });
+
+  final String? imageUrl;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: PersonAvatarHelper.isPlaceholder(imageUrl) ? null : onTap,
+      borderRadius: BorderRadius.circular(6.r),
+      child: PersonAvatarImage(
+        imageUrl: imageUrl,
+        height: 38.h,
+        width: 38.w,
+        fit: BoxFit.cover,
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+    );
+  }
+}
+
+class _IdentityBlock extends StatelessWidget {
+  const _IdentityBlock({
+    required this.employee,
+    required this.isComplete,
+  });
+
+  final GeneralDataModel employee;
+  final bool isComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            _CompletionBadge(isComplete: isComplete),
+            SizedBox(width: 5.w),
+            Expanded(
+              child: Text(
+                employee.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w700,
+                  color: ThemeService.isDark.value
+                      ? AppColors.whiteColor
+                      : AppColors.darkColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CompletionBadge extends StatelessWidget {
+  const _CompletionBadge({required this.isComplete});
+
+  final bool isComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        isComplete ? AppColors.primaryColor : AppColors.customGreyColor3;
+    final label = isComplete ? 'كامل البيانات' : 'بيانات غير مكتملة';
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        child: Container(
+          width: 17.w,
+          height: 17.w,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.check_rounded,
+            color: Colors.white,
+            size: 12.sp,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoCell extends StatelessWidget {
+  const _InfoCell({
+    required this.label,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: 190.w),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w600,
+          color: ThemeService.isDark.value
+              ? AppColors.whiteColor
+              : AppColors.customGreyColor5,
+        ),
+      ),
+    );
+  }
+}
+
+class _RowActions extends StatelessWidget {
+  const _RowActions({
+    required this.onHistory,
+  });
+
+  final VoidCallback onHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'ledgerActivityLog'.tr,
+      child: Material(
+        color: AppColors.primaryColor.withValues(alpha: 0.1),
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onHistory,
+          child: SizedBox(
+            width: 32.w,
+            height: 32.w,
+            child: Icon(
+              Icons.history_rounded,
+              color: AppColors.primaryColor,
+              size: 18.sp,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -5,12 +5,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class StockProductGridLayout {
   StockProductGridLayout._();
 
-  static const double minCardHeight = 112;
+  static const double minCardHeight = 132;
 
   static double aspectRatioForTab(int tab) {
-    if (tab == 0) return 0.92;
-    if (tab == 1) return 0.72;
-    return 0.84;
+    if (tab == 0) return 0.78;
+    if (tab == 1) return 0.68;
+    return 0.74;
   }
 
   static SliverGridDelegateWithFixedCrossAxisCount delegate({

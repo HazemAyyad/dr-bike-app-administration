@@ -1216,6 +1216,8 @@ const Map<String, String> ar = {
   'manualCheckoutConfirm':
       'تسجيل خروج هذا الموظف الآن؟ يُستخدم إذا نسي الخروج بالبصمة أو QR.',
   'manualCheckoutSuccess': 'تم تسجيل الخروج بنجاح',
+  'addAttendanceDay': 'إضافة يوم دوام',
+  'attendanceDayDate': 'تاريخ الدوام',
   'editAttendanceDay': 'تعديل دوام اليوم',
   'hasCheckout': 'يوجد وقت خروج',
   'overtimePendingApproval': 'أوفر تايم بانتظار الموافقة',
@@ -2343,6 +2345,9 @@ const Map<String, String> ar = {
   'instantSaleCompositionMixed': 'مختلط',
   'instantSaleCompositionProduct': 'منتج',
   'instantSaleAdditionalProducts': 'منتجات إضافية مع الباكيج',
+  'instantSaleOperationBox': 'صندوق العملية',
+  'instantSaleCreatedTime': 'وقت الفاتورة',
+  'instantSaleOperationDetails': 'تفاصيل العملية',
   'saleTypeOfferPackage': 'باكيج عرض',
   'packageContents': 'محتويات الباكيج',
   'packageContentsCount': '@count منتج داخل الباكيج',
@@ -2639,6 +2644,9 @@ const Map<String, String> ar = {
   'instantSalePriceRequired': 'أدخل سعراً أكبر من صفر',
   'instantSaleRetailPriceRequired': 'أدخل سعر المفرق أكبر من صفر',
   'instantSaleWholesalePriceRequired': 'أدخل سعر الجملة أكبر من صفر',
+  'instantSaleNegativeStockWarningTitle': 'تنبيه مخزون',
+  'instantSaleNegativeStockWarningBody':
+      'خلي بالك، مخزون @product حالياً @stock والكمية المطلوبة @quantity. إذا تابعت رح يصير المخزون سالب ويتم إرسال إشعار للإدارة.',
   'instantSaleRetailPriceSaved': 'تم حفظ سعر المفرق في المنتج',
   'instantSaleProductPricesSaved': 'تم حفظ أسعار المنتج',
   'instantSaleNoRetailPrice': 'لا يوجد سعر مفرق',
@@ -2681,8 +2689,10 @@ const Map<String, String> ar = {
       'يوجد فاتورة بيع فوري كنت تعمل عليها محفوظة على هذا الجهاز. هل تريد استرجاعها؟',
   'instantSaleLeaveWarningTitle': 'الخروج من الفاتورة',
   'instantSaleLeaveWarningBody':
-      'إذا خرجت الآن ستبقى الفاتورة محفوظة محلياً على هذا الجهاز فقط. إذا تريد حفظها كفاتورة معلقة اضغط تعليق.',
+      'لديك فاتورة غير مكتملة. اختر تعليقها على النظام، أو حفظها محلياً على هذا الجهاز، أو تجاهلها نهائياً.',
   'instantSaleLeaveKeepLocal': 'خروج وحفظ محلي',
+  'instantSaleLeaveDiscard': 'تجاهل الفاتورة',
+  'instantSaleLeaveStay': 'الرجوع للتعديل',
   'operationCompletedSuccessfully': 'تمت العملية بنجاح',
 
   'salesDailyDayOpen': 'يوم المبيعات مفتوح',
@@ -2835,4 +2845,16 @@ const Map<String, String> ar = {
   'suggestionStatus_new': 'جديد',
   'suggestionStatus_reviewed': 'تمت المراجعة',
   'suggestionStatus_closed': 'مغلق',
+  'appUpdateSettingsTitle': 'تحديث التطبيق',
+  'appUpdateSettingsDesc': 'تحكم بتحديث Android و iOS ورابط التحميل',
+  'appUpdateActive': 'تفعيل فحص التحديث لهذه المنصة',
+  'appUpdateForce': 'تحديث إجباري',
+  'appUpdateLatestVersion': 'آخر نسخة',
+  'appUpdateLatestBuild': 'آخر build',
+  'appUpdateMinimumBuild': 'أقل build مسموح',
+  'appUpdateUrl': 'رابط التحديث',
+  'appUpdateDialogTitle': 'عنوان نافذة التحديث',
+  'appUpdateDialogMessage': 'رسالة نافذة التحديث',
+  'appUpdateBuildHint':
+      'ارفع آخر build لإظهار تحديث، وارفع أقل build مسموح لإجبار النسخ القديمة.',
 };

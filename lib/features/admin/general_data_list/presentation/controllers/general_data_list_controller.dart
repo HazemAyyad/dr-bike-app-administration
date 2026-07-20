@@ -221,6 +221,7 @@ class GeneralDataListController extends GetxController {
       return;
     }
 
+    final wasEditing = isEdit.value;
     isLoading(true);
     final result = await addPersonUseCase.call(
       data: AddPersonEntity(
@@ -281,6 +282,8 @@ class GeneralDataListController extends GetxController {
       (success) {
         clearForm();
         if (_popOnceOnSuccess) {
+          isLoading(false);
+          update();
           Get.back(result: {
             'added': true,
             'employeeType': _employeeTypeFromArguments,
@@ -292,6 +295,28 @@ class GeneralDataListController extends GetxController {
             backgroundColor: Colors.green,
             colorText: Colors.white,
             duration: const Duration(seconds: 2),
+          );
+          return;
+        }
+        if (wasEditing) {
+          isLoading(false);
+          update();
+          Future.delayed(
+            const Duration(milliseconds: 500),
+            () {
+              getGeneralData(loding: true);
+            },
+          );
+          Future.delayed(
+            const Duration(milliseconds: 750),
+            () {
+              Get.back();
+            },
+          );
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
           );
           return;
         }

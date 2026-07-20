@@ -381,6 +381,190 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _editAppUpdateSettings() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final service = AppSettingsService.instance;
+    var android = service.appUpdateSettings['android'] ??
+        AppUpdatePlatformSettings.defaults('android');
+    var ios = service.appUpdateSettings['ios'] ??
+        AppUpdatePlatformSettings.defaults('ios');
+
+    final androidVersionCtrl =
+        TextEditingController(text: android.latestVersion);
+    final androidLatestBuildCtrl =
+        TextEditingController(text: '${android.latestBuild}');
+    final androidMinimumBuildCtrl =
+        TextEditingController(text: '${android.minimumBuild}');
+    final androidUrlCtrl = TextEditingController(text: android.url);
+    final androidTitleCtrl = TextEditingController(text: android.title);
+    final androidMessageCtrl = TextEditingController(text: android.message);
+
+    final iosVersionCtrl = TextEditingController(text: ios.latestVersion);
+    final iosLatestBuildCtrl =
+        TextEditingController(text: '${ios.latestBuild}');
+    final iosMinimumBuildCtrl =
+        TextEditingController(text: '${ios.minimumBuild}');
+    final iosUrlCtrl = TextEditingController(text: ios.url);
+    final iosTitleCtrl = TextEditingController(text: ios.title);
+    final iosMessageCtrl = TextEditingController(text: ios.message);
+
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+
+    if (!mounted) return;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: dialogBg,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'appUpdateSettingsTitle'.tr,
+            style: const TextStyle(
+              color: textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _AppUpdatePlatformEditor(
+                    title: 'Android',
+                    settings: android,
+                    versionCtrl: androidVersionCtrl,
+                    latestBuildCtrl: androidLatestBuildCtrl,
+                    minimumBuildCtrl: androidMinimumBuildCtrl,
+                    urlCtrl: androidUrlCtrl,
+                    titleCtrl: androidTitleCtrl,
+                    messageCtrl: androidMessageCtrl,
+                    onActiveChanged: (v) => setDialogState(
+                        () => android = android.copyWith(isActive: v)),
+                    onForceChanged: (v) => setDialogState(
+                      () => android = android.copyWith(forceUpdate: v),
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  _AppUpdatePlatformEditor(
+                    title: 'iOS',
+                    settings: ios,
+                    versionCtrl: iosVersionCtrl,
+                    latestBuildCtrl: iosLatestBuildCtrl,
+                    minimumBuildCtrl: iosMinimumBuildCtrl,
+                    urlCtrl: iosUrlCtrl,
+                    titleCtrl: iosTitleCtrl,
+                    messageCtrl: iosMessageCtrl,
+                    onActiveChanged: (v) =>
+                        setDialogState(() => ios = ios.copyWith(isActive: v)),
+                    onForceChanged: (v) => setDialogState(
+                        () => ios = ios.copyWith(forceUpdate: v)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('cancel'.tr,
+                  style: const TextStyle(color: textSecondary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child:
+                  Text('save'.tr, style: const TextStyle(color: textPrimary)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true || !mounted) {
+      _disposeAppUpdateControllers([
+        androidVersionCtrl,
+        androidLatestBuildCtrl,
+        androidMinimumBuildCtrl,
+        androidUrlCtrl,
+        androidTitleCtrl,
+        androidMessageCtrl,
+        iosVersionCtrl,
+        iosLatestBuildCtrl,
+        iosMinimumBuildCtrl,
+        iosUrlCtrl,
+        iosTitleCtrl,
+        iosMessageCtrl,
+      ]);
+      return;
+    }
+
+    android = android.copyWith(
+      latestVersion: androidVersionCtrl.text.trim(),
+      latestBuild: int.tryParse(androidLatestBuildCtrl.text.trim()) ?? 0,
+      minimumBuild: int.tryParse(androidMinimumBuildCtrl.text.trim()) ?? 0,
+      url: androidUrlCtrl.text.trim(),
+      title: androidTitleCtrl.text.trim().isEmpty
+          ? 'تحديث جديد متاح'
+          : androidTitleCtrl.text.trim(),
+      message: androidMessageCtrl.text.trim().isEmpty
+          ? 'يرجى تحديث التطبيق للحصول على آخر التحسينات.'
+          : androidMessageCtrl.text.trim(),
+    );
+    ios = ios.copyWith(
+      latestVersion: iosVersionCtrl.text.trim(),
+      latestBuild: int.tryParse(iosLatestBuildCtrl.text.trim()) ?? 0,
+      minimumBuild: int.tryParse(iosMinimumBuildCtrl.text.trim()) ?? 0,
+      url: iosUrlCtrl.text.trim(),
+      title: iosTitleCtrl.text.trim().isEmpty
+          ? 'تحديث جديد متاح'
+          : iosTitleCtrl.text.trim(),
+      message: iosMessageCtrl.text.trim().isEmpty
+          ? 'يرجى تحديث التطبيق للحصول على آخر التحسينات.'
+          : iosMessageCtrl.text.trim(),
+    );
+    _disposeAppUpdateControllers([
+      androidVersionCtrl,
+      androidLatestBuildCtrl,
+      androidMinimumBuildCtrl,
+      androidUrlCtrl,
+      androidTitleCtrl,
+      androidMessageCtrl,
+      iosVersionCtrl,
+      iosLatestBuildCtrl,
+      iosMinimumBuildCtrl,
+      iosUrlCtrl,
+      iosTitleCtrl,
+      iosMessageCtrl,
+    ]);
+
+    final ok = await service.updateAppUpdateSettings(
+      android: android,
+      ios: ios,
+    );
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
+  }
+
+  void _disposeAppUpdateControllers(List<TextEditingController> controllers) {
+    for (final controller in controllers) {
+      controller.dispose();
+    }
+  }
+
   Future<void> _editAdminFabOptions() async {
     await AppSettingsService.instance.ensureLoaded(force: true);
     final service = AppSettingsService.instance;
@@ -575,6 +759,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               titleKey: 'shiplySettingsTitle',
               descriptionKey: 'shiplySettingsDesc',
               onTap: _editShiplySettings,
+            ),
+            _SettingsItem(
+              icon: Icons.system_update_alt_outlined,
+              iconColor: const Color(0xFF0F766E),
+              titleKey: 'appUpdateSettingsTitle',
+              descriptionKey: 'appUpdateSettingsDesc',
+              onTap: _editAppUpdateSettings,
             ),
             _SettingsItem(
               icon: Icons.point_of_sale_outlined,
@@ -958,6 +1149,157 @@ class _BiometricTestButton extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10.r),
         ),
+      ),
+    );
+  }
+}
+
+class _AppUpdatePlatformEditor extends StatelessWidget {
+  const _AppUpdatePlatformEditor({
+    required this.title,
+    required this.settings,
+    required this.versionCtrl,
+    required this.latestBuildCtrl,
+    required this.minimumBuildCtrl,
+    required this.urlCtrl,
+    required this.titleCtrl,
+    required this.messageCtrl,
+    required this.onActiveChanged,
+    required this.onForceChanged,
+  });
+
+  final String title;
+  final AppUpdatePlatformSettings settings;
+  final TextEditingController versionCtrl;
+  final TextEditingController latestBuildCtrl;
+  final TextEditingController minimumBuildCtrl;
+  final TextEditingController urlCtrl;
+  final TextEditingController titleCtrl;
+  final TextEditingController messageCtrl;
+  final ValueChanged<bool> onActiveChanged;
+  final ValueChanged<bool> onForceChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SwitchListTile(
+            value: settings.isActive,
+            activeThumbColor: const Color(0xFF059669),
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'appUpdateActive'.tr,
+              style: const TextStyle(color: textPrimary),
+            ),
+            onChanged: onActiveChanged,
+          ),
+          SwitchListTile(
+            value: settings.forceUpdate,
+            activeThumbColor: const Color(0xFFDC2626),
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'appUpdateForce'.tr,
+              style: const TextStyle(color: textPrimary),
+            ),
+            onChanged: onForceChanged,
+          ),
+          _AppUpdateTextField(
+            controller: versionCtrl,
+            label: 'appUpdateLatestVersion'.tr,
+          ),
+          SizedBox(height: 10.h),
+          Row(
+            children: [
+              Expanded(
+                child: _AppUpdateTextField(
+                  controller: latestBuildCtrl,
+                  label: 'appUpdateLatestBuild'.tr,
+                  number: true,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: _AppUpdateTextField(
+                  controller: minimumBuildCtrl,
+                  label: 'appUpdateMinimumBuild'.tr,
+                  number: true,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          _AppUpdateTextField(
+            controller: urlCtrl,
+            label: 'appUpdateUrl'.tr,
+          ),
+          SizedBox(height: 10.h),
+          _AppUpdateTextField(
+            controller: titleCtrl,
+            label: 'appUpdateDialogTitle'.tr,
+          ),
+          SizedBox(height: 10.h),
+          _AppUpdateTextField(
+            controller: messageCtrl,
+            label: 'appUpdateDialogMessage'.tr,
+            maxLines: 3,
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            'appUpdateBuildHint'.tr,
+            style: TextStyle(color: textSecondary, fontSize: 11.sp),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppUpdateTextField extends StatelessWidget {
+  const _AppUpdateTextField({
+    required this.controller,
+    required this.label,
+    this.number = false,
+    this.maxLines = 1,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final bool number;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: number ? TextInputType.number : TextInputType.text,
+      maxLines: maxLines,
+      inputFormatters: number ? [FilteringTextInputFormatter.digitsOnly] : null,
+      style: const TextStyle(color: Color(0xFF1F2937)),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Color(0xFF6B7280)),
+        filled: true,
+        fillColor: const Color(0xFFF9FAFB),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
       ),
     );
   }

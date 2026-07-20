@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -10,7 +8,7 @@ import '../../../stock/data/models/store_section_model.dart';
 import '../../../stock/domain/product_location_utils.dart';
 import '../controllers/sales_controller.dart';
 
-/// Sales product picker: long-press filter FAB = quarter-arc location filter.
+/// Shared sales picker location filter: tap/long-press opens a multi-select grid.
 class SalesLocationFilterFab extends StatefulWidget {
   const SalesLocationFilterFab({Key? key}) : super(key: key);
 
@@ -24,37 +22,10 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
 
   OverlayEntry? _overlay;
   bool _loading = false;
-
   int _highlightIndex = -1;
-  Offset? _anchorCenter;
-  bool _fabOnLeft = false;
-  int _segmentPage = 0;
-  double _pageDragAccum = 0;
+  final Set<String> _selectedIds = <String>{};
 
-  static const double _centerHit = 34;
-  static const double _minPickRadius = 44;
-  static const double _pageSwipeThreshold = 52;
-  static const double _arcSweep = math.pi / 2;
-
-  static final List<_ArcRowConfig> _arcRows = _buildArcRows();
-
-  static List<_ArcRowConfig> _buildArcRows() {
-    const baseRadius = 94.0;
-    const radiusStep = 58.0;
-    const arcCount = 5;
-    const minChipWidth = 96.0;
-    const gap = 22.0;
-    const slotPitch = minChipWidth + gap;
-
-    return List.generate(arcCount, (i) {
-      final radius = baseRadius + i * radiusStep;
-      final arcLength = radius * math.pi / 2;
-      final capacity = math.max(1, (arcLength / slotPitch).floor());
-      return _ArcRowConfig(capacity: capacity, radius: radius);
-    });
-  }
-
-  List<StoreSectionModel> get _activeSections => [
+  List<StoreSectionModel> get _sections => [
         StoreSectionModel(
           id: kUnassignedStoreSectionFilterId,
           name: 'noLocationAssigned'.tr,
@@ -62,45 +33,23 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
         ..._sales.pickerStoreSections.where((s) => s.isActive),
       ];
 
-  int get _itemsPerPage => _arcRows.fold(0, (sum, row) => sum + row.capacity);
-
-  List<StoreSectionModel> get _currentPageItems {
-    final source = _activeSections;
-    if (source.isEmpty) return const [];
-    final start = _segmentPage * _itemsPerPage;
-    final end = math.min(start + _itemsPerPage, source.length);
-    return source.sublist(start, end);
-  }
-
-  int get _pageCount {
-    final total = _activeSections.length;
-    if (total <= 0) return 1;
-    return ((total + _itemsPerPage - 1) ~/ _itemsPerPage);
-  }
-
   @override
   void dispose() {
     _removeOverlay(applySelection: false);
     super.dispose();
   }
 
-  Offset? _readFabCenter([BuildContext? overlayContext]) {
-    final box = _fabKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return null;
-
-    final global = box.localToGlobal(box.size.center(Offset.zero));
-    if (overlayContext == null) return global;
-
-    final overlayBox = overlayContext.findRenderObject() as RenderBox?;
-    if (overlayBox == null) return global;
-    return overlayBox.globalToLocal(global);
-  }
-
-  void _syncAnchor(BuildContext overlayContext) {
-    final center = _readFabCenter(overlayContext);
-    if (center == null) return;
-    _anchorCenter = center;
-    _fabOnLeft = center.dx < MediaQuery.sizeOf(overlayContext).width * 0.5;
+  Future<void> _openGrid() async {
+    if (_overlay != null) return;
+    HapticHelper.selection();
+    _highlightIndex = -1;
+    _selectedIds
+      ..clear()
+      ..addAll(_splitLocationIds(_sales.pickerLocationSectionId.value));
+    _overlay = OverlayEntry(builder: _buildOverlay);
+    Overlay.of(context, rootOverlay: true).insert(_overlay!);
+    await _loadSections();
+    _overlay?.markNeedsBuild();
   }
 
   Future<void> _loadSections() async {
@@ -116,406 +65,77 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
     }
   }
 
-  Future<void> _openLens() async {
-    if (_overlay != null) return;
-    HapticHelper.selection();
-    _highlightIndex = -1;
-    _segmentPage = 0;
-    _pageDragAccum = 0;
-    _anchorCenter = _readFabCenter();
-    _overlay = OverlayEntry(builder: _buildOverlay);
-    final overlayState = Overlay.of(context, rootOverlay: true);
-    overlayState.insert(_overlay!);
-    await _loadSections();
-    _overlay?.markNeedsBuild();
-  }
-
   void _removeOverlay({required bool applySelection}) {
     if (_overlay == null) return;
     _overlay?.remove();
     _overlay = null;
     if (applySelection) {
-      _commitCurrentSelection();
-    }
-    _anchorCenter = null;
-  }
-
-  void _commitCurrentSelection() {
-    if (_highlightIndex < 0) {
-      _sales.clearPickerLocationFilter();
-    } else {
-      final sections = _activeSections;
-      if (sections.isNotEmpty) {
-        final i = _highlightIndex.clamp(0, sections.length - 1);
-        _sales.applyPickerLocationFilter(sectionId: sections[i].id);
+      if (_selectedIds.isEmpty) {
+        _sales.clearPickerLocationFilter();
+      } else {
+        _sales.applyPickerLocationFilter(sectionId: _selectedIds.join(','));
       }
     }
   }
 
-  void _setHighlight(int index, {bool vibrate = true}) {
-    if (index == _highlightIndex) return;
-    if (vibrate) HapticHelper.confirm();
+  List<String> _splitLocationIds(String? raw) {
+    final value = raw?.trim();
+    if (value == null || value.isEmpty) return const [];
+    return value
+        .split(',')
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  void _toggleSection(int index) {
+    final sections = _sections;
+    if (sections.isEmpty) return;
+    HapticHelper.confirm();
     _highlightIndex = index;
-    _schedulePreview();
+    final id = sections[index.clamp(0, sections.length - 1)].id;
+    if (_selectedIds.contains(id)) {
+      _selectedIds.remove(id);
+    } else {
+      _selectedIds.add(id);
+    }
     _overlay?.markNeedsBuild();
-  }
-
-  void _schedulePreview() {
-    // Sales picker: do not filter the grid while the lens is open.
-    _overlay?.markNeedsBuild();
-  }
-
-  void _handlePageSwipe(double deltaX) {
-    if (_pageCount <= 1) return;
-    _pageDragAccum += deltaX;
-    if (_pageDragAccum >= _pageSwipeThreshold) {
-      if (_segmentPage < _pageCount - 1) {
-        _segmentPage++;
-        HapticHelper.selection();
-      }
-      _pageDragAccum = 0;
-      _overlay?.markNeedsBuild();
-      return;
-    }
-    if (_pageDragAccum <= -_pageSwipeThreshold) {
-      if (_segmentPage > 0) {
-        _segmentPage--;
-        HapticHelper.selection();
-      }
-      _pageDragAccum = 0;
-      _overlay?.markNeedsBuild();
-    }
-  }
-
-  List<_ArcSlot> _layoutSlots(int count) {
-    if (count <= 0) return const [];
-    final slots = <_ArcSlot>[];
-    var local = 0;
-    for (var row = 0; row < _arcRows.length && local < count; row++) {
-      final inRow = math.min(_arcRows[row].capacity, count - local);
-      for (var slot = 0; slot < inRow; slot++) {
-        slots.add(
-          _ArcSlot(
-            localIndex: local,
-            row: row,
-            slotInRow: slot,
-            rowCount: inRow,
-          ),
-        );
-        local++;
-      }
-    }
-    return slots;
-  }
-
-  List<int> _activeRows(int count) {
-    return _layoutSlots(count).map((s) => s.row).toSet().toList()..sort();
-  }
-
-  double _radiusForRow(int row) =>
-      _arcRows[row.clamp(0, _arcRows.length - 1)].radius;
-
-  double _arcStartAngle() => _fabOnLeft ? -math.pi / 2 : -math.pi;
-
-  double _arcEndAngle() => _fabOnLeft ? 0.0 : -math.pi / 2;
-
-  bool _angleInArc(double angle) {
-    const margin = 0.22;
-    final start = _arcStartAngle();
-    final end = _arcEndAngle();
-    return angle >= (start - margin) && angle <= (end + margin);
-  }
-
-  static const double _arcEdgePadding = 0.07;
-
-  double _angleForSlot(int index, int total) {
-    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
-    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
-    final t = total <= 1 ? 0.5 : (index + 0.5) / total;
-    return start + t * sweep;
-  }
-
-  int _localIndexFromAngle(double angle, int total) {
-    final start = _arcStartAngle() + _arcEdgePadding * _arcSweep;
-    final sweep = _arcSweep * (1 - 2 * _arcEdgePadding);
-    final t = ((angle - start) / sweep).clamp(0.0, 0.999999);
-    return (t * total).floor().clamp(0, total - 1);
-  }
-
-  double _bubbleSize({required int rowCount}) {
-    if (rowCount >= 5) return 34;
-    if (rowCount >= 3) return 38;
-    if (rowCount >= 2) return 42;
-    return 46;
-  }
-
-  double _chipMaxWidth({required int rowCount}) {
-    if (rowCount <= 1) return 124;
-    if (rowCount == 2) return 116;
-    if (rowCount <= 3) return 108;
-    if (rowCount <= 4) return 100;
-    return 92;
-  }
-
-  double _chipMinHeight({required int rowCount}) {
-    return _bubbleSize(rowCount: rowCount);
-  }
-
-  double _chipFontSize({required int rowCount}) {
-    if (rowCount >= 5) return 10;
-    if (rowCount >= 3) return 11;
-    if (rowCount >= 2) return 12;
-    return 13;
-  }
-
-  int? _rowFromDistance(double distance, int pageCount) {
-    final rows = _activeRows(pageCount);
-    if (rows.isEmpty) return null;
-
-    for (var i = 0; i < rows.length; i++) {
-      final row = rows[i];
-      final radius = _radiusForRow(row);
-      final inner =
-          i == 0 ? _minPickRadius : (_radiusForRow(rows[i - 1]) + radius) / 2;
-      final outer = i == rows.length - 1
-          ? radius + 48
-          : (radius + _radiusForRow(rows[i + 1])) / 2;
-      if (distance >= inner && distance < outer) return row;
-    }
-
-    int? bestRow;
-    var bestDiff = double.infinity;
-    for (final row in rows) {
-      final diff = (distance - _radiusForRow(row)).abs();
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestRow = row;
-      }
-    }
-    return bestRow;
-  }
-
-  int _indexFromPointer(Offset global, BuildContext overlayContext) {
-    _syncAnchor(overlayContext);
-    final center = _anchorCenter;
-    if (center == null) return -1;
-
-    final delta = global - center;
-    if (delta.distance <= _centerHit) return -1;
-    if (delta.distance < _minPickRadius) return _highlightIndex;
-
-    final pageItems = _currentPageItems;
-    if (pageItems.isEmpty) return -1;
-
-    final angle = math.atan2(delta.dy, delta.dx);
-    if (!_angleInArc(angle)) return _highlightIndex;
-
-    final row = _rowFromDistance(delta.distance, pageItems.length);
-    if (row == null) return _highlightIndex;
-
-    final rowSlots = _layoutSlots(pageItems.length)
-        .where((s) => s.row == row)
-        .toList()
-      ..sort((a, b) => a.slotInRow.compareTo(b.slotInRow));
-    if (rowSlots.isEmpty) return _highlightIndex;
-
-    final slotInRow = _localIndexFromAngle(angle, rowSlots.length);
-    return _segmentPage * _itemsPerPage +
-        rowSlots[slotInRow.clamp(0, rowSlots.length - 1)].localIndex;
-  }
-
-  Offset _slotPosition(_ArcSlot slot, Offset center) {
-    final angle = _angleForSlot(slot.slotInRow, slot.rowCount);
-    final radius = _radiusForRow(slot.row);
-    return center + Offset(math.cos(angle) * radius, math.sin(angle) * radius);
-  }
-
-  String? _centerBannerLabel() {
-    if (_highlightIndex < 0) return null;
-    final sections = _activeSections;
-    if (sections.isEmpty) return null;
-    return sections[_highlightIndex.clamp(0, sections.length - 1)].name;
-  }
-
-  void _onPointerUp() {
-    _removeOverlay(applySelection: true);
   }
 
   Widget _buildOverlay(BuildContext context) {
-    _syncAnchor(context);
-    final anchor = _anchorCenter;
-    final pageItems = _currentPageItems;
-    final onPage = pageItems.length;
-    final slots = _layoutSlots(onPage);
-    final guideRadii = _activeRows(onPage).map(_radiusForRow).toList();
-    final maxArcRadius =
-        guideRadii.isEmpty ? 180.0 : guideRadii.reduce(math.max);
-    final bannerLabel = _centerBannerLabel();
-    final totalCount = _activeSections.length;
-    final clearSelected = _highlightIndex < 0;
-
+    final sections = _sections;
     return Material(
       color: Colors.transparent,
-      child: Listener(
+      child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) {
-          _pageDragAccum = 0;
-          _syncAnchor(context);
-        },
-        onPointerMove: (e) {
-          _handlePageSwipe(e.delta.dx);
-          _setHighlight(_indexFromPointer(e.position, context));
-        },
-        onPointerUp: (_) => _onPointerUp(),
-        onPointerCancel: (_) => _removeOverlay(applySelection: false),
+        onTap: () => _removeOverlay(applySelection: false),
         child: Stack(
           children: [
             Positioned.fill(
-              child: GestureDetector(
-                onTap: () => _removeOverlay(applySelection: true),
-                child: Container(color: Colors.black.withValues(alpha: 0.45)),
-              ),
+              child: Container(color: Colors.black.withValues(alpha: 0.45)),
             ),
-            if (!_loading && bannerLabel != null)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Center(
-                    child: _CenterSelectionBanner(
-                      title: bannerLabel,
-                      subtitle: 'storeLocationFabChooseSection'.tr,
-                      index: _highlightIndex + 1,
-                      total: totalCount,
-                      pageCount: _pageCount,
-                      currentPage: _segmentPage,
+            if (_loading)
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+            else
+              SafeArea(
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: _LocationGridPanel(
+                      sections: sections,
+                      selectedIds: _selectedIds,
+                      highlightedIndex: _highlightIndex,
+                      onClear: () {
+                        _selectedIds.clear();
+                        _highlightIndex = -1;
+                        _overlay?.markNeedsBuild();
+                      },
+                      onSelect: _toggleSection,
+                      onApply: () => _removeOverlay(applySelection: true),
                     ),
                   ),
-                ),
-              ),
-            if (anchor != null) ...[
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _QuarterArcGuidePainter(
-                    center: anchor,
-                    fabOnLeft: _fabOnLeft,
-                    radii: guideRadii,
-                  ),
-                ),
-              ),
-              if (_loading)
-                Positioned(
-                  left: anchor.dx - 18,
-                  top: anchor.dy - 18,
-                  child: const SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              if (!_loading && onPage > 0)
-                ...slots.map((slot) {
-                  final globalIndex =
-                      _segmentPage * _itemsPerPage + slot.localIndex;
-                  final pos = _slotPosition(slot, anchor);
-                  final selected = globalIndex == _highlightIndex;
-                  final chipMaxWidth = _chipMaxWidth(rowCount: slot.rowCount);
-                  final chipMinHeight = _chipMinHeight(rowCount: slot.rowCount);
-                  return Positioned(
-                    left: pos.dx - chipMaxWidth / 2,
-                    top: pos.dy - chipMinHeight / 2,
-                    child: Transform.scale(
-                      scale: selected ? 1.08 : 0.96,
-                      child: _SectionBubble(
-                        name: _currentPageItems[slot.localIndex].name,
-                        selected: selected,
-                        maxWidth: chipMaxWidth,
-                        minHeight: chipMinHeight,
-                        fontSize: _chipFontSize(rowCount: slot.rowCount),
-                      ),
-                    ),
-                  );
-                }),
-              if (!_loading && _pageCount > 1 && onPage > 0)
-                Positioned(
-                  left: _fabOnLeft ? anchor.dx + 8 : anchor.dx - 168,
-                  top: anchor.dy - maxArcRadius - 48,
-                  width: 160,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_pageCount, (i) {
-                          final active = i == _segmentPage;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            margin: const EdgeInsets.symmetric(horizontal: 3),
-                            width: active ? 16 : 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: active
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          );
-                        }),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'storeLocationFabSwipeHint'.tr,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w600,
-                          shadows: const [
-                            Shadow(color: Colors.black54, blurRadius: 4),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Positioned(
-                left: anchor.dx - 28,
-                top: anchor.dy - 28,
-                child: IgnorePointer(
-                  child: clearSelected
-                      ? const _CenterClearBubble(selected: true)
-                      : Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: AppColors.secondaryColor,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.28),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.filter_alt_outlined,
-                            color: Colors.white,
-                            size: 28.sp,
-                          ),
-                        ),
-                ),
-              ),
-            ],
-            if (!_loading && _activeSections.isEmpty && anchor != null)
-              Positioned(
-                left: anchor.dx - 80,
-                top: anchor.dy - 120,
-                width: 160,
-                child: Text(
-                  'noStoreSectionsYet'.tr,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ),
           ],
@@ -527,21 +147,14 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final hasFilter = _sales.pickerLocationSectionId.value != null;
+      final hasFilter = _sales.pickerLocationSectionId.value != null &&
+          _sales.pickerLocationSectionId.value!.isNotEmpty;
       return GestureDetector(
-        onLongPressStart: _overlay == null ? (_) => _openLens() : null,
+        onLongPressStart: _overlay == null ? (_) => _openGrid() : null,
         child: FloatingActionButton(
           key: _fabKey,
           heroTag: 'sales_location_filter_fab',
-          onPressed: _overlay != null
-              ? null
-              : () {
-                  if (hasFilter) {
-                    _sales.clearPickerLocationFilter();
-                  } else {
-                    _openLens();
-                  }
-                },
+          onPressed: _overlay != null ? null : _openGrid,
           backgroundColor:
               hasFilter ? AppColors.primaryColor : AppColors.secondaryColor,
           elevation: 4.0,
@@ -557,145 +170,185 @@ class _SalesLocationFilterFabState extends State<SalesLocationFilterFab> {
   }
 }
 
-class _CenterSelectionBanner extends StatelessWidget {
-  const _CenterSelectionBanner({
-    required this.title,
-    required this.subtitle,
-    required this.index,
-    required this.total,
-    required this.pageCount,
-    required this.currentPage,
+class _LocationGridPanel extends StatelessWidget {
+  const _LocationGridPanel({
+    required this.sections,
+    required this.selectedIds,
+    required this.highlightedIndex,
+    required this.onClear,
+    required this.onSelect,
+    required this.onApply,
   });
 
-  final String title;
-  final String subtitle;
-  final int index;
-  final int total;
-  final int pageCount;
-  final int currentPage;
+  final List<StoreSectionModel> sections;
+  final Set<String> selectedIds;
+  final int highlightedIndex;
+  final VoidCallback onClear;
+  final ValueChanged<int> onSelect;
+  final VoidCallback onApply;
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final columns = width >= 720
+        ? 4
+        : width >= 430
+            ? 3
+            : 2;
+
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 32.w),
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
+      constraints: BoxConstraints(
+        maxWidth: 720,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.72,
+      ),
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.24),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w800,
-            ),
+          _GridClearTile(
+            selected: selectedIds.isEmpty,
+            onTap: onClear,
           ),
-          SizedBox(height: 4.h),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 12.sp,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (total > 0) ...[
-            SizedBox(height: 6.h),
-            Text(
-              '$index / $total',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w600,
+          SizedBox(height: 10.h),
+          if (sections.isEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 28.h),
+              child: Text(
+                'noStoreSectionsYet'.tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.secondaryColor,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            )
+          else
+            Flexible(
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const BouncingScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: 8.h,
+                  crossAxisSpacing: 8.w,
+                  childAspectRatio: columns == 2 ? 2.55 : 2.35,
+                ),
+                itemCount: sections.length,
+                itemBuilder: (context, index) {
+                  final section = sections[index];
+                  return _SectionTile(
+                    name: section.name,
+                    selected: selectedIds.contains(section.id),
+                    highlighted: highlightedIndex == index,
+                    onTap: () => onSelect(index),
+                  );
+                },
               ),
             ),
-          ],
-          if (pageCount > 1) ...[
-            SizedBox(height: 8.h),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(pageCount, (i) {
-                final active = i == currentPage;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: active ? 16 : 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? AppColors.secondaryColor
-                        : Colors.white.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                );
-              }),
+          SizedBox(height: 10.h),
+          SizedBox(
+            height: 42.h,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.secondaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              onPressed: onApply,
+              child: Text(
+                'apply'.tr,
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+              ),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _SectionBubble extends StatelessWidget {
-  const _SectionBubble({
+class _SectionTile extends StatelessWidget {
+  const _SectionTile({
     required this.name,
     required this.selected,
-    required this.maxWidth,
-    required this.minHeight,
-    required this.fontSize,
+    required this.highlighted,
+    required this.onTap,
   });
 
   final String name;
   final bool selected;
-  final double maxWidth;
-  final double minHeight;
-  final double fontSize;
+  final bool highlighted;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final label = name.trim().isNotEmpty ? name.trim() : '?';
-    return ConstrainedBox(
-      constraints: BoxConstraints(
-        minHeight: minHeight,
-        maxWidth: maxWidth,
-      ),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(999),
-          color: selected ? AppColors.secondaryColor : Colors.white,
-          border: Border.all(
-            color:
-                selected ? Colors.white : Colors.white.withValues(alpha: 0.9),
-            width: selected ? 2.4 : 1.4,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 8,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8.r),
+        onTap: onTap,
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8.r),
+            color: selected
+                ? AppColors.secondaryColor.withValues(alpha: 0.12)
+                : Colors.grey.shade100,
+            border: Border.all(
+              color: selected || highlighted
+                  ? AppColors.secondaryColor
+                  : Colors.grey.shade300,
+              width: selected ? 2 : 1,
             ),
-          ],
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: selected ? Colors.white : AppColors.secondaryColor,
-            fontWeight: FontWeight.w800,
-            fontSize: fontSize.sp,
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (selected) ...[
+                  Icon(
+                    Icons.check_circle,
+                    color: AppColors.secondaryColor,
+                    size: 16.sp,
+                  ),
+                  SizedBox(width: 5.w),
+                ],
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      softWrap: true,
+                      style: TextStyle(
+                        color: AppColors.secondaryColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.sp,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -703,94 +356,60 @@ class _SectionBubble extends StatelessWidget {
   }
 }
 
-class _CenterClearBubble extends StatelessWidget {
-  const _CenterClearBubble({required this.selected});
+class _GridClearTile extends StatelessWidget {
+  const _GridClearTile({
+    required this.selected,
+    required this.onTap,
+  });
 
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(
-          color: selected ? AppColors.secondaryColor : Colors.white70,
-          width: selected ? 3 : 1.5,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8.r),
+        onTap: onTap,
+        child: Ink(
+          height: 44.h,
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8.r),
+            color: selected
+                ? AppColors.secondaryColor.withValues(alpha: 0.12)
+                : Colors.grey.shade100,
+            border: Border.all(
+              color: selected ? AppColors.secondaryColor : Colors.grey.shade300,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.filter_alt_off_outlined,
+                color: AppColors.secondaryColor,
+                size: 21.sp,
+              ),
+              SizedBox(width: 8.w),
+              Flexible(
+                child: Text(
+                  'all'.tr,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.secondaryColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.sp,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 8),
-        ],
-      ),
-      child: Icon(
-        Icons.filter_alt_off_outlined,
-        color: selected ? AppColors.secondaryColor : Colors.grey.shade600,
-        size: 26,
       ),
     );
-  }
-}
-
-class _ArcRowConfig {
-  const _ArcRowConfig({required this.capacity, required this.radius});
-
-  final int capacity;
-  final double radius;
-}
-
-class _ArcSlot {
-  const _ArcSlot({
-    required this.localIndex,
-    required this.row,
-    required this.slotInRow,
-    required this.rowCount,
-  });
-
-  final int localIndex;
-  final int row;
-  final int slotInRow;
-  final int rowCount;
-}
-
-class _QuarterArcGuidePainter extends CustomPainter {
-  const _QuarterArcGuidePainter({
-    required this.center,
-    required this.fabOnLeft,
-    required this.radii,
-  });
-
-  final Offset center;
-  final bool fabOnLeft;
-  final List<double> radii;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (radii.isEmpty) return;
-
-    final startAngle = fabOnLeft ? -math.pi / 2 : -math.pi;
-    const sweep = math.pi / 2;
-
-    for (final radius in radii) {
-      final rect = Rect.fromCircle(center: center, radius: radius);
-      final fillPaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.07)
-        ..style = PaintingStyle.fill;
-      canvas.drawArc(rect, startAngle, sweep, true, fillPaint);
-
-      final strokePaint = Paint()
-        ..color = Colors.white.withValues(alpha: 0.3)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4;
-      canvas.drawArc(rect, startAngle, sweep, false, strokePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _QuarterArcGuidePainter oldDelegate) {
-    return oldDelegate.center != center ||
-        oldDelegate.fabOnLeft != fabOnLeft ||
-        oldDelegate.radii != radii;
   }
 }

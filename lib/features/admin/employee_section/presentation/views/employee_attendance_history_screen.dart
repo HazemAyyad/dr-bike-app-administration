@@ -114,6 +114,252 @@ Future<void> _showEditDayDialog(
   );
 }
 
+Future<void> _showAddDayDialog(
+  BuildContext context,
+  AttendanceHistoryController controller,
+) async {
+  final now = DateTime.now();
+  final occupiedDates = (controller.result.value?.days ?? [])
+      .where(
+        (day) =>
+            day.firstCheckIn != null ||
+            day.lastCheckOut != null ||
+            day.segments.isNotEmpty ||
+            day.workedMinutes > 0 ||
+            day.attendanceStatus == 'present' ||
+            day.attendanceStatus == 'present_on_weekly_day_off',
+      )
+      .map((day) => day.date)
+      .toSet();
+
+  String fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  bool isAvailableDate(DateTime d) => !occupiedDates.contains(fmtDate(d));
+
+  DateTime firstAvailableDate() {
+    final start = DateTime(now.year, now.month, now.day);
+    for (var i = 0; i < 370; i++) {
+      final candidate = start.add(Duration(days: i));
+      if (isAvailableDate(candidate)) return candidate;
+    }
+    return start;
+  }
+
+  final modalBg = const Color(0xFFF3F4F6);
+  final fieldBg = const Color(0xFFE9EEF2);
+  final textColor = const Color(0xFF1F2937);
+  final mutedText = const Color(0xFF5F6B7A);
+  final selectedBg = const Color(0xFFD3DAE2);
+  final accent = AppColors.operationalNavy;
+
+  var selectedDate = isAvailableDate(now)
+      ? DateTime(now.year, now.month, now.day)
+      : firstAvailableDate();
+  var checkInTime = const TimeOfDay(hour: 9, minute: 0);
+  var checkOutTime = const TimeOfDay(hour: 17, minute: 0);
+  var hasCheckout = true;
+
+  ThemeData pickerTheme(ThemeData base) => base.copyWith(
+        colorScheme: ColorScheme.light(
+          primary: selectedBg,
+          onPrimary: textColor,
+          surface: modalBg,
+          onSurface: textColor,
+          secondary: accent,
+          onSecondary: textColor,
+        ),
+        dialogTheme: DialogThemeData(backgroundColor: modalBg),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(foregroundColor: accent),
+        ),
+        timePickerTheme: TimePickerThemeData(
+          backgroundColor: modalBg,
+          dialBackgroundColor: fieldBg,
+          dialHandColor: accent,
+          dialTextColor: textColor,
+          dayPeriodTextColor: textColor,
+          hourMinuteColor: fieldBg,
+          hourMinuteTextColor: textColor,
+          helpTextStyle: TextStyle(color: textColor),
+        ),
+        datePickerTheme: DatePickerThemeData(
+          backgroundColor: modalBg,
+          headerBackgroundColor: fieldBg,
+          headerForegroundColor: textColor,
+          dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) return mutedText;
+            return textColor;
+          }),
+          dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return selectedBg;
+            return null;
+          }),
+          todayForegroundColor: WidgetStateProperty.all(textColor),
+          todayBackgroundColor: WidgetStateProperty.all(fieldBg),
+        ),
+      );
+
+  final ok = await Get.dialog<bool>(
+    StatefulBuilder(
+      builder: (ctx, setState) {
+        return AlertDialog(
+          backgroundColor: modalBg,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'addAttendanceDay'.tr,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Theme(
+              data: Theme.of(ctx).copyWith(
+                listTileTheme: ListTileThemeData(
+                  textColor: textColor,
+                  titleTextStyle: TextStyle(
+                    color: textColor,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  subtitleTextStyle: TextStyle(
+                    color: mutedText,
+                    fontSize: 12.sp,
+                  ),
+                  iconColor: accent,
+                ),
+                switchTheme: SwitchThemeData(
+                  thumbColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) return accent;
+                    return mutedText;
+                  }),
+                  trackColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return selectedBg;
+                    }
+                    return fieldBg;
+                  }),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('attendanceDayDate'.tr),
+                    subtitle: Text(fmtDate(selectedDate)),
+                    trailing: const Icon(Icons.event_outlined),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: ctx,
+                        firstDate: DateTime(now.year - 5),
+                        lastDate: DateTime(now.year + 1, 12, 31),
+                        initialDate: selectedDate,
+                        selectableDayPredicate: isAvailableDate,
+                        builder: (pickerContext, child) {
+                          return Theme(
+                            data: pickerTheme(Theme.of(pickerContext)),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          selectedDate =
+                              DateTime(picked.year, picked.month, picked.day);
+                        });
+                      }
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('attendanceCheckIn'.tr),
+                    subtitle: Text(checkInTime.format(ctx)),
+                    trailing: const Icon(Icons.schedule),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: ctx,
+                        initialTime: checkInTime,
+                        builder: (pickerContext, child) {
+                          return Theme(
+                            data: pickerTheme(Theme.of(pickerContext)),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setState(() => checkInTime = picked);
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('hasCheckout'.tr),
+                    value: hasCheckout,
+                    onChanged: (v) => setState(() => hasCheckout = v),
+                  ),
+                  if (hasCheckout)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('attendanceCheckOut'.tr),
+                      subtitle: Text(checkOutTime.format(ctx)),
+                      trailing: const Icon(Icons.schedule),
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: ctx,
+                          initialTime: checkOutTime,
+                          builder: (pickerContext, child) {
+                            return Theme(
+                              data: pickerTheme(Theme.of(pickerContext)),
+                              child: child!,
+                            );
+                          },
+                        );
+                        if (picked != null) {
+                          setState(() => checkOutTime = picked);
+                        }
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              style: TextButton.styleFrom(foregroundColor: mutedText),
+              child: Text('cancel'.tr),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              style: TextButton.styleFrom(foregroundColor: accent),
+              child: Text('save'.tr),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+
+  if (ok != true) return;
+
+  DateTime merge(TimeOfDay t) => DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        t.hour,
+        t.minute,
+      );
+
+  await controller.updateAttendanceDay(
+    workDate:
+        '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
+    checkInAt: merge(checkInTime),
+    checkOutAt: hasCheckout ? merge(checkOutTime) : null,
+  );
+}
+
 Future<void> _showWeeklyOffImportDialog(
   BuildContext context,
   AttendanceHistoryController controller,
@@ -237,6 +483,15 @@ class EmployeeAttendanceHistoryScreen
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          if (!controller.reportMode)
+            IconButton(
+              tooltip: 'addAttendanceDay'.tr,
+              onPressed: () => _showAddDayDialog(context, controller),
+              icon: const Icon(
+                Icons.add_task_outlined,
+                color: AppColors.primaryColor,
+              ),
+            ),
           if (!controller.reportMode)
             IconButton(
               tooltip: 'weeklyOffImportsTitle'.tr,

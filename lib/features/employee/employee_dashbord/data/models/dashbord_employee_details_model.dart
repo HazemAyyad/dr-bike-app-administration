@@ -18,6 +18,7 @@ class DashbordEmployeeDetailsModel {
   final List<Task> tasks;
   final TodayTasksSummary todayTasksSummary;
   final List<String> weeklyDaysOff;
+  final Map<String, int> dashboardBadges;
 
   DashbordEmployeeDetailsModel({
     required this.id,
@@ -35,6 +36,7 @@ class DashbordEmployeeDetailsModel {
     required this.tasks,
     this.todayTasksSummary = const TodayTasksSummary(),
     this.weeklyDaysOff = const [],
+    this.dashboardBadges = const {},
   });
 
   factory DashbordEmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -62,8 +64,19 @@ class DashbordEmployeeDetailsModel {
         asMap(json['today_tasks_summary']),
       ),
       weeklyDaysOff: asStringList(json['weekly_days_off']),
+      dashboardBadges: _parseDashboardBadges(json['dashboard_badges']),
     );
   }
+}
+
+Map<String, int> _parseDashboardBadges(dynamic raw) {
+  if (raw is! Map) return const {};
+  return raw.map(
+    (key, value) => MapEntry(
+      key.toString(),
+      asInt(value),
+    ),
+  );
 }
 
 class TodayTasksSummary {

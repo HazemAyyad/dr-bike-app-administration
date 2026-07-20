@@ -131,7 +131,13 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
             const BuildStatisticsCards(),
             SizedBox(height: 20.h),
             // أزرار الوظائف
-            BuildActionButtons(buttons: controller.buttons),
+            GetBuilder<AdminDashboardController>(
+              builder: (controller) => BuildActionButtons(
+                buttons: controller.buttons,
+                badges:
+                    controller.mainDashboardDataModel?.dashboardBadges ?? {},
+              ),
+            ),
             SizedBox(height: 70.h),
           ],
         ),

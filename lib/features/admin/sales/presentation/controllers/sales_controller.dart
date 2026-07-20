@@ -16,6 +16,7 @@ import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/phone_format_helper.dart';
+import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../general_data_list/data/datasources/general_data_list_datasource.dart';
@@ -65,6 +66,48 @@ const String kProfitSalePaymentTag = 'profit_sale_payment';
 const String kInstantSaleLocalDraftKey = 'instant_sale_local_draft_v1';
 const String kInstantSaleKindRegular = 'regular';
 const String kInstantSaleKindAdjustment = 'adjustment';
+
+class _InstantSaleLeaveOption extends StatelessWidget {
+  const _InstantSaleLeaveOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 19, color: color),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          alignment: Alignment.center,
+          backgroundColor: Colors.white,
+          side: BorderSide(color: color.withValues(alpha: 0.35)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class PastedInstantSaleProductRequest {
   const PastedInstantSaleProductRequest({
@@ -581,6 +624,8 @@ class SalesController extends GetxController
     final confirmed = await showDialog<bool>(
       context: dialogContext,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         title: Text('salesDailyPreviousDaySaleWarningTitle'.tr),
         content: Text(
           'salesDailyPreviousDaySaleWarningBody'.trParams({
@@ -621,6 +666,8 @@ class SalesController extends GetxController
       final confirmed = await showDialog<bool>(
         context: dialogContext,
         builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
           title: Text('salesDailyPreviousDaySaleWarningTitle'.tr),
           content: Text(
             'salesDailyPreviousDaySaleWarningBody'.trParams({
@@ -697,6 +744,8 @@ class SalesController extends GetxController
     final openDrawer = await showDialog<bool>(
       context: dialogContext,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         title: Text('salesDailyInvoiceSuspendedNoDrawerTitle'.tr),
         content: Text('salesDailyInvoiceSuspendedNoDrawerBody'.tr),
         actions: [
@@ -902,6 +951,13 @@ class SalesController extends GetxController
     maintenancePickerFlow.value = false;
   }
 
+  void disablePickerReservedStockAfterFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!Get.isRegistered<SalesController>()) return;
+      disablePickerReservedStock();
+    });
+  }
+
   bool get shouldWarnReservedStock =>
       pickerReservedStockEnabled.value || salesOrderStockMode.value;
 
@@ -925,11 +981,19 @@ class SalesController extends GetxController
   bool productMatchesPickerLocation(ProductModel product) {
     final sectionId = pickerLocationSectionId.value;
     if (sectionId == null || sectionId.isEmpty) return true;
-    if (isUnassignedStoreSectionFilter(sectionId)) {
-      final productSection = product.storeSectionId?.trim();
-      return productSection == null || productSection.isEmpty;
+    final filters = sectionId
+        .split(',')
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (filters.isEmpty) return true;
+
+    final productSection = product.storeSectionId?.trim();
+    if ((productSection == null || productSection.isEmpty) &&
+        filters.any(isUnassignedStoreSectionFilter)) {
+      return true;
     }
-    return (product.storeSectionId ?? '').trim() == sectionId.trim();
+    return productSection != null && filters.contains(productSection);
   }
 
   Future<void> applyPickerLocationFilter({
@@ -1113,6 +1177,8 @@ class SalesController extends GetxController
     final restore = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         title: Text('instantSaleDraftRestoreTitle'.tr),
         content: Text('instantSaleDraftRestoreBody'.tr),
         actions: [
@@ -1154,28 +1220,91 @@ class SalesController extends GetxController
   Future<bool> confirmLeaveInstantSaleFlow(BuildContext context) async {
     if (!hasUnsavedInstantSaleWork) return true;
 
-    await saveLocalInstantSaleDraft();
     if (!context.mounted) return false;
 
     final action = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('instantSaleLeaveWarningTitle'.tr),
-        content: Text('instantSaleLeaveWarningBody'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'stay'),
-            child: Text('cancel'.tr),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+        title: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7ED),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.receipt_long_outlined,
+                color: Color(0xFFEA580C),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'instantSaleLeaveWarningTitle'.tr,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF111827),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'instantSaleLeaveWarningBody'.tr,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: Color(0xFF4B5563),
+                ),
+              ),
+              const SizedBox(height: 16),
+              _InstantSaleLeaveOption(
+                icon: Icons.pause_circle_outline_rounded,
+                label: 'suspendInvoice'.tr,
+                color: AppColors.primaryColor,
+                onTap: () => Navigator.pop(ctx, 'suspend'),
+              ),
+              const SizedBox(height: 8),
+              _InstantSaleLeaveOption(
+                icon: Icons.save_outlined,
+                label: 'instantSaleLeaveKeepLocal'.tr,
+                color: const Color(0xFF2563EB),
+                onTap: () => Navigator.pop(ctx, 'local'),
+              ),
+              const SizedBox(height: 8),
+              _InstantSaleLeaveOption(
+                icon: Icons.delete_outline_rounded,
+                label: 'instantSaleLeaveDiscard'.tr,
+                color: const Color(0xFFDC2626),
+                onTap: () => Navigator.pop(ctx, 'discard'),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, 'stay'),
+                child: Text('instantSaleLeaveStay'.tr),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'leave'),
-            child: Text('instantSaleLeaveKeepLocal'.tr),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'suspend'),
-            child: Text('suspendInvoice'.tr),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -1193,7 +1322,18 @@ class SalesController extends GetxController
       return false;
     }
 
-    return action == 'leave';
+    if (action == 'local') {
+      await saveLocalInstantSaleDraft();
+      return true;
+    }
+
+    if (action == 'discard') {
+      resetInstantSaleForm(renewFormKey: true);
+      await clearLocalInstantSaleDraft();
+      return true;
+    }
+
+    return false;
   }
 
   void _bumpProductsList() => productsListVersion.value++;
@@ -1659,6 +1799,46 @@ class SalesController extends GetxController
     );
   }
 
+  Future<bool> confirmInstantSaleNegativeStockIfNeeded({
+    BuildContext? context,
+    required String productName,
+    required int stock,
+    required int requestedQty,
+  }) async {
+    if (isAdjustmentInstantSale || requestedQty <= stock) return true;
+
+    final dialogContext = context ?? Get.overlayContext ?? Get.context;
+    if (dialogContext == null) return true;
+
+    final confirmed = await showDialog<bool>(
+      context: dialogContext,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        title: Text('instantSaleNegativeStockWarningTitle'.tr),
+        content: Text(
+          'instantSaleNegativeStockWarningBody'.trParams({
+            'product': productName,
+            'stock': '$stock',
+            'quantity': '$requestedQty',
+          }),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('continue'.tr),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed == true;
+  }
+
   Future<void> incrementProductInCart(
     ProductModel product, {
     BuildContext? context,
@@ -1684,9 +1864,11 @@ class SalesController extends GetxController
     )) {
       return;
     }
-    if (next > stock && !isAdjustmentInstantSale) {
-      Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-          backgroundColor: Colors.red);
+    if (!await confirmInstantSaleNegativeStockIfNeeded(
+      productName: resolved.nameAr,
+      stock: stock,
+      requestedQty: next,
+    )) {
       return;
     }
     line.quantityController.text = next.toString();
@@ -1700,9 +1882,6 @@ class SalesController extends GetxController
     ProductModel product, {
     BuildContext? context,
   }) async {
-    final ctx = context ?? Get.context;
-    if (ctx == null) return;
-
     var resolved = productById(product.id) ?? product;
     final priced = await ensureProductPricesForPicker(resolved);
     if (priced == null) return;
@@ -1713,68 +1892,91 @@ class SalesController extends GetxController
       return;
     }
 
-    final pick = await showSalesVariantPickerSheet(
-      context: ctx,
-      product: resolved,
-    );
-    if (pick == null) return;
+    final picks = await _showVariantPicker(resolved);
+    if (picks == null || picks.isEmpty) return;
 
-    final sizeColorId = int.tryParse(pick.variant.id);
-    final existingIdx = _cartIndexForVariantLine(
-      '${resolved.id}::${pick.variant.id}',
-    );
-    if (existingIdx != null) {
-      final line = cartLines[existingIdx];
-      final next = (int.tryParse(line.quantityController.text.trim()) ?? 0) +
-          pick.quantity;
+    final selectedVariantIds = picks.map((pick) => pick.variant.id).toSet();
+    for (final pick in picks) {
+      final sizeColorId = int.tryParse(pick.variant.id);
+      final existingIdx = _cartIndexForVariantLine(
+        '${resolved.id}::${pick.variant.id}',
+      );
+      if (existingIdx != null) {
+        final line = cartLines[existingIdx];
+        if (!await _confirmSalesOrderReservedStock(
+          product: resolved,
+          sizeColorId: sizeColorId,
+          requestedQty: pick.quantity,
+        )) {
+          return;
+        }
+        if (!await confirmInstantSaleNegativeStockIfNeeded(
+          productName:
+              '${resolved.nameAr} - ${pick.size.size} / ${pick.variant.colorAr}',
+          stock: pick.variant.stock,
+          requestedQty: pick.quantity,
+        )) {
+          return;
+        }
+        line.quantityController.text = pick.quantity.toString();
+        line.priceController.text = _formatUnitPrice(pick.unitPrice);
+        line.recalculateTotal();
+        calculateGrandTotal();
+        bumpCartRevision();
+        continue;
+      }
+
       if (!await _confirmSalesOrderReservedStock(
         product: resolved,
         sizeColorId: sizeColorId,
-        requestedQty: next,
+        requestedQty: pick.quantity,
       )) {
         return;
       }
-      if (next > pick.variant.stock && !isAdjustmentInstantSale) {
-        Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-            backgroundColor: Colors.red);
-        return;
-      }
-      line.quantityController.text = next.toString();
-      _refreshTierPriceForCartLine(line);
-      line.recalculateTotal();
-      calculateGrandTotal();
-      bumpCartRevision();
-      return;
-    }
 
-    if (!await _confirmSalesOrderReservedStock(
-      product: resolved,
-      sizeColorId: sizeColorId,
-      requestedQty: pick.quantity,
-    )) {
-      return;
-    }
-
-    addCartLine(
-      InstantSaleCartLine.fromProduct(
-        resolved,
-        quantity: pick.quantity.toString(),
-        unitPrice: await resolveDefaultUnitPrice(
+      addCartLine(
+        InstantSaleCartLine.fromProduct(
           resolved,
-          quantity: pick.quantity,
+          quantity: pick.quantity.toString(),
+          unitPrice: _formatUnitPrice(pick.unitPrice),
           sizeColorId: pick.variant.id,
-          variantRetailPrice: pick.variant.normailPrice,
-          variantWholesalePrice: pick.variant.wholesalePrice,
+          sizeId: pick.size.id,
+          sizeLabel: pick.size.size,
+          colorLabel: pick.variant.colorAr,
+          variantStock: pick.variant.stock,
+          variantImageUrl: pick.variant.imageUrl,
         ),
-        sizeColorId: pick.variant.id,
-        sizeId: pick.size.id,
-        sizeLabel: pick.size.size,
-        colorLabel: pick.variant.colorAr,
-        variantStock: pick.variant.stock,
-        variantImageUrl: pick.variant.imageUrl,
-      ),
-    );
+      );
+    }
+
+    for (var i = cartLines.length - 1; i >= 0; i--) {
+      final line = cartLines[i];
+      if (line.productId == resolved.id &&
+          line.sizeColorId != null &&
+          line.sizeColorId!.isNotEmpty &&
+          !selectedVariantIds.contains(line.sizeColorId)) {
+        removeCartLine(i);
+      }
+    }
     bumpCartRevision();
+  }
+
+  Future<List<SalesVariantPickerResult>?> _showVariantPicker(
+    ProductModel product,
+  ) {
+    final ctx = Get.context;
+    if (ctx == null) return Future.value(null);
+    return showSalesVariantPickerSheet(
+      context: ctx,
+      product: product,
+      initialLines: cartLines
+          .where((line) =>
+              !line.isDisposed &&
+              line.productId == product.id &&
+              line.sizeColorId != null &&
+              line.sizeColorId!.isNotEmpty)
+          .toList(growable: false),
+    );
   }
 
   Future<void> _addProductToCartOnce(ProductModel product) async {
@@ -1782,9 +1984,11 @@ class SalesController extends GetxController
     if (resolved == null) return;
 
     final stock = int.tryParse(resolved.stock) ?? 0;
-    if (stock < 1 && !isAdjustmentInstantSale) {
-      Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-          backgroundColor: Colors.red);
+    if (!await confirmInstantSaleNegativeStockIfNeeded(
+      productName: resolved.nameAr,
+      stock: stock,
+      requestedQty: 1,
+    )) {
       return;
     }
     if (!await _confirmSalesOrderReservedStock(
@@ -1830,7 +2034,7 @@ class SalesController extends GetxController
     bumpCartRevision();
   }
 
-  void adjustCartLineQuantity(int index, int delta) {
+  Future<void> adjustCartLineQuantity(int index, int delta) async {
     if (index < 0 || index >= cartLines.length) return;
     final line = cartLines[index];
     final current = int.tryParse(line.quantityController.text.trim()) ?? 1;
@@ -1840,9 +2044,11 @@ class SalesController extends GetxController
       bumpCartRevision();
       return;
     }
-    if (next > line.stock && !isAdjustmentInstantSale) {
-      Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-          backgroundColor: Colors.red);
+    if (!await confirmInstantSaleNegativeStockIfNeeded(
+      productName: line.displayName,
+      stock: line.stock,
+      requestedQty: next,
+    )) {
       return;
     }
     line.quantityController.text = next.toString();
@@ -1869,17 +2075,6 @@ class SalesController extends GetxController
       if (qtyError != null) {
         Get.snackbar('error'.tr, qtyError, backgroundColor: Colors.red);
         return;
-      }
-    }
-
-    if (hasProducts && activeEditInstantSaleId.value == null) {
-      for (final line in cartLines) {
-        final qty = int.tryParse(line.quantityText) ?? 0;
-        if (qty > line.stock && !isAdjustmentInstantSale) {
-          Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-              backgroundColor: Colors.red);
-          return;
-        }
       }
     }
 
@@ -2226,6 +2421,7 @@ class SalesController extends GetxController
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           'suspendedInvoiceNoteOnSuspendTitle'.tr,
           style: const TextStyle(color: Color(0xFF374151)),
@@ -2312,13 +2508,9 @@ class SalesController extends GetxController
         await Future<void>.delayed(const Duration(milliseconds: 200));
       }
 
-      if (sale.isCheckoutStep) {
-        openInstantSaleCheckout(fromResume: true);
-      } else {
-        await Get.toNamed(isAdjustmentInstantSale
-            ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
-            : AppRoutes.INSTANTSALEPRODUCTPICKER);
-      }
+      await Get.toNamed(isAdjustmentInstantSale
+          ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+          : AppRoutes.INSTANTSALEPRODUCTPICKER);
       return true;
     } catch (e) {
       _instantSaleDebug('resume failed', e);
@@ -3281,11 +3473,6 @@ class SalesController extends GetxController
 
     final resolved = productById(product.id) ?? product;
     final stock = int.tryParse(resolved.stock) ?? 0;
-    if (stock < 1 && !isAdjustmentInstantSale) {
-      Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-          backgroundColor: Colors.red);
-      return;
-    }
 
     final idx = cartLines.indexWhere((l) => l.productId == product.id);
     final current =
@@ -3294,12 +3481,20 @@ class SalesController extends GetxController
     final result = await showInstantSaleQuantityDialog(
       context,
       initialQuantity: current,
-      maxQuantity: isAdjustmentInstantSale ? 999999 : stock,
+      maxQuantity: 999999,
       stockHint: isAdjustmentInstantSale
           ? 'adjustmentSaleNoStockCheck'.tr
           : SalesOrderStockContext.controller?.stockHintForProduct(resolved.id),
     );
     if (result == null) return;
+
+    if (!await confirmInstantSaleNegativeStockIfNeeded(
+      productName: resolved.nameAr,
+      stock: stock,
+      requestedQty: result,
+    )) {
+      return;
+    }
 
     if (!await _confirmSalesOrderReservedStock(
       product: resolved,
@@ -3649,21 +3844,7 @@ class SalesController extends GetxController
       }
     }
 
-    if (hasProducts &&
-        activeEditInstantSaleId.value == null &&
-        !isAdjustmentInstantSale) {
-      for (final line in cartLines) {
-        final qty = int.tryParse(line.quantityText) ?? 0;
-        if (qty > line.stock) {
-          Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-              backgroundColor: Colors.red);
-          return;
-        }
-      }
-      if (!hasPackage) {
-        syncCartToItems();
-      }
-    } else if (hasProducts && !hasPackage) {
+    if (hasProducts && !hasPackage) {
       syncCartToItems();
     }
 
@@ -4830,15 +5011,15 @@ class SalesController extends GetxController
     resolved = productById(resolved.id) ?? resolved;
 
     final stock = int.tryParse(resolved.stock) ?? 0;
-    if (stock < 1 && !isAdjustmentInstantSale) {
-      Get.snackbar('error'.tr, 'out_of_stock_products'.tr,
-          backgroundColor: Colors.red);
+    if (!await confirmInstantSaleNegativeStockIfNeeded(
+      productName: resolved.nameAr,
+      stock: stock,
+      requestedQty: request.quantity,
+    )) {
       return;
     }
 
-    final qty = isAdjustmentInstantSale
-        ? request.quantity.clamp(1, request.quantity)
-        : request.quantity.clamp(1, stock);
+    final qty = request.quantity.clamp(1, request.quantity);
     final existingIdx =
         cartLines.indexWhere((l) => l.productId == resolved!.id);
     final requestedQty = existingIdx >= 0
@@ -4853,10 +5034,8 @@ class SalesController extends GetxController
 
     if (existingIdx >= 0) {
       final line = cartLines[existingIdx];
-      line.quantityController.text = (isAdjustmentInstantSale
-              ? requestedQty.clamp(1, requestedQty)
-              : requestedQty.clamp(1, stock))
-          .toString();
+      line.quantityController.text =
+          requestedQty.clamp(1, requestedQty).toString();
       _refreshTierPriceForCartLine(line);
       line.recalculateTotal();
       calculateGrandTotal();
@@ -5085,6 +5264,8 @@ class SalesController extends GetxController
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         title: Text('salesDailyCancelRequestTitle'.tr),
         content: TextField(
           controller: reasonCtrl,

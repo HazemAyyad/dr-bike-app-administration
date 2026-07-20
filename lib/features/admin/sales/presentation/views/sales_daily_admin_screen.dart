@@ -8,6 +8,7 @@ import '../../../../../core/utils/app_colors.dart';
 import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../data/models/daily_session_model.dart';
 import '../controllers/sales_daily_admin_controller.dart';
+import '../widgets/sales_daily_session_sales_log.dart';
 import '../widgets/sales_skeleton_widgets.dart';
 
 class SalesDailyAdminScreen extends GetView<SalesDailyAdminController> {
@@ -175,13 +176,20 @@ class _ClosingList extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return Padding(
+        return Container(
+          margin: EdgeInsets.fromLTRB(8.w, 0, 8.w, 8.h),
           padding: EdgeInsets.only(
-            left: 16.w,
-            right: 16.w,
-            top: 16.h,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16.h,
+            left: 14.w,
+            right: 14.w,
+            top: 14.h,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 14.h,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(18.r)),
+            border: Border.all(color: Colors.grey.shade300),
           ),
           child: StatefulBuilder(
             builder: (context, setState) {
@@ -233,6 +241,8 @@ class _ClosingList extends StatelessWidget {
                         ),
                       ),
                     ],
+                    SizedBox(height: 12.h),
+                    _ClosingRequestTotals(item: item),
                     SizedBox(height: 12.h),
                     ...item.cashCounts.map((row) {
                       final boxes = controller.shownBoxes
@@ -293,6 +303,11 @@ class _ClosingList extends StatelessWidget {
                       );
                     }),
                     SizedBox(height: 12.h),
+                    SalesDailySessionSalesLog(
+                      instantSales: item.instantSales,
+                      profitSales: item.profitSales,
+                    ),
+                    SizedBox(height: 12.h),
                     Row(
                       children: [
                         Expanded(
@@ -352,6 +367,76 @@ class _ClosingList extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _ClosingRequestTotals extends StatelessWidget {
+  const _ClosingRequestTotals({required this.item});
+
+  final DailyClosingRequestModel item;
+
+  @override
+  Widget build(BuildContext context) {
+    final opening = _sum((row) => row.openingFloat);
+    final sold = _sum((row) => row.salesCollected);
+    final counted = _sum((row) => row.physicalCount);
+    final transfer = _sum((row) => row.amountToTransfer);
+
+    return Wrap(
+      spacing: 8.w,
+      runSpacing: 8.h,
+      children: [
+        _TotalChip(label: 'salesDailyOpeningFloat'.tr, value: opening),
+        _TotalChip(label: 'salesDailySalesCollected'.tr, value: sold),
+        _TotalChip(label: 'salesDailyPhysicalCount'.tr, value: counted),
+        _TotalChip(label: 'salesDailyAmountToTransfer'.tr, value: transfer),
+      ],
+    );
+  }
+
+  double _sum(double Function(DailyCashCountRow row) selector) {
+    return item.cashCounts.fold<double>(0, (sum, row) => sum + selector(row));
+  }
+}
+
+class _TotalChip extends StatelessWidget {
+  const _TotalChip({required this.label, required this.value});
+
+  final String label;
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 0.42.sw,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade700),
+          ),
+          SizedBox(height: 2.h),
+          Text(
+            value.toStringAsFixed(0),
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

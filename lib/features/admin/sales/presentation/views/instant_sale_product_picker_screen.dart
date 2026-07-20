@@ -87,7 +87,7 @@ class _InstantSaleProductPickerScreenState
 
   @override
   void dispose() {
-    controller.disablePickerReservedStock();
+    controller.disablePickerReservedStockAfterFrame();
     _searchController.dispose();
     super.dispose();
   }
@@ -98,13 +98,7 @@ class _InstantSaleProductPickerScreenState
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        if (_maintenanceFlow) {
-          Get.back();
-          return;
-        }
-        final canLeave = await controller.confirmLeaveInstantSaleFlow(context);
-        if (!mounted || !canLeave) return;
-        Get.back();
+        await _handleBackPressed();
       },
       child: Scaffold(
         appBar: CustomAppBar(
@@ -112,6 +106,7 @@ class _InstantSaleProductPickerScreenState
               ? 'adjustmentSalePickProducts'
               : 'instantSalePickProducts',
           action: false,
+          onPressedBack: _handleBackPressed,
           actions: [
             const InstantSalePickerPartnerIcon(),
             IconButton(
@@ -624,6 +619,16 @@ class _InstantSaleProductPickerScreenState
     );
   }
 
+  Future<void> _handleBackPressed() async {
+    if (_maintenanceFlow) {
+      Get.back();
+      return;
+    }
+    final canLeave = await controller.confirmLeaveInstantSaleFlow(context);
+    if (!mounted || !canLeave) return;
+    Get.back();
+  }
+
   Future<void> _openPasteProductListDialog() async {
     final textController = TextEditingController();
     Timer? previewDebounce;
@@ -644,7 +649,7 @@ class _InstantSaleProductPickerScreenState
 
           return AlertDialog(
             backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
             title: Text(
               'instantSalePasteProductList'.tr,
               style: const TextStyle(

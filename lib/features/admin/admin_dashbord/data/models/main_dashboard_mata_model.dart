@@ -6,6 +6,7 @@ class MainDashboardDataModel {
   final String totalExpenses;
   final String totalCompletedTasks;
   final String totalIncompletedTasks;
+  final Map<String, int> dashboardBadges;
 
   MainDashboardDataModel({
     required this.totalDebtsWeOwe,
@@ -15,6 +16,7 @@ class MainDashboardDataModel {
     required this.totalExpenses,
     required this.totalCompletedTasks,
     required this.totalIncompletedTasks,
+    this.dashboardBadges = const {},
   });
 
   factory MainDashboardDataModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class MainDashboardDataModel {
       totalExpenses: json['total_expenses'].toString(),
       totalCompletedTasks: json['total_completed_tasks'].toString(),
       totalIncompletedTasks: json['total_incompleted_tasks'].toString(),
+      dashboardBadges: _parseBadges(json['dashboard_badges']),
     );
   }
 
@@ -38,6 +41,17 @@ class MainDashboardDataModel {
       'total_expenses': totalExpenses,
       'total_completed_tasks': totalCompletedTasks,
       'total_incompleted_tasks': totalIncompletedTasks,
+      'dashboard_badges': dashboardBadges,
     };
   }
+}
+
+Map<String, int> _parseBadges(dynamic raw) {
+  if (raw is! Map) return const {};
+  return raw.map(
+    (key, value) => MapEntry(
+      key.toString(),
+      int.tryParse(value?.toString() ?? '') ?? 0,
+    ),
+  );
 }

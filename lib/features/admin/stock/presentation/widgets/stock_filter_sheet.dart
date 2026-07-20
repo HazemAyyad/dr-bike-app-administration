@@ -35,7 +35,10 @@ class _StockFilterSheetState extends State<StockFilterSheet> {
     final f = controller.productListFilters.value;
     categoryId = f.categoryId;
     subCategoryId = f.subCategoryId;
-    storeSectionId = f.storeSectionId;
+    final sectionFilter = f.storeSectionId;
+    storeSectionId = sectionFilter != null && sectionFilter.contains(',')
+        ? null
+        : sectionFilter;
     costPriceStatus = f.costPriceStatus;
     dateFrom = f.dateFrom;
     dateTo = f.dateTo;

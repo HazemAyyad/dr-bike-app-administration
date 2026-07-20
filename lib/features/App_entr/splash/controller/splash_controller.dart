@@ -1,5 +1,6 @@
 import 'package:doctorbike/core/services/app_shortcut_service.dart';
 import 'package:doctorbike/core/services/app_startup.dart';
+import 'package:doctorbike/core/services/app_update_service.dart';
 
 import 'package:doctorbike/core/services/employee_attendance_persistent_notification_service.dart';
 import 'package:doctorbike/core/services/initial_bindings.dart';
@@ -46,6 +47,7 @@ class SplashController extends GetxController {
       if (!supabase) {
         debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN supabase=false');
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+        _scheduleUpdateCheck();
         return;
       }
 
@@ -58,6 +60,7 @@ class SplashController extends GetxController {
       if (isFirstTime) {
         debugPrint('[Splash] navigate -> ONBOARDINGSCREEN firstTime=true');
         Get.offAllNamed(AppRoutes.ONBOARDINGSCREEN);
+        _scheduleUpdateCheck();
         return;
       }
 
@@ -65,6 +68,7 @@ class SplashController extends GetxController {
       if (token.isEmpty) {
         debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN empty token');
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+        _scheduleUpdateCheck();
         return;
       }
 
@@ -88,6 +92,7 @@ class SplashController extends GetxController {
       if (validation.isValid) {
         debugPrint('[Splash] navigate -> BOTTOMNAVBARSCREEN valid session');
         Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+        _scheduleUpdateCheck();
         AppShortcutService.instance.scheduleConsumePending();
         if (userType == 'employee') {
           EmployeeAttendancePersistentNotificationService.instance
@@ -107,6 +112,7 @@ class SplashController extends GetxController {
         await SessionService.restoreGlobalsFromStorage();
         debugPrint('[Splash] navigate -> BOTTOMNAVBARSCREEN cached user');
         Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+        _scheduleUpdateCheck();
         AppShortcutService.instance.scheduleConsumePending();
         if (userType == 'employee') {
           EmployeeAttendancePersistentNotificationService.instance
@@ -115,11 +121,19 @@ class SplashController extends GetxController {
       } else {
         debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN no cached user');
         Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+        _scheduleUpdateCheck();
       }
     } catch (e, st) {
       debugPrint('[Splash] navigation failed: $e\n$st');
       debugPrint('[Splash] navigate -> LOGINORSIGNUPSCREEN catch');
       Get.offAllNamed(AppRoutes.LOGINORSIGNUPSCREEN);
+      _scheduleUpdateCheck();
     }
+  }
+
+  void _scheduleUpdateCheck() {
+    Future<void>.delayed(const Duration(milliseconds: 600), () {
+      AppUpdateService.instance.checkForUpdate();
+    });
   }
 }

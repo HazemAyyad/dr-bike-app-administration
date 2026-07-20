@@ -115,7 +115,7 @@ class _TableHeaderRow extends StatelessWidget {
           _HeaderCell('total', flex: 2),
           _HeaderCell('instantSalePieces', flex: 2),
           _HeaderCell('instantSalePartner', flex: 2),
-          _HeaderCell('status', flex: 1),
+          _HeaderCell('status', flex: 3),
         ],
       ),
     );
@@ -343,8 +343,19 @@ class _InstantSaleTableRow extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: 1,
-                child: Center(child: _StatusChip(cancelled: cancelled)),
+                flex: 3,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(start: 4.w),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _StatusChip(cancelled: cancelled),
+                      SizedBox(width: 2.w),
+                      _OperationInfoButton(sale: sale),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -352,6 +363,132 @@ class _InstantSaleTableRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _OperationInfoButton extends StatelessWidget {
+  const _OperationInfoButton({required this.sale});
+
+  final InstantSalesModel sale;
+
+  @override
+  Widget build(BuildContext context) {
+    final boxName = _displayBoxName(sale.paymentBoxName);
+    final paid = SalesAmountFormat.parse(sale.paymentBoxValue ?? '0');
+
+    return Tooltip(
+      message: 'instantSaleOperationDetails'.tr,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14.r),
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (ctx) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              title: Text(
+                'instantSaleOperationDetails'.tr,
+                style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w700),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _OperationInfoRow(
+                    label: 'instantSaleOperationBox'.tr,
+                    value: boxName,
+                  ),
+                  SizedBox(height: 8.h),
+                  _OperationInfoRow(
+                    label: 'instantSaleCreatedTime'.tr,
+                    value: _formatSaleTime(sale),
+                  ),
+                  if (paid > 0) ...[
+                    SizedBox(height: 8.h),
+                    _OperationInfoRow(
+                      label: 'paidAmount'.tr,
+                      value: SalesAmountFormat.display(paid),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: Text('close'.tr),
+                ),
+              ],
+            );
+          },
+        ),
+        child: SizedBox(
+          width: 28.w,
+          height: 28.w,
+          child: Icon(
+            Icons.info_outline,
+            size: 20.sp,
+            color: AppColors.primaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OperationInfoRow extends StatelessWidget {
+  const _OperationInfoRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 90.w,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.start,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _displayBoxName(String? raw) {
+  final value = raw?.trim();
+  if (value == null || value.isEmpty) return '—';
+
+  return value
+      .replaceFirst('صندوق مبيعات يومي - ', '')
+      .replaceFirst('Daily sales box - ', '');
+}
+
+String _formatSaleTime(InstantSalesModel sale) {
+  final time = sale.createdAt ?? sale.date;
+  final local = time.toLocal();
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
 }
 
 Color _invoiceColorForKind(String kind) {
@@ -448,8 +585,8 @@ class _StatusChip extends StatelessWidget {
       child: Semantics(
         label: label,
         child: Container(
-          width: 26.w,
-          height: 26.w,
+          width: 30.w,
+          height: 30.w,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
@@ -458,7 +595,7 @@ class _StatusChip extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            size: 17.sp,
+            size: 19.sp,
             color: color,
           ),
         ),

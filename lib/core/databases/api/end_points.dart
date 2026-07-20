@@ -94,6 +94,8 @@ class EndPoints {
   static String supportConversation(int id) => 'support/conversations/$id';
   static String supportConversationMessages(int id) =>
       'support/conversations/$id/messages';
+  static String supportMessageReaction(int conversationId, int messageId) =>
+      'support/conversations/$conversationId/messages/$messageId/reaction';
   static String supportConversationRead(int id) =>
       'support/conversations/$id/read';
   static String supportConversationStatus(int id) =>
@@ -157,6 +159,7 @@ class EndPoints {
       'employee/impersonate/$employeeId';
 
   static const String appSettings = 'app/settings';
+  static const String appUpdateCheck = 'app/update-check';
   static const String attendanceSettings = 'admin/settings/attendance';
   static const String attendanceDevices = 'admin/attendance-devices';
   static String attendanceDeviceTestConnection(int id) =>
