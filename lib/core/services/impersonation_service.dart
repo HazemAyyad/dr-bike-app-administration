@@ -33,7 +33,8 @@ class ImpersonationService {
   static String impersonatorType = '';
 
   static bool get canImpersonateEmployees =>
-      userType == 'admin' || employeePermissions.contains(impersonationPermissionId);
+      userType == 'admin' ||
+      employeePermissions.contains(impersonationPermissionId);
 
   static Future<bool> get isActive async {
     final t = FinalClasses.getStorage.read(_originalTokenKey);
@@ -71,13 +72,13 @@ class ImpersonationService {
 
     final imp = data['impersonation'];
     if (imp is Map) {
-      impersonatorDisplayName =
-          imp['impersonator_name']?.toString() ??
-              imp['admin_name']?.toString() ??
-              '';
+      impersonatorDisplayName = imp['impersonator_name']?.toString() ??
+          imp['admin_name']?.toString() ??
+          '';
       impersonatorType = imp['impersonator_type']?.toString() ??
           (imp['admin_name'] != null ? 'admin' : userType);
-      await FinalClasses.getStorage.write(_originalNameKey, impersonatorDisplayName);
+      await FinalClasses.getStorage
+          .write(_originalNameKey, impersonatorDisplayName);
       await FinalClasses.getStorage.write(_originalTypeKey, impersonatorType);
     } else {
       impersonatorType = userType;
@@ -111,6 +112,8 @@ class ImpersonationService {
       name: userModel.user.name,
       permissionIds:
           userModel.employeePermissions.map((p) => p.permissionId).toList(),
+      permissionNamesEn:
+          userModel.employeePermissions.map((p) => p.permissionNameEn).toList(),
     );
 
     await SessionService.hydrateToken();
@@ -167,6 +170,9 @@ class ImpersonationService {
         name: userdata.user.name,
         permissionIds:
             userdata.employeePermissions.map((p) => p.permissionId).toList(),
+        permissionNamesEn: userdata.employeePermissions
+            .map((p) => p.permissionNameEn)
+            .toList(),
       );
     }
     UserData.userToken = originalToken;
@@ -213,10 +219,9 @@ class ImpersonationService {
   /// Backward-compatible alias.
   static Future<void> exitToAdmin() => exitToOriginal();
 
-  static String get exitButtonLabel =>
-      impersonatorType == 'employee'
-          ? 'exitImpersonationEmployee'.tr
-          : 'exitImpersonation'.tr;
+  static String get exitButtonLabel => impersonatorType == 'employee'
+      ? 'exitImpersonationEmployee'.tr
+      : 'exitImpersonation'.tr;
 
   /// Rebuilds bottom nav without racing [sessionEpoch] against a deleted controller.
   static Future<void> _navigateToShell({

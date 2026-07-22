@@ -117,7 +117,8 @@ class AuthImplement implements AuthRepository {
       );
       final raw = result.data;
       if (raw is! Map) {
-        return Left(ServerFailure('استجابة غير صالحة من السيرفر', {'message': raw}));
+        return Left(
+            ServerFailure('استجابة غير صالحة من السيرفر', {'message': raw}));
       }
       final data = Map<String, dynamic>.from(raw);
 
@@ -146,7 +147,8 @@ class AuthImplement implements AuthRepository {
       await UserData.saveToken(token);
 
       final userModel = UserModel.fromJson(data);
-      log('AuthLogin: parsed user name = ${userModel.user.name}', name: 'AuthLogin');
+      log('AuthLogin: parsed user name = ${userModel.user.name}',
+          name: 'AuthLogin');
       log(
         'AuthLogin: employee ok id=${userModel.user.employee.id} userId=${userModel.user.employee.userId} points=${userModel.user.employee.points}',
         name: 'AuthLogin',
@@ -161,6 +163,9 @@ class AuthImplement implements AuthRepository {
           type: userdata.user.type,
           name: userdata.user.name,
           permissionIds: permissionIds,
+          permissionNamesEn: userdata.employeePermissions
+              .map((p) => p.permissionNameEn)
+              .toList(),
         );
       }
       return Right(userModel);

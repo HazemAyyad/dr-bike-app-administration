@@ -61,9 +61,6 @@ class SessionService {
     final userdata = await UserData.getSavedUser();
     if (userdata == null) return;
 
-    employeePermissions
-      ..clear()
-      ..addAll(userdata.employeePermissions.map((p) => p.permissionId));
     syncSessionIdentity(
       type: userdata.user.type,
       name: userdata.user.name,
@@ -72,7 +69,6 @@ class SessionService {
       permissionNamesEn:
           userdata.employeePermissions.map((p) => p.permissionNameEn).toList(),
     );
-    userName = userdata.user.name;
   }
 
   static Future<SessionValidationResult> validateAndRefreshSession() async {
@@ -133,7 +129,8 @@ class SessionService {
     }
   }
 
-  static Future<void> clearSessionAndGoToLogin({bool showMessage = true}) async {
+  static Future<void> clearSessionAndGoToLogin(
+      {bool showMessage = true}) async {
     if (_redirectingToLogin) return;
     if (_loginRoutes.contains(Get.currentRoute)) return;
 
