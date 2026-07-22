@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_points_log_model.dart';
@@ -45,8 +46,10 @@ class EmployeePointsTab extends StatelessWidget {
             children: [
               _SummaryCard(controller: _controller),
               SizedBox(height: 16.h),
-              _ActionButtons(controller: _controller),
-              SizedBox(height: 20.h),
+              if (canManageEmployeesPoints) ...[
+                _ActionButtons(controller: _controller),
+                SizedBox(height: 20.h),
+              ],
               _FiltersBar(controller: _controller),
               SizedBox(height: 12.h),
               _LogsList(controller: _controller),
@@ -68,11 +71,9 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final cardColor = isDark ? const Color(0xFF1F1F23) : Colors.white;
-    final borderColor =
-        isDark ? Colors.white12 : const Color(0xFFE5E7EB);
+    final borderColor = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
     final headerColor = isDark ? Colors.white : const Color(0xFF1F2937);
-    final secondaryText =
-        isDark ? Colors.white70 : const Color(0xFF6B7280);
+    final secondaryText = isDark ? Colors.white70 : const Color(0xFF6B7280);
 
     return Obx(() {
       final summary = controller.summary.value;
@@ -258,19 +259,22 @@ class _PeriodPills extends StatelessWidget {
             value: controller.selectedMonth.value,
             color: color,
             onTap: () async {
-              final picked = await _pickMonth(context, controller.selectedMonth.value);
+              final picked =
+                  await _pickMonth(context, controller.selectedMonth.value);
               if (picked != null) {
                 controller.updatePeriod(month: picked);
               }
             },
-            displayValue: controller.selectedMonth.value.toString().padLeft(2, '0'),
+            displayValue:
+                controller.selectedMonth.value.toString().padLeft(2, '0'),
           ),
           _PillSelector<int>(
             label: 'pointsFilterYear'.tr,
             value: controller.selectedYear.value,
             color: color,
             onTap: () async {
-              final picked = await _pickYear(context, controller.selectedYear.value);
+              final picked =
+                  await _pickYear(context, controller.selectedYear.value);
               if (picked != null) {
                 controller.updatePeriod(year: picked);
               }
@@ -567,8 +571,7 @@ class _LogsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
     final cardColor = isDark ? const Color(0xFF1F1F23) : Colors.white;
-    final borderColor =
-        isDark ? Colors.white12 : const Color(0xFFE5E7EB);
+    final borderColor = isDark ? Colors.white12 : const Color(0xFFE5E7EB);
 
     return Container(
       decoration: BoxDecoration(
@@ -648,8 +651,7 @@ class _LogTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isAdd = item.isAdd;
-    final accent =
-        isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+    final accent = isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
     final isDark = ThemeService.isDark.value;
     final secondary = isDark ? Colors.white70 : const Color(0xFF6B7280);
 
@@ -668,7 +670,9 @@ class _LogTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  isAdd ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                  isAdd
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
                   size: 14.sp,
                   color: accent,
                 ),
@@ -697,9 +701,8 @@ class _LogTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF111827),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF111827),
                         ),
                       ),
                     ),
@@ -833,9 +836,8 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.isAdd
-        ? const Color(0xFF16A34A)
-        : const Color(0xFFDC2626);
+    final accent =
+        widget.isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
     final isDark = ThemeService.isDark.value;
     final dialogBg = isDark ? const Color(0xFF1F1F23) : Colors.white;
 
@@ -870,7 +872,8 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF111827),
+                          color:
+                              isDark ? Colors.white : const Color(0xFF111827),
                         ),
                       ),
                     ),
@@ -881,8 +884,7 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
                   final all = widget.controller.categories.value;
                   final configurable = (all?.configurable ?? const [])
                       .where((c) =>
-                          c.isActive &&
-                          (widget.isAdd ? c.isAdd : c.isDeduct))
+                          c.isActive && (widget.isAdd ? c.isAdd : c.isDeduct))
                       .toList();
                   final legacy = widget.isAdd
                       ? (all?.positive ?? const <String>[])
@@ -909,12 +911,11 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
                                 ),
                               )
                               .toList(),
-                          validator: (v) => v == null
-                              ? 'pointsCategoryRequired'.tr
-                              : null,
+                          validator: (v) =>
+                              v == null ? 'pointsCategoryRequired'.tr : null,
                           onChanged: (id) {
-                            final cat = configurable
-                                .firstWhere((c) => c.id == id);
+                            final cat =
+                                configurable.firstWhere((c) => c.id == id);
                             setState(() {
                               _selectedConfigurableCategory = cat;
                               _pointsCtrl.text = cat.defaultPoints.toString();
@@ -1035,8 +1036,9 @@ class _PointsMutationDialogState extends State<_PointsMutationDialog> {
                     children: [
                       Expanded(
                         child: TextButton(
-                          onPressed:
-                              loading ? null : () => Navigator.of(context).pop(false),
+                          onPressed: loading
+                              ? null
+                              : () => Navigator.of(context).pop(false),
                           child: Text('cancel'.tr),
                         ),
                       ),

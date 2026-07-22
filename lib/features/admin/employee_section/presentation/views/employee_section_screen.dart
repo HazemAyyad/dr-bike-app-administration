@@ -6,6 +6,7 @@ import '../../../../../core/helpers/costom_dialog_filter.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
@@ -40,7 +41,9 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                   : AppColors.secondaryColor,
               size: 25.sp,
             ),
-            onPressed: () => Get.toNamed(AppRoutes.POINTSTABLE),
+            onPressed: canViewEmployeesPoints || canManageEmployeesRewardsRules
+                ? () => Get.toNamed(AppRoutes.POINTSTABLE)
+                : null,
           ),
           IconButton(
             icon: Icon(
@@ -50,10 +53,12 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                   : AppColors.secondaryColor,
               size: 27.sp,
             ),
-            onPressed: () {
-              controller.getLogs();
-              Get.toNamed(AppRoutes.ACTIVITYLOGSCREEN);
-            },
+            onPressed: canViewEmployeesLogs
+                ? () {
+                    controller.getLogs();
+                    Get.toNamed(AppRoutes.ACTIVITYLOGSCREEN);
+                  }
+                : null,
           ),
           IconButton(
             highlightColor: Colors.transparent,
@@ -78,7 +83,9 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
             },
           ),
           Obx(() {
-            if (controller.currentTab.value != 1) {
+            if (controller.activeTab !=
+                    EmployeeSectionController.workHoursTab ||
+                !canViewEmployeesAttendance) {
               return const SizedBox.shrink();
             }
             return IconButton(
@@ -112,8 +119,8 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
             ),
             Obx(
               () {
-                final tab = controller.currentTab.value;
-                if (tab == 0) {
+                final tab = controller.activeTab;
+                if (tab == EmployeeSectionController.employeeListTab) {
                   return EmployeeSection(
                     isLoading: controller.isLoading,
                     onCount: () => controller.filteredEmployees.length,
@@ -148,7 +155,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                     },
                   );
                 }
-                if (tab == 1) {
+                if (tab == EmployeeSectionController.workHoursTab) {
                   return EmployeeSection(
                     isLoading: controller.isLoading,
                     onCount: () => controller.filteredWorkingTimes.length,
@@ -186,7 +193,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                     },
                   );
                 }
-                if (tab == 2) {
+                if (tab == EmployeeSectionController.entitlementsTab) {
                   return EmployeeSection(
                     isLoading: controller.isLoading,
                     onCount: () => controller.filteredFinancialDues.length,
@@ -223,7 +230,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                     },
                   );
                 }
-                if (tab == 3) {
+                if (tab == EmployeeSectionController.loansTab) {
                   return EmployeeSection(
                     isLoading: controller.isLoading,
                     onCount: () => controller.filteredLoanList.length,
@@ -261,7 +268,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                     },
                   );
                 }
-                if (tab == 4) {
+                if (tab == EmployeeSectionController.overtimeTab) {
                   return EmployeeSection(
                     isLoading: controller.isLoading,
                     onCount: () =>
@@ -311,7 +318,7 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
                     },
                   );
                 }
-                if (tab == 5) {
+                if (tab == EmployeeSectionController.adminsTab) {
                   return EmployeeSection(
                     isLoading: controller.isLoading,
                     onCount: () => controller.filteredAdmins.length,
@@ -355,23 +362,27 @@ class EmployeeSectionScreen extends GetView<EmployeeSectionController> {
           ],
         ),
       ),
-      floatingActionButton: CustomFloatingActionButton(
-        isAddMenuOpen: controller.isAddMenuOpen,
-        onTap: () => controller.toggleAddMenu(),
-        opacityAnimation: controller.sizeAnimation,
-        sizeAnimation: controller.opacityAnimation,
-        addList: controller.addList,
-        customWidget: BuildAddMenuItem(
-          title: 'barcode',
-          iconAsset: AssetsManager.qrcode,
-          route: '',
-          onTap: () {
-            controller.generateQrCode(false);
-            controller.toggleAddMenu();
-            Get.dialog(const CreateQrcode());
-          },
-        ),
-      ),
+      floatingActionButton: controller.canShowAddMenu
+          ? CustomFloatingActionButton(
+              isAddMenuOpen: controller.isAddMenuOpen,
+              onTap: () => controller.toggleAddMenu(),
+              opacityAnimation: controller.sizeAnimation,
+              sizeAnimation: controller.opacityAnimation,
+              addList: controller.visibleAddList,
+              customWidget: canManageEmployeesAttendance
+                  ? BuildAddMenuItem(
+                      title: 'barcode',
+                      iconAsset: AssetsManager.qrcode,
+                      route: '',
+                      onTap: () {
+                        controller.generateQrCode(false);
+                        controller.toggleAddMenu();
+                        Get.dialog(const CreateQrcode());
+                      },
+                    )
+                  : const SizedBox.shrink(),
+            )
+          : null,
     );
   }
 }

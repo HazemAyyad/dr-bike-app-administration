@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:open_filex/open_filex.dart';
@@ -99,14 +98,15 @@ class EmployeeSectionController extends GetxController
   final TextEditingController employeeNameController = TextEditingController();
 
   RxInt currentTab = 0.obs;
-  final tabs = [
-    'employeeList',
-    'workHours',
-    'entitlements',
-    'loans',
-    'overtime',
-    'admins',
-  ].obs;
+  static const int employeeListTab = 0;
+  static const int workHoursTab = 1;
+  static const int entitlementsTab = 2;
+  static const int loansTab = 3;
+  static const int overtimeTab = 4;
+  static const int adminsTab = 5;
+
+  final tabs = <String>[].obs;
+  final visibleTabIndexes = <int>[].obs;
 
   final RxBool isLoading = false.obs;
 
@@ -116,8 +116,42 @@ class EmployeeSectionController extends GetxController
 
   void changeTab(int index) {
     currentTab.value = index;
-    if (index == 5) {
+    if (activeTab == adminsTab) {
       getAdminUsers();
+    }
+  }
+
+  int get activeTab {
+    if (visibleTabIndexes.isEmpty) {
+      return employeeListTab;
+    }
+
+    final index = currentTab.value.clamp(0, visibleTabIndexes.length - 1);
+    return visibleTabIndexes[index];
+  }
+
+  void syncVisibleTabs() {
+    final nextTabs = <String>[];
+    final nextIndexes = <int>[];
+
+    void add(int index, String label, bool visible) {
+      if (!visible) return;
+      nextIndexes.add(index);
+      nextTabs.add(label);
+    }
+
+    add(employeeListTab, 'employeeList', canViewEmployees);
+    add(workHoursTab, 'workHours', canViewEmployeesAttendance);
+    add(entitlementsTab, 'entitlements', canViewEmployeesFinancial);
+    add(loansTab, 'loans', canManageEmployeesOrders);
+    add(overtimeTab, 'overtime',
+        canManageEmployeesOrders || canViewEmployeesAttendance);
+    add(adminsTab, 'admins', userType == 'admin');
+
+    tabs.assignAll(nextTabs);
+    visibleTabIndexes.assignAll(nextIndexes);
+    if (currentTab.value >= tabs.length) {
+      currentTab.value = 0;
     }
   }
 
@@ -181,6 +215,24 @@ class EmployeeSectionController extends GetxController
       'route': AppRoutes.ADDEDITADMINSCREEN,
     },
   ];
+
+  List<Map<String, String>> get visibleAddList => addList.where((item) {
+        final route = item['route'];
+        if (route == AppRoutes.ADDNEWEMPLOYEESCREEN) {
+          return canCreateEmployees;
+        }
+        if (route == AppRoutes.ADDPENALTYANDREWARDSCREEN) {
+          return canManageEmployeesPoints;
+        }
+        if (route == AppRoutes.ADDEDITADMINSCREEN) {
+          return userType == 'admin';
+        }
+
+        return true;
+      }).toList();
+
+  bool get canShowAddMenu =>
+      visibleAddList.isNotEmpty || canManageEmployeesAttendance;
 
   final RxBool isPaymentLoading = false.obs;
   //pay Salary To Employee
@@ -401,7 +453,8 @@ class EmployeeSectionController extends GetxController
         snackPosition: SnackPosition.BOTTOM,
       ),
       (success) async {
-        Get.snackbar('success'.tr, success, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('success'.tr, success,
+            snackPosition: SnackPosition.BOTTOM);
         await getAdminUsers();
       },
     );
@@ -420,7 +473,8 @@ class EmployeeSectionController extends GetxController
         snackPosition: SnackPosition.BOTTOM,
       ),
       (success) async {
-        Get.snackbar('success'.tr, success, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('success'.tr, success,
+            snackPosition: SnackPosition.BOTTOM);
         await getAdminUsers();
       },
     );
@@ -570,8 +624,8 @@ class EmployeeSectionController extends GetxController
 
     impersonatingEmployeeId.value = employee.id;
     try {
-      final raw = await Get.find<EmployeeDatasource>()
-          .impersonateEmployee(employee.id);
+      final raw =
+          await Get.find<EmployeeDatasource>().impersonateEmployee(employee.id);
       await ImpersonationService.startFromLoginResponse(raw);
     } on ServerException catch (e) {
       if (!context.mounted) return;
@@ -697,8 +751,7 @@ class EmployeeSectionController extends GetxController
   }
 
   void setFinancialDate(DateTime date) {
-    selectedFinancialDate.value =
-        DateTime(date.year, date.month, date.day);
+    selectedFinancialDate.value = DateTime(date.year, date.month, date.day);
     _syncFinancialPeriodContext();
     final employeeId = financialDetailsList.value?.employeeId;
     if (employeeId != null) {
@@ -740,12 +793,13 @@ class EmployeeSectionController extends GetxController
 
   // Get Overtime And Loan
   void getOvertimeAndLoan() async {
-    final showLoader =
-        employeeService.overtimeList.isEmpty && employeeService.loanList.isEmpty;
+    final showLoader = employeeService.overtimeList.isEmpty &&
+        employeeService.loanList.isEmpty;
     if (showLoader) isLoading(true);
     try {
       final attendanceFuture = loadAttendanceOvertimeRequests();
-      final overtimeResult = await overtimeAndLoanUsecase.call(isOvertime: true);
+      final overtimeResult =
+          await overtimeAndLoanUsecase.call(isOvertime: true);
       employeeService.overtimeList.assignAll(overtimeResult);
       filteredOvertimeList.assignAll(employeeService.overtimeList);
       final loanResult = await overtimeAndLoanUsecase.call(isOvertime: false);
@@ -784,7 +838,8 @@ class EmployeeSectionController extends GetxController
     int? approvedMinutes,
   }) async {
     try {
-      final raw = await Get.find<EmployeeDatasource>().reviewAttendanceOvertimeRequest(
+      final raw =
+          await Get.find<EmployeeDatasource>().reviewAttendanceOvertimeRequest(
         requestId: requestId,
         approve: true,
         approvedMinutes: approvedMinutes,
@@ -802,7 +857,8 @@ class EmployeeSectionController extends GetxController
 
   Future<void> rejectAttendanceOvertimeRequest(int requestId) async {
     try {
-      final raw = await Get.find<EmployeeDatasource>().reviewAttendanceOvertimeRequest(
+      final raw =
+          await Get.find<EmployeeDatasource>().reviewAttendanceOvertimeRequest(
         requestId: requestId,
         approve: false,
       );
@@ -934,14 +990,27 @@ class EmployeeSectionController extends GetxController
   Future<void> pullToRefresh() async {
     isLoading(true);
     update();
-    final result = await getAllEmployeeUsecase.call();
-    employeeService.employeeList.assignAll(result);
-    filteredEmployees.assignAll(employeeService.employeeList);
-    getWorkingTimes();
-    getFinancialDues();
-    getOvertimeAndLoan();
-    getLogs();
-    await getAdminUsers();
+    syncVisibleTabs();
+    if (canViewEmployees) {
+      final result = await getAllEmployeeUsecase.call();
+      employeeService.employeeList.assignAll(result);
+      filteredEmployees.assignAll(employeeService.employeeList);
+    }
+    if (canViewEmployeesAttendance) {
+      getWorkingTimes();
+    }
+    if (canViewEmployeesFinancial) {
+      getFinancialDues();
+    }
+    if (canManageEmployeesOrders) {
+      getOvertimeAndLoan();
+    }
+    if (canViewEmployeesLogs) {
+      getLogs();
+    }
+    if (userType == 'admin') {
+      await getAdminUsers();
+    }
     isLoading(false);
     update();
   }
@@ -949,14 +1018,27 @@ class EmployeeSectionController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    syncVisibleTabs();
     _resolveCurrentEmployeeRecordId();
-    getEmployee();
-    filteredEmployees.assignAll(employeeService.employeeList);
-    getWorkingTimes();
-    getFinancialDues();
-    getOvertimeAndLoan();
-    getLogs();
-    getAdminUsers();
+    if (canViewEmployees) {
+      getEmployee();
+      filteredEmployees.assignAll(employeeService.employeeList);
+    }
+    if (canViewEmployeesAttendance) {
+      getWorkingTimes();
+    }
+    if (canViewEmployeesFinancial) {
+      getFinancialDues();
+    }
+    if (canManageEmployeesOrders) {
+      getOvertimeAndLoan();
+    }
+    if (canViewEmployeesLogs) {
+      getLogs();
+    }
+    if (userType == 'admin') {
+      getAdminUsers();
+    }
     animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),

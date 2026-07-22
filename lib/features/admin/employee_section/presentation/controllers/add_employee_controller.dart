@@ -279,6 +279,102 @@ class AddEmployeeController extends GetxController {
       'group': 'financial',
       'permission': false.obs
     },
+    {
+      'name': 'مشاهدة الموظفين',
+      'id': '50',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'إضافة موظف',
+      'id': '51',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'تعديل بيانات الموظف',
+      'id': '52',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'حذف موظف',
+      'id': '53',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'مشاهدة صلاحيات الموظفين',
+      'id': '54',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة صلاحيات الموظفين',
+      'id': '55',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'مشاهدة ماليات الموظفين',
+      'id': '56',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'دفع رواتب الموظفين',
+      'id': '57',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'مشاهدة نقاط الموظفين',
+      'id': '58',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة نقاط الموظفين',
+      'id': '59',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'مشاهدة حضور الموظفين',
+      'id': '60',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة حضور الموظفين',
+      'id': '61',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'مشاهدة سجلات الموظفين',
+      'id': '62',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة طلبات الموظفين',
+      'id': '63',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة بصمة الموظفين',
+      'id': '64',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'إدارة قواعد مكافآت الموظفين',
+      'id': '65',
+      'group': 'employees',
+      'permission': false.obs
+    },
   ].obs;
 
   final RxBool isAllPermissionsSelected = false.obs;
@@ -358,6 +454,22 @@ class AddEmployeeController extends GetxController {
       'Employee Impersonation': 'employees',
       'Edit Employee Task': 'employees',
       'Clone Employee Task': 'employees',
+      'Employees View': 'employees',
+      'Employees Create': 'employees',
+      'Employees Edit Basic': 'employees',
+      'Employees Delete': 'employees',
+      'Employees Permissions View': 'employees',
+      'Employees Permissions Manage': 'employees',
+      'Employees Financial View': 'employees',
+      'Employees Salary Pay': 'employees',
+      'Employees Points View': 'employees',
+      'Employees Points Manage': 'employees',
+      'Employees Attendance View': 'employees',
+      'Employees Attendance Manage': 'employees',
+      'Employees Logs View': 'employees',
+      'Employees Orders Manage': 'employees',
+      'Employees Fingerprint Manage': 'employees',
+      'Employees Rewards Rules Manage': 'employees',
       'Debts': 'financial',
       'Boxes Section': 'financial',
       'Expenses and Financial Affairs': 'financial',
@@ -432,8 +544,13 @@ class AddEmployeeController extends GetxController {
   ];
 
   Future<void> _loadPermissionEditContext() async {
-    if (userType != 'employee') {
+    if (userType == 'admin') {
       canEditPermissionAssignments.value = true;
+      return;
+    }
+
+    if (!canManageEmployeesPermissions) {
+      canEditPermissionAssignments.value = false;
       return;
     }
 

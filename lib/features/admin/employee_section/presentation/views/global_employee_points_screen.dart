@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../../core/databases/api/end_points.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/month_year_picker.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_points_log_model.dart';
@@ -77,8 +78,8 @@ class GlobalEmployeePointsScreen
               return RefreshIndicator(
                 onRefresh: controller.loadRows,
                 child: ListView.separated(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 12.w, vertical: 12.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
                   itemCount: controller.rows.length,
                   separatorBuilder: (_, __) => SizedBox(height: 8.h),
                   itemBuilder: (_, i) {
@@ -86,10 +87,11 @@ class GlobalEmployeePointsScreen
                     return _EmployeePointsRowCard(
                       row: row,
                       isDark: isDark,
-                      onAdd: () => _openMutationDialog(
-                          context, row: row, isAdd: true),
-                      onDeduct: () => _openMutationDialog(
-                          context, row: row, isAdd: false),
+                      canManage: canManageEmployeesPoints,
+                      onAdd: () =>
+                          _openMutationDialog(context, row: row, isAdd: true),
+                      onDeduct: () =>
+                          _openMutationDialog(context, row: row, isAdd: false),
                       onLogs: () => _openLogsDialog(context, row: row),
                     );
                   },
@@ -245,8 +247,7 @@ class _PeriodChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final accent =
-        isDark ? AppColors.primaryColor : AppColors.secondaryColor;
+    final accent = isDark ? AppColors.primaryColor : AppColors.secondaryColor;
     return InkWell(
       borderRadius: BorderRadius.circular(12.r),
       onTap: onTap,
@@ -280,9 +281,7 @@ class _PeriodChip extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10.sp,
                       fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? Colors.white70
-                          : const Color(0xFF6B7280),
+                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                     ),
                   ),
                   SizedBox(height: 1.h),
@@ -293,9 +292,7 @@ class _PeriodChip extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w800,
-                      color: isDark
-                          ? Colors.white
-                          : const Color(0xFF111827),
+                      color: isDark ? Colors.white : const Color(0xFF111827),
                     ),
                   ),
                 ],
@@ -317,6 +314,7 @@ class _EmployeePointsRowCard extends StatelessWidget {
   const _EmployeePointsRowCard({
     required this.row,
     required this.isDark,
+    required this.canManage,
     required this.onAdd,
     required this.onDeduct,
     required this.onLogs,
@@ -324,6 +322,7 @@ class _EmployeePointsRowCard extends StatelessWidget {
 
   final EmployeePointsRowModel row;
   final bool isDark;
+  final bool canManage;
   final VoidCallback onAdd;
   final VoidCallback onDeduct;
   final VoidCallback onLogs;
@@ -337,8 +336,7 @@ class _EmployeePointsRowCard extends StatelessWidget {
     final badgeColor =
         _parseHex(row.rewardStatusColor) ?? const Color(0xFF9CA3AF);
 
-    final hasImage =
-        row.employeeImg != null && row.employeeImg!.isNotEmpty;
+    final hasImage = row.employeeImg != null && row.employeeImg!.isNotEmpty;
 
     return Container(
       padding: EdgeInsets.all(12.w),
@@ -442,30 +440,32 @@ class _EmployeePointsRowCard extends StatelessWidget {
           SizedBox(height: 8.h),
           Row(
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onAdd,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text('addPointsAction'.tr),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF16A34A),
-                    side: const BorderSide(color: Color(0xFF16A34A)),
+              if (canManage) ...[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onAdd,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text('addPointsAction'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF16A34A),
+                      side: const BorderSide(color: Color(0xFF16A34A)),
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onDeduct,
-                  icon: const Icon(Icons.remove, size: 18),
-                  label: Text('deductPointsAction'.tr),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    side: const BorderSide(color: Color(0xFFDC2626)),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDeduct,
+                    icon: const Icon(Icons.remove, size: 18),
+                    label: Text('deductPointsAction'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      side: const BorderSide(color: Color(0xFFDC2626)),
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: 8.w),
+                SizedBox(width: 8.w),
+              ],
               IconButton(
                 tooltip: 'viewLogs'.tr,
                 onPressed: onLogs,
@@ -552,8 +552,7 @@ class _MiniStat extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color:
-                    isDark ? Colors.white70 : const Color(0xFF6B7280),
+                color: isDark ? Colors.white70 : const Color(0xFF6B7280),
                 fontSize: 10.sp,
                 fontWeight: FontWeight.w600,
               ),
@@ -600,16 +599,14 @@ class _GlobalPointsMutationDialogState
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.isAdd
-        ? const Color(0xFF16A34A)
-        : const Color(0xFFDC2626);
+    final accent =
+        widget.isAdd ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
     final categories = widget.controller.categories
         .where((c) => widget.isAdd ? c.isAdd : c.isDeduct)
         .toList();
 
     return Dialog(
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       insetPadding: EdgeInsets.symmetric(horizontal: 16.w),
       child: Padding(
         padding: EdgeInsets.all(16.w),
@@ -669,8 +666,7 @@ class _GlobalPointsMutationDialogState
                     validator: (v) =>
                         v == null ? 'pointsCategoryRequired'.tr : null,
                     onChanged: (id) {
-                      final cat =
-                          categories.firstWhere((c) => c.id == id);
+                      final cat = categories.firstWhere((c) => c.id == id);
                       setState(() {
                         _selectedCategory = cat;
                         _pointsCtrl.text = cat.defaultPoints.toString();
@@ -736,8 +732,7 @@ class _GlobalPointsMutationDialogState
                     }
                   },
                   child: InputDecorator(
-                    decoration:
-                        _decoration('pointsDateOptional'.tr).copyWith(
+                    decoration: _decoration('pointsDateOptional'.tr).copyWith(
                       suffixIcon: const Icon(Icons.calendar_today_outlined),
                     ),
                     child: Text(

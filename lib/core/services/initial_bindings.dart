@@ -46,6 +46,108 @@ bool get canViewCostPrice =>
 
 /// رقم صلاحية الوصول لمهام الموظفين (Employee Tasks).
 const int employeeTasksPermissionId = 7;
+const int employeesSectionPermissionId = 5;
+const String employeesSectionPermissionName = 'Employees Section';
+const String employeesViewPermissionName = 'Employees View';
+const String employeesCreatePermissionName = 'Employees Create';
+const String employeesEditBasicPermissionName = 'Employees Edit Basic';
+const String employeesDeletePermissionName = 'Employees Delete';
+const String employeesPermissionsViewPermissionName =
+    'Employees Permissions View';
+const String employeesPermissionsManagePermissionName =
+    'Employees Permissions Manage';
+const String employeesFinancialViewPermissionName = 'Employees Financial View';
+const String employeesSalaryPayPermissionName = 'Employees Salary Pay';
+const String employeesPointsViewPermissionName = 'Employees Points View';
+const String employeesPointsManagePermissionName = 'Employees Points Manage';
+const String employeesAttendanceViewPermissionName =
+    'Employees Attendance View';
+const String employeesAttendanceManagePermissionName =
+    'Employees Attendance Manage';
+const String employeesLogsViewPermissionName = 'Employees Logs View';
+const String employeesOrdersManagePermissionName = 'Employees Orders Manage';
+const String employeesFingerprintManagePermissionName =
+    'Employees Fingerprint Manage';
+const String employeesRewardsRulesManagePermissionName =
+    'Employees Rewards Rules Manage';
+
+bool hasEmployeePermissionName(String name) =>
+    userType == 'admin' || employeePermissionNames.contains(name);
+
+bool get canAccessEmployeesSection =>
+    userType == 'admin' ||
+    employeePermissions.contains(employeesSectionPermissionId) ||
+    employeePermissionNames.contains(employeesSectionPermissionName) ||
+    canViewEmployees ||
+    canManageEmployeeTasks;
+
+bool get canViewEmployees =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesViewPermissionName) ||
+    employeePermissions.contains(employeesSectionPermissionId);
+
+bool get canCreateEmployees =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesCreatePermissionName);
+
+bool get canEditEmployeesBasic =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesEditBasicPermissionName);
+
+bool get canDeleteEmployees =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesDeletePermissionName);
+
+bool get canViewEmployeesPermissions =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesPermissionsViewPermissionName) ||
+    employeePermissionNames.contains(employeesPermissionsManagePermissionName);
+
+bool get canManageEmployeesPermissions =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesPermissionsManagePermissionName);
+
+bool get canViewEmployeesFinancial =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesFinancialViewPermissionName);
+
+bool get canPayEmployeesSalary =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesSalaryPayPermissionName);
+
+bool get canViewEmployeesPoints =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesPointsViewPermissionName) ||
+    employeePermissionNames.contains(employeesPointsManagePermissionName);
+
+bool get canManageEmployeesPoints =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesPointsManagePermissionName);
+
+bool get canViewEmployeesAttendance =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesAttendanceViewPermissionName) ||
+    employeePermissionNames.contains(employeesAttendanceManagePermissionName);
+
+bool get canManageEmployeesAttendance =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesAttendanceManagePermissionName);
+
+bool get canViewEmployeesLogs =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesLogsViewPermissionName);
+
+bool get canManageEmployeesOrders =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesOrdersManagePermissionName);
+
+bool get canManageEmployeesFingerprint =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesFingerprintManagePermissionName);
+
+bool get canManageEmployeesRewardsRules =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesRewardsRulesManagePermissionName);
 
 /// هل يقدر المستخدم الحالي الوصول لشاشة إدارة مهام الموظفين (عرض/إنشاء)؟
 /// الأدمن دائماً، والموظف فقط إذا منحه الأدمن صلاحية "Employee Tasks".

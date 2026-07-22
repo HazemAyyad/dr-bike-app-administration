@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/financial_details_model.dart';
@@ -106,7 +107,8 @@ class EmployeeFinancialDetails extends StatelessWidget {
                 SizedBox(height: 12.h),
                 _SummarySection(employee: employee, textStyle: textStyle),
                 SizedBox(height: 12.h),
-                _PaymentForm(controller: controller, employee: employee),
+                if (canPayEmployeesSalary)
+                  _PaymentForm(controller: controller, employee: employee),
               ],
             ),
           );
@@ -164,7 +166,8 @@ class _DaySelectorBar extends StatelessWidget {
                 onTap: () => _pickDate(context),
                 borderRadius: BorderRadius.circular(8.r),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
+                  padding:
+                      EdgeInsets.symmetric(vertical: 10.h, horizontal: 8.w),
                   child: Column(
                     children: [
                       Text(

@@ -11,6 +11,7 @@ import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/services/attendance_settings_service.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/custom_phone_field.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/validator/validator.dart';
@@ -178,16 +179,18 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
               ],
             ),
             SizedBox(height: 8.h),
-            _EmployeeFormSection(
-              icon: Icons.fingerprint_outlined,
-              title: 'البصمة',
-              collapsible: true,
-              initiallyExpanded: false,
-              children: [
-                _FingerprintSettingsCard(controller: controller),
-              ],
-            ),
-            SizedBox(height: 8.h),
+            if (canManageEmployeesFingerprint) ...[
+              _EmployeeFormSection(
+                icon: Icons.fingerprint_outlined,
+                title: 'البصمة',
+                collapsible: true,
+                initiallyExpanded: false,
+                children: [
+                  _FingerprintSettingsCard(controller: controller),
+                ],
+              ),
+              SizedBox(height: 8.h),
+            ],
             _EmployeeFormSection(
               icon: Icons.admin_panel_settings_outlined,
               title: 'permissions'.tr,

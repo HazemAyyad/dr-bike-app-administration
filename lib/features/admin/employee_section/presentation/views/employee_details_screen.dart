@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/showtime.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
@@ -22,8 +23,9 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
     final String points = Get.arguments;
+    final showPointsTab = canViewEmployeesPoints;
     return DefaultTabController(
-      length: 2,
+      length: showPointsTab ? 2 : 1,
       child: Scaffold(
         appBar: CustomAppBar(
           title: 'employeeDetails',
@@ -47,37 +49,38 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                 ),
                 tabs: [
                   Tab(text: 'employeeDetails'.tr),
-                  Tab(text: 'pointsAndRewardsTab'.tr),
+                  if (showPointsTab) Tab(text: 'pointsAndRewardsTab'.tr),
                 ],
               ),
             ),
           ),
           actions: [
-            TextButton.icon(
-              icon: Icon(
-                Icons.edit_calendar_outlined,
-                color: ThemeService.isDark.value
-                    ? AppColors.primaryColor
-                    : AppColors.secondaryColor,
-                size: 25.sp,
-              ),
-              onPressed: () {
-                Get.toNamed(
-                  AppRoutes.ADDNEWEMPLOYEESCREEN,
-                  arguments: {'AddNewEmployeeScreen': 'editEmployee'},
-                );
-              },
-              label: Text(
-                'edit'.tr,
-                style: theme.copyWith(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
+            if (canEditEmployeesBasic)
+              TextButton.icon(
+                icon: Icon(
+                  Icons.edit_calendar_outlined,
                   color: ThemeService.isDark.value
                       ? AppColors.primaryColor
                       : AppColors.secondaryColor,
+                  size: 25.sp,
+                ),
+                onPressed: () {
+                  Get.toNamed(
+                    AppRoutes.ADDNEWEMPLOYEESCREEN,
+                    arguments: {'AddNewEmployeeScreen': 'editEmployee'},
+                  );
+                },
+                label: Text(
+                  'edit'.tr,
+                  style: theme.copyWith(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w700,
+                    color: ThemeService.isDark.value
+                        ? AppColors.primaryColor
+                        : AppColors.secondaryColor,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         body: Obx(
@@ -97,20 +100,19 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
             }
             final employeeId =
                 controller.employeeService.employeeDetails.value!.id;
-            return TabBarView(
-              children: [
-                _EmployeeOverviewTab(
-                  employee: controller.employeeService.employeeDetails.value!,
-                  points: points,
-                  isManualCheckoutLoading:
-                      controller.isManualCheckoutLoading.value,
-                  onManualCheckout: () => controller.manualCheckoutEmployee(
-                    context,
-                  ),
+            final children = <Widget>[
+              _EmployeeOverviewTab(
+                employee: controller.employeeService.employeeDetails.value!,
+                points: points,
+                isManualCheckoutLoading:
+                    controller.isManualCheckoutLoading.value,
+                onManualCheckout: () => controller.manualCheckoutEmployee(
+                  context,
                 ),
-                EmployeePointsTab(employeeId: employeeId),
-              ],
-            );
+              ),
+              if (showPointsTab) EmployeePointsTab(employeeId: employeeId),
+            ];
+            return TabBarView(children: children);
           },
         ),
       ),
@@ -233,7 +235,7 @@ class _EmployeeOverviewTab extends StatelessWidget {
             lastScan: employee.lastFingerprintScanAt,
             lastAttendance: employee.lastFingerprintAttendanceAt,
           ),
-          if (employee.currentlyInToday) ...[
+          if (employee.currentlyInToday && canManageEmployeesAttendance) ...[
             SizedBox(height: 12.h),
             SizedBox(
               width: double.infinity,
@@ -261,7 +263,8 @@ class _EmployeeOverviewTab extends StatelessWidget {
             images: employee.documentImg,
           ),
           SizedBox(height: 12.h),
-          _PermissionsSection(permissions: employee.permissions),
+          if (canViewEmployeesPermissions)
+            _PermissionsSection(permissions: employee.permissions),
         ],
       ),
     );

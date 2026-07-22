@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
@@ -77,11 +78,11 @@ class EmployeeList extends GetView<EmployeeSectionController> {
           ),
         ),
         content: Text(
-          'impersonateConfirmBody'
-              .trParams({'name': employee.employeeName}),
+          'impersonateConfirmBody'.trParams({'name': employee.employeeName}),
           style: TextStyle(
             fontSize: 13.sp,
-            color: isDark ? AppColors.customGreyColor5 : const Color(0xFF4B5563),
+            color:
+                isDark ? AppColors.customGreyColor5 : const Color(0xFF4B5563),
           ),
         ),
         actions: [
@@ -90,7 +91,9 @@ class EmployeeList extends GetView<EmployeeSectionController> {
             child: Text(
               'cancel'.tr,
               style: TextStyle(
-                color: isDark ? AppColors.customGreyColor5 : const Color(0xFF6B7280),
+                color: isDark
+                    ? AppColors.customGreyColor5
+                    : const Color(0xFF6B7280),
               ),
             ),
           ),
@@ -127,8 +130,7 @@ class EmployeeList extends GetView<EmployeeSectionController> {
           style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
         ),
         content: Text(
-          'deleteEmployeeConfirmBody'
-              .trParams({'name': employee.employeeName}),
+          'deleteEmployeeConfirmBody'.trParams({'name': employee.employeeName}),
           style: TextStyle(fontSize: 13.sp),
         ),
         actions: [
@@ -277,8 +279,7 @@ class _EmployeeActionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
-    final sheetColor =
-        isDark ? AppColors.customGreyColor : Colors.white;
+    final sheetColor = isDark ? AppColors.customGreyColor : Colors.white;
     final titleColor = isDark ? Colors.white : const Color(0xFF111827);
     final subColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
 
@@ -313,8 +314,7 @@ class _EmployeeActionsSheet extends StatelessWidget {
                       child: CachedNetworkImage(
                         imageUrl: employee.employeeImg,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) =>
-                            const Icon(Icons.person),
+                        errorWidget: (_, __, ___) => const Icon(Icons.person),
                       ),
                     ),
                   ),
@@ -355,17 +355,16 @@ class _EmployeeActionsSheet extends StatelessWidget {
             _ActionTile(
               icon: Icons.person_outline_rounded,
               label: 'viewEmployee'.tr,
-              color: isDark
-                  ? AppColors.primaryColor
-                  : AppColors.secondaryColor,
+              color: isDark ? AppColors.primaryColor : AppColors.secondaryColor,
               onTap: onView,
             ),
-            _ActionTile(
-              icon: Icons.delete_outline_rounded,
-              label: 'deleteEmployeeAction'.tr,
-              color: const Color(0xFFDC2626),
-              onTap: onDelete,
-            ),
+            if (canDeleteEmployees)
+              _ActionTile(
+                icon: Icons.delete_outline_rounded,
+                label: 'deleteEmployeeAction'.tr,
+                color: const Color(0xFFDC2626),
+                onTap: onDelete,
+              ),
             SizedBox(height: 4.h),
           ],
         ),
