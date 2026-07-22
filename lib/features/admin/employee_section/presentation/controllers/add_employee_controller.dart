@@ -160,13 +160,13 @@ class AddEmployeeController extends GetxController {
     {
       'name': 'privateTasks'.tr,
       'id': '6',
-      'group': 'employees',
+      'group': 'special_tasks',
       'permission': false.obs
     },
     {
       'name': 'employeeTasks'.tr,
       'id': '7',
-      'group': 'employees',
+      'group': 'employee_tasks',
       'permission': false.obs
     },
     {'name': 'sales'.tr, 'id': '8', 'group': 'sales', 'permission': false.obs},
@@ -258,13 +258,13 @@ class AddEmployeeController extends GetxController {
     {
       'name': 'editEmployeeTaskPermission'.tr,
       'id': '45',
-      'group': 'employees',
+      'group': 'employee_tasks',
       'permission': false.obs
     },
     {
       'name': 'cloneEmployeeTaskPermission'.tr,
       'id': '46',
-      'group': 'employees',
+      'group': 'employee_tasks',
       'permission': false.obs
     },
     {
@@ -449,11 +449,11 @@ class AddEmployeeController extends GetxController {
       'Cost Price': 'stock',
       'Stock Inventory Settings': 'stock',
       'Employees Section': 'employees',
-      'Employee Tasks': 'employees',
-      'Special Tasks': 'employees',
+      'Employee Tasks': 'employee_tasks',
+      'Special Tasks': 'special_tasks',
       'Employee Impersonation': 'employees',
-      'Edit Employee Task': 'employees',
-      'Clone Employee Task': 'employees',
+      'Edit Employee Task': 'employee_tasks',
+      'Clone Employee Task': 'employee_tasks',
       'Employees View': 'employees',
       'Employees Create': 'employees',
       'Employees Edit Basic': 'employees',
@@ -518,8 +518,18 @@ class AddEmployeeController extends GetxController {
     ),
     _PermissionGroupMeta(
       key: 'employees',
-      title: 'الموظفين والمهام',
+      title: 'الموظفين',
       icon: Icons.groups_2_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'employee_tasks',
+      title: 'مهام الموظفين',
+      icon: Icons.assignment_ind_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'special_tasks',
+      title: 'المهام الخاصة',
+      icon: Icons.task_alt_outlined,
     ),
     _PermissionGroupMeta(
       key: 'financial',
