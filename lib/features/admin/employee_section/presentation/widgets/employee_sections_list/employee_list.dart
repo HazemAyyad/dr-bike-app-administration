@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
+import '../../../../../../core/services/impersonation_service.dart';
 import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/services/theme_service.dart';
 import '../../../../../../core/utils/app_colors.dart';
@@ -236,28 +237,29 @@ class EmployeeList extends GetView<EmployeeSectionController> {
               ],
             ),
           ),
-          Obx(() {
-            if (!controller.canShowImpersonateFor(employee.id)) {
-              return const SizedBox.shrink();
-            }
-            final busy =
-                controller.impersonatingEmployeeId.value == employee.id;
-            return IconButton(
-              tooltip: 'impersonateEmployee'.tr,
-              onPressed: busy ? null : () => _confirmImpersonate(context),
-              icon: busy
-                  ? SizedBox(
-                      width: 22.sp,
-                      height: 22.sp,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(
-                      Icons.switch_account_rounded,
-                      color: AppColors.operationalPurple,
-                      size: 22.sp,
-                    ),
-            );
-          }),
+          if (ImpersonationService.canImpersonateEmployees)
+            Obx(() {
+              if (!controller.canShowImpersonateFor(employee.id)) {
+                return const SizedBox.shrink();
+              }
+              final busy =
+                  controller.impersonatingEmployeeId.value == employee.id;
+              return IconButton(
+                tooltip: 'impersonateEmployee'.tr,
+                onPressed: busy ? null : () => _confirmImpersonate(context),
+                icon: busy
+                    ? SizedBox(
+                        width: 22.sp,
+                        height: 22.sp,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        Icons.switch_account_rounded,
+                        color: AppColors.operationalPurple,
+                        size: 22.sp,
+                      ),
+              );
+            }),
           _PointsBadge(employee: employee),
         ],
       ),
