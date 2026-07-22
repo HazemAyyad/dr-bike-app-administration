@@ -21,6 +21,12 @@ import '../../data/models/admin_user_model.dart';
 abstract class EmployeeRepository {
   Future<List<Map<String, dynamic>>> getAllPermissions();
 
+  Future<Either<Failure, String>> updatePermissionGrantPolicy({
+    required int permissionId,
+    required String grantPolicy,
+    required bool applyToGroup,
+  });
+
   Future<List<EmployeeEntity>> getEmployees();
 
   Future<List<WorkingTimesModel>> getWorkingTimes();

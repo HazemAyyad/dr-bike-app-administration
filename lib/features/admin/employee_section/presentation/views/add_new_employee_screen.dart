@@ -285,7 +285,7 @@ class _PermissionGroups extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < groups.length; i++) ...[
-          _PermissionGroupCard(group: groups[i]),
+          _PermissionGroupCard(controller: controller, group: groups[i]),
           if (i != groups.length - 1) SizedBox(height: 8.h),
         ],
       ],
@@ -294,8 +294,12 @@ class _PermissionGroups extends StatelessWidget {
 }
 
 class _PermissionGroupCard extends StatelessWidget {
-  const _PermissionGroupCard({required this.group});
+  const _PermissionGroupCard({
+    required this.controller,
+    required this.group,
+  });
 
+  final AddEmployeeController controller;
   final Map<String, dynamic> group;
 
   @override
@@ -349,39 +353,48 @@ class _PermissionGroupCard extends StatelessWidget {
                   for (final permission in permissions)
                     SizedBox(
                       width: itemWidth,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: CustomCheckBox(
-                              title: permission['name'],
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    color: isDark
-                                        ? AppColors.customGreyColor6
-                                        : AppColors.customGreyColor2,
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                              value: permission['permission'],
-                              onChanged: (value) {
-                                permission['permission'].value = value;
-                              },
-                            ),
-                          ),
-                          if (permission['adminOnly'] == true) ...[
-                            SizedBox(width: 4.w),
-                            Tooltip(
-                              message: 'adminOnlyPermission'.tr,
-                              child: Icon(
-                                Icons.lock_outline_rounded,
-                                size: 14.sp,
-                                color: AppColors.customOrange3,
+                      child: GestureDetector(
+                        onLongPress: userType == 'admin'
+                            ? () => _showPermissionPolicySheet(
+                                  context,
+                                  permission,
+                                  group,
+                                )
+                            : null,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: CustomCheckBox(
+                                title: permission['name'],
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium!
+                                    .copyWith(
+                                      color: isDark
+                                          ? AppColors.customGreyColor6
+                                          : AppColors.customGreyColor2,
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                value: permission['permission'],
+                                onChanged: (value) {
+                                  permission['permission'].value = value;
+                                },
                               ),
                             ),
+                            if (permission['adminOnly'] == true) ...[
+                              SizedBox(width: 4.w),
+                              Tooltip(
+                                message: 'adminOnlyPermission'.tr,
+                                child: Icon(
+                                  Icons.lock_outline_rounded,
+                                  size: 14.sp,
+                                  color: AppColors.customOrange3,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                 ],
@@ -389,6 +402,130 @@ class _PermissionGroupCard extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPermissionPolicySheet(
+    BuildContext context,
+    Map<String, dynamic> permission,
+    Map<String, dynamic> group,
+  ) {
+    final selectedPolicy = (permission['grantPolicy']?.toString() ??
+            AddEmployeeController.grantPolicyPermissionsManage)
+        .obs;
+    final applyToGroup = false.obs;
+    final isDark = ThemeService.isDark.value;
+
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 12.h),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkColor : Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(14.r)),
+          ),
+          child: Obx(
+            () => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  permission['name']?.toString() ?? '',
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : AppColors.secondaryColor,
+                      ),
+                ),
+                SizedBox(height: 12.h),
+                _GrantPolicyTile(
+                  selected: selectedPolicy.value ==
+                      AddEmployeeController.grantPolicyAdminOnly,
+                  title: 'أدمن فقط',
+                  subtitle: 'لا يستطيع أي موظف منح هذه الصلاحية',
+                  onTap: () {
+                    selectedPolicy.value =
+                        AddEmployeeController.grantPolicyAdminOnly;
+                  },
+                ),
+                _GrantPolicyTile(
+                  selected: selectedPolicy.value ==
+                      AddEmployeeController.grantPolicyPermissionsManage,
+                  title: 'مسؤول صلاحيات الموظفين',
+                  subtitle:
+                      'الموظف صاحب صلاحية إدارة صلاحيات الموظفين يستطيع منحها',
+                  onTap: () {
+                    selectedPolicy.value =
+                        AddEmployeeController.grantPolicyPermissionsManage;
+                  },
+                ),
+                CheckboxListTile(
+                  value: applyToGroup.value,
+                  onChanged: (value) => applyToGroup.value = value ?? false,
+                  title: Text('تطبيق على قسم ${group['title']} كله'),
+                ),
+                SizedBox(height: 8.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: Get.back,
+                        child: Text('cancel'.tr),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Get.back();
+                          controller.updatePermissionGrantPolicy(
+                            permission: permission,
+                            grantPolicy: selectedPolicy.value,
+                            applyToGroup: applyToGroup.value,
+                          );
+                        },
+                        child: Text('saveChanges'.tr),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+}
+
+class _GrantPolicyTile extends StatelessWidget {
+  const _GrantPolicyTile({
+    required this.selected,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    return ListTile(
+      onTap: onTap,
+      contentPadding: EdgeInsets.zero,
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: Icon(
+        selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: selected
+            ? AppColors.primaryColor
+            : (isDark ? Colors.white54 : AppColors.customGreyColor5),
       ),
     );
   }

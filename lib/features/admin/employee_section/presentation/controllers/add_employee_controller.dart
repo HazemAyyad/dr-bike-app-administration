@@ -11,6 +11,7 @@ import '../../../../../core/services/user_data.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
 import '../../domain/usecases/add_points_usecase.dart';
 import '../../domain/usecases/get_permissions_usecase.dart';
+import '../../domain/usecases/update_permission_grant_policy_usecase.dart';
 import 'employee_section_controller.dart';
 import 'employee_service.dart';
 
@@ -27,15 +28,20 @@ class _PermissionGroupMeta {
 }
 
 class AddEmployeeController extends GetxController {
+  static const String grantPolicyAdminOnly = 'admin_only';
+  static const String grantPolicyPermissionsManage = 'permissions_manage';
+
   AddEmployeeUsecase employeeUsecase;
   AddPointsUsecase addPointsUsecase;
   GetPermissionsUsecase getPermissionsUsecase;
+  UpdatePermissionGrantPolicyUsecase updatePermissionGrantPolicyUsecase;
   EmployeeService employeeService;
 
   AddEmployeeController({
     required this.employeeUsecase,
     required this.addPointsUsecase,
     required this.getPermissionsUsecase,
+    required this.updatePermissionGrantPolicyUsecase,
     required this.employeeService,
   });
   final bool isEditEmployee =
@@ -417,12 +423,49 @@ class AddEmployeeController extends GetxController {
     }
   }
 
+  Future<void> updatePermissionGrantPolicy({
+    required Map<String, dynamic> permission,
+    required String grantPolicy,
+    required bool applyToGroup,
+  }) async {
+    final permissionId = int.tryParse(permission['id']?.toString() ?? '');
+    if (permissionId == null) return;
+
+    isLoading(true);
+    final result = await updatePermissionGrantPolicyUsecase.call(
+      permissionId: permissionId,
+      grantPolicy: grantPolicy,
+      applyToGroup: applyToGroup,
+    );
+    result.fold(
+      (failure) {
+        Helpers.showCustomDialogError(
+          context: Get.context!,
+          title: 'error'.tr,
+          message: failure.errMessage,
+        );
+      },
+      (success) async {
+        await _loadPermissionsFromServer();
+        Helpers.showCustomDialogSuccess(
+          context: Get.context!,
+          title: 'success'.tr,
+          message: success,
+        );
+      },
+    );
+    isLoading(false);
+  }
+
   Map<String, dynamic> _permissionFromApi(Map<String, dynamic> row) {
     final id = row['id'] ?? row['permission_id'];
     final nameAr = row['name'] ?? row['permission_name'];
     final nameEn = row['name_en'] ?? row['permission_name_en'];
     final group = row['group_key'] ?? _permissionGroupForName(nameEn);
+    final grantPolicy =
+        row['grant_policy']?.toString() ?? grantPolicyPermissionsManage;
     final adminOnly = row['admin_only'] == true ||
+        grantPolicy == grantPolicyAdminOnly ||
         employeeHiddenPermissionIds.contains(id.toString());
     final preferredName = Get.locale?.languageCode == 'en' ? nameEn : nameAr;
     final fallbackName = nameAr ?? nameEn ?? '';
@@ -436,6 +479,7 @@ class AddEmployeeController extends GetxController {
       'group': group.toString(),
       'permission': false.obs,
       'adminOnly': adminOnly,
+      'grantPolicy': grantPolicy,
     };
   }
 

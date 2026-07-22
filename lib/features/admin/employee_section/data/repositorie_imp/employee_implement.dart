@@ -38,6 +38,35 @@ class EmployeeImplement implements EmployeeRepository {
     return employeeDatasource.getAllPermissions();
   }
 
+  @override
+  Future<Either<Failure, String>> updatePermissionGrantPolicy({
+    required int permissionId,
+    required String grantPolicy,
+    required bool applyToGroup,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.updatePermissionGrantPolicy(
+        permissionId: permissionId,
+        grantPolicy: grantPolicy,
+        applyToGroup: applyToGroup,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message'] ?? 'Updated successfully');
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
   // creat new employee
   @override
   Future<Either<Failure, String>> creatEmployee({

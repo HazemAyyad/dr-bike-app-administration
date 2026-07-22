@@ -22,6 +22,7 @@ import '../../domain/usecases/qr_generation_usecase.dart';
 import '../../domain/usecases/qr_history_usecase.dart';
 import '../../domain/usecases/reject_order_usecase.dart';
 import '../../domain/usecases/employee_points_usecases.dart';
+import '../../domain/usecases/update_permission_grant_policy_usecase.dart';
 import '../../domain/usecases/working_times_usecase.dart';
 import '../../domain/usecases/admin_users_usecase.dart';
 import '../controllers/add_employee_controller.dart';
@@ -116,6 +117,9 @@ class EmployeeSectionBinding extends Bindings {
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         getPermissionsUsecase: GetPermissionsUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        updatePermissionGrantPolicyUsecase: UpdatePermissionGrantPolicyUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         employeeService: Get.find<EmployeeService>(),

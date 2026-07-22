@@ -162,6 +162,9 @@ class EndPoints {
   static const String appUpdateCheck = 'app/update-check';
   static const String appVersionSeen = 'app/version-seen';
   static const String appVersionReport = 'app/version-report';
+  static const String databaseBackups = 'admin/database-backups';
+  static String databaseBackupDownload(String filename) =>
+      'admin/database-backups/${Uri.encodeComponent(filename)}/download';
   static const String attendanceSettings = 'admin/settings/attendance';
   static const String attendanceDevices = 'admin/attendance-devices';
   static String attendanceDeviceTestConnection(int id) =>
@@ -182,6 +185,7 @@ class EndPoints {
   static String employeeAdvances(int employeeId) =>
       'employees/$employeeId/advances';
   static const String allPermissions = 'all/permissions';
+  static const String updatePermissionGrantPolicy = 'permissions/grant-policy';
   static const String employeePermissions = 'employee/permissions';
   static const String qrGeneration = 'qr-generation';
   static const String qrHistory = 'qr-history';
@@ -288,6 +292,7 @@ class EndPoints {
   static const String transferSpecialTask = 'transfer/special/task';
   static const String changeSubSpecialTaskToCompleted =
       'change/sub/special/task/to/completed';
+  static const String cancelSubSpecialTask = 'cancel/sub/special/task';
   static const String updateSpecialTask = 'update/special/task';
   static const String convertSpecialTaskToEmployee =
       'convert/special/task/to/employee';

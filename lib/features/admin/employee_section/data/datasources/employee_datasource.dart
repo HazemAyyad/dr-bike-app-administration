@@ -57,6 +57,23 @@ class EmployeeDatasource {
     }
   }
 
+  Future<Map<String, dynamic>> updatePermissionGrantPolicy({
+    required int permissionId,
+    required String grantPolicy,
+    required bool applyToGroup,
+  }) async {
+    final response = await api.post(
+      EndPoints.updatePermissionGrantPolicy,
+      data: {
+        'permission_id': permissionId,
+        'grant_policy': grantPolicy,
+        'apply_to_group': applyToGroup ? 1 : 0,
+      },
+      isFormData: true,
+    );
+    return asMap(response.data);
+  }
+
   // create or edit employee
   Future<Map<String, dynamic>> creatEmployee({
     String? employeeId,
