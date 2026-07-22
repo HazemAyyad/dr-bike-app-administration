@@ -494,7 +494,7 @@ class EmployeeDatasource {
         throw ServerException(
           ErrorModel(
             errorMessage: raw['message']?.toString() ?? 'Unknown error',
-            status: raw['status'] ?? 500,
+            status: raw['status'] is int ? raw['status'] as int : 500,
             data: raw['data'] ?? {},
           ),
         );
@@ -505,9 +505,13 @@ class EmployeeDatasource {
       final data = e.response?.data;
       throw ServerException(
         ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
+          errorMessage: data is Map
+              ? (data['message']?.toString() ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map && data['status'] is int
+              ? data['status'] as int
+              : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }
