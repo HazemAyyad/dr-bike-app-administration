@@ -197,6 +197,7 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
   late FocusNode _focusNode;
   bool _wasFocused = false;
   bool _shouldKeepKeyboard = false;
+  bool _syncing = false;
 
   final List<CountryData> countries = const [
     CountryData(code: "PS", dialCode: "+970", name: "فلسطين"),
@@ -244,16 +245,28 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
   }
 
   void _syncFromParentController() {
+    if (_syncing) return;
     var text = widget.controller.text.trim();
-    if (text.isEmpty) return;
-
-    // استيراد جهات الاتصال أحياناً يضع الرقم بدون +972 / +970
-    if (!text.startsWith('+')) {
-      final formatted = PhoneFormatHelper.forApi(text);
-      if (formatted.isNotEmpty && formatted != text) {
-        widget.controller.text = formatted;
-        text = formatted;
+    if (text.isEmpty) {
+      if (_phoneOnlyController.text.isNotEmpty) {
+        _phoneOnlyController.clear();
       }
+      return;
+    }
+
+    final formatted = PhoneFormatHelper.forApi(
+      text,
+      defaultDialCode: selectedCountry.dialCode,
+    );
+    if (formatted.isEmpty) return;
+    if (formatted != text) {
+      _syncing = true;
+      widget.controller.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+      _syncing = false;
+      text = formatted;
     }
 
     final country = text.contains('+970') ? countries.first : countries.last;
@@ -326,8 +339,9 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
       setState(() => selectedCountry = country);
 
       // بعد تغيير الدولة، خزن الرقم مع الكود الجديد
-      widget.controller.text =
-          "${selectedCountry.dialCode} ${_phoneOnlyController.text}";
+      final localDigits = _localDigits(_phoneOnlyController.text);
+      _phoneOnlyController.text = localDigits;
+      widget.controller.text = "${selectedCountry.dialCode} $localDigits";
     }
 
     // ارجع الكيبورد إذا كان مفتوح قبل البوتوم شيت
@@ -372,74 +386,137 @@ class _CustomPhoneFieldState extends State<CustomPhoneField>
                 ),
               ),
         SizedBox(height: 10.h),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: _selectCountry,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 13.h),
-                decoration: BoxDecoration(
-                  color: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Text(
-                  selectedCountry.dialCode,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: TextField(
-                maxLength: 9,
-                focusNode: _focusNode,
-                controller: _phoneOnlyController,
-                onChanged: (value) {
-                  // دايمًا نخزن الكود + الرقم في الكنترولر الأساسي
-                  widget.controller.text = "${selectedCountry.dialCode} $value";
-                },
-                onTap: () {
-                  // تأكد إن الكيبورد يفضل مفتوح
-                  _shouldKeepKeyboard = true;
-                },
-                textInputAction: widget.textInputAction ?? TextInputAction.next,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  hintText: widget.hintText?.tr,
-                  hintStyle: TextStyle(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: _selectCountry,
+                child: Container(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 13.h),
+                  decoration: BoxDecoration(
                     color: ThemeService.isDark.value
                         ? AppColors.customGreyColor
-                        : AppColors.customGreyColor6,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w400,
+                        : AppColors.whiteColor2,
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  suffixIcon: const Icon(
-                    Icons.phone,
-                    color: AppColors.primaryColor,
+                  child: Text(
+                    selectedCountry.dialCode,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryColor,
+                    ),
                   ),
-                  filled: true,
-                  fillColor: ThemeService.isDark.value
-                      ? AppColors.customGreyColor
-                      : AppColors.whiteColor2,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(11.r),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
                 ),
               ),
-            ),
-          ],
+              SizedBox(width: 8.w),
+              Expanded(
+                child: TextField(
+                  textDirection: TextDirection.ltr,
+                  textAlign: TextAlign.left,
+                  maxLength: widget.maxLength ?? 20,
+                  focusNode: _focusNode,
+                  controller: _phoneOnlyController,
+                  onChanged: _applyPhoneInput,
+                  onTap: () {
+                    _shouldKeepKeyboard = true;
+                  },
+                  textInputAction:
+                      widget.textInputAction ?? TextInputAction.next,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: widget.hintText?.tr,
+                    hintStyle: TextStyle(
+                      color: ThemeService.isDark.value
+                          ? AppColors.customGreyColor
+                          : AppColors.customGreyColor6,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    suffixIcon: const Icon(
+                      Icons.phone,
+                      color: AppColors.primaryColor,
+                    ),
+                    filled: true,
+                    fillColor: ThemeService.isDark.value
+                        ? AppColors.customGreyColor
+                        : AppColors.whiteColor2,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(11.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding:
+                        EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  String _localDigits(String value) {
+    final formatted = PhoneFormatHelper.forApi(
+      value,
+      defaultDialCode: selectedCountry.dialCode,
+    );
+    if (formatted.isEmpty) {
+      return value.replaceAll(RegExp(r'\D'), '');
+    }
+    selectedCountry =
+        formatted.contains('+970') ? countries.first : countries.last;
+    return formatted.replaceFirst(selectedCountry.dialCode, '').trim();
+  }
+
+  void _applyPhoneInput(String value) {
+    final raw = value.trim();
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) {
+      widget.controller.clear();
+      return;
+    }
+
+    final looksInternational = raw.startsWith('+') ||
+        digits.startsWith('00') ||
+        digits.startsWith('972') ||
+        digits.startsWith('970');
+    final looksLocalWithZero = digits.startsWith('0');
+
+    if (looksInternational && digits.length < 12) {
+      return;
+    }
+    if (looksLocalWithZero && digits.length < 10) {
+      return;
+    }
+    if (!looksInternational && !looksLocalWithZero && digits.length < 9) {
+      return;
+    }
+
+    final formatted = PhoneFormatHelper.forApi(
+      raw,
+      defaultDialCode: selectedCountry.dialCode,
+    );
+    if (formatted.isEmpty) return;
+
+    selectedCountry =
+        formatted.contains('+970') ? countries.first : countries.last;
+    final localDigits =
+        formatted.replaceFirst(selectedCountry.dialCode, '').trim();
+    if (_phoneOnlyController.text != localDigits) {
+      _phoneOnlyController.value = TextEditingValue(
+        text: localDigits,
+        selection: TextSelection.collapsed(offset: localDigits.length),
+      );
+    }
+    _syncing = true;
+    widget.controller.text = formatted;
+    _syncing = false;
+    if (mounted) setState(() {});
   }
 }

@@ -272,6 +272,7 @@ class MediaUploadButton extends StatefulWidget {
   final void Function(List<File> files) onFilesChanged;
   final MediaType allowedType;
   final bool isShowPreview;
+  final List<File> initialFiles;
 
   const MediaUploadButton({
     Key? key,
@@ -282,6 +283,7 @@ class MediaUploadButton extends StatefulWidget {
     required this.onFilesChanged,
     this.allowedType = MediaType.both,
     this.isShowPreview = true,
+    this.initialFiles = const [],
   }) : super(key: key);
 
   @override
@@ -292,6 +294,41 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
   final List<File> _files = [];
   final Map<String, Uint8List?> _videoThumbnails = {};
   final Map<String, double> _progress = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _syncInitialFiles();
+    _generateThumbnails();
+  }
+
+  @override
+  void didUpdateWidget(covariant MediaUploadButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_samePaths(oldWidget.initialFiles, widget.initialFiles) &&
+        !_samePaths(_files, widget.initialFiles)) {
+      _syncInitialFiles();
+      _generateThumbnails();
+    }
+  }
+
+  bool _samePaths(List<File> a, List<File> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].path != b[i].path) return false;
+    }
+    return true;
+  }
+
+  void _syncInitialFiles() {
+    _files
+      ..clear()
+      ..addAll(widget.initialFiles);
+  }
+
+  void _emitFiles() {
+    widget.onFilesChanged(List<File>.unmodifiable(_files));
+  }
 
   Future<void> _pickFiles() async {
     final picker = ImagePicker();
@@ -400,7 +437,7 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
       setState(() {
         _files.addAll(picked.map((e) => File(e.path)));
       });
-      widget.onFilesChanged(_files);
+      _emitFiles();
       _generateThumbnails();
     }
   }
@@ -498,11 +535,10 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
       _progress[file.path] = 0;
       _videoThumbnails[file.path] = null;
 
-      // simulate progress loading
       Future(() async {
         for (int i = 1; i <= 10; i++) {
           await Future.delayed(const Duration(milliseconds: 100));
-          setState(() => _progress[file.path] = i / 10);
+          if (mounted) setState(() => _progress[file.path] = i / 10);
         }
 
         final thumb = await VideoThumbnail.thumbnailData(
@@ -512,10 +548,12 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
           quality: 50,
         );
 
-        setState(() {
-          _videoThumbnails[file.path] = thumb;
-          _progress.remove(file.path);
-        });
+        if (mounted) {
+          setState(() {
+            _videoThumbnails[file.path] = thumb;
+            _progress.remove(file.path);
+          });
+        }
       });
     }
   }
@@ -524,28 +562,28 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
     final ext = path.toLowerCase();
     return ext.endsWith(".png") ||
         ext.endsWith(".jpg") ||
-        ext.endsWith(".jpeg");
+        ext.endsWith(".jpeg") ||
+        ext.startsWith('http');
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _pickFiles,
-      child: SizedBox(
-        width: widget.width ?? double.infinity,
-        height: widget.height ?? 150,
-        child: DashedBorderContainer(
-          dashWidth: 5,
-          dashSpace: 5,
-          strokeWidth: 1,
-          radius: 4,
-          child: _files.isEmpty
-              ? buildInitialState(widget.title)
-              : widget.isShowPreview
-                  ? _buildPreviewList()
-                  : buildInitialState(widget.title),
-        ),
-      ),
+    final height = widget.height ?? (_files.isEmpty ? 122.h : 116.h);
+    return SizedBox(
+      width: widget.width ?? double.infinity,
+      height: height,
+      child: _files.isEmpty || !widget.isShowPreview
+          ? GestureDetector(
+              onTap: _pickFiles,
+              child: DashedBorderContainer(
+                dashWidth: 5,
+                dashSpace: 5,
+                strokeWidth: 1,
+                radius: 8,
+                child: buildInitialState(widget.title),
+              ),
+            )
+          : _buildPreviewList(),
     );
   }
 
@@ -553,121 +591,132 @@ class _MediaUploadButtonState extends State<MediaUploadButton> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(height: 15.h),
         Image.asset(
           AssetsManager.upLoadIcon,
-          height: 32.h,
-          width: 37.w,
+          height: 26.h,
+          width: 30.w,
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 6.h),
         Text(
           title.tr,
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor2
-                    : AppColors.secondaryColor,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-              ),
+          style: widget.titleStyle ??
+              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    color: ThemeService.isDark.value
+                        ? AppColors.customGreyColor2
+                        : AppColors.secondaryColor,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
           textAlign: TextAlign.center,
           textDirection: TextDirection.rtl,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(height: 15.h),
       ],
     );
   }
 
   Widget _buildPreviewList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '${"filesSelected".tr} : ${_files.length}',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                color: ThemeService.isDark.value
-                    ? AppColors.customGreyColor2
-                    : AppColors.secondaryColor,
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w400,
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: _files.length + 1,
+      separatorBuilder: (_, __) => SizedBox(width: 8.w),
+      itemBuilder: (context, i) {
+        if (i == _files.length) {
+          return GestureDetector(
+            onTap: _pickFiles,
+            child: SizedBox(
+              width: 104.w,
+              child: DashedBorderContainer(
+                dashWidth: 5,
+                dashSpace: 5,
+                strokeWidth: 1,
+                radius: 8,
+                child: buildInitialState(widget.title),
               ),
-        ),
-        const SizedBox(height: 8),
-        Flexible(
-          child: SizedBox(
-            height: 100.h,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _files.length,
-              itemBuilder: (context, i) {
-                final file = _files[i];
-                final path = file.path;
-
-                Widget preview;
-
-                if (_isImage(path)) {
-                  preview = Image.file(file,
-                      width: 80.w, height: 80.h, fit: BoxFit.cover);
-                } else if (_videoThumbnails[path] != null) {
-                  preview = Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Image.memory(_videoThumbnails[path]!,
-                          width: 80.w, height: 80.h, fit: BoxFit.cover),
-                      const Icon(Icons.play_circle_fill,
-                          size: 32, color: Colors.white),
-                    ],
-                  );
-                } else {
-                  final progress = _progress[path] ?? 0;
-                  preview = Container(
-                    width: 80.w,
-                    height: 80.h,
-                    color: Colors.grey[300],
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 40,
-                          height: 40,
-                          child: CircularProgressIndicator(value: progress),
-                        ),
-                        Text('${(progress * 100).toInt()}%',
-                            style: const TextStyle(fontSize: 12)),
-                      ],
-                    ),
-                  );
-                }
-
-                return Padding(
-                  padding: EdgeInsets.only(right: 8.w),
-                  child: Stack(
-                    children: [
-                      preview,
-                      Positioned(
-                        right: 2,
-                        top: 2,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(
-                              () {
-                                _files.removeAt(i);
-                                _progress.remove(path);
-                                _videoThumbnails.remove(path);
-                              },
-                            );
-                            widget.onFilesChanged(_files);
-                          },
-                          child: const Icon(Icons.close, color: Colors.red),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
             ),
+          );
+        }
+
+        final file = _files[i];
+        final path = file.path;
+        return SizedBox(
+          width: 104.w,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8.r),
+                child: _buildPreview(file),
+              ),
+              Positioned(
+                right: 4.w,
+                top: 4.h,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _files.removeAt(i);
+                      _progress.remove(path);
+                      _videoThumbnails.remove(path);
+                    });
+                    _emitFiles();
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(4.w),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: .55),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 15.sp,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPreview(File file) {
+    final path = file.path;
+    if (_isImage(path)) {
+      if (path.startsWith('http')) {
+        return Image.network(path, fit: BoxFit.cover);
+      }
+      return Image.file(file, fit: BoxFit.cover);
+    }
+    if (_videoThumbnails[path] != null) {
+      return Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [
+          Image.memory(_videoThumbnails[path]!, fit: BoxFit.cover),
+          const Icon(Icons.play_circle_fill, size: 32, color: Colors.white),
+        ],
+      );
+    }
+    final progress = _progress[path] ?? 0;
+    return Container(
+      color: Colors.grey[300],
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 38,
+            height: 38,
+            child: CircularProgressIndicator(value: progress),
+          ),
+          Text(
+            '${(progress * 100).toInt()}%',
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,11 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_chechbox.dart';
 import 'package:doctorbike/core/helpers/custom_text_field.dart';
 import 'package:doctorbike/core/helpers/custom_time_picker.dart';
 import 'package:doctorbike/core/helpers/custom_upload_button.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -25,522 +23,621 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
   Widget build(BuildContext context) {
     final String title =
         Get.arguments['AddNewEmployeeScreen'] ?? 'addNewEmployee';
+    final isEdit = title == 'editEmployee';
+
     return Scaffold(
       appBar: CustomAppBar(title: title, action: false),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Form(
-          key: controller.formKey,
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      isRequired: true,
-                      label: 'employeeName',
-                      hintText: 'employeeNameExample',
-                      controller: controller.employeeNameController,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      isRequired: true,
-                      label: 'email',
-                      hintText: 'test@mail.com',
-                      controller: controller.emailController,
-                      validator: (p0) => Validators.validateEmail(
-                        p0,
-                        Get.locale!.languageCode,
+      body: Form(
+        key: controller.formKey,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 16.h),
+          children: [
+            _EmployeeFormSection(
+              icon: Icons.badge_outlined,
+              title: 'بيانات الموظف',
+              children: [
+                _AdaptiveFields(
+                  children: [
+                    _AdaptiveField(
+                      width: .50,
+                      child: CustomTextField(
+                        isRequired: true,
+                        label: 'employeeName',
+                        hintText: 'employeeNameExample',
+                        controller: controller.employeeNameController,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 15.h),
-              CustomPhoneField(
-                label: 'phoneNumber',
-                hintText: '58458XXXXX',
-                controller: controller.phoneNumberController,
-              ),
-              SizedBox(height: 15.h),
-              CustomPhoneField(
-                label: 'alternatePhone',
-                hintText: '58410XXXXX',
-                controller: controller.subPhoneController,
-              ),
-              SizedBox(height: controller.isEditEmployee ? 0 : 15.h),
-              controller.isEditEmployee
-                  ? const SizedBox()
-                  : Row(
-                      children: [
-                        Flexible(
-                          child: CustomTextField(
-                            isRequired: true,
-                            label: 'password',
-                            hintText: '**********',
-                            controller: controller.passwordController,
-                            validator: (p0) => Validators.validatePassword(
-                              p0,
-                              Get.locale!.languageCode,
-                            ),
-                          ),
+                    _AdaptiveField(
+                      width: .50,
+                      child: CustomTextField(
+                        isRequired: true,
+                        label: 'email',
+                        hintText: 'test@mail.com',
+                        controller: controller.emailController,
+                        validator: (p0) => Validators.validateEmail(
+                          p0,
+                          Get.locale!.languageCode,
                         ),
-                        SizedBox(width: 10.w),
-                        Flexible(
-                          child: CustomTextField(
-                            isRequired: true,
-                            label: 'confirmPassword',
-                            hintText: '**********',
-                            controller: controller.confirmPasswordController,
-                            validator: (p0) => Validators.validatePassword(
-                              p0,
-                              Get.locale!.languageCode,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-              SizedBox(height: 15.h),
-              Row(
-                children: [
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'hourlyRate',
-                      hintText: 'employeeSalaryExample',
-                      controller: controller.hourlyRateController,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Flexible(
-                    child: CustomTextField(
-                      label: 'overTimeRate',
-                      hintText: 'employeeSalaryExample',
-                      controller: controller.overTimeRateController,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 15.h),
-              CustomTextField(
-                label: 'workHoursOfDayExample'.tr.split('(')[0],
-                hintText: 'workHoursExample',
-                controller: controller.workHoursOfDayController,
-              ),
-              SizedBox(height: 15.w),
-              CustomTimePicker(
-                isVisible: controller.isVisible,
-                onTap: () =>
-                    controller.isVisible.value = !controller.isVisible.value,
-                selectedTime: controller.selectedTime,
-                label: 'regularWorkingHours',
-              ),
-              SizedBox(height: 15.h),
-              controller.isEditEmployee
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        controller.documentsImageList.isEmpty
-                            ? const SizedBox.shrink()
-                            : Text(
-                                'documentsImages'.tr,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: (ThemeService.isDark.value
-                                          ? AppColors.customGreyColor6
-                                          : AppColors.customGreyColor),
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                              ),
-                        SizedBox(height: 5.h),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Obx(
-                            () => controller.deleteImage.value
-                                ? const SizedBox.shrink()
-                                : Row(
-                                    children: [
-                                      ...controller.documentsImageList
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                        (entry) {
-                                          final index = entry.key;
-                                          final file = entry.value;
-                                          return Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 5.w),
-                                            child: Stack(
-                                              children: [
-                                                ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5.r),
-                                                  child: CachedNetworkImage(
-                                                    cacheManager: CacheManager(
-                                                      Config(
-                                                        'imagesCache',
-                                                        stalePeriod:
-                                                            const Duration(
-                                                                days: 7),
-                                                        maxNrOfCacheObjects:
-                                                            100,
-                                                      ),
-                                                    ),
-                                                    imageBuilder: (context,
-                                                            imageProvider) =>
-                                                        Container(
-                                                      height: 200.h,
-                                                      width: 200.w,
-                                                      decoration: BoxDecoration(
-                                                        image: DecorationImage(
-                                                          image: imageProvider,
-                                                          fit: BoxFit.fill,
-                                                          filterQuality:
-                                                              FilterQuality
-                                                                  .medium,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    imageUrl: file.path,
-                                                    fadeInDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    fadeOutDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    placeholder:
-                                                        (context, url) =>
-                                                            const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                    errorWidget: (context, url,
-                                                            error) =>
-                                                        const Icon(Icons.error),
-                                                  ),
-                                                ),
-                                                // زرار فوق الصورة
-                                                Positioned(
-                                                  right: 8,
-                                                  top: 8,
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.delete,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      controller
-                                                          .deleteImage(true);
-                                                      controller
-                                                          .documentsImageList
-                                                          .removeAt(index);
-                                                      controller
-                                                          .deleteImage(false);
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                        SizedBox(height: 15.h),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-              MediaUploadButton(
-                title: 'documentsImages',
-                onFilesChanged: (val) {
-                  controller.documentsImageList.addAll(val);
-                },
-                allowedType: MediaType.image,
-              ),
-              SizedBox(height: 15.h),
-              controller.isEditEmployee
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        controller.employeeImageList.isEmpty
-                            ? const SizedBox.shrink()
-                            : Text(
-                                'employeeImage'.tr,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: (ThemeService.isDark.value
-                                          ? AppColors.customGreyColor6
-                                          : AppColors.customGreyColor),
-                                      fontSize: 15.sp,
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                              ),
-                        SizedBox(height: 5.h),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Obx(
-                            () => controller.deleteImage.value
-                                ? const SizedBox.shrink()
-                                : Row(
-                                    children: [
-                                      ...controller.employeeImageList
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                        (entry) {
-                                          final index = entry.key;
-                                          final file = entry.value;
-
-                                          return Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 5.w),
-                                            child: Stack(
-                                              children: [
-                                                ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5.r),
-                                                  child: file.path
-                                                          .startsWith('http')
-                                                      ? CachedNetworkImage(
-                                                          cacheManager:
-                                                              CacheManager(
-                                                            Config(
-                                                              'imagesCache',
-                                                              stalePeriod:
-                                                                  const Duration(
-                                                                      days: 7),
-                                                              maxNrOfCacheObjects:
-                                                                  100,
-                                                            ),
-                                                          ),
-                                                          imageBuilder: (context,
-                                                                  imageProvider) =>
-                                                              Container(
-                                                            height: 200.h,
-                                                            width: 200.w,
-                                                            decoration:
-                                                                BoxDecoration(
-                                                              image:
-                                                                  DecorationImage(
-                                                                image:
-                                                                    imageProvider,
-                                                                fit:
-                                                                    BoxFit.fill,
-                                                                filterQuality:
-                                                                    FilterQuality
-                                                                        .medium,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          imageUrl: file.path,
-                                                          placeholder: (context,
-                                                                  url) =>
-                                                              const Center(
-                                                                  child:
-                                                                      CircularProgressIndicator()),
-                                                          errorWidget: (context,
-                                                                  url, error) =>
-                                                              const Icon(
-                                                                  Icons.error),
-                                                        )
-                                                      : Image.file(
-                                                          file,
-                                                          height: 200.h,
-                                                          width: 200.w,
-                                                          fit: BoxFit.fill,
-                                                        ),
-                                                ),
-                                                Positioned(
-                                                  right: 8,
-                                                  top: 8,
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.delete,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      controller
-                                                          .deleteImage(true);
-                                                      controller
-                                                          .employeeImageList
-                                                          .removeAt(index);
-                                                      controller
-                                                          .deleteImage(false);
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                        SizedBox(height: 15.h),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-              MediaUploadButton(
-                title: 'employeeImage',
-                onFilesChanged: (val) {
-                  controller.employeeImageList.addAll(val);
-                },
-                allowedType: MediaType.image,
-              ),
-              SizedBox(height: 10.h),
-              // Weekly days off (new)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  'weeklyDaysOffTitle'.tr,
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: ThemeService.isDark.value
-                            ? AppColors.customGreyColor6
-                            : AppColors.customGreyColor,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w700,
                       ),
+                    ),
+                    _AdaptiveField(
+                      width: .50,
+                      child: CustomPhoneField(
+                        label: 'phoneNumber',
+                        hintText: '58458XXXXX',
+                        controller: controller.phoneNumberController,
+                      ),
+                    ),
+                    _AdaptiveField(
+                      width: .50,
+                      child: CustomPhoneField(
+                        label: 'alternatePhone',
+                        hintText: '58410XXXXX',
+                        controller: controller.subPhoneController,
+                      ),
+                    ),
+                    if (!controller.isEditEmployee) ...[
+                      _AdaptiveField(
+                        width: .50,
+                        child: CustomTextField(
+                          isRequired: true,
+                          label: 'password',
+                          hintText: '**********',
+                          controller: controller.passwordController,
+                          validator: (p0) => Validators.validatePassword(
+                            p0,
+                            Get.locale!.languageCode,
+                          ),
+                        ),
+                      ),
+                      _AdaptiveField(
+                        width: .50,
+                        child: CustomTextField(
+                          isRequired: true,
+                          label: 'confirmPassword',
+                          hintText: '**********',
+                          controller: controller.confirmPasswordController,
+                          validator: (p0) => Validators.validatePassword(
+                            p0,
+                            Get.locale!.languageCode,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-              SizedBox(height: 8.h),
-              Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
-                children: [
-                  _WeeklyDayChip(controller: controller, keyName: 'saturday'),
-                  _WeeklyDayChip(controller: controller, keyName: 'sunday'),
-                  _WeeklyDayChip(controller: controller, keyName: 'monday'),
-                  _WeeklyDayChip(controller: controller, keyName: 'tuesday'),
-                  _WeeklyDayChip(controller: controller, keyName: 'wednesday'),
-                  _WeeklyDayChip(controller: controller, keyName: 'thursday'),
-                  _WeeklyDayChip(controller: controller, keyName: 'friday'),
-                ],
-              ),
-              SizedBox(height: 15.h),
-              // Fingerprint settings (new)
-              _FingerprintSettingsCard(controller: controller),
-              SizedBox(height: 15.h),
-              Row(
-                children: [
-                  Text(
-                    'permissions'.tr,
+              ],
+            ),
+            SizedBox(height: 8.h),
+            _EmployeeFormSection(
+              icon: Icons.schedule_outlined,
+              title: 'الدوام والأجور',
+              collapsible: true,
+              initiallyExpanded: false,
+              children: [
+                _CompactWorkFields(controller: controller),
+                SizedBox(height: 14.h),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    'weeklyDaysOffTitle'.tr,
                     style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                           color: ThemeService.isDark.value
                               ? AppColors.customGreyColor6
                               : AppColors.customGreyColor,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w800,
                         ),
                   ),
-                  const Spacer(),
-                  Obx(
-                    () => controller.canEditPermissionAssignments.value
-                        ? TextButton(
-                            onPressed: () =>
-                                controller.isAllPermissionsSelected.value
-                                    ? controller.setAllPermissionsFalse()
-                                    : controller.setAllPermissionsTrue(),
-                            child: Text(
-                              controller.isAllPermissionsSelected.value
-                                  ? 'unselectAll'.tr
-                                  : 'selectAll'.tr,
+                ),
+                SizedBox(height: 8.h),
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: [
+                    _WeeklyDayChip(controller: controller, keyName: 'saturday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'sunday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'monday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'tuesday'),
+                    _WeeklyDayChip(
+                        controller: controller, keyName: 'wednesday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'thursday'),
+                    _WeeklyDayChip(controller: controller, keyName: 'friday'),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            _EmployeeFormSection(
+              icon: Icons.photo_library_outlined,
+              title: 'الصور والمستندات',
+              collapsible: true,
+              initiallyExpanded: false,
+              children: [
+                MediaUploadButton(
+                  title: 'documentsImages',
+                  initialFiles: controller.documentsImageList,
+                  onFilesChanged: (files) {
+                    controller.documentsImageList
+                      ..clear()
+                      ..addAll(files);
+                  },
+                  allowedType: MediaType.image,
+                ),
+                SizedBox(height: 8.h),
+                MediaUploadButton(
+                  title: 'employeeImage',
+                  initialFiles: controller.employeeImageList,
+                  onFilesChanged: (files) {
+                    controller.employeeImageList
+                      ..clear()
+                      ..addAll(files);
+                  },
+                  allowedType: MediaType.image,
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            _EmployeeFormSection(
+              icon: Icons.fingerprint_outlined,
+              title: 'البصمة',
+              collapsible: true,
+              initiallyExpanded: false,
+              children: [
+                _FingerprintSettingsCard(controller: controller),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            _EmployeeFormSection(
+              icon: Icons.admin_panel_settings_outlined,
+              title: 'permissions'.tr,
+              collapsible: true,
+              initiallyExpanded: false,
+              trailing: Obx(
+                () => controller.canEditPermissionAssignments.value
+                    ? TextButton(
+                        onPressed: () =>
+                            controller.isAllPermissionsSelected.value
+                                ? controller.setAllPermissionsFalse()
+                                : controller.setAllPermissionsTrue(),
+                        child: Text(
+                          controller.isAllPermissionsSelected.value
+                              ? 'unselectAll'.tr
+                              : 'selectAll'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.customGreyColor6
+                                        : AppColors.customGreyColor,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              children: [
+                Obx(
+                  () {
+                    if (!controller.canEditPermissionAssignments.value) {
+                      return Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.customOrange3.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color:
+                                AppColors.customOrange3.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Text(
+                          'cannotEditOwnPermissions'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: AppColors.customOrange3,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      );
+                    }
+
+                    return _PermissionGroups(controller: controller);
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 10.h),
+            AppButton(
+              isLoading: controller.isLoading,
+              text: isEdit ? 'saveChanges' : 'addNewEmployee',
+              textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+              height: 48.h,
+              onPressed: () {
+                controller.isLoading.value
+                    ? null
+                    : controller.addNewEmployee(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PermissionGroups extends StatelessWidget {
+  const _PermissionGroups({required this.controller});
+
+  final AddEmployeeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = controller.groupedVisiblePermissions;
+    return Column(
+      children: [
+        for (var i = 0; i < groups.length; i++) ...[
+          _PermissionGroupCard(group: groups[i]),
+          if (i != groups.length - 1) SizedBox(height: 8.h),
+        ],
+      ],
+    );
+  }
+}
+
+class _PermissionGroupCard extends StatelessWidget {
+  const _PermissionGroupCard({required this.group});
+
+  final Map<String, dynamic> group;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final permissions =
+        List<Map<String, dynamic>>.from(group['permissions'] as List);
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(9.r),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                group['icon'] as IconData,
+                size: 16.sp,
+                color: AppColors.primaryColor,
+              ),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  group['title'].toString(),
+                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                        color: isDark ? Colors.white : const Color(0xFF111827),
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = constraints.maxWidth >= 680
+                  ? (constraints.maxWidth - 10.w) / 2
+                  : constraints.maxWidth;
+              return Wrap(
+                spacing: 10.w,
+                runSpacing: 2.h,
+                children: [
+                  for (final permission in permissions)
+                    SizedBox(
+                      width: itemWidth,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: CustomCheckBox(
+                              title: permission['name'],
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium!
                                   .copyWith(
-                                    color: ThemeService.isDark.value
+                                    color: isDark
                                         ? AppColors.customGreyColor6
-                                        : AppColors.customGreyColor,
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w700,
-                                    decoration: TextDecoration.underline,
-                                    decorationStyle: TextDecorationStyle.solid,
+                                        : AppColors.customGreyColor2,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
                                   ),
+                              value: permission['permission'],
+                              onChanged: (value) {
+                                permission['permission'].value = value;
+                              },
                             ),
-                          )
-                        : const SizedBox.shrink(),
-                  )
+                          ),
+                          if (permission['adminOnly'] == true) ...[
+                            SizedBox(width: 4.w),
+                            Tooltip(
+                              message: 'adminOnlyPermission'.tr,
+                              child: Icon(
+                                Icons.lock_outline_rounded,
+                                size: 14.sp,
+                                color: AppColors.customOrange3,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                 ],
-              ),
-              Obx(
-                () {
-                  if (!controller.canEditPermissionAssignments.value) {
-                    return Container(
-                      width: double.infinity,
-                      margin: EdgeInsets.only(top: 8.h),
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: AppColors.customOrange3.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(
-                          color:
-                              AppColors.customOrange3.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Text(
-                        'cannotEditOwnPermissions'.tr,
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: AppColors.customOrange3,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                    );
-                  }
-
-                  final permissions = controller.visiblePermissionsList;
-                  return Column(
-                    children: List.generate(
-                      permissions.length,
-                      (index) => CustomCheckBox(
-                        title: permissions[index]['name'],
-                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                              color: ThemeService.isDark.value
-                                  ? AppColors.customGreyColor6
-                                  : AppColors.customGreyColor2,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                            ),
-                        value: permissions[index]['permission'],
-                        onChanged: (value) {
-                          permissions[index]['permission'].value = value;
-                        },
-                      ),
-                    ),
-                  );
-                },
-              ),
-              SizedBox(height: 20.h),
-              AppButton(
-                isLoading: controller.isLoading,
-                text:
-                    title == 'editEmployee' ? 'saveChanges' : 'addNewEmployee',
-                textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                height: 50.h,
-                onPressed: () {
-                  controller.isLoading.value
-                      ? null
-                      : controller.addNewEmployee(context);
-                },
-              ),
-            ],
+              );
+            },
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeeFormSection extends StatefulWidget {
+  const _EmployeeFormSection({
+    required this.icon,
+    required this.title,
+    required this.children,
+    this.trailing,
+    this.collapsible = false,
+    this.initiallyExpanded = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+  final Widget? trailing;
+  final bool collapsible;
+  final bool initiallyExpanded;
+
+  @override
+  State<_EmployeeFormSection> createState() => _EmployeeFormSectionState();
+}
+
+class _EmployeeFormSectionState extends State<_EmployeeFormSection> {
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.initiallyExpanded;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final showBody = !widget.collapsible || _expanded;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkColor : Colors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
         ),
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: widget.collapsible
+                ? () => setState(() => _expanded = !_expanded)
+                : null,
+            borderRadius: BorderRadius.circular(8.r),
+            child: Row(
+              children: [
+                Container(
+                  width: 28.w,
+                  height: 28.w,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: .11),
+                    borderRadius: BorderRadius.circular(7.r),
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: AppColors.primaryColor,
+                    size: 17.sp,
+                  ),
+                ),
+                SizedBox(width: 7.w),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF111827),
+                        ),
+                  ),
+                ),
+                if (widget.trailing != null && showBody) widget.trailing!,
+                if (widget.collapsible)
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.primaryColor,
+                  ),
+              ],
+            ),
+          ),
+          if (showBody) ...[
+            SizedBox(height: 9.h),
+            ...widget.children,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactWorkFields extends StatelessWidget {
+  const _CompactWorkFields({required this.controller});
+
+  final AddEmployeeController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _TinyNumberField(
+                label: 'hourlyRate',
+                hintText: 'employeeSalaryExample',
+                controller: controller.hourlyRateController,
+              ),
+            ),
+            SizedBox(width: 6.w),
+            Expanded(
+              child: _TinyNumberField(
+                label: 'workHoursOfDayExample'.tr.split('(')[0],
+                hintText: 'workHoursExample',
+                controller: controller.workHoursOfDayController,
+              ),
+            ),
+            SizedBox(width: 6.w),
+            Expanded(
+              child: _TinyNumberField(
+                label: 'overTimeRate',
+                hintText: 'employeeSalaryExample',
+                controller: controller.overTimeRateController,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8.h),
+        CustomTimePicker(
+          isVisible: controller.isVisible,
+          onTap: () => controller.isVisible.value = !controller.isVisible.value,
+          selectedTime: controller.selectedTime,
+          label: 'regularWorkingHours',
+        ),
+      ],
+    );
+  }
+}
+
+class _TinyNumberField extends StatelessWidget {
+  const _TinyNumberField({
+    required this.label,
+    required this.hintText,
+    required this.controller,
+  });
+
+  final String label;
+  final String hintText;
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final fill = isDark ? AppColors.customGreyColor : AppColors.whiteColor2;
+    final labelColor =
+        isDark ? AppColors.customGreyColor6 : AppColors.customGreyColor;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.tr,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                color: labelColor,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        SizedBox(height: 5.h),
+        TextFormField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.next,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
+              ),
+          decoration: InputDecoration(
+            hintText: hintText.tr,
+            hintStyle: TextStyle(fontSize: 11.sp),
+            filled: true,
+            fillColor: fill,
+            isDense: true,
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9.r),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdaptiveField {
+  const _AdaptiveField({required this.child, this.width = .5});
+
+  final Widget child;
+  final double width;
+}
+
+class _AdaptiveFields extends StatelessWidget {
+  const _AdaptiveFields({required this.children});
+
+  final List<_AdaptiveField> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 620;
+        final gap = 10.w;
+        if (!wide) {
+          return Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                children[i].child,
+                if (i != children.length - 1) SizedBox(height: 8.h),
+              ],
+            ],
+          );
+        }
+        return Wrap(
+          spacing: gap,
+          runSpacing: 12.h,
+          children: children.map((field) {
+            final width = (constraints.maxWidth * field.width) - gap;
+            return SizedBox(
+              width: width.clamp(180.0, constraints.maxWidth),
+              child: field.child,
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }
@@ -827,7 +924,7 @@ class _DeviceUserPickerSheetState extends State<_DeviceUserPickerSheet> {
               borderRadius: BorderRadius.circular(999),
             ),
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 8.h),
           Row(
             children: [
               Expanded(

@@ -39,7 +39,9 @@ class DebtLedgerController extends GetxController {
   DebtLedgerController({required this.repository});
 
   final RxInt currentTab = 0.obs;
-  final tabs = ['ledgerCustomers', 'ledgerSuppliers'];
+  final tabs = ['ledgerCustomers', 'ledgerSuppliers', 'ledgerPrivate'];
+  static const String privateCategoryName = 'خاص';
+  static const String privateCategoryColor = '#7A85C1';
 
   static const List<String> ledgerCurrencies = ['شيكل', 'دولار', 'دينار'];
   final RxString selectedCurrency = 'شيكل'.obs;
@@ -72,7 +74,18 @@ class DebtLedgerController extends GetxController {
   LedgerPersonInfo? selectedPerson;
   bool get isCustomerTab => currentTab.value == 0;
 
+  bool get isPrivateTab => currentTab.value == 2;
+
   String get peopleType => isCustomerTab ? 'customers' : 'sellers';
+
+  ContactCategory? get privateCategory {
+    for (final category in categories) {
+      if (category.name.trim() == privateCategoryName) {
+        return category;
+      }
+    }
+    return null;
+  }
 
   double get tabTotalTaken {
     final s = summary.value;
@@ -97,9 +110,28 @@ class DebtLedgerController extends GetxController {
   }
 
   List<String> get tabLabels => [
-        '${'ledgerCustomers'.tr} (${summary.value?.customersCount ?? people.length})',
-        '${'ledgerSuppliers'.tr} (${summary.value?.sellersCount ?? 0})',
+        '${'ledgerCustomers'.tr} ($_visibleCustomersCount)',
+        '${'ledgerSuppliers'.tr} ($_visibleSellersCount)',
+        '${'ledgerPrivate'.tr} ($_privatePeopleCount)',
       ];
+
+  int get _visibleCustomersCount {
+    final total = summary.value?.customersCount ?? 0;
+    final privateCustomers = privateCategory?.customersCount ?? 0;
+    return (total - privateCustomers).clamp(0, total).toInt();
+  }
+
+  int get _visibleSellersCount {
+    final total = summary.value?.sellersCount ?? 0;
+    final privateSellers = privateCategory?.sellersCount ?? 0;
+    return (total - privateSellers).clamp(0, total).toInt();
+  }
+
+  int get _privatePeopleCount {
+    final category = privateCategory;
+    if (category == null) return 0;
+    return category.customersCount + category.sellersCount;
+  }
 
   List<LedgerPerson> get filteredPeople {
     final list = searchQuery.value.isEmpty
@@ -112,8 +144,19 @@ class DebtLedgerController extends GetxController {
             },
           ).toList();
     list.removeWhere((person) => !_matchesDebtType(person));
+    if (!isPrivateTab) {
+      list.removeWhere(_isPrivatePerson);
+    }
     list.sort(_comparePeople);
     return list;
+  }
+
+  bool _isPrivatePerson(LedgerPerson person) {
+    final category = privateCategory;
+    if (category == null) return false;
+    return person.isCustomer
+        ? category.customerIds.contains(person.id)
+        : category.sellerIds.contains(person.id);
   }
 
   bool _matchesDebtType(LedgerPerson person) {
@@ -155,6 +198,12 @@ class DebtLedgerController extends GetxController {
 
   void changeSort(String sort) {
     selectedSort.value = sort;
+  }
+
+  void toggleAmountSort() {
+    selectedSort.value = selectedSort.value == 'largest_amount'
+        ? 'smallest_amount'
+        : 'largest_amount';
   }
 
   void changeDebtType(String type) {
@@ -199,19 +248,65 @@ class DebtLedgerController extends GetxController {
 
   Future<void> fetchPeople() async {
     isLoading(true);
-    final result = await repository.getPeople(
-      type: peopleType,
-      search: searchQuery.value.isNotEmpty ? searchQuery.value : null,
-      startDate: _formatDate(customStartDate.value),
-      endDate: _formatDate(customEndDate.value),
-      currency: selectedCurrency.value,
-      categoryId: selectedCategoryId.value,
-    );
-    result.fold(
-      (failure) => Get.snackbar('error'.tr, failure.errMessage),
-      (data) => people.assignAll(data),
-    );
+    if (isPrivateTab) {
+      await _fetchPrivatePeople();
+    } else {
+      final result = await repository.getPeople(
+        type: peopleType,
+        search: searchQuery.value.isNotEmpty ? searchQuery.value : null,
+        startDate: _formatDate(customStartDate.value),
+        endDate: _formatDate(customEndDate.value),
+        currency: selectedCurrency.value,
+        categoryId: selectedCategoryId.value,
+      );
+      result.fold(
+        (failure) => Get.snackbar('error'.tr, failure.errMessage),
+        (data) => people.assignAll(data),
+      );
+    }
     isLoading(false);
+  }
+
+  Future<void> _fetchPrivatePeople() async {
+    if (categories.isEmpty) {
+      await fetchCategories();
+    }
+    final category = privateCategory;
+    if (category == null) {
+      people.clear();
+      return;
+    }
+
+    final search = searchQuery.value.isNotEmpty ? searchQuery.value : null;
+    final startDate = _formatDate(customStartDate.value);
+    final endDate = _formatDate(customEndDate.value);
+    final results = await Future.wait([
+      repository.getPeople(
+        type: 'customers',
+        search: search,
+        startDate: startDate,
+        endDate: endDate,
+        currency: selectedCurrency.value,
+        categoryId: category.id,
+      ),
+      repository.getPeople(
+        type: 'sellers',
+        search: search,
+        startDate: startDate,
+        endDate: endDate,
+        currency: selectedCurrency.value,
+        categoryId: category.id,
+      ),
+    ]);
+
+    final nextPeople = <LedgerPerson>[];
+    for (final result in results) {
+      result.fold(
+        (failure) => Get.snackbar('error'.tr, failure.errMessage),
+        nextPeople.addAll,
+      );
+    }
+    people.assignAll(nextPeople);
   }
 
   void onSearchChanged(String value) {
@@ -230,6 +325,51 @@ class DebtLedgerController extends GetxController {
   Future<void> applyCategory(int? id) async {
     selectedCategoryId.value = id;
     await fetchPeople();
+  }
+
+  Future<void> togglePrivateDebtPerson(LedgerPerson person) async {
+    final category = await _ensurePrivateCategory();
+    if (category == null) return;
+
+    final customerIds = category.customerIds.toSet();
+    final sellerIds = category.sellerIds.toSet();
+    final makePrivate = !_isPrivatePerson(person);
+
+    if (person.isCustomer) {
+      makePrivate ? customerIds.add(person.id) : customerIds.remove(person.id);
+    } else {
+      makePrivate ? sellerIds.add(person.id) : sellerIds.remove(person.id);
+    }
+
+    final saved = await saveCategory(
+      id: category.id,
+      name: privateCategoryName,
+      color: category.color.isEmpty ? privateCategoryColor : category.color,
+      customerIds: customerIds.toList(),
+      sellerIds: sellerIds.toList(),
+    );
+
+    if (saved) {
+      Get.snackbar(
+        'success'.tr,
+        makePrivate ? 'ledgerMovedToPrivate'.tr : 'ledgerRemovedFromPrivate'.tr,
+      );
+    }
+  }
+
+  Future<ContactCategory?> _ensurePrivateCategory() async {
+    if (categories.isEmpty) {
+      await fetchCategories();
+    }
+    final existing = privateCategory;
+    if (existing != null) return existing;
+
+    final saved = await saveCategory(
+      name: privateCategoryName,
+      color: privateCategoryColor,
+    );
+    if (!saved) return null;
+    return privateCategory;
   }
 
   Future<bool> saveCategory({

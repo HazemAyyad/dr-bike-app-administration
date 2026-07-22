@@ -1014,7 +1014,6 @@ class SalesController extends GetxController
     pickerLocationSectionId.value = null;
   }
 
-  static const int _autoSuspendLineThreshold = 10;
   Timer? _autoSuspendDebounce;
   Timer? _localDraftDebounce;
   bool _isAutoSuspendingInstantSale = false;
@@ -1027,35 +1026,24 @@ class SalesController extends GetxController
     _scheduleLocalInstantSaleDraftSave();
   }
 
-  int get _instantSaleLineCount {
-    if (cartLines.isNotEmpty) {
-      return cartLines.length + (hasSelectedPackage ? 1 : 0);
-    }
-    return items.where((item) {
-      final productId = item.selectedItem.value.toString().trim();
-      return productId.isNotEmpty;
-    }).length;
-  }
-
   void _scheduleAutoSuspendLargeInstantSale() {
     _autoSuspendDebounce?.cancel();
 
     if (activeEditInstantSaleId.value != null) return;
-    if (_instantSaleLineCount <= _autoSuspendLineThreshold) return;
+    if (!canContinueFromPicker) return;
     if (activeSuspendedSaleId.value != null && !_activeSuspendedSaleIsAuto) {
       return;
     }
 
     _autoSuspendDebounce = Timer(
       const Duration(milliseconds: 900),
-      _autoSuspendLargeInstantSale,
+      _autoSuspendInstantSale,
     );
   }
 
-  Future<void> _autoSuspendLargeInstantSale() async {
+  Future<void> _autoSuspendInstantSale() async {
     if (_isAutoSuspendingInstantSale) return;
     if (activeEditInstantSaleId.value != null) return;
-    if (_instantSaleLineCount <= _autoSuspendLineThreshold) return;
     if (!canContinueFromPicker) return;
     if (activeSuspendedSaleId.value != null && !_activeSuspendedSaleIsAuto) {
       return;
@@ -1083,10 +1071,11 @@ class SalesController extends GetxController
         if (count != null) {
           suspendedInvoicesCount.value = count;
         }
+        await saveLocalInstantSaleDraft();
       }
     } catch (e) {
       assert(() {
-        debugPrint('[SalesController.autoSuspendLargeInstantSale] $e');
+        debugPrint('[SalesController.autoSuspendInstantSale] $e');
         return true;
       }());
     } finally {
@@ -1095,19 +1084,13 @@ class SalesController extends GetxController
   }
 
   bool get _shouldKeepLocalInstantSaleDraft =>
-      activeEditInstantSaleId.value == null &&
-      activeSuspendedSaleId.value == null &&
-      canContinueFromPicker &&
-      _instantSaleLineCount <= _autoSuspendLineThreshold;
+      activeEditInstantSaleId.value == null && canContinueFromPicker;
 
   void _scheduleLocalInstantSaleDraftSave() {
     _localDraftDebounce?.cancel();
     if (_isRestoringLocalInstantSaleDraft) return;
 
     if (!_shouldKeepLocalInstantSaleDraft) {
-      if (_instantSaleLineCount > _autoSuspendLineThreshold) {
-        clearLocalInstantSaleDraft();
-      }
       return;
     }
 
@@ -2126,6 +2109,11 @@ class SalesController extends GetxController
       activeSuspendedSaleId.value == null || _activeSuspendedSaleIsAuto
           ? null
           : 'ع-${activeSuspendedSaleId.value}';
+
+  String? get activeAutoSuspendedReferenceCode =>
+      activeSuspendedSaleId.value != null && _activeSuspendedSaleIsAuto
+          ? 'ع-${activeSuspendedSaleId.value}'
+          : null;
 
   String? get activeEditInstantSaleReference =>
       activeEditInstantSaleId.value == null
@@ -3812,6 +3800,26 @@ class SalesController extends GetxController
     refreshInstantSalePaymentSummary();
   }
 
+  bool _validateInstantSaleRemainingBuyer(PaymentController payment) {
+    final paidAmount = isAdjustmentInstantSale
+        ? 0.0
+        : SalesAmountFormat.parse(payment.cashValueController.text);
+    final remaining = (totalCost.value - paidAmount).clamp(0, double.infinity);
+    final hasPartner = payment.partnerIdController.text.trim().isNotEmpty;
+
+    if (remaining <= 0.0001 || hasPartner) {
+      return true;
+    }
+
+    Get.snackbar(
+      'error'.tr,
+      'عند وجود مبلغ باقي يجب اختيار زبون أو تاجر.',
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+    );
+    return false;
+  }
+
   /// Single step: قبض then create instant sale.
   Future<void> submitInstantSaleWithPayment(BuildContext context) async {
     _instantSaleDebug('submit with payment requested', {
@@ -3854,6 +3862,7 @@ class SalesController extends GetxController
 
     final payment = _instantSalePayment;
     if (payment == null) return;
+    if (!_validateInstantSaleRemainingBuyer(payment)) return;
 
     payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
 

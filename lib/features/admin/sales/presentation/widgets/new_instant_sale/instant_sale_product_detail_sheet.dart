@@ -48,7 +48,6 @@ class _ProductDetailSheet extends StatelessWidget {
     final url = ShowNetImage.getThumbnailPhoto(product.imageUrl);
     final hasImage = url.isNotEmpty && product.imageUrl != 'no image';
     final stock = int.tryParse(product.stock) ?? 0;
-    final isAdmin = userType.toLowerCase() == 'admin';
     final locationCodeLabel = ProductLocationLabel.withProductCode(
       sectionName: product.storeSectionName,
       productCode: product.displayProductCode,
@@ -136,9 +135,9 @@ class _ProductDetailSheet extends StatelessWidget {
                     ? SalesAmountFormat.displayShekel(retail)
                     : 'instantSaleNoRetailPrice'.tr,
               ),
-              if (isAdmin)
+              if (canViewCostPrice)
                 _row(
-                  'ThePurchase'.tr,
+                  'costPrice'.tr,
                   product.purchaseCost > 0
                       ? SalesAmountFormat.displayShekel(product.purchaseCost)
                       : '—',

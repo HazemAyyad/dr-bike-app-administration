@@ -672,78 +672,94 @@ class CreateTaskController extends GetxController {
         return;
       }
       isLoding(true);
-      if (!isEdit) {
-        employeeTaskService.taskDetails.value = null;
-      }
-      final details = isEdit ? employeeTaskService.taskDetails.value : null;
-      final templateId = details?.templateId;
-      final occurrenceId = details?.occurrenceId;
-      final result = await createTaskUsecase.call(
-        employeeTaskId: isEdit ? employeeTaskId : 0,
-        templateId: templateId,
-        occurrenceId: occurrenceId,
-        name: taskNameController.text,
-        description: taskDescriptionController.text,
-        notes: taskNotesController.text,
-        employeeId: employeeIdsForApi.isNotEmpty
-            ? employeeIdsForApi.first
-            : employeeIdConroller.text,
-        employeeIds: employeeIdsForApi,
-        points: pointsController.text.isEmpty ? '0' : pointsController.text,
-        startTime: startDate.value,
-        endTime: endDate.value,
-        taskRecurrence: effectiveRecurrenceType,
-        taskRecurrenceTime: selectedDaysList,
-        subEmployeeTasks: subTasks,
-        notShownForEmployee: hideTask.value ? '1' : '0',
-        isForcedToUploadImg:
-            proofMediaType.value != ProofMediaType.none ? '1' : '0',
-        proofMediaType: proofMediaType.value,
-        requiresAdminReview: requireAdminReview.value ? '1' : '0',
-        adminImg: selectedFile,
-        audio: hasPlayableAudio(recordedPath.value)
-            ? File(recordedPath.value)
-            : File(''),
-        priority: priority.value,
-        recurrenceConfig: buildRecurrenceConfigMap(),
-      );
-      result.fold(
-        (failure) {
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: failure.data['message'] ?? 'Unknown error',
-          );
-        },
-        (success) {
+      try {
+        if (!isEdit) {
           employeeTaskService.taskDetails.value = null;
-          TaskDetailsDebug.clearTraces();
-          Get.find<EmployeeTasksController>().getEmployeeTasks();
-          if (isEdit && details != null) {
-            Get.find<EmployeeTasksController>().getTaskDetails(
-              taskId:
-                  details.occurrenceId?.toString() ?? details.taskId.toString(),
-              occurrenceId: details.occurrenceId?.toString(),
+        }
+        final details = isEdit ? employeeTaskService.taskDetails.value : null;
+        final templateId = details?.templateId;
+        final occurrenceId = details?.occurrenceId;
+        final result = await createTaskUsecase.call(
+          employeeTaskId: isEdit ? employeeTaskId : 0,
+          templateId: templateId,
+          occurrenceId: occurrenceId,
+          name: taskNameController.text,
+          description: taskDescriptionController.text,
+          notes: taskNotesController.text,
+          employeeId: employeeIdsForApi.isNotEmpty
+              ? employeeIdsForApi.first
+              : employeeIdConroller.text,
+          employeeIds: employeeIdsForApi,
+          points: pointsController.text.isEmpty ? '0' : pointsController.text,
+          startTime: startDate.value,
+          endTime: endDate.value,
+          taskRecurrence: effectiveRecurrenceType,
+          taskRecurrenceTime: selectedDaysList,
+          subEmployeeTasks: subTasks,
+          notShownForEmployee: hideTask.value ? '1' : '0',
+          isForcedToUploadImg:
+              proofMediaType.value != ProofMediaType.none ? '1' : '0',
+          proofMediaType: proofMediaType.value,
+          requiresAdminReview: requireAdminReview.value ? '1' : '0',
+          adminImg: selectedFile,
+          audio: hasPlayableAudio(recordedPath.value)
+              ? File(recordedPath.value)
+              : File(''),
+          priority: priority.value,
+          recurrenceConfig: buildRecurrenceConfigMap(),
+        );
+        if (!context.mounted) return;
+        result.fold(
+          (failure) {
+            Helpers.showCustomDialogError(
+              context: context,
+              title: failure.errMessage,
+              message: failure.data['message'] ?? 'Unknown error',
             );
-          }
-          Future.delayed(
-            const Duration(milliseconds: 650),
-            () {
-              if (isEdit) {
-                AppNavigation.popToRoute(AppRoutes.TASKDETAILS);
-              } else {
-                AppNavigation.popToRoute(AppRoutes.EMPLOYEETASKSSCREEN);
+          },
+          (success) {
+            employeeTaskService.taskDetails.value = null;
+            TaskDetailsDebug.clearTraces();
+            if (Get.isRegistered<EmployeeTasksController>()) {
+              final employeeTasksController =
+                  Get.find<EmployeeTasksController>();
+              employeeTasksController.getEmployeeTasks();
+              if (isEdit && details != null) {
+                employeeTasksController.getTaskDetails(
+                  taskId: details.occurrenceId?.toString() ??
+                      details.taskId.toString(),
+                  occurrenceId: details.occurrenceId?.toString(),
+                );
               }
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-        },
-      );
-      isLoding(false);
+            }
+            Future.delayed(
+              const Duration(milliseconds: 650),
+              () {
+                if (isEdit) {
+                  AppNavigation.popToRoute(AppRoutes.TASKDETAILS);
+                } else if (isOpenedFromHomeWidget) {
+                  Get.offNamed(AppRoutes.EMPLOYEETASKSSCREEN);
+                } else {
+                  AppNavigation.popToRoute(AppRoutes.EMPLOYEETASKSSCREEN);
+                }
+              },
+            );
+            Helpers.showCustomDialogSuccess(
+              context: context,
+              title: 'success'.tr,
+              message: success,
+            );
+          },
+        );
+      } catch (e) {
+        Helpers.showCustomDialogError(
+          context: context,
+          title: 'error'.tr,
+          message: e.toString(),
+        );
+      } finally {
+        isLoding(false);
+      }
     }
   }
 

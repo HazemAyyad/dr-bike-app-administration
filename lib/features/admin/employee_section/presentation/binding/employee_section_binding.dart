@@ -15,6 +15,7 @@ import '../../domain/usecases/employee_advances_usecase.dart';
 import '../../domain/usecases/financial_details_usecase.dart';
 import '../../domain/usecases/financial_dues.usecase.dart';
 import '../../domain/usecases/get_logs_usecase.dart';
+import '../../domain/usecases/get_permissions_usecase.dart';
 import '../../domain/usecases/overtime_and_loan_usecase.dart';
 import '../../domain/usecases/pay_salary_to_employee_usecase.dart';
 import '../../domain/usecases/qr_generation_usecase.dart';
@@ -112,6 +113,9 @@ class EmployeeSectionBinding extends Bindings {
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         addPointsUsecase: AddPointsUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        getPermissionsUsecase: GetPermissionsUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         employeeService: Get.find<EmployeeService>(),

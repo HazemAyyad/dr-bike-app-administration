@@ -109,103 +109,214 @@ class _SuspendedTableRow extends StatelessWidget {
         ),
       ),
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 10.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.referenceCode,
-                  style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFFE65100),
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  summary,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11.sp),
-                ),
-              ],
-            ),
-          ),
-          if (showOwner)
-            Expanded(
-              flex: 2,
-              child: Text(
-                item.createdByName ?? '-',
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 11.sp),
-              ),
-            ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              SalesAmountFormat.display(item.totalCost),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              formatSuspendedInvoiceDateTime(item.suspendedAt),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              style: TextStyle(
-                fontSize: 10.sp,
-                height: 1.25,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Center(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ActionTap(
-                      tooltip: 'suspendedInvoiceNotes'.tr,
-                      icon: item.noteCount > 0
-                          ? Icons.speaker_notes_rounded
-                          : Icons.note_add_rounded,
-                      color: Colors.blueGrey.shade700,
-                      onTap: onNotes,
+                    Text(
+                      item.referenceCode,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFE65100),
+                      ),
                     ),
-                    SizedBox(width: 2.w),
-                    _ActionTap(
-                      tooltip: 'suspendedInvoiceResume'.tr,
-                      icon: Icons.play_arrow_rounded,
-                      color: AppColors.primaryColor,
-                      onTap: onResume,
-                    ),
-                    SizedBox(width: 2.w),
-                    _ActionTap(
-                      tooltip: 'suspendedInvoiceCancel'.tr,
-                      icon: Icons.close_rounded,
-                      color: Colors.red.shade700,
-                      onTap: onCancel,
+                    SizedBox(height: 2.h),
+                    Text(
+                      summary,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.sp),
                     ),
                   ],
                 ),
               ),
+              if (showOwner)
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    item.createdByName ?? '-',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11.sp),
+                  ),
+                ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  SalesAmountFormat.display(item.totalCost),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  formatSuspendedInvoiceDateTime(item.suspendedAt),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    height: 1.25,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ActionTap(
+                          tooltip: 'suspendedInvoiceNoteHint'.tr,
+                          icon: Icons.note_add_rounded,
+                          color: Colors.blueGrey.shade700,
+                          onTap: onNotes,
+                        ),
+                        SizedBox(width: 2.w),
+                        _ActionTap(
+                          tooltip: 'suspendedInvoiceResume'.tr,
+                          icon: Icons.play_arrow_rounded,
+                          color: AppColors.primaryColor,
+                          onTap: onResume,
+                        ),
+                        SizedBox(width: 2.w),
+                        _ActionTap(
+                          tooltip: 'suspendedInvoiceCancel'.tr,
+                          icon: Icons.close_rounded,
+                          color: Colors.red.shade700,
+                          onTap: onCancel,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (item.noteLog.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            _SuspendedNotesTable(notes: item.noteLog),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuspendedNotesTable extends StatelessWidget {
+  const _SuspendedNotesTable({required this.notes});
+
+  final List<SuspendedInstantSaleNote> notes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5E7EB),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(8.r)),
+            ),
+            child: const Row(
+              children: [
+                Expanded(flex: 2, child: _NoteHeader('suspendedInvoiceOwner')),
+                Expanded(flex: 2, child: _NoteHeader('date')),
+                Expanded(flex: 4, child: _NoteHeader('suspendedInvoiceNotes')),
+              ],
             ),
           ),
+          for (var i = 0; i < notes.length; i++) ...[
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      notes[i].userName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5.sp,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF374151),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      notes[i].createdAt,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 9.5.sp,
+                        height: 1.25,
+                        color: const Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 4,
+                    child: Text(
+                      notes[i].note,
+                      style: TextStyle(
+                        fontSize: 10.5.sp,
+                        height: 1.35,
+                        color: const Color(0xFF374151),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (i < notes.length - 1)
+              Divider(height: 1, color: Colors.grey.shade300),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+class _NoteHeader extends StatelessWidget {
+  const _NoteHeader(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.tr,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 10.sp,
+        fontWeight: FontWeight.w800,
+        color: const Color(0xFF374151),
       ),
     );
   }

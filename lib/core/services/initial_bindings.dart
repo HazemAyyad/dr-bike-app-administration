@@ -13,6 +13,7 @@ import 'app_dependency_registry.dart';
 import 'app_home_widget_service.dart';
 import 'app_shortcut_service.dart';
 import 'app_startup.dart';
+import 'app_version_tracking_service.dart';
 import 'employee_attendance_persistent_notification_service.dart';
 import 'notification_firebase_service.dart';
 import 'session_service.dart';
@@ -222,6 +223,8 @@ class InitialBindings implements Bindings {
       }
       await NotificationFirebaseService.instance
           .syncFcmTokenToServer(source: 'app_resume');
+      AppVersionTrackingService.instance.start();
+      await AppVersionTrackingService.instance.sync(source: 'app_resume');
 
       if (userdata.user.type == 'employee') {
         unawaited(

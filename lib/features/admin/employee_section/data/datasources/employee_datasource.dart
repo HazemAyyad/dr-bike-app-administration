@@ -32,6 +32,31 @@ class EmployeeDatasource {
 
   EmployeeDatasource({required this.api});
 
+  Future<List<Map<String, dynamic>>> getAllPermissions() async {
+    try {
+      final response = await api.get(EndPoints.allPermissions);
+      final data = asMap(response.data);
+      final raw = data['permissions'] ?? data['permissions of the system'];
+      if (raw is! List) return <Map<String, dynamic>>[];
+
+      return raw
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   // create or edit employee
   Future<Map<String, dynamic>> creatEmployee({
     String? employeeId,

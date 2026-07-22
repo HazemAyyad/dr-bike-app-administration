@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import '../../../../../core/helpers/api_error_message.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/services/app_shortcut_service.dart';
+import '../../../../../core/services/app_version_tracking_service.dart';
 import '../../../../../core/services/biometric_auth_service.dart';
 import '../../../../../core/services/native_biometric_service.dart';
 import '../../../../../core/services/initial_bindings.dart';
@@ -193,6 +194,11 @@ class LoginController extends GetxController {
 
       try {
         await _registerAdminPushAfterLogin();
+        AppVersionTrackingService.instance.start();
+        await AppVersionTrackingService.instance.sync(
+          source: 'biometric_login',
+          force: true,
+        );
       } catch (e, st) {
         debugPrint('biometric login push setup error: $e\n$st');
       }
@@ -234,6 +240,11 @@ class LoginController extends GetxController {
     }
 
     await _registerAdminPushAfterLogin();
+    AppVersionTrackingService.instance.start();
+    await AppVersionTrackingService.instance.sync(
+      source: 'login',
+      force: true,
+    );
 
     Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
     AppShortcutService.instance.scheduleConsumePending();

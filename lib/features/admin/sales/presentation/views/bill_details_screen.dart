@@ -12,6 +12,7 @@ import 'package:printing/printing.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../core/helpers/show_no_data.dart';
+import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -216,6 +217,50 @@ class _InvoicePrintActions extends StatelessWidget {
     return 'sales_invoice_$safeNumber.pdf';
   }
 
+  Future<bool?> _chooseImageMode(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('صور المنتجات'),
+        content: const Text('اختر نسخة الفاتورة المطلوبة.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('بدون صور'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            icon: const Icon(Icons.image_outlined),
+            label: const Text('مع الصور'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _sharePdf(BuildContext context) async {
+    final includeImages = await _chooseImageMode(context);
+    if (includeImages == null) return;
+    final bytes = await SalesInvoicePdfBuilder.build(
+      invoice,
+      includeProductImages: includeImages,
+    );
+    await Printing.sharePdf(bytes: bytes, filename: _fileName);
+  }
+
+  Future<void> _printPdf(BuildContext context) async {
+    final includeImages = await _chooseImageMode(context);
+    if (includeImages == null) return;
+    final bytes = await SalesInvoicePdfBuilder.build(
+      invoice,
+      includeProductImages: includeImages,
+    );
+    await Printing.layoutPdf(
+      name: _fileName,
+      onLayout: (_) async => bytes,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -242,21 +287,12 @@ class _InvoicePrintActions extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'pdf'.tr,
-            onPressed: () async {
-              final bytes = await SalesInvoicePdfBuilder.build(invoice);
-              await Printing.sharePdf(bytes: bytes, filename: _fileName);
-            },
+            onPressed: () => _sharePdf(context),
             icon: const Icon(Icons.picture_as_pdf_outlined),
           ),
           IconButton(
             tooltip: 'print'.tr,
-            onPressed: () async {
-              final bytes = await SalesInvoicePdfBuilder.build(invoice);
-              await Printing.layoutPdf(
-                name: _fileName,
-                onLayout: (_) async => bytes,
-              );
-            },
+            onPressed: () => _printPdf(context),
             icon: const Icon(Icons.print_outlined),
           ),
         ],
@@ -510,6 +546,40 @@ class _InvoiceTotalsSection extends StatelessWidget {
   }
 }
 
+class _PdfLineRow {
+  const _PdfLineRow({
+    required this.index,
+    required this.code,
+    required this.name,
+    required this.quantity,
+    required this.cost,
+    required this.total,
+    this.image,
+  });
+
+  final String index;
+  final pw.ImageProvider? image;
+  final String code;
+  final String name;
+  final String quantity;
+  final String cost;
+  final String total;
+
+  List<Object> visualCells(bool includeProductImages) {
+    final cells = <Object>[
+      index,
+      if (includeProductImages) image ?? '-',
+      code,
+      name,
+      quantity,
+      cost,
+      total,
+    ];
+
+    return cells.reversed.toList();
+  }
+}
+
 class SalesInvoicePdfBuilder {
   SalesInvoicePdfBuilder._();
 
@@ -538,11 +608,31 @@ class SalesInvoicePdfBuilder {
     return NumberFormat('#,##0.00').format(parsed ?? 0);
   }
 
-  static Future<Uint8List> build(InvoiceModel invoice) async {
+  static Future<pw.ImageProvider?> _productImage(String imageUrl) async {
+    final trimmed = imageUrl.trim();
+    if (trimmed.isEmpty || trimmed == 'no image') return null;
+
+    final resolved = ShowNetImage.getPhoto(trimmed);
+    if (resolved.isEmpty) return null;
+
+    try {
+      return await networkImage(resolved);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<Uint8List> build(
+    InvoiceModel invoice, {
+    bool includeProductImages = false,
+  }) async {
     final regular = await _regular();
     final bold = await _bold();
     final logo = await _logo();
-    final rows = _lineRows(invoice);
+    final rows = await _lineRows(
+      invoice,
+      includeProductImages: includeProductImages,
+    );
 
     final doc = pw.Document();
     doc.addPage(
@@ -602,7 +692,12 @@ class SalesInvoicePdfBuilder {
             ],
           ),
           pw.SizedBox(height: 12),
-          _itemsTable(rows: rows, regular: regular, bold: bold),
+          _itemsTable(
+            rows: rows,
+            regular: regular,
+            bold: bold,
+            includeProductImages: includeProductImages,
+          ),
           if (invoice.additionalNotes.isNotEmpty) ...[
             pw.SizedBox(height: 10),
             pw.Text(
@@ -654,28 +749,36 @@ class SalesInvoicePdfBuilder {
     return doc.save();
   }
 
-  static List<List<String>> _lineRows(InvoiceModel invoice) {
-    final rows = <List<String>>[];
+  static Future<List<_PdfLineRow>> _lineRows(
+    InvoiceModel invoice, {
+    required bool includeProductImages,
+  }) async {
+    final rows = <_PdfLineRow>[];
 
-    void addLine({
+    Future<void> addLine({
+      required String imageUrl,
       required String code,
       required String name,
       required String quantity,
       required String cost,
       required String total,
-    }) {
-      rows.add([
-        '${rows.length + 1}',
-        code.trim().isEmpty ? '-' : code,
-        name,
-        quantity,
-        _money(cost),
-        _money(total),
-      ]);
+    }) async {
+      rows.add(
+        _PdfLineRow(
+          index: '${rows.length + 1}',
+          image: includeProductImages ? await _productImage(imageUrl) : null,
+          code: code.trim().isEmpty ? '-' : code,
+          name: name,
+          quantity: quantity,
+          cost: _money(cost),
+          total: _money(total),
+        ),
+      );
     }
 
     if (invoice.isPackageSale) {
-      addLine(
+      await addLine(
+        imageUrl: invoice.productImage,
         code: invoice.productCode ?? '-',
         name: invoice.displayProductTitle,
         quantity: invoice.quantity,
@@ -683,7 +786,8 @@ class SalesInvoicePdfBuilder {
         total: invoice.subtotal,
       );
       for (final sub in invoice.additionalProductLines) {
-        addLine(
+        await addLine(
+          imageUrl: sub.productImage,
           code: sub.productCode ?? '-',
           name: sub.displayProductName,
           quantity: sub.quantity,
@@ -692,7 +796,8 @@ class SalesInvoicePdfBuilder {
         );
       }
     } else {
-      addLine(
+      await addLine(
+        imageUrl: invoice.productImage,
         code: invoice.productCode ?? '-',
         name: invoice.displayProductTitle,
         quantity: invoice.quantity,
@@ -700,7 +805,8 @@ class SalesInvoicePdfBuilder {
         total: invoice.subtotal,
       );
       for (final sub in invoice.subProducts) {
-        addLine(
+        await addLine(
+          imageUrl: sub.productImage,
           code: sub.productCode ?? '-',
           name: sub.displayProductName,
           quantity: sub.quantity,
@@ -714,12 +820,14 @@ class SalesInvoicePdfBuilder {
   }
 
   static pw.Widget _itemsTable({
-    required List<List<String>> rows,
+    required List<_PdfLineRow> rows,
     required pw.Font regular,
     required pw.Font bold,
+    required bool includeProductImages,
   }) {
     final headers = [
       '#',
+      if (includeProductImages) 'الصورة',
       'productCode'.tr,
       'productName'.tr,
       'quantity'.tr,
@@ -727,18 +835,29 @@ class SalesInvoicePdfBuilder {
       'total'.tr,
     ];
     final visualHeaders = headers.reversed.toList();
-    final visualRows = rows.map((row) => row.reversed.toList()).toList();
+    final visualRows =
+        rows.map((row) => row.visualCells(includeProductImages)).toList();
 
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.7),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(64),
-        1: pw.FixedColumnWidth(56),
-        2: pw.FixedColumnWidth(42),
-        3: pw.FlexColumnWidth(4),
-        4: pw.FixedColumnWidth(58),
-        5: pw.FixedColumnWidth(24),
-      },
+      columnWidths: includeProductImages
+          ? const {
+              0: pw.FixedColumnWidth(64),
+              1: pw.FixedColumnWidth(56),
+              2: pw.FixedColumnWidth(42),
+              3: pw.FlexColumnWidth(4),
+              4: pw.FixedColumnWidth(58),
+              5: pw.FixedColumnWidth(44),
+              6: pw.FixedColumnWidth(24),
+            }
+          : const {
+              0: pw.FixedColumnWidth(64),
+              1: pw.FixedColumnWidth(56),
+              2: pw.FixedColumnWidth(42),
+              3: pw.FlexColumnWidth(4),
+              4: pw.FixedColumnWidth(58),
+              5: pw.FixedColumnWidth(24),
+            },
       children: [
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: PdfColors.deepPurple600),
@@ -757,16 +876,27 @@ class SalesInvoicePdfBuilder {
           (row) => pw.TableRow(
             children: row
                 .map(
-                  (text) => _tableCell(
-                    text,
-                    font: regular,
-                    alignment: pw.Alignment.centerRight,
-                  ),
+                  (cell) => cell is pw.ImageProvider
+                      ? _imageCell(cell)
+                      : _tableCell(
+                          cell.toString(),
+                          font: regular,
+                          alignment: pw.Alignment.centerRight,
+                        ),
                 )
                 .toList(),
           ),
         ),
       ],
+    );
+  }
+
+  static pw.Widget _imageCell(pw.ImageProvider image) {
+    return pw.Container(
+      alignment: pw.Alignment.center,
+      padding: const pw.EdgeInsets.all(3),
+      height: 42,
+      child: pw.Image(image, fit: pw.BoxFit.contain),
     );
   }
 

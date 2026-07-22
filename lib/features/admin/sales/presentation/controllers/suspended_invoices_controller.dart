@@ -223,7 +223,6 @@ class SuspendedInvoicesController extends GetxController {
   ) async {
     final note = await SuspendedInvoiceDialog.showNotes(
       context: context,
-      item: item,
     );
     if (note == null || note.trim().isEmpty) return;
 

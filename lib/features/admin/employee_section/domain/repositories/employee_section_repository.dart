@@ -19,6 +19,8 @@ import '../entities/employee_entity.dart';
 import '../../data/models/admin_user_model.dart';
 
 abstract class EmployeeRepository {
+  Future<List<Map<String, dynamic>>> getAllPermissions();
+
   Future<List<EmployeeEntity>> getEmployees();
 
   Future<List<WorkingTimesModel>> getWorkingTimes();

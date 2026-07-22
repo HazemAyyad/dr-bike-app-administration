@@ -30,6 +30,14 @@ class EmployeeImplement implements EmployeeRepository {
   EmployeeImplement(
       {required this.networkInfo, required this.employeeDatasource});
 
+  @override
+  Future<List<Map<String, dynamic>>> getAllPermissions() async {
+    if (!await networkInfo.isConnected) {
+      return <Map<String, dynamic>>[];
+    }
+    return employeeDatasource.getAllPermissions();
+  }
+
   // creat new employee
   @override
   Future<Either<Failure, String>> creatEmployee({

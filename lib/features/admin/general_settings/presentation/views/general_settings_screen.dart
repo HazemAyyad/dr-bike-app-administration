@@ -560,9 +560,103 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
   }
 
   void _disposeAppUpdateControllers(List<TextEditingController> controllers) {
-    for (final controller in controllers) {
-      controller.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future<void>.delayed(const Duration(milliseconds: 250), () {
+        for (final controller in controllers) {
+          controller.dispose();
+        }
+      });
+    });
+  }
+
+  Future<void> _showAppVersionReport() async {
+    final report = await AppSettingsService.instance.fetchAppVersionReport();
+    if (!mounted) return;
+
+    if (report == null) {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+      return;
     }
+
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF111827);
+    const textSecondary = Color(0xFF6B7280);
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: dialogBg,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          'appVersionReportTitle'.tr,
+          style: const TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: MediaQuery.of(ctx).size.height * .68,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'appVersionReportSummary'.tr,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                if (report.summary.isEmpty)
+                  Text(
+                    'appVersionReportEmpty'.tr,
+                    style: const TextStyle(color: textSecondary),
+                  )
+                else
+                  ...report.summary.map(
+                    (row) => _AppVersionSummaryTile(row: row),
+                  ),
+                SizedBox(height: 14.h),
+                Text(
+                  'appVersionReportDevices'.tr,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                if (report.devices.isEmpty)
+                  Text(
+                    'appVersionReportEmpty'.tr,
+                    style: const TextStyle(color: textSecondary),
+                  )
+                else
+                  ...report.devices.map(
+                    (row) => _AppVersionDeviceTile(row: row),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'close'.tr,
+              style: const TextStyle(color: textPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _editAdminFabOptions() async {
@@ -766,6 +860,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               titleKey: 'appUpdateSettingsTitle',
               descriptionKey: 'appUpdateSettingsDesc',
               onTap: _editAppUpdateSettings,
+            ),
+            _SettingsItem(
+              icon: Icons.query_stats_outlined,
+              iconColor: const Color(0xFF2563EB),
+              titleKey: 'appVersionReportTitle',
+              descriptionKey: 'appVersionReportDesc',
+              onTap: _showAppVersionReport,
             ),
             _SettingsItem(
               icon: Icons.point_of_sale_outlined,
@@ -1300,6 +1401,109 @@ class _AppUpdateTextField extends StatelessWidget {
         filled: true,
         fillColor: const Color(0xFFF9FAFB),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.r)),
+      ),
+    );
+  }
+}
+
+class _AppVersionSummaryTile extends StatelessWidget {
+  const _AppVersionSummaryTile({required this.row});
+
+  final AppVersionSummaryRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            row.platform == 'ios' ? Icons.phone_iphone : Icons.android,
+            color: const Color(0xFF2563EB),
+            size: 22.sp,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              '${row.platform.toUpperCase()} - ${row.version}+${row.build}',
+              style: TextStyle(
+                color: const Color(0xFF111827),
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Text(
+            '${row.usersCount} ${'appVersionReportUsers'.tr} / ${row.devicesCount} ${'appVersionReportDevicesShort'.tr}',
+            style: TextStyle(
+              color: const Color(0xFF374151),
+              fontSize: 12.sp,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppVersionDeviceTile extends StatelessWidget {
+  const _AppVersionDeviceTile({required this.row});
+
+  final AppVersionDeviceRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final userName = row.userName.isEmpty ? '-' : row.userName;
+    final lastSeen = row.lastSeenAt.isEmpty ? '-' : row.lastSeenAt;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  userName,
+                  style: TextStyle(
+                    color: const Color(0xFF111827),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                '${row.version}+${row.build}',
+                style: TextStyle(
+                  color: const Color(0xFF059669),
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            '${row.platform} - ${row.deviceName} - $lastSeen',
+            style: TextStyle(
+              color: const Color(0xFF6B7280),
+              fontSize: 11.sp,
+            ),
+          ),
+        ],
       ),
     );
   }

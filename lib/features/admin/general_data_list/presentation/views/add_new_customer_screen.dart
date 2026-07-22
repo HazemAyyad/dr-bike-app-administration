@@ -1,6 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
@@ -45,545 +43,310 @@ class _AddNewCustomerScreenState extends State<AddNewCustomerScreen> {
         child: GetBuilder<GeneralDataListController>(
           builder: (controller) {
             if (controller.isEditLoading.value) {
-              return const Center(
-                child: CircularProgressIndicator(),
-              );
+              return const Center(child: CircularProgressIndicator());
             }
             return ListView(
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              padding: EdgeInsets.fromLTRB(10.w, 8.h, 10.w, 16.h),
               children: [
-                SizedBox(height: 10.h),
-                if (controller.isEdit.value)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 10.h),
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        final isSeller = controller.currentTab.value == 0 ||
-                            employeeType == 'seller';
-                        Get.to(
-                          () => PersonProductSettingsScreen(
-                            personName: controller.customerNameController.text,
-                            customerId: isSeller ? null : employeeId.toString(),
-                            sellerId: isSeller ? sellerId.toString() : null,
+                _CustomerActionsBar(
+                  controller: controller,
+                  sellerId: sellerId,
+                  employeeId: employeeId,
+                  employeeType: employeeType,
+                ),
+                SizedBox(height: 8.h),
+                _CustomerFormSection(
+                  icon: Icons.person_outline,
+                  title: 'البيانات الأساسية',
+                  children: [
+                    _AdaptiveFields(
+                      children: [
+                        _AdaptiveField(
+                          width: .58,
+                          child: CustomTextField(
+                            isRequired: true,
+                            label: 'customerName',
+                            hintText: 'customerNameExample',
+                            controller: controller.customerNameController,
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.price_change_outlined),
-                      label: const Text('تعديل أسعار وإظهار المنتجات'),
-                    ),
-                  ),
-                if (!controller.isEdit.value)
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: () => controller.importFromContacts(context),
-                      icon: Icon(
-                        Icons.contacts_outlined,
-                        color: AppColors.primaryColor,
-                        size: 22.sp,
-                      ),
-                      label: Text(
-                        'importContacts'.tr,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryColor,
                         ),
-                      ),
-                    ),
-                  ),
-                Row(
-                  children: [
-                    Flexible(
-                      child: CustomTextField(
-                        isRequired: true,
-                        label: 'customerName',
-                        hintText: 'customerNameExample',
-                        controller: controller.customerNameController,
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Flexible(
-                      child: CustomDropdownField(
-                        isRequired: true,
-                        label: 'customerTypeTitle',
-                        hint: 'customerNameExample',
-                        value: controller.selectedCustomerType.text.isEmpty
-                            ? null
-                            : controller.selectedCustomerType.text,
-                        items: controller.customerTypeList,
-                        onChanged: (value) {
-                          controller.selectedCustomerType.text = value!;
-                        },
-                        border: Border.all(color: AppColors.customGreyColor3),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                CustomPhoneField(
-                  label: 'customerPhoneNumber',
-                  hintText: 'phoneNumberExample',
-                  controller: controller.phoneNumberController,
-                ),
-                SizedBox(height: 10.h),
-                CustomPhoneField(
-                  label: 'alternatePhone',
-                  hintText: 'phoneNumberExample',
-                  controller: controller.subPhoneNumberController,
-                ),
-                SizedBox(height: 10.h),
-                Row(
-                  children: [
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'facebookName',
-                        hintText: 'facebookNameExample',
-                        controller: controller.facebookNameController,
-                        validator: (p0) => null,
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'facebookLink',
-                        hintText: 'facebookLinkExample',
-                        controller: controller.facebookLinkController,
-                        validator: (p0) => null,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                Row(
-                  children: [
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'instagramName',
-                        hintText: 'instagramNameExample',
-                        controller: controller.instagramNameController,
-                        validator: (p0) => null,
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'instagramLink',
-                        hintText: 'instagramLinkExample',
-                        controller: controller.instagramLinkController,
-                        validator: (p0) => null,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                CustomDropdownFieldWithSearch(
-                  tital: 'closeContacts',
-                  hint: controller.closePeopleController.text.isEmpty
-                      ? 'customerNameExample'
-                      : controller.closePeopleController.text,
-                  labelStyle: controller.closePeopleController.text.isEmpty
-                      ? null
-                      : Theme.of(context).textTheme.bodyMedium!.copyWith(
-                            color: AppColors.blackColor,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w400,
+                        _AdaptiveField(
+                          width: .42,
+                          child: CustomDropdownField(
+                            isRequired: true,
+                            label: 'customerTypeTitle',
+                            hint: 'customerNameExample',
+                            value: controller.selectedCustomerType.text.isEmpty
+                                ? null
+                                : controller.selectedCustomerType.text,
+                            items: controller.customerTypeList,
+                            onChanged: (value) {
+                              controller.selectedCustomerType.text = value!;
+                            },
+                            border:
+                                Border.all(color: AppColors.customGreyColor3),
                           ),
-                  items: controller.closePeopleList,
-                  onChanged: (value) {
-                    controller.closePeopleController.text = value!.name;
-                  },
-                  itemAsString: (item) => item.name,
-                  compareFn: (item, value) => item.id == value.id,
-                  validator: (p0) => null,
-                ),
-                SizedBox(height: 14.h),
-                Container(
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: ThemeService.isDark.value
-                        ? AppColors.darkColor
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
-                      color: AppColors.primaryColor.withValues(alpha: .18),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'تصنيفات العملاء والموردين',
-                              textAlign: TextAlign.right,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: AppColors.primaryColor,
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: () => Get.toNamed(
-                              AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN,
-                            )?.then((_) => controller.getContactCategories()),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 8.w),
-                              minimumSize: Size(0, 38.h),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            icon: const Icon(Icons.settings_outlined),
-                            label: const Text(
-                              'إدارة',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'يمكن اختيار أكثر من تصنيف لنفس العميل أو المورد',
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: AppColors.customGreyColor2,
-                          fontSize: 11.sp,
-                          height: 1.4,
                         ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomPhoneField(
+                            label: 'customerPhoneNumber',
+                            hintText: 'phoneNumberExample',
+                            controller: controller.phoneNumberController,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomPhoneField(
+                            label: 'alternatePhone',
+                            hintText: 'phoneNumberExample',
+                            controller: controller.subPhoneNumberController,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                _CustomerFormSection(
+                  icon: Icons.alternate_email_outlined,
+                  title: 'التواصل والسوشال',
+                  collapsible: true,
+                  initiallyExpanded: false,
+                  children: [
+                    _AdaptiveFields(
+                      children: [
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'facebookName',
+                            hintText: 'facebookNameExample',
+                            controller: controller.facebookNameController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'facebookLink',
+                            hintText: 'facebookLinkExample',
+                            controller: controller.facebookLinkController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'instagramName',
+                            hintText: 'instagramNameExample',
+                            controller: controller.instagramNameController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'instagramLink',
+                            hintText: 'instagramLinkExample',
+                            controller: controller.instagramLinkController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: 1,
+                          child: CustomDropdownFieldWithSearch(
+                            tital: 'closeContacts',
+                            hint: controller.closePeopleController.text.isEmpty
+                                ? 'customerNameExample'
+                                : controller.closePeopleController.text,
+                            labelStyle:
+                                controller.closePeopleController.text.isEmpty
+                                    ? null
+                                    : Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: AppColors.blackColor,
+                                          fontSize: 16.sp,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                            items: controller.closePeopleList,
+                            onChanged: (value) {
+                              controller.closePeopleController.text =
+                                  value!.name;
+                            },
+                            itemAsString: (item) => item.name,
+                            compareFn: (item, value) => item.id == value.id,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                _CustomerFormSection(
+                  icon: Icons.category_outlined,
+                  title: 'تصنيفات العملاء والموردين',
+                  collapsible: true,
+                  initiallyExpanded: false,
+                  trailing: TextButton.icon(
+                    onPressed: () => Get.toNamed(
+                      AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN,
+                    )?.then((_) => controller.getContactCategories()),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w),
+                      minimumSize: Size(0, 34.h),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: const Icon(Icons.settings_outlined),
+                    label: const Text('إدارة'),
+                  ),
+                  children: [
+                    Text(
+                      'يمكن اختيار أكثر من تصنيف لنفس العميل أو المورد',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: AppColors.customGreyColor2,
+                        fontSize: 12.sp,
+                        height: 1.4,
                       ),
-                      SizedBox(height: 8.h),
-                      controller.contactCategories.isEmpty
-                          ? Text(
-                              'لا توجد تصنيفات',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                color: AppColors.customGreyColor2,
-                                fontSize: 13.sp,
-                              ),
-                            )
-                          : Wrap(
-                              spacing: 8.w,
-                              runSpacing: 8.h,
-                              children: controller.contactCategories.map(
-                                (category) {
-                                  final selected = controller
-                                      .selectedContactCategoryIds
-                                      .contains(category.id);
-                                  return FilterChip(
-                                    label: Text(category.name),
-                                    selected: selected,
-                                    selectedColor: AppColors.primaryColor
-                                        .withValues(alpha: .16),
-                                    checkmarkColor: AppColors.primaryColor,
-                                    avatar: CircleAvatar(
-                                      radius: 5.r,
-                                      backgroundColor: _contactCategoryColor(
-                                        category.color,
-                                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    controller.contactCategories.isEmpty
+                        ? Text(
+                            'لا توجد تصنيفات',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: AppColors.customGreyColor2,
+                              fontSize: 13.sp,
+                            ),
+                          )
+                        : Wrap(
+                            spacing: 8.w,
+                            runSpacing: 8.h,
+                            children: controller.contactCategories.map(
+                              (category) {
+                                final selected = controller
+                                    .selectedContactCategoryIds
+                                    .contains(category.id);
+                                return FilterChip(
+                                  label: Text(category.name),
+                                  selected: selected,
+                                  selectedColor: AppColors.primaryColor
+                                      .withValues(alpha: .16),
+                                  checkmarkColor: AppColors.primaryColor,
+                                  avatar: CircleAvatar(
+                                    radius: 5.r,
+                                    backgroundColor: _contactCategoryColor(
+                                      category.color,
                                     ),
-                                    onSelected: (_) => controller
-                                        .toggleContactCategory(category.id),
-                                  );
-                                },
-                              ).toList(),
-                            ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20.h),
-                controller.isEdit.value
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          controller.personalIdImage.isEmpty
-                              ? const SizedBox.shrink()
-                              : Text(
-                                  'personalIdImage'.tr,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        color: (ThemeService.isDark.value
-                                            ? AppColors.customGreyColor6
-                                            : AppColors.customGreyColor),
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                ),
-                          SizedBox(height: 5.h),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: controller.personalIdImage.isEmpty
-                                ? const SizedBox.shrink()
-                                : Row(
-                                    children: [
-                                      ...controller.personalIdImage
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                        (entry) {
-                                          final index = entry.key;
-                                          final file = entry.value;
-                                          return Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 5.w),
-                                            child: Stack(
-                                              children: [
-                                                ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5.r),
-                                                  child: CachedNetworkImage(
-                                                    cacheManager: CacheManager(
-                                                      Config(
-                                                        'imagesCache',
-                                                        stalePeriod:
-                                                            const Duration(
-                                                                days: 7),
-                                                        maxNrOfCacheObjects:
-                                                            100,
-                                                      ),
-                                                    ),
-                                                    imageBuilder: (context,
-                                                            imageProvider) =>
-                                                        Container(
-                                                      height: 200.h,
-                                                      width: 200.w,
-                                                      decoration: BoxDecoration(
-                                                        image: DecorationImage(
-                                                          image: imageProvider,
-                                                          fit: BoxFit.fill,
-                                                          filterQuality:
-                                                              FilterQuality
-                                                                  .medium,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    imageUrl: file.path,
-                                                    fadeInDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    fadeOutDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    placeholder:
-                                                        (context, url) =>
-                                                            const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                    errorWidget: (context, url,
-                                                            error) =>
-                                                        const Icon(Icons.error),
-                                                  ),
-                                                ),
-                                                // زرار فوق الصورة
-                                                Positioned(
-                                                  right: 8,
-                                                  top: 8,
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.delete,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      controller.personalIdImage
-                                                          .removeAt(index);
-                                                      controller.update();
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
                                   ),
+                                  onSelected: (_) => controller
+                                      .toggleContactCategory(category.id),
+                                );
+                              },
+                            ).toList(),
                           ),
-                          SizedBox(height: 15.h),
-                        ],
-                      )
-                    : const SizedBox.shrink(),
-                SizedBox(height: 0.h),
-                controller.isEdit.value
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          controller.personalIdImage.isEmpty
-                              ? const SizedBox.shrink()
-                              : Text(
-                                  'carLicenseImage'.tr,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium!
-                                      .copyWith(
-                                        color: (ThemeService.isDark.value
-                                            ? AppColors.customGreyColor6
-                                            : AppColors.customGreyColor),
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                ),
-                          SizedBox(height: 5.h),
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: controller.licenseImage.isEmpty
-                                ? const SizedBox.shrink()
-                                : Row(
-                                    children: [
-                                      ...controller.licenseImage
-                                          .asMap()
-                                          .entries
-                                          .map(
-                                        (entry) {
-                                          final index = entry.key;
-                                          final file = entry.value;
-                                          return Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                horizontal: 5.w),
-                                            child: Stack(
-                                              children: [
-                                                ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5.r),
-                                                  child: CachedNetworkImage(
-                                                    imageUrl: file.path,
-                                                    height: 200.h,
-                                                    width: 200.w,
-                                                    fit: BoxFit.fill,
-                                                    fadeInDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    fadeOutDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    placeholder:
-                                                        (context, url) =>
-                                                            const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                    errorWidget: (context, url,
-                                                            error) =>
-                                                        const Icon(Icons.error),
-                                                  ),
-                                                ),
-                                                // زرار فوق الصورة
-                                                Positioned(
-                                                  right: 8,
-                                                  top: 8,
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                        Icons.delete,
-                                                        color: Colors.red),
-                                                    onPressed: () {
-                                                      controller.licenseImage
-                                                          .removeAt(index);
-                                                      controller.update();
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                _CustomerFormSection(
+                  icon: Icons.photo_library_outlined,
+                  title: 'الصور والوثائق',
+                  collapsible: true,
+                  initiallyExpanded: false,
+                  children: [
+                    MediaUploadButton(
+                      allowedType: MediaType.image,
+                      title: 'personalIdImage',
+                      initialFiles: controller.personalIdImage,
+                      onFilesChanged: (files) {
+                        controller.personalIdImage = List.of(files);
+                        controller.update();
+                      },
+                    ),
+                    SizedBox(height: 8.h),
+                    MediaUploadButton(
+                      allowedType: MediaType.image,
+                      title: 'carLicenseImage',
+                      initialFiles: controller.licenseImage,
+                      onFilesChanged: (files) {
+                        controller.licenseImage = List.of(files);
+                        controller.update();
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                _CustomerFormSection(
+                  icon: Icons.home_work_outlined,
+                  title: 'السكن والعمل والقريب',
+                  collapsible: true,
+                  initiallyExpanded: false,
+                  children: [
+                    _AdaptiveFields(
+                      children: [
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'residenceLocation',
+                            hintText: 'residenceLocationExample',
+                            controller: controller.residenceLocationController,
+                            validator: (p0) => null,
                           ),
-                          SizedBox(height: 15.h),
-                        ],
-                      )
-                    : const SizedBox.shrink(),
-                Row(
-                  children: [
-                    Flexible(
-                      child: MediaUploadButton(
-                        allowedType: MediaType.image,
-                        title: 'personalIdImage',
-                        onFilesChanged: (files) {
-                          controller.personalIdImage = files;
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 20.w),
-                    Flexible(
-                      child: MediaUploadButton(
-                        allowedType: MediaType.image,
-                        title: 'carLicenseImage',
-                        onFilesChanged: (files) {
-                          controller.licenseImage = files;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                Row(
-                  children: [
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'residenceLocation',
-                        hintText: 'residenceLocationExample',
-                        controller: controller.residenceLocationController,
-                        validator: (p0) => null,
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'work',
-                        hintText: 'workExample',
-                        controller: controller.workController,
-                        validator: (p0) => null,
-                      ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'work',
+                            hintText: 'workExample',
+                            controller: controller.workController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'closestPersonWork',
+                            hintText: 'workTitleExample',
+                            controller: controller.closestPersonWorkController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomTextField(
+                            label: 'workLocation',
+                            hintText: 'residenceLocationExample',
+                            controller: controller.workLocationController,
+                            validator: (p0) => null,
+                          ),
+                        ),
+                        _AdaptiveField(
+                          width: .50,
+                          child: CustomPhoneField(
+                            label: 'closestPersonNumber',
+                            hintText: 'phoneNumberExample',
+                            controller:
+                                controller.closestPersonNumberController,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 SizedBox(height: 10.h),
-                Row(
-                  children: [
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'closestPersonWork',
-                        hintText: 'workTitleExample',
-                        controller: controller.closestPersonWorkController,
-                        validator: (p0) => null,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 10.w,
-                    ),
-                    Flexible(
-                      child: CustomTextField(
-                        label: 'workLocation',
-                        hintText: 'residenceLocationExample',
-                        controller: controller.workLocationController,
-                        validator: (p0) => null,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 10.h),
-                CustomPhoneField(
-                  label: 'closestPersonNumber',
-                  hintText: 'phoneNumberExample',
-                  controller: controller.closestPersonNumberController,
-                ),
-                SizedBox(height: 20.h),
                 AppButton(
                   isLoading: controller.isLoading,
                   text:
                       controller.isEdit.value ? 'editCustomer' : 'addCustomer',
                   textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
                         fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),
+                  height: 48.h,
                   onPressed: () {
                     if (!(formKey.currentState?.validate() ?? false)) {
                       return;
@@ -616,6 +379,197 @@ class _AddNewCustomerScreenState extends State<AddNewCustomerScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+class _CustomerActionsBar extends StatelessWidget {
+  const _CustomerActionsBar({
+    required this.controller,
+    required this.sellerId,
+    required this.employeeId,
+    required this.employeeType,
+  });
+
+  final GeneralDataListController controller;
+  final dynamic sellerId;
+  final dynamic employeeId;
+  final dynamic employeeType;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!controller.isEdit.value) {
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: OutlinedButton.icon(
+          onPressed: () => controller.importFromContacts(context),
+          icon: Icon(Icons.contacts_outlined, size: 19.sp),
+          label: Text('importContacts'.tr),
+        ),
+      );
+    }
+
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: OutlinedButton.icon(
+        onPressed: () {
+          final isSeller =
+              controller.currentTab.value == 0 || employeeType == 'seller';
+          Get.to(
+            () => PersonProductSettingsScreen(
+              personName: controller.customerNameController.text,
+              customerId: isSeller ? null : employeeId.toString(),
+              sellerId: isSeller ? sellerId.toString() : null,
+            ),
+          );
+        },
+        icon: const Icon(Icons.price_change_outlined),
+        label: const Text('تعديل أسعار وإظهار المنتجات'),
+      ),
+    );
+  }
+}
+
+class _CustomerFormSection extends StatefulWidget {
+  const _CustomerFormSection({
+    required this.icon,
+    required this.title,
+    required this.children,
+    this.trailing,
+    this.collapsible = false,
+    this.initiallyExpanded = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+  final Widget? trailing;
+  final bool collapsible;
+  final bool initiallyExpanded;
+
+  @override
+  State<_CustomerFormSection> createState() => _CustomerFormSectionState();
+}
+
+class _CustomerFormSectionState extends State<_CustomerFormSection> {
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.initiallyExpanded;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final showBody = !widget.collapsible || _expanded;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 9.h),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkColor : Colors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE5E7EB),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: widget.collapsible
+                ? () => setState(() => _expanded = !_expanded)
+                : null,
+            borderRadius: BorderRadius.circular(8.r),
+            child: Row(
+              children: [
+                Container(
+                  width: 28.w,
+                  height: 28.w,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withValues(alpha: .11),
+                    borderRadius: BorderRadius.circular(7.r),
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: AppColors.primaryColor,
+                    size: 17.sp,
+                  ),
+                ),
+                SizedBox(width: 7.w),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                          color:
+                              isDark ? Colors.white : const Color(0xFF111827),
+                        ),
+                  ),
+                ),
+                if (widget.trailing != null && showBody) widget.trailing!,
+                if (widget.collapsible)
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.primaryColor,
+                  ),
+              ],
+            ),
+          ),
+          if (showBody) ...[
+            SizedBox(height: 9.h),
+            ...widget.children,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AdaptiveField {
+  const _AdaptiveField({required this.child, this.width = .5});
+
+  final Widget child;
+  final double width;
+}
+
+class _AdaptiveFields extends StatelessWidget {
+  const _AdaptiveFields({required this.children});
+
+  final List<_AdaptiveField> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 620;
+        final gap = 10.w;
+        if (!wide) {
+          return Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                children[i].child,
+                if (i != children.length - 1) SizedBox(height: 8.h),
+              ],
+            ],
+          );
+        }
+        return Wrap(
+          spacing: gap,
+          runSpacing: 12.h,
+          children: children.map((field) {
+            final width = (constraints.maxWidth * field.width) - gap;
+            return SizedBox(
+              width: width.clamp(180.0, constraints.maxWidth),
+              child: field.child,
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }

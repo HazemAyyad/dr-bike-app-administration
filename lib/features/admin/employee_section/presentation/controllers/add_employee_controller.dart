@@ -10,17 +10,32 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/user_data.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
 import '../../domain/usecases/add_points_usecase.dart';
+import '../../domain/usecases/get_permissions_usecase.dart';
 import 'employee_section_controller.dart';
 import 'employee_service.dart';
+
+class _PermissionGroupMeta {
+  const _PermissionGroupMeta({
+    required this.key,
+    required this.title,
+    required this.icon,
+  });
+
+  final String key;
+  final String title;
+  final IconData icon;
+}
 
 class AddEmployeeController extends GetxController {
   AddEmployeeUsecase employeeUsecase;
   AddPointsUsecase addPointsUsecase;
+  GetPermissionsUsecase getPermissionsUsecase;
   EmployeeService employeeService;
 
   AddEmployeeController({
     required this.employeeUsecase,
     required this.addPointsUsecase,
+    required this.getPermissionsUsecase,
     required this.employeeService,
   });
   final bool isEditEmployee =
@@ -56,12 +71,7 @@ class AddEmployeeController extends GetxController {
       selectedTime.value = parseTimeOfDay(
         employeeService.employeeDetails.value!.startWorkTime,
       );
-      for (var element in permissionsList) {
-        element['permission'].value =
-            employeeService.employeeDetails.value!.permissions.any(
-          (permission) => permission.permissionId == int.parse(element['id']),
-        );
-      }
+      _applyEditedEmployeePermissionSelection();
 
       // Weekly days off (new)
       final existing = employeeService.employeeDetails.value!.weeklyDaysOff;
@@ -85,6 +95,7 @@ class AddEmployeeController extends GetxController {
       // Default weekly day off: Friday (week starts Saturday)
       weeklyDaysOff['friday']!.value = true;
     }
+    _loadPermissionsFromServer();
   }
 
   final formKey = GlobalKey<FormState>();
@@ -115,52 +126,160 @@ class AddEmployeeController extends GetxController {
     '14', // Checks
   };
 
-  final List<Map<String, dynamic>> permissionsList = [
-    {'name': 'debts'.tr, 'id': '1', 'permission': false.obs},
-    {'name': 'followUpDepartment'.tr, 'id': '2', 'permission': false.obs},
-    {'name': 'targetSetting'.tr, 'id': '3', 'permission': false.obs},
-    {'name': 'projectManagement'.tr, 'id': '4', 'permission': false.obs},
-    {'name': 'employeeDepartment'.tr, 'id': '5', 'permission': false.obs},
-    {'name': 'privateTasks'.tr, 'id': '6', 'permission': false.obs},
-    {'name': 'employeeTasks'.tr, 'id': '7', 'permission': false.obs},
-    {'name': 'sales'.tr, 'id': '8', 'permission': false.obs},
-    {'name': 'generalData'.tr, 'id': '9', 'permission': false.obs},
-    {'name': 'boxes'.tr, 'id': '11', 'permission': false.obs},
-    {'name': 'purchasingDepartment'.tr, 'id': '12', 'permission': false.obs},
-    {'name': 'financialMatters'.tr, 'id': '13', 'permission': false.obs},
-    {'name': 'checksandCommitments'.tr, 'id': '14', 'permission': false.obs},
-    {'name': 'maintenance'.tr, 'id': '15', 'permission': false.obs},
-    {'name': 'stock'.tr, 'id': '16', 'permission': false.obs},
+  final RxList<Map<String, dynamic>> permissionsList = <Map<String, dynamic>>[
+    {
+      'name': 'debts'.tr,
+      'id': '1',
+      'group': 'financial',
+      'permission': false.obs
+    },
+    {
+      'name': 'followUpDepartment'.tr,
+      'id': '2',
+      'group': 'general',
+      'permission': false.obs
+    },
+    {
+      'name': 'targetSetting'.tr,
+      'id': '3',
+      'group': 'general',
+      'permission': false.obs
+    },
+    {
+      'name': 'projectManagement'.tr,
+      'id': '4',
+      'group': 'general',
+      'permission': false.obs
+    },
+    {
+      'name': 'employeeDepartment'.tr,
+      'id': '5',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'privateTasks'.tr,
+      'id': '6',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {
+      'name': 'employeeTasks'.tr,
+      'id': '7',
+      'group': 'employees',
+      'permission': false.obs
+    },
+    {'name': 'sales'.tr, 'id': '8', 'group': 'sales', 'permission': false.obs},
+    {
+      'name': 'generalData'.tr,
+      'id': '9',
+      'group': 'general',
+      'permission': false.obs
+    },
+    {
+      'name': 'partnershipSectionPermission'.tr,
+      'id': '10',
+      'group': 'general',
+      'permission': false.obs
+    },
+    {
+      'name': 'boxes'.tr,
+      'id': '11',
+      'group': 'financial',
+      'permission': false.obs
+    },
+    {
+      'name': 'purchasingDepartment'.tr,
+      'id': '12',
+      'group': 'stock',
+      'permission': false.obs
+    },
+    {
+      'name': 'financialMatters'.tr,
+      'id': '13',
+      'group': 'financial',
+      'permission': false.obs
+    },
+    {
+      'name': 'checksandCommitments'.tr,
+      'id': '14',
+      'group': 'financial',
+      'permission': false.obs
+    },
+    {
+      'name': 'maintenance'.tr,
+      'id': '15',
+      'group': 'maintenance',
+      'permission': false.obs
+    },
+    {'name': 'stock'.tr, 'id': '16', 'group': 'stock', 'permission': false.obs},
     {
       'name': 'whatsappSectionPermission'.tr,
       'id': '17',
+      'group': 'communication',
       'permission': false.obs
     },
-    {'name': 'completeData'.tr, 'id': '40', 'permission': false.obs},
+    {
+      'name': 'completeData'.tr,
+      'id': '40',
+      'group': 'general',
+      'permission': false.obs
+    },
+    {
+      'name': 'salesDailyCloseReviewPermission'.tr,
+      'id': '41',
+      'group': 'sales',
+      'permission': false.obs
+    },
+    {
+      'name': 'salesCancelClosedReviewPermission'.tr,
+      'id': '42',
+      'group': 'sales',
+      'permission': false.obs
+    },
     {
       'name': 'impersonateEmployeePermission'.tr,
       'id': '43',
+      'group': 'employees',
       'permission': false.obs
     },
-    {'name': 'costPricePermission'.tr, 'id': '44', 'permission': false.obs},
-    {'name': 'technicalSupport'.tr, 'id': '49', 'permission': false.obs},
+    {
+      'name': 'costPricePermission'.tr,
+      'id': '44',
+      'group': 'stock',
+      'permission': false.obs
+    },
+    {
+      'name': 'technicalSupport'.tr,
+      'id': '49',
+      'group': 'communication',
+      'permission': false.obs
+    },
     {
       'name': 'editEmployeeTaskPermission'.tr,
       'id': '45',
+      'group': 'employees',
       'permission': false.obs
     },
     {
       'name': 'cloneEmployeeTaskPermission'.tr,
       'id': '46',
+      'group': 'employees',
       'permission': false.obs
     },
     {
       'name': 'stockInventorySettingsPermission'.tr,
       'id': '47',
+      'group': 'stock',
       'permission': false.obs
     },
-    {'name': 'dailyBoxes'.tr, 'id': '48', 'permission': false.obs},
-  ];
+    {
+      'name': 'dailyBoxes'.tr,
+      'id': '48',
+      'group': 'financial',
+      'permission': false.obs
+    },
+  ].obs;
 
   final RxBool isAllPermissionsSelected = false.obs;
   final RxBool canEditPermissionAssignments = true.obs;
@@ -175,6 +294,142 @@ class AddEmployeeController extends GetxController {
             !employeeHiddenPermissionIds.contains(permission['id'].toString()))
         .toList();
   }
+
+  void _applyEditedEmployeePermissionSelection() {
+    if (!isEditEmployee || employeeService.employeeDetails.value == null) {
+      return;
+    }
+
+    final selectedIds = employeeService.employeeDetails.value!.permissions
+        .map((permission) => permission.permissionId)
+        .toSet();
+    for (final element in permissionsList) {
+      element['permission'].value =
+          selectedIds.contains(int.tryParse(element['id'].toString()) ?? -1);
+    }
+  }
+
+  Future<void> _loadPermissionsFromServer() async {
+    try {
+      final rows = await getPermissionsUsecase.call();
+      if (rows.isEmpty) return;
+
+      permissionsList.assignAll(rows.map(_permissionFromApi));
+      _applyEditedEmployeePermissionSelection();
+    } catch (_) {
+      _applyEditedEmployeePermissionSelection();
+    }
+  }
+
+  Map<String, dynamic> _permissionFromApi(Map<String, dynamic> row) {
+    final id = row['id'] ?? row['permission_id'];
+    final nameAr = row['name'] ?? row['permission_name'];
+    final nameEn = row['name_en'] ?? row['permission_name_en'];
+    final group = row['group_key'] ?? _permissionGroupForName(nameEn);
+    final adminOnly = row['admin_only'] == true ||
+        employeeHiddenPermissionIds.contains(id.toString());
+    final preferredName = Get.locale?.languageCode == 'en' ? nameEn : nameAr;
+    final fallbackName = nameAr ?? nameEn ?? '';
+    final displayName = preferredName?.toString().trim().isNotEmpty == true
+        ? preferredName.toString()
+        : fallbackName.toString();
+
+    return {
+      'name': displayName,
+      'id': id.toString(),
+      'group': group.toString(),
+      'permission': false.obs,
+      'adminOnly': adminOnly,
+    };
+  }
+
+  String _permissionGroupForName(dynamic nameEn) {
+    const groupsByName = {
+      'Sales': 'sales',
+      'Sales Daily Close Review': 'sales',
+      'Sales Cancel Closed Review': 'sales',
+      'Stock': 'stock',
+      'Purchasing Section': 'stock',
+      'Cost Price': 'stock',
+      'Stock Inventory Settings': 'stock',
+      'Employees Section': 'employees',
+      'Employee Tasks': 'employees',
+      'Special Tasks': 'employees',
+      'Employee Impersonation': 'employees',
+      'Edit Employee Task': 'employees',
+      'Clone Employee Task': 'employees',
+      'Debts': 'financial',
+      'Boxes Section': 'financial',
+      'Expenses and Financial Affairs': 'financial',
+      'Checks': 'financial',
+      'Daily Boxes': 'financial',
+      'Maintenance': 'maintenance',
+      'Messages Section': 'communication',
+      'Technical Support': 'communication',
+    };
+    return groupsByName[nameEn?.toString()] ?? 'general';
+  }
+
+  List<Map<String, dynamic>> get groupedVisiblePermissions {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final permission in visiblePermissionsList) {
+      final group = permission['group']?.toString() ?? 'general';
+      final row = Map<String, dynamic>.from(permission)
+        ..['adminOnly'] = permission['adminOnly'] == true ||
+            employeeHiddenPermissionIds.contains(permission['id'].toString());
+      grouped.putIfAbsent(group, () => <Map<String, dynamic>>[]).add(row);
+    }
+
+    return _permissionGroupOrder
+        .where((group) => grouped[group.key]?.isNotEmpty == true)
+        .map(
+          (group) => {
+            'key': group.key,
+            'title': group.title,
+            'icon': group.icon,
+            'permissions': grouped[group.key]!,
+          },
+        )
+        .toList();
+  }
+
+  static const List<_PermissionGroupMeta> _permissionGroupOrder = [
+    _PermissionGroupMeta(
+      key: 'sales',
+      title: 'المبيعات',
+      icon: Icons.point_of_sale_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'stock',
+      title: 'المخزون والمشتريات',
+      icon: Icons.inventory_2_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'employees',
+      title: 'الموظفين والمهام',
+      icon: Icons.groups_2_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'financial',
+      title: 'المالية والصناديق',
+      icon: Icons.account_balance_wallet_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'maintenance',
+      title: 'الصيانة',
+      icon: Icons.build_circle_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'communication',
+      title: 'التواصل والدعم',
+      icon: Icons.support_agent_outlined,
+    ),
+    _PermissionGroupMeta(
+      key: 'general',
+      title: 'إعدادات عامة',
+      icon: Icons.tune_outlined,
+    ),
+  ];
 
   Future<void> _loadPermissionEditContext() async {
     if (userType != 'employee') {

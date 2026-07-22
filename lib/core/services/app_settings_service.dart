@@ -248,6 +248,20 @@ class AppSettingsService {
     return false;
   }
 
+  Future<AppVersionReport?> fetchAppVersionReport() async {
+    final api = _api;
+    if (api == null) return null;
+
+    try {
+      final response = await api.get(EndPoints.appVersionReport);
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        return AppVersionReport.fromJson(data);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   void _applyMaxFloatMap(Map<dynamic, dynamic> raw) {
     for (final entry in raw.entries) {
       final key = entry.key.toString();
@@ -396,6 +410,97 @@ class AppUpdatePlatformSettings {
       url: url ?? this.url,
       title: title ?? this.title,
       message: message ?? this.message,
+    );
+  }
+}
+
+class AppVersionReport {
+  AppVersionReport({
+    required this.summary,
+    required this.devices,
+  });
+
+  final List<AppVersionSummaryRow> summary;
+  final List<AppVersionDeviceRow> devices;
+
+  factory AppVersionReport.fromJson(Map<dynamic, dynamic> json) {
+    final summaryRaw = json['summary'];
+    final devicesRaw = json['devices'];
+
+    return AppVersionReport(
+      summary: summaryRaw is List
+          ? summaryRaw
+              .whereType<Map>()
+              .map((row) => AppVersionSummaryRow.fromJson(row))
+              .toList()
+          : const [],
+      devices: devicesRaw is List
+          ? devicesRaw
+              .whereType<Map>()
+              .map((row) => AppVersionDeviceRow.fromJson(row))
+              .toList()
+          : const [],
+    );
+  }
+}
+
+class AppVersionSummaryRow {
+  AppVersionSummaryRow({
+    required this.platform,
+    required this.version,
+    required this.build,
+    required this.devicesCount,
+    required this.usersCount,
+    required this.lastSeenAt,
+  });
+
+  final String platform;
+  final String version;
+  final int build;
+  final int devicesCount;
+  final int usersCount;
+  final String lastSeenAt;
+
+  factory AppVersionSummaryRow.fromJson(Map<dynamic, dynamic> json) {
+    return AppVersionSummaryRow(
+      platform: json['platform']?.toString() ?? '',
+      version: json['version']?.toString() ?? '',
+      build: int.tryParse(json['build']?.toString() ?? '') ?? 0,
+      devicesCount: int.tryParse(json['devices_count']?.toString() ?? '') ?? 0,
+      usersCount: int.tryParse(json['users_count']?.toString() ?? '') ?? 0,
+      lastSeenAt: json['last_seen_at']?.toString() ?? '',
+    );
+  }
+}
+
+class AppVersionDeviceRow {
+  AppVersionDeviceRow({
+    required this.userName,
+    required this.userType,
+    required this.platform,
+    required this.deviceName,
+    required this.version,
+    required this.build,
+    required this.lastSeenAt,
+  });
+
+  final String userName;
+  final String userType;
+  final String platform;
+  final String deviceName;
+  final String version;
+  final int build;
+  final String lastSeenAt;
+
+  factory AppVersionDeviceRow.fromJson(Map<dynamic, dynamic> json) {
+    return AppVersionDeviceRow(
+      userName: json['user_name']?.toString() ?? '',
+      userType: json['user_type']?.toString() ?? '',
+      platform: json['platform']?.toString() ?? '',
+      deviceName: json['device_name']?.toString() ?? '',
+      version: json['version']?.toString() ?? '',
+      build: int.tryParse(json['build']?.toString() ?? '') ?? 0,
+      lastSeenAt: json['last_seen_at']?.toString() ?? '',
     );
   }
 }

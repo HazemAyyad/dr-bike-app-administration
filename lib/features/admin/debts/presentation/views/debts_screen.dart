@@ -106,8 +106,16 @@ class _SummaryCard extends StatelessWidget {
       final summary = controller.summary.value;
       final currency = controller.selectedCurrency.value;
       final totals = summary?.totalsFor(currency, customers: tab == 0);
-      final taken = totals?.receivable ?? 0;
-      final given = totals?.payable ?? 0;
+      final taken = tab == 2
+          ? controller.people
+              .where((person) => person.balance > 0)
+              .fold<double>(0, (sum, person) => sum + person.balance)
+          : totals?.receivable ?? 0;
+      final given = tab == 2
+          ? controller.people
+              .where((person) => person.balance < 0)
+              .fold<double>(0, (sum, person) => sum + person.balance.abs())
+          : totals?.payable ?? 0;
 
       return Container(
         width: double.infinity,
@@ -223,6 +231,21 @@ class _SearchRow extends StatelessWidget {
             size: 26.sp,
           ),
         ),
+        Obx(() {
+          final largestFirst =
+              controller.selectedSort.value != 'smallest_amount';
+          return IconButton(
+            tooltip: largestFirst
+                ? 'ledgerSortLargestAmount'.tr
+                : 'ledgerSortSmallestAmount'.tr,
+            onPressed: controller.toggleAmountSort,
+            icon: Icon(
+              largestFirst ? Icons.south_outlined : Icons.north_outlined,
+              color: LedgerColors.primaryBlue,
+              size: 26.sp,
+            ),
+          );
+        }),
         IconButton(
           onPressed: () => Get.bottomSheet(
             const PeriodFilterSheet(),
@@ -243,7 +266,7 @@ class _CategoryQuickFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.categories.isEmpty) {
+      if (controller.isPrivateTab || controller.categories.isEmpty) {
         return const SizedBox.shrink();
       }
       final selectedId = controller.selectedCategoryId.value;
@@ -353,6 +376,7 @@ class _PersonRow extends StatelessWidget {
 
     return InkWell(
       onTap: () => controller.openPerson(person),
+      onLongPress: () => _showPrivateDebtAction(context),
       borderRadius: BorderRadius.circular(12.r),
       child: Container(
         margin: EdgeInsets.only(bottom: 8.h),
@@ -388,6 +412,11 @@ class _PersonRow extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (controller.isPrivateTab)
+                    Padding(
+                      padding: EdgeInsets.only(top: 4.h),
+                      child: _PersonTypeBadge(person: person),
+                    ),
                   if (lastActivity.isNotEmpty)
                     Text(
                       lastActivity,
@@ -424,6 +453,88 @@ class _PersonRow extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showPrivateDebtAction(BuildContext context) {
+    final isPrivate = controller.isPrivateTab;
+    Get.bottomSheet(
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(
+          child: Container(
+            padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 18.h),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  person.name,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    isPrivate ? Icons.lock_open_outlined : Icons.lock_outline,
+                    color: LedgerColors.primaryBlue,
+                  ),
+                  title: Text(
+                    isPrivate
+                        ? 'ledgerRemoveFromPrivate'.tr
+                        : 'ledgerMoveToPrivate'.tr,
+                    textAlign: TextAlign.right,
+                  ),
+                  onTap: () {
+                    Get.back();
+                    controller.togglePrivateDebtPerson(person);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+    );
+  }
+}
+
+class _PersonTypeBadge extends StatelessWidget {
+  const _PersonTypeBadge({required this.person});
+
+  final LedgerPerson person;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        person.isCustomer ? LedgerColors.primaryBlue : const Color(0xFF8B5CF6);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .12),
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: color.withValues(alpha: .28)),
+        ),
+        child: Text(
+          person.isCustomer ? 'ledgerCustomer'.tr : 'ledgerSupplier'.tr,
+          style: TextStyle(
+            color: color,
+            fontSize: 11.sp,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

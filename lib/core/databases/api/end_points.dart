@@ -160,6 +160,8 @@ class EndPoints {
 
   static const String appSettings = 'app/settings';
   static const String appUpdateCheck = 'app/update-check';
+  static const String appVersionSeen = 'app/version-seen';
+  static const String appVersionReport = 'app/version-report';
   static const String attendanceSettings = 'admin/settings/attendance';
   static const String attendanceDevices = 'admin/attendance-devices';
   static String attendanceDeviceTestConnection(int id) =>
@@ -179,6 +181,7 @@ class EndPoints {
       'show/employee/financial/details';
   static String employeeAdvances(int employeeId) =>
       'employees/$employeeId/advances';
+  static const String allPermissions = 'all/permissions';
   static const String employeePermissions = 'employee/permissions';
   static const String qrGeneration = 'qr-generation';
   static const String qrHistory = 'qr-history';

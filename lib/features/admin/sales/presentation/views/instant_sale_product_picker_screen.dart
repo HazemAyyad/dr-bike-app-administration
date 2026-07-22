@@ -277,20 +277,27 @@ class _InstantSaleProductPickerScreenState
                   );
                 }),
                 Obx(() {
+                  final autoSuspendedRef =
+                      controller.activeAutoSuspendedReferenceCode;
+                  if (autoSuspendedRef != null) {
+                    return Padding(
+                      padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+                      child: _InstantSaleStatusBanner(
+                        icon: Icons.cloud_done_outlined,
+                        color: const Color(0xFF15803D),
+                        text:
+                            '${'instantSaleAutoSavedSuspended'.tr}: $autoSuspendedRef',
+                      ),
+                    );
+                  }
                   final suspendedRef = controller.activeSuspendedReferenceCode;
                   if (suspendedRef != null) {
                     return Padding(
                       padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '${'suspendedInvoiceResuming'.tr}: $suspendedRef',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: const Color(0xFFE65100),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      child: _InstantSaleStatusBanner(
+                        icon: Icons.pause_circle_outline,
+                        color: const Color(0xFFE65100),
+                        text: '${'suspendedInvoiceResuming'.tr}: $suspendedRef',
                       ),
                     );
                   }
@@ -298,16 +305,10 @@ class _InstantSaleProductPickerScreenState
                   if (editRef != null) {
                     return Padding(
                       padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '${'instantSaleEditing'.tr}: #$editRef',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: const Color(0xFF1565C0),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      child: _InstantSaleStatusBanner(
+                        icon: Icons.edit_outlined,
+                        color: const Color(0xFF1565C0),
+                        text: '${'instantSaleEditing'.tr}: #$editRef',
                       ),
                     );
                   }
@@ -895,5 +896,47 @@ class _CartAppBarButton extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class _InstantSaleStatusBanner extends StatelessWidget {
+  const _InstantSaleStatusBanner({
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 17.sp),
+          SizedBox(width: 7.w),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -76,6 +76,40 @@ class _CustomTextFieldState extends State<CustomTextField>
   bool _wasFocused = false;
   bool _shouldKeepKeyboard = false;
 
+  bool get _isNumericField {
+    final type = widget.keyboardType;
+    return type == TextInputType.number ||
+        type == TextInputType.phone ||
+        type == const TextInputType.numberWithOptions() ||
+        type == const TextInputType.numberWithOptions(decimal: true) ||
+        type == const TextInputType.numberWithOptions(signed: true) ||
+        type ==
+            const TextInputType.numberWithOptions(
+              signed: true,
+              decimal: true,
+            );
+  }
+
+  bool _isZeroValue(String value) {
+    final normalized = value.replaceAll(',', '').replaceAll('،', '').trim();
+    if (normalized.isEmpty) return false;
+    return (double.tryParse(normalized) ?? 1) == 0;
+  }
+
+  void _selectZeroOnNumericFocus() {
+    final controller = widget.controller;
+    if (!_isNumericField || controller == null) return;
+    if (!_isZeroValue(controller.text)) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_focusNode.hasFocus) return;
+      controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: controller.text.length,
+      );
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +119,9 @@ class _CustomTextFieldState extends State<CustomTextField>
 
     _focusNode.addListener(() {
       _shouldKeepKeyboard = _focusNode.hasFocus;
+      if (_focusNode.hasFocus) {
+        _selectZeroOnNumericFocus();
+      }
     });
   }
 
@@ -120,13 +157,10 @@ class _CustomTextFieldState extends State<CustomTextField>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final labelGap =
-        widget.label == '' ? 0.0 : math.max(16.0, 16.h);
+    final labelGap = widget.label == '' ? 0.0 : math.max(16.0, 16.h);
 
     final Color defaultLabelColor = widget.labelColor ??
-        (isDark
-            ? scheme.onSurface
-            : AppColors.customGreyColor);
+        (isDark ? scheme.onSurface : AppColors.customGreyColor);
 
     final Color defaultFillColor = widget.fillColor ??
         (Theme.of(context).inputDecorationTheme.fillColor ??
@@ -178,8 +212,10 @@ class _CustomTextFieldState extends State<CustomTextField>
                   color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w400,
                 ),
+            textDirection: _isNumericField ? TextDirection.ltr : null,
             onTap: () {
               _shouldKeepKeyboard = true;
+              _selectZeroOnNumericFocus();
             },
             decoration: widget.border != null
                 ? InputDecoration(
@@ -217,8 +253,8 @@ class _CustomTextFieldState extends State<CustomTextField>
                     hintText: widget.hintText.tr,
                     hintStyle: widget.hintStyle ??
                         TextStyle(
-                          color: widget.hintColor ??
-                              Theme.of(context).hintColor,
+                          color:
+                              widget.hintColor ?? Theme.of(context).hintColor,
                           fontSize: 16.sp,
                         ),
                     suffixIcon: widget.suffixIcon,

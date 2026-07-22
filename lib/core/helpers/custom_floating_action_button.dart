@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../routes/app_routes.dart';
 import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 
@@ -231,6 +232,9 @@ class BuildAddMenuItem extends StatelessWidget {
           }
           if (item?['createProduct'] == 'true') {
             args['createProduct'] = true;
+          }
+          if (_route == AppRoutes.CREATETASKSCREEN) {
+            args['fromHomeWidget'] = true;
           }
           Get.toNamed(_route, arguments: args);
         }
