@@ -56,7 +56,10 @@ class CommonDatasource {
         return Map<String, dynamic>.from(data);
       }
 
-      final raw = {'status': 'error', 'message': data?.toString() ?? 'Invalid response'};
+      final raw = {
+        'status': 'error',
+        'message': data?.toString() ?? 'Invalid response'
+      };
       if (kDebugMode) {
         debugPrint('[ProfileUpdate] non-map response: $raw');
       }
@@ -67,7 +70,8 @@ class CommonDatasource {
 
       if (kDebugMode) {
         debugPrint('[ProfileUpdate] DioException status=$statusCode');
-        debugPrint('[ProfileUpdate] DioException type=${e.type} message=${e.message}');
+        debugPrint(
+            '[ProfileUpdate] DioException type=${e.type} message=${e.message}');
         debugPrint('[ProfileUpdate] DioException response data: $data');
       }
 
@@ -105,7 +109,8 @@ class CommonDatasource {
       if (raw is Map && raw['status'] != 'success') {
         throw ServerException(
           ErrorModel(
-            errorMessage: raw['message']?.toString() ?? 'فشل تحميل بيانات المستخدم',
+            errorMessage:
+                raw['message']?.toString() ?? 'فشل تحميل بيانات المستخدم',
             status: raw['status'] ?? 'error',
             data: raw,
           ),
@@ -117,11 +122,13 @@ class CommonDatasource {
       if (userdata != null) {
         final permissionIds =
             userdata.employeePermissions.map((p) => p.permissionId).toList();
-        employeePermissions.addAll(permissionIds);
-        employeePermissionNames.addAll(
-          userdata.employeePermissions.map((p) => p.permissionNameEn),
+        syncSessionIdentity(
+          type: userdata.user.type,
+          permissionIds: permissionIds,
+          permissionNamesEn: userdata.employeePermissions
+              .map((p) => p.permissionNameEn)
+              .toList(),
         );
-        userType = userdata.user.type;
       }
       return user;
     } on DioException catch (e) {

@@ -71,19 +71,43 @@ const String employeesFingerprintManagePermissionName =
 const String employeesRewardsRulesManagePermissionName =
     'Employees Rewards Rules Manage';
 
+const List<String> employeeSectionDetailedPermissionNames = [
+  employeesViewPermissionName,
+  employeesCreatePermissionName,
+  employeesEditBasicPermissionName,
+  employeesDeletePermissionName,
+  employeesPermissionsViewPermissionName,
+  employeesPermissionsManagePermissionName,
+  employeesFinancialViewPermissionName,
+  employeesSalaryPayPermissionName,
+  employeesPointsViewPermissionName,
+  employeesPointsManagePermissionName,
+  employeesAttendanceViewPermissionName,
+  employeesAttendanceManagePermissionName,
+  employeesLogsViewPermissionName,
+  employeesOrdersManagePermissionName,
+  employeesFingerprintManagePermissionName,
+  employeesRewardsRulesManagePermissionName,
+];
+
 bool hasEmployeePermissionName(String name) =>
     userType == 'admin' || employeePermissionNames.contains(name);
+
+bool get hasAnyEmployeeSectionDetailedPermission => employeePermissionNames
+    .any(employeeSectionDetailedPermissionNames.contains);
 
 bool get canAccessEmployeesSection =>
     userType == 'admin' ||
     employeePermissions.contains(employeesSectionPermissionId) ||
     employeePermissionNames.contains(employeesSectionPermissionName) ||
-    canViewEmployees ||
+    hasAnyEmployeeSectionDetailedPermission ||
     canManageEmployeeTasks;
 
 bool get canViewEmployees =>
     userType == 'admin' ||
     employeePermissionNames.contains(employeesViewPermissionName) ||
+    employeePermissionNames.contains(employeesEditBasicPermissionName) ||
+    employeePermissionNames.contains(employeesDeletePermissionName) ||
     employeePermissions.contains(employeesSectionPermissionId);
 
 bool get canCreateEmployees =>
@@ -329,10 +353,11 @@ class InitialBindings implements Bindings {
       await AppVersionTrackingService.instance.sync(source: 'app_resume');
 
       if (userdata.user.type == 'employee') {
-        unawaited(
-          EmployeeAttendancePersistentNotificationService.instance
-              .initializeForEmployee(),
-        );
+        EmployeeAttendancePersistentNotificationService.instance
+            .initializeForEmployee()
+            .catchError((Object e, StackTrace st) {
+          debugPrint('[Startup] attendance notification error: $e\n$st');
+        });
       }
     } catch (e, st) {
       debugPrint('[Startup] deferred setup error: $e\n$st');
