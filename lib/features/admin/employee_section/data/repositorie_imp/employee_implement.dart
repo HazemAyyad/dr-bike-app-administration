@@ -1009,6 +1009,19 @@ class EmployeeImplement implements EmployeeRepository {
   }
 
   @override
+  Future<Either<Failure, String>> updateAdminDevelopmentRole({
+    required String adminId,
+    required String developmentRole,
+  }) {
+    return _adminAction(
+      () => employeeDatasource.updateAdminDevelopmentRole(
+        adminId: adminId,
+        developmentRole: developmentRole,
+      ),
+    );
+  }
+
+  @override
   Future<Either<Failure, String>> deleteAdminUser({required String adminId}) {
     return _adminAction(
       () => employeeDatasource.deleteAdminUser(adminId: adminId),

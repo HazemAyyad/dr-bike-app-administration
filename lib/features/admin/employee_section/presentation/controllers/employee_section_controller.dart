@@ -488,11 +488,8 @@ class EmployeeSectionController extends GetxController
   }) async {
     isLoading(true);
     update();
-    final result = await manageAdminUserUsecase.update(
+    final result = await manageAdminUserUsecase.updateDevelopmentRole(
       adminId: admin.id.toString(),
-      name: admin.name,
-      email: admin.email,
-      phone: admin.phone,
       developmentRole: developmentRole,
     );
     result.fold(

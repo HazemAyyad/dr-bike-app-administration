@@ -64,4 +64,14 @@ class ManageAdminUserUsecase {
   Future<Either<Failure, String>> toggleBlock({required String adminId}) {
     return employeeRepository.toggleBlockAdminUser(adminId: adminId);
   }
+
+  Future<Either<Failure, String>> updateDevelopmentRole({
+    required String adminId,
+    required String developmentRole,
+  }) {
+    return employeeRepository.updateAdminDevelopmentRole(
+      adminId: adminId,
+      developmentRole: developmentRole,
+    );
+  }
 }

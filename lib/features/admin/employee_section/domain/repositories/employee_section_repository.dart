@@ -245,6 +245,11 @@ abstract class EmployeeRepository {
     String? passwordConfirmation,
   });
 
+  Future<Either<Failure, String>> updateAdminDevelopmentRole({
+    required String adminId,
+    required String developmentRole,
+  });
+
   Future<Either<Failure, String>> deleteAdminUser({required String adminId});
 
   Future<Either<Failure, String>> toggleBlockAdminUser(

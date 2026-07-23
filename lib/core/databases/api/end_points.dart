@@ -211,6 +211,8 @@ class EndPoints {
   // admin users
   static const String adminUsers = 'admin/users';
   static String editAdminUser(int id) => 'admin/users/$id/edit';
+  static String adminUserDevelopmentRole(int id) =>
+      'admin/users/$id/development-role';
   static String deleteAdminUser(int id) => 'admin/users/$id/delete';
   static String toggleBlockAdminUser(int id) => 'admin/users/$id/toggle-block';
   static const String appDevelopmentMetadata = 'admin/app-development/metadata';

@@ -1574,11 +1574,37 @@ class EmployeeDatasource {
         data: {
           'name': name,
           'email': email,
-          if (phone != null) 'phone': phone,
+          if (phone != null) 'phone': phone.trim(),
           'development_role': developmentRole,
           if (password != null && password.isNotEmpty) 'password': password,
           if (passwordConfirmation != null && passwordConfirmation.isNotEmpty)
             'password_confirmation': passwordConfirmation,
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> updateAdminDevelopmentRole({
+    required String adminId,
+    required String developmentRole,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.adminUserDevelopmentRole(int.parse(adminId)),
+        data: {
+          'development_role': developmentRole,
         },
       );
       return Map<String, dynamic>.from(response.data as Map);

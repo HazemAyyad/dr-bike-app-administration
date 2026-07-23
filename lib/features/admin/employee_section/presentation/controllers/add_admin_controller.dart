@@ -44,7 +44,9 @@ class AddAdminController extends GetxController {
   Future<void> submit(BuildContext context) async {
     if (!(formKey.currentState?.validate() ?? false)) return;
 
-    if (!isEdit &&
+    final wantsPasswordChange = passwordController.text.isNotEmpty ||
+        passwordConfirmationController.text.isNotEmpty;
+    if ((!isEdit || wantsPasswordChange) &&
         passwordController.text != passwordConfirmationController.text) {
       Helpers.showCustomDialogError(
         context: context,
@@ -61,9 +63,7 @@ class AddAdminController extends GetxController {
             adminId: editingAdmin!.id.toString(),
             name: nameController.text.trim(),
             email: emailController.text.trim(),
-            phone: phoneController.text.trim().isEmpty
-                ? null
-                : phoneController.text.trim(),
+            phone: phoneController.text.trim(),
             developmentRole: developmentRole.value,
             password: passwordController.text.isEmpty
                 ? null
