@@ -50,12 +50,14 @@ class AppDevelopmentAttachment {
   }
 
   String get displayType {
+    final normalizedType = type.toLowerCase();
     final lowerName = name.toLowerCase();
     final lowerUrl = url.toLowerCase();
     final lowerMime = mimeType.toLowerCase();
     final source = '$lowerName $lowerUrl';
 
-    if (lowerMime.startsWith('audio/') ||
+    if (normalizedType == 'audio' ||
+        lowerMime.startsWith('audio/') ||
         source.endsWith('.m4a') ||
         source.endsWith('.mp3') ||
         source.endsWith('.aac') ||
@@ -63,7 +65,8 @@ class AppDevelopmentAttachment {
         source.endsWith('.wav')) {
       return 'audio';
     }
-    if (lowerMime.startsWith('image/') ||
+    if (normalizedType == 'image' ||
+        lowerMime.startsWith('image/') ||
         source.endsWith('.jpg') ||
         source.endsWith('.jpeg') ||
         source.endsWith('.png') ||
@@ -72,7 +75,8 @@ class AppDevelopmentAttachment {
         source.endsWith('.heif')) {
       return 'image';
     }
-    if (lowerMime.startsWith('video/') ||
+    if (normalizedType == 'video' ||
+        lowerMime.startsWith('video/') ||
         source.endsWith('.mp4') ||
         source.endsWith('.mov') ||
         source.endsWith('.webm') ||

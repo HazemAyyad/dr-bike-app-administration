@@ -1314,14 +1314,36 @@ class _DevelopmentAudioAttachmentState
     if (error != null) return const Text('تعذر تحميل التسجيل الصوتي');
 
     return Container(
-      width: 255.w,
-      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+      width: 278.w,
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 7.h),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: .05),
         borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.grey.withValues(alpha: .12)),
       ),
       child: Row(
         children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: 19.r,
+                backgroundColor: AppColors.primaryColor.withValues(alpha: .14),
+                foregroundColor: AppColors.primaryColor,
+                child: const Icon(Icons.person),
+              ),
+              PositionedDirectional(
+                bottom: -2.h,
+                start: -2.w,
+                child: CircleAvatar(
+                  radius: 7.r,
+                  backgroundColor: AppColors.primaryColor,
+                  child: Icon(Icons.mic, color: Colors.white, size: 9.sp),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(width: 6.w),
           StreamBuilder<ja.PlayerState>(
             stream: player.playerStateStream,
             builder: (_, snapshot) {
@@ -1330,6 +1352,10 @@ class _DevelopmentAudioAttachmentState
               final completed =
                   state?.processingState == ja.ProcessingState.completed;
               return IconButton.filled(
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: () async {
                   if (completed) await player.seek(Duration.zero);
                   playing ? await player.pause() : await player.play();
@@ -1338,6 +1364,7 @@ class _DevelopmentAudioAttachmentState
               );
             },
           ),
+          SizedBox(width: 4.w),
           Expanded(
             child: StreamBuilder<Duration>(
               stream: player.positionStream,
@@ -1352,12 +1379,18 @@ class _DevelopmentAudioAttachmentState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LinearProgressIndicator(value: progress),
-                    SizedBox(height: 4.h),
+                    _DevelopmentWaveformProgress(
+                      progress: progress,
+                      duration: duration,
+                      onSeek: player.seek,
+                    ),
                     Text(
-                      _formatDuration(duration),
+                      '${_formatDuration(position)} / ${_formatDuration(duration)}',
                       textDirection: TextDirection.ltr,
-                      style: TextStyle(fontSize: 10.sp),
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
                   ],
                 );
@@ -1373,6 +1406,81 @@ class _DevelopmentAudioAttachmentState
     final minutes = value.inMinutes.toString().padLeft(2, '0');
     final seconds = value.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
+  }
+}
+
+class _DevelopmentWaveformProgress extends StatelessWidget {
+  const _DevelopmentWaveformProgress({
+    required this.progress,
+    required this.duration,
+    required this.onSeek,
+  });
+
+  final double progress;
+  final Duration duration;
+  final ValueChanged<Duration> onSeek;
+
+  @override
+  Widget build(BuildContext context) {
+    const heights = <double>[
+      11,
+      20,
+      14,
+      28,
+      17,
+      24,
+      31,
+      15,
+      26,
+      19,
+      29,
+      13,
+      23,
+      32,
+      18,
+      25,
+      12,
+      30,
+      20,
+      24,
+      15,
+      31,
+      17,
+      27,
+    ];
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (details) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box == null || duration == Duration.zero) return;
+        final ratio =
+            (details.localPosition.dx / box.size.width).clamp(0.0, 1.0);
+        onSeek(
+          Duration(milliseconds: (duration.inMilliseconds * ratio).round()),
+        );
+      },
+      child: SizedBox(
+        height: 36.h,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: List.generate(heights.length, (index) {
+            final played = index / heights.length <= progress;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              width: 2.4.w,
+              height: heights[index].h,
+              decoration: BoxDecoration(
+                color: played
+                    ? AppColors.primaryColor
+                    : Colors.grey.withValues(alpha: .35),
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
   }
 }
 
