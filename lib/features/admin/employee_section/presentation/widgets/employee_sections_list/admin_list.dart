@@ -30,6 +30,10 @@ class AdminList extends GetView<EmployeeSectionController> {
           Navigator.of(ctx).pop();
           await controller.toggleAdminBlock(admin.id.toString());
         },
+        onDevelopmentRole: () async {
+          Navigator.of(ctx).pop();
+          await _showDevelopmentRoleSheet(context);
+        },
         onDelete: () async {
           Navigator.of(ctx).pop();
           final confirmed = await _confirmDelete(context);
@@ -106,6 +110,15 @@ class AdminList extends GetView<EmployeeSectionController> {
                       color: AppColors.customGreyColor5,
                     ),
                   ),
+                  if (admin.developmentRole != 'none') ...[
+                    SizedBox(height: 5.h),
+                    _Badge(
+                      label: _developmentRoleLabel(admin.developmentRole),
+                      color: admin.developmentRole == 'owner'
+                          ? AppColors.primaryColor
+                          : Colors.teal,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -140,6 +153,29 @@ class AdminList extends GetView<EmployeeSectionController> {
         ),
       ),
     );
+  }
+
+  Future<void> _showDevelopmentRoleSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _DevelopmentRoleSheet(
+        currentRole: admin.developmentRole,
+        onSelect: (role) async {
+          Navigator.of(ctx).pop();
+          await controller.updateAdminDevelopmentRole(
+            admin: admin,
+            developmentRole: role,
+          );
+        },
+      ),
+    );
+  }
+
+  String _developmentRoleLabel(String role) {
+    if (role == 'owner') return 'صاحب التطبيق';
+    if (role == 'developer') return 'مبرمج';
+    return 'بدون دور';
   }
 }
 
@@ -195,12 +231,14 @@ class _AdminActionsSheet extends StatelessWidget {
   const _AdminActionsSheet({
     required this.admin,
     required this.onEdit,
+    required this.onDevelopmentRole,
     required this.onToggleBlock,
     required this.onDelete,
   });
 
   final AdminUserModel admin;
   final VoidCallback onEdit;
+  final VoidCallback onDevelopmentRole;
   final VoidCallback onToggleBlock;
   final VoidCallback onDelete;
 
@@ -224,20 +262,128 @@ class _AdminActionsSheet extends StatelessWidget {
             onTap: onEdit,
           ),
           ListTile(
+            leading: const Icon(Icons.engineering_outlined),
+            title: const Text('دور تطوير التطبيق'),
+            subtitle: Text(_roleLabel(admin.developmentRole)),
+            onTap: onDevelopmentRole,
+          ),
+          ListTile(
             leading: Icon(
               admin.isBlocked ? Icons.lock_open_outlined : Icons.block_outlined,
-              color: admin.isBlocked ? AppColors.customGreen1 : AppColors.redColor,
+              color:
+                  admin.isBlocked ? AppColors.customGreen1 : AppColors.redColor,
             ),
             title: Text(admin.isBlocked ? 'unblock'.tr : 'block'.tr),
             onTap: onToggleBlock,
           ),
           ListTile(
-            leading: const Icon(Icons.delete_outline, color: AppColors.redColor),
-            title: Text('delete'.tr, style: const TextStyle(color: AppColors.redColor)),
+            leading:
+                const Icon(Icons.delete_outline, color: AppColors.redColor),
+            title: Text('delete'.tr,
+                style: const TextStyle(color: AppColors.redColor)),
             onTap: onDelete,
           ),
         ],
       ),
+    );
+  }
+
+  String _roleLabel(String role) {
+    if (role == 'owner') return 'صاحب التطبيق';
+    if (role == 'developer') return 'مبرمج';
+    return 'بدون';
+  }
+}
+
+class _DevelopmentRoleSheet extends StatelessWidget {
+  const _DevelopmentRoleSheet({
+    required this.currentRole,
+    required this.onSelect,
+  });
+
+  final String currentRole;
+  final Future<void> Function(String role) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+
+    return Container(
+      margin: EdgeInsets.all(16.w),
+      padding: EdgeInsets.symmetric(vertical: 8.h),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            child: Row(
+              children: [
+                const Icon(Icons.engineering_outlined),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Text(
+                    'دور تطوير التطبيق',
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _RoleTile(
+            value: 'none',
+            label: 'بدون',
+            currentRole: currentRole,
+            onSelect: onSelect,
+          ),
+          _RoleTile(
+            value: 'owner',
+            label: 'صاحب التطبيق',
+            currentRole: currentRole,
+            onSelect: onSelect,
+          ),
+          _RoleTile(
+            value: 'developer',
+            label: 'مبرمج',
+            currentRole: currentRole,
+            onSelect: onSelect,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleTile extends StatelessWidget {
+  const _RoleTile({
+    required this.value,
+    required this.label,
+    required this.currentRole,
+    required this.onSelect,
+  });
+
+  final String value;
+  final String label;
+  final String currentRole;
+  final Future<void> Function(String role) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = value == currentRole;
+
+    return ListTile(
+      leading: Icon(
+        selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: selected ? AppColors.primaryColor : null,
+      ),
+      title: Text(label),
+      onTap: () => onSelect(value),
     );
   }
 }

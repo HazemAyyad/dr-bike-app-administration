@@ -482,6 +482,35 @@ class EmployeeSectionController extends GetxController
     update();
   }
 
+  Future<void> updateAdminDevelopmentRole({
+    required AdminUserModel admin,
+    required String developmentRole,
+  }) async {
+    isLoading(true);
+    update();
+    final result = await manageAdminUserUsecase.update(
+      adminId: admin.id.toString(),
+      name: admin.name,
+      email: admin.email,
+      phone: admin.phone,
+      developmentRole: developmentRole,
+    );
+    result.fold(
+      (failure) => Get.snackbar(
+        'error'.tr,
+        failure.errMessage,
+        snackPosition: SnackPosition.BOTTOM,
+      ),
+      (success) async {
+        Get.snackbar('success'.tr, success,
+            snackPosition: SnackPosition.BOTTOM);
+        await getAdminUsers();
+      },
+    );
+    isLoading(false);
+    update();
+  }
+
   final RxBool isDeletingEmployee = false.obs;
 
   /// Soft-deletes an employee on the backend and removes them from the
