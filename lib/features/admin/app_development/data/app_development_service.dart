@@ -24,6 +24,18 @@ class AppDevelopmentAdmin {
   }
 }
 
+class AppDevelopmentMetadata {
+  final String currentRole;
+  final List<AppDevelopmentAdmin> owners;
+  final List<AppDevelopmentAdmin> developers;
+
+  const AppDevelopmentMetadata({
+    required this.currentRole,
+    required this.owners,
+    required this.developers,
+  });
+}
+
 class AppDevelopmentAttachment {
   final int id;
   final String url;
@@ -177,10 +189,13 @@ class AppDevelopmentTask {
   final String statusLabel;
   final String priority;
   final String priorityLabel;
+  final List<String> tags;
+  final DateTime? dueAt;
   final int progress;
   final int subtasksCount;
   final int completedSubtasksCount;
   final int messagesCount;
+  final int unreadMessagesCount;
   final String assigneeName;
   final String creatorName;
   final DateTime? updatedAt;
@@ -199,10 +214,13 @@ class AppDevelopmentTask {
     required this.statusLabel,
     required this.priority,
     required this.priorityLabel,
+    required this.tags,
+    required this.dueAt,
     required this.progress,
     required this.subtasksCount,
     required this.completedSubtasksCount,
     required this.messagesCount,
+    required this.unreadMessagesCount,
     required this.assigneeName,
     required this.creatorName,
     this.updatedAt,
@@ -230,11 +248,18 @@ class AppDevelopmentTask {
       statusLabel: json['status_label']?.toString() ?? '',
       priority: json['priority']?.toString() ?? 'normal',
       priorityLabel: json['priority_label']?.toString() ?? '',
+      tags: _list(json['tags'])
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .toList(),
+      dueAt: DateTime.tryParse(json['due_at']?.toString() ?? '')?.toLocal(),
       progress: int.tryParse('${json['progress']}') ?? 0,
       subtasksCount: int.tryParse('${json['subtasks_count']}') ?? 0,
       completedSubtasksCount:
           int.tryParse('${json['completed_subtasks_count']}') ?? 0,
       messagesCount: int.tryParse('${json['messages_count']}') ?? 0,
+      unreadMessagesCount:
+          int.tryParse('${json['unread_messages_count']}') ?? 0,
       assigneeName: assignee['name']?.toString() ?? '',
       creatorName: creator['name']?.toString() ?? '',
       updatedAt:
@@ -271,32 +296,35 @@ class AppDevelopmentListResult {
 class AppDevelopmentService {
   DioConsumer get _api => Get.find<DioConsumer>();
 
-  Future<Map<String, List<AppDevelopmentAdmin>>> metadata() async {
+  Future<AppDevelopmentMetadata> metadata() async {
     final response = await _api.get(EndPoints.appDevelopmentMetadata);
     final raw = Map<String, dynamic>.from(response.data as Map);
-    return {
-      'owners': _list(raw['owners'])
+    return AppDevelopmentMetadata(
+      currentRole: raw['current_development_role']?.toString() ?? 'none',
+      owners: _list(raw['owners'])
           .whereType<Map>()
           .map(
               (e) => AppDevelopmentAdmin.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
-      'developers': _list(raw['developers'])
+      developers: _list(raw['developers'])
           .whereType<Map>()
           .map(
               (e) => AppDevelopmentAdmin.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
-    };
+    );
   }
 
   Future<AppDevelopmentListResult> tasks({
     String status = 'all',
     String search = '',
+    String scope = 'all',
   }) async {
     final response = await _api.get(
       EndPoints.appDevelopmentTasks,
       queryParameters: {
         if (status != 'all') 'status': status,
         if (search.trim().isNotEmpty) 'search': search.trim(),
+        if (scope != 'all') 'scope': scope,
       },
     );
     final raw = Map<String, dynamic>.from(response.data as Map);
@@ -331,6 +359,8 @@ class AppDevelopmentService {
     required String title,
     required String description,
     required String priority,
+    List<String> tags = const [],
+    DateTime? dueAt,
     List<String> files = const [],
     List<String> attachmentTypes = const [],
   }) async {
@@ -342,6 +372,8 @@ class AppDevelopmentService {
         title: title,
         description: description,
         priority: priority,
+        tags: tags,
+        dueAt: dueAt,
         files: files,
         attachmentTypes: attachmentTypes,
       ),
@@ -399,6 +431,8 @@ class AppDevelopmentService {
     String? description,
     String? priority,
     String? message,
+    List<String> tags = const [],
+    DateTime? dueAt,
     List<String> files = const [],
     List<String> attachmentTypes = const [],
   }) async {
@@ -409,6 +443,8 @@ class AppDevelopmentService {
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
       if (priority != null) 'priority': priority,
+      for (var i = 0; i < tags.length; i++) 'tags[$i]': tags[i],
+      if (dueAt != null) 'due_at': _datePayload(dueAt),
       if (message != null && message.trim().isNotEmpty) 'body': message.trim(),
       for (var i = 0; i < files.length; i++)
         'attachments[$i]': await MultipartFile.fromFile(files[i]),
@@ -429,3 +465,9 @@ class AppDevelopmentService {
 }
 
 List<dynamic> _list(dynamic value) => value is List ? value : const [];
+
+String _datePayload(DateTime value) {
+  final month = value.month.toString().padLeft(2, '0');
+  final day = value.day.toString().padLeft(2, '0');
+  return '${value.year}-$month-$day';
+}

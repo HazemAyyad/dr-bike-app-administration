@@ -42,6 +42,8 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   String? recordingPath;
   Timer? recordingTimer;
   String status = 'all';
+  String scope = 'all';
+  String currentRole = 'none';
   Map<String, int> stats = {};
   List<AppDevelopmentTask> tasks = [];
   List<AppDevelopmentAdmin> developers = [];
@@ -57,14 +59,6 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
     ['waiting_owner', 'بانتظارك'],
     ['done', 'منجزة'],
     ['closed', 'مغلقة'],
-  ];
-
-  static const statusActions = [
-    ['review', 'مراجعة'],
-    ['in_progress', 'قيد العمل'],
-    ['waiting_owner', 'بانتظار صاحب التطبيق'],
-    ['done', 'منجزة'],
-    ['closed', 'إغلاق'],
   ];
 
   static const messageReactions = ['👍', '😂', '✅', '❌', '👎', '❤️', '😮'];
@@ -96,7 +90,8 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   Future<void> _loadMetadata() async {
     try {
       final data = await service.metadata();
-      developers = data['developers'] ?? [];
+      developers = data.developers;
+      currentRole = data.currentRole;
       if (mounted) setState(() {});
     } catch (_) {}
   }
@@ -113,6 +108,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
       final result = await service.tasks(
         status: status,
         search: searchController.text,
+        scope: scope,
       );
       tasks = result.tasks;
       stats = result.stats;
@@ -452,6 +448,8 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
             ),
           ),
           SizedBox(height: 12.h),
+          _scopeStrip(),
+          SizedBox(height: 10.h),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -516,6 +514,26 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
     );
   }
 
+  Widget _scopeStrip() {
+    return Row(
+      children: [
+        Expanded(
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'all', label: Text('الكل')),
+              ButtonSegment(value: 'mine', label: Text('مهامي')),
+            ],
+            selected: {scope},
+            onSelectionChanged: (values) {
+              setState(() => scope = values.first);
+              _loadList();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _stat(String label, int value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,9 +564,28 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
                     style: _titleStyle(size: 15),
                   ),
                 ),
+                if (item.unreadMessagesCount > 0) ...[
+                  _unreadBadge(item.unreadMessagesCount),
+                  SizedBox(width: 6.w),
+                ],
                 _pill(item.priorityLabel, _priorityColor(item.priority)),
               ],
             ),
+            if (item.tags.isNotEmpty || item.dueAt != null) ...[
+              SizedBox(height: 8.h),
+              Wrap(
+                spacing: 6.w,
+                runSpacing: 6.h,
+                children: [
+                  if (item.dueAt != null)
+                    _pill(
+                      _dateLabel(item.dueAt!),
+                      _isOverdue(item) ? Colors.red : Colors.blueGrey,
+                    ),
+                  ...item.tags.map((tag) => _pill('#$tag', Colors.indigo)),
+                ],
+              ),
+            ],
             SizedBox(height: 8.h),
             LinearProgressIndicator(
               value: item.progress / 100,
@@ -577,6 +614,26 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
     );
   }
 
+  Widget _unreadBadge(int count) {
+    return Container(
+      constraints: BoxConstraints(minWidth: 22.w),
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: AppColors.redColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 10.sp,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
   Widget _detailsBody() {
     final current = task;
     if (current == null) return const SizedBox.shrink();
@@ -590,7 +647,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
             children: [
               _detailsHeader(current),
               SizedBox(height: 12.h),
-              _statusActions(),
+              _statusActions(current),
               SizedBox(height: 12.h),
               _subtasksSection(current),
               SizedBox(height: 12.h),
@@ -638,6 +695,12 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
               _pill(item.statusLabel, _statusColor(item.status)),
               _pill(item.priorityLabel, _priorityColor(item.priority)),
               _pill('المبرمج: ${item.assigneeName}', Colors.blueGrey),
+              if (item.dueAt != null)
+                _pill(
+                  'موعد: ${_dateLabel(item.dueAt!)}',
+                  _isOverdue(item) ? Colors.red : Colors.blueGrey,
+                ),
+              ...item.tags.map((tag) => _pill('#$tag', Colors.indigo)),
             ],
           ),
         ],
@@ -645,11 +708,24 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
     );
   }
 
-  Widget _statusActions() {
+  Widget _statusActions(AppDevelopmentTask item) {
+    final actions = [
+      ['in_progress', 'قيد العمل'],
+      ['review', currentRole == 'developer' ? 'طلب مراجعة' : 'مراجعة'],
+      ['waiting_owner', 'بانتظار صاحب التطبيق'],
+      [
+        'done',
+        currentRole == 'owner' && item.status == 'review'
+            ? 'اعتماد الإنجاز'
+            : 'منجزة'
+      ],
+      ['closed', 'إغلاق'],
+    ];
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: statusActions
+        children: actions
             .map((item) => Padding(
                   padding: EdgeInsetsDirectional.only(end: 8.w),
                   child: OutlinedButton(
@@ -1262,6 +1338,22 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         'ملف';
   }
 
+  bool _isOverdue(AppDevelopmentTask item) {
+    final dueAt = item.dueAt;
+    if (dueAt == null || item.status == 'done' || item.status == 'closed') {
+      return false;
+    }
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    return dueAt.isBefore(normalizedToday);
+  }
+
+  String _dateLabel(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+
   String _duration(Duration duration) {
     final minutes = duration.inMinutes.toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -1615,9 +1707,11 @@ class _CreateTaskSheet extends StatefulWidget {
 class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
+  final tagsController = TextEditingController();
 
   String priority = 'normal';
   late int developerId;
+  DateTime? dueAt;
   List<String> files = [];
   bool saving = false;
 
@@ -1632,6 +1726,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   void dispose() {
     titleController.dispose();
     descriptionController.dispose();
+    tagsController.dispose();
     super.dispose();
   }
 
@@ -1639,6 +1734,18 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
     final picked = await widget.pickFiles();
     if (!mounted) return;
     setState(() => files = picked);
+  }
+
+  Future<void> _pickDueAt() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: dueAt ?? now,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 3),
+    );
+    if (!mounted || picked == null) return;
+    setState(() => dueAt = picked);
   }
 
   Future<void> _save() async {
@@ -1656,6 +1763,8 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
         title: titleController.text,
         description: descriptionController.text,
         priority: priority,
+        tags: _parseTags(tagsController.text),
+        dueAt: dueAt,
         files: files,
       );
       if (mounted) Navigator.pop(context, true);
@@ -1743,6 +1852,25 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
               },
             ),
             SizedBox(height: 10.h),
+            TextField(
+              controller: tagsController,
+              decoration: const InputDecoration(
+                labelText: 'وسوم',
+                hintText: 'Bug, UI, Backend',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            OutlinedButton.icon(
+              onPressed: saving ? null : _pickDueAt,
+              icon: const Icon(Icons.event_outlined),
+              label: Text(
+                dueAt == null
+                    ? 'تحديد موعد إنجاز'
+                    : 'الموعد: ${_sheetDateLabel(dueAt!)}',
+              ),
+            ),
+            SizedBox(height: 10.h),
             OutlinedButton.icon(
               onPressed: saving ? null : _pickFiles,
               icon: const Icon(Icons.attach_file),
@@ -1765,6 +1893,22 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
         ),
       ),
     );
+  }
+
+  List<String> _parseTags(String value) {
+    return value
+        .split(RegExp(r'[,،\s]+'))
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toSet()
+        .take(8)
+        .toList();
+  }
+
+  String _sheetDateLabel(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 }
 
