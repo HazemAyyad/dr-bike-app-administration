@@ -222,6 +222,8 @@ class EndPoints {
       'admin/app-development/tasks/$id/status';
   static String appDevelopmentTaskMessages(int id) =>
       'admin/app-development/tasks/$id/messages';
+  static String appDevelopmentMessageReaction(int taskId, int messageId) =>
+      'admin/app-development/tasks/$taskId/messages/$messageId/reaction';
   static const String qrScan = 'qr-scan';
   static const String overtimeOrders = 'employee/overtime/orders';
   static const String loanOrders = 'employee/loan/orders';

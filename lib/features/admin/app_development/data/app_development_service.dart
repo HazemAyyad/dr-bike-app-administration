@@ -92,6 +92,8 @@ class AppDevelopmentMessage {
   final String senderName;
   final String body;
   final List<AppDevelopmentAttachment> attachments;
+  final List<AppDevelopmentMessageReaction> reactions;
+  final String myReaction;
   final DateTime? createdAt;
 
   const AppDevelopmentMessage({
@@ -100,6 +102,8 @@ class AppDevelopmentMessage {
     required this.senderName,
     required this.body,
     required this.attachments,
+    required this.reactions,
+    required this.myReaction,
     this.createdAt,
   });
 
@@ -118,8 +122,42 @@ class AppDevelopmentMessage {
                 Map<String, dynamic>.from(e),
               ))
           .toList(),
+      reactions: _list(json['reactions'])
+          .whereType<Map>()
+          .map((e) => AppDevelopmentMessageReaction.fromJson(
+                Map<String, dynamic>.from(e),
+              ))
+          .where((e) => e.reaction.isNotEmpty && e.count > 0)
+          .toList(),
+      myReaction: json['my_reaction']?.toString() ?? '',
       createdAt:
           DateTime.tryParse(json['created_at']?.toString() ?? '')?.toLocal(),
+    );
+  }
+}
+
+class AppDevelopmentMessageReaction {
+  final String reaction;
+  final int count;
+  final bool reacted;
+  final List<String> users;
+
+  const AppDevelopmentMessageReaction({
+    required this.reaction,
+    required this.count,
+    required this.reacted,
+    required this.users,
+  });
+
+  factory AppDevelopmentMessageReaction.fromJson(Map<String, dynamic> json) {
+    return AppDevelopmentMessageReaction(
+      reaction: json['reaction']?.toString() ?? '',
+      count: int.tryParse('${json['count']}') ?? 0,
+      reacted: json['reacted'] == true,
+      users: _list(json['users'])
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList(),
     );
   }
 }
@@ -290,6 +328,7 @@ class AppDevelopmentService {
     required String description,
     required String priority,
     List<String> files = const [],
+    List<String> attachmentTypes = const [],
   }) async {
     final response = await _api.post(
       EndPoints.appDevelopmentTasks,
@@ -300,6 +339,7 @@ class AppDevelopmentService {
         description: description,
         priority: priority,
         files: files,
+        attachmentTypes: attachmentTypes,
       ),
     );
     return AppDevelopmentTask.fromJson(
@@ -325,10 +365,26 @@ class AppDevelopmentService {
     required int id,
     required String body,
     List<String> files = const [],
+    List<String> attachmentTypes = const [],
   }) async {
     await _api.post(
       EndPoints.appDevelopmentTaskMessages(id),
-      data: await _formData(message: body, files: files),
+      data: await _formData(
+        message: body,
+        files: files,
+        attachmentTypes: attachmentTypes,
+      ),
+    );
+  }
+
+  Future<void> reactToMessage({
+    required int taskId,
+    required int messageId,
+    String? reaction,
+  }) async {
+    await _api.post(
+      EndPoints.appDevelopmentMessageReaction(taskId, messageId),
+      data: {'reaction': reaction},
     );
   }
 
@@ -340,6 +396,7 @@ class AppDevelopmentService {
     String? priority,
     String? message,
     List<String> files = const [],
+    List<String> attachmentTypes = const [],
   }) async {
     return FormData.fromMap({
       if (parentId != null && parentId > 0) 'parent_id': parentId,
@@ -351,6 +408,8 @@ class AppDevelopmentService {
       if (message != null && message.trim().isNotEmpty) 'body': message.trim(),
       for (var i = 0; i < files.length; i++)
         'attachments[$i]': await MultipartFile.fromFile(files[i]),
+      for (var i = 0; i < attachmentTypes.length && i < files.length; i++)
+        'attachment_types[$i]': attachmentTypes[i],
     });
   }
 

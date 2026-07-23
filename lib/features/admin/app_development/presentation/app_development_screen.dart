@@ -67,6 +67,8 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
     ['closed', 'إغلاق'],
   ];
 
+  static const messageReactions = ['👍', '😂', '✅', '❌', '👎', '❤️', '😮'];
+
   @override
   void initState() {
     super.initState();
@@ -145,7 +147,10 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
       fullscreenDialog: true,
     );
     if (result?.path.isNotEmpty == true) {
-      await _sendMessage(files: [result!.path]);
+      await _sendMessage(
+        files: [result!.path],
+        attachmentTypes: [result.mediaKind],
+      );
     }
   }
 
@@ -183,12 +188,20 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         [];
   }
 
-  Future<void> _sendMessage({List<String> files = const []}) async {
+  Future<void> _sendMessage({
+    List<String> files = const [],
+    List<String> attachmentTypes = const [],
+  }) async {
     final text = messageController.text.trim();
     if (text.isEmpty && files.isEmpty) return;
     setState(() => sending = true);
     try {
-      await service.sendMessage(id: widget.taskId!, body: text, files: files);
+      await service.sendMessage(
+        id: widget.taskId!,
+        body: text,
+        files: files,
+        attachmentTypes: attachmentTypes,
+      );
       messageController.clear();
       await _loadDetails(silent: true);
     } catch (e) {
@@ -256,7 +269,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         });
       }
       if (path != null && path.isNotEmpty) {
-        await _sendMessage(files: [path]);
+        await _sendMessage(files: [path], attachmentTypes: const ['audio']);
       }
     } catch (e) {
       _snack('تعذر إرسال التسجيل: $e');
@@ -328,6 +341,36 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
       _snack(e.toString());
     } finally {
       noteController.dispose();
+    }
+  }
+
+  Future<void> _toggleSubtaskDone(AppDevelopmentTask subtask) async {
+    final done = subtask.status == 'done' || subtask.status == 'closed';
+    try {
+      await service.updateStatus(
+        id: subtask.id,
+        status: done ? 'in_progress' : 'done',
+      );
+      await _loadDetails(silent: true);
+    } catch (e) {
+      _snack(e.toString());
+    }
+  }
+
+  Future<void> _reactToMessage(
+    AppDevelopmentMessage message,
+    String reaction,
+  ) async {
+    if (widget.taskId == null) return;
+    try {
+      await service.reactToMessage(
+        taskId: widget.taskId!,
+        messageId: message.id,
+        reaction: message.myReaction == reaction ? null : reaction,
+      );
+      await _loadDetails(silent: true);
+    } catch (e) {
+      _snack(e.toString());
     }
   }
 
@@ -631,15 +674,71 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
               ]
             : item.subtasks
                 .map(
-                  (subtask) => ListTile(
-                    dense: true,
-                    title: Text(subtask.title),
-                    subtitle: Text(subtask.statusLabel),
-                    trailing: Text('${subtask.progress}%'),
-                    onTap: () => Get.toNamed('/AppDevelopment/${subtask.id}'),
-                  ),
+                  (subtask) => _subtaskTile(subtask),
                 )
                 .toList(),
+      ),
+    );
+  }
+
+  Widget _subtaskTile(AppDevelopmentTask subtask) {
+    final done = subtask.status == 'done' || subtask.status == 'closed';
+    return InkWell(
+      onTap: () => Get.toNamed('/AppDevelopment/${subtask.id}'),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
+        child: Row(
+          children: [
+            Checkbox(
+              value: done,
+              visualDensity: VisualDensity.compact,
+              onChanged: sending ? null : (_) => _toggleSubtaskDone(subtask),
+            ),
+            SizedBox(width: 6.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    subtask.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      decoration: done ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  SizedBox(height: 5.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: (subtask.progress / 100).clamp(0, 1),
+                          minHeight: 5.h,
+                          borderRadius: BorderRadius.circular(8.r),
+                          backgroundColor: Colors.grey.withValues(alpha: .15),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        '${subtask.progress}%',
+                        style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 3.h),
+                  Text(
+                    subtask.statusLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10.sp, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -670,51 +769,142 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
       alignment: mine
           ? AlignmentDirectional.centerEnd
           : AlignmentDirectional.centerStart,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: .86.sw),
-        margin: EdgeInsets.only(bottom: 8.h),
-        padding: EdgeInsets.all(9.r),
-        decoration: BoxDecoration(
-          color: mine
-              ? const Color(0xffdcf8c6)
-              : (ThemeService.isDark.value
-                  ? AppColors.customGreyColor4
-                  : Colors.white),
-          borderRadius: BorderRadiusDirectional.only(
-            topStart: Radius.circular(12.r),
-            topEnd: Radius.circular(12.r),
-            bottomStart: Radius.circular(mine ? 12.r : 2.r),
-            bottomEnd: Radius.circular(mine ? 2.r : 12.r),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: .05),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+      child: GestureDetector(
+        onLongPress: () => _showReactionPicker(message),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: .86.sw),
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.all(9.r),
+          decoration: BoxDecoration(
+            color: mine
+                ? const Color(0xffdcf8c6)
+                : (ThemeService.isDark.value
+                    ? AppColors.customGreyColor4
+                    : Colors.white),
+            borderRadius: BorderRadiusDirectional.only(
+              topStart: Radius.circular(12.r),
+              topEnd: Radius.circular(12.r),
+              bottomStart: Radius.circular(mine ? 12.r : 2.r),
+              bottomEnd: Radius.circular(mine ? 2.r : 12.r),
             ),
-          ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .05),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!mine && message.senderName.isNotEmpty)
+                Text(
+                  message.senderName,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryColor,
+                  ),
+                ),
+              if (message.body.isNotEmpty) ...[
+                SizedBox(height: 5.h),
+                Text(message.body, style: TextStyle(fontSize: 13.sp)),
+              ],
+              if (message.attachments.isNotEmpty) ...[
+                SizedBox(height: 8.h),
+                ...message.attachments.map(_attachmentMessageTile),
+              ],
+              if (message.reactions.isNotEmpty) ...[
+                SizedBox(height: 7.h),
+                _reactionSummary(message),
+              ],
+            ],
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!mine && message.senderName.isNotEmpty)
-              Text(
-                message.senderName,
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primaryColor,
+      ),
+    );
+  }
+
+  Widget _reactionSummary(AppDevelopmentMessage message) {
+    return Wrap(
+      spacing: 4.w,
+      runSpacing: 4.h,
+      children: message.reactions
+          .map(
+            (reaction) => Container(
+              padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
+              decoration: BoxDecoration(
+                color: reaction.reacted
+                    ? const Color(0xffdcf8c6)
+                    : Colors.grey.withValues(alpha: .09),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: reaction.reacted
+                      ? AppColors.primaryColor
+                      : Colors.grey.withValues(alpha: .16),
                 ),
               ),
-            if (message.body.isNotEmpty) ...[
-              SizedBox(height: 5.h),
-              Text(message.body, style: TextStyle(fontSize: 13.sp)),
+              child: Text(
+                '${reaction.reaction} ${reaction.count}',
+                textDirection: TextDirection.ltr,
+                style: TextStyle(fontSize: 10.sp, color: Colors.grey.shade700),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  void _showReactionPicker(AppDevelopmentMessage message) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SafeArea(
+        child: Container(
+          margin: EdgeInsets.all(12.w),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: ThemeService.isDark.value
+                ? AppColors.customGreyColor
+                : AppColors.whiteColor,
+            borderRadius: BorderRadius.circular(18.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: .14),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
             ],
-            if (message.attachments.isNotEmpty) ...[
-              SizedBox(height: 8.h),
-              ...message.attachments.map(_attachmentMessageTile),
-            ],
-          ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: messageReactions
+                .map(
+                  (reaction) => InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _reactToMessage(message, reaction);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 140),
+                      padding: EdgeInsets.all(8.w),
+                      decoration: BoxDecoration(
+                        color: message.myReaction == reaction
+                            ? const Color(0xffdcf8c6)
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: message.myReaction == reaction
+                            ? Border.all(color: AppColors.primaryColor)
+                            : null,
+                      ),
+                      child: Text(reaction, style: TextStyle(fontSize: 26.sp)),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
         ),
       ),
     );
