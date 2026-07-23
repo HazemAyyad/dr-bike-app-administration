@@ -51,13 +51,6 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
     ['closed', 'إغلاق'],
   ];
 
-  static const priorities = [
-    ['low', 'منخفضة'],
-    ['normal', 'عادية'],
-    ['high', 'عالية'],
-    ['urgent', 'عاجلة'],
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -217,138 +210,17 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   }
 
   Future<void> _showCreateSheet({AppDevelopmentTask? parent}) async {
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    var priority = 'normal';
-    var developerId = parent?.assignedToUserId ??
-        (developers.isNotEmpty ? developers.first.id : 0);
-    var files = <String>[];
-
     final created = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              18.w,
-              14.h,
-              18.w,
-              MediaQuery.of(context).viewInsets.bottom + 18.h,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    parent == null ? 'مهمة تطوير جديدة' : 'مهمة فرعية',
-                    style: _titleStyle(),
-                  ),
-                  SizedBox(height: 12.h),
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'العنوان',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  TextField(
-                    controller: descriptionController,
-                    minLines: 3,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      labelText: 'الوصف',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-                  if (developers.isNotEmpty)
-                    DropdownButtonFormField<int>(
-                      initialValue:
-                          developerId == 0 ? developers.first.id : developerId,
-                      decoration: const InputDecoration(
-                        labelText: 'المبرمج',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: developers
-                          .map(
-                            (developer) => DropdownMenuItem(
-                              value: developer.id,
-                              child: Text(developer.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) {
-                        if (value != null) developerId = value;
-                      },
-                    ),
-                  SizedBox(height: 10.h),
-                  DropdownButtonFormField<String>(
-                    initialValue: priority,
-                    decoration: const InputDecoration(
-                      labelText: 'الأولوية',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: priorities
-                        .map(
-                          (item) => DropdownMenuItem(
-                            value: item.first,
-                            child: Text(item.last),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) priority = value;
-                    },
-                  ),
-                  SizedBox(height: 10.h),
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final picked = await _pickFiles();
-                      setSheetState(() => files = picked);
-                    },
-                    icon: const Icon(Icons.attach_file),
-                    label: Text(files.isEmpty
-                        ? 'إرفاق صور أو صوت أو فيديو'
-                        : 'مرفقات: ${files.length}'),
-                  ),
-                  SizedBox(height: 12.h),
-                  ElevatedButton(
-                    onPressed: developerId == 0
-                        ? null
-                        : () async {
-                            if (titleController.text.trim().isEmpty) {
-                              _snack('اكتب عنوان المهمة');
-                              return;
-                            }
-                            try {
-                              await service.create(
-                                parentId: parent?.id,
-                                developerId: developerId,
-                                title: titleController.text,
-                                description: descriptionController.text,
-                                priority: priority,
-                                files: files,
-                              );
-                              if (context.mounted) Navigator.pop(context, true);
-                            } catch (e) {
-                              _snack(e.toString());
-                            }
-                          },
-                    child: const Text('حفظ المهمة'),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+      builder: (_) => _CreateTaskSheet(
+        parent: parent,
+        developers: developers,
+        service: service,
+        pickFiles: _pickFiles,
+        onError: _snack,
       ),
     );
-
-    titleController.dispose();
-    descriptionController.dispose();
 
     if (created == true) {
       isDetails ? await _loadDetails(silent: true) : await _loadList();
@@ -827,4 +699,188 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   void _snack(String message) {
     Get.snackbar('تطوير التطبيق', message, snackPosition: SnackPosition.BOTTOM);
   }
+}
+
+class _CreateTaskSheet extends StatefulWidget {
+  const _CreateTaskSheet({
+    required this.parent,
+    required this.developers,
+    required this.service,
+    required this.pickFiles,
+    required this.onError,
+  });
+
+  final AppDevelopmentTask? parent;
+  final List<AppDevelopmentAdmin> developers;
+  final AppDevelopmentService service;
+  final Future<List<String>> Function() pickFiles;
+  final void Function(String message) onError;
+
+  @override
+  State<_CreateTaskSheet> createState() => _CreateTaskSheetState();
+}
+
+class _CreateTaskSheetState extends State<_CreateTaskSheet> {
+  final titleController = TextEditingController();
+  final descriptionController = TextEditingController();
+
+  String priority = 'normal';
+  late int developerId;
+  List<String> files = [];
+  bool saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    developerId = widget.parent?.assignedToUserId ??
+        (widget.developers.isNotEmpty ? widget.developers.first.id : 0);
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFiles() async {
+    final picked = await widget.pickFiles();
+    if (!mounted) return;
+    setState(() => files = picked);
+  }
+
+  Future<void> _save() async {
+    if (titleController.text.trim().isEmpty) {
+      widget.onError('اكتب عنوان المهمة');
+      return;
+    }
+    if (developerId == 0 || saving) return;
+
+    setState(() => saving = true);
+    try {
+      await widget.service.create(
+        parentId: widget.parent?.id,
+        developerId: developerId,
+        title: titleController.text,
+        description: descriptionController.text,
+        priority: priority,
+        files: files,
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      widget.onError(e.toString());
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        18.w,
+        14.h,
+        18.w,
+        MediaQuery.of(context).viewInsets.bottom + 18.h,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.parent == null ? 'مهمة تطوير جديدة' : 'مهمة فرعية',
+              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 12.h),
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'العنوان',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            TextField(
+              controller: descriptionController,
+              minLines: 3,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: 'الوصف',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            if (widget.developers.isNotEmpty)
+              DropdownButtonFormField<int>(
+                initialValue:
+                    developerId == 0 ? widget.developers.first.id : developerId,
+                decoration: const InputDecoration(
+                  labelText: 'المبرمج',
+                  border: OutlineInputBorder(),
+                ),
+                items: widget.developers
+                    .map(
+                      (developer) => DropdownMenuItem(
+                        value: developer.id,
+                        child: Text(developer.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) developerId = value;
+                },
+              ),
+            SizedBox(height: 10.h),
+            DropdownButtonFormField<String>(
+              initialValue: priority,
+              decoration: const InputDecoration(
+                labelText: 'الأولوية',
+                border: OutlineInputBorder(),
+              ),
+              items: _AppDevelopmentPriorities.items
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item.first,
+                      child: Text(item.last),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) priority = value;
+              },
+            ),
+            SizedBox(height: 10.h),
+            OutlinedButton.icon(
+              onPressed: saving ? null : _pickFiles,
+              icon: const Icon(Icons.attach_file),
+              label: Text(files.isEmpty
+                  ? 'إرفاق صور أو صوت أو فيديو'
+                  : 'مرفقات: ${files.length}'),
+            ),
+            SizedBox(height: 12.h),
+            ElevatedButton(
+              onPressed: developerId == 0 || saving ? null : _save,
+              child: saving
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('حفظ المهمة'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AppDevelopmentPriorities {
+  static const items = [
+    ['low', 'منخفضة'],
+    ['normal', 'عادية'],
+    ['high', 'عالية'],
+    ['urgent', 'عاجلة'],
+  ];
 }
