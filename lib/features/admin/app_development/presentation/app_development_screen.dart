@@ -337,6 +337,11 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         note: noteController.text,
       );
       await _loadDetails(silent: true);
+      _snack(
+        newStatus == 'done'
+            ? 'تم إنجاز المهمة بنجاح'
+            : 'تم تحديث حالة المهمة بنجاح',
+      );
     } catch (e) {
       _snack(e.toString());
     } finally {
@@ -352,6 +357,9 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         status: done ? 'in_progress' : 'done',
       );
       await _loadDetails(silent: true);
+      _snack(done
+          ? 'تم إرجاع المهمة الفرعية لقيد العمل'
+          : 'تم إنجاز المهمة الفرعية بنجاح');
     } catch (e) {
       _snack(e.toString());
     }
