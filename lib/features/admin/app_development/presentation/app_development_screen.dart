@@ -12,8 +12,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../core/helpers/custom_app_bar.dart';
-import '../../../../core/services/initial_bindings.dart';
 import '../../../../core/services/theme_service.dart';
+import '../../../../core/services/user_data.dart';
 import '../../../../core/utils/app_colors.dart';
 import '../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
 import '../data/app_development_service.dart';
@@ -46,6 +46,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   List<AppDevelopmentTask> tasks = [];
   List<AppDevelopmentAdmin> developers = [];
   AppDevelopmentTask? task;
+  int currentUserId = 0;
 
   bool get isDetails => widget.taskId != null;
 
@@ -75,6 +76,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
       ..iosEncoder = IosEncoder.kAudioFormatMPEG4AAC
       ..sampleRate = 48000
       ..bitRate = 128000;
+    _loadCurrentUser();
     isDetails ? _loadDetails() : _loadList();
     _loadMetadata();
   }
@@ -95,6 +97,12 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
       developers = data['developers'] ?? [];
       if (mounted) setState(() {});
     } catch (_) {}
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final saved = await UserData.getSavedUser();
+    if (!mounted) return;
+    setState(() => currentUserId = saved?.user.id ?? 0);
   }
 
   Future<void> _loadList() async {
@@ -657,7 +665,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   }
 
   Widget _messageBubble(AppDevelopmentMessage message) {
-    final mine = userName.isNotEmpty && message.senderName == userName;
+    final mine = currentUserId > 0 && message.senderUserId == currentUserId;
     return Align(
       alignment: mine
           ? AlignmentDirectional.centerEnd
@@ -713,7 +721,8 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   }
 
   Widget _attachmentPreview(AppDevelopmentAttachment attachment) {
-    if (attachment.type == 'image' && attachment.url.isNotEmpty) {
+    final type = attachment.displayType;
+    if (type == 'image' && attachment.url.isNotEmpty) {
       return GestureDetector(
         onTap: () => _openImage(attachment.url),
         child: ClipRRect(
@@ -732,19 +741,20 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   }
 
   Widget _attachmentMessageTile(AppDevelopmentAttachment attachment) {
-    if (attachment.type == 'audio' && attachment.url.isNotEmpty) {
+    final type = attachment.displayType;
+    if (type == 'audio' && attachment.url.isNotEmpty) {
       return Padding(
         padding: EdgeInsets.only(top: 4.h),
         child: _DevelopmentAudioAttachment(attachment: attachment),
       );
     }
-    if (attachment.type == 'video' && attachment.url.isNotEmpty) {
+    if (type == 'video' && attachment.url.isNotEmpty) {
       return Padding(
         padding: EdgeInsets.only(top: 4.h),
         child: _DevelopmentVideoAttachment(attachment: attachment),
       );
     }
-    if (attachment.type == 'image' && attachment.url.isNotEmpty) {
+    if (type == 'image' && attachment.url.isNotEmpty) {
       return Padding(
         padding: EdgeInsets.only(top: 4.h),
         child: GestureDetector(
@@ -782,12 +792,12 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(_attachmentIcon(attachment.type), size: 20.sp),
+            Icon(_attachmentIcon(attachment.displayType), size: 20.sp),
             SizedBox(width: 8.w),
             Flexible(
               child: Text(
                 attachment.name.isEmpty
-                    ? _attachmentLabel(attachment.type)
+                    ? _attachmentLabel(attachment.displayType)
                     : attachment.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -935,7 +945,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   }
 
   Future<void> _openAttachment(AppDevelopmentAttachment attachment) async {
-    if (attachment.type == 'image' && attachment.url.isNotEmpty) {
+    if (attachment.displayType == 'image' && attachment.url.isNotEmpty) {
       _openImage(attachment.url);
       return;
     }

@@ -29,12 +29,14 @@ class AppDevelopmentAttachment {
   final String url;
   final String name;
   final String type;
+  final String mimeType;
 
   const AppDevelopmentAttachment({
     required this.id,
     required this.url,
     required this.name,
     required this.type,
+    required this.mimeType,
   });
 
   factory AppDevelopmentAttachment.fromJson(Map<String, dynamic> json) {
@@ -43,7 +45,44 @@ class AppDevelopmentAttachment {
       url: json['url']?.toString() ?? '',
       name: json['original_name']?.toString() ?? '',
       type: json['attachment_type']?.toString() ?? 'document',
+      mimeType: json['mime_type']?.toString() ?? '',
     );
+  }
+
+  String get displayType {
+    final lowerName = name.toLowerCase();
+    final lowerUrl = url.toLowerCase();
+    final lowerMime = mimeType.toLowerCase();
+    final source = '$lowerName $lowerUrl';
+
+    if (lowerMime.startsWith('audio/') ||
+        source.endsWith('.m4a') ||
+        source.endsWith('.mp3') ||
+        source.endsWith('.aac') ||
+        source.endsWith('.ogg') ||
+        source.endsWith('.wav')) {
+      return 'audio';
+    }
+    if (lowerMime.startsWith('image/') ||
+        source.endsWith('.jpg') ||
+        source.endsWith('.jpeg') ||
+        source.endsWith('.png') ||
+        source.endsWith('.webp') ||
+        source.endsWith('.heic') ||
+        source.endsWith('.heif')) {
+      return 'image';
+    }
+    if (lowerMime.startsWith('video/') ||
+        source.endsWith('.mp4') ||
+        source.endsWith('.mov') ||
+        source.endsWith('.webm') ||
+        source.endsWith('.3gp') ||
+        source.endsWith('.m4v') ||
+        source.endsWith('.avi')) {
+      return 'video';
+    }
+
+    return type;
   }
 }
 
