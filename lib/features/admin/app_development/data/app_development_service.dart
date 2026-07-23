@@ -383,6 +383,31 @@ class AppDevelopmentService {
     );
   }
 
+  Future<AppDevelopmentTask> updateTask({
+    required int id,
+    required int developerId,
+    required String title,
+    required String description,
+    required String priority,
+    List<String> tags = const [],
+    DateTime? dueAt,
+  }) async {
+    final response = await _api.post(
+      EndPoints.appDevelopmentTask(id),
+      data: {
+        'assigned_to_user_id': developerId,
+        'title': title.trim(),
+        'description': description.trim(),
+        'priority': priority,
+        'tags': tags,
+        'due_at': dueAt == null ? null : _datePayload(dueAt),
+      },
+    );
+    return AppDevelopmentTask.fromJson(
+      Map<String, dynamic>.from(response.data['task'] as Map),
+    );
+  }
+
   Future<void> updateStatus({
     required int id,
     required String status,

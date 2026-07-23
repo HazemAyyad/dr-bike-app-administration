@@ -289,6 +289,16 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   }
 
   Future<void> _changeStatus(String newStatus) async {
+    await _submitStatusChange(newStatus);
+  }
+
+  Future<void> _submitStatusChange(
+    String newStatus, {
+    String title = 'تغيير الحالة',
+    String hint = 'ملاحظة قصيرة اختيارية',
+    bool requireNote = false,
+    String? successMessage,
+  }) async {
     final noteController = TextEditingController();
     final ok = await showModalBottomSheet<bool>(
       context: context,
@@ -304,15 +314,15 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('تغيير الحالة', style: _titleStyle()),
+            Text(title, style: _titleStyle()),
             SizedBox(height: 12.h),
             TextField(
               controller: noteController,
               minLines: 2,
               maxLines: 4,
-              decoration: const InputDecoration(
-                hintText: 'ملاحظة قصيرة اختيارية',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText: hint,
+                border: const OutlineInputBorder(),
               ),
             ),
             SizedBox(height: 12.h),
@@ -325,6 +335,11 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
       ),
     );
     if (ok != true) return;
+    if (requireNote && noteController.text.trim().isEmpty) {
+      noteController.dispose();
+      _snack('اكتب سبب الإرجاع');
+      return;
+    }
 
     try {
       await service.updateStatus(
@@ -333,11 +348,10 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
         note: noteController.text,
       );
       await _loadDetails(silent: true);
-      _snack(
-        newStatus == 'done'
-            ? 'تم إنجاز المهمة بنجاح'
-            : 'تم تحديث حالة المهمة بنجاح',
-      );
+      _snack(successMessage ??
+          (newStatus == 'done'
+              ? 'تم إنجاز المهمة بنجاح'
+              : 'تم تحديث حالة المهمة بنجاح'));
     } catch (e) {
       _snack(e.toString());
     } finally {
@@ -393,6 +407,25 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
 
     if (created == true) {
       isDetails ? await _loadDetails(silent: true) : await _loadList();
+    }
+  }
+
+  Future<void> _showEditSheet(AppDevelopmentTask item) async {
+    final edited = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _CreateTaskSheet(
+        task: item,
+        parent: null,
+        developers: developers,
+        service: service,
+        pickFiles: _pickFiles,
+        onError: _snack,
+      ),
+    );
+
+    if (edited == true) {
+      await _loadDetails(silent: true);
     }
   }
 
@@ -674,6 +707,11 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
           Row(
             children: [
               Expanded(child: Text(item.title, style: _titleStyle(size: 17))),
+              IconButton(
+                tooltip: 'تعديل المهمة',
+                onPressed: () => _showEditSheet(item),
+                icon: const Icon(Icons.edit_outlined),
+              ),
               _pill('${item.progress}%', AppColors.primaryColor),
             ],
           ),
@@ -709,7 +747,7 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
   }
 
   Widget _statusActions(AppDevelopmentTask item) {
-    final actions = [
+    final actions = <List<String>>[
       ['in_progress', 'قيد العمل'],
       ['review', currentRole == 'developer' ? 'طلب مراجعة' : 'مراجعة'],
       ['waiting_owner', 'بانتظار صاحب التطبيق'],
@@ -725,15 +763,30 @@ class _AppDevelopmentScreenState extends State<AppDevelopmentScreen> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: actions
-            .map((item) => Padding(
-                  padding: EdgeInsetsDirectional.only(end: 8.w),
-                  child: OutlinedButton(
-                    onPressed: () => _changeStatus(item.first),
-                    child: Text(item.last),
-                  ),
-                ))
-            .toList(),
+        children: [
+          ...actions.map((action) => Padding(
+                padding: EdgeInsetsDirectional.only(end: 8.w),
+                child: OutlinedButton(
+                  onPressed: () => _changeStatus(action.first),
+                  child: Text(action.last),
+                ),
+              )),
+          if (currentRole == 'owner' && item.status == 'review')
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: 8.w),
+              child: OutlinedButton.icon(
+                onPressed: () => _submitStatusChange(
+                  'in_progress',
+                  title: 'إرجاع للمبرمج',
+                  hint: 'اكتب سبب الإرجاع',
+                  requireNote: true,
+                  successMessage: 'تم إرجاع المهمة للمبرمج',
+                ),
+                icon: const Icon(Icons.reply_outlined),
+                label: const Text('إرجاع للمبرمج'),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1687,6 +1740,7 @@ class _DevelopmentVideoAttachmentState
 
 class _CreateTaskSheet extends StatefulWidget {
   const _CreateTaskSheet({
+    this.task,
     required this.parent,
     required this.developers,
     required this.service,
@@ -1694,6 +1748,7 @@ class _CreateTaskSheet extends StatefulWidget {
     required this.onError,
   });
 
+  final AppDevelopmentTask? task;
   final AppDevelopmentTask? parent;
   final List<AppDevelopmentAdmin> developers;
   final AppDevelopmentService service;
@@ -1718,8 +1773,21 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
   @override
   void initState() {
     super.initState();
-    developerId = widget.parent?.assignedToUserId ??
+    final task = widget.task;
+    developerId = task?.assignedToUserId ??
+        widget.parent?.assignedToUserId ??
         (widget.developers.isNotEmpty ? widget.developers.first.id : 0);
+    if (task != null) {
+      titleController.text = task.title;
+      descriptionController.text = task.description;
+      tagsController.text = task.tags.join(', ');
+      priority = task.priority;
+      dueAt = task.dueAt;
+    }
+    if (widget.developers.isNotEmpty &&
+        !widget.developers.any((developer) => developer.id == developerId)) {
+      developerId = widget.developers.first.id;
+    }
   }
 
   @override
@@ -1757,16 +1825,29 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
 
     setState(() => saving = true);
     try {
-      await widget.service.create(
-        parentId: widget.parent?.id,
-        developerId: developerId,
-        title: titleController.text,
-        description: descriptionController.text,
-        priority: priority,
-        tags: _parseTags(tagsController.text),
-        dueAt: dueAt,
-        files: files,
-      );
+      final task = widget.task;
+      if (task == null) {
+        await widget.service.create(
+          parentId: widget.parent?.id,
+          developerId: developerId,
+          title: titleController.text,
+          description: descriptionController.text,
+          priority: priority,
+          tags: _parseTags(tagsController.text),
+          dueAt: dueAt,
+          files: files,
+        );
+      } else {
+        await widget.service.updateTask(
+          id: task.id,
+          developerId: developerId,
+          title: titleController.text,
+          description: descriptionController.text,
+          priority: priority,
+          tags: _parseTags(tagsController.text),
+          dueAt: dueAt,
+        );
+      }
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       widget.onError(e.toString());
@@ -1790,7 +1871,11 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.parent == null ? 'مهمة تطوير جديدة' : 'مهمة فرعية',
+              widget.task != null
+                  ? 'تعديل المهمة'
+                  : widget.parent == null
+                      ? 'مهمة تطوير جديدة'
+                      : 'مهمة فرعية',
               style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
             ),
             SizedBox(height: 12.h),
@@ -1861,24 +1946,41 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
               ),
             ),
             SizedBox(height: 10.h),
-            OutlinedButton.icon(
-              onPressed: saving ? null : _pickDueAt,
-              icon: const Icon(Icons.event_outlined),
-              label: Text(
-                dueAt == null
-                    ? 'تحديد موعد إنجاز'
-                    : 'الموعد: ${_sheetDateLabel(dueAt!)}',
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: saving ? null : _pickDueAt,
+                    icon: const Icon(Icons.event_outlined),
+                    label: Text(
+                      dueAt == null
+                          ? 'تحديد موعد إنجاز'
+                          : 'الموعد: ${_sheetDateLabel(dueAt!)}',
+                    ),
+                  ),
+                ),
+                if (dueAt != null) ...[
+                  SizedBox(width: 8.w),
+                  IconButton(
+                    tooltip: 'إزالة الموعد',
+                    onPressed:
+                        saving ? null : () => setState(() => dueAt = null),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ],
             ),
             SizedBox(height: 10.h),
-            OutlinedButton.icon(
-              onPressed: saving ? null : _pickFiles,
-              icon: const Icon(Icons.attach_file),
-              label: Text(files.isEmpty
-                  ? 'إرفاق صور أو صوت أو فيديو'
-                  : 'مرفقات: ${files.length}'),
-            ),
-            SizedBox(height: 12.h),
+            if (widget.task == null) ...[
+              OutlinedButton.icon(
+                onPressed: saving ? null : _pickFiles,
+                icon: const Icon(Icons.attach_file),
+                label: Text(files.isEmpty
+                    ? 'إرفاق صور أو صوت أو فيديو'
+                    : 'مرفقات: ${files.length}'),
+              ),
+              SizedBox(height: 12.h),
+            ],
             ElevatedButton(
               onPressed: developerId == 0 || saving ? null : _save,
               child: saving
@@ -1887,7 +1989,7 @@ class _CreateTaskSheetState extends State<_CreateTaskSheet> {
                       height: 18.w,
                       child: const CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('حفظ المهمة'),
+                  : Text(widget.task == null ? 'حفظ المهمة' : 'حفظ التعديل'),
             ),
           ],
         ),
