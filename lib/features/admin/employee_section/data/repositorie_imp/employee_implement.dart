@@ -969,6 +969,7 @@ class EmployeeImplement implements EmployeeRepository {
     required String name,
     required String email,
     String? phone,
+    String developmentRole = 'none',
     required String password,
     required String passwordConfirmation,
   }) {
@@ -977,6 +978,7 @@ class EmployeeImplement implements EmployeeRepository {
         name: name,
         email: email,
         phone: phone,
+        developmentRole: developmentRole,
         password: password,
         passwordConfirmation: passwordConfirmation,
       ),
@@ -989,6 +991,7 @@ class EmployeeImplement implements EmployeeRepository {
     required String name,
     required String email,
     String? phone,
+    String developmentRole = 'none',
     String? password,
     String? passwordConfirmation,
   }) {
@@ -998,6 +1001,7 @@ class EmployeeImplement implements EmployeeRepository {
         name: name,
         email: email,
         phone: phone,
+        developmentRole: developmentRole,
         password: password,
         passwordConfirmation: passwordConfirmation,
       ),

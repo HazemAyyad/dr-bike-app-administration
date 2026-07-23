@@ -1528,6 +1528,7 @@ class EmployeeDatasource {
     required String name,
     required String email,
     String? phone,
+    String developmentRole = 'none',
     required String password,
     required String passwordConfirmation,
   }) async {
@@ -1538,6 +1539,7 @@ class EmployeeDatasource {
           'name': name,
           'email': email,
           if (phone != null && phone.isNotEmpty) 'phone': phone,
+          'development_role': developmentRole,
           'password': password,
           'password_confirmation': passwordConfirmation,
         },
@@ -1562,6 +1564,7 @@ class EmployeeDatasource {
     required String name,
     required String email,
     String? phone,
+    String developmentRole = 'none',
     String? password,
     String? passwordConfirmation,
   }) async {
@@ -1572,6 +1575,7 @@ class EmployeeDatasource {
           'name': name,
           'email': email,
           if (phone != null) 'phone': phone,
+          'development_role': developmentRole,
           if (password != null && password.isNotEmpty) 'password': password,
           if (passwordConfirmation != null && passwordConfirmation.isNotEmpty)
             'password_confirmation': passwordConfirmation,

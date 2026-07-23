@@ -66,6 +66,11 @@ class AdminNotificationRouter {
             return;
           }
           break;
+        case 'app_development_task':
+          if (_openAppDevelopmentTask(raw)) {
+            return;
+          }
+          break;
         default:
           break;
       }
@@ -177,6 +182,18 @@ class AdminNotificationRouter {
     );
     if (id == null || id <= 0) return false;
     Get.toNamed('/TechnicalSupport/$id');
+    return true;
+  }
+
+  static bool _openAppDevelopmentTask(Map<String, dynamic> raw) {
+    final id = int.tryParse(
+      raw['app_development_task_id']?.toString() ??
+          raw['task_id']?.toString() ??
+          raw['related_id']?.toString() ??
+          '',
+    );
+    if (id == null || id <= 0) return false;
+    Get.toNamed('/AppDevelopment/$id');
     return true;
   }
 

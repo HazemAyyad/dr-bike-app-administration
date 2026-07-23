@@ -170,6 +170,11 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.TECHNICALSUPPORT,
       'badgeKey': 'technical_support',
     },
+    {
+      'id': '50',
+      'title': 'تطوير التطبيق',
+      'route': AppRoutes.APPDEVELOPMENT,
+    },
     {'id': '17', 'title': 'whatsappCenter', 'route': AppRoutes.WHATSAPPCENTER},
     {
       'id': '16',

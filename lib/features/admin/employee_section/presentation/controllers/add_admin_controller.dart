@@ -21,11 +21,13 @@ class AddAdminController extends GetxController {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final passwordConfirmationController = TextEditingController();
+  final developmentRole = 'none'.obs;
 
   final isLoading = false.obs;
 
   bool get isEdit => Get.arguments?['isEdit'] == true;
-  AdminUserModel? get editingAdmin => Get.arguments?['admin'] as AdminUserModel?;
+  AdminUserModel? get editingAdmin =>
+      Get.arguments?['admin'] as AdminUserModel?;
 
   @override
   void onInit() {
@@ -35,6 +37,7 @@ class AddAdminController extends GetxController {
       nameController.text = admin.name;
       emailController.text = admin.email;
       phoneController.text = admin.phone ?? '';
+      developmentRole.value = admin.developmentRole;
     }
   }
 
@@ -61,13 +64,13 @@ class AddAdminController extends GetxController {
             phone: phoneController.text.trim().isEmpty
                 ? null
                 : phoneController.text.trim(),
+            developmentRole: developmentRole.value,
             password: passwordController.text.isEmpty
                 ? null
                 : passwordController.text,
-            passwordConfirmation:
-                passwordConfirmationController.text.isEmpty
-                    ? null
-                    : passwordConfirmationController.text,
+            passwordConfirmation: passwordConfirmationController.text.isEmpty
+                ? null
+                : passwordConfirmationController.text,
           )
         : await manageAdminUserUsecase.create(
             name: nameController.text.trim(),
@@ -75,6 +78,7 @@ class AddAdminController extends GetxController {
             phone: phoneController.text.trim().isEmpty
                 ? null
                 : phoneController.text.trim(),
+            developmentRole: developmentRole.value,
             password: passwordController.text,
             passwordConfirmation: passwordConfirmationController.text,
           );
@@ -92,7 +96,8 @@ class AddAdminController extends GetxController {
       (success) async {
         await sectionController.getAdminUsers();
         Get.back();
-        Get.snackbar('success'.tr, success, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('success'.tr, success,
+            snackPosition: SnackPosition.BOTTOM);
       },
     );
   }

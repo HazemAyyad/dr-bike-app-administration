@@ -23,6 +23,7 @@ class ManageAdminUserUsecase {
     required String name,
     required String email,
     String? phone,
+    String developmentRole = 'none',
     required String password,
     required String passwordConfirmation,
   }) {
@@ -30,6 +31,7 @@ class ManageAdminUserUsecase {
       name: name,
       email: email,
       phone: phone,
+      developmentRole: developmentRole,
       password: password,
       passwordConfirmation: passwordConfirmation,
     );
@@ -40,6 +42,7 @@ class ManageAdminUserUsecase {
     required String name,
     required String email,
     String? phone,
+    String developmentRole = 'none',
     String? password,
     String? passwordConfirmation,
   }) {
@@ -48,6 +51,7 @@ class ManageAdminUserUsecase {
       name: name,
       email: email,
       phone: phone,
+      developmentRole: developmentRole,
       password: password,
       passwordConfirmation: passwordConfirmation,
     );

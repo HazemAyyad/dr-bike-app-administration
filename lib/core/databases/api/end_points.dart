@@ -213,6 +213,13 @@ class EndPoints {
   static String editAdminUser(int id) => 'admin/users/$id/edit';
   static String deleteAdminUser(int id) => 'admin/users/$id/delete';
   static String toggleBlockAdminUser(int id) => 'admin/users/$id/toggle-block';
+  static const String appDevelopmentMetadata = 'admin/app-development/metadata';
+  static const String appDevelopmentTasks = 'admin/app-development/tasks';
+  static String appDevelopmentTask(int id) => 'admin/app-development/tasks/$id';
+  static String appDevelopmentTaskStatus(int id) =>
+      'admin/app-development/tasks/$id/status';
+  static String appDevelopmentTaskMessages(int id) =>
+      'admin/app-development/tasks/$id/messages';
   static const String qrScan = 'qr-scan';
   static const String overtimeOrders = 'employee/overtime/orders';
   static const String loanOrders = 'employee/loan/orders';
@@ -292,6 +299,8 @@ class EndPoints {
   static const String transferSpecialTask = 'transfer/special/task';
   static const String changeSubSpecialTaskToCompleted =
       'change/sub/special/task/to/completed';
+  static const String changeSubSpecialTaskToPending =
+      'change/sub/special/task/to/pending';
   static const String cancelSubSpecialTask = 'cancel/sub/special/task';
   static const String updateSpecialTask = 'update/special/task';
   static const String convertSpecialTaskToEmployee =

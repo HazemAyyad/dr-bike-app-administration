@@ -47,6 +47,8 @@ class AppRoutes {
   static const WHATSAPPCONVERSATION = '/WhatsAppConversation/:id';
   static const TECHNICALSUPPORT = '/TechnicalSupport';
   static const TECHNICALSUPPORTCONVERSATION = '/TechnicalSupport/:id';
+  static const APPDEVELOPMENT = '/AppDevelopment';
+  static const APPDEVELOPMENTTASK = '/AppDevelopment/:id';
   static const METACATALOGSYNC = '/MetaCatalogSync';
 
   // EMPLOYEE TASKS SCREEN
@@ -174,6 +176,7 @@ class AppRoutes {
   static const BANKSSETTINGSSCREEN = '/BanksSettingsScreen';
   static const CONTACTCATEGORIESSETTINGSSCREEN =
       '/ContactCategoriesSettingsScreen';
+  static const DATABASEBACKUPSSCREEN = '/DatabaseBackupsScreen';
 
   // Attendance / Fingerprint (admin)
   static const ATTENDANCEDEVICESSCREEN = '/AttendanceDevicesScreen';

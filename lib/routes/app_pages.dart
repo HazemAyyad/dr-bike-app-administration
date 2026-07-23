@@ -42,6 +42,7 @@ import '../features/employee/notifications/presentation/views/employee_notificat
 import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
 import '../features/employee_suggestions/presentation/employee_suggestions_screen.dart';
 import '../features/admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
+import '../features/admin/app_development/presentation/app_development_screen.dart';
 import '../features/admin/boxes/presentation/binding/boxes_binding.dart';
 import '../features/admin/boxes/presentation/views/boxes_screen.dart';
 import '../features/admin/boxes/presentation/views/create_boxes_screen.dart';
@@ -86,6 +87,7 @@ import '../features/admin/general_settings/presentation/controllers/banks_settin
 import '../features/admin/general_settings/presentation/views/attendance_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/banks_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/contact_categories_settings_screen.dart';
+import '../features/admin/general_settings/presentation/views/database_backups_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/product_size_options_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/stock_inventory_settings_screen.dart';
@@ -330,6 +332,18 @@ class AppPages {
       name: AppRoutes.TECHNICALSUPPORTCONVERSATION,
       page: () => TechnicalSupportScreen(
         conversationId: int.tryParse(Get.parameters['id'] ?? ''),
+      ),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.APPDEVELOPMENT,
+      page: () => const AppDevelopmentScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.APPDEVELOPMENTTASK,
+      page: () => AppDevelopmentScreen(
+        taskId: int.tryParse(Get.parameters['id'] ?? ''),
       ),
       transition: _transitionFadeIn,
     ),
@@ -585,6 +599,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.CONTACTCATEGORIESSETTINGSSCREEN,
       page: () => const ContactCategoriesSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.DATABASEBACKUPSSCREEN,
+      page: () => const DatabaseBackupsScreen(),
       transition: _transitionFadeIn,
     ),
     GetPage(

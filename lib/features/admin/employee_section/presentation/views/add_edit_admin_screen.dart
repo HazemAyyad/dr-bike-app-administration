@@ -51,6 +51,32 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
                 keyboardType: TextInputType.phone,
               ),
               SizedBox(height: 12.h),
+              Obx(
+                () => DropdownButtonFormField<String>(
+                  initialValue: controller.developmentRole.value,
+                  decoration: const InputDecoration(
+                    labelText: 'الدور في تطوير التطبيق',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'none', child: Text('بدون')),
+                    DropdownMenuItem(
+                      value: 'owner',
+                      child: Text('صاحب التطبيق'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'developer',
+                      child: Text('مبرمج'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      controller.developmentRole.value = value;
+                    }
+                  },
+                ),
+              ),
+              SizedBox(height: 12.h),
               CustomTextField(
                 isRequired: !controller.isEdit,
                 controller: controller.passwordController,

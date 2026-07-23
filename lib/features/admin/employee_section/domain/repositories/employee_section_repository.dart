@@ -230,6 +230,7 @@ abstract class EmployeeRepository {
     required String name,
     required String email,
     String? phone,
+    String developmentRole,
     required String password,
     required String passwordConfirmation,
   });
@@ -239,6 +240,7 @@ abstract class EmployeeRepository {
     required String name,
     required String email,
     String? phone,
+    String developmentRole,
     String? password,
     String? passwordConfirmation,
   });

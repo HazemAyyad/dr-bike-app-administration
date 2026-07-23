@@ -5,6 +5,7 @@ class AdminUserModel {
   final String? phone;
   final bool isBlocked;
   final bool isOnline;
+  final String developmentRole;
   final int activeSessionsCount;
   final int adminFcmDevicesCount;
   final String? fcmLabel;
@@ -17,6 +18,7 @@ class AdminUserModel {
     this.phone,
     required this.isBlocked,
     required this.isOnline,
+    required this.developmentRole,
     required this.activeSessionsCount,
     required this.adminFcmDevicesCount,
     this.fcmLabel,
@@ -31,6 +33,7 @@ class AdminUserModel {
       phone: json['phone']?.toString(),
       isBlocked: json['is_blocked'] == true || json['is_blocked'] == 1,
       isOnline: json['is_online'] == true || json['is_online'] == 1,
+      developmentRole: json['development_role']?.toString() ?? 'none',
       activeSessionsCount:
           int.tryParse('${json['active_sessions_count']}') ?? 0,
       adminFcmDevicesCount:
