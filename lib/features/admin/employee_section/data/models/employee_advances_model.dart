@@ -8,6 +8,9 @@ class EmployeeAdvanceModel {
     required this.day,
     required this.date,
     required this.time,
+    this.approvedLoanValue,
+    this.reviewedAt,
+    this.rejectionReason,
   });
 
   final int id;
@@ -16,6 +19,9 @@ class EmployeeAdvanceModel {
   final String day;
   final String date;
   final String time;
+  final String? approvedLoanValue;
+  final String? reviewedAt;
+  final String? rejectionReason;
 
   factory EmployeeAdvanceModel.fromJson(Map<String, dynamic> json) {
     return EmployeeAdvanceModel(
@@ -25,6 +31,9 @@ class EmployeeAdvanceModel {
       day: asString(json['day']),
       date: asString(json['date']),
       time: asString(json['time']),
+      approvedLoanValue: asNullableString(json['approved_loan_value']),
+      reviewedAt: asNullableString(json['reviewed_at']),
+      rejectionReason: asNullableString(json['rejection_reason']),
     );
   }
 }
@@ -34,11 +43,13 @@ class EmployeeAdvancesResult {
     required this.month,
     required this.advances,
     required this.total,
+    required this.approvedTotal,
   });
 
   final String month;
   final List<EmployeeAdvanceModel> advances;
   final String total;
+  final String approvedTotal;
 
   factory EmployeeAdvancesResult.fromJson(Map<String, dynamic> json) {
     final data = asMap(json['data']);
@@ -56,6 +67,7 @@ class EmployeeAdvancesResult {
       month: asString(data['month']),
       advances: advances,
       total: asString(data['total'], '0'),
+      approvedTotal: asString(data['approved_total'], '0'),
     );
   }
 }

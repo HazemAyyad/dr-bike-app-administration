@@ -30,6 +30,7 @@ abstract class SalesRepository {
 
   Future<List<InstantSalesModel>> getInstantSales({
     String? search,
+    String? date,
     String sortDirection = 'desc',
   });
 

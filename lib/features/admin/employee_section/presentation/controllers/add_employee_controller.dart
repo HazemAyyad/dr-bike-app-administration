@@ -385,6 +385,27 @@ class AddEmployeeController extends GetxController {
 
   final RxBool isAllPermissionsSelected = false.obs;
   final RxBool canEditPermissionAssignments = true.obs;
+  final RxMap<String, bool> expandedPermissionGroups = <String, bool>{}.obs;
+
+  bool isPermissionGroupExpanded(String groupKey) =>
+      expandedPermissionGroups[groupKey] ?? false;
+
+  void togglePermissionGroupExpanded(String groupKey) {
+    expandedPermissionGroups[groupKey] = !isPermissionGroupExpanded(groupKey);
+  }
+
+  void _expandGroupsWithSelectedPermissions() {
+    for (final group in groupedVisiblePermissions) {
+      final permissions =
+          List<Map<String, dynamic>>.from(group['permissions'] as List);
+      final hasSelected = permissions.any(
+        (permission) => permission['permission'].value == true,
+      );
+      if (hasSelected) {
+        expandedPermissionGroups[group['key'].toString()] = true;
+      }
+    }
+  }
 
   List<Map<String, dynamic>> get visiblePermissionsList {
     if (userType != 'employee') {
@@ -409,6 +430,7 @@ class AddEmployeeController extends GetxController {
       element['permission'].value =
           selectedIds.contains(int.tryParse(element['id'].toString()) ?? -1);
     }
+    _expandGroupsWithSelectedPermissions();
   }
 
   Future<void> _loadPermissionsFromServer() async {
@@ -625,6 +647,35 @@ class AddEmployeeController extends GetxController {
         permission['permission'].value = !permission['permission'].value;
       }
     }
+  }
+
+  bool isPermissionGroupSelected(String groupKey) {
+    final groupPermissions = visiblePermissionsList
+        .where((permission) => permission['group']?.toString() == groupKey)
+        .toList();
+    if (groupPermissions.isEmpty) return false;
+    return groupPermissions
+        .every((permission) => permission['permission'].value == true);
+  }
+
+  void setPermissionValue(Map<String, dynamic> permission, bool? value) {
+    if (!canEditPermissionAssignments.value) return;
+    permission['permission'].value = value ?? false;
+    isAllPermissionsSelected.value = visiblePermissionsList.isNotEmpty &&
+        visiblePermissionsList
+            .every((permission) => permission['permission'].value == true);
+  }
+
+  void setPermissionGroupSelected(String groupKey, bool selected) {
+    if (!canEditPermissionAssignments.value) return;
+    for (final permission in visiblePermissionsList.where(
+      (permission) => permission['group']?.toString() == groupKey,
+    )) {
+      permission['permission'].value = selected;
+    }
+    isAllPermissionsSelected.value = visiblePermissionsList.isNotEmpty &&
+        visiblePermissionsList
+            .every((permission) => permission['permission'].value == true);
   }
 
   void setAllPermissionsFalse() {

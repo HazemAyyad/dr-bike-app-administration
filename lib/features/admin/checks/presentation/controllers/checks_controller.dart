@@ -29,6 +29,7 @@ import '../../domain/usecases/get_checks_usecase.dart';
 import '../../domain/usecases/return_check_usercase.dart';
 import '../../domain/usecases/chash_to_box_usecase.dart';
 import '../../domain/repositories/checks_repository.dart';
+import '../widgets/check_details.dart';
 import 'checks_serves.dart';
 
 class ChecksController extends GetxController
@@ -308,6 +309,8 @@ class ChecksController extends GetxController
 
   final currentTab = 0.obs;
   final tabs = ['didNotActOnIt', 'actedOnIt', 'archive'].obs;
+  int? _pendingOpenCheckId;
+  bool _pendingCheckDialogOpened = false;
 
   final isLoading = false.obs;
   final isBulkSelectionMode = false.obs;
@@ -1477,7 +1480,41 @@ class ChecksController extends GetxController
         isLoading(false);
       }
       update();
+      _openPendingCheckDetailsIfNeeded();
     }
+  }
+
+  void _openPendingCheckDetailsIfNeeded() {
+    final id = _pendingOpenCheckId;
+    if (id == null || _pendingCheckDialogOpened) return;
+
+    final match = _findCheckById(id);
+    if (match == null) return;
+
+    currentTab.value = match.tabIndex;
+    _pendingCheckDialogOpened = true;
+    update();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Get.dialog(CheckDetails(check: match.check, type: isInComing));
+    });
+  }
+
+  _CheckTabMatch? _findCheckById(int id) {
+    final sources = [
+      _CheckTabSource(0, filteredInComingTasks),
+      _CheckTabSource(1, filteredCashedToPersonTasks),
+      _CheckTabSource(2, filteredArchiveTasks),
+    ];
+    for (final source in sources) {
+      for (final list in source.grouped.values) {
+        for (final check in list) {
+          if (check.id == id) {
+            return _CheckTabMatch(tabIndex: source.tabIndex, check: check);
+          }
+        }
+      }
+    }
+    return null;
   }
 
   void openOutgoingChecks() {
@@ -1730,12 +1767,35 @@ class ChecksController extends GetxController
   @override
   void onInit() {
     super.onInit();
+    _applyRouteArguments();
     loadSavedExchangeCurrencies();
     fetchExchangeRate();
     getGeneralChecksData();
+    loadAllChecksTabs(showLoading: true);
 
     getAllCustomersAndSellers();
     getShowBoxes();
+  }
+
+  void _applyRouteArguments() {
+    final args = Get.arguments;
+    if (args is Map) {
+      final incoming = args['isIncoming'];
+      if (incoming is bool) {
+        isInComing = incoming;
+      }
+      final checkId = args['checkId'];
+      _pendingOpenCheckId =
+          checkId is int ? checkId : int.tryParse(checkId?.toString() ?? '');
+      return;
+    }
+
+    final route = Get.currentRoute;
+    if (route == AppRoutes.INCOMINGCHECKSSCREEN) {
+      isInComing = true;
+    } else if (route == AppRoutes.OUTGOINGCHECKSSCREEN) {
+      isInComing = false;
+    }
   }
 
   @override
@@ -1759,6 +1819,23 @@ class ChecksController extends GetxController
     _exchangeDebounce?.cancel();
     super.onClose();
   }
+}
+
+class _CheckTabSource {
+  const _CheckTabSource(this.tabIndex, this.grouped);
+
+  final int tabIndex;
+  final Map<String, List<CheckModel>> grouped;
+}
+
+class _CheckTabMatch {
+  const _CheckTabMatch({
+    required this.tabIndex,
+    required this.check,
+  });
+
+  final int tabIndex;
+  final CheckModel check;
 }
 
 class ExchangeCurrency {

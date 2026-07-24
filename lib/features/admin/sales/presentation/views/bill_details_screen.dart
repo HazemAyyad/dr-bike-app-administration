@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -551,6 +552,8 @@ class _PdfLineRow {
     required this.index,
     required this.code,
     required this.name,
+    required this.nameImage,
+    this.variant,
     required this.quantity,
     required this.cost,
     required this.total,
@@ -561,6 +564,8 @@ class _PdfLineRow {
   final pw.ImageProvider? image;
   final String code;
   final String name;
+  final pw.ImageProvider nameImage;
+  final String? variant;
   final String quantity;
   final String cost;
   final String total;
@@ -570,7 +575,11 @@ class _PdfLineRow {
       index,
       if (includeProductImages) image ?? '-',
       code,
-      name,
+      _PdfProductNameCell(
+        name: name,
+        nameImage: nameImage,
+        variant: variant,
+      ),
       quantity,
       cost,
       total,
@@ -580,18 +589,41 @@ class _PdfLineRow {
   }
 }
 
+class _PdfProductNameCell {
+  const _PdfProductNameCell({
+    required this.name,
+    required this.nameImage,
+    this.variant,
+  });
+
+  final String name;
+  final pw.ImageProvider nameImage;
+  final String? variant;
+}
+
 class SalesInvoicePdfBuilder {
   SalesInvoicePdfBuilder._();
 
   static Future<pw.Font> _regular() async {
-    final data =
-        await rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf');
-    return pw.Font.ttf(data);
+    try {
+      return await PdfGoogleFonts.cairoRegular()
+          .timeout(const Duration(seconds: 4));
+    } catch (_) {
+      final data =
+          await rootBundle.load('assets/fonts/Almarai/Almarai-Regular.ttf');
+      return pw.Font.ttf(data);
+    }
   }
 
   static Future<pw.Font> _bold() async {
-    final data = await rootBundle.load('assets/fonts/Almarai/Almarai-Bold.ttf');
-    return pw.Font.ttf(data);
+    try {
+      return await PdfGoogleFonts.cairoBold()
+          .timeout(const Duration(seconds: 4));
+    } catch (_) {
+      final data =
+          await rootBundle.load('assets/fonts/Almarai/Almarai-Bold.ttf');
+      return pw.Font.ttf(data);
+    }
   }
 
   static Future<pw.MemoryImage?> _logo() async {
@@ -606,6 +638,85 @@ class SalesInvoicePdfBuilder {
   static String _money(dynamic value) {
     final parsed = value is num ? value.toDouble() : double.tryParse('$value');
     return NumberFormat('#,##0.00').format(parsed ?? 0);
+  }
+
+  static String _cleanPdfProductBaseName({
+    required String preferredBaseName,
+    required String fallbackName,
+    String? variantLabel,
+    String? sizeLabel,
+    String? colorLabel,
+  }) {
+    var base = preferredBaseName.trim().isNotEmpty
+        ? preferredBaseName.trim()
+        : fallbackName.trim();
+    if (base.isEmpty) return '-';
+
+    for (final suffix in [
+      variantLabel,
+      [
+        sizeLabel?.trim(),
+        colorLabel?.trim(),
+      ].where((part) => part != null && part.isNotEmpty).join(' / '),
+      sizeLabel,
+      colorLabel,
+    ]) {
+      final value = suffix?.trim();
+      if (value == null || value.isEmpty) continue;
+      base = base.replaceAll(' — $value', '').replaceAll(' - $value', '');
+    }
+
+    return base.trim().isEmpty ? '-' : base.trim();
+  }
+
+  static String? _pdfVariantLine({
+    String? sizeLabel,
+    String? colorLabel,
+    String? variantLabel,
+  }) {
+    final variant = variantLabel?.trim();
+    if (variant != null && variant.isNotEmpty) {
+      return variant;
+    }
+
+    final parts = [
+      sizeLabel?.trim(),
+      colorLabel?.trim(),
+    ].where((part) => part != null && part.isNotEmpty).cast<String>().toList();
+
+    return parts.isEmpty ? null : parts.join(' / ');
+  }
+
+  static Future<pw.ImageProvider> _productNameImage(String text) async {
+    final value = text.trim().isEmpty ? '-' : text.trim();
+    final painter = TextPainter(
+      text: TextSpan(
+        text: value,
+        style: const TextStyle(
+          color: Colors.black,
+          fontFamily: 'Almarai',
+          fontSize: 42,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textAlign: TextAlign.right,
+      textDirection: ui.TextDirection.rtl,
+      maxLines: 1,
+    )..layout();
+
+    final width = (painter.width + 12).ceil().clamp(24, 900);
+    final height = (painter.height + 8).ceil().clamp(24, 160);
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(
+      recorder,
+      ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+    );
+
+    painter.paint(canvas, const ui.Offset(6, 4));
+    final image = await recorder.endRecording().toImage(width, height);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+
+    return pw.MemoryImage(data!.buffer.asUint8List());
   }
 
   static Future<pw.ImageProvider?> _productImage(String imageUrl) async {
@@ -759,6 +870,7 @@ class SalesInvoicePdfBuilder {
       required String imageUrl,
       required String code,
       required String name,
+      String? variant,
       required String quantity,
       required String cost,
       required String total,
@@ -769,6 +881,8 @@ class SalesInvoicePdfBuilder {
           image: includeProductImages ? await _productImage(imageUrl) : null,
           code: code.trim().isEmpty ? '-' : code,
           name: name,
+          nameImage: await _productNameImage(name),
+          variant: variant,
           quantity: quantity,
           cost: _money(cost),
           total: _money(total),
@@ -780,7 +894,18 @@ class SalesInvoicePdfBuilder {
       await addLine(
         imageUrl: invoice.productImage,
         code: invoice.productCode ?? '-',
-        name: invoice.displayProductTitle,
+        name: _cleanPdfProductBaseName(
+          preferredBaseName: invoice.displayProductNameOnly,
+          fallbackName: invoice.displayProductTitle,
+          sizeLabel: invoice.sizeLabel,
+          colorLabel: invoice.colorLabel,
+          variantLabel: invoice.variantLabel,
+        ),
+        variant: _pdfVariantLine(
+          sizeLabel: invoice.sizeLabel,
+          colorLabel: invoice.colorLabel,
+          variantLabel: invoice.variantLabel,
+        ),
         quantity: invoice.quantity,
         cost: invoice.cost,
         total: invoice.subtotal,
@@ -789,7 +914,20 @@ class SalesInvoicePdfBuilder {
         await addLine(
           imageUrl: sub.productImage,
           code: sub.productCode ?? '-',
-          name: sub.displayProductName,
+          name: _cleanPdfProductBaseName(
+            preferredBaseName: sub.productNameBase?.trim().isNotEmpty == true
+                ? sub.productNameBase!
+                : sub.productName,
+            fallbackName: sub.displayProductName,
+            sizeLabel: sub.sizeLabel,
+            colorLabel: sub.colorLabel,
+            variantLabel: sub.variantLabel,
+          ),
+          variant: _pdfVariantLine(
+            sizeLabel: sub.sizeLabel,
+            colorLabel: sub.colorLabel,
+            variantLabel: sub.variantLabel,
+          ),
           quantity: sub.quantity,
           cost: sub.cost,
           total: sub.subtotal,
@@ -799,7 +937,18 @@ class SalesInvoicePdfBuilder {
       await addLine(
         imageUrl: invoice.productImage,
         code: invoice.productCode ?? '-',
-        name: invoice.displayProductTitle,
+        name: _cleanPdfProductBaseName(
+          preferredBaseName: invoice.displayProductNameOnly,
+          fallbackName: invoice.displayProductTitle,
+          sizeLabel: invoice.sizeLabel,
+          colorLabel: invoice.colorLabel,
+          variantLabel: invoice.variantLabel,
+        ),
+        variant: _pdfVariantLine(
+          sizeLabel: invoice.sizeLabel,
+          colorLabel: invoice.colorLabel,
+          variantLabel: invoice.variantLabel,
+        ),
         quantity: invoice.quantity,
         cost: invoice.cost,
         total: invoice.subtotal,
@@ -808,7 +957,20 @@ class SalesInvoicePdfBuilder {
         await addLine(
           imageUrl: sub.productImage,
           code: sub.productCode ?? '-',
-          name: sub.displayProductName,
+          name: _cleanPdfProductBaseName(
+            preferredBaseName: sub.productNameBase?.trim().isNotEmpty == true
+                ? sub.productNameBase!
+                : sub.productName,
+            fallbackName: sub.displayProductName,
+            sizeLabel: sub.sizeLabel,
+            colorLabel: sub.colorLabel,
+            variantLabel: sub.variantLabel,
+          ),
+          variant: _pdfVariantLine(
+            sizeLabel: sub.sizeLabel,
+            colorLabel: sub.colorLabel,
+            variantLabel: sub.variantLabel,
+          ),
           quantity: sub.quantity,
           cost: sub.cost,
           total: sub.subtotal,
@@ -878,11 +1040,13 @@ class SalesInvoicePdfBuilder {
                 .map(
                   (cell) => cell is pw.ImageProvider
                       ? _imageCell(cell)
-                      : _tableCell(
-                          cell.toString(),
-                          font: regular,
-                          alignment: pw.Alignment.centerRight,
-                        ),
+                      : cell is _PdfProductNameCell
+                          ? _productNameCell(cell, font: regular)
+                          : _tableCell(
+                              cell.toString(),
+                              font: regular,
+                              alignment: pw.Alignment.centerRight,
+                            ),
                 )
                 .toList(),
           ),
@@ -897,6 +1061,45 @@ class SalesInvoicePdfBuilder {
       padding: const pw.EdgeInsets.all(3),
       height: 42,
       child: pw.Image(image, fit: pw.BoxFit.contain),
+    );
+  }
+
+  static pw.Widget _productNameCell(
+    _PdfProductNameCell cell, {
+    required pw.Font font,
+  }) {
+    final variant = cell.variant?.trim();
+
+    return pw.Container(
+      alignment: pw.Alignment.centerRight,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+      child: pw.Directionality(
+        textDirection: pw.TextDirection.rtl,
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.start,
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            pw.Image(
+              cell.nameImage,
+              height: 15,
+              fit: pw.BoxFit.contain,
+              alignment: pw.Alignment.centerRight,
+            ),
+            if (variant != null && variant.isNotEmpty) ...[
+              pw.SizedBox(width: 4),
+              pw.Text(
+                variant,
+                textDirection: pw.TextDirection.rtl,
+                style: pw.TextStyle(
+                  font: font,
+                  color: PdfColors.grey600,
+                  fontSize: 8.2,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 

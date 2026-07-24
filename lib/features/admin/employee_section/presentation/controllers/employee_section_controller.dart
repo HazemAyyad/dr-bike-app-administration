@@ -160,6 +160,8 @@ class EmployeeSectionController extends GetxController
   final TextEditingController overtimeValueController = TextEditingController();
 
   final TextEditingController loanValueController = TextEditingController();
+  final TextEditingController rejectionReasonController =
+      TextEditingController();
 
   final TextEditingController extraWorkHoursController =
       TextEditingController();
@@ -275,8 +277,10 @@ class EmployeeSectionController extends GetxController
   // reject Employee Order
   void rejectEmployeeOrder(BuildContext context, String employeeOrderId) async {
     isPaymentLoading(true);
-    final result =
-        await rejectOrderUsecase.call(employeeOrderId: employeeOrderId);
+    final result = await rejectOrderUsecase.call(
+      employeeOrderId: employeeOrderId,
+      rejectionReason: rejectionReasonController.text.trim(),
+    );
     result.fold(
       (failure) {
         Helpers.showCustomDialogError(
@@ -286,18 +290,20 @@ class EmployeeSectionController extends GetxController
         );
       },
       (success) {
+        overtimeValueController.clear();
+        loanValueController.clear();
+        rejectionReasonController.clear();
+        extraWorkHoursController.clear();
+        loanValue.value = false;
+        rejectOrder.value = false;
+        extraWorkHours.value = false;
+        overtimeValue.value = false;
         Get.back();
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            getOvertimeAndLoan();
-            Get.back();
-          },
-        );
-        Helpers.showCustomDialogSuccess(
-          context: context,
-          title: 'success'.tr,
-          message: success,
+        getOvertimeAndLoan();
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
         );
       },
     );
@@ -332,23 +338,18 @@ class EmployeeSectionController extends GetxController
       (success) {
         overtimeValueController.clear();
         loanValueController.clear();
+        rejectionReasonController.clear();
         extraWorkHoursController.clear();
         loanValue.value = false;
         rejectOrder.value = false;
         extraWorkHours.value = false;
         overtimeValue.value = false;
         Get.back();
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () {
-            getOvertimeAndLoan();
-            Get.back();
-          },
-        );
-        Helpers.showCustomDialogSuccess(
-          context: context,
-          title: 'success'.tr,
-          message: success,
+        getOvertimeAndLoan();
+        Get.snackbar(
+          'success'.tr,
+          success,
+          snackPosition: SnackPosition.BOTTOM,
         );
       },
     );
@@ -1183,6 +1184,7 @@ class EmployeeSectionController extends GetxController
   void onClose() {
     employeeNameController.dispose();
     paySalaryController.dispose();
+    rejectionReasonController.dispose();
     addRegularWorkingHoursController.dispose();
     addWorkHoursController.dispose();
     animController.dispose();

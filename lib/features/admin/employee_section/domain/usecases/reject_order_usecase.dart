@@ -8,8 +8,13 @@ class RejectOrderUsecase {
 
   RejectOrderUsecase({required this.employeeRepository});
 
-  Future<Either<Failure, String>> call({required String employeeOrderId}) {
+  Future<Either<Failure, String>> call({
+    required String employeeOrderId,
+    required String rejectionReason,
+  }) {
     return employeeRepository.rejectEmployeeOrder(
-        employeeOrderId: employeeOrderId);
+      employeeOrderId: employeeOrderId,
+      rejectionReason: rejectionReason,
+    );
   }
 }

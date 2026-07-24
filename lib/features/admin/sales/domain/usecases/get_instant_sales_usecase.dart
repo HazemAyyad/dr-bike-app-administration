@@ -9,10 +9,12 @@ class GetInstantSalesUsecase {
 
   Future<List<InstantSalesModel>> call({
     String? search,
+    String? date,
     String sortDirection = 'desc',
   }) async {
     return await salesRepository.getInstantSales(
       search: search,
+      date: date,
       sortDirection: sortDirection,
     );
   }

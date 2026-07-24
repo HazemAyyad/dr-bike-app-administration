@@ -11,6 +11,10 @@ class OvertimeAndLoanModel {
   final String? loanValue;
   final String? extraWorkHoursValue;
   final DateTime orderDate;
+  final bool canReview;
+  final String? reviewedAt;
+  final String? rejectionReason;
+  final String? approvedLoanValue;
 
   OvertimeAndLoanModel({
     required this.id,
@@ -22,20 +26,29 @@ class OvertimeAndLoanModel {
     this.loanValue,
     this.extraWorkHoursValue,
     required this.orderDate,
+    required this.canReview,
+    this.reviewedAt,
+    this.rejectionReason,
+    this.approvedLoanValue,
   });
 
   factory OvertimeAndLoanModel.fromJson(Map<String, dynamic> json) {
     final j = Map<String, dynamic>.from(json);
+    final status = asString(j['order_status']);
     return OvertimeAndLoanModel(
       id: asInt(j['id']),
       employeeName: asString(j['employee_name']),
       employeeImg: ShowNetImage.getPhoto(asNullableString(j['employee_img'])),
-      orderStatus: asString(j['order_status']),
+      orderStatus: status,
       type: asString(j['type']),
       overtimeValue: asNullableString(j['overtime_value']),
       loanValue: asNullableString(j['loan_value']),
       extraWorkHoursValue: asNullableString(j['extra_work_hours']),
       orderDate: parseApiDateTime(j['order_date']),
+      canReview: asBool(j['can_review'], status == 'pending'),
+      reviewedAt: asNullableString(j['reviewed_at']),
+      rejectionReason: asNullableString(j['rejection_reason']),
+      approvedLoanValue: asNullableString(j['approved_loan_value']),
     );
   }
 
@@ -50,6 +63,10 @@ class OvertimeAndLoanModel {
       'loan_value': loanValue,
       'extra_work_hours': extraWorkHoursValue,
       'order_date': orderDate,
+      'can_review': canReview,
+      'reviewed_at': reviewedAt,
+      'rejection_reason': rejectionReason,
+      'approved_loan_value': approvedLoanValue,
     };
   }
 }

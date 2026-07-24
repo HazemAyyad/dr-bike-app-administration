@@ -23,6 +23,226 @@ class RequestsDetails extends StatelessWidget {
   final EmployeeSectionController controller;
   final bool? isOvertime;
 
+  String get _statusLabel {
+    switch (employee.orderStatus) {
+      case 'approved':
+        return 'مقبول';
+      case 'rejected':
+        return 'مرفوض';
+      case 'pending':
+        return 'قيد الانتظار';
+      default:
+        return employee.orderStatus;
+    }
+  }
+
+  String get _requestDetailsText {
+    if (isOvertime == true) {
+      final overtime = employee.overtimeValue ?? '';
+      final extraHours = employee.extraWorkHoursValue ?? '';
+      final hours = overtime.isNotEmpty ? overtime : extraHours;
+      final title =
+          overtime.isNotEmpty ? 'overtimeValue'.tr : 'numberOfHours'.tr;
+      final unit = (int.tryParse(hours) ?? 0) > 10 ? 'hour'.tr : 'hours'.tr;
+      return '$title : $hours $unit';
+    }
+
+    return '${'debtValue'.tr} : ${employee.loanValue ?? ''} ${'currency'.tr}';
+  }
+
+  CustomTextField _readOnlyField({
+    required TextStyle textStyle,
+    required String label,
+    required String value,
+  }) {
+    return CustomTextField(
+      label: label,
+      labelTextstyle: textStyle.copyWith(
+        color: AppColors.primaryColor,
+        fontSize: 17.sp,
+        fontWeight: FontWeight.w700,
+      ),
+      hintText: value,
+      hintStyle: textStyle.copyWith(
+        color: Colors.grey,
+        fontSize: 15.sp,
+        fontWeight: FontWeight.w700,
+      ),
+      enabled: false,
+      sizedBox: false,
+      fillColor: ThemeService.isDark.value
+          ? AppColors.darkColor
+          : AppColors.whiteColor,
+      validator: (value) => null,
+    );
+  }
+
+  Widget _reviewSummary(TextStyle textStyle) {
+    final approvedAmount = employee.approvedLoanValue ?? employee.loanValue;
+    return Column(
+      children: [
+        _readOnlyField(
+          textStyle: textStyle,
+          label: 'حالة الطلب',
+          value: _statusLabel,
+        ),
+        if (!isOvertime! && employee.orderStatus == 'approved')
+          _readOnlyField(
+            textStyle: textStyle,
+            label: 'قيمة السلفة المعتمدة',
+            value: '${approvedAmount ?? ''} ${'currency'.tr}',
+          ),
+        if (employee.orderStatus == 'rejected')
+          _readOnlyField(
+            textStyle: textStyle,
+            label: 'سبب الرفض',
+            value: employee.rejectionReason ?? 'لم يتم توضيح السبب',
+          ),
+        if (employee.reviewedAt != null)
+          _readOnlyField(
+            textStyle: textStyle,
+            label: 'تاريخ المراجعة',
+            value: employee.reviewedAt!,
+          ),
+      ],
+    );
+  }
+
+  Widget _reviewControls(TextStyle textStyle, BuildContext context) {
+    return Column(
+      children: [
+        isOvertime!
+            ? Column(
+                children: [
+                  CustomCheckBox(
+                    title: 'AddRegularWorkingHours',
+                    shape: const CircleBorder(),
+                    style: textStyle.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    value: controller.extraWorkHours,
+                    onChanged: (value) =>
+                        controller.setOnlyOneTrue('extraWorkHours'),
+                  ),
+                  Obx(
+                    () => controller.extraWorkHours.value
+                        ? CustomTextField(
+                            label: '',
+                            labelTextstyle: textStyle.copyWith(
+                              color: AppColors.primaryColor,
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            hintText: 'numberOfHours',
+                            controller: controller.extraWorkHoursController,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                  CustomCheckBox(
+                    title: 'addOvertime',
+                    shape: const CircleBorder(),
+                    style: textStyle.copyWith(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    value: controller.overtimeValue,
+                    onChanged: (value) =>
+                        controller.setOnlyOneTrue('overtimeValue'),
+                  ),
+                  Obx(
+                    () => controller.overtimeValue.value
+                        ? CustomTextField(
+                            label: '',
+                            labelTextstyle: textStyle.copyWith(
+                              color: AppColors.primaryColor,
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            hintText: 'numberOfHours',
+                            controller: controller.overtimeValueController,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              )
+            : const SizedBox.shrink(),
+        !isOvertime!
+            ? CustomCheckBox(
+                title: 'acceptOrder',
+                shape: const CircleBorder(),
+                style: textStyle.copyWith(
+                  color: Colors.green,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+                value: controller.loanValue,
+                onChanged: (value) => controller.setOnlyOneTrue('loanValue'),
+              )
+            : const SizedBox.shrink(),
+        Obx(
+          () => controller.loanValue.value
+              ? CustomTextField(
+                  label: '',
+                  labelTextstyle: textStyle.copyWith(
+                    color: AppColors.primaryColor,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  hintText: 'debtValue',
+                  controller: controller.loanValueController,
+                )
+              : const SizedBox.shrink(),
+        ),
+        Obx(
+          () => controller.rejectOrder.value
+              ? CustomTextField(
+                  label: '',
+                  labelTextstyle: textStyle.copyWith(
+                    color: AppColors.primaryColor,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  hintText: 'سبب الرفض',
+                  controller: controller.rejectionReasonController,
+                )
+              : const SizedBox.shrink(),
+        ),
+        CustomCheckBox(
+          title: 'rejectOrder',
+          shape: const CircleBorder(),
+          style: textStyle.copyWith(
+            color: Colors.red,
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w700,
+          ),
+          value: controller.rejectOrder,
+          onChanged: (value) => controller.setOnlyOneTrue('rejectOrder'),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 10.h),
+          child: AppButton(
+            isLoading: controller.isPaymentLoading,
+            text: 'apply',
+            onPressed: () {
+              if (controller.rejectOrder.value) {
+                return controller.rejectEmployeeOrder(
+                  context,
+                  employee.id.toString(),
+                );
+              } else if (controller.formKey.currentState!.validate()) {
+                return controller.approveEmployeeOrder(
+                  context: context,
+                  employeeOrderId: employee.id.toString(),
+                );
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final textStyle = Theme.of(context).textTheme.bodyMedium!;
@@ -70,196 +290,24 @@ class RequestsDetails extends StatelessWidget {
                     ],
                   ),
                 ),
-                CustomTextField(
+                _readOnlyField(
+                  textStyle: textStyle,
                   label: 'employeeName',
-                  labelTextstyle: textStyle.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  hintText: employee.employeeName,
-                  hintStyle: textStyle.copyWith(
-                    color: Colors.grey,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  enabled: false,
-                  sizedBox: false,
-                  fillColor: ThemeService.isDark.value
-                      ? AppColors.darkColor
-                      : AppColors.whiteColor,
-                  validator: (value) {
-                    return null;
-                  },
+                  value: employee.employeeName,
                 ),
-                CustomTextField(
+                _readOnlyField(
+                  textStyle: textStyle,
                   label: 'requestDetails',
-                  labelTextstyle: textStyle.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  hintText: isOvertime!
-                      ? employee.overtimeValue!.isEmpty
-                          ? '${'overtimeValue'.tr} : ${employee.extraWorkHoursValue ?? ''} '
-                              '${(int.tryParse(employee.extraWorkHoursValue ?? '0') ?? 0) > 10 ? 'hour'.tr : 'hours'.tr}'
-                          : '${'overtimeValue'.tr} : ${employee.overtimeValue ?? ''} '
-                              '${(int.tryParse(employee.overtimeValue ?? '0') ?? 0) > 10 ? 'hour'.tr : 'hours'.tr}'
-                      : '${'debtValue'.tr} : ${employee.loanValue} ${'currency'.tr}',
-                  hintStyle: textStyle.copyWith(
-                    color: Colors.grey,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  enabled: false,
-                  sizedBox: false,
-                  fillColor: ThemeService.isDark.value
-                      ? AppColors.darkColor
-                      : AppColors.whiteColor,
-                  validator: (value) {
-                    return null;
-                  },
+                  value: _requestDetailsText,
                 ),
-                CustomTextField(
+                _readOnlyField(
+                  textStyle: textStyle,
                   label: 'orderDate',
-                  hintStyle: textStyle.copyWith(
-                    color: Colors.grey,
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  hintText: showData(employee.orderDate),
-                  labelTextstyle: textStyle.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  enabled: false,
-                  sizedBox: false,
-                  fillColor: ThemeService.isDark.value
-                      ? AppColors.darkColor
-                      : AppColors.whiteColor,
-                  validator: (value) {
-                    return null;
-                  },
+                  value: showData(employee.orderDate),
                 ),
-                isOvertime!
-                    ? Column(
-                        children: [
-                          CustomCheckBox(
-                            title: 'AddRegularWorkingHours',
-                            shape: const CircleBorder(),
-                            style: textStyle.copyWith(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            value: controller.extraWorkHours,
-                            onChanged: (value) =>
-                                controller.setOnlyOneTrue('extraWorkHours'),
-                          ),
-                          Obx(
-                            () => controller.extraWorkHours.value
-                                ? CustomTextField(
-                                    label: '',
-                                    labelTextstyle: textStyle.copyWith(
-                                      color: AppColors.primaryColor,
-                                      fontSize: 17.sp,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    hintText: 'numberOfHours',
-                                    controller:
-                                        controller.extraWorkHoursController,
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                          CustomCheckBox(
-                            title: 'addOvertime',
-                            shape: const CircleBorder(),
-                            style: textStyle.copyWith(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            value: controller.overtimeValue,
-                            onChanged: (value) =>
-                                controller.setOnlyOneTrue('overtimeValue'),
-                          ),
-                          Obx(
-                            () => controller.overtimeValue.value
-                                ? CustomTextField(
-                                    label: '',
-                                    labelTextstyle: textStyle.copyWith(
-                                      color: AppColors.primaryColor,
-                                      fontSize: 17.sp,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    hintText: 'numberOfHours',
-                                    controller:
-                                        controller.overtimeValueController,
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                        ],
-                      )
-                    : const SizedBox.shrink(),
-                !isOvertime!
-                    ? CustomCheckBox(
-                        title: 'acceptOrder',
-                        shape: const CircleBorder(),
-                        style: textStyle.copyWith(
-                          color: Colors.green,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        value: controller.loanValue,
-                        onChanged: (value) =>
-                            controller.setOnlyOneTrue('loanValue'),
-                      )
-                    : const SizedBox.shrink(),
-                Obx(
-                  () => controller.loanValue.value
-                      ? CustomTextField(
-                          label: '',
-                          labelTextstyle: textStyle.copyWith(
-                            color: AppColors.primaryColor,
-                            fontSize: 17.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          hintText: 'debtValue',
-                          controller: controller.loanValueController,
-                        )
-                      : const SizedBox.shrink(),
-                ),
-                CustomCheckBox(
-                  title: 'rejectOrder',
-                  shape: const CircleBorder(),
-                  style: textStyle.copyWith(
-                    color: Colors.red,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  value: controller.rejectOrder,
-                  onChanged: (value) =>
-                      controller.setOnlyOneTrue('rejectOrder'),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10.h),
-                  child: AppButton(
-                    isLoading: controller.isPaymentLoading,
-                    text: 'apply',
-                    onPressed: () {
-                      if (controller.rejectOrder.value) {
-                        return controller.rejectEmployeeOrder(
-                          context,
-                          employee.id.toString(),
-                        );
-                      } else if (controller.formKey.currentState!.validate()) {
-                        return controller.approveEmployeeOrder(
-                          context: context,
-                          employeeOrderId: employee.id.toString(),
-                        );
-                      }
-                    },
-                  ),
-                )
+                employee.canReview
+                    ? _reviewControls(textStyle, context)
+                    : _reviewSummary(textStyle),
               ],
             ),
           ),

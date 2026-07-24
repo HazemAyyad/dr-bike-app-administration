@@ -106,6 +106,7 @@ abstract class EmployeeRepository {
 
   Future<Either<Failure, String>> rejectEmployeeOrder({
     required String employeeOrderId,
+    required String rejectionReason,
   });
 
   Future<Either<Failure, String>> approveEmployeeOrder({

@@ -893,10 +893,12 @@ class EmployeeDatasource {
   // reject employee order
   Future<Map<String, dynamic>> rejectEmployeeOrder({
     required String employeeOrderId,
+    required String rejectionReason,
   }) async {
     try {
       final response = await api.post(EndPoints.rejectEmployeeOrder, data: {
         'employee_order_id': employeeOrderId,
+        if (rejectionReason.isNotEmpty) 'rejection_reason': rejectionReason,
       });
       final data = response.data;
       return data;

@@ -869,6 +869,13 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               onTap: _showAppVersionReport,
             ),
             _SettingsItem(
+              icon: Icons.backup_outlined,
+              iconColor: const Color(0xFF0F766E),
+              titleKey: 'databaseBackups',
+              descriptionKey: 'databaseBackupsDesc',
+              onTap: () => Get.toNamed(AppRoutes.DATABASEBACKUPSSCREEN),
+            ),
+            _SettingsItem(
               icon: Icons.point_of_sale_outlined,
               iconColor: const Color(0xFFBE123C),
               titleKey: 'salesDailySettingsTitle',

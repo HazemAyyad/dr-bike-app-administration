@@ -27,7 +27,34 @@ class AddNewEmployeeScreen extends GetView<AddEmployeeController> {
     final isEdit = title == 'editEmployee';
 
     return Scaffold(
-      appBar: CustomAppBar(title: title, action: false),
+      appBar: CustomAppBar(
+        title: title,
+        action: false,
+        actions: [
+          Obx(
+            () => IconButton(
+              tooltip: (isEdit ? 'saveChanges' : 'addNewEmployee').tr,
+              onPressed: controller.isLoading.value
+                  ? null
+                  : () => controller.addNewEmployee(context),
+              icon: controller.isLoading.value
+                  ? SizedBox(
+                      width: 20.w,
+                      height: 20.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      Icons.save_outlined,
+                      size: 24.sp,
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                    ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+        ],
+      ),
       body: Form(
         key: controller.formKey,
         child: ListView(
@@ -305,11 +332,12 @@ class _PermissionGroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = ThemeService.isDark.value;
+    final groupKey = group['key'].toString();
     final permissions =
         List<Map<String, dynamic>>.from(group['permissions'] as List);
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: isDark ? Colors.white10 : const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(9.r),
@@ -320,87 +348,162 @@ class _PermissionGroupCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                group['icon'] as IconData,
-                size: 16.sp,
-                color: AppColors.primaryColor,
-              ),
-              SizedBox(width: 6.w),
-              Expanded(
-                child: Text(
-                  group['title'].toString(),
-                  style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                        color: isDark ? Colors.white : const Color(0xFF111827),
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w900,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final itemWidth = constraints.maxWidth >= 680
-                  ? (constraints.maxWidth - 10.w) / 2
-                  : constraints.maxWidth;
-              return Wrap(
-                spacing: 10.w,
-                runSpacing: 2.h,
-                children: [
-                  for (final permission in permissions)
-                    SizedBox(
-                      width: itemWidth,
-                      child: GestureDetector(
-                        onLongPress: userType == 'admin'
-                            ? () => _showPermissionPolicySheet(
-                                  context,
-                                  permission,
-                                  group,
-                                )
-                            : null,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: CustomCheckBox(
-                                title: permission['name'],
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium!
-                                    .copyWith(
-                                      color: isDark
-                                          ? AppColors.customGreyColor6
-                                          : AppColors.customGreyColor2,
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                value: permission['permission'],
-                                onChanged: (value) {
-                                  permission['permission'].value = value;
-                                },
-                              ),
+          Obx(() {
+            final expanded = controller.isPermissionGroupExpanded(groupKey);
+            final selectedCount = permissions
+                .where((permission) => permission['permission'].value == true)
+                .length;
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(8.r),
+              onTap: () => controller.togglePermissionGroupExpanded(groupKey),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 2.h),
+                child: Row(
+                  children: [
+                    Icon(
+                      group['icon'] as IconData,
+                      size: 16.sp,
+                      color: AppColors.primaryColor,
+                    ),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: Text(
+                        group['title'].toString(),
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF111827),
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w900,
                             ),
-                            if (permission['adminOnly'] == true) ...[
-                              SizedBox(width: 4.w),
-                              Tooltip(
-                                message: 'adminOnlyPermission'.tr,
-                                child: Icon(
-                                  Icons.lock_outline_rounded,
-                                  size: 14.sp,
-                                  color: AppColors.customOrange3,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
                       ),
                     ),
-                ],
-              );
-            },
-          ),
+                    Text(
+                      '$selectedCount/${permissions.length}',
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: isDark
+                                ? AppColors.customGreyColor6
+                                : AppColors.customGreyColor2,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    if (controller.canEditPermissionAssignments.value) ...[
+                      SizedBox(width: 4.w),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 6.w),
+                          minimumSize: Size(0, 30.h),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () {
+                          final selected =
+                              controller.isPermissionGroupSelected(groupKey);
+                          controller.setPermissionGroupSelected(
+                            groupKey,
+                            !selected,
+                          );
+                        },
+                        child: Text(
+                          controller.isPermissionGroupSelected(groupKey)
+                              ? 'unselectAll'.tr
+                              : 'selectAll'.tr,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    color: AppColors.primaryColor,
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                        ),
+                      ),
+                    ],
+                    Icon(
+                      expanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      size: 20.sp,
+                      color: isDark
+                          ? AppColors.customGreyColor6
+                          : AppColors.customGreyColor2,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          Obx(() {
+            if (!controller.isPermissionGroupExpanded(groupKey)) {
+              return const SizedBox(width: double.infinity);
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(top: 6.h),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final itemWidth = constraints.maxWidth >= 680
+                      ? (constraints.maxWidth - 10.w) / 2
+                      : constraints.maxWidth;
+                  return Wrap(
+                    spacing: 10.w,
+                    runSpacing: 2.h,
+                    children: [
+                      for (final permission in permissions)
+                        SizedBox(
+                          width: itemWidth,
+                          child: GestureDetector(
+                            onLongPress: userType == 'admin'
+                                ? () => _showPermissionPolicySheet(
+                                      context,
+                                      permission,
+                                      group,
+                                    )
+                                : null,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: CustomCheckBox(
+                                    title: permission['name'],
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium!
+                                        .copyWith(
+                                          color: isDark
+                                              ? AppColors.customGreyColor6
+                                              : AppColors.customGreyColor2,
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                    value: permission['permission'],
+                                    onChanged: (value) {
+                                      controller.setPermissionValue(
+                                        permission,
+                                        value,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                if (permission['adminOnly'] == true) ...[
+                                  SizedBox(width: 4.w),
+                                  Tooltip(
+                                    message: 'adminOnlyPermission'.tr,
+                                    child: Icon(
+                                      Icons.lock_outline_rounded,
+                                      size: 14.sp,
+                                      color: AppColors.customOrange3,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            );
+          }),
         ],
       ),
     );

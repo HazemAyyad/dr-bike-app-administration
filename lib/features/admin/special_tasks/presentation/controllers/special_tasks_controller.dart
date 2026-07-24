@@ -389,8 +389,13 @@ class SpecialTasksController extends GetxController {
   void makeSubsSpecialTaskCompleted(
       BuildContext context, String subTaskId, String specialTaskId) async {
     final details = specialTasksService.specialTaskDetails.value;
-    final pendingSubtasks =
-        details?.subTasks.where((s) => s.status != 'completed').length ?? 0;
+    final pendingSubtasks = details?.subTasks
+            .where((s) =>
+                s.status != 'completed' &&
+                s.status != 'canceled' &&
+                s.status != 'rejected')
+            .length ??
+        0;
     final isLastSubtask = pendingSubtasks <= 1;
 
     isLoading(true);
@@ -398,6 +403,11 @@ class SpecialTasksController extends GetxController {
 
     final result =
         await subsSpecialTaskCompletedUsecase.call(subTaskId: subTaskId);
+    if (!context.mounted) {
+      isLoading(false);
+      update();
+      return;
+    }
     result.fold(
       (failure) {
         final errors = failure.data != null ? failure.data['errors'] : null;
@@ -436,15 +446,100 @@ class SpecialTasksController extends GetxController {
           );
         }
 
-        Helpers.showCustomDialogSuccess(
-          context: context,
-          title: 'success'.tr,
-          message: success,
-        );
+        if (context.mounted) {
+          Helpers.showCustomDialogSuccess(
+            context: context,
+            title: 'success'.tr,
+            message: success,
+          );
+        }
       },
     );
     isLoading(false);
     update();
+  }
+
+  Future<void> cancelSubSpecialTask({
+    required BuildContext context,
+    required String subTaskId,
+    required String specialTaskId,
+  }) async {
+    isLoading(true);
+    update();
+
+    try {
+      final result =
+          await _specialDs.cancelSubSpecialTask(subTaskId: subTaskId);
+      if (result['status'] == 'success') {
+        Get.back();
+        await getSpecialTasksDetails(specialTaskId: specialTaskId);
+        await getSpecialTasks(scrollToTodayb: false);
+        Get.snackbar(
+          'success'.tr,
+          '${result['message'] ?? 'task_canceled'.tr}',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
+        );
+      } else {
+        Get.snackbar(
+          'error'.tr,
+          '${result['message'] ?? ''}',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 1000),
+      );
+    } finally {
+      isLoading(false);
+      update();
+    }
+  }
+
+  Future<void> undoSubSpecialTaskCompletion({
+    required String subTaskId,
+    required String specialTaskId,
+  }) async {
+    isLoading(true);
+    update();
+
+    try {
+      final result =
+          await _specialDs.subSpecialTaskPending(subTaskId: subTaskId);
+      if (result['status'] == 'success') {
+        Get.back();
+        await getSpecialTasksDetails(specialTaskId: specialTaskId);
+        await getSpecialTasks(scrollToTodayb: false);
+        Get.snackbar(
+          'success'.tr,
+          '${result['message'] ?? 'subtaskUndoSuccess'.tr}',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
+        );
+      } else {
+        Get.snackbar(
+          'error'.tr,
+          '${result['message'] ?? ''}',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(milliseconds: 1000),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(milliseconds: 1000),
+      );
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 
   // بيانات العرض بعد الفلترة

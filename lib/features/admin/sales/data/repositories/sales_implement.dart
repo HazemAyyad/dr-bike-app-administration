@@ -86,6 +86,7 @@ class SalesImplement implements SalesRepository {
   @override
   Future<List<InstantSalesModel>> getInstantSales({
     String? search,
+    String? date,
     String sortDirection = 'desc',
   }) async {
     if (!await networkInfo.isConnected) {
@@ -94,6 +95,7 @@ class SalesImplement implements SalesRepository {
     try {
       final result = await salesDatasource.getInstantSales(
         search: search,
+        date: date,
         sortDirection: sortDirection,
       );
       return result;

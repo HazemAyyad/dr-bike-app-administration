@@ -13,7 +13,6 @@ import 'package:get_storage/get_storage.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../features/admin/notifications/presentation/controllers/admin_notification_badge_controller.dart';
-import '../../features/employee/employee_dashbord/presentation/controllers/employee_dashbord_controller.dart';
 import '../../firebase_options.dart';
 import '../databases/api/dio_consumer.dart';
 import '../databases/api/end_points.dart';
@@ -1188,11 +1187,6 @@ class NotificationFirebaseService {
     if (userType == 'employee' &&
         Get.isRegistered<EmployeeNotificationBadgeController>()) {
       Get.find<EmployeeNotificationBadgeController>().refresh();
-    }
-    if (userType == 'employee' &&
-        Get.isRegistered<EmployeeDashbordController>()) {
-      unawaited(
-          Get.find<EmployeeDashbordController>().loadDashboardReminders());
     }
   }
 

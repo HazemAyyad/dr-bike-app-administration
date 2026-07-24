@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../../../core/utils/assets_manger.dart';
 import '../data/models/employee_attendance_history_model.dart';
+import '../data/models/employee_advances_model.dart';
 
 class EmployeeAttendanceHistoryPdfHelper {
   EmployeeAttendanceHistoryPdfHelper._();
@@ -67,10 +67,22 @@ class EmployeeAttendanceHistoryPdfHelper {
     return (minutes / 60).toStringAsFixed(2);
   }
 
+  static double _number(String? value) {
+    return double.tryParse((value ?? '').replaceAll(',', '')) ?? 0;
+  }
+
   static String _money(String? value) {
-    final n = double.tryParse(value ?? '');
-    if (n == null) return value?.isNotEmpty == true ? value! : '0.00';
+    final n = _number(value);
+    if (n == 0 && value != null && value.isNotEmpty) {
+      final parsed = double.tryParse(value.replaceAll(',', ''));
+      if (parsed == null) return value;
+    }
     return n.toStringAsFixed(2);
+  }
+
+  static String _sumMoney(Iterable<String?> values) {
+    final total = values.fold<double>(0, (sum, value) => sum + _number(value));
+    return total.toStringAsFixed(2);
   }
 
   static String _dayWorkLabel(EmployeeAttendanceDay day) {
@@ -115,9 +127,191 @@ class EmployeeAttendanceHistoryPdfHelper {
     }).toList();
   }
 
+  static String _advanceStatusLabel(String status) {
+    switch (status) {
+      case 'approved':
+        return 'مقبولة';
+      case 'rejected':
+        return 'مرفوضة';
+      case 'paid':
+        return 'مدفوعة';
+      case 'pending':
+        return 'قيد الانتظار';
+      default:
+        return status;
+    }
+  }
+
+  static pw.Widget _buildAdvancesSection({
+    required List<EmployeeAdvanceModel> advances,
+    required String advancesTotal,
+    required String approvedAdvancesTotal,
+    required pw.Font regular,
+    required pw.Font bold,
+    required bool rtl,
+  }) {
+    final title = pw.Container(
+      width: double.infinity,
+      alignment: pw.Alignment.centerRight,
+      child: pw.Text(
+        'السلف خلال الفترة',
+        textAlign: pw.TextAlign.right,
+        textDirection: pw.TextDirection.rtl,
+        style: pw.TextStyle(
+          font: bold,
+          fontSize: 12,
+          color: const PdfColor.fromInt(0xFF1F2937),
+        ),
+      ),
+    );
+
+    if (advances.isEmpty) {
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.end,
+        children: [
+          title,
+          pw.SizedBox(height: 6),
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: const PdfColor.fromInt(0xFFD0D7E2)),
+            ),
+            child: pw.Text(
+              'لا توجد سلف ضمن هذه الفترة',
+              textAlign: pw.TextAlign.center,
+              textDirection: pw.TextDirection.rtl,
+              style: pw.TextStyle(font: regular, fontSize: 8),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final headers = [
+      'تاريخ الطلب',
+      'الوقت',
+      'الحالة',
+      'قيمة الطلب',
+      'القيمة المقبولة',
+    ];
+    final rows = advances.map((advance) {
+      final approvedValue =
+          advance.status == 'approved' || advance.status == 'paid'
+              ? (advance.approvedLoanValue ?? advance.amount)
+              : '-';
+      return [
+        advance.date,
+        advance.time,
+        _advanceStatusLabel(advance.status),
+        _money(advance.amount),
+        approvedValue == '-' ? '-' : _money(approvedValue),
+      ];
+    }).toList();
+    rows.add([
+      'المجموع',
+      '-',
+      '-',
+      _money(advancesTotal),
+      _money(approvedAdvancesTotal),
+    ]);
+
+    final displayHeaders = rtl ? headers.reversed.toList() : headers;
+    final displayRows =
+        rtl ? rows.map((row) => row.reversed.toList()).toList() : rows;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
+      children: [
+        title,
+        pw.SizedBox(height: 6),
+        _buildTable(
+          headers: displayHeaders,
+          rows: displayRows,
+          regular: regular,
+          bold: bold,
+        ),
+      ],
+    );
+  }
+
+  static pw.Widget _buildFinalPayrollSection({
+    required EmployeeAttendanceHistoryResult result,
+    required String approvedAdvancesTotal,
+    required pw.Font regular,
+    required pw.Font bold,
+    required bool rtl,
+  }) {
+    final summary = result.monthlySummary;
+    final normalHours = summary?.rangeNormalHours ??
+        summary?.monthlyNormalHours ??
+        result.days
+            .fold<double>(0, (sum, day) => sum + _number(day.normalHours))
+            .toStringAsFixed(2);
+    final overtimeHours = summary?.rangeOvertimeHours ??
+        summary?.monthlyOvertimeHours ??
+        result.days
+            .fold<double>(0, (sum, day) => sum + _number(day.overtimeHours))
+            .toStringAsFixed(2);
+    final normalSalary = summary?.rangeNormalSalary ??
+        _sumMoney(result.days.map((day) => day.normalSalary));
+    final overtimeSalary = summary?.rangeOvertimeSalary ??
+        _sumMoney(result.days.map((day) => day.overtimeSalary));
+    final grossSalary = summary?.rangeTotalSalary ??
+        (_number(normalSalary) + _number(overtimeSalary)).toStringAsFixed(2);
+    final advancesDeduction = _money(approvedAdvancesTotal);
+    final netSalary =
+        (_number(grossSalary) - _number(advancesDeduction)).toStringAsFixed(2);
+
+    final headers = ['البند', 'القيمة'];
+    final rows = [
+      ['إجمالي الساعات العادية', '$normalHours ساعة'],
+      ['إجمالي ساعات الأوفر تايم', '$overtimeHours ساعة'],
+      ['إجمالي مبلغ الساعات العادية', _money(normalSalary)],
+      ['إجمالي مبلغ الأوفر تايم', _money(overtimeSalary)],
+      ['الإجمالي قبل السلف', _money(grossSalary)],
+      ['خصم السلف المقبولة', advancesDeduction],
+      ['الصافي المفروض يقبضه الموظف', _money(netSalary)],
+    ];
+
+    final displayHeaders = rtl ? headers.reversed.toList() : headers;
+    final displayRows =
+        rtl ? rows.map((row) => row.reversed.toList()).toList() : rows;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.end,
+      children: [
+        pw.Container(
+          width: double.infinity,
+          alignment: pw.Alignment.centerRight,
+          child: pw.Text(
+            'الخلاصة النهائية',
+            textAlign: pw.TextAlign.right,
+            textDirection: pw.TextDirection.rtl,
+            style: pw.TextStyle(
+              font: bold,
+              fontSize: 12,
+              color: const PdfColor.fromInt(0xFF1F2937),
+            ),
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        _buildTable(
+          headers: displayHeaders,
+          rows: displayRows,
+          regular: regular,
+          bold: bold,
+        ),
+      ],
+    );
+  }
+
   static Future<Uint8List> buildPdfBytes({
     required EmployeeAttendanceHistoryResult result,
     required String periodLabel,
+    List<EmployeeAdvanceModel> advances = const [],
+    String advancesTotal = '0.00',
+    String approvedAdvancesTotal = '0.00',
   }) async {
     final regular = await _loadRegular();
     final bold = await _loadBold();
@@ -263,6 +457,23 @@ class EmployeeAttendanceHistoryPdfHelper {
             regular: regular,
             bold: bold,
           ),
+          pw.SizedBox(height: 14),
+          _buildAdvancesSection(
+            advances: advances,
+            advancesTotal: advancesTotal,
+            approvedAdvancesTotal: approvedAdvancesTotal,
+            regular: regular,
+            bold: bold,
+            rtl: rtl,
+          ),
+          pw.SizedBox(height: 14),
+          _buildFinalPayrollSection(
+            result: result,
+            approvedAdvancesTotal: approvedAdvancesTotal,
+            regular: regular,
+            bold: bold,
+            rtl: rtl,
+          ),
         ],
       ),
     );
@@ -327,6 +538,9 @@ class EmployeeAttendanceHistoryPdfHelper {
   static Future<File> savePdfToFile({
     required EmployeeAttendanceHistoryResult result,
     required String periodLabel,
+    List<EmployeeAdvanceModel> advances = const [],
+    String advancesTotal = '0.00',
+    String approvedAdvancesTotal = '0.00',
   }) async {
     late Directory directory;
     if (Platform.isAndroid) {
@@ -345,7 +559,13 @@ class EmployeeAttendanceHistoryPdfHelper {
         'employee_attendance_${employeeName}_${DateTime.now().millisecondsSinceEpoch}.pdf';
     final file = File(p.join(directory.path, fileName));
     await file.writeAsBytes(
-      await buildPdfBytes(result: result, periodLabel: periodLabel),
+      await buildPdfBytes(
+        result: result,
+        periodLabel: periodLabel,
+        advances: advances,
+        advancesTotal: advancesTotal,
+        approvedAdvancesTotal: approvedAdvancesTotal,
+      ),
     );
     return file;
   }

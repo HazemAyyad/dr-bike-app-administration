@@ -426,6 +426,7 @@ class EmployeeImplement implements EmployeeRepository {
   @override
   Future<Either<Failure, String>> rejectEmployeeOrder({
     required String employeeOrderId,
+    required String rejectionReason,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -433,6 +434,7 @@ class EmployeeImplement implements EmployeeRepository {
     try {
       final result = await employeeDatasource.rejectEmployeeOrder(
         employeeOrderId: employeeOrderId,
+        rejectionReason: rejectionReason,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

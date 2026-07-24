@@ -372,6 +372,7 @@ class LedgerTransaction {
   final String? createdAt;
   final int? boxId;
   final String? source;
+  final int? sourceId;
   final String? sourceLabel;
   final String currency;
 
@@ -388,6 +389,7 @@ class LedgerTransaction {
     this.createdAt,
     this.boxId,
     this.source,
+    this.sourceId,
     this.sourceLabel,
     this.currency = 'شيكل',
   });
@@ -418,6 +420,9 @@ class LedgerTransaction {
           ? null
           : int.tryParse(json['box_id'].toString()),
       source: json['source']?.toString(),
+      sourceId: json['source_id'] == null
+          ? null
+          : int.tryParse(json['source_id'].toString()),
       sourceLabel: json['source_label']?.toString(),
     );
   }
@@ -427,6 +432,8 @@ class LedgerTransaction {
   bool get isManual => source == null || source == '' || source == 'manual';
 
   bool get isInstantSale => source == 'instant_sale';
+
+  bool get hasLinkedRecord => sourceId != null && sourceId! > 0;
 
   /// نص يُعرض للمستخدم (ملاحظة أو وصف مصدر مثل بيع فوري #123).
   String get displayDescription {

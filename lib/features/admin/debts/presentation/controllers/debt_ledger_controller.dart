@@ -13,6 +13,10 @@ import '../../../boxes/data/models/get_shown_boxes_model.dart';
 import '../../../boxes/domain/usecases/get_shown_box_usecase.dart';
 import '../../data/models/debt_ledger_models.dart';
 import '../../domain/repositories/debt_ledger_repository.dart';
+import '../../../maintenance/presentation/binding/maintenance_binding.dart';
+import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
+import '../../../sales/presentation/binding/sales_binding.dart';
+import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../ledger/edit_transaction_sheet.dart';
 import '../ledger/person_detail_screen.dart';
 import '../ledger/transaction_detail_screen.dart';
@@ -665,7 +669,9 @@ class DebtLedgerController extends GetxController {
     personActivityLoading(false);
   }
 
-  void openTransactionDetail(LedgerTransaction transaction) {
+  Future<void> openTransactionDetail(LedgerTransaction transaction) async {
+    if (await _openLinkedSource(transaction)) return;
+
     selectedTransaction.value = transaction;
     loadTransactionActivity(transaction.id);
     Get.to(() => const TransactionDetailScreen())?.then((changed) {
@@ -674,6 +680,66 @@ class DebtLedgerController extends GetxController {
         fetchSummary();
       }
     });
+  }
+
+  Future<bool> _openLinkedSource(LedgerTransaction transaction) async {
+    final sourceId = transaction.sourceId;
+    if (sourceId == null || sourceId <= 0) return false;
+
+    switch (transaction.source) {
+      case 'instant_sale':
+      case 'profit_sale':
+        await _openInstantSaleInvoice(sourceId);
+        return true;
+      case 'sales_order':
+        await Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN,
+            arguments: sourceId);
+        return true;
+      case 'maintenance':
+        await _openMaintenanceInvoice(sourceId);
+        return true;
+      case 'incoming_check':
+      case 'incoming_check_disposal':
+        await Get.toNamed(
+          AppRoutes.INCOMINGCHECKSSCREEN,
+          arguments: {'checkId': sourceId, 'isIncoming': true},
+        );
+        return true;
+      case 'outgoing_check':
+        await Get.toNamed(
+          AppRoutes.OUTGOINGCHECKSSCREEN,
+          arguments: {'checkId': sourceId, 'isIncoming': false},
+        );
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  Future<void> _openInstantSaleInvoice(int sourceId) async {
+    if (!Get.isRegistered<SalesController>() &&
+        !Get.isPrepared<SalesController>()) {
+      SalesBinding().dependencies();
+    }
+    await Get.find<SalesController>().openInstantSaleBillDetails(
+      sourceId.toString(),
+    );
+  }
+
+  Future<void> _openMaintenanceInvoice(int sourceId) async {
+    if (!Get.isRegistered<MaintenanceController>() &&
+        !Get.isPrepared<MaintenanceController>()) {
+      MaintenanceBinding().dependencies();
+    }
+    final context = Get.context;
+    if (context == null) {
+      await Get.toNamed(AppRoutes.MAINTENANCESCREEN);
+      return;
+    }
+    await Get.find<MaintenanceController>().openMaintenanceInvoice(
+      context: context,
+      maintenanceId: sourceId.toString(),
+    );
   }
 
   Future<void> deleteTransaction(int id) async {

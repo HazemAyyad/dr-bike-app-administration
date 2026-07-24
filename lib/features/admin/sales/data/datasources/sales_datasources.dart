@@ -283,6 +283,7 @@ class SalesDatasource {
   // get instant sales
   Future<List<InstantSalesModel>> getInstantSales({
     String? search,
+    String? date,
     String sortDirection = 'desc',
   }) async {
     try {
@@ -292,6 +293,10 @@ class SalesDatasource {
       final trimmed = search?.trim();
       if (trimmed != null && trimmed.isNotEmpty) {
         query['search'] = trimmed;
+      }
+      final selectedDate = date?.trim();
+      if (selectedDate != null && selectedDate.isNotEmpty) {
+        query['date'] = selectedDate;
       }
       final response = await api.get(
         EndPoints.allInstantSales,

@@ -2125,6 +2125,8 @@ const Map<String, String> ar = {
   'sizeColorQtyHint': 'المخزون: @stock — المتبقي لهذا المنتج: @remaining',
   'stockInventorySettings': 'إعدادات المخزون',
   'stockInventorySettingsDesc': 'التحكم بقوائم المخزون وأحجام المنتجات',
+  'databaseBackups': 'النسخ الاحتياطية',
+  'databaseBackupsDesc': 'عرض نسخ قاعدة البيانات وتحميل الناجحة ومعرفة الفاشلة',
   'storeSectionsSetting': 'أقسام المحل',
   'storeSectionsSettingDesc': 'إضافة وتعديل وحذف أقسام المحل',
   'sectionStatProducts': '@count منتج',

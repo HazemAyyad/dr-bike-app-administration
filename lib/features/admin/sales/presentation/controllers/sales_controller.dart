@@ -279,6 +279,7 @@ class SalesController extends GetxController
       TextEditingController();
   final instantSalesSearchQuery = ''.obs;
   final instantSalesSortDescending = true.obs;
+  final selectedInstantSalesDate = _todayDateOnly().obs;
   Timer? _instantSalesSearchDebounce;
   final TextEditingController profitSalesSearchController =
       TextEditingController();
@@ -288,6 +289,88 @@ class SalesController extends GetxController
 
   String get instantSalesSortDirection =>
       instantSalesSortDescending.value ? 'desc' : 'asc';
+
+  static DateTime _todayDateOnly() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  String _formatDateParam(DateTime value) {
+    final date = _dateOnly(value);
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${date.year}-${two(date.month)}-${two(date.day)}';
+  }
+
+  String get selectedInstantSalesDateParam =>
+      _formatDateParam(selectedInstantSalesDate.value);
+
+  String get selectedInstantSalesDateLabel {
+    final selected = _dateOnly(selectedInstantSalesDate.value);
+    final today = _todayDateOnly();
+    if (selected == today) return 'today'.tr;
+    final label = '${_weekdayLabel(selected)} ${_formatDateParam(selected)}';
+    if (selected == today.subtract(const Duration(days: 1))) {
+      return '${'yesterday'.tr} - $label';
+    }
+    return label;
+  }
+
+  String _weekdayLabel(DateTime date) {
+    final isArabic =
+        Get.locale?.languageCode.toLowerCase().startsWith('ar') ?? true;
+    const ar = [
+      'الإثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
+    ];
+    const en = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    return (isArabic ? ar : en)[date.weekday - 1];
+  }
+
+  bool get canGoNextInstantSalesDate =>
+      selectedInstantSalesDate.value.isBefore(_todayDateOnly());
+
+  void changeInstantSalesDateByDays(int days) {
+    final today = _todayDateOnly();
+    var next =
+        _dateOnly(selectedInstantSalesDate.value).add(Duration(days: days));
+    if (next.isAfter(today)) next = today;
+    if (next == selectedInstantSalesDate.value) return;
+    selectedInstantSalesDate.value = next;
+    getInstantSales(loding: true, clearCache: true);
+  }
+
+  Future<void> pickInstantSalesDate(BuildContext context) async {
+    final today = _todayDateOnly();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedInstantSalesDate.value.isAfter(today)
+          ? today
+          : selectedInstantSalesDate.value,
+      firstDate: DateTime(2020),
+      lastDate: today,
+    );
+    if (picked == null) return;
+    final next = _dateOnly(picked);
+    if (next == selectedInstantSalesDate.value) return;
+    selectedInstantSalesDate.value = next;
+    getInstantSales(loding: true, clearCache: true);
+  }
 
   void onInstantSalesSearchChanged(String value) {
     instantSalesSearchQuery.value = value;
@@ -388,34 +471,8 @@ class SalesController extends GetxController
   }
 
   void _syncFilteredInstantSales() {
-    final from = DateTime.tryParse(fromDateController.text);
-    final to = DateTime.tryParse(toDateController.text);
-    if (from == null && to == null) {
-      salesService.filterInstantSalesTasks
-          .assignAll(salesService.instantSalesTasks);
-      return;
-    }
-    final filtered = Map<String, List<InstantSalesModel>>.fromEntries(
-      salesService.instantSalesTasks.entries.map((entry) {
-        final list = entry.value.where((task) {
-          final d = task.date;
-          if (from != null && to == null) {
-            return d.isAtSameMomentAs(from) || d.isAfter(from);
-          }
-          if (to != null && from == null) {
-            return d.isAtSameMomentAs(to) || d.isBefore(to);
-          }
-          if (from != null && to != null) {
-            final okStart = d.isAtSameMomentAs(from) || d.isAfter(from);
-            final okEnd = d.isAtSameMomentAs(to) || d.isBefore(to);
-            return okStart && okEnd;
-          }
-          return true;
-        }).toList();
-        return MapEntry(entry.key, list);
-      }).where((e) => e.value.isNotEmpty),
-    );
-    salesService.filterInstantSalesTasks.assignAll(filtered);
+    salesService.filterInstantSalesTasks
+        .assignAll(salesService.instantSalesTasks);
   }
 
   void _syncFilteredProfitSales() {
@@ -4567,6 +4624,7 @@ class SalesController extends GetxController
         search: instantSalesSearchQuery.value.trim().isEmpty
             ? null
             : instantSalesSearchQuery.value.trim(),
+        date: selectedInstantSalesDateParam,
         sortDirection: instantSalesSortDirection,
       );
       if (clearCache) {

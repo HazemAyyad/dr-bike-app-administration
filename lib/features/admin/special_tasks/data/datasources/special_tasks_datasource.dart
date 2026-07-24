@@ -164,4 +164,46 @@ class SpecialTasksDatasource {
       );
     }
   }
+
+  Future<Map<String, dynamic>> cancelSubSpecialTask({
+    required String subTaskId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.cancelSubSpecialTask,
+        data: {'sub_task_id': subTaskId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> subSpecialTaskPending({
+    required String subTaskId,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.changeSubSpecialTaskToPending,
+        data: {'sub_task_id': subTaskId},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
 }

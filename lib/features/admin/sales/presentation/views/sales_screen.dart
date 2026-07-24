@@ -63,11 +63,21 @@ class SalesScreen extends GetView<SalesController> {
             ),
           IconButton(
             icon: const Icon(Icons.calendar_today_outlined),
-            onPressed: () => controller.filterLists(true),
+            onPressed: () {
+              if (controller.currentTab.value == 0) {
+                controller.pickInstantSalesDate(context);
+                return;
+              }
+              controller.filterLists(true);
+            },
           ),
           SizedBox(width: 10.w),
         ],
         onPressedFilter: () {
+          if (controller.currentTab.value == 0) {
+            controller.pickInstantSalesDate(context);
+            return;
+          }
           controller.filterLists(true);
         },
         fromDateController: controller.fromDateController,
@@ -141,7 +151,8 @@ class SalesScreen extends GetView<SalesController> {
                             );
                           }
                           if (orderCount == 0) {
-                            return const SliverFillRemaining(child: ShowNoData());
+                            return const SliverFillRemaining(
+                                child: ShowNoData());
                           }
                         }
                         return const SliverToBoxAdapter(

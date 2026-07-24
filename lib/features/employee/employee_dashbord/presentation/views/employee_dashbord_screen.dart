@@ -16,7 +16,6 @@ import '../controllers/employee_dashbord_controller.dart';
 import '../binding/employee_dashbord_binding.dart';
 import '../helpers/employee_task_visibility.dart';
 import '../widgets/employee_dashbord_tasks.dart';
-import '../widgets/employee_dashboard_reminders.dart';
 import '../widgets/employee_floating_action_button.dart';
 import '../widgets/employee_home_statistics_card.dart';
 import '../widgets/employee_attendance_app_bar_button.dart';
@@ -238,7 +237,7 @@ class EmployeeDashbordScreen extends GetView<EmployeeDashbordController> {
                           return const SizedBox.shrink();
                         },
                       ),
-                      const EmployeeDashboardReminders(),
+                      // Employee reminders are delivered as push notifications only.
                       BuildActionButtons(
                         buttons: controller.buttons,
                         badges:

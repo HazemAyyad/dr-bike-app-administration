@@ -14,12 +14,9 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/helpers.dart';
 import '../../../../../core/helpers/task_details_debug.dart';
-import '../../../../../core/databases/api/dio_consumer.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../../core/services/user_data.dart';
-import '../../../../employee_reminders/data/employee_reminder_models.dart';
-import '../../../../employee_reminders/data/employee_reminders_datasource.dart';
 import '../../../../bottom_nav_bar/controllers/bottom_nav_bar_controller.dart';
 import '../../../notifications/presentation/controllers/employee_notification_badge_controller.dart';
 import '../../../../admin/debts/domain/usecases/get_debts_reports_usecase.dart';
@@ -210,7 +207,6 @@ class EmployeeDashbordController extends GetxController
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       refreshTodayAttendance(silent: true);
-      loadDashboardReminders();
       _syncPersistentAttendanceNotification();
     }
   }
@@ -324,11 +320,7 @@ class EmployeeDashbordController extends GetxController
       'route': AppRoutes.EMPLOYEETASKSSCREEN,
       'badgeKey': 'employee_tasks_today_pending',
     },
-    {
-      'id': '23',
-      'title': 'employeeReminders',
-      'route': AppRoutes.MYEMPLOYEEREMINDERSSCREEN
-    },
+    // Employee reminders are delivered as push notifications only.
     {
       'id': 'employee_suggestions',
       'title': 'suggestionBox',
@@ -736,9 +728,6 @@ class EmployeeDashbordController extends GetxController
 
   // get employee data
   final Rxn<DashbordEmployeeDetailsModel> employeeData = Rxn();
-  final RxList<EmployeeReminderItem> dashboardReminders =
-      <EmployeeReminderItem>[].obs;
-  final RxBool remindersLoading = false.obs;
   final Map<String, List<Task>> tasksData = {};
   final Map<String, List<Task>> tasksDataFilter = {};
   final List<Task> _allTasksRaw = [];
@@ -812,24 +801,8 @@ class EmployeeDashbordController extends GetxController
     update();
     refreshTodayAttendance();
     _syncPersistentAttendanceNotification();
-    loadDashboardReminders();
     if (scrollToTodayb) {
       Future.delayed(const Duration(milliseconds: 400), scrollToToday);
-    }
-  }
-
-  Future<void> loadDashboardReminders() async {
-    if (!Get.isRegistered<DioConsumer>()) return;
-    try {
-      remindersLoading.value = true;
-      final datasource =
-          EmployeeRemindersDatasource(api: Get.find<DioConsumer>());
-      final items = await datasource.getMyReminders(dueOnly: true);
-      dashboardReminders.assignAll(items.take(3));
-    } catch (_) {
-      dashboardReminders.clear();
-    } finally {
-      remindersLoading.value = false;
     }
   }
 

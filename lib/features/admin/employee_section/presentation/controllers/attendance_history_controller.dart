@@ -9,6 +9,7 @@ import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../data/datasources/employee_datasource.dart';
 import '../../data/models/employee_attendance_history_model.dart';
+import '../../data/models/employee_advances_model.dart';
 import '../../domain/usecases/get_employee_attendance_history_usecase.dart';
 import '../../utils/employee_attendance_history_pdf_helper.dart';
 
@@ -186,6 +187,70 @@ class AttendanceHistoryController extends GetxController {
     return result.value;
   }
 
+  Future<_AttendanceHistoryAdvances> _loadReportAdvances() async {
+    final id = int.tryParse(employeeId);
+    if (id == null || id <= 0) {
+      return const _AttendanceHistoryAdvances();
+    }
+
+    final range = _currentRange;
+    final datasource = Get.find<EmployeeDatasource>();
+    final all = <EmployeeAdvanceModel>[];
+
+    for (final month in _monthsInRange(range.fromDate, range.toDate)) {
+      final result = await datasource.getEmployeeAdvances(
+        employeeId: id,
+        month: month,
+      );
+      all.addAll(result.advances);
+    }
+
+    final filtered = all.where((advance) {
+      final date = DateTime.tryParse(advance.date);
+      if (date == null) return false;
+      final day = DateTime(date.year, date.month, date.day);
+      final from = DateTime(
+        range.fromDate.year,
+        range.fromDate.month,
+        range.fromDate.day,
+      );
+      final to = DateTime(
+        range.toDate.year,
+        range.toDate.month,
+        range.toDate.day,
+      );
+      return !day.isBefore(from) && !day.isAfter(to);
+    }).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    double sum(String? value) => double.tryParse(value ?? '') ?? 0;
+    final total = filtered.fold<double>(
+      0,
+      (acc, item) => acc + sum(item.amount),
+    );
+    final approvedTotal = filtered.fold<double>(0, (acc, item) {
+      if (item.status != 'approved' && item.status != 'paid') return acc;
+      return acc + sum(item.approvedLoanValue ?? item.amount);
+    });
+
+    return _AttendanceHistoryAdvances(
+      items: filtered,
+      total: total.toStringAsFixed(2),
+      approvedTotal: approvedTotal.toStringAsFixed(2),
+    );
+  }
+
+  List<String> _monthsInRange(DateTime from, DateTime to) {
+    final months = <String>[];
+    var cursor = DateTime(from.year, from.month, 1);
+    final end = DateTime(to.year, to.month, 1);
+    while (!cursor.isAfter(end)) {
+      months.add('${cursor.year}-${cursor.month.toString().padLeft(2, '0')}');
+      cursor = DateTime(cursor.year, cursor.month + 1, 1);
+    }
+    return months;
+  }
+
   Future<void> exportPdfShare() async {
     if (isExporting.value) return;
     try {
@@ -197,9 +262,13 @@ class AttendanceHistoryController extends GetxController {
         'reportExportPreparing'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
+      final advances = await _loadReportAdvances();
       final bytes = await EmployeeAttendanceHistoryPdfHelper.buildPdfBytes(
         result: data,
         periodLabel: periodLabel,
+        advances: advances.items,
+        advancesTotal: advances.total,
+        approvedAdvancesTotal: advances.approvedTotal,
       );
       await Printing.sharePdf(
         bytes: bytes,
@@ -228,9 +297,13 @@ class AttendanceHistoryController extends GetxController {
         'reportExportPreparing'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
+      final advances = await _loadReportAdvances();
       final file = await EmployeeAttendanceHistoryPdfHelper.savePdfToFile(
         result: data,
         periodLabel: periodLabel,
+        advances: advances.items,
+        advancesTotal: advances.total,
+        approvedAdvancesTotal: advances.approvedTotal,
       );
       Get.snackbar(
         'fileDownloadedSuccessfully'.tr,
@@ -473,4 +546,16 @@ class _AttendanceHistoryRange {
   final DateTime toDate;
 
   const _AttendanceHistoryRange(this.fromDate, this.toDate);
+}
+
+class _AttendanceHistoryAdvances {
+  const _AttendanceHistoryAdvances({
+    this.items = const [],
+    this.total = '0.00',
+    this.approvedTotal = '0.00',
+  });
+
+  final List<EmployeeAdvanceModel> items;
+  final String total;
+  final String approvedTotal;
 }

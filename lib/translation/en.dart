@@ -2070,6 +2070,9 @@ const Map<String, String> en = {
   'sizeColorQtyHint': 'Stock: @stock — remaining for this product: @remaining',
   'stockInventorySettings': 'Inventory settings',
   'stockInventorySettingsDesc': 'Manage stock lists and product sizes',
+  'databaseBackups': 'Database backups',
+  'databaseBackupsDesc':
+      'View database backups, download complete files, and inspect failures',
   'storeSectionsSetting': 'Store sections',
   'storeSectionsSettingDesc': 'Add, edit and delete store sections',
   'sectionStatProducts': '@count product(s)',
