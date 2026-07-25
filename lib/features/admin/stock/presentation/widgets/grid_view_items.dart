@@ -32,6 +32,7 @@ class GridViewItems extends GetView<StockController> {
           child: StockProductsGridSkeleton(
             aspectRatio: StockProductGridLayout.aspectRatioForTab(
               controller.currentTab.value,
+              context: context,
             ),
           ),
         );
@@ -41,7 +42,9 @@ class GridViewItems extends GetView<StockController> {
           ? controller.allProducts.isEmpty
           : controller.currentTab.value == 1
               ? controller.allClearances.isEmpty
-              : controller.allCombinations.isEmpty;
+              : controller.currentTab.value == 2
+                  ? controller.allCombinations.isEmpty
+                  : controller.deletedProducts.isEmpty;
 
       if (isEmpty) {
         if (controller.currentTab.value == 0 &&
@@ -88,17 +91,21 @@ class GridViewItems extends GetView<StockController> {
                     ? controller.allProducts
                     : controller.currentTab.value == 1
                         ? controller.allClearances
-                        : controller.allCombinations;
+                        : controller.currentTab.value == 2
+                            ? controller.allCombinations
+                            : controller.deletedProducts;
 
-                final aspectRatio =
-                    StockProductGridLayout.aspectRatioForTab(
-                        controller.currentTab.value);
+                final aspectRatio = StockProductGridLayout.aspectRatioForTab(
+                  controller.currentTab.value,
+                  context: context,
+                );
+                final readOnly = controller.currentTab.value == 5;
 
                 return GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                      StockProductGridLayout.delegate(
+                  gridDelegate: StockProductGridLayout.delegate(
+                    context: context,
                     aspectRatio: aspectRatio,
                   ),
                   itemCount: items.length,
@@ -109,6 +116,7 @@ class GridViewItems extends GetView<StockController> {
                       child: BuildProductCard(
                         product: product,
                         isCloseouts: false,
+                        readOnly: readOnly,
                       ),
                     );
                   },
@@ -119,9 +127,10 @@ class GridViewItems extends GetView<StockController> {
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 12.h),
                 child: StockProductsGridSkeleton(
-                  itemCount: 3,
+                  rows: 1,
                   aspectRatio: StockProductGridLayout.aspectRatioForTab(
                     controller.currentTab.value,
+                    context: context,
                   ),
                 ),
               ),

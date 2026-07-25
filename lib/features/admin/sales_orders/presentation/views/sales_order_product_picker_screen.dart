@@ -3,7 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
+import 'package:doctorbike/core/utils/desktop_layout.dart';
 import 'package:doctorbike/core/utils/app_colors.dart';
+import 'package:doctorbike/core/widgets/open_desktop_window_button.dart';
+import 'package:doctorbike/routes/app_routes.dart';
 
 import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/widgets/sales_location_filter_fab.dart';
@@ -30,10 +33,6 @@ class _SalesOrderProductPickerScreenState
   SalesOrdersController get orders => Get.find<SalesOrdersController>();
 
   final _searchController = TextEditingController();
-
-  static const int _maxRows = 4;
-  static const int _minRows = 2;
-  static const int _visibleColumns = 4;
 
   @override
   void initState() {
@@ -91,6 +90,10 @@ class _SalesOrderProductPickerScreenState
               : 'instantSalePickProducts',
           action: false,
           actions: [
+            const OpenDesktopWindowButton(
+              route: AppRoutes.NEWSALESORDERSCREEN,
+              title: 'instantSalePickProducts',
+            ),
             const InstantSalePickerPartnerIcon(),
             _CartAppBarButton(
               onTap: () => showInstantSaleCartSheet(context),
@@ -182,30 +185,26 @@ class _SalesOrderProductPickerScreenState
                             final hGap = 6.w;
                             final vGap = 6.h;
                             final padH = 10.w;
-                            final gridW = constraints.maxWidth - padH * 2;
-                            final gridH = constraints.maxHeight;
-                            final minCellH = 82.h;
-                            final rows = ((gridH + vGap) / (minCellH + vGap))
-                                .floor()
-                                .clamp(_minRows, _maxRows);
-                            final cellW =
-                                (gridW - hGap * (_visibleColumns - 1)) /
-                                    _visibleColumns;
-                            final cellH = (gridH - vGap * (rows - 1)) / rows;
-                            final aspectRatio = cellH / cellW;
+                            final desktop = DesktopLayout.isDesktop(context);
+                            final columns = DesktopLayout.gridColumnsForWidth(
+                              constraints.maxWidth - padH * 2,
+                              minTileWidth: 152.w,
+                              min: desktop ? 4 : 2,
+                              max: 10,
+                              gap: hGap,
+                            );
 
                             return GridView.builder(
                               key: ValueKey(
                                 'order_picker_grid_${searchQuery}_${sales.productsListVersion.value}',
                               ),
-                              scrollDirection: Axis.horizontal,
                               padding: EdgeInsets.symmetric(horizontal: padH),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: rows,
+                                crossAxisCount: columns,
                                 mainAxisSpacing: hGap,
                                 crossAxisSpacing: vGap,
-                                childAspectRatio: aspectRatio,
+                                childAspectRatio: desktop ? 0.82 : 0.72,
                               ),
                               itemCount: total + packages.length,
                               itemBuilder: (_, i) {

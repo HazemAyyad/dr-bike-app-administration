@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:ui';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -5,6 +8,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'core/services/desktop_window_service.dart';
 import 'core/services/fcm_background_handler.dart';
 import 'core/services/languague_service.dart';
 import 'core/services/theme_service.dart';
@@ -15,13 +19,32 @@ import 'core/services/initial_bindings.dart';
 import 'core/theme/themes.dart';
 import 'core/utils/screen_util_new.dart';
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (!kIsWeb) {
+  FlutterError.onError = (details) {
+    DesktopWindowService.debugLog(
+      'FlutterError ${details.exceptionAsString()}\n${details.stack}',
+    );
+    FlutterError.presentError(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    DesktopWindowService.debugLog('PlatformError $error\n$stack');
+    return false;
+  };
+  DesktopWindowService.debugLog(
+    'main start exe="${!kIsWeb ? Platform.resolvedExecutable : 'web'}" '
+    'cwd="${!kIsWeb ? Directory.current.path : 'web'}" args=$args',
+  );
+  if (!kIsWeb && !DesktopWindowService.isSupported) {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     // FCM يُهيّأ بعد أول إطار (Splash) — تجنّب شاشة بيضاء قبل runApp
   }
   await GetStorage.init();
+  final desktopLaunch = DesktopWindowService.parseLaunchArgs(args);
+  DesktopWindowService.setInitialLaunch(desktopLaunch);
+  DesktopWindowService.debugLog(
+    'main launch route="${desktopLaunch?.route}" title="${desktopLaunch?.title}"',
+  );
 
   final binding = WidgetsFlutterBinding.ensureInitialized();
   // ignore: deprecated_member_use
@@ -44,7 +67,10 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key, required this.designSize}) : super(key: key);
+  const MyApp({
+    Key? key,
+    required this.designSize,
+  }) : super(key: key);
 
   final Size designSize;
   @override

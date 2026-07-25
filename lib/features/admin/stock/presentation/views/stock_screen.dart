@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/widgets/open_desktop_window_button.dart';
 import '../widgets/stock_products_fab.dart';
 import '../../../../../core/helpers/custom_floating_action_button.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
@@ -25,6 +26,26 @@ class StockScreen extends GetView<StockController> {
       appBar: CustomAppBar(
         title: 'stock',
         actions: [
+          const OpenDesktopWindowButton(
+            route: AppRoutes.STOCKSCREEN,
+            title: 'stock',
+          ),
+          Obx(() {
+            if (!controller.canPickProductLocation) {
+              return const SizedBox.shrink();
+            }
+            final active = controller.locationSelectionActive.value;
+            return IconButton(
+              icon: Icon(
+                active ? Icons.location_on : Icons.drive_file_move_outline,
+                color: active ? AppColors.operationalPurple : null,
+              ),
+              tooltip: 'moveProductLocation'.tr,
+              onPressed: active
+                  ? controller.exitLocationSelection
+                  : controller.startLocationSelectionMode,
+            );
+          }),
           Obx(() {
             if (!controller.canDeleteProducts) {
               return const SizedBox.shrink();
@@ -80,7 +101,7 @@ class StockScreen extends GetView<StockController> {
                 SliverToBoxAdapter(
                   child: Obx(() {
                     final tab = controller.currentTab.value;
-                    if (tab == 3 || tab == 4) {
+                    if (tab == 3 || tab == 4 || tab == 5) {
                       return const SizedBox.shrink();
                     }
                     return Padding(
@@ -139,6 +160,9 @@ class StockScreen extends GetView<StockController> {
             elevation: 2,
             child: const Icon(Icons.add),
           );
+        }
+        if (controller.currentTab.value == 5) {
+          return const SizedBox.shrink();
         }
         return StockProductsFab(
           isAddMenuOpen: controller.isAddMenuOpen,

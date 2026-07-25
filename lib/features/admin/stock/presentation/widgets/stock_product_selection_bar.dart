@@ -108,6 +108,33 @@ class StockProductSelectionBar extends GetView<StockController> {
                         child: const CircularProgressIndicator(strokeWidth: 2),
                       )
                     else if (deleteMode) ...[
+                      if (controller.canSelectAllLocationDeleteProducts)
+                        TextButton.icon(
+                          onPressed:
+                              controller.locationProductsLoadingMore.value
+                                  ? null
+                                  : controller.toggleAllLocationDeleteProducts,
+                          icon: controller.locationProductsLoadingMore.value
+                              ? SizedBox(
+                                  width: 16.w,
+                                  height: 16.w,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  controller.allLocationDeleteProductsSelected
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank,
+                                  size: 16,
+                                ),
+                          label: Text(
+                            controller.allLocationDeleteProductsSelected
+                                ? 'unselectAll'.tr
+                                : 'selectAll'.tr,
+                            style: TextStyle(fontSize: 11.sp),
+                          ),
+                        ),
                       TextButton.icon(
                         onPressed: total == 0
                             ? null

@@ -248,7 +248,8 @@ void openStockSearchSheet({
                           product: product,
                           isCloseouts: searchContext.isCloseouts,
                           newComposition: searchContext.newComposition,
-                          productIdController: searchContext.productIdController,
+                          productIdController:
+                              searchContext.productIdController,
                           productNameController:
                               searchContext.productNameController,
                           searchContext: searchContext,
@@ -258,7 +259,11 @@ void openStockSearchSheet({
                     childCount: controller.searchProducts.length,
                   ),
                   gridDelegate: StockProductGridLayout.delegate(
-                    aspectRatio: StockProductGridLayout.aspectRatioForTab(0),
+                    context: sheetContext,
+                    aspectRatio: StockProductGridLayout.aspectRatioForTab(
+                      0,
+                      context: sheetContext,
+                    ),
                   ),
                 ),
               );
@@ -270,9 +275,8 @@ void openStockSearchSheet({
     isScrollControlled: true,
     isDismissible: true,
     enableDrag: true,
-    backgroundColor: ThemeService.isDark.value
-        ? AppColors.darkColor
-        : AppColors.whiteColor,
+    backgroundColor:
+        ThemeService.isDark.value ? AppColors.darkColor : AppColors.whiteColor,
   );
 }
 

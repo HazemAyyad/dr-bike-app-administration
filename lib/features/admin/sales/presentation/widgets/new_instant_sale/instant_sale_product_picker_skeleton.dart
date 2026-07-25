@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../../../core/utils/desktop_layout.dart';
 import '../../../../../../core/widgets/skeleton_loading.dart';
 
 /// Skeleton grid matching [InstantSaleProductPickerScreen] horizontal layout.
@@ -23,27 +24,24 @@ class InstantSaleProductPickerGridSkeleton extends StatelessWidget {
         final hGap = 6.w;
         final vGap = 6.h;
         final padH = 10.w;
-        final gridW = constraints.maxWidth - padH * 2;
-        final gridH = constraints.maxHeight;
-        final minCellH = 82.h;
-        final rows = ((gridH + vGap) / (minCellH + vGap))
-            .floor()
-            .clamp(minRows, maxRows);
-        final cellW =
-            (gridW - hGap * (visibleColumns - 1)) / visibleColumns;
-        final cellH = (gridH - vGap * (rows - 1)) / rows;
-        final aspectRatio = cellH / cellW;
-        final itemCount = rows * visibleColumns;
+        final desktop = DesktopLayout.isDesktop(context);
+        final columns = DesktopLayout.gridColumnsForWidth(
+          constraints.maxWidth - padH * 2,
+          minTileWidth: desktop ? 190 : 152.w,
+          min: desktop ? 4 : minRows,
+          max: desktop ? 8 : 10,
+          gap: hGap,
+        );
+        final itemCount = columns * (desktop ? 4 : visibleColumns);
 
         return GridView.builder(
-          scrollDirection: Axis.horizontal,
           padding: EdgeInsets.symmetric(horizontal: padH),
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: rows,
+            crossAxisCount: columns,
             mainAxisSpacing: hGap,
             crossAxisSpacing: vGap,
-            childAspectRatio: aspectRatio,
+            childAspectRatio: desktop ? 0.76 : 0.72,
           ),
           itemCount: itemCount,
           itemBuilder: (_, __) => const _InstantSaleProductCardSkeleton(),
@@ -70,7 +68,7 @@ class _InstantSaleProductCardSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
+          const Expanded(
             flex: 3,
             child: SkeletonBlock(
               width: double.infinity,

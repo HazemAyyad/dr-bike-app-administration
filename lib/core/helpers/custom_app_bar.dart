@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import '../../routes/app_routes.dart';
+import '../services/desktop_window_service.dart';
 import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
 import 'costom_dialog_filter.dart';
@@ -59,6 +61,65 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeButton = DesktopWindowService.startedAsSecondaryWindow
+        ? IconButton(
+            tooltip: 'home'.tr,
+            icon: Icon(
+              Icons.home_outlined,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+            ),
+            onPressed: () {
+              FocusManager.instance.primaryFocus?.unfocus();
+              Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+            },
+          )
+        : null;
+    final defaultActions = [
+      if (fromDateController != null ||
+          toDateController != null ||
+          employeeNameController != null)
+        IconButton(
+          highlightColor: Colors.transparent,
+          icon: Icon(
+            Icons.calendar_today_outlined,
+            size: 22.sp,
+            color: ThemeService.isDark.value
+                ? AppColors.primaryColor
+                : AppColors.secondaryColor,
+          ),
+          onPressed: () {
+            showCustomDialog(
+              context,
+              fromDateController: fromDateController,
+              toDateController: toDateController,
+              employeeNameController: employeeNameController,
+              label: label ?? 'employeeName',
+              onPressed: onPressedFilter ?? () {},
+            );
+          },
+        ),
+      action!
+          ? IconButton(
+              highlightColor: Colors.transparent,
+              icon: Icon(
+                Icons.add_circle,
+                size: 32.sp,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+              onPressed: onPressedAdd,
+            )
+          : const SizedBox(),
+      SizedBox(width: 10.w)
+    ];
+    final appBarActions = [
+      if (homeButton != null) homeButton,
+      ...(actions ?? defaultActions),
+    ];
+
     return AppBar(
       automaticallyImplyLeading: false,
       scrolledUnderElevation: 0,
@@ -86,46 +147,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
               onPressed: onPressedBack ?? _safeBack,
             ),
-      actions: actions ??
-          [
-            if (fromDateController != null ||
-                toDateController != null ||
-                employeeNameController != null)
-              IconButton(
-                highlightColor: Colors.transparent,
-                icon: Icon(
-                  Icons.calendar_today_outlined,
-                  size: 22.sp,
-                  color: ThemeService.isDark.value
-                      ? AppColors.primaryColor
-                      : AppColors.secondaryColor,
-                ),
-                onPressed: () {
-                  showCustomDialog(
-                    context,
-                    fromDateController: fromDateController,
-                    toDateController: toDateController,
-                    employeeNameController: employeeNameController,
-                    label: label ?? 'employeeName',
-                    onPressed: onPressedFilter ?? () {},
-                  );
-                },
-              ),
-            action!
-                ? IconButton(
-                    highlightColor: Colors.transparent,
-                    icon: Icon(
-                      Icons.add_circle,
-                      size: 32.sp,
-                      color: ThemeService.isDark.value
-                          ? AppColors.primaryColor
-                          : AppColors.secondaryColor,
-                    ),
-                    onPressed: onPressedAdd,
-                  )
-                : const SizedBox(),
-            SizedBox(width: 10.w)
-          ],
+      actions: appBarActions,
     );
   }
 

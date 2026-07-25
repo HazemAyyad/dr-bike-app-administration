@@ -14,6 +14,8 @@ class AppSettingsService {
 
   static const _cacheKey = 'app_settings_subtask_bonus_default';
   static const _fabCacheKey = 'app_settings_admin_fab_options';
+  static const _passwordResetOtpDeliveryMethodCacheKey =
+      'app_settings_password_reset_otp_delivery_method';
   static const _salesVarianceCacheKey =
       'app_settings_sales_daily_variance_alert_threshold';
   static const _salesMaxFloatCacheKey = 'app_settings_sales_daily_max_float';
@@ -36,6 +38,7 @@ class AppSettingsService {
 
   final RxInt subtaskBonusDefault = 5.obs;
   final RxSet<String> adminFabOptions = <String>{...defaultAdminFabOptions}.obs;
+  final RxString passwordResetOtpDeliveryMethod = 'email'.obs;
   final RxDouble salesDailyVarianceAlertThreshold = 50.0.obs;
   final RxMap<String, double> salesDailyMaxFloat = <String, double>{
     'شيكل': 500,
@@ -65,6 +68,14 @@ class AppSettingsService {
     final cachedFab = FinalClasses.getStorage.read(_fabCacheKey);
     if (cachedFab != null) {
       adminFabOptions.assignAll(_decodeFabOptions(cachedFab.toString()));
+    }
+    final cachedPasswordResetOtpDeliveryMethod =
+        FinalClasses.getStorage.read(_passwordResetOtpDeliveryMethodCacheKey);
+    if (cachedPasswordResetOtpDeliveryMethod != null) {
+      passwordResetOtpDeliveryMethod.value =
+          _normalizePasswordResetOtpDeliveryMethod(
+        cachedPasswordResetOtpDeliveryMethod.toString(),
+      );
     }
     final cachedVariance = FinalClasses.getStorage.read(_salesVarianceCacheKey);
     if (cachedVariance != null) {
@@ -100,6 +111,17 @@ class AppSettingsService {
             final options = _decodeFabOptions(fabRaw);
             adminFabOptions.assignAll(options);
             await FinalClasses.getStorage.write(_fabCacheKey, fabRaw);
+          }
+          final resetOtpMethod =
+              settings['password_reset_otp_delivery_method']?.toString();
+          if (resetOtpMethod != null) {
+            final method =
+                _normalizePasswordResetOtpDeliveryMethod(resetOtpMethod);
+            passwordResetOtpDeliveryMethod.value = method;
+            await FinalClasses.getStorage.write(
+              _passwordResetOtpDeliveryMethodCacheKey,
+              method,
+            );
           }
           final variance = double.tryParse(
             settings['sales_daily_variance_alert_threshold']?.toString() ?? '',
@@ -212,6 +234,30 @@ class AppSettingsService {
     return false;
   }
 
+  Future<bool> updatePasswordResetOtpDeliveryMethod(String method) async {
+    final api = _api;
+    if (api == null) return false;
+
+    final normalized = _normalizePasswordResetOtpDeliveryMethod(method);
+
+    try {
+      final response = await api.put(
+        EndPoints.appSettings,
+        data: {'password_reset_otp_delivery_method': normalized},
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        passwordResetOtpDeliveryMethod.value = normalized;
+        await FinalClasses.getStorage.write(
+          _passwordResetOtpDeliveryMethodCacheKey,
+          normalized,
+        );
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   Future<bool> updateAppUpdateSettings({
     required AppUpdatePlatformSettings android,
     required AppUpdatePlatformSettings ios,
@@ -262,6 +308,31 @@ class AppSettingsService {
     return null;
   }
 
+  Future<List<PasswordResetCodeReportRow>> fetchPasswordResetCodeReport({
+    String status = 'all',
+  }) async {
+    final api = _api;
+    if (api == null) return const [];
+
+    try {
+      final response = await api.get(
+        EndPoints.adminPasswordResetCodes,
+        queryParameters: {'status': status, 'limit': 100},
+      );
+      final data = _responseData(response);
+      if (data is Map && data['status']?.toString() == 'success') {
+        final rows = data['codes'];
+        if (rows is List) {
+          return rows
+              .whereType<Map>()
+              .map((row) => PasswordResetCodeReportRow.fromJson(row))
+              .toList();
+        }
+      }
+    } catch (_) {}
+    return const [];
+  }
+
   void _applyMaxFloatMap(Map<dynamic, dynamic> raw) {
     for (final entry in raw.entries) {
       final key = entry.key.toString();
@@ -302,6 +373,11 @@ class AppSettingsService {
         .where((e) => allAdminFabOptions.contains(e))
         .toSet();
     return values;
+  }
+
+  String _normalizePasswordResetOtpDeliveryMethod(String raw) {
+    final method = raw.trim().toLowerCase();
+    return const {'email', 'admin', 'sms'}.contains(method) ? method : 'email';
   }
 
   void _applyAppUpdateSettings(Map<dynamic, dynamic> raw) {
@@ -501,6 +577,47 @@ class AppVersionDeviceRow {
       version: json['version']?.toString() ?? '',
       build: int.tryParse(json['build']?.toString() ?? '') ?? 0,
       lastSeenAt: json['last_seen_at']?.toString() ?? '',
+    );
+  }
+}
+
+class PasswordResetCodeReportRow {
+  PasswordResetCodeReportRow({
+    required this.id,
+    required this.userName,
+    required this.userType,
+    required this.email,
+    required this.token,
+    required this.deliveryMethod,
+    required this.status,
+    required this.createdAt,
+    required this.expiresAt,
+    required this.usedAt,
+  });
+
+  final int id;
+  final String userName;
+  final String userType;
+  final String email;
+  final String token;
+  final String deliveryMethod;
+  final String status;
+  final String createdAt;
+  final String expiresAt;
+  final String usedAt;
+
+  factory PasswordResetCodeReportRow.fromJson(Map<dynamic, dynamic> json) {
+    return PasswordResetCodeReportRow(
+      id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      userName: json['user_name']?.toString() ?? '',
+      userType: json['user_type']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      token: json['token']?.toString() ?? '',
+      deliveryMethod: json['delivery_method']?.toString() ?? 'email',
+      status: json['status']?.toString() ?? 'active',
+      createdAt: json['created_at']?.toString() ?? '',
+      expiresAt: json['expires_at']?.toString() ?? '',
+      usedAt: json['used_at']?.toString() ?? '',
     );
   }
 }

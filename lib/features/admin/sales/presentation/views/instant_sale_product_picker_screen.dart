@@ -6,7 +6,9 @@ import 'package:get/get.dart';
 
 import '../../../stock/data/models/offer_package_model.dart';
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/widgets/open_desktop_window_button.dart';
 import '../../../../../routes/app_routes.dart';
 import '../controllers/sales_controller.dart';
 import '../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
@@ -32,10 +34,6 @@ class _InstantSaleProductPickerScreenState
   final _searchController = TextEditingController();
   bool _maintenanceFlow = false;
   bool _adjustmentFlow = false;
-
-  static const int _maxRows = 4;
-  static const int _minRows = 2;
-  static const int _visibleColumns = 4;
 
   @override
   void initState() {
@@ -108,6 +106,14 @@ class _InstantSaleProductPickerScreenState
           action: false,
           onPressedBack: _handleBackPressed,
           actions: [
+            OpenDesktopWindowButton(
+              route: Get.currentRoute == AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+                  ? AppRoutes.ADJUSTMENTSALEPRODUCTPICKER
+                  : AppRoutes.INSTANTSALEPRODUCTPICKER,
+              title: _adjustmentFlow
+                  ? 'adjustmentSalePickProducts'
+                  : 'instantSalePickProducts',
+            ),
             const InstantSalePickerPartnerIcon(),
             IconButton(
               tooltip: 'instantSalePasteProductList'.tr,
@@ -388,30 +394,26 @@ class _InstantSaleProductPickerScreenState
                             final hGap = 6.w;
                             final vGap = 6.h;
                             final padH = 10.w;
-                            final gridW = constraints.maxWidth - padH * 2;
-                            final gridH = constraints.maxHeight;
-                            final minCellH = 82.h;
-                            final rows = ((gridH + vGap) / (minCellH + vGap))
-                                .floor()
-                                .clamp(_minRows, _maxRows);
-                            final cellW =
-                                (gridW - hGap * (_visibleColumns - 1)) /
-                                    _visibleColumns;
-                            final cellH = (gridH - vGap * (rows - 1)) / rows;
-                            final aspectRatio = cellH / cellW;
+                            final desktop = DesktopLayout.isDesktop(context);
+                            final columns = DesktopLayout.gridColumnsForWidth(
+                              constraints.maxWidth - padH * 2,
+                              minTileWidth: desktop ? 190 : 152.w,
+                              min: desktop ? 4 : 2,
+                              max: desktop ? 8 : 10,
+                              gap: hGap,
+                            );
 
                             return GridView.builder(
                               key: ValueKey(
                                 'picker_grid_${searchQuery}_${controller.productsListVersion.value}',
                               ),
-                              scrollDirection: Axis.horizontal,
                               padding: EdgeInsets.symmetric(horizontal: padH),
                               gridDelegate:
                                   SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: rows,
+                                crossAxisCount: columns,
                                 mainAxisSpacing: hGap,
                                 crossAxisSpacing: vGap,
-                                childAspectRatio: aspectRatio,
+                                childAspectRatio: desktop ? 0.76 : 0.72,
                               ),
                               itemCount: total,
                               itemBuilder: (_, i) {

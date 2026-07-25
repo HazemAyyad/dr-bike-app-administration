@@ -381,6 +381,111 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     }
   }
 
+  Future<void> _editPasswordResetOtpDeliveryMethod() async {
+    await AppSettingsService.instance.ensureLoaded(force: true);
+    final service = AppSettingsService.instance;
+    var selected = service.passwordResetOtpDeliveryMethod.value;
+
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF1F2937);
+    const textSecondary = Color(0xFF6B7280);
+
+    if (!mounted) return;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: dialogBg,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'passwordResetOtpDeliverySetting'.tr,
+            style: const TextStyle(
+              color: textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: selected,
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'passwordResetOtpDeliverySetting'.tr,
+                    labelStyle: const TextStyle(color: textSecondary),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'email',
+                      child: Text('passwordResetOtpDeliveryEmail'.tr),
+                    ),
+                    DropdownMenuItem(
+                      value: 'admin',
+                      child: Text('passwordResetOtpDeliveryAdmin'.tr),
+                    ),
+                    DropdownMenuItem(
+                      value: 'sms',
+                      child: Text('passwordResetOtpDeliverySms'.tr),
+                    ),
+                  ],
+                  onChanged: (v) =>
+                      setDialogState(() => selected = v ?? 'email'),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _passwordResetDeliveryDescription(selected),
+                  style: const TextStyle(
+                    color: textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('cancel'.tr,
+                  style: const TextStyle(color: textSecondary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child:
+                  Text('save'.tr, style: const TextStyle(color: textPrimary)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true || !mounted) return;
+
+    final ok = await service.updatePasswordResetOtpDeliveryMethod(selected);
+    if (!mounted) return;
+    if (ok) {
+      Helpers.showCustomDialogSuccess(
+        context: context,
+        title: 'success'.tr,
+        message: 'settingsUpdated'.tr,
+      );
+    } else {
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'settingsUpdateFailed'.tr,
+      );
+    }
+  }
+
   Future<void> _editAppUpdateSettings() async {
     await AppSettingsService.instance.ensureLoaded(force: true);
     final service = AppSettingsService.instance;
@@ -659,6 +764,122 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     );
   }
 
+  Future<void> _showPasswordResetCodeReport() async {
+    const dialogBg = Color(0xFFF3F4F6);
+    const textPrimary = Color(0xFF111827);
+    const textSecondary = Color(0xFF6B7280);
+    var status = 'all';
+    var future = AppSettingsService.instance.fetchPasswordResetCodeReport();
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          void setStatus(String next) {
+            setDialogState(() {
+              status = next;
+              future = AppSettingsService.instance
+                  .fetchPasswordResetCodeReport(status: status);
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: dialogBg,
+            surfaceTintColor: Colors.transparent,
+            title: Text(
+              'passwordResetCodesReportTitle'.tr,
+              style: const TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              height: MediaQuery.of(ctx).size.height * .68,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _PasswordResetStatusChip(
+                          label: 'passwordResetStatus_all'.tr,
+                          selected: status == 'all',
+                          onSelected: () => setStatus('all'),
+                        ),
+                        _PasswordResetStatusChip(
+                          label: 'passwordResetStatus_active'.tr,
+                          selected: status == 'active',
+                          onSelected: () => setStatus('active'),
+                        ),
+                        _PasswordResetStatusChip(
+                          label: 'passwordResetStatus_used'.tr,
+                          selected: status == 'used',
+                          onSelected: () => setStatus('used'),
+                        ),
+                        _PasswordResetStatusChip(
+                          label: 'passwordResetStatus_expired'.tr,
+                          selected: status == 'expired',
+                          onSelected: () => setStatus('expired'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10.h),
+                  Expanded(
+                    child: FutureBuilder<List<PasswordResetCodeReportRow>>(
+                      future: future,
+                      builder: (ctx, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final rows = snapshot.data ??
+                            const <PasswordResetCodeReportRow>[];
+                        if (rows.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'passwordResetCodesReportEmpty'.tr,
+                              style: const TextStyle(color: textSecondary),
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          itemCount: rows.length,
+                          separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                          itemBuilder: (_, index) =>
+                              _PasswordResetCodeReportCard(row: rows[index]),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () => setStatus(status),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text('refresh'.tr),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'close'.tr,
+                  style: const TextStyle(color: textPrimary),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _editAdminFabOptions() async {
     await AppSettingsService.instance.ensureLoaded(force: true);
     final service = AppSettingsService.instance;
@@ -846,6 +1067,20 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
               titleKey: 'subtaskBonusDefaultSetting',
               descriptionKey: 'subtaskBonusDefaultSettingDesc',
               onTap: _editSubtaskBonusDefault,
+            ),
+            _SettingsItem(
+              icon: Icons.lock_reset_outlined,
+              iconColor: const Color(0xFF2563EB),
+              titleKey: 'passwordResetOtpDeliverySetting',
+              descriptionKey: 'passwordResetOtpDeliverySettingDesc',
+              onTap: _editPasswordResetOtpDeliveryMethod,
+            ),
+            _SettingsItem(
+              icon: Icons.manage_search_outlined,
+              iconColor: const Color(0xFF0F766E),
+              titleKey: 'passwordResetCodesReportTitle',
+              descriptionKey: 'passwordResetCodesReportDesc',
+              onTap: _showPasswordResetCodeReport,
             ),
             _SettingsItem(
               icon: Icons.local_shipping_outlined,
@@ -1070,6 +1305,238 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
       colorText: Colors.white,
+    );
+  }
+
+  String _passwordResetDeliveryDescription(String method) {
+    switch (method) {
+      case 'admin':
+        return 'passwordResetOtpDeliveryAdminDesc'.tr;
+      case 'sms':
+        return 'passwordResetOtpDeliverySmsDesc'.tr;
+      default:
+        return 'passwordResetOtpDeliveryEmailDesc'.tr;
+    }
+  }
+}
+
+class _PasswordResetStatusChip extends StatelessWidget {
+  const _PasswordResetStatusChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsetsDirectional.only(end: 8.w),
+      child: ChoiceChip(
+        selected: selected,
+        label: Text(label),
+        selectedColor: const Color(0xFF2563EB),
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : const Color(0xFF374151),
+          fontWeight: FontWeight.w700,
+        ),
+        onSelected: (_) => onSelected(),
+      ),
+    );
+  }
+}
+
+class _PasswordResetCodeReportCard extends StatelessWidget {
+  const _PasswordResetCodeReportCard({required this.row});
+
+  final PasswordResetCodeReportRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _statusColor(row.status);
+    final name = row.userName.isNotEmpty ? row.userName : row.email;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: const Color(0xFF111827),
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  _statusLabel(row.status),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            row.email,
+            style: TextStyle(color: const Color(0xFF6B7280), fontSize: 12.sp),
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: SelectableText(
+                  row.token,
+                  style: TextStyle(
+                    color: const Color(0xFF111827),
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'copy'.tr,
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: row.token));
+                  Get.snackbar(
+                    'copied'.tr,
+                    row.token,
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                },
+                icon: const Icon(Icons.copy_outlined),
+              ),
+              const Spacer(),
+              Text(
+                _deliveryMethodLabel(row.deliveryMethod),
+                style: TextStyle(
+                  color: const Color(0xFF374151),
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 10.w,
+            runSpacing: 4.h,
+            children: [
+              _MetaText(
+                label: 'passwordResetRequestedAt'.tr,
+                value: _shortDate(row.createdAt),
+              ),
+              if (row.expiresAt.isNotEmpty)
+                _MetaText(
+                  label: 'passwordResetExpiresAt'.tr,
+                  value: _shortDate(row.expiresAt),
+                ),
+              if (row.usedAt.isNotEmpty)
+                _MetaText(
+                  label: 'passwordResetUsedAt'.tr,
+                  value: _shortDate(row.usedAt),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Color _statusColor(String status) {
+    switch (status) {
+      case 'used':
+        return const Color(0xFF2563EB);
+      case 'expired':
+        return const Color(0xFFDC2626);
+      default:
+        return const Color(0xFF059669);
+    }
+  }
+
+  static String _statusLabel(String status) {
+    switch (status) {
+      case 'used':
+        return 'passwordResetStatus_used'.tr;
+      case 'expired':
+        return 'passwordResetStatus_expired'.tr;
+      default:
+        return 'passwordResetStatus_active'.tr;
+    }
+  }
+
+  static String _deliveryMethodLabel(String method) {
+    switch (method) {
+      case 'admin':
+        return 'passwordResetOtpDeliveryAdmin'.tr;
+      case 'sms':
+        return 'passwordResetOtpDeliverySms'.tr;
+      default:
+        return 'passwordResetOtpDeliveryEmail'.tr;
+    }
+  }
+
+  static String _shortDate(String value) {
+    if (value.isEmpty) return '';
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) return value;
+    final local = parsed.toLocal();
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '${local.year}-$month-$day $hour:$minute';
+  }
+}
+
+class _MetaText extends StatelessWidget {
+  const _MetaText({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '$label: $value',
+      style: TextStyle(
+        color: const Color(0xFF6B7280),
+        fontSize: 11.sp,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 }

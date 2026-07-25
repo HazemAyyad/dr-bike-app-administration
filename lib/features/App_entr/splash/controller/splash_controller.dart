@@ -2,6 +2,7 @@ import 'package:doctorbike/core/services/app_shortcut_service.dart';
 import 'package:doctorbike/core/services/app_startup.dart';
 import 'package:doctorbike/core/services/app_update_service.dart';
 
+import 'package:doctorbike/core/services/desktop_window_service.dart';
 import 'package:doctorbike/core/services/employee_attendance_persistent_notification_service.dart';
 import 'package:doctorbike/core/services/initial_bindings.dart';
 import 'package:doctorbike/core/services/session_service.dart';
@@ -90,8 +91,11 @@ class SplashController extends GetxController {
       }
 
       if (validation.isValid) {
-        debugPrint('[Splash] navigate -> BOTTOMNAVBARSCREEN valid session');
-        Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+        final desktopRoute = _consumeDesktopRoute();
+        debugPrint(
+          '[Splash] navigate -> ${desktopRoute ?? AppRoutes.BOTTOMNAVBARSCREEN} valid session',
+        );
+        Get.offAllNamed(desktopRoute ?? AppRoutes.BOTTOMNAVBARSCREEN);
         _scheduleUpdateCheck();
         AppShortcutService.instance.scheduleConsumePending();
         if (userType == 'employee') {
@@ -110,8 +114,11 @@ class SplashController extends GetxController {
       final cachedUser = await UserData.getSavedUser();
       if (cachedUser != null) {
         await SessionService.restoreGlobalsFromStorage();
-        debugPrint('[Splash] navigate -> BOTTOMNAVBARSCREEN cached user');
-        Get.offAllNamed(AppRoutes.BOTTOMNAVBARSCREEN);
+        final desktopRoute = _consumeDesktopRoute();
+        debugPrint(
+          '[Splash] navigate -> ${desktopRoute ?? AppRoutes.BOTTOMNAVBARSCREEN} cached user',
+        );
+        Get.offAllNamed(desktopRoute ?? AppRoutes.BOTTOMNAVBARSCREEN);
         _scheduleUpdateCheck();
         AppShortcutService.instance.scheduleConsumePending();
         if (userType == 'employee') {
@@ -132,8 +139,28 @@ class SplashController extends GetxController {
   }
 
   void _scheduleUpdateCheck() {
+    if (DesktopWindowService.startedAsSecondaryWindow) {
+      debugPrint('[Splash] secondary desktop window — skip update check');
+      return;
+    }
     Future<void>.delayed(const Duration(milliseconds: 600), () {
       AppUpdateService.instance.checkForUpdate();
     });
+  }
+
+  String? _consumeDesktopRoute() {
+    if (!DesktopWindowService.isSupported) {
+      return null;
+    }
+    final launch = DesktopWindowService.consumeInitialLaunch();
+    final route = launch?.route;
+    if (route == null ||
+        route.isEmpty ||
+        route == AppRoutes.SPLASHSCREEN ||
+        route == AppRoutes.LOGINORSIGNUPSCREEN ||
+        route == AppRoutes.ONBOARDINGSCREEN) {
+      return null;
+    }
+    return route;
   }
 }

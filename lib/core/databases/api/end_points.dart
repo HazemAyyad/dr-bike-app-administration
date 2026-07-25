@@ -64,6 +64,7 @@ class EndPoints {
       'admin/notifications/mark-all-read';
   static String adminNotificationDelete(int id) => 'admin/notifications/$id';
   static const String adminDeviceToken = 'admin/device-token';
+  static const String adminPasswordResetCodes = 'admin/password-reset-codes';
 
   static const String employeeNotifications = 'employee/notifications';
   static const String employeeNotificationsUnreadCount =
@@ -372,6 +373,7 @@ class EndPoints {
 
   // stock
   static const String getProductsList = 'get/products/list';
+  static const String getDeletedProducts = 'get/deleted/products';
   static const String productCostPrice = 'product/cost-price';
   static const String exportProductsCsv = 'products/export-csv';
   static const String previewImportProductsCsv = 'products/import-csv/preview';

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:doctorbike/core/helpers/custom_app_bar.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
+import 'package:doctorbike/core/widgets/open_desktop_window_button.dart';
 import 'package:doctorbike/features/admin/sales/presentation/widgets/instant_sales_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -32,6 +33,10 @@ class SalesScreen extends GetView<SalesController> {
         title: 'sales',
         action: false,
         actions: [
+          const OpenDesktopWindowButton(
+            route: AppRoutes.SALESSCREEN,
+            title: 'sales',
+          ),
           Obx(
             () {
               final count = controller.suspendedInvoicesCount.value;

@@ -3,8 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/services/initial_bindings.dart';
+import '../../../../../core/services/desktop_window_service.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../routes/app_routes.dart';
 
 class BuildActionButtons extends StatelessWidget {
@@ -45,30 +47,41 @@ class BuildActionButtons extends StatelessWidget {
         ),
         SizedBox(height: 8.h),
 
-        GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 2.h,
-            crossAxisSpacing: 8.w,
-            mainAxisSpacing: 13.h,
-          ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: filteredButtons.length,
-          itemBuilder: (context, index) {
-            final button = filteredButtons[index];
-            final badgeDescriptors = (button['badgeDescriptors'] as List?)
-                    ?.whereType<Map>()
-                    .map((item) => _ActionBadge.fromMap(item, badges))
-                    .where((item) => item.count > 0)
-                    .toList(growable: false) ??
-                const <_ActionBadge>[];
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = DesktopLayout.gridColumnsForWidth(
+              constraints.maxWidth,
+              minTileWidth: DesktopLayout.isDesktop(context) ? 170 : 105,
+              min: DesktopLayout.isDesktop(context) ? 5 : 3,
+              max: 10,
+              gap: 8.w,
+            );
+            return GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                childAspectRatio: DesktopLayout.isDesktop(context) ? 3 : 2.h,
+                crossAxisSpacing: 8.w,
+                mainAxisSpacing: 13.h,
+              ),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: filteredButtons.length,
+              itemBuilder: (context, index) {
+                final button = filteredButtons[index];
+                final badgeDescriptors = (button['badgeDescriptors'] as List?)
+                        ?.whereType<Map>()
+                        .map((item) => _ActionBadge.fromMap(item, badges))
+                        .where((item) => item.count > 0)
+                        .toList(growable: false) ??
+                    const <_ActionBadge>[];
 
-            return _buildActionButton(
-              button['title'],
-              button['route'],
-              badges[button['badgeKey']?.toString() ?? ''] ?? 0,
-              badgeDescriptors,
+                return _buildActionButton(
+                  button['title'],
+                  button['route'],
+                  badges[button['badgeKey']?.toString() ?? ''] ?? 0,
+                  badgeDescriptors,
+                );
+              },
             );
           },
         ),
@@ -143,11 +156,23 @@ Widget _buildActionButton(
   int badge,
   List<_ActionBadge> badgeDescriptors,
 ) {
+  String desktopWindowTitle() {
+    final count = badge > 0
+        ? badge
+        : badgeDescriptors.fold<int>(
+            0,
+            (sum, item) => sum + item.count,
+          );
+    final translatedTitle = title.tr;
+    return count > 0 ? '$translatedTitle ($count)' : translatedTitle;
+  }
+
+  void openCurrent() {
+    route == '' ? null : Get.toNamed(route);
+  }
+
   return GestureDetector(
-    onTap: () {
-      // print(route);
-      route == '' ? null : Get.toNamed(route);
-    },
+    onTap: openCurrent,
     child: Stack(
       clipBehavior: Clip.none,
       children: [
@@ -161,6 +186,28 @@ Widget _buildActionButton(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              if (DesktopWindowService.isSupported && route.isNotEmpty)
+                Align(
+                  alignment: AlignmentDirectional.topEnd,
+                  child: Tooltip(
+                    message: 'openInNewWindow'.tr,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => DesktopWindowService.openRoute(
+                        route: route,
+                        title: desktopWindowTitle(),
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.all(5),
+                        child: Icon(
+                          Icons.open_in_new_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               Flexible(
                 child: Text(
                   title.tr,

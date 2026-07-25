@@ -132,10 +132,13 @@ class StockDatasource {
   }) async {
     try {
       final queryParams = ifCombinations || ifCloseouts
-          ? <String, dynamic>{'page': page}
+          ? <String, dynamic>{'page': page, 'per_page': perPage}
           : {
               ...?filters?.toQueryParams(page: page, perPage: perPage),
-              if (filters == null) 'page': page,
+              if (filters == null) ...{
+                'page': page,
+                'per_page': perPage,
+              },
             };
 
       final response = await api.get(
@@ -173,6 +176,48 @@ class StockDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<StockProductsPageResult> getDeletedProducts({
+    required int page,
+    int perPage = 15,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.getDeletedProducts,
+        queryParameters: {
+          'page': page,
+          'per_page': perPage,
+        },
+      );
+      final raw = response.data;
+      final map =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final products = mapListFromResponseKey(
+        map,
+        'products',
+        (Map<String, dynamic> m) => AllStockProductsModel.fromJson(m),
+      );
+      final p = map['pagination'];
+      final pg = p is Map ? Map<String, dynamic>.from(p) : <String, dynamic>{};
+      return StockProductsPageResult(
+        products: products,
+        currentPage: asInt(pg['current_page'], page),
+        lastPage: asInt(pg['last_page'], 1),
+        total: asInt(pg['total'], products.length),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );
     }

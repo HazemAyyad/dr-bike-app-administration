@@ -8,24 +8,29 @@ import 'stock_product_grid_layout.dart';
 class StockProductsGridSkeleton extends StatelessWidget {
   const StockProductsGridSkeleton({
     Key? key,
-    this.itemCount = 12,
+    this.itemCount,
+    this.rows,
     this.aspectRatio = 0.92,
   }) : super(key: key);
 
-  final int itemCount;
+  final int? itemCount;
+  final int? rows;
   final double aspectRatio;
 
   @override
   Widget build(BuildContext context) {
+    final columns = StockProductGridLayout.columnsForContext(context);
+    final resolvedItemCount = itemCount ?? columns * (rows ?? 4);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: StockProductGridLayout.delegate(
+          context: context,
           aspectRatio: aspectRatio,
         ),
-        itemCount: itemCount,
+        itemCount: resolvedItemCount,
         itemBuilder: (_, __) => const _StockProductCardSkeleton(),
       ),
     );
@@ -49,7 +54,7 @@ class _StockProductCardSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
+          const Expanded(
             child: SkeletonBlock(
               width: double.infinity,
               height: double.infinity,
@@ -82,17 +87,21 @@ class ProductDetailsPageSkeleton extends StatelessWidget {
           SizedBox(height: 10.h),
           Row(
             children: [
-              Expanded(child: SkeletonBlock(width: double.infinity, height: 56.h)),
+              Expanded(
+                  child: SkeletonBlock(width: double.infinity, height: 56.h)),
               SizedBox(width: 8.w),
-              Expanded(child: SkeletonBlock(width: double.infinity, height: 56.h)),
+              Expanded(
+                  child: SkeletonBlock(width: double.infinity, height: 56.h)),
             ],
           ),
           SizedBox(height: 8.h),
           Row(
             children: [
-              Expanded(child: SkeletonBlock(width: double.infinity, height: 56.h)),
+              Expanded(
+                  child: SkeletonBlock(width: double.infinity, height: 56.h)),
               SizedBox(width: 8.w),
-              Expanded(child: SkeletonBlock(width: double.infinity, height: 56.h)),
+              Expanded(
+                  child: SkeletonBlock(width: double.infinity, height: 56.h)),
             ],
           ),
           SizedBox(height: 12.h),

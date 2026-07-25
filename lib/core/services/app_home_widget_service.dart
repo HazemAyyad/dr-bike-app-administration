@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:get/get.dart';
 import 'package:home_widget/home_widget.dart';
 
@@ -24,7 +25,7 @@ class AppHomeWidgetService {
   bool _initialized = false;
 
   Future<void> initialize() async {
-    if (kIsWeb || _initialized) return;
+    if (kIsWeb || _isDesktopPlatform || _initialized) return;
     _initialized = true;
 
     try {
@@ -45,7 +46,7 @@ class AppHomeWidgetService {
   }
 
   Future<void> syncPresentation() async {
-    if (kIsWeb) return;
+    if (kIsWeb || _isDesktopPlatform) return;
 
     final lang = _currentLangCode();
     final title = lang == 'ar' ? 'إضافة مهمة خاصة' : 'Add special task';
@@ -94,4 +95,9 @@ class AppHomeWidgetService {
     }
     return 'ar';
   }
+
+  bool get _isDesktopPlatform =>
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux;
 }

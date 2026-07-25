@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/app_button.dart';
 import '../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../../data/models/all_stock_products_model.dart';
@@ -34,6 +34,7 @@ class BuildProductCard extends GetView<StockController> {
     this.productIdController,
     this.productNameController,
     this.searchContext,
+    this.readOnly = false,
   }) : super(key: key);
 
   final AllStockProductsModel product;
@@ -42,6 +43,7 @@ class BuildProductCard extends GetView<StockController> {
   final TextEditingController? productIdController;
   final TextEditingController? productNameController;
   final StockSearchContext? searchContext;
+  final bool readOnly;
 
   Future<void> _openProductDetails() async {
     final fromSearch = searchContext != null;
@@ -154,47 +156,15 @@ class BuildProductCard extends GetView<StockController> {
     );
   }
 
-  Future<void> _showProductLongPressActions(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (userType == 'admin')
-              ListTile(
-                leading: const Icon(Icons.payments_outlined),
-                title: Text('costPrice'.tr),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  _showCostPriceDialog(context);
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.location_on_outlined),
-              title: Text('storeSection'.tr),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                controller.showLocationActionSheetForProduct(
-                  context,
-                  product,
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isDesktopLayout = DesktopLayout.isDesktop(context);
     final nameStyle = Theme.of(context).textTheme.bodyLarge!.copyWith(
           color: ThemeService.isDark.value
               ? AppColors.whiteColor
               : AppColors.secondaryColor,
           fontWeight: FontWeight.w700,
-          fontSize: 11.sp,
+          fontSize: isDesktopLayout ? 13.sp : 11.sp,
           height: 1.2,
         );
 
@@ -256,6 +226,9 @@ class BuildProductCard extends GetView<StockController> {
           controller.toggleProductSelection(product.productId);
           return;
         }
+        if (readOnly) {
+          return;
+        }
         await _openProductDetails();
       }
 
@@ -274,61 +247,16 @@ class BuildProductCard extends GetView<StockController> {
           await handleCardTap();
         },
         onLongPress: () async {
-          if (isCloseouts) return;
-          if (tab == 1) {
-            Get.dialog(
-              Dialog(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'moveToArchive'.tr,
-                        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                              color: ThemeService.isDark.value
-                                  ? AppColors.whiteColor
-                                  : AppColors.secondaryColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 20.sp,
-                            ),
-                      ),
-                      SizedBox(height: 10.h),
-                      AppButton(
-                        isSafeArea: false,
-                        isLoading: controller.isLoading,
-                        text: 'apply'.tr,
-                        onPressed: () {
-                          controller.moveProductToArchive(
-                            context: context,
-                            productId: product.closeoutId.toString(),
-                            isMove: true,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          } else if (canSelectLocation) {
-            if (controller.locationSelectionActive.value) {
-              controller.toggleProductSelection(product.productId);
-              return;
-            }
-            if (userType == 'admin') {
-              await _showProductLongPressActions(context);
-            } else {
-              await controller.showLocationActionSheetForProduct(
-                context,
-                product,
-              );
-            }
+          if (isCloseouts || readOnly) return;
+          if (userType == 'admin') {
+            await _showCostPriceDialog(context);
           }
         },
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            minHeight: StockProductGridLayout.minCardHeight.h,
+            minHeight: isDesktopLayout
+                ? StockProductGridLayout.minCardHeight
+                : StockProductGridLayout.minCardHeight.h,
           ),
           child: Stack(
             children: [
@@ -627,8 +555,9 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = DesktopLayout.isDesktop(context);
     return Container(
-      height: 19.h,
+      height: isDesktop ? 24 : 19.h,
       alignment: Alignment.center,
       padding: EdgeInsets.symmetric(horizontal: 5.w),
       decoration: BoxDecoration(
@@ -646,7 +575,7 @@ class _InfoPill extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: 9.sp,
+            size: isDesktop ? 11.sp : 9.sp,
             color: ThemeService.isDark.value
                 ? Colors.white.withValues(alpha: 0.82)
                 : AppColors.secondaryColor.withValues(alpha: 0.78),
@@ -662,7 +591,7 @@ class _InfoPill extends StatelessWidget {
                 color: ThemeService.isDark.value
                     ? Colors.white.withValues(alpha: 0.9)
                     : AppColors.secondaryColor.withValues(alpha: 0.88),
-                fontSize: 7.5.sp,
+                fontSize: isDesktop ? 9.5.sp : 7.5.sp,
                 fontWeight: FontWeight.w700,
                 height: 1,
               ),
@@ -685,6 +614,7 @@ class _ImageBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = DesktopLayout.isDesktop(context);
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
       decoration: BoxDecoration(
@@ -694,7 +624,7 @@ class _ImageBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 8.sp, color: Colors.white),
+          Icon(icon, size: isDesktop ? 10.sp : 8.sp, color: Colors.white),
           SizedBox(width: 2.w),
           Text(
             text,
@@ -702,7 +632,7 @@ class _ImageBadge extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: Colors.white,
-              fontSize: 7.sp,
+              fontSize: isDesktop ? 9.sp : 7.sp,
               fontWeight: FontWeight.w700,
               height: 1,
             ),

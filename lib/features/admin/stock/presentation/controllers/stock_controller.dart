@@ -16,6 +16,7 @@ import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/server_validation_messages.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
+import '../../../../../core/utils/desktop_layout.dart';
 import '../../../sales/data/models/product_model.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/all_stock_products_model.dart';
@@ -136,6 +137,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     'productComposition',
     'storeLocationTab',
     'offerPackages',
+    'deletedProducts',
   ].obs;
 
   final currentTab = 0.obs;
@@ -159,6 +161,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         if (packagesCtrl.packages.isEmpty) {
           Future<void>(() async => packagesCtrl.loadPackages());
         }
+      }
+    } else if (index == 5) {
+      if (deletedProducts.isEmpty) {
+        _resetPaginationForCurrentTab();
+        Future<void>(() async => getAllProducts());
       }
     } else {
       final needsLoad = (index == 0 && allProducts.isEmpty) ||
@@ -195,7 +202,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   bool get canPickProductLocation =>
       currentTab.value == 0 || currentTab.value == 3;
 
-  bool get canDeleteProducts => currentTab.value == 0;
+  bool get canDeleteProducts {
+    if (currentTab.value == 0) return true;
+    if (currentTab.value != 3) return false;
+    final sectionId = selectedLocationSectionId.value;
+    return sectionId != null && sectionId.isNotEmpty;
+  }
 
   bool get productSelectionActive =>
       locationSelectionActive.value || deleteSelectionActive.value;
@@ -264,6 +276,13 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
+  void startLocationSelectionMode() {
+    if (!canPickProductLocation) return;
+    exitDeleteSelection();
+    locationSelectionActive.value = true;
+    pickingSwapGroupB.value = false;
+  }
+
   void startSwapGroupBPicking() {
     pickingSwapGroupB.value = true;
   }
@@ -284,6 +303,37 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         productId.isNotEmpty &&
         !selectedProductIds.contains(productId)) {
       selectedProductIds.add(productId);
+    }
+  }
+
+  bool get canSelectAllLocationDeleteProducts =>
+      deleteSelectionActive.value &&
+      currentTab.value == 3 &&
+      locationFilterProducts.isNotEmpty;
+
+  bool get allLocationDeleteProductsSelected {
+    if (!canSelectAllLocationDeleteProducts) return false;
+    return locationFilterProducts.every(
+      (product) => selectedProductIds.contains(product.productId),
+    );
+  }
+
+  Future<void> toggleAllLocationDeleteProducts() async {
+    if (!canSelectAllLocationDeleteProducts) return;
+    while (locationProductsPage < locationProductsLastPage) {
+      await loadMoreLocationFilterProducts();
+    }
+    final productIds = locationFilterProducts
+        .map((product) => product.productId)
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    if (allLocationDeleteProductsSelected) {
+      selectedProductIds.removeWhere(productIds.contains);
+      if (selectedProductIds.isEmpty) {
+        exitDeleteSelection();
+      }
+    } else {
+      selectedProductIds.assignAll(productIds.toSet().toList());
     }
   }
 
@@ -335,8 +385,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       final deleted = await stockDatasource.deleteProducts(productIds: ids);
       final idSet = ids.map((id) => id.toString()).toSet();
       allProducts.removeWhere((product) => idSet.contains(product.productId));
+      locationFilterProducts
+          .removeWhere((product) => idSet.contains(product.productId));
       final remainingTotal = productListTotalCount.value - deleted;
       productListTotalCount.value = remainingTotal < 0 ? 0 : remainingTotal;
+      final remainingLocationTotal = locationFilterTotalCount.value - deleted;
+      locationFilterTotalCount.value =
+          remainingLocationTotal < 0 ? 0 : remainingLocationTotal;
+      deletedProducts.clear();
+      _deletedProductsPage = 1;
+      _hasMoreDeletedProducts = true;
       exitDeleteSelection();
       Get.snackbar(
         'success'.tr,
@@ -696,6 +754,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   }
 
   Future<void> selectLocationFilter(String? sectionId) async {
+    exitDeleteSelection();
     selectedLocationSectionId.value = sectionId;
     locationFilterProducts.clear();
     locationFilterTotalCount.value = 0;
@@ -1349,12 +1408,16 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   final RxList<AllStockProductsModel> allCombinations =
       <AllStockProductsModel>[].obs;
+  final RxList<AllStockProductsModel> deletedProducts =
+      <AllStockProductsModel>[].obs;
   int _productsPage = 1;
   int _clearancesPage = 1;
   int _combinationsPage = 1;
+  int _deletedProductsPage = 1;
   bool _hasMoreProducts = true;
   bool _hasMoreClearances = true;
   bool _hasMoreCombinations = true;
+  bool _hasMoreDeletedProducts = true;
 
   int get page {
     switch (currentTab.value) {
@@ -1362,6 +1425,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         return _clearancesPage;
       case 2:
         return _combinationsPage;
+      case 5:
+        return _deletedProductsPage;
       default:
         return _productsPage;
     }
@@ -1375,6 +1440,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       case 2:
         _combinationsPage = value;
         break;
+      case 5:
+        _deletedProductsPage = value;
+        break;
       default:
         _productsPage = value;
         break;
@@ -1387,6 +1455,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         return _hasMoreClearances;
       case 2:
         return _hasMoreCombinations;
+      case 5:
+        return _hasMoreDeletedProducts;
       default:
         return _hasMoreProducts;
     }
@@ -1399,6 +1469,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         break;
       case 2:
         _hasMoreCombinations = value;
+        break;
+      case 5:
+        _hasMoreDeletedProducts = value;
         break;
       default:
         _hasMoreProducts = value;
@@ -1486,6 +1559,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       allClearances.clear();
     } else if (currentTab.value == 2) {
       allCombinations.clear();
+    } else if (currentTab.value == 5) {
+      deletedProducts.clear();
     }
     await getAllProducts();
   }
@@ -1721,6 +1796,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<StockProductsPageResult> _fetchStockForCurrentTab() {
     final tab = currentTab.value;
+    final perPage = DesktopLayout.isDesktopPlatform ? 60 : 15;
     final filters = tab == 0 && productListFilters.value.hasActiveFilters
         ? productListFilters.value
         : null;
@@ -1729,6 +1805,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         page: page,
         ifCombinations: false,
         ifCloseouts: true,
+        perPage: perPage,
       );
     }
     if (tab == 2) {
@@ -1736,13 +1813,18 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         page: page,
         ifCombinations: true,
         ifCloseouts: false,
+        perPage: perPage,
       );
+    }
+    if (tab == 5) {
+      return stockDatasource.getDeletedProducts(page: page, perPage: perPage);
     }
     return getAllStockUsecase.call(
       page: page,
       ifCombinations: false,
       ifCloseouts: false,
       filters: filters,
+      perPage: perPage,
     );
   }
 
@@ -1765,7 +1847,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         ? allProducts.isEmpty
         : tab == 1
             ? allClearances.isEmpty
-            : allCombinations.isEmpty;
+            : tab == 2
+                ? allCombinations.isEmpty
+                : deletedProducts.isEmpty;
 
     try {
       if (isRefresh) {
@@ -1796,8 +1880,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       } else if (tab == 1) {
         _mergeStockItems(allClearances, result.products);
         _hasMoreForCurrentTab = result.currentPage < result.lastPage;
-      } else {
+      } else if (tab == 2) {
         _mergeStockItems(allCombinations, result.products);
+        _hasMoreForCurrentTab = result.currentPage < result.lastPage;
+      } else if (tab == 5) {
+        _mergeStockItems(deletedProducts, result.products);
         _hasMoreForCurrentTab = result.currentPage < result.lastPage;
       }
       page++;

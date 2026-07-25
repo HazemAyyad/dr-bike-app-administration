@@ -19,8 +19,8 @@ class StockLocationTab extends GetView<StockController> {
           .where((s) => s.isActive)
           .toList(growable: false);
       final selectedSectionId = controller.selectedLocationSectionId.value;
-      final hasLocationFilter = selectedSectionId != null &&
-          selectedSectionId.isNotEmpty;
+      final hasLocationFilter =
+          selectedSectionId != null && selectedSectionId.isNotEmpty;
 
       return Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -59,8 +59,8 @@ class StockLocationTab extends GetView<StockController> {
                     padding: EdgeInsets.only(right: 8.w),
                     child: ChoiceChip(
                       label: Text('all'.tr),
-                      selected:
-                          selectedSectionId == null || selectedSectionId.isEmpty,
+                      selected: selectedSectionId == null ||
+                          selectedSectionId.isEmpty,
                       onSelected: (_) => controller.selectLocationFilter(null),
                     ),
                   ),
@@ -69,8 +69,8 @@ class StockLocationTab extends GetView<StockController> {
                     child: ChoiceChip(
                       avatar: const Icon(Icons.location_off_outlined, size: 16),
                       label: Text('noLocationAssigned'.tr),
-                      selected: selectedSectionId ==
-                          kUnassignedStoreSectionFilterId,
+                      selected:
+                          selectedSectionId == kUnassignedStoreSectionFilterId,
                       onSelected: (_) {
                         if (selectedSectionId ==
                             kUnassignedStoreSectionFilterId) {
@@ -138,7 +138,11 @@ class StockLocationTab extends GetView<StockController> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: StockProductGridLayout.delegate(
-                    aspectRatio: StockProductGridLayout.aspectRatioForTab(0),
+                    context: context,
+                    aspectRatio: StockProductGridLayout.aspectRatioForTab(
+                      0,
+                      context: context,
+                    ),
                   ),
                   itemCount: controller.locationFilterProducts.length,
                   itemBuilder: (context, index) {

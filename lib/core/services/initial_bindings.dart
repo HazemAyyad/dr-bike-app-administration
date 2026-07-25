@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,6 +15,7 @@ import 'app_home_widget_service.dart';
 import 'app_shortcut_service.dart';
 import 'app_startup.dart';
 import 'app_version_tracking_service.dart';
+import 'desktop_window_service.dart';
 import 'employee_attendance_persistent_notification_service.dart';
 import 'notification_firebase_service.dart';
 import 'session_service.dart';
@@ -30,6 +32,13 @@ final RxInt sessionEpoch = 0.obs;
 RxBool startApp = true.obs;
 bool supabase = true;
 List<int> employeePermissions = [];
+
+bool get isDesktopRuntime {
+  if (kIsWeb) return false;
+  return defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux;
+}
 
 /// أسماء صلاحيات الموظف بالإنجليزي (name_en) — تُستخدم للفحص بالاسم بدل الـ ID.
 List<String> employeePermissionNames = [];
@@ -324,11 +333,22 @@ class InitialBindings implements Bindings {
     try {
       if (kIsWeb) {
         startApp.value = true;
+      } else if (isDesktopRuntime &&
+          DesktopWindowService.startedAsSecondaryWindow) {
+        startApp.value = true;
+        DesktopWindowService.debugLog(
+          'secondary desktop startup — skipping Firebase remote config',
+        );
       } else {
         await AppBootstrap.initializeMobile();
-        await AppShortcutService.instance.initialize();
-        await AppHomeWidgetService.instance.initialize();
+        if (!isDesktopRuntime) {
+          await AppShortcutService.instance.initialize();
+          await AppHomeWidgetService.instance.initialize();
+        } else {
+          debugPrint('[Startup] desktop platform — skipping mobile widgets');
+        }
         try {
+          debugPrint('[Startup] Firestore Test doc start');
           final doc = await FirebaseFirestore.instance
               .collection('Test')
               .doc('Test')
@@ -336,6 +356,7 @@ class InitialBindings implements Bindings {
               .timeout(const Duration(seconds: 5));
           final bool? value = doc.data()?['Test'] as bool?;
           startApp.value = value ?? true;
+          debugPrint('[Startup] Firestore Test doc done value=$startApp');
         } catch (e) {
           debugPrint('[Startup] Firestore Test doc failed: $e');
           startApp.value = true;
@@ -343,18 +364,22 @@ class InitialBindings implements Bindings {
       }
 
       await initializeDateFormatting();
+      debugPrint('[Startup] date formatting ready');
 
       try {
+        debugPrint('[Startup] Supabase.initialize start');
         await Supabase.initialize(
           url: 'https://tigmezfjgepmzuefrogq.supabase.co',
           anonKey:
               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpZ21lemZqZ2VwbXp1ZWZyb2dxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MzMxNzMsImV4cCI6MjA3NTEwOTE3M30.xaocus3WHvIjcgJdocAdJYippiBFGwzr4zFymlsIDbE',
         );
+        debugPrint('[Startup] Supabase.initialize done');
       } catch (e) {
         debugPrint('[Startup] Supabase.initialize: $e');
       }
 
       try {
+        debugPrint('[Startup] Supabase status check start');
         final response = await Supabase.instance.client
             .from('doctor_bike')
             .select('status')
@@ -362,6 +387,7 @@ class InitialBindings implements Bindings {
             .maybeSingle()
             .timeout(const Duration(seconds: 6));
         supabase = response?['status'] == true;
+        debugPrint('[Startup] Supabase status check done supabase=$supabase');
       } catch (e) {
         debugPrint('[Startup] Supabase status check failed: $e');
         supabase = true;

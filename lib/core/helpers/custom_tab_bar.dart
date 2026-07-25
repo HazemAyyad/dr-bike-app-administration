@@ -4,8 +4,9 @@ import 'package:get/get.dart';
 
 import '../services/theme_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/desktop_layout.dart';
 
-class AppTabs extends StatelessWidget {
+class AppTabs extends StatefulWidget {
   const AppTabs({
     Key? key,
     required this.tabs,
@@ -34,40 +35,124 @@ class AppTabs extends StatelessWidget {
   final bool translateLabels;
 
   @override
+  State<AppTabs> createState() => _AppTabsState();
+}
+
+class _AppTabsState extends State<AppTabs> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollTabs(double direction) {
+    if (!_scrollController.hasClients) return;
+    final next = (_scrollController.offset + (direction * 220))
+        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    _scrollController.animateTo(
+      next,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final desktop = DesktopLayout.isDesktop(context);
+    final tabs = SingleChildScrollView(
+      controller: _scrollController,
+      scrollDirection: Axis.horizontal,
+      child: Container(
+        margin: widget.width != null
+            ? null
+            : EdgeInsets.symmetric(
+                horizontal: widget.horizontalPadding ?? 10.w),
+        padding:
+            widget.width != null ? null : EdgeInsets.symmetric(horizontal: 2.w),
+        height: widget.height ?? 48.h,
+        width: widget.width,
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : AppColors.whiteColor2,
+          borderRadius: BorderRadius.circular(31.r),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ...widget.tabs.map(
+              (e) => CustomTabBar(
+                label: e,
+                index: widget.tabs.indexOf(e),
+                currentTab: widget.currentTab,
+                onTap: () => widget.changeTab(widget.tabs.indexOf(e)),
+                translateLabel: widget.translateLabels,
+                horizontalPadding: widget.tabHorizontalPadding,
+                verticalPadding: widget.tabVerticalPadding,
+                horizontalMargin: widget.tabHorizontalMargin,
+                fontSize: widget.fontSize,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
     return Center(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
+      child: desktop
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TabScrollButton(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: () => _scrollTabs(-1),
+                ),
+                Flexible(child: tabs),
+                _TabScrollButton(
+                  icon: Icons.chevron_right_rounded,
+                  onTap: () => _scrollTabs(1),
+                ),
+              ],
+            )
+          : tabs,
+    );
+  }
+}
+
+class _TabScrollButton extends StatelessWidget {
+  const _TabScrollButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'scroll'.tr,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
         child: Container(
-          margin: width != null
-              ? null
-              : EdgeInsets.symmetric(horizontal: horizontalPadding ?? 10.w),
-          padding: width != null ? null : EdgeInsets.symmetric(horizontal: 2.w),
-          height: height ?? 48.h,
-          width: width,
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: ThemeService.isDark.value
                 ? AppColors.customGreyColor
                 : AppColors.whiteColor2,
-            borderRadius: BorderRadius.circular(31.r),
+            shape: BoxShape.circle,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ...tabs.map(
-                (e) => CustomTabBar(
-                  label: e,
-                  index: tabs.indexOf(e),
-                  currentTab: currentTab,
-                  onTap: () => changeTab(tabs.indexOf(e)),
-                  translateLabel: translateLabels,
-                  horizontalPadding: tabHorizontalPadding,
-                  verticalPadding: tabVerticalPadding,
-                  horizontalMargin: tabHorizontalMargin,
-                  fontSize: fontSize,
-                ),
-              ),
-            ],
+          child: Icon(
+            icon,
+            size: 22,
+            color: ThemeService.isDark.value
+                ? Colors.white
+                : AppColors.secondaryColor,
           ),
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../stock/presentation/widgets/product_location_badge.dart';
 import '../../../../../../core/helpers/show_net_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
+import '../../../../../../core/utils/desktop_layout.dart';
 import '../../../data/models/product_model.dart';
 import '../../../../sales_orders/presentation/controllers/sales_orders_controller.dart';
 import '../../../../sales_orders/presentation/utils/sales_order_stock_context.dart';
@@ -25,6 +26,7 @@ class InstantSaleProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = DesktopLayout.isDesktop(context);
     final controller = Get.find<SalesController>();
     final url = ShowNetImage.getThumbnailPhoto(product.imageUrl);
     final hasImage = url.isNotEmpty && product.imageUrl != 'no image';
@@ -166,7 +168,7 @@ class InstantSaleProductCard extends StatelessWidget {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 6.5.sp,
+                                fontSize: isDesktop ? 8.5.sp : 6.5.sp,
                                 fontWeight: FontWeight.w600,
                                 height: 1.05,
                               ),
@@ -190,7 +192,7 @@ class InstantSaleProductCard extends StatelessWidget {
                               '$qty',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 8.sp,
+                                fontSize: isDesktop ? 10.sp : 8.sp,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -218,7 +220,7 @@ class InstantSaleProductCard extends StatelessWidget {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 6.5.sp,
+                                fontSize: isDesktop ? 8.5.sp : 6.5.sp,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -238,7 +240,7 @@ class InstantSaleProductCard extends StatelessWidget {
                             child: Icon(
                               Icons.check,
                               color: Colors.white,
-                              size: 13.sp,
+                              size: isDesktop ? 15.sp : 13.sp,
                             ),
                           ),
                         ),
@@ -281,7 +283,7 @@ class InstantSaleProductCard extends StatelessWidget {
                                           softWrap: true,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 8.sp,
+                                            fontSize: isDesktop ? 11.sp : 8.sp,
                                             fontWeight: FontWeight.w600,
                                             height: 1.05,
                                           ),
@@ -291,7 +293,7 @@ class InstantSaleProductCard extends StatelessWidget {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontSize: 7.sp,
+                                            fontSize: isDesktop ? 10.sp : 7.sp,
                                             color: outOfStock
                                                 ? Colors.grey.shade500
                                                 : AppColors.primaryColor,
@@ -309,7 +311,7 @@ class InstantSaleProductCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(
-                        height: 20.h,
+                        height: isDesktop ? 28 : 20.h,
                         child: Center(
                           child: InstantSaleQtyStepper(
                             compact: true,
@@ -369,6 +371,7 @@ class _StockBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = DesktopLayout.isDesktop(context);
     final out = physicalStock < 1;
     final hasReservation = reservedStock > 0 ||
         (physicalStock > displayStock && displayStock >= 0);
@@ -398,7 +401,7 @@ class _StockBadge extends StatelessWidget {
                 hasReservation
                     ? Icons.lock_outline
                     : Icons.inventory_2_outlined,
-                size: 8.sp,
+                size: isDesktop ? 10.sp : 8.sp,
                 color: Colors.white,
               ),
               SizedBox(width: 2.w),
@@ -406,7 +409,7 @@ class _StockBadge extends StatelessWidget {
                 hasReservation ? '$displayStock' : '$physicalStock',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 7.5.sp,
+                  fontSize: isDesktop ? 9.5.sp : 7.5.sp,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -428,7 +431,7 @@ class _StockBadge extends StatelessWidget {
               }),
               style: TextStyle(
                 color: Colors.deepOrange.shade900,
-                fontSize: 6.5.sp,
+                fontSize: isDesktop ? 8.5.sp : 6.5.sp,
                 fontWeight: FontWeight.w700,
               ),
             ),

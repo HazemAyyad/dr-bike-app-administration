@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:quick_actions/quick_actions.dart';
@@ -27,7 +28,7 @@ class AppShortcutService {
       employeePermissions.contains(specialTasksPermissionId);
 
   Future<void> initialize() async {
-    if (kIsWeb || _initialized) return;
+    if (kIsWeb || _isDesktopPlatform || _initialized) return;
     _initialized = true;
 
     try {
@@ -42,7 +43,7 @@ class AppShortcutService {
   }
 
   Future<void> refreshShortcutItems() async {
-    if (kIsWeb || !_initialized) return;
+    if (kIsWeb || _isDesktopPlatform || !_initialized) return;
 
     final lang = _currentLangCode();
     final title = lang == 'ar' ? 'إضافة مهمة خاصة' : 'Add special task';
@@ -185,4 +186,9 @@ class AppShortcutService {
     }
     return 'ar';
   }
+
+  bool get _isDesktopPlatform =>
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux;
 }
