@@ -119,6 +119,9 @@ class BuildActionButtons extends StatelessWidget {
     if (route == AppRoutes.TECHNICALSUPPORT) {
       return true;
     }
+    if (route == AppRoutes.NOTES) {
+      return true;
+    }
 
     final id = int.tryParse(button['id']?.toString() ?? '');
     return id != null && permissions.contains(id);

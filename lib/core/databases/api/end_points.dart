@@ -102,6 +102,11 @@ class EndPoints {
   static String supportConversationStatus(int id) =>
       'support/conversations/$id/status';
 
+  static const String notesUsers = 'notes/users';
+  static const String notes = 'notes';
+  static String note(int id) => 'notes/$id';
+  static String noteAttachments(int id) => 'notes/$id/attachments';
+
   // banks (checks)
   static const String banks = 'banks';
   static const String banksFindOrCreate = 'banks/find-or-create';

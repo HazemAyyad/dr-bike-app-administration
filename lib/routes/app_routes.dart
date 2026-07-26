@@ -47,6 +47,8 @@ class AppRoutes {
   static const WHATSAPPCONVERSATION = '/WhatsAppConversation/:id';
   static const TECHNICALSUPPORT = '/TechnicalSupport';
   static const TECHNICALSUPPORTCONVERSATION = '/TechnicalSupport/:id';
+  static const NOTES = '/Notes';
+  static const NOTEDETAIL = '/Notes/:id';
   static const APPDEVELOPMENT = '/AppDevelopment';
   static const APPDEVELOPMENTTASK = '/AppDevelopment/:id';
   static const METACATALOGSYNC = '/MetaCatalogSync';

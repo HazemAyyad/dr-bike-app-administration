@@ -37,6 +37,7 @@ import '../features/admin/whatsapp_center/presentation/views/whatsapp_conversati
 import '../features/admin/meta_catalog/presentation/bindings/meta_catalog_binding.dart';
 import '../features/admin/meta_catalog/presentation/views/meta_catalog_sync_screen.dart';
 import '../features/technical_support/presentation/technical_support_screen.dart';
+import '../features/notes/presentation/notes_screen.dart';
 import '../features/employee/notifications/presentation/bindings/employee_notification_center_binding.dart';
 import '../features/employee/notifications/presentation/views/employee_notification_center_screen.dart';
 import '../features/employee_reminders/presentation/employee_reminders_screen.dart';
@@ -332,6 +333,18 @@ class AppPages {
       name: AppRoutes.TECHNICALSUPPORTCONVERSATION,
       page: () => TechnicalSupportScreen(
         conversationId: int.tryParse(Get.parameters['id'] ?? ''),
+      ),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.NOTES,
+      page: () => const NotesScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.NOTEDETAIL,
+      page: () => NotesScreen(
+        noteId: int.tryParse(Get.parameters['id'] ?? ''),
       ),
       transition: _transitionFadeIn,
     ),
