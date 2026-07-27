@@ -15,8 +15,8 @@ import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/open_apps.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
-import '../../../../../routes/app_routes.dart';
 import '../controllers/general_data_list_controller.dart';
+import '../views/person_profile_screen.dart';
 
 class GlobalData extends GetView<GeneralDataListController> {
   const GlobalData({Key? key, required this.employee}) : super(key: key);
@@ -27,7 +27,7 @@ class GlobalData extends GetView<GeneralDataListController> {
     return Padding(
       padding: EdgeInsets.only(bottom: 10.h),
       child: GestureDetector(
-        onTap: () => _openEditor(),
+        onTap: () => _openProfile(),
         onLongPress: () {
           Get.dialog(
             AlertDialog(
@@ -207,7 +207,7 @@ class GlobalData extends GetView<GeneralDataListController> {
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(8.r),
-              onTap: _openEditor,
+              onTap: _openProfile,
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 6.h),
                 child: LayoutBuilder(
@@ -276,28 +276,12 @@ class GlobalData extends GetView<GeneralDataListController> {
     );
   }
 
-  void _openEditor() {
-    controller.clearForm();
-    controller.isEdit.value = true;
-    controller.getPersonData(
-      customerId: controller.currentTab.value == 1
-          ? employee.id.toString()
-          : employee.type == 'customer'
-              ? employee.id.toString()
-              : '',
-      sellerId: controller.currentTab.value == 0
-          ? employee.id.toString()
-          : employee.type == 'seller'
-              ? employee.id.toString()
-              : '',
-    );
-    Get.toNamed(
-      AppRoutes.ADDNEWCUSTOMERSCREEN,
-      arguments: {
-        'employeeType': employee.type,
-        'employeeId': employee.id.toString(),
-        'sellerId': employee.id.toString(),
-      },
+  void _openProfile() {
+    Get.to(
+      () => PersonProfileScreen(
+        person: employee,
+        isCustomer: _isCustomer,
+      ),
     );
   }
 

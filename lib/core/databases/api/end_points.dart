@@ -438,6 +438,9 @@ class EndPoints {
   static const String personProductSettings = 'person-product-settings';
   static const String deletePersonProductSetting =
       'person-product-settings/delete';
+  static const String personProfile = 'person/profile';
+  static const String personProfileProductHistory =
+      'person/profile/product-history';
   static const String updateProductRetailPrice = 'product/retail-price';
   static const String categories = 'get/all/categories';
   static const String sub_categories = 'get/all/subcategories';
