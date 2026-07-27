@@ -16,6 +16,8 @@ class MaintenanceDataModel {
   final double partsTotal;
   final double laborCost;
   final double invoiceTotal;
+  final double paidAmount;
+  final double remainingAmount;
   final int? instantSaleId;
 
   MaintenanceDataModel({
@@ -33,6 +35,8 @@ class MaintenanceDataModel {
     this.partsTotal = 0,
     this.laborCost = 0,
     this.invoiceTotal = 0,
+    this.paidAmount = 0,
+    this.remainingAmount = 0,
     this.instantSaleId,
   });
 
@@ -53,6 +57,8 @@ class MaintenanceDataModel {
       partsTotal: asDouble(j['parts_total']),
       laborCost: asDouble(j['labor_cost']),
       invoiceTotal: asDouble(j['invoice_total']),
+      paidAmount: asDouble(j['paid_amount']),
+      remainingAmount: asDouble(j['remaining_amount']),
       instantSaleId:
           j['instant_sale_id'] == null ? null : asInt(j['instant_sale_id']),
     );

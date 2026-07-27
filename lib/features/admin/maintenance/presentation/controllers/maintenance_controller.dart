@@ -23,9 +23,11 @@ import '../../domain/usecases/creat_maintenance_usecase.dart';
 import '../../domain/usecases/delete_maintenance_usecase.dart';
 import '../../domain/usecases/deliver_maintenance_usecase.dart';
 import '../../domain/usecases/get_maintenance_activity_log_usecase.dart';
+import '../../domain/usecases/get_maintenance_daily_session_usecase.dart';
 import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../domain/usecases/get_maintenances_details_usecase.dart';
 import '../../domain/usecases/maintenance_usecase.dart';
+import '../../domain/usecases/open_maintenance_daily_session_usecase.dart';
 import '../../domain/usecases/sync_maintenance_products_usecase.dart';
 import 'maintenance_serves.dart';
 import '../widgets/maintenance_activity_log_sheet.dart';
@@ -42,6 +44,8 @@ class MaintenanceController extends GetxController {
   final DeliverMaintenanceUsecase deliverMaintenanceUsecase;
   final GetMaintenanceActivityLogUsecase getMaintenanceActivityLogUsecase;
   final GetMaintenanceInvoiceUsecase getMaintenanceInvoiceUsecase;
+  final GetMaintenanceDailySessionUsecase getMaintenanceDailySessionUsecase;
+  final OpenMaintenanceDailySessionUsecase openMaintenanceDailySessionUsecase;
   final GetShownBoxUsecase getShownBoxUsecase;
 
   MaintenanceController({
@@ -54,6 +58,8 @@ class MaintenanceController extends GetxController {
     required this.deliverMaintenanceUsecase,
     required this.getMaintenanceActivityLogUsecase,
     required this.getMaintenanceInvoiceUsecase,
+    required this.getMaintenanceDailySessionUsecase,
+    required this.openMaintenanceDailySessionUsecase,
     required this.getShownBoxUsecase,
   });
 
@@ -75,6 +81,8 @@ class MaintenanceController extends GetxController {
   RxBool isEdit = false.obs;
   RxBool isDelivered = false.obs;
   final RxBool isLoading = false.obs;
+  final RxBool isDailyBoxLoading = false.obs;
+  final RxMap<String, dynamic> dailyBoxPayload = <String, dynamic>{}.obs;
   final RxList<MaintenanceProductModel> maintenanceProducts =
       <MaintenanceProductModel>[].obs;
   final RxList<ShownBoxesModel> paymentBoxes = <ShownBoxesModel>[].obs;
@@ -98,6 +106,22 @@ class MaintenanceController extends GetxController {
   double get invoiceTotal =>
       (partsTotal + laborCost - discount).clamp(0, double.infinity);
 
+  Map<String, dynamic>? get dailyBoxSession {
+    final session = dailyBoxPayload['session'];
+    return session is Map ? Map<String, dynamic>.from(session) : null;
+  }
+
+  Map<String, dynamic>? get dailyBoxInfo {
+    final box = dailyBoxPayload['box'];
+    return box is Map ? Map<String, dynamic>.from(box) : null;
+  }
+
+  bool get isMaintenanceDailyBoxOpen =>
+      dailyBoxSession?['status']?.toString() == 'open';
+
+  String get maintenanceDailyBoxName =>
+      dailyBoxInfo?['name']?.toString() ?? 'صندوق الصيانة اليومي';
+
   void changeTab(int index) {
     currentTab.value = index;
     update();
@@ -106,6 +130,49 @@ class MaintenanceController extends GetxController {
   void changeSelected(int index) => selectedStep.value = index;
 
   void recalculateTotals() => maintenanceProducts.refresh();
+
+  Future<void> loadMaintenanceDailySession() async {
+    isDailyBoxLoading(true);
+    final result = await getMaintenanceDailySessionUsecase.call();
+    result.fold(
+      (failure) => dailyBoxPayload.clear(),
+      (payload) => dailyBoxPayload.assignAll(payload),
+    );
+    isDailyBoxLoading(false);
+    update();
+  }
+
+  Future<bool> openMaintenanceDailySession() async {
+    isDailyBoxLoading(true);
+    update();
+
+    final result = await openMaintenanceDailySessionUsecase.call();
+    var opened = false;
+    result.fold(
+      (failure) {
+        Get.snackbar(
+          'error'.tr,
+          failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      },
+      (payload) {
+        opened = true;
+        dailyBoxPayload.assignAll(payload);
+        Get.snackbar(
+          'success'.tr,
+          'تم فتح صندوق الصيانة اليومي',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
+    );
+
+    isDailyBoxLoading(false);
+    update();
+    return opened;
+  }
 
   @override
   void onClose() {
@@ -291,8 +358,30 @@ class MaintenanceController extends GetxController {
   Future<bool> deliverMaintenance({
     required double paymentAmount,
     int? paymentBoxId,
+    List<Map<String, dynamic>> payments = const [],
   }) async {
     if (maintenanceId == null || maintenanceId!.isEmpty) return false;
+
+    final effectivePaid = payments.isNotEmpty
+        ? payments.fold<double>(
+            0,
+            (sum, item) => sum + SalesAmountFormat.parse('${item['amount']}'),
+          )
+        : paymentAmount;
+
+    if (effectivePaid > 0 && !isMaintenanceDailyBoxOpen) {
+      await loadMaintenanceDailySession();
+      if (!isMaintenanceDailyBoxOpen) {
+        Get.snackbar(
+          'error'.tr,
+          'يجب فتح صندوق الصيانة اليومي قبل تسليم الصيانة',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return false;
+      }
+    }
 
     isLoading(true);
     update();
@@ -301,8 +390,9 @@ class MaintenanceController extends GetxController {
       maintenanceId: maintenanceId!,
       laborCost: laborCost,
       discount: discount,
-      paymentAmount: paymentAmount,
+      paymentAmount: payments.isEmpty ? paymentAmount : null,
       paymentBoxId: paymentBoxId,
+      payments: payments,
     );
 
     var ok = false;
@@ -747,6 +837,7 @@ class MaintenanceController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    loadMaintenanceDailySession();
     getMaintenancesData();
     getAllCustomersAndSellers();
     maintenancesSearch.assignAll(MaintenanceServes().maintenancesTasks);

@@ -606,6 +606,10 @@ class EndPoints {
   static const String maintenanceDeliver = 'maintenance/deliver';
   static const String maintenanceActivityLog = 'maintenance/activity-log';
   static const String maintenanceInvoice = 'maintenance/invoice';
+  static const String maintenanceDailySessionCurrent =
+      'maintenance/daily-session/current';
+  static const String maintenanceDailySessionOpen =
+      'maintenance/daily-session/open';
 
   // goals
   static const String getAllGoals = 'get/all/goals';

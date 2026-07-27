@@ -17,6 +17,8 @@ class BoxLogModel extends BoxLog {
     required String? maintenanceId,
     required String? instantSaleId,
     required String? invoiceNumber,
+    required String? paymentMethod,
+    required bool affectsCashBalance,
     required double? boxBalanceBefore,
     required double? boxBalanceAfter,
     required Box? fromBox,
@@ -36,6 +38,8 @@ class BoxLogModel extends BoxLog {
           maintenanceId: maintenanceId,
           instantSaleId: instantSaleId,
           invoiceNumber: invoiceNumber,
+          paymentMethod: paymentMethod,
+          affectsCashBalance: affectsCashBalance,
           boxBalanceBefore: boxBalanceBefore,
           boxBalanceAfter: boxBalanceAfter,
           fromBox: fromBox,
@@ -60,6 +64,10 @@ class BoxLogModel extends BoxLog {
       instantSaleId: asNullableString(j['instant_sale_id']),
       invoiceNumber: asNullableString(j['invoice_number']) ??
           asNullableString(j['instant_sale_serial']),
+      paymentMethod: asNullableString(j['payment_method']),
+      affectsCashBalance: j['affects_cash_balance'] == null
+          ? true
+          : asBool(j['affects_cash_balance'], true),
       boxBalanceBefore: j['box_balance_before'] == null
           ? null
           : asDouble(j['box_balance_before']),
@@ -89,6 +97,8 @@ class BoxLogModel extends BoxLog {
       'maintenance_id': maintenanceId,
       'instant_sale_id': instantSaleId,
       'invoice_number': invoiceNumber,
+      'payment_method': paymentMethod,
+      'affects_cash_balance': affectsCashBalance,
       'box_balance_before': boxBalanceBefore,
       'box_balance_after': boxBalanceAfter,
       'from_box': fromBox is BoxModel ? (fromBox as BoxModel).toJson() : null,

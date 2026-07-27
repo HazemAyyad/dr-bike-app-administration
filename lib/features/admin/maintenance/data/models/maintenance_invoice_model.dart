@@ -25,6 +25,7 @@ class MaintenanceInvoiceModel {
   final double invoiceTotal;
   final double paidAmount;
   final double remainingAmount;
+  final List<MaintenanceInvoicePaymentModel> payments;
   final int? instantSaleId;
   final String? instantSaleSerial;
 
@@ -52,12 +53,14 @@ class MaintenanceInvoiceModel {
     required this.invoiceTotal,
     required this.paidAmount,
     required this.remainingAmount,
+    this.payments = const [],
     this.instantSaleId,
     this.instantSaleSerial,
   });
 
   factory MaintenanceInvoiceModel.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'];
+    final rawPayments = json['payments'];
     return MaintenanceInvoiceModel(
       maintenanceId: asInt(json['maintenance_id']),
       invoiceNumber: asString(json['invoice_number']),
@@ -95,10 +98,37 @@ class MaintenanceInvoiceModel {
       invoiceTotal: asDouble(json['invoice_total']),
       paidAmount: asDouble(json['paid_amount']),
       remainingAmount: asDouble(json['remaining_amount']),
+      payments: rawPayments is List
+          ? rawPayments
+              .map((e) => MaintenanceInvoicePaymentModel.fromJson(
+                    Map<String, dynamic>.from(e as Map),
+                  ))
+              .toList()
+          : const [],
       instantSaleId: json['instant_sale_id'] == null
           ? null
           : asInt(json['instant_sale_id']),
       instantSaleSerial: asNullableString(json['instant_sale_serial']),
+    );
+  }
+}
+
+class MaintenanceInvoicePaymentModel {
+  final String method;
+  final double amount;
+  final String? note;
+
+  const MaintenanceInvoicePaymentModel({
+    required this.method,
+    required this.amount,
+    this.note,
+  });
+
+  factory MaintenanceInvoicePaymentModel.fromJson(Map<String, dynamic> json) {
+    return MaintenanceInvoicePaymentModel(
+      method: asString(json['method']),
+      amount: asDouble(json['amount']),
+      note: asNullableString(json['note']),
     );
   }
 }

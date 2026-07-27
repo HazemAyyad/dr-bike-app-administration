@@ -163,6 +163,28 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
                   _total('totalBill'.tr, invoice.invoiceTotal, bold: true),
                   _total('paidAmount'.tr, invoice.paidAmount),
                   _total('remainingAmount'.tr, invoice.remainingAmount),
+                  if (invoice.payments.isNotEmpty) ...[
+                    Divider(height: 20.h),
+                    Text(
+                      'تفاصيل الدفع',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryColor,
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    ...invoice.payments.map(
+                      (payment) => _meta(
+                        _paymentLabel(payment.method),
+                        [
+                          _money(payment.amount),
+                          if (payment.note?.trim().isNotEmpty == true)
+                            payment.note!.trim(),
+                        ].join(' - '),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -170,6 +192,17 @@ class _MaintenanceInvoiceSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _paymentLabel(String method) {
+    switch (method) {
+      case 'visa':
+        return 'فيزا';
+      case 'bank_transfer':
+        return 'حوالة';
+      default:
+        return 'كاش';
+    }
   }
 
   Widget _meta(String label, String value) {
@@ -450,10 +483,42 @@ class MaintenanceInvoicePdfBuilder {
               ),
             ),
           ),
+          if (invoice.payments.isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            pw.Text('تفاصيل الدفع', style: pw.TextStyle(font: bold)),
+            pw.SizedBox(height: 6),
+            pw.TableHelper.fromTextArray(
+              headers: ['طريقة الدفع', 'المبلغ', 'ملاحظة'],
+              data: invoice.payments
+                  .map(
+                    (payment) => [
+                      _paymentLabel(payment.method),
+                      _money(payment.amount),
+                      payment.note ?? '-',
+                    ],
+                  )
+                  .toList(),
+              headerStyle: pw.TextStyle(font: bold, color: PdfColors.white),
+              headerDecoration:
+                  const pw.BoxDecoration(color: PdfColors.deepPurple600),
+              cellAlignment: pw.Alignment.centerRight,
+            ),
+          ],
         ],
       ),
     );
     return doc.save();
+  }
+
+  static String _paymentLabel(String method) {
+    switch (method) {
+      case 'visa':
+        return 'فيزا';
+      case 'bank_transfer':
+        return 'حوالة';
+      default:
+        return 'كاش';
+    }
   }
 
   static pw.Widget _detailsTable({

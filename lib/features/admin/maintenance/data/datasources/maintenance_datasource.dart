@@ -177,6 +177,7 @@ class MaintenanceDatasource {
     double? discount,
     double? paymentAmount,
     int? paymentBoxId,
+    List<Map<String, dynamic>> payments = const [],
   }) async {
     try {
       final response = await api.post(
@@ -187,8 +188,41 @@ class MaintenanceDatasource {
           if (discount != null) 'discount': discount,
           if (paymentAmount != null) 'payment_amount': paymentAmount,
           if (paymentBoxId != null) 'payment_box_id': paymentBoxId,
+          if (payments.isNotEmpty) 'payments': payments,
         },
       );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> getDailySessionCurrent() async {
+    try {
+      final response = await api.get(EndPoints.maintenanceDailySessionCurrent);
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> openDailySession() async {
+    try {
+      final response = await api.post(EndPoints.maintenanceDailySessionOpen);
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;

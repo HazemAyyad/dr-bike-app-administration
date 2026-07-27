@@ -26,6 +26,8 @@ class BoxLog {
   final String? maintenanceId;
   final String? instantSaleId;
   final String? invoiceNumber;
+  final String? paymentMethod;
+  final bool affectsCashBalance;
   final double? boxBalanceBefore;
   final double? boxBalanceAfter;
 
@@ -47,6 +49,8 @@ class BoxLog {
     this.maintenanceId,
     this.instantSaleId,
     this.invoiceNumber,
+    this.paymentMethod,
+    this.affectsCashBalance = true,
     this.boxBalanceBefore,
     this.boxBalanceAfter,
     this.fromBox,

@@ -18,6 +18,8 @@ import '../controllers/maintenance_controller.dart';
 class MaintenanceDataWidget extends GetView<MaintenanceController> {
   const MaintenanceDataWidget({Key? key}) : super(key: key);
 
+  String _money(double value) => value.toStringAsFixed(2);
+
   Future<void> _confirmDelete(
     BuildContext context,
     MaintenanceDataModel item,
@@ -249,20 +251,15 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                             Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
                           },
                           child: Container(
-                            margin: EdgeInsets.symmetric(vertical: 5.h),
+                            margin: EdgeInsets.symmetric(vertical: 6.h),
                             decoration: BoxDecoration(
                               color: ThemeService.isDark.value
                                   ? AppColors.customGreyColor4
-                                  : AppColors.whiteColor2,
-                              borderRadius: BorderRadius.circular(4.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withAlpha(32),
-                                  blurRadius: 5.r,
-                                  spreadRadius: 2.r,
-                                  offset: const Offset(0, 0),
-                                ),
-                              ],
+                                  : AppColors.whiteColor,
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(
+                                color: AppColors.operationalCardBorder,
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -301,8 +298,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                               imageUrl: item.mediaFiles,
                                               placeholder: (context, url) =>
                                                   SizedBox(
-                                                height: 50.h,
-                                                width: 64.w,
+                                                height: 58.h,
+                                                width: 66.w,
                                                 child: const Center(
                                                   child:
                                                       CircularProgressIndicator(),
@@ -328,9 +325,12 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                                   .bodyMedium!
                                                   .copyWith(
                                                     fontSize: 14.sp,
-                                                    fontWeight: FontWeight.w400,
-                                                    color: Colors.grey
-                                                        .withAlpha(500),
+                                                    fontWeight: FontWeight.w800,
+                                                    color: ThemeService
+                                                            .isDark.value
+                                                        ? AppColors.whiteColor
+                                                        : AppColors
+                                                            .secondaryColor,
                                                   ),
                                             ),
                                             SizedBox(height: 5.h),
@@ -347,7 +347,7 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             ),
                                             if (item.invoiceTotal > 0)
                                               Text(
-                                                '${'total'.tr}: ${item.invoiceTotal.toStringAsFixed(2)}',
+                                                '${'total'.tr}: ${_money(item.invoiceTotal)} | ${'paidAmount'.tr}: ${_money(item.paidAmount)}',
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodyMedium!
@@ -357,6 +357,19 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                                           FontWeight.w600,
                                                       color: AppColors
                                                           .primaryColor,
+                                                    ),
+                                              ),
+                                            if (item.remainingAmount > 0)
+                                              Text(
+                                                '${'remainingAmount'.tr}: ${_money(item.remainingAmount)}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium!
+                                                    .copyWith(
+                                                      fontSize: 12.sp,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: AppColors.redColor,
                                                     ),
                                               ),
                                           ],

@@ -14,6 +14,7 @@ class DeliverMaintenanceUsecase {
     double? discount,
     double? paymentAmount,
     int? paymentBoxId,
+    List<Map<String, dynamic>> payments = const [],
   }) {
     return maintenanceRepository.deliverMaintenance(
       maintenanceId: maintenanceId,
@@ -21,6 +22,7 @@ class DeliverMaintenanceUsecase {
       discount: discount,
       paymentAmount: paymentAmount,
       paymentBoxId: paymentBoxId,
+      payments: payments,
     );
   }
 }

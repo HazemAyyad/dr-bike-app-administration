@@ -1400,6 +1400,17 @@ class _DailyBoxDayGroup extends StatelessWidget {
     final sortedAsc = [...logs]
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     final total = logs.fold<double>(0, (sum, log) => sum + signedValue(log));
+    final cashTotal = logs
+        .where((log) =>
+            log.affectsCashBalance &&
+            (log.paymentMethod == null || log.paymentMethod == 'cash'))
+        .fold<double>(0, (sum, log) => sum + log.value.abs());
+    final visaTotal = logs
+        .where((log) => log.paymentMethod == 'visa')
+        .fold<double>(0, (sum, log) => sum + log.value.abs());
+    final transferTotal = logs
+        .where((log) => log.paymentMethod == 'bank_transfer')
+        .fold<double>(0, (sum, log) => sum + log.value.abs());
     final invoiceCount = logs.where((log) {
       final invoice = log.invoiceNumber?.trim();
       return invoice != null && invoice.isNotEmpty;
@@ -1445,6 +1456,21 @@ class _DailyBoxDayGroup extends StatelessWidget {
                 label: 'dailyBoxDayTotal'.tr,
                 value: amount(total),
               ),
+              if (cashTotal > 0)
+                _DailyBoxMetric(
+                  label: 'كاش',
+                  value: amount(cashTotal),
+                ),
+              if (visaTotal > 0)
+                _DailyBoxMetric(
+                  label: 'فيزا',
+                  value: amount(visaTotal),
+                ),
+              if (transferTotal > 0)
+                _DailyBoxMetric(
+                  label: 'حوالة',
+                  value: amount(transferTotal),
+                ),
               _DailyBoxMetric(
                 label: 'dailyBoxInvoicesCount'.tr,
                 value: invoiceCount.toString(),
@@ -1521,6 +1547,17 @@ class _DailyBoxLogTile extends StatelessWidget {
   bool get _isOut => log.fromBoxId == boxId || log.type == 'minus';
   bool get _hasMaintenanceInvoice =>
       log.maintenanceId != null && log.maintenanceId!.trim().isNotEmpty;
+  String? get _paymentMethodLabel {
+    switch (log.paymentMethod) {
+      case 'cash':
+        return 'كاش';
+      case 'visa':
+        return 'فيزا';
+      case 'bank_transfer':
+        return 'حوالة';
+    }
+    return null;
+  }
 
   String? get _noteText {
     final note = log.note?.trim();
@@ -1536,6 +1573,7 @@ class _DailyBoxLogTile extends StatelessWidget {
     final value = log.value.abs();
     final invoiceNumber = log.invoiceNumber?.trim();
     final note = _noteText;
+    final paymentMethodLabel = _paymentMethodLabel;
 
     return InkWell(
       onTap: _hasMaintenanceInvoice ? () => onOpenInvoice(log) : null,
@@ -1589,6 +1627,17 @@ class _DailyBoxLogTile extends StatelessWidget {
                       '${'billNumber'.tr}: $invoiceNumber',
                       style: TextStyle(
                         color: AppColors.primaryColor,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  if (paymentMethodLabel != null)
+                    Text(
+                      paymentMethodLabel,
+                      style: TextStyle(
+                        color: log.affectsCashBalance
+                            ? AppColors.customGreen1
+                            : AppColors.primaryColor,
                         fontSize: 11.sp,
                         fontWeight: FontWeight.w800,
                       ),

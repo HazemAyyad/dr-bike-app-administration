@@ -189,6 +189,7 @@ class MaintenanceImplement implements MaintenanceRepository {
     double? discount,
     double? paymentAmount,
     int? paymentBoxId,
+    List<Map<String, dynamic>> payments = const [],
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -200,6 +201,7 @@ class MaintenanceImplement implements MaintenanceRepository {
         discount: discount,
         paymentAmount: paymentAmount,
         paymentBoxId: paymentBoxId,
+        payments: payments,
       );
       if (result['status'] == 'success') {
         return Right(Map<String, dynamic>.from(result));
@@ -210,6 +212,52 @@ class MaintenanceImplement implements MaintenanceRepository {
           result,
         ),
       );
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'error'.tr, {}));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> getDailySessionCurrent() async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await maintenanceDatasource.getDailySessionCurrent();
+      if (result['status'] == 'success') {
+        return Right(Map<String, dynamic>.from(result['daily_box'] ?? {}));
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'error'.tr, {}));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> openDailySession() async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await maintenanceDatasource.openDailySession();
+      if (result['status'] == 'success') {
+        return Right(Map<String, dynamic>.from(result['daily_box'] ?? {}));
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     } on DioException catch (e) {
       return Left(ServerFailure(e.message ?? 'error'.tr, {}));
     }

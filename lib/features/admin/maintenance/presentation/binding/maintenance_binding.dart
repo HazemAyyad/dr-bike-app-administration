@@ -9,9 +9,11 @@ import '../../domain/usecases/creat_maintenance_usecase.dart';
 import '../../domain/usecases/delete_maintenance_usecase.dart';
 import '../../domain/usecases/deliver_maintenance_usecase.dart';
 import '../../domain/usecases/get_maintenance_activity_log_usecase.dart';
+import '../../domain/usecases/get_maintenance_daily_session_usecase.dart';
 import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../domain/usecases/get_maintenances_details_usecase.dart';
 import '../../domain/usecases/maintenance_usecase.dart';
+import '../../domain/usecases/open_maintenance_daily_session_usecase.dart';
 import '../../domain/usecases/sync_maintenance_products_usecase.dart';
 import '../controllers/maintenance_controller.dart';
 
@@ -45,6 +47,12 @@ class MaintenanceBinding extends Bindings {
           maintenanceRepository: Get.find<MaintenanceImplement>(),
         ),
         getMaintenanceInvoiceUsecase: GetMaintenanceInvoiceUsecase(
+          maintenanceRepository: Get.find<MaintenanceImplement>(),
+        ),
+        getMaintenanceDailySessionUsecase: GetMaintenanceDailySessionUsecase(
+          maintenanceRepository: Get.find<MaintenanceImplement>(),
+        ),
+        openMaintenanceDailySessionUsecase: OpenMaintenanceDailySessionUsecase(
           maintenanceRepository: Get.find<MaintenanceImplement>(),
         ),
         getShownBoxUsecase: GetShownBoxUsecase(

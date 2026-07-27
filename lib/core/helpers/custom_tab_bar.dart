@@ -20,6 +20,7 @@ class AppTabs extends StatefulWidget {
     this.tabHorizontalMargin,
     this.fontSize,
     this.translateLabels = true,
+    this.fitToWidthUpToCount,
   }) : super(key: key);
 
   final List<String> tabs;
@@ -33,6 +34,7 @@ class AppTabs extends StatefulWidget {
   final double? tabHorizontalMargin;
   final double? fontSize;
   final bool translateLabels;
+  final int? fitToWidthUpToCount;
 
   @override
   State<AppTabs> createState() => _AppTabsState();
@@ -61,44 +63,41 @@ class _AppTabsState extends State<AppTabs> {
   @override
   Widget build(BuildContext context) {
     final desktop = DesktopLayout.isDesktop(context);
-    final tabs = SingleChildScrollView(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      child: Container(
-        margin: widget.width != null
-            ? null
-            : EdgeInsets.symmetric(
-                horizontal: widget.horizontalPadding ?? 10.w),
-        padding:
-            widget.width != null ? null : EdgeInsets.symmetric(horizontal: 2.w),
-        height: widget.height ?? 48.h,
-        width: widget.width,
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(31.r),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ...widget.tabs.map(
-              (e) => CustomTabBar(
-                label: e,
-                index: widget.tabs.indexOf(e),
-                currentTab: widget.currentTab,
-                onTap: () => widget.changeTab(widget.tabs.indexOf(e)),
-                translateLabel: widget.translateLabels,
-                horizontalPadding: widget.tabHorizontalPadding,
-                verticalPadding: widget.tabVerticalPadding,
-                horizontalMargin: widget.tabHorizontalMargin,
-                fontSize: widget.fontSize,
-              ),
-            ),
-          ],
-        ),
+    final shouldFitToWidth = widget.fitToWidthUpToCount != null &&
+        widget.tabs.length <= widget.fitToWidthUpToCount!;
+    final tabContainer = Container(
+      margin: widget.width != null
+          ? null
+          : EdgeInsets.symmetric(horizontal: widget.horizontalPadding ?? 10.w),
+      padding:
+          widget.width != null ? null : EdgeInsets.symmetric(horizontal: 2.w),
+      height: widget.height ?? 48.h,
+      width: shouldFitToWidth ? double.infinity : widget.width,
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : AppColors.whiteColor2,
+        borderRadius: BorderRadius.circular(31.r),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          for (var i = 0; i < widget.tabs.length; i++)
+            shouldFitToWidth ? Expanded(child: _buildTab(i)) : _buildTab(i),
+        ],
       ),
     );
+    final tabs = shouldFitToWidth
+        ? tabContainer
+        : SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            child: tabContainer,
+          );
+
+    if (shouldFitToWidth) {
+      return Center(child: tabs);
+    }
 
     return Center(
       child: desktop
@@ -117,6 +116,20 @@ class _AppTabsState extends State<AppTabs> {
               ],
             )
           : tabs,
+    );
+  }
+
+  Widget _buildTab(int index) {
+    return CustomTabBar(
+      label: widget.tabs[index],
+      index: index,
+      currentTab: widget.currentTab,
+      onTap: () => widget.changeTab(index),
+      translateLabel: widget.translateLabels,
+      horizontalPadding: widget.tabHorizontalPadding,
+      verticalPadding: widget.tabVerticalPadding,
+      horizontalMargin: widget.tabHorizontalMargin,
+      fontSize: widget.fontSize,
     );
   }
 }
@@ -217,6 +230,9 @@ class CustomTabBar extends StatelessWidget {
           ),
           child: Text(
             translateLabel ? label.tr : label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                   fontSize: fontSize ?? 17.sp,
                   fontWeight: FontWeight.w400,

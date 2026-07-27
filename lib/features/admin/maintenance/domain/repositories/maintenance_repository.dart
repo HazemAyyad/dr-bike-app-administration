@@ -42,7 +42,12 @@ abstract class MaintenanceRepository {
     double? discount,
     double? paymentAmount,
     int? paymentBoxId,
+    List<Map<String, dynamic>> payments = const [],
   });
+
+  Future<Either<Failure, Map<String, dynamic>>> getDailySessionCurrent();
+
+  Future<Either<Failure, Map<String, dynamic>>> openDailySession();
 
   Future<Either<Failure, List<MaintenanceActivityLogModel>>> getActivityLog({
     required String maintenanceId,
