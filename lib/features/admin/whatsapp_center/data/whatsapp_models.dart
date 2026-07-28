@@ -28,17 +28,20 @@ class WhatsAppContact {
   final int id;
   final String? name;
   final String phone;
+  final String? profilePictureUrl;
   final int? customerId, supplierId;
   const WhatsAppContact(
       {required this.id,
       this.name,
       required this.phone,
+      this.profilePictureUrl,
       this.customerId,
       this.supplierId});
   factory WhatsAppContact.fromJson(Map<String, dynamic> j) => WhatsAppContact(
       id: _int(j['id']),
       name: j['name']?.toString(),
       phone: j['phone']?.toString() ?? '',
+      profilePictureUrl: j['profile_picture_url']?.toString(),
       customerId: int.tryParse(j['customer_id']?.toString() ?? ''),
       supplierId: int.tryParse(j['supplier_id']?.toString() ?? ''));
 }

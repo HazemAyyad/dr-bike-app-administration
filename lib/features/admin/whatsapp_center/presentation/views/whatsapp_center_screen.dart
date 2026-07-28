@@ -441,10 +441,12 @@ class _ConversationsTab extends StatelessWidget {
                           leading: Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              CircleAvatar(
-                                  child: Text((item.contact?.name ?? item.phone)
-                                      .characters
-                                      .first)),
+                              _ContactAvatar(
+                                name: item.contact?.name?.isNotEmpty == true
+                                    ? item.contact!.name!
+                                    : item.phone,
+                                imageUrl: item.contact?.profilePictureUrl,
+                              ),
                               if (item.contact?.customerId != null ||
                                   item.contact?.supplierId != null)
                                 const Positioned(
@@ -834,6 +836,23 @@ class _LinkedBadge extends StatelessWidget {
       );
 }
 
+class _ContactAvatar extends StatelessWidget {
+  final String name;
+  final String? imageUrl;
+  const _ContactAvatar({required this.name, this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = imageUrl?.trim().isNotEmpty == true;
+    return CircleAvatar(
+      backgroundColor: const Color(0xFFF8E7B5),
+      foregroundColor: const Color(0xFF66562E),
+      backgroundImage: hasImage ? NetworkImage(imageUrl!.trim()) : null,
+      child: hasImage ? null : Text(_avatarInitial(name)),
+    );
+  }
+}
+
 class _ChannelDot extends StatelessWidget {
   final String channel;
   const _ChannelDot({required this.channel});
@@ -891,3 +910,8 @@ Color _channelColor(String channel) =>
       'instagram': Color(0xFFE4405F),
     }[channel] ??
     const Color(0xFF455A64);
+
+String _avatarInitial(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? '?' : trimmed.characters.first;
+}

@@ -48,7 +48,19 @@ class WhatsAppConversationScreen
                             radius: 19,
                             backgroundColor: const Color(0xFFF8E7B5),
                             foregroundColor: const Color(0xFF66562E),
-                            child: Text(name.characters.first),
+                            backgroundImage: c?.contact?.profilePictureUrl
+                                        ?.trim()
+                                        .isNotEmpty ==
+                                    true
+                                ? NetworkImage(
+                                    c!.contact!.profilePictureUrl!.trim())
+                                : null,
+                            child: c?.contact?.profilePictureUrl
+                                        ?.trim()
+                                        .isNotEmpty ==
+                                    true
+                                ? null
+                                : Text(_avatarInitial(name)),
                           ),
                           if (linked)
                             const Positioned(
@@ -1126,3 +1138,8 @@ String _channelLabel(String channel) =>
       'instagram': 'إنستغرام',
     }[channel] ??
     channel;
+
+String _avatarInitial(String value) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? '?' : trimmed.characters.first;
+}
