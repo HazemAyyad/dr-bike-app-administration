@@ -34,11 +34,12 @@ class SessionService {
 
   /// فشل جلسة مؤكد (انتهاء توكن / غير مصادق) — لا يُستخدم لأخطاء الشبكة.
   static bool isDefiniteAuthFailure(dynamic data, int? statusCode) {
-    if (statusCode == 401) return true;
-    if (data is! Map) return false;
+    final authStatus = statusCode == 401 || statusCode == 419;
+    if (!authStatus) return false;
+    if (data is! Map) return true;
 
     final message = data['message']?.toString().trim() ?? '';
-    if (message.isEmpty) return false;
+    if (message.isEmpty) return true;
 
     const exactMatches = {
       'Unauthenticated.',
