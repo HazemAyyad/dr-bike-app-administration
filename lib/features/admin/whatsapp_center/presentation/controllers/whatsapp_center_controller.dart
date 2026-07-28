@@ -1,11 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'dart:typed_data';
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:open_filex/open_filex.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -223,6 +224,39 @@ class WhatsAppCenterController extends GetxController {
     await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
     await Share.shareXFiles([XFile(file.path, mimeType: 'image/png')],
         text: 'تواصل مع دكتور بايك عبر واتساب');
+  }
+
+  Future<void> openChannel(SocialChannelSetting channel) async {
+    final url = channel.url;
+    if (url == null || url.trim().isEmpty) {
+      Get.snackbar('غير متاح', 'لا يوجد رابط لهذه القناة');
+      return;
+    }
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null) {
+      Get.snackbar('خطأ', 'الرابط غير صالح');
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> shareChannel(SocialChannelSetting channel) async {
+    final url = channel.url;
+    if (url == null || url.trim().isEmpty) {
+      Get.snackbar('غير متاح', 'لا يوجد رابط للمشاركة');
+      return;
+    }
+    await Share.share('${channel.name} دكتور بايك\n$url');
+  }
+
+  Future<void> copyChannelLink(SocialChannelSetting channel) async {
+    final url = channel.url;
+    if (url == null || url.trim().isEmpty) {
+      Get.snackbar('غير متاح', 'لا يوجد رابط للنسخ');
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: url.trim()));
+    Get.snackbar('تم', 'تم نسخ الرابط');
   }
 
   Future<bool> sendDirect(String phone, String message,

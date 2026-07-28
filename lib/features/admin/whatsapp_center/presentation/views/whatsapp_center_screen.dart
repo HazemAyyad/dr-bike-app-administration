@@ -203,7 +203,7 @@ class _DashboardTab extends StatelessWidget {
       },
     ];
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('نظرة عامة على واتساب',
+      Text('نظرة عامة على مركز التواصل',
           style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 12),
       LayoutBuilder(builder: (context, constraints) {
@@ -642,15 +642,32 @@ class _SettingsTab extends StatelessWidget {
           icon: Icons.settings_outlined, text: 'لا توجد إعدادات');
     }
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Card(
-          child: ListTile(
-        leading: Icon(settings.configured ? Icons.cloud_done : Icons.cloud_off,
-            color: settings.configured ? Colors.green : Colors.red),
-        title: Text(settings.configured ? 'الاتصال مهيأ' : 'الاتصال غير مكتمل'),
-        subtitle: Text(
-            '${settings.message}\nPhone number ID: ${settings.phoneNumberId ?? '—'}'),
-        isThreeLine: true,
-      )),
+      Text('قنوات التواصل', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 8),
+      if (settings.channels.isEmpty)
+        Card(
+            child: ListTile(
+          leading: Icon(
+              settings.configured ? Icons.cloud_done : Icons.cloud_off,
+              color: settings.configured ? Colors.green : Colors.red),
+          title:
+              Text(settings.configured ? 'الاتصال مهيأ' : 'الاتصال غير مكتمل'),
+          subtitle: Text(
+              '${settings.message}\nPhone number ID: ${settings.phoneNumberId ?? '—'}'),
+          isThreeLine: true,
+        ))
+      else
+        ...settings.channels.map(
+          (channel) => _SocialChannelSettingsCard(
+            channel: channel,
+            controller: controller,
+          ),
+        ),
+      const SizedBox(height: 8),
+      const Text(
+        'رموز الوصول محفوظة في Laravel .env ولا يتم عرضها أو تخزينها داخل التطبيق.',
+        style: TextStyle(fontSize: 12, color: Color(0xFF52635F)),
+      ),
       Obx(() {
         if (!controller.canManageWhatsAppEmployees.value) {
           return const SizedBox.shrink();
@@ -757,9 +774,6 @@ class _SettingsTab extends StatelessWidget {
             icon: const Icon(Icons.send),
             label: const Text('إرسال رسالة تجربة'),
           )),
-      const SizedBox(height: 12),
-      const Text(
-          'رمز الوصول محفوظ في Laravel .env ولا يتم عرضه أو تخزينه داخل التطبيق.'),
       const Divider(height: 28),
       Text('QR واتساب دكتور بايك',
           style: Theme.of(context).textTheme.titleMedium),
@@ -789,6 +803,126 @@ class _SettingsTab extends StatelessWidget {
             label: const Text('مشاركة')),
       ]),
     ]);
+  }
+}
+
+class _SocialChannelSettingsCard extends StatelessWidget {
+  final SocialChannelSetting channel;
+  final WhatsAppCenterController controller;
+  const _SocialChannelSettingsCard({
+    required this.channel,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _channelColor(channel.id);
+    final details = channel.details.entries
+        .where((entry) => entry.value?.toString().isNotEmpty == true)
+        .map((entry) => '${_detailLabel(entry.key)}: ${entry.value}')
+        .join('\n');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              CircleAvatar(
+                backgroundColor: color.withValues(alpha: .12),
+                foregroundColor: color,
+                child: Icon(_channelIcon(channel.id)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Expanded(
+                        child: Text(
+                          channel.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        channel.configured
+                            ? Icons.check_circle
+                            : Icons.error_outline,
+                        size: 18,
+                        color: channel.configured ? Colors.green : Colors.red,
+                      ),
+                    ]),
+                    Text(
+                      channel.displayName.isNotEmpty
+                          ? channel.displayName
+                          : 'غير محدد',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF263B37),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ]),
+            if (channel.identifier?.isNotEmpty == true || details.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  [
+                    if (channel.identifier?.isNotEmpty == true)
+                      'ID: ${channel.identifier}',
+                    if (details.isNotEmpty) details,
+                  ].join('\n'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF52635F),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: channel.url?.isNotEmpty == true
+                      ? () => controller.openChannel(channel)
+                      : null,
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('فتح'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: channel.url?.isNotEmpty == true
+                      ? () => controller.shareChannel(channel)
+                      : null,
+                  icon: const Icon(Icons.share, size: 18),
+                  label: const Text('مشاركة'),
+                ),
+                IconButton.outlined(
+                  tooltip: 'نسخ الرابط',
+                  onPressed: channel.url?.isNotEmpty == true
+                      ? () => controller.copyChannelLink(channel)
+                      : null,
+                  icon: const Icon(Icons.copy, size: 18),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -915,3 +1049,12 @@ String _avatarInitial(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? '?' : trimmed.characters.first;
 }
+
+String _detailLabel(String key) =>
+    const {
+      'phone_number_id': 'Phone number ID',
+      'business_account_id': 'Business account ID',
+      'page_id': 'Page ID',
+      'instagram_business_account_id': 'Instagram business ID',
+    }[key] ??
+    key;

@@ -190,17 +190,20 @@ class WhatsAppSettings {
   final String message;
   final String? phoneNumberId, businessAccountId;
   final Map<String, dynamic> values;
+  final List<SocialChannelSetting> channels;
   const WhatsAppSettings({
     required this.configured,
     required this.message,
     this.phoneNumberId,
     this.businessAccountId,
     required this.values,
+    this.channels = const [],
   });
   factory WhatsAppSettings.fromJson(Map<String, dynamic> j) {
     final c = j['connection'] is Map
         ? Map<String, dynamic>.from(j['connection'] as Map)
         : <String, dynamic>{};
+    final channels = j['channels'] is List ? j['channels'] as List : const [];
     return WhatsAppSettings(
       configured: c['configured'] == true,
       message: c['message']?.toString() ?? '',
@@ -209,8 +212,43 @@ class WhatsAppSettings {
       values: j['settings'] is Map
           ? Map<String, dynamic>.from(j['settings'] as Map)
           : const {},
+      channels: channels
+          .whereType<Map>()
+          .map((item) =>
+              SocialChannelSetting.fromJson(Map<String, dynamic>.from(item)))
+          .toList(),
     );
   }
+}
+
+class SocialChannelSetting {
+  final String id, name, displayName;
+  final String? identifier, url;
+  final bool configured;
+  final Map<String, dynamic> details;
+
+  const SocialChannelSetting({
+    required this.id,
+    required this.name,
+    required this.displayName,
+    this.identifier,
+    this.url,
+    required this.configured,
+    required this.details,
+  });
+
+  factory SocialChannelSetting.fromJson(Map<String, dynamic> json) =>
+      SocialChannelSetting(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        displayName: json['display_name']?.toString() ?? '',
+        identifier: json['identifier']?.toString(),
+        url: json['url']?.toString(),
+        configured: json['configured'] == true || json['configured'] == 1,
+        details: json['details'] is Map
+            ? Map<String, dynamic>.from(json['details'] as Map)
+            : const {},
+      );
 }
 
 class WhatsAppEmployeeAccess {
