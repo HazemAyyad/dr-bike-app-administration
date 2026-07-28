@@ -432,8 +432,6 @@ class _ConversationsTab extends StatelessWidget {
                   .map((item) => Card(
                         margin: const EdgeInsets.symmetric(vertical: 2),
                         child: ListTile(
-                          dense: true,
-                          visualDensity: const VisualDensity(vertical: -2),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 10),
                           onTap: () => Get.toNamed(
@@ -467,19 +465,28 @@ class _ConversationsTab extends StatelessWidget {
                           ]),
                           subtitle: Text(item.lastMessage ?? 'لا توجد رسائل',
                               maxLines: 1, overflow: TextOverflow.ellipsis),
-                          trailing: Column(
+                          trailing: SizedBox(
+                            width: 62,
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(_shortDate(item.lastMessageAt),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style:
                                         Theme.of(context).textTheme.bodySmall),
-                                if (item.unreadCount > 0)
-                                  Badge(label: Text('${item.unreadCount}')),
-                                Text(_statusLabel(item.status),
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: _statusColor(item.status))),
-                              ]),
+                                const SizedBox(height: 2),
+                                item.unreadCount > 0
+                                    ? Badge(label: Text('${item.unreadCount}'))
+                                    : Text(_statusLabel(item.status),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                            fontSize: 11,
+                                            color: _statusColor(item.status))),
+                              ],
+                            ),
+                          ),
                         ),
                       ))
                   .toList());

@@ -20,10 +20,14 @@ class EmployeeNotificationRouter {
     }
 
     final type = raw['type']?.toString() ?? '';
-    if (type == 'whatsapp_message_received') {
+    if (type == 'whatsapp_message_received' ||
+        type == 'social_message_received') {
       final id = int.tryParse(raw['conversation_id']?.toString() ?? '');
       if (id != null && id > 0) {
-        Get.toNamed('/WhatsAppConversation/$id');
+        Get.toNamed(
+          '/WhatsAppConversation/$id',
+          parameters: {'channel': raw['channel']?.toString() ?? 'whatsapp'},
+        );
         return;
       }
     }

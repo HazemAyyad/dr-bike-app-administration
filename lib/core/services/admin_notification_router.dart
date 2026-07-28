@@ -57,7 +57,8 @@ class AdminNotificationRouter {
           }
           break;
         case 'whatsapp_message_received':
-          if (_openWhatsAppConversation(raw)) {
+        case 'social_message_received':
+          if (_openSocialConversation(raw)) {
             return;
           }
           break;
@@ -68,6 +69,11 @@ class AdminNotificationRouter {
           break;
         case 'app_development_task':
           if (_openAppDevelopmentTask(raw)) {
+            return;
+          }
+          break;
+        case 'stock_images_export_ready':
+          if (_openStockImagesExport(raw)) {
             return;
           }
           break;
@@ -167,10 +173,13 @@ class AdminNotificationRouter {
     }
   }
 
-  static bool _openWhatsAppConversation(Map<String, dynamic> raw) {
+  static bool _openSocialConversation(Map<String, dynamic> raw) {
     final id = int.tryParse(raw['conversation_id']?.toString() ?? '');
     if (id == null || id <= 0) return false;
-    Get.toNamed('/WhatsAppConversation/$id');
+    Get.toNamed(
+      '/WhatsAppConversation/$id',
+      parameters: {'channel': raw['channel']?.toString() ?? 'whatsapp'},
+    );
     return true;
   }
 
@@ -195,6 +204,24 @@ class AdminNotificationRouter {
     if (id == null || id <= 0) return false;
     Get.toNamed('/AppDevelopment/$id');
     return true;
+  }
+
+  static bool _openStockImagesExport(Map<String, dynamic> raw) {
+    try {
+      AppDependencyRegistry.ensureStock();
+      final exportId =
+          raw['export_id']?.toString() ?? raw['related_id']?.toString() ?? '';
+      Get.toNamed(
+        AppRoutes.STOCKIMAGESEXPORTSSCREEN,
+        arguments: {
+          if (exportId.isNotEmpty) 'stockImagesExportId': exportId,
+        },
+      );
+      return true;
+    } catch (e) {
+      debugPrint('[NotificationRouter] stock export unavailable: $e');
+      return false;
+    }
   }
 
   static Map<String, dynamic> parsePayload(String? payload) {
