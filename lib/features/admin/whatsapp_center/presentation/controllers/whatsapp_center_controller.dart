@@ -100,6 +100,9 @@ class WhatsAppCenterController extends GetxController {
 
   Future<void> selectChannel(String channel) async {
     selectedChannel.value = channel;
+    if (tabIndex.value == 3) {
+      return;
+    }
     tabIndex.value = 1;
     await loadConversations();
   }

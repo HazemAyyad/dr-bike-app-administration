@@ -642,27 +642,55 @@ class _SettingsTab extends StatelessWidget {
           icon: Icons.settings_outlined, text: 'لا توجد إعدادات');
     }
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('قنوات التواصل', style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: 8),
-      if (settings.channels.isEmpty)
-        Card(
-            child: ListTile(
-          leading: Icon(
-              settings.configured ? Icons.cloud_done : Icons.cloud_off,
-              color: settings.configured ? Colors.green : Colors.red),
-          title:
-              Text(settings.configured ? 'الاتصال مهيأ' : 'الاتصال غير مكتمل'),
-          subtitle: Text(
-              '${settings.message}\nPhone number ID: ${settings.phoneNumberId ?? '—'}'),
-          isThreeLine: true,
-        ))
-      else
-        ...settings.channels.map(
-          (channel) => _SocialChannelSettingsCard(
-            channel: channel,
-            controller: controller,
-          ),
-        ),
+      Obx(() {
+        final selectedChannel = controller.selectedChannel.value;
+        final visibleChannels = selectedChannel == 'all'
+            ? settings.channels
+            : settings.channels
+                .where((channel) => channel.id == selectedChannel)
+                .toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Text(
+                  selectedChannel == 'all'
+                      ? 'قنوات التواصل'
+                      : 'إعدادات ${_channelLabel(selectedChannel)}',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              if (selectedChannel != 'all')
+                TextButton.icon(
+                  onPressed: () => controller.selectChannel('all'),
+                  icon: const Icon(Icons.all_inbox_outlined, size: 18),
+                  label: const Text('عرض الكل'),
+                ),
+            ]),
+            const SizedBox(height: 8),
+            if (settings.channels.isEmpty)
+              Card(
+                  child: ListTile(
+                leading: Icon(
+                    settings.configured ? Icons.cloud_done : Icons.cloud_off,
+                    color: settings.configured ? Colors.green : Colors.red),
+                title: Text(
+                    settings.configured ? 'الاتصال مهيأ' : 'الاتصال غير مكتمل'),
+                subtitle: Text(
+                    '${settings.message}\nPhone number ID: ${settings.phoneNumberId ?? '—'}'),
+                isThreeLine: true,
+              ))
+            else
+              ...visibleChannels.map(
+                (channel) => _SocialChannelSettingsCard(
+                  channel: channel,
+                  controller: controller,
+                ),
+              ),
+          ],
+        );
+      }),
       const SizedBox(height: 8),
       const Text(
         'رموز الوصول محفوظة في Laravel .env ولا يتم عرضها أو تخزينها داخل التطبيق.',
