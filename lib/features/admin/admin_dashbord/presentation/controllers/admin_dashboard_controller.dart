@@ -180,10 +180,14 @@ class AdminDashboardController extends GetxController
       'title': 'تطوير التطبيق',
       'route': AppRoutes.APPDEVELOPMENT,
     },
-    {'id': '17', 'title': 'whatsappCenter', 'route': AppRoutes.WHATSAPPCENTER},
+    {
+      'id': '17',
+      'title': 'مركز التواصل الاجتماعي',
+      'route': AppRoutes.WHATSAPPCENTER
+    },
     {
       'id': '16',
-      'title': 'whatsappCatalog',
+      'title': 'كتالوج التواصل الاجتماعي',
       'route': AppRoutes.METACATALOGSYNC
     },
   ];

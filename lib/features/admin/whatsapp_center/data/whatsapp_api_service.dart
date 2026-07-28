@@ -6,29 +6,39 @@ import '../../../../core/databases/api/dio_consumer.dart';
 class WhatsAppApiService {
   DioConsumer get _api => Get.find<DioConsumer>();
   static const _base = '/whatsapp';
+  static const _socialBase = '/social';
 
   Future<Map<String, dynamic>> getWhatsAppDashboard() =>
-      _get('$_base/dashboard');
+      _get('$_socialBase/dashboard');
 
   Future<Map<String, dynamic>> getWhatsAppConversations({
     String? search,
     String? status,
+    String? channel,
     int page = 1,
   }) =>
-      _get('$_base/conversations', query: {
+      _get('$_socialBase/conversations', query: {
         'page': page,
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
         if (status != null && status != 'all') 'status': status,
+        if (channel != null && channel != 'all') 'channel': channel,
       });
 
-  Future<Map<String, dynamic>> getWhatsAppConversationDetails(int id,
-          {int page = 1}) =>
-      _get('$_base/conversations/$id', query: {'page': page, 'per_page': 50});
+  Future<Map<String, dynamic>> getWhatsAppConversationDetails(
+    int id, {
+    String channel = 'whatsapp',
+    int page = 1,
+  }) =>
+      _get('$_socialBase/conversations/$channel/$id',
+          query: {'page': page, 'per_page': 50});
 
   Future<Map<String, dynamic>> sendWhatsAppMessageToConversation(
-          int id, String message,
-          {int? replyToMessageId}) =>
-      _post('$_base/conversations/$id/send', {
+    int id,
+    String message, {
+    String channel = 'whatsapp',
+    int? replyToMessageId,
+  }) =>
+      _post('$_socialBase/conversations/$channel/$id/send', {
         'message': message,
         if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
       });

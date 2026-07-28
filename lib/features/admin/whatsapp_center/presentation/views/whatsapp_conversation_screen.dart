@@ -70,7 +70,7 @@ class WhatsAppConversationScreen
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600)),
                               if (c != null)
-                                Text('حساب واتساب للأعمال • ${c.phone}',
+                                Text('${_channelLabel(c.channel)} • ${c.phone}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(fontSize: 11)),
@@ -85,6 +85,8 @@ class WhatsAppConversationScreen
                           contact?.supplierId != null;
                       final windowOpen =
                           controller.customerServiceWindowOpen.value;
+                      final isWhatsApp =
+                          controller.conversation.value?.channel == 'whatsapp';
                       return PopupMenuButton<String>(
                         tooltip: 'خيارات المحادثة',
                         color: const Color(0xFFF7FAF9),
@@ -116,19 +118,21 @@ class WhatsAppConversationScreen
                               ],
                             ),
                           ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem<String>(
-                            value: 'share_products',
-                            enabled: windowOpen,
-                            child: const Row(
-                              children: [
-                                Icon(Icons.inventory_2_outlined,
-                                    color: Color(0xFF075E54)),
-                                SizedBox(width: 10),
-                                Text('مشاركة منتجات'),
-                              ],
+                          if (isWhatsApp) ...[
+                            const PopupMenuDivider(),
+                            PopupMenuItem<String>(
+                              value: 'share_products',
+                              enabled: windowOpen,
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.inventory_2_outlined,
+                                      color: Color(0xFF075E54)),
+                                  SizedBox(width: 10),
+                                  Text('مشاركة منتجات'),
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       );
                     }),
@@ -560,29 +564,32 @@ class _ComposerState extends State<_Composer> {
               ],
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: controller.sending.value
-                    ? null
-                    : controller.requestContinuation,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF075E54),
-                  foregroundColor: Colors.white,
+            if (controller.channel == 'whatsapp') ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: controller.sending.value
+                      ? null
+                      : controller.requestContinuation,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF075E54),
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: controller.sending.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.mark_chat_unread_outlined),
+                  label: const Text('هل تريد الاستمرار مع دكتور بايك؟'),
                 ),
-                icon: controller.sending.value
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.mark_chat_unread_outlined),
-                label: const Text('هل تريد الاستمرار مع دكتور بايك؟'),
               ),
-            ),
+            ],
           ],
         ),
       );
@@ -646,17 +653,19 @@ class _ComposerState extends State<_Composer> {
               ),
             ),
           ),
-          IconButton(
-            tooltip: 'إرفاق',
-            onPressed: () => _attachmentSource(context),
-            icon: const Icon(Icons.attach_file, color: Color(0xFF667781)),
-          ),
-          IconButton(
-            tooltip: 'فتح الكاميرا',
-            onPressed: () => _cameraSource(context),
-            icon:
-                const Icon(Icons.camera_alt_outlined, color: Color(0xFF667781)),
-          ),
+          if (controller.channel == 'whatsapp') ...[
+            IconButton(
+              tooltip: 'إرفاق',
+              onPressed: () => _attachmentSource(context),
+              icon: const Icon(Icons.attach_file, color: Color(0xFF667781)),
+            ),
+            IconButton(
+              tooltip: 'فتح الكاميرا',
+              onPressed: () => _cameraSource(context),
+              icon: const Icon(Icons.camera_alt_outlined,
+                  color: Color(0xFF667781)),
+            ),
+          ],
         ],
       );
 
@@ -755,6 +764,12 @@ class _ComposerState extends State<_Composer> {
       return GestureDetector(
         onTap: controller.send,
         child: _circle(child: const Icon(Icons.send, color: Colors.white)),
+      );
+    }
+    if (controller.channel != 'whatsapp') {
+      return _circle(
+        color: const Color(0xFF8AA09A),
+        child: const Icon(Icons.send, color: Colors.white),
       );
     }
     return GestureDetector(
@@ -1103,3 +1118,11 @@ String _time(DateTime? date) {
   final d = date.toLocal();
   return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }
+
+String _channelLabel(String channel) =>
+    const {
+      'whatsapp': 'واتساب',
+      'facebook': 'فيسبوك',
+      'instagram': 'إنستغرام',
+    }[channel] ??
+    channel;

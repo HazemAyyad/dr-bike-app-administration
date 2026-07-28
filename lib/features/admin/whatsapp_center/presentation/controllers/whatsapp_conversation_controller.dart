@@ -42,11 +42,13 @@ class WhatsAppConversationController extends GetxController {
   String? _recordingPath;
   bool _openedAtLatestMessage = false;
   late int id;
+  late String channel;
 
   @override
   void onInit() {
     super.onInit();
     id = int.tryParse(Get.parameters['id'] ?? '') ?? 0;
+    channel = Get.parameters['channel'] ?? 'whatsapp';
     recorder = RecorderController()
       ..androidEncoder = AndroidEncoder.aac
       ..androidOutputFormat = AndroidOutputFormat.mpeg4
@@ -69,7 +71,8 @@ class WhatsAppConversationController extends GetxController {
     if (!silent) loading.value = true;
     error.value = null;
     try {
-      final result = await api.getWhatsAppConversationDetails(id);
+      final result =
+          await api.getWhatsAppConversationDetails(id, channel: channel);
       if (result['conversation'] is Map) {
         conversation.value = WhatsAppConversation.fromJson(
             Map<String, dynamic>.from(result['conversation'] as Map));
@@ -125,6 +128,7 @@ class WhatsAppConversationController extends GetxController {
   void _onTextChanged() {
     composing.value = input.text.trim().isNotEmpty;
     if (!composing.value) return;
+    if (channel != 'whatsapp') return;
     _typingDebounce?.cancel();
     _typingDebounce = Timer(const Duration(milliseconds: 350), () async {
       final now = DateTime.now();
@@ -149,6 +153,7 @@ class WhatsAppConversationController extends GetxController {
       await api.sendWhatsAppMessageToConversation(
         id,
         text,
+        channel: channel,
         replyToMessageId: replyingTo.value?.id,
       );
       input.clear();
@@ -196,7 +201,9 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<bool> sendSelectedProducts(List<String> productIds) async {
-    if (productIds.isEmpty || sending.value) return false;
+    if (channel != 'whatsapp' || productIds.isEmpty || sending.value) {
+      return false;
+    }
     sending.value = true;
     try {
       await api.sendProducts(id, productIds);
@@ -211,6 +218,7 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> pickAndSendAttachment() async {
+    if (channel != 'whatsapp') return;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: [
@@ -244,6 +252,7 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> pickAndSendVideo({required bool fromCamera}) async {
+    if (channel != 'whatsapp') return;
     final picked = await ImagePicker().pickVideo(
       source: fromCamera ? ImageSource.camera : ImageSource.gallery,
       maxDuration: const Duration(minutes: 2),
@@ -253,6 +262,7 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> pickAndSendImage({required bool fromCamera}) async {
+    if (channel != 'whatsapp') return;
     final picked = await ImagePicker().pickImage(
       source: fromCamera ? ImageSource.camera : ImageSource.gallery,
       imageQuality: 92,
@@ -262,11 +272,13 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> sendCapturedMedia(String path, String mediaKind) async {
+    if (channel != 'whatsapp') return;
     final name = File(path).uri.pathSegments.last;
     await _sendMediaPath(path, name, mediaKind: mediaKind);
   }
 
   Future<void> startRecording() async {
+    if (channel != 'whatsapp') return;
     if (recording.value || sending.value) return;
     var permission = await Permission.microphone.status;
     if (!permission.isGranted) {

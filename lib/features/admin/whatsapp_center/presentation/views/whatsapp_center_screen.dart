@@ -28,8 +28,9 @@ class WhatsAppCenterScreen extends GetView<WhatsAppCenterController> {
             ),
           ),
           child: Scaffold(
-            appBar: AppBar(title: const Text('مركز واتساب')),
+            appBar: AppBar(title: const Text('مركز التواصل الاجتماعي')),
             body: Column(children: [
+              _SocialChannelBar(controller: controller),
               Obx(() => Container(
                     color: Colors.white,
                     padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
@@ -202,7 +203,8 @@ class _DashboardTab extends StatelessWidget {
       },
     ];
     return ListView(padding: const EdgeInsets.all(16), children: [
-      Text('نظرة عامة', style: Theme.of(context).textTheme.titleLarge),
+      Text('نظرة عامة على واتساب',
+          style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: 12),
       LayoutBuilder(builder: (context, constraints) {
         final count = constraints.maxWidth >= 900 ? 3 : 2;
@@ -262,6 +264,124 @@ class _DashboardTab extends StatelessWidget {
   }
 }
 
+class _SocialChannelBar extends StatelessWidget {
+  final WhatsAppCenterController controller;
+  const _SocialChannelBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    const channels = [
+      _SocialChannel(
+        id: 'all',
+        icon: Icons.all_inbox_outlined,
+        label: 'الكل',
+        color: Color(0xFF455A64),
+      ),
+      _SocialChannel(
+        id: 'whatsapp',
+        icon: Icons.chat,
+        label: 'واتساب',
+        color: Color(0xFF075E54),
+      ),
+      _SocialChannel(
+        id: 'facebook',
+        icon: Icons.facebook,
+        label: 'فيسبوك',
+        color: Color(0xFF1877F2),
+      ),
+      _SocialChannel(
+        id: 'instagram',
+        icon: Icons.camera_alt_outlined,
+        label: 'إنستغرام',
+        color: Color(0xFFE4405F),
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFFF7FAF9),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 2),
+      child: Obx(() => Row(
+            children: channels
+                .map((channel) => Expanded(
+                      child: _ChannelChip(
+                        channel: channel,
+                        active: controller.selectedChannel.value == channel.id,
+                        onTap: () => controller.selectChannel(channel.id),
+                      ),
+                    ))
+                .toList(),
+          )),
+    );
+  }
+}
+
+class _SocialChannel {
+  final String id;
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _SocialChannel({
+    required this.id,
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+}
+
+class _ChannelChip extends StatelessWidget {
+  final _SocialChannel channel;
+  final bool active;
+  final VoidCallback onTap;
+  const _ChannelChip({
+    required this.channel,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 38,
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        decoration: BoxDecoration(
+          color: active ? channel.color : Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: active ? channel.color : const Color(0xFFDDE5E3),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              channel.icon,
+              size: 18,
+              color: active ? Colors.white : channel.color,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                channel.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: active ? Colors.white : const Color(0xFF263B37),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ConversationsTab extends StatelessWidget {
   final WhatsAppCenterController controller;
   const _ConversationsTab({required this.controller});
@@ -316,8 +436,10 @@ class _ConversationsTab extends StatelessWidget {
                           visualDensity: const VisualDensity(vertical: -2),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 10),
-                          onTap: () =>
-                              Get.toNamed('/WhatsAppConversation/${item.id}'),
+                          onTap: () => Get.toNamed(
+                            '/WhatsAppConversation/${item.id}',
+                            parameters: {'channel': item.channel},
+                          ),
                           leading: Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -334,9 +456,15 @@ class _ConversationsTab extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          title: Text(item.contact?.name?.isNotEmpty == true
-                              ? item.contact!.name!
-                              : item.phone),
+                          title: Row(children: [
+                            _ChannelDot(channel: item.channel),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(item.contact?.name?.isNotEmpty == true
+                                  ? item.contact!.name!
+                                  : item.phone),
+                            ),
+                          ]),
                           subtitle: Text(item.lastMessage ?? 'لا توجد رسائل',
                               maxLines: 1, overflow: TextOverflow.ellipsis),
                           trailing: Column(
@@ -532,7 +660,7 @@ class _SettingsTab extends StatelessWidget {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'الموظفون المخولون بقسم واتساب',
+                      'الموظفون المخولون بمركز التواصل',
                       style:
                           TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                     ),
@@ -541,7 +669,7 @@ class _SettingsTab extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 6),
                   child: Text(
-                    'هذا الاختيار يستخدم نفس صلاحية قسم واتساب الموجودة في إضافة وتعديل الموظف.',
+                    'هذا الاختيار يستخدم نفس صلاحية مركز التواصل الموجودة في إضافة وتعديل الموظف.',
                     style: TextStyle(fontSize: 12, color: Color(0xFF52635F)),
                   ),
                 ),
@@ -586,7 +714,7 @@ class _SettingsTab extends StatelessWidget {
                             dimension: 18,
                             child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.save),
-                    label: const Text('حفظ صلاحيات واتساب'),
+                    label: const Text('حفظ صلاحيات مركز التواصل'),
                   ),
                 ),
               ],
@@ -699,6 +827,21 @@ class _LinkedBadge extends StatelessWidget {
       );
 }
 
+class _ChannelDot extends StatelessWidget {
+  final String channel;
+  const _ChannelDot({required this.channel});
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: _channelLabel(channel),
+        child: Icon(
+          _channelIcon(channel),
+          size: 16,
+          color: _channelColor(channel),
+        ),
+      );
+}
+
 String _shortDate(DateTime? date) {
   if (date == null) return '';
   final local = date.toLocal();
@@ -717,3 +860,27 @@ Color _statusColor(String status) => status == 'open'
     : status == 'pending'
         ? Colors.orange
         : Colors.grey;
+
+String _channelLabel(String channel) =>
+    const {
+      'whatsapp': 'واتساب',
+      'facebook': 'فيسبوك',
+      'instagram': 'إنستغرام',
+    }[channel] ??
+    channel;
+
+IconData _channelIcon(String channel) =>
+    const {
+      'whatsapp': Icons.chat,
+      'facebook': Icons.facebook,
+      'instagram': Icons.camera_alt_outlined,
+    }[channel] ??
+    Icons.forum_outlined;
+
+Color _channelColor(String channel) =>
+    const {
+      'whatsapp': Color(0xFF075E54),
+      'facebook': Color(0xFF1877F2),
+      'instagram': Color(0xFFE4405F),
+    }[channel] ??
+    const Color(0xFF455A64);

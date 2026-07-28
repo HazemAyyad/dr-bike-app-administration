@@ -32,6 +32,7 @@ class WhatsAppCenterController extends GetxController {
   final canManageWhatsAppEmployees = false.obs;
   final qrBytes = Rxn<Uint8List>();
   final selectedStatus = 'all'.obs;
+  final selectedChannel = 'all'.obs;
   final searchController = TextEditingController();
   final testPhoneController = TextEditingController();
   final testMessageController =
@@ -84,7 +85,10 @@ class WhatsAppCenterController extends GetxController {
 
   Future<void> loadConversations() => _load(() async {
         final result = await api.getWhatsAppConversations(
-            search: searchController.text, status: selectedStatus.value);
+          search: searchController.text,
+          status: selectedStatus.value,
+          channel: selectedChannel.value,
+        );
         final block = result['conversations'];
         final data = block is Map && block['data'] is List
             ? block['data'] as List
@@ -92,6 +96,12 @@ class WhatsAppCenterController extends GetxController {
         conversations.assignAll(data.whereType<Map>().map((e) =>
             WhatsAppConversation.fromJson(Map<String, dynamic>.from(e))));
       });
+
+  Future<void> selectChannel(String channel) async {
+    selectedChannel.value = channel;
+    tabIndex.value = 1;
+    await loadConversations();
+  }
 
   Future<void> loadTemplates() => _load(() async {
         final result = await api.getWhatsAppTemplates();
@@ -140,7 +150,7 @@ class WhatsAppCenterController extends GetxController {
       selectedWhatsAppEmployeeIds.assignAll(whatsAppEmployees
           .where((employee) => employee.hasAccess)
           .map((employee) => employee.id));
-      Get.snackbar('تم', 'تم تحديث صلاحيات قسم واتساب');
+      Get.snackbar('تم', 'تم تحديث صلاحيات مركز التواصل');
     } catch (e) {
       Get.snackbar('خطأ', _message(e), snackPosition: SnackPosition.BOTTOM);
     } finally {

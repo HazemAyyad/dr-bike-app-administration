@@ -45,12 +45,13 @@ class WhatsAppContact {
 
 class WhatsAppConversation {
   final int id, unreadCount;
-  final String phone, status;
+  final String phone, status, channel;
   final String? lastMessage;
   final DateTime? lastMessageAt;
   final WhatsAppContact? contact;
   const WhatsAppConversation({
     required this.id,
+    this.channel = 'whatsapp',
     required this.phone,
     required this.status,
     this.lastMessage,
@@ -61,6 +62,7 @@ class WhatsAppConversation {
   factory WhatsAppConversation.fromJson(Map<String, dynamic> j) =>
       WhatsAppConversation(
         id: _int(j['id']),
+        channel: j['channel']?.toString() ?? 'whatsapp',
         phone: j['phone']?.toString() ?? '',
         status: j['status']?.toString() ?? 'open',
         lastMessage: j['last_message']?.toString(),
@@ -76,7 +78,7 @@ class WhatsAppConversation {
 
 class WhatsAppMessage {
   final int id;
-  final String direction, type, status;
+  final String direction, type, status, channel;
   final String? body, errorMessage;
   final String? mediaUrl;
   final String? senderName;
@@ -86,6 +88,7 @@ class WhatsAppMessage {
   final DateTime? customerDeletedAt;
   const WhatsAppMessage({
     required this.id,
+    this.channel = 'whatsapp',
     required this.direction,
     required this.type,
     this.body,
@@ -100,6 +103,7 @@ class WhatsAppMessage {
   });
   factory WhatsAppMessage.fromJson(Map<String, dynamic> j) => WhatsAppMessage(
         id: _int(j['id']),
+        channel: j['channel']?.toString() ?? 'whatsapp',
         direction: j['direction']?.toString() ?? 'inbound',
         type: j['message_type']?.toString() ?? 'text',
         body: j['body']?.toString(),
