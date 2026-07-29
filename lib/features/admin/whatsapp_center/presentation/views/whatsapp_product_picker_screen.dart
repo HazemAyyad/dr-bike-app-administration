@@ -120,11 +120,21 @@ class _WhatsAppProductPickerScreenState
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: const Color(0x1A075E54),
+                          color: controller.channel == 'whatsapp'
+                              ? const Color(0x1A075E54)
+                              : const Color(0x141877F2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.picture_as_pdf,
-                            color: Color(0xFF075E54)),
+                        child: Icon(
+                          controller.channel == 'whatsapp'
+                              ? Icons.picture_as_pdf
+                              : Icons.link,
+                          color: controller.channel == 'instagram'
+                              ? const Color(0xFFE1306C)
+                              : controller.channel == 'facebook'
+                                  ? const Color(0xFF1877F2)
+                                  : const Color(0xFF075E54),
+                        ),
                       ),
                       if (selected.isNotEmpty)
                         Positioned(
@@ -150,10 +160,12 @@ class _WhatsAppProductPickerScreenState
                           'المنتجات المختارة (${selected.length})',
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        const Text(
-                          'سيتم إرسال ملف PDF بالصور والتفاصيل',
-                          style:
-                              TextStyle(fontSize: 11, color: Color(0xFF667781)),
+                        Text(
+                          controller.channel == 'whatsapp'
+                              ? 'سيتم إرسال ملف PDF بالصور والتفاصيل'
+                              : 'سيتم إرسال أسماء المنتجات وروابطها',
+                          style: const TextStyle(
+                              fontSize: 11, color: Color(0xFF667781)),
                         ),
                       ],
                     ),
@@ -161,7 +173,11 @@ class _WhatsAppProductPickerScreenState
                   const SizedBox(width: 8),
                   Obx(() => FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF00A884),
+                          backgroundColor: controller.channel == 'instagram'
+                              ? const Color(0xFFE1306C)
+                              : controller.channel == 'facebook'
+                                  ? const Color(0xFF1877F2)
+                                  : const Color(0xFF00A884),
                           foregroundColor: Colors.white,
                           minimumSize: const Size(112, 48),
                         ),
@@ -188,7 +204,12 @@ class _WhatsAppProductPickerScreenState
     if (!sent || !mounted) return;
     Navigator.of(context).pop();
     Future<void>.delayed(Duration.zero, () {
-      Get.snackbar('تم', 'تم إرسال ملف المنتجات PDF في المحادثة');
+      Get.snackbar(
+        'تم',
+        controller.channel == 'whatsapp'
+            ? 'تم إرسال ملف المنتجات PDF في المحادثة'
+            : 'تم إرسال روابط المنتجات في المحادثة',
+      );
     });
   }
 

@@ -201,12 +201,12 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<bool> sendSelectedProducts(List<String> productIds) async {
-    if (channel != 'whatsapp' || productIds.isEmpty || sending.value) {
+    if (productIds.isEmpty || sending.value) {
       return false;
     }
     sending.value = true;
     try {
-      await api.sendProducts(id, productIds);
+      await api.sendProducts(id, productIds, channel: channel);
       await load(silent: true);
       return true;
     } catch (e) {
@@ -218,7 +218,6 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> pickAndSendAttachment() async {
-    if (channel != 'whatsapp') return;
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: [
@@ -240,19 +239,10 @@ class WhatsAppConversationController extends GetxController {
     );
     final file = result?.files.single;
     if (file?.path == null) return;
-    sending.value = true;
-    try {
-      await api.sendWhatsAppMedia(id, file!.path!, file.name);
-      await load();
-    } catch (e) {
-      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      sending.value = false;
-    }
+    await _sendMediaPath(file!.path!, file.name);
   }
 
   Future<void> pickAndSendVideo({required bool fromCamera}) async {
-    if (channel != 'whatsapp') return;
     final picked = await ImagePicker().pickVideo(
       source: fromCamera ? ImageSource.camera : ImageSource.gallery,
       maxDuration: const Duration(minutes: 2),
@@ -262,7 +252,6 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> pickAndSendImage({required bool fromCamera}) async {
-    if (channel != 'whatsapp') return;
     final picked = await ImagePicker().pickImage(
       source: fromCamera ? ImageSource.camera : ImageSource.gallery,
       imageQuality: 92,
@@ -272,13 +261,11 @@ class WhatsAppConversationController extends GetxController {
   }
 
   Future<void> sendCapturedMedia(String path, String mediaKind) async {
-    if (channel != 'whatsapp') return;
     final name = File(path).uri.pathSegments.last;
     await _sendMediaPath(path, name, mediaKind: mediaKind);
   }
 
   Future<void> startRecording() async {
-    if (channel != 'whatsapp') return;
     if (recording.value || sending.value) return;
     var permission = await Permission.microphone.status;
     if (!permission.isGranted) {
@@ -291,7 +278,7 @@ class WhatsAppConversationController extends GetxController {
     }
     final directory = await getTemporaryDirectory();
     _recordingPath =
-        '${directory.path}/whatsapp_voice_${DateTime.now().millisecondsSinceEpoch}.mp4';
+        '${directory.path}/${channel}_voice_${DateTime.now().millisecondsSinceEpoch}.mp4';
     try {
       await recorder.record(path: _recordingPath!);
       recordingDuration.value = Duration.zero;
@@ -376,7 +363,8 @@ class WhatsAppConversationController extends GetxController {
     if (sending.value) return;
     sending.value = true;
     try {
-      await api.sendWhatsAppMedia(id, path, name, mediaKind: mediaKind);
+      await api.sendWhatsAppMedia(id, path, name,
+          mediaKind: mediaKind, channel: channel);
       await load(silent: true);
     } catch (e) {
       Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
@@ -439,8 +427,8 @@ class WhatsAppConversationController extends GetxController {
             : message.type == 'audio'
                 ? 'ogg'
                 : 'pdf';
-        final file =
-            File('${directory.path}/whatsapp-${message.id}.$extension');
+        final file = File(
+            '${directory.path}/${message.channel}-${message.id}.$extension');
         await file.writeAsBytes(bytes, flush: true);
         await OpenFilex.open(file.path);
       }
@@ -454,7 +442,12 @@ class WhatsAppConversationController extends GetxController {
   Future<Uint8List> getMediaBytes(WhatsAppMessage message) async {
     final cached = _mediaCache[message.id];
     if (cached != null) return cached;
-    final bytes = Uint8List.fromList(await api.getMedia(message.id));
+    final remoteUrl = message.mediaUrl;
+    final bytes = Uint8List.fromList(
+      message.channel == 'whatsapp' || remoteUrl == null
+          ? await api.getMedia(message.id)
+          : await api.getRemoteMedia(remoteUrl),
+    );
     _mediaCache[message.id] = bytes;
     return bytes;
   }
@@ -465,7 +458,8 @@ class WhatsAppConversationController extends GetxController {
       await ImageGallerySaverPlus.saveImage(
         bytes,
         quality: 100,
-        name: 'whatsapp_${message.id}_${DateTime.now().millisecondsSinceEpoch}',
+        name:
+            '${message.channel}_${message.id}_${DateTime.now().millisecondsSinceEpoch}',
       );
       Get.snackbar('تم', 'تم حفظ الصورة في معرض الصور',
           snackPosition: SnackPosition.BOTTOM);

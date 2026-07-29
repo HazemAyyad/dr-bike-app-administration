@@ -57,8 +57,11 @@ class WhatsAppApiService {
       });
 
   Future<Map<String, dynamic>> sendProducts(
-          int conversationId, List<String> productIds) =>
-      _post('$_base/conversations/$conversationId/send-products',
+    int conversationId,
+    List<String> productIds, {
+    String channel = 'whatsapp',
+  }) =>
+      _post('$_socialBase/conversations/$channel/$conversationId/send-products',
           {'product_ids': productIds});
 
   Future<void> hideMessage(int conversationId, int messageId) async {
@@ -68,15 +71,21 @@ class WhatsAppApiService {
 
   Future<Map<String, dynamic>> sendWhatsAppMedia(
       int id, String path, String name,
-      {String? caption, String? mediaKind}) async {
+      {String? caption, String? mediaKind, String channel = 'whatsapp'}) async {
     final form = FormData.fromMap({
       'file': await MultipartFile.fromFile(path, filename: name),
       if (caption != null && caption.isNotEmpty) 'caption': caption,
       if (mediaKind != null) 'media_kind': mediaKind,
     });
-    final Response response =
-        await _api.post('$_base/conversations/$id/send-media', data: form);
+    final Response response = await _api
+        .post('$_socialBase/conversations/$channel/$id/send-media', data: form);
     return _map(response.data);
+  }
+
+  Future<List<int>> getRemoteMedia(String url) async {
+    final response =
+        await _api.get(url, options: Options(responseType: ResponseType.bytes));
+    return List<int>.from(response.data as List);
   }
 
   Future<Map<String, dynamic>> linkPerson(int id, String type, String name) =>

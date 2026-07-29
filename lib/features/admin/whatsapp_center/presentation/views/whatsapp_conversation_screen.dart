@@ -19,7 +19,7 @@ class WhatsAppConversationScreen
         child: Theme(
             data: Theme.of(context).copyWith(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF075E54),
+                seedColor: _channelColor(controller.channel),
                 brightness: Theme.of(context).brightness,
               ),
               dialogTheme: const DialogThemeData(
@@ -97,8 +97,6 @@ class WhatsAppConversationScreen
                           contact?.supplierId != null;
                       final windowOpen =
                           controller.customerServiceWindowOpen.value;
-                      final isWhatsApp =
-                          controller.conversation.value?.channel == 'whatsapp';
                       return PopupMenuButton<String>(
                         tooltip: 'خيارات المحادثة',
                         color: const Color(0xFFF7FAF9),
@@ -130,21 +128,19 @@ class WhatsAppConversationScreen
                               ],
                             ),
                           ),
-                          if (isWhatsApp) ...[
-                            const PopupMenuDivider(),
-                            PopupMenuItem<String>(
-                              value: 'share_products',
-                              enabled: windowOpen,
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.inventory_2_outlined,
-                                      color: Color(0xFF075E54)),
-                                  SizedBox(width: 10),
-                                  Text('مشاركة منتجات'),
-                                ],
-                              ),
+                          const PopupMenuDivider(),
+                          PopupMenuItem<String>(
+                            value: 'share_products',
+                            enabled: windowOpen,
+                            child: Row(
+                              children: [
+                                Icon(Icons.inventory_2_outlined,
+                                    color: _channelColor(controller.channel)),
+                                const SizedBox(width: 10),
+                                const Text('مشاركة منتجات'),
+                              ],
                             ),
-                          ],
+                          ),
                         ],
                       );
                     }),
@@ -195,7 +191,7 @@ class WhatsAppConversationScreen
                                     const EdgeInsets.fromLTRB(12, 9, 12, 7),
                                 decoration: BoxDecoration(
                                   color: outbound
-                                      ? const Color(0xFFD9FDD3)
+                                      ? _outboundBubbleColor(message.channel)
                                       : message.customerDeletedAt != null
                                           ? const Color(0xFFFFE8A3)
                                           : Theme.of(context).cardColor,
@@ -665,19 +661,17 @@ class _ComposerState extends State<_Composer> {
               ),
             ),
           ),
-          if (controller.channel == 'whatsapp') ...[
-            IconButton(
-              tooltip: 'إرفاق',
-              onPressed: () => _attachmentSource(context),
-              icon: const Icon(Icons.attach_file, color: Color(0xFF667781)),
-            ),
-            IconButton(
-              tooltip: 'فتح الكاميرا',
-              onPressed: () => _cameraSource(context),
-              icon: const Icon(Icons.camera_alt_outlined,
-                  color: Color(0xFF667781)),
-            ),
-          ],
+          IconButton(
+            tooltip: 'إرفاق',
+            onPressed: () => _attachmentSource(context),
+            icon: const Icon(Icons.attach_file, color: Color(0xFF667781)),
+          ),
+          IconButton(
+            tooltip: 'فتح الكاميرا',
+            onPressed: () => _cameraSource(context),
+            icon:
+                const Icon(Icons.camera_alt_outlined, color: Color(0xFF667781)),
+          ),
         ],
       );
 
@@ -730,8 +724,8 @@ class _ComposerState extends State<_Composer> {
               child: AudioWaveforms(
                 recorderController: controller.recorder,
                 size: const Size(double.infinity, 42),
-                waveStyle: const WaveStyle(
-                  waveColor: Color(0xFF00A884),
+                waveStyle: WaveStyle(
+                  waveColor: _channelColor(controller.channel),
                   showMiddleLine: false,
                   extendWaveform: true,
                   spacing: 5,
@@ -775,15 +769,13 @@ class _ComposerState extends State<_Composer> {
     if (controller.composing.value) {
       return GestureDetector(
         onTap: controller.send,
-        child: _circle(child: const Icon(Icons.send, color: Colors.white)),
+        child: _circle(
+          color: _channelColor(controller.channel),
+          child: const Icon(Icons.send, color: Colors.white),
+        ),
       );
     }
-    if (controller.channel != 'whatsapp') {
-      return _circle(
-        color: const Color(0xFF8AA09A),
-        child: const Icon(Icons.send, color: Colors.white),
-      );
-    }
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onLongPressStart: (details) async {
@@ -854,9 +846,7 @@ class _ComposerState extends State<_Composer> {
               ),
             ),
           _circle(
-            color: controller.recording.value
-                ? const Color(0xFF00A884)
-                : const Color(0xFF00A884),
+            color: _channelColor(controller.channel),
             child: const Icon(Icons.mic, color: Colors.white, size: 27),
           ),
         ],
@@ -1131,6 +1121,21 @@ String _time(DateTime? date) {
   return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }
 
+Color _channelColor(String channel) =>
+    const {
+      'whatsapp': Color(0xFF00A884),
+      'facebook': Color(0xFF1877F2),
+      'instagram': Color(0xFFE1306C),
+    }[channel] ??
+    const Color(0xFF00A884);
+
+Color _outboundBubbleColor(String channel) =>
+    const {
+      'whatsapp': Color(0xFFD9FDD3),
+      'facebook': Color(0xFFDCEBFF),
+      'instagram': Color(0xFFFFE1EA),
+    }[channel] ??
+    const Color(0xFFD9FDD3);
 String _channelLabel(String channel) =>
     const {
       'whatsapp': 'واتساب',
