@@ -15,6 +15,7 @@ class WhatsAppApiService {
     String? search,
     String? status,
     String? channel,
+    String? quickFilter,
     int page = 1,
   }) =>
       _get('$_socialBase/conversations', query: {
@@ -22,6 +23,8 @@ class WhatsAppApiService {
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
         if (status != null && status != 'all') 'status': status,
         if (channel != null && channel != 'all') 'channel': channel,
+        if (quickFilter != null && quickFilter != 'all')
+          'quick_filter': quickFilter,
       });
 
   Future<Map<String, dynamic>> getWhatsAppConversationDetails(

@@ -260,8 +260,119 @@ class _DashboardTab extends StatelessWidget {
           ),
         );
       }),
+      if (d.channelStats.isNotEmpty) ...[
+        const SizedBox(height: 16),
+        Text('أداء القنوات', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        LayoutBuilder(builder: (context, constraints) {
+          final count = constraints.maxWidth >= 900 ? 3 : 1;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: count,
+              childAspectRatio: constraints.maxWidth < 520 ? 2.15 : 2.75,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: d.channelStats.length,
+            itemBuilder: (_, i) => _ChannelStatsCard(stats: d.channelStats[i]),
+          );
+        }),
+      ],
     ]);
   }
+}
+
+class _ChannelStatsCard extends StatelessWidget {
+  final SocialChannelStats stats;
+  const _ChannelStatsCard({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _channelColor(stats.channel);
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withValues(alpha: .25)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(children: [
+              CircleAvatar(
+                backgroundColor: color.withValues(alpha: .12),
+                child: Icon(_channelIcon(stats.channel), color: color),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  _channelLabel(stats.channel),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              Text(stats.messagesToday.toString(),
+                  style: TextStyle(
+                      color: color, fontSize: 24, fontWeight: FontWeight.w800)),
+            ]),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                _MetricPill(label: 'محادثات', value: stats.conversations),
+                _MetricPill(label: 'مفتوحة', value: stats.open),
+                _MetricPill(label: 'غير مقروء', value: stats.unread),
+                if (stats.failedToday > 0)
+                  _MetricPill(
+                    label: 'فاشلة',
+                    value: stats.failedToday,
+                    color: Colors.red,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricPill extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+  const _MetricPill({
+    required this.label,
+    required this.value,
+    this.color = const Color(0xFF52635F),
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .10),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          '$label $value',
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
 }
 
 class _SocialChannelBar extends StatelessWidget {
@@ -385,115 +496,403 @@ class _ChannelChip extends StatelessWidget {
 class _ConversationsTab extends StatelessWidget {
   final WhatsAppCenterController controller;
   const _ConversationsTab({required this.controller});
+
   @override
-  Widget build(BuildContext context) =>
-      ListView(padding: const EdgeInsets.fromLTRB(8, 6, 8, 70), children: [
-        SizedBox(
-            height: 46,
-            child: SearchBar(
-              controller: controller.searchController,
-              hintText: 'بحث بالاسم أو الرقم أو الرسالة',
-              leading: const Icon(Icons.search),
-              trailing: [
-                IconButton(
-                    onPressed: controller.loadConversations,
-                    icon: const Icon(Icons.arrow_forward))
-              ],
-              onSubmitted: (_) => controller.loadConversations(),
-            )),
-        const SizedBox(height: 6),
-        Obx(() => Wrap(
-            spacing: 5,
-            children: const <Map<String, String>>[
-              {'id': 'all', 'label': 'الكل'},
-              {'id': 'open', 'label': 'مفتوحة'},
-              {'id': 'pending', 'label': 'معلقة'},
-              {'id': 'closed', 'label': 'مغلقة'},
-            ]
-                .map((item) => ChoiceChip(
-                      label: Text(item['label']!),
-                      selected: controller.selectedStatus.value == item['id'],
-                      onSelected: (_) {
-                        controller.selectedStatus.value = item['id']!;
-                        controller.loadConversations();
-                      },
-                    ))
-                .toList())),
-        const SizedBox(height: 4),
-        Obx(() {
-          if (controller.conversations.isEmpty) {
-            return const SizedBox(
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 70),
+        children: [
+          _ConversationSearch(controller: controller),
+          const SizedBox(height: 8),
+          _ConversationFilters(controller: controller),
+          const SizedBox(height: 8),
+          Obx(() {
+            if (controller.conversations.isEmpty) {
+              return const SizedBox(
                 height: 350,
                 child: _StateMessage(
-                    icon: Icons.chat_bubble_outline, text: 'لا توجد محادثات'));
-          }
-          return Column(
+                  icon: Icons.chat_bubble_outline,
+                  text: 'لا توجد محادثات تطابق الفلاتر الحالية',
+                ),
+              );
+            }
+            return Column(
               children: controller.conversations
-                  .map((item) => Card(
-                        margin: const EdgeInsets.symmetric(vertical: 2),
-                        child: ListTile(
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 10),
-                          onTap: () => Get.toNamed(
-                            '/WhatsAppConversation/${item.id}',
-                            parameters: {'channel': item.channel},
-                          ),
-                          leading: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              _ContactAvatar(
-                                name: item.contact?.name?.isNotEmpty == true
-                                    ? item.contact!.name!
-                                    : item.phone,
-                                imageUrl: item.contact?.profilePictureUrl,
-                              ),
-                              if (item.contact?.customerId != null ||
-                                  item.contact?.supplierId != null)
-                                const Positioned(
-                                  left: -3,
-                                  bottom: -2,
-                                  child: _LinkedBadge(),
-                                ),
-                            ],
-                          ),
-                          title: Row(children: [
-                            _ChannelDot(channel: item.channel),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(item.contact?.name?.isNotEmpty == true
-                                  ? item.contact!.name!
-                                  : item.phone),
-                            ),
-                          ]),
-                          subtitle: Text(item.lastMessage ?? 'لا توجد رسائل',
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
-                          trailing: SizedBox(
-                            width: 62,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(_shortDate(item.lastMessageAt),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall),
-                                const SizedBox(height: 2),
-                                item.unreadCount > 0
-                                    ? Badge(label: Text('${item.unreadCount}'))
-                                    : Text(_statusLabel(item.status),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: _statusColor(item.status))),
-                              ],
-                            ),
-                          ),
-                        ),
+                  .map((item) => _ConversationCard(
+                        item: item,
+                        controller: controller,
                       ))
-                  .toList());
-        }),
-      ]);
+                  .toList(),
+            );
+          }),
+        ],
+      );
+}
+
+class _ConversationSearch extends StatelessWidget {
+  final WhatsAppCenterController controller;
+  const _ConversationSearch({required this.controller});
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 48,
+        child: SearchBar(
+          controller: controller.searchController,
+          hintText: 'بحث بالاسم أو الرقم أو الرسالة',
+          leading: const Icon(Icons.search),
+          trailing: [
+            IconButton(
+              tooltip: 'مسح الفلاتر',
+              onPressed: controller.clearConversationFilters,
+              icon: const Icon(Icons.filter_alt_off_outlined),
+            ),
+            IconButton(
+              tooltip: 'بحث',
+              onPressed: controller.loadConversations,
+              icon: const Icon(Icons.arrow_forward),
+            ),
+          ],
+          onSubmitted: (_) => controller.loadConversations(),
+        ),
+      );
+}
+
+class _ConversationFilters extends StatelessWidget {
+  final WhatsAppCenterController controller;
+  const _ConversationFilters({required this.controller});
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Obx(() => Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: const <Map<String, String>>[
+                  {'id': 'all', 'label': 'كل الحالات'},
+                  {'id': 'open', 'label': 'مفتوحة'},
+                  {'id': 'pending', 'label': 'معلقة'},
+                  {'id': 'closed', 'label': 'مغلقة'},
+                ]
+                    .map((item) => ChoiceChip(
+                          label: Text(item['label']!),
+                          selected:
+                              controller.selectedStatus.value == item['id'],
+                          onSelected: (_) =>
+                              controller.selectStatus(item['id']!),
+                        ))
+                    .toList(),
+              )),
+          const SizedBox(height: 6),
+          Obx(() => Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: const <Map<String, dynamic>>[
+                  {'id': 'all', 'label': 'الكل', 'icon': Icons.all_inbox},
+                  {
+                    'id': 'unread',
+                    'label': 'غير مقروء',
+                    'icon': Icons.mark_chat_unread_outlined
+                  },
+                  {
+                    'id': 'failed',
+                    'label': 'فاشلة',
+                    'icon': Icons.error_outline
+                  },
+                  {
+                    'id': 'linked',
+                    'label': 'مربوطة',
+                    'icon': Icons.verified_user_outlined
+                  },
+                ]
+                    .map((item) => FilterChip(
+                          avatar: Icon(item['icon'] as IconData, size: 17),
+                          label: Text(item['label'] as String),
+                          selected: controller.selectedQuickFilter.value ==
+                              item['id'],
+                          onSelected: (_) => controller
+                              .selectQuickFilter(item['id'] as String),
+                        ))
+                    .toList(),
+              )),
+        ],
+      );
+}
+
+class _ConversationCard extends StatelessWidget {
+  final WhatsAppConversation item;
+  final WhatsAppCenterController controller;
+  const _ConversationCard({required this.item, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = item.contact?.name?.isNotEmpty == true
+        ? item.contact!.name!
+        : item.phone;
+    final linked =
+        item.contact?.customerId != null || item.contact?.supplierId != null;
+    final color = _channelColor(item.channel);
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      elevation: item.unreadCount > 0 ? 1 : 0,
+      color: item.unreadCount > 0 ? color.withValues(alpha: .06) : Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: item.failedCount > 0
+              ? const Color(0xFFFFB4AB)
+              : item.unreadCount > 0
+                  ? color.withValues(alpha: .35)
+                  : const Color(0xFFE3ECE9),
+        ),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        onTap: () => Get.toNamed(
+          '/WhatsAppConversation/${item.id}',
+          parameters: {'channel': item.channel},
+        ),
+        leading: GestureDetector(
+          onTap: () => _showContactProfile(context, item),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _ContactAvatar(
+                name: displayName,
+                imageUrl: item.contact?.profilePictureUrl,
+              ),
+              Positioned(
+                right: -4,
+                bottom: -3,
+                child: CircleAvatar(
+                  radius: 10,
+                  backgroundColor: Colors.white,
+                  child: Icon(_channelIcon(item.channel),
+                      size: 13, color: _channelColor(item.channel)),
+                ),
+              ),
+              if (linked)
+                const Positioned(
+                  left: -3,
+                  bottom: -2,
+                  child: _LinkedBadge(),
+                ),
+            ],
+          ),
+        ),
+        title: Row(children: [
+          Expanded(
+            child: Text(
+              displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight:
+                    item.unreadCount > 0 ? FontWeight.w800 : FontWeight.w700,
+              ),
+            ),
+          ),
+          if (item.failedCount > 0)
+            const Icon(Icons.error_outline, color: Colors.red, size: 18),
+        ]),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              item.lastMessage ?? _messageTypeLabel(item.lastMessageType),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+            Wrap(
+              spacing: 5,
+              runSpacing: 3,
+              children: [
+                _TinyBadge(
+                  label: _channelLabel(item.channel),
+                  color: color,
+                  icon: _channelIcon(item.channel),
+                ),
+                _TinyBadge(
+                  label: _statusLabel(item.status),
+                  color: _statusColor(item.status),
+                  icon: Icons.radio_button_checked,
+                ),
+                if (linked)
+                  const _TinyBadge(
+                    label: 'مربوط',
+                    color: Color(0xFF1D9BF0),
+                    icon: Icons.verified_user_outlined,
+                  ),
+              ],
+            ),
+          ],
+        ),
+        trailing: SizedBox(
+          width: 66,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _shortDate(item.lastMessageAt),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 4),
+              if (item.unreadCount > 0)
+                Badge(label: Text('${item.unreadCount}'))
+              else
+                IconButton(
+                  tooltip: 'عرض البروفايل',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _showContactProfile(context, item),
+                  icon: const Icon(Icons.info_outline, size: 20),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TinyBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  final IconData icon;
+  const _TinyBadge({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .10),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 12),
+            const SizedBox(width: 3),
+            Text(label,
+                style: TextStyle(
+                    color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
+}
+
+void _showContactProfile(BuildContext context, WhatsAppConversation item) {
+  final contact = item.contact;
+  final displayName =
+      contact?.name?.isNotEmpty == true ? contact!.name! : item.phone;
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (_) => Directionality(
+      textDirection: TextDirection.rtl,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              _ContactAvatar(
+                name: displayName,
+                imageUrl: contact?.profilePictureUrl,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(displayName,
+                        style: Theme.of(context).textTheme.titleMedium),
+                    Text('${_channelLabel(item.channel)} • ${item.phone}',
+                        textDirection: TextDirection.ltr),
+                  ],
+                ),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            _ProfileRow(
+                icon: Icons.forum_outlined,
+                label: 'حالة المحادثة',
+                value: _statusLabel(item.status)),
+            _ProfileRow(
+                icon: Icons.schedule,
+                label: 'آخر رسالة',
+                value: _shortDate(item.lastMessageAt).isEmpty
+                    ? 'غير متاح'
+                    : _shortDate(item.lastMessageAt)),
+            _ProfileRow(
+                icon: Icons.notifications_active_outlined,
+                label: 'غير مقروء',
+                value: '${item.unreadCount}'),
+            _ProfileRow(
+                icon: Icons.error_outline,
+                label: 'رسائل فاشلة',
+                value: '${item.failedCount}'),
+            _ProfileRow(
+              icon: Icons.link,
+              label: 'الربط',
+              value: contact?.customerId != null
+                  ? 'زبون #${contact!.customerId}'
+                  : contact?.supplierId != null
+                      ? 'تاجر #${contact!.supplierId}'
+                      : 'غير مربوط',
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Get.toNamed('/WhatsAppConversation/${item.id}',
+                      parameters: {'channel': item.channel});
+                },
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('فتح المحادثة'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _ProfileRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _ProfileRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(children: [
+          Icon(icon, size: 18, color: const Color(0xFF52635F)),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 105,
+            child: Text(label,
+                style: const TextStyle(
+                    color: Color(0xFF52635F), fontWeight: FontWeight.w600)),
+          ),
+          Expanded(child: Text(value, textDirection: TextDirection.rtl)),
+        ]),
+      );
 }
 
 class _TemplatesTab extends StatelessWidget {
@@ -919,6 +1318,19 @@ class _SocialChannelSettingsCard extends StatelessWidget {
                   ),
                 ),
               ),
+            if (channel.health.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: channel.health.entries
+                    .map((entry) => _HealthChip(
+                          label: _healthLabel(entry.key),
+                          ok: entry.value,
+                        ))
+                    .toList(),
+              ),
+            ],
             const SizedBox(height: 8),
             Wrap(
               spacing: 6,
@@ -952,6 +1364,40 @@ class _SocialChannelSettingsCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _HealthChip extends StatelessWidget {
+  final String label;
+  final bool ok;
+  const _HealthChip({required this.label, required this.ok});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: ok ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: ok ? const Color(0xFFA5D6A7) : const Color(0xFFFFCDD2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              ok ? Icons.check_circle : Icons.error_outline,
+              size: 14,
+              color: ok ? Colors.green : Colors.red,
+            ),
+            const SizedBox(width: 4),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: ok ? Colors.green.shade800 : Colors.red.shade800)),
+          ],
+        ),
+      );
 }
 
 class _StateMessage extends StatelessWidget {
@@ -1015,26 +1461,22 @@ class _ContactAvatar extends StatelessWidget {
   }
 }
 
-class _ChannelDot extends StatelessWidget {
-  final String channel;
-  const _ChannelDot({required this.channel});
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-        message: _channelLabel(channel),
-        child: Icon(
-          _channelIcon(channel),
-          size: 16,
-          color: _channelColor(channel),
-        ),
-      );
-}
-
 String _shortDate(DateTime? date) {
   if (date == null) return '';
   final local = date.toLocal();
   return '${local.day}/${local.month} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
 }
+
+String _messageTypeLabel(String? type) =>
+    const {
+      'image': 'صورة',
+      'audio': 'رسالة صوتية',
+      'video': 'فيديو',
+      'document': 'مستند',
+      'interactive': 'منتجات',
+      'template': 'قالب',
+    }[type] ??
+    'لا توجد رسائل';
 
 String _statusLabel(String status) =>
     const {
@@ -1077,6 +1519,16 @@ String _avatarInitial(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? '?' : trimmed.characters.first;
 }
+
+String _healthLabel(String key) =>
+    const {
+      'token': 'التوكن',
+      'identity': 'الهوية',
+      'webhook': 'Webhook',
+      'profile': 'البروفايل',
+      'public_url': 'الرابط العام',
+    }[key] ??
+    key;
 
 String _detailLabel(String key) =>
     const {

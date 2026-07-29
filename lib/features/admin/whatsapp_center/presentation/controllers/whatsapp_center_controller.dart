@@ -33,6 +33,7 @@ class WhatsAppCenterController extends GetxController {
   final canManageWhatsAppEmployees = false.obs;
   final qrBytes = Rxn<Uint8List>();
   final selectedStatus = 'all'.obs;
+  final selectedQuickFilter = 'all'.obs;
   final selectedChannel = 'all'.obs;
   final searchController = TextEditingController();
   final testPhoneController = TextEditingController();
@@ -89,6 +90,7 @@ class WhatsAppCenterController extends GetxController {
           search: searchController.text,
           status: selectedStatus.value,
           channel: selectedChannel.value,
+          quickFilter: selectedQuickFilter.value,
         );
         final block = result['conversations'];
         final data = block is Map && block['data'] is List
@@ -97,6 +99,23 @@ class WhatsAppCenterController extends GetxController {
         conversations.assignAll(data.whereType<Map>().map((e) =>
             WhatsAppConversation.fromJson(Map<String, dynamic>.from(e))));
       });
+
+  Future<void> selectStatus(String status) async {
+    selectedStatus.value = status;
+    await loadConversations();
+  }
+
+  Future<void> selectQuickFilter(String filter) async {
+    selectedQuickFilter.value = filter;
+    await loadConversations();
+  }
+
+  Future<void> clearConversationFilters() async {
+    selectedStatus.value = 'all';
+    selectedQuickFilter.value = 'all';
+    searchController.clear();
+    await loadConversations();
+  }
 
   Future<void> selectChannel(String channel) async {
     selectedChannel.value = channel;

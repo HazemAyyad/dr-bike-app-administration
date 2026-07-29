@@ -5,6 +5,8 @@ class WhatsAppDashboard {
       unreadConversations,
       messagesToday,
       failedMessagesToday;
+  final List<SocialChannelStats> channelStats;
+
   const WhatsAppDashboard({
     required this.totalContacts,
     required this.totalConversations,
@@ -12,7 +14,9 @@ class WhatsAppDashboard {
     required this.unreadConversations,
     required this.messagesToday,
     required this.failedMessagesToday,
+    this.channelStats = const [],
   });
+
   factory WhatsAppDashboard.fromJson(Map<String, dynamic> j) =>
       WhatsAppDashboard(
         totalContacts: _int(j['total_contacts']),
@@ -21,6 +25,39 @@ class WhatsAppDashboard {
         unreadConversations: _int(j['unread_conversations']),
         messagesToday: _int(j['messages_today']),
         failedMessagesToday: _int(j['failed_messages_today']),
+        channelStats: (j['channel_stats'] is List
+                ? j['channel_stats'] as List
+                : const [])
+            .whereType<Map>()
+            .map((item) =>
+                SocialChannelStats.fromJson(Map<String, dynamic>.from(item)))
+            .toList(),
+      );
+}
+
+class SocialChannelStats {
+  final String channel;
+  final int contacts, conversations, open, unread, messagesToday, failedToday;
+
+  const SocialChannelStats({
+    required this.channel,
+    required this.contacts,
+    required this.conversations,
+    required this.open,
+    required this.unread,
+    required this.messagesToday,
+    required this.failedToday,
+  });
+
+  factory SocialChannelStats.fromJson(Map<String, dynamic> json) =>
+      SocialChannelStats(
+        channel: json['channel']?.toString() ?? '',
+        contacts: _int(json['contacts']),
+        conversations: _int(json['conversations']),
+        open: _int(json['open']),
+        unread: _int(json['unread']),
+        messagesToday: _int(json['messages_today']),
+        failedToday: _int(json['failed_today']),
       );
 }
 
@@ -47,11 +84,12 @@ class WhatsAppContact {
 }
 
 class WhatsAppConversation {
-  final int id, unreadCount;
+  final int id, unreadCount, failedCount;
   final String phone, status, channel;
-  final String? lastMessage;
+  final String? lastMessage, lastMessageType;
   final DateTime? lastMessageAt;
   final WhatsAppContact? contact;
+
   const WhatsAppConversation({
     required this.id,
     this.channel = 'whatsapp',
@@ -60,8 +98,11 @@ class WhatsAppConversation {
     this.lastMessage,
     this.lastMessageAt,
     required this.unreadCount,
+    this.failedCount = 0,
+    this.lastMessageType,
     this.contact,
   });
+
   factory WhatsAppConversation.fromJson(Map<String, dynamic> j) =>
       WhatsAppConversation(
         id: _int(j['id']),
@@ -72,6 +113,8 @@ class WhatsAppConversation {
         lastMessageAt:
             DateTime.tryParse(j['last_message_at']?.toString() ?? ''),
         unreadCount: _int(j['unread_count']),
+        failedCount: _int(j['failed_count']),
+        lastMessageType: j['last_message_type']?.toString(),
         contact: j['contact'] is Map
             ? WhatsAppContact.fromJson(
                 Map<String, dynamic>.from(j['contact'] as Map))
@@ -226,6 +269,7 @@ class SocialChannelSetting {
   final String? identifier, url;
   final bool configured;
   final Map<String, dynamic> details;
+  final Map<String, bool> health;
 
   const SocialChannelSetting({
     required this.id,
@@ -235,6 +279,7 @@ class SocialChannelSetting {
     this.url,
     required this.configured,
     required this.details,
+    this.health = const {},
   });
 
   factory SocialChannelSetting.fromJson(Map<String, dynamic> json) =>
@@ -247,6 +292,11 @@ class SocialChannelSetting {
         configured: json['configured'] == true || json['configured'] == 1,
         details: json['details'] is Map
             ? Map<String, dynamic>.from(json['details'] as Map)
+            : const {},
+        health: json['health'] is Map
+            ? Map<String, bool>.fromEntries((json['health'] as Map).entries.map(
+                (entry) => MapEntry(entry.key.toString(),
+                    entry.value == true || entry.value == 1)))
             : const {},
       );
 }
