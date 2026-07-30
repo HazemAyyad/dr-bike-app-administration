@@ -16,8 +16,11 @@ import '../../../sales/data/models/product_model.dart';
 import '../../presentation/controllers/stock_controller.dart';
 import '../models/all_stock_products_model.dart';
 import '../models/stock_products_page_result.dart';
+import '../models/stock_images_export_model.dart';
 import '../models/product_details_model.dart';
 import '../models/product_tag_model.dart';
+import '../models/quick_edit_product_model.dart';
+import '../models/quick_edit_products_page_result.dart';
 import '../../domain/product_location_utils.dart';
 import '../../domain/stock_product_filters.dart';
 import '../models/offer_package_model.dart';
@@ -32,11 +35,16 @@ class StockDatasource {
 
   StockDatasource({required this.api});
 
-  Future<Uint8List> exportProductsCsv() async {
+  Future<Uint8List> exportProductsCsv({StockProductFilters? filters}) async {
     try {
       final response = await api.get(
         EndPoints.exportProductsCsv,
-        options: Options(responseType: ResponseType.bytes),
+        queryParameters: filters?.toQueryParams(page: 1, perPage: 1),
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(minutes: 5),
+          sendTimeout: const Duration(minutes: 5),
+        ),
       );
       final data = response.data;
       if (data is Uint8List) {
@@ -48,6 +56,188 @@ class StockDatasource {
       throw ServerException(
         ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
       );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> startProductsImagesZipExport({
+    StockProductFilters? filters,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.productsImagesZipExports,
+        data: filters?.toQueryParams(page: 1, perPage: 1) ?? {},
+      );
+      final raw = response.data;
+      if (raw is Map) {
+        return Map<String, dynamic>.from(raw);
+      }
+      throw ServerException(
+        ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> latestProductsImagesZipExport() async {
+    try {
+      final response = await api.get(EndPoints.latestProductsImagesZipExport);
+      final raw = response.data;
+      if (raw is! Map) {
+        return null;
+      }
+      final export = raw['export'];
+      return export is Map ? Map<String, dynamic>.from(export) : null;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<StockImagesExportModel>> listProductsImagesZipExports({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.listProductsImagesZipExports,
+        queryParameters: {
+          'page': page,
+          'per_page': perPage,
+        },
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        return [];
+      }
+      final exports = raw['exports'];
+      if (exports is! List) {
+        return [];
+      }
+      return exports
+          .whereType<Map>()
+          .map((e) => StockImagesExportModel.fromJson(
+                Map<String, dynamic>.from(e),
+              ))
+          .toList();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> productsImagesZipExportStatus({
+    required String exportId,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.productsImagesZipExport(exportId),
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        return null;
+      }
+      final export = raw['export'];
+      return export is Map ? Map<String, dynamic>.from(export) : null;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<Uint8List> downloadProductsImagesZipExport({
+    required String exportId,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.productsImagesZipExportDownload(exportId),
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(minutes: 10),
+          sendTimeout: const Duration(minutes: 10),
+        ),
+      );
+      final data = response.data;
+      if (data is Uint8List) {
+        return data;
+      }
+      if (data is List<int>) {
+        return Uint8List.fromList(data);
+      }
+      throw ServerException(
+        ErrorModel(errorMessage: 'Invalid response', status: 500, data: {}),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> deleteProductsImagesZipExport({
+    required String exportId,
+  }) async {
+    try {
+      final response = await api.delete(
+        EndPoints.productsImagesZipExportDelete(exportId),
+      );
+      final raw = response.data;
+      if (raw is! Map) {
+        return null;
+      }
+      final export = raw['export'];
+      return export is Map ? Map<String, dynamic>.from(export) : null;
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -74,6 +264,117 @@ class StockDatasource {
       endpoint: EndPoints.previewImportProductsCsv,
       filePath: filePath,
     );
+  }
+
+  Future<QuickEditProductsPageResult> getQuickEditProducts({
+    required int page,
+    int perPage = 60,
+    StockProductFilters? filters,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.quickEditProducts,
+        queryParameters: filters?.toQueryParams(page: page, perPage: perPage) ??
+            {'page': page, 'per_page': perPage},
+      );
+      final raw = response.data;
+      final map =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final products = mapListFromResponseKey(
+        map,
+        'products',
+        (Map<String, dynamic> m) => QuickEditProductModel.fromJson(m),
+      );
+      final p = map['pagination'];
+      final pg = p is Map ? Map<String, dynamic>.from(p) : <String, dynamic>{};
+      return QuickEditProductsPageResult(
+        products: products,
+        currentPage: asInt(pg['current_page'], page),
+        lastPage: asInt(pg['last_page'], 1),
+        total: asInt(pg['total'], products.length),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<QuickEditProductModel> updateQuickEditProduct(
+    QuickEditProductModel product, {
+    bool markToday = false,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.quickEditProductsUpdate,
+        data: product.toUpdateJson(markToday: markToday),
+      );
+      final raw = response.data;
+      final map =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final productMap = map['product'];
+      if (productMap is Map) {
+        return QuickEditProductModel.fromJson(
+          Map<String, dynamic>.from(productMap),
+        );
+      }
+      throw ServerException(
+        ErrorModel(errorMessage: 'Invalid response', status: 500, data: map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
+  Future<QuickEditProductModel> markQuickEditProduct({
+    required String productId,
+    required bool marked,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.quickEditProductsMark,
+        data: {'product_id': productId, 'marked': marked},
+      );
+      final raw = response.data;
+      final map =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final productMap = map['product'];
+      if (productMap is Map) {
+        return QuickEditProductModel.fromJson(
+          Map<String, dynamic>.from(productMap),
+        );
+      }
+      throw ServerException(
+        ErrorModel(errorMessage: 'Invalid response', status: 500, data: map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
   }
 
   Future<Map<String, dynamic>> _sendProductsCsv({

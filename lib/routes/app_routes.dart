@@ -73,6 +73,7 @@ class AppRoutes {
   // Maintenance Screen
   static const MAINTENANCESCREEN = '/MaintenancesScreen';
   static const NEWMAINTENANCESCREEN = '/NewMaintenanceScreen';
+  static const MAINTENANCEDAILYADMINSCREEN = '/MaintenanceDailyAdminScreen';
 
   // Sales
   static const SALESSCREEN = '/SalesScreen';
@@ -106,6 +107,7 @@ class AppRoutes {
 
   // Stock
   static const STOCKSCREEN = '/StockScreen';
+  static const STOCKIMAGESEXPORTSSCREEN = '/StockImagesExportsScreen';
   static const PRODUCTDETAILSSCREEN = '/ProductDetailsScreen';
   static const PRODUCTSTOCKMOVEMENTSSCREEN = '/ProductStockMovementsScreen';
   static const PRODUCTASSEMBLYOPERATIONSSCREEN =

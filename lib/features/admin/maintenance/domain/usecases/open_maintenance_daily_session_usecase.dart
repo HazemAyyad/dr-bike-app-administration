@@ -8,7 +8,11 @@ class OpenMaintenanceDailySessionUsecase {
 
   OpenMaintenanceDailySessionUsecase({required this.maintenanceRepository});
 
-  Future<Either<Failure, Map<String, dynamic>>> call() {
-    return maintenanceRepository.openDailySession();
+  Future<Either<Failure, Map<String, dynamic>>> call({
+    double openingBalance = 0,
+  }) {
+    return maintenanceRepository.openDailySession(
+      openingBalance: openingBalance,
+    );
   }
 }

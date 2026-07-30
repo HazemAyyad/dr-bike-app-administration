@@ -14,6 +14,7 @@ import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../domain/usecases/get_maintenances_details_usecase.dart';
 import '../../domain/usecases/maintenance_usecase.dart';
 import '../../domain/usecases/open_maintenance_daily_session_usecase.dart';
+import '../../domain/usecases/request_maintenance_daily_session_closing_usecase.dart';
 import '../../domain/usecases/sync_maintenance_products_usecase.dart';
 import '../controllers/maintenance_controller.dart';
 
@@ -53,6 +54,10 @@ class MaintenanceBinding extends Bindings {
           maintenanceRepository: Get.find<MaintenanceImplement>(),
         ),
         openMaintenanceDailySessionUsecase: OpenMaintenanceDailySessionUsecase(
+          maintenanceRepository: Get.find<MaintenanceImplement>(),
+        ),
+        requestMaintenanceDailySessionClosingUsecase:
+            RequestMaintenanceDailySessionClosingUsecase(
           maintenanceRepository: Get.find<MaintenanceImplement>(),
         ),
         getShownBoxUsecase: GetShownBoxUsecase(

@@ -29,9 +29,10 @@ class _AddNewCustomerScreenState extends State<AddNewCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sellerId = Get.arguments['sellerId'];
-    final employeeId = Get.arguments['employeeId'];
-    final employeeType = Get.arguments['employeeType'];
+    final args = Get.arguments is Map ? Get.arguments as Map : const {};
+    final sellerId = args['sellerId']?.toString() ?? '';
+    final employeeId = args['employeeId']?.toString() ?? '';
+    final employeeType = args['employeeType']?.toString() ?? '';
 
     return Scaffold(
       appBar: CustomAppBar(

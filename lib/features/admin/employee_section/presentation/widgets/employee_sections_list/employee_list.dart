@@ -57,6 +57,112 @@ class EmployeeList extends GetView<EmployeeSectionController> {
             await controller.deleteEmployee(employee.id.toString());
           }
         },
+        onChangePassword: () {
+          Navigator.of(ctx).pop();
+          _showChangePasswordDialog(context);
+        },
+      ),
+    );
+  }
+
+  Future<void> _showChangePasswordDialog(BuildContext context) async {
+    final formKey = GlobalKey<FormState>();
+    final isDark = ThemeService.isDark.value;
+    controller.employeePasswordController.clear();
+    controller.employeePasswordConfirmationController.clear();
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        backgroundColor: isDark ? AppColors.customGreyColor : Colors.white,
+        title: Text(
+          'changeEmployeePassword'.tr,
+          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: controller.employeePasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'newPassword'.tr,
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                ),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return 'requiredField'.tr;
+                  if (text.length < 8) return 'passwordMinLength'.tr;
+                  return null;
+                },
+              ),
+              SizedBox(height: 12.h),
+              TextFormField(
+                controller: controller.employeePasswordConfirmationController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'passwordConfirmation'.tr,
+                  prefixIcon: const Icon(Icons.lock_reset_rounded),
+                ),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) return 'requiredField'.tr;
+                  if (text != controller.employeePasswordController.text) {
+                    return 'passwordMismatch'.tr;
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('cancel'.tr),
+          ),
+          Obx(
+            () {
+              final busy = controller.isChangingEmployeePassword.value;
+              return ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.operationalPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+                onPressed: busy
+                    ? null
+                    : () async {
+                        if (!(formKey.currentState?.validate() ?? false)) {
+                          return;
+                        }
+                        final ok = await controller.changeEmployeePassword(
+                          employee.id.toString(),
+                        );
+                        if (ok && ctx.mounted) {
+                          Navigator.of(ctx).pop();
+                        }
+                      },
+                child: busy
+                    ? SizedBox(
+                        width: 18.sp,
+                        height: 18.sp,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text('save'.tr),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -272,11 +378,13 @@ class _EmployeeActionsSheet extends StatelessWidget {
     required this.employee,
     required this.onView,
     required this.onDelete,
+    required this.onChangePassword,
   });
 
   final EmployeeEntity employee;
   final VoidCallback onView;
   final VoidCallback onDelete;
+  final VoidCallback onChangePassword;
 
   @override
   Widget build(BuildContext context) {
@@ -360,6 +468,13 @@ class _EmployeeActionsSheet extends StatelessWidget {
               color: isDark ? AppColors.primaryColor : AppColors.secondaryColor,
               onTap: onView,
             ),
+            if (canManageEmployeesPasswords)
+              _ActionTile(
+                icon: Icons.lock_reset_rounded,
+                label: 'changeEmployeePassword'.tr,
+                color: AppColors.operationalPurple,
+                onTap: onChangePassword,
+              ),
             if (canDeleteEmployees)
               _ActionTile(
                 icon: Icons.delete_outline_rounded,

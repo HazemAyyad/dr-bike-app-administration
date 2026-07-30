@@ -62,6 +62,22 @@ class StockScreen extends GetView<StockController> {
                   : () => controller.startDeleteSelection(),
             );
           }),
+          Obx(() {
+            final busy = controller.isProductsCsvBusy.value;
+            return IconButton(
+              icon: busy
+                  ? SizedBox(
+                      width: 20.w,
+                      height: 20.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.folder_zip_outlined),
+              tooltip: 'downloadStockImages'.tr,
+              onPressed: busy
+                  ? null
+                  : () => Get.toNamed(AppRoutes.STOCKIMAGESEXPORTSSCREEN),
+            );
+          }),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'stockInventorySettings'.tr,
@@ -101,7 +117,10 @@ class StockScreen extends GetView<StockController> {
                 SliverToBoxAdapter(
                   child: Obx(() {
                     final tab = controller.currentTab.value;
-                    if (tab == 3 || tab == 4 || tab == 5) {
+                    if (tab == 3 ||
+                        tab == 4 ||
+                        tab == 5 ||
+                        controller.isQuickEditTab) {
                       return const SizedBox.shrink();
                     }
                     return Padding(
@@ -161,7 +180,7 @@ class StockScreen extends GetView<StockController> {
             child: const Icon(Icons.add),
           );
         }
-        if (controller.currentTab.value == 5) {
+        if (controller.currentTab.value == 5 || controller.isQuickEditTab) {
           return const SizedBox.shrink();
         }
         return StockProductsFab(

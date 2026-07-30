@@ -54,6 +54,7 @@ class DebtLedgerController extends GetxController {
   final RxBool isSaving = false.obs;
   final RxString searchQuery = ''.obs;
   final RxString selectedPeriod = 'all'.obs;
+  final RxString selectedBalanceScope = 'full'.obs;
   final RxString selectedSort = 'newest'.obs;
   final RxString selectedDebtType = 'all'.obs;
   final RxnInt selectedCategoryId = RxnInt();
@@ -432,6 +433,21 @@ class DebtLedgerController extends GetxController {
     );
   }
 
+  Future<void> openPersonAccount({
+    required int id,
+    required String name,
+    String? phone,
+    required String personType,
+  }) async {
+    currentTab.value = personType == 'customer' ? 0 : 1;
+    await _openPersonDetail(
+      id: id,
+      name: name,
+      phone: phone,
+      personType: personType,
+    );
+  }
+
   Future<void> _openPersonDetail({
     required int id,
     required String name,
@@ -490,6 +506,7 @@ class DebtLedgerController extends GetxController {
       startDate: _formatDate(customStartDate.value),
       endDate: _formatDate(customEndDate.value),
       currency: selectedCurrency.value,
+      balanceScope: selectedBalanceScope.value,
     );
     result.fold(
       (failure) => Get.snackbar('error'.tr, failure.errMessage),

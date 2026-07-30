@@ -122,7 +122,7 @@ class _HorizontalTimePickerSheetState extends State<HorizontalTimePickerSheet> {
     final idx = _hourCtrl.selectedItem;
     if (idx == _lastHourIdx) return;
     _lastHourIdx = idx;
-    HapticHelper.selection();
+    HapticHelper.selection(sound: true);
     _hour12 = idx + 1;
     _emit();
   }
@@ -132,7 +132,7 @@ class _HorizontalTimePickerSheetState extends State<HorizontalTimePickerSheet> {
     final idx = _minuteCtrl.selectedItem;
     if (idx == _lastMinuteIdx) return;
     _lastMinuteIdx = idx;
-    HapticHelper.selection();
+    HapticHelper.selection(sound: true);
     _minute = idx;
     _emit();
   }
@@ -142,7 +142,7 @@ class _HorizontalTimePickerSheetState extends State<HorizontalTimePickerSheet> {
     final idx = _ampmCtrl.selectedItem;
     if (idx == _lastAmpmIdx) return;
     _lastAmpmIdx = idx;
-    HapticHelper.selection();
+    HapticHelper.selection(sound: true);
     _isAm = idx == 0;
     _emit();
   }

@@ -395,11 +395,50 @@ class _InstantSaleProductPickerScreenState
                             final vGap = 6.h;
                             final padH = 10.w;
                             final desktop = DesktopLayout.isDesktop(context);
+                            if (!desktop) {
+                              final tileWidth = ((constraints.maxWidth -
+                                          padH * 2 -
+                                          hGap * 3) /
+                                      4)
+                                  .clamp(68.0, 96.0)
+                                  .toDouble();
+                              return GridView.builder(
+                                key: ValueKey(
+                                  'picker_grid_${searchQuery}_${controller.productsListVersion.value}',
+                                ),
+                                scrollDirection: Axis.horizontal,
+                                padding: EdgeInsets.symmetric(horizontal: padH),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 4,
+                                  mainAxisSpacing: hGap,
+                                  crossAxisSpacing: vGap,
+                                  mainAxisExtent: tileWidth,
+                                ),
+                                itemCount: total,
+                                itemBuilder: (_, i) {
+                                  if (i < packages.length) {
+                                    final pkg = packages[i];
+                                    return InstantSalePackageCard(
+                                      key: ValueKey('picker_pkg_${pkg.id}'),
+                                      package: pkg,
+                                    );
+                                  }
+                                  final product = products[i - packages.length];
+                                  return InstantSaleProductCard(
+                                    key: ValueKey('picker_${product.id}'),
+                                    product: product,
+                                    showOrderStock: !_adjustmentFlow,
+                                  );
+                                },
+                              );
+                            }
+
                             final columns = DesktopLayout.gridColumnsForWidth(
                               constraints.maxWidth - padH * 2,
-                              minTileWidth: desktop ? 190 : 152.w,
-                              min: desktop ? 4 : 2,
-                              max: desktop ? 8 : 10,
+                              minTileWidth: 190,
+                              min: 4,
+                              max: 8,
                               gap: hGap,
                             );
 

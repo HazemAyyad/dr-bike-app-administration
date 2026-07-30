@@ -207,6 +207,10 @@ class GeneralDataListController extends GetxController {
     }
     if (successCount > 0) {
       getGeneralData(loding: true);
+      _selectTabForPersonType(resolvedPersonType);
+      if (context.mounted) {
+        Get.back();
+      }
     }
   }
 
@@ -323,13 +327,13 @@ class GeneralDataListController extends GetxController {
         Future.delayed(
           const Duration(milliseconds: 500),
           () {
+            _selectTabForPersonType(resolvedPersonType);
             getGeneralData(loding: true);
           },
         );
         Future.delayed(
-          const Duration(milliseconds: 1500),
+          const Duration(milliseconds: 750),
           () {
-            Get.back();
             Get.back();
           },
         );
@@ -482,6 +486,11 @@ class GeneralDataListController extends GetxController {
       return args['employeeType'].toString();
     }
     return resolvedPersonType == 'seller' ? 'seller' : 'customer';
+  }
+
+  void _selectTabForPersonType(String personType) {
+    currentTab.value = personType == 'seller' ? 0 : 1;
+    update();
   }
 
   String _categoryFromPersonData(

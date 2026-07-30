@@ -493,6 +493,8 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         AppUpdatePlatformSettings.defaults('android');
     var ios = service.appUpdateSettings['ios'] ??
         AppUpdatePlatformSettings.defaults('ios');
+    var windows = service.appUpdateSettings['windows'] ??
+        AppUpdatePlatformSettings.defaults('windows');
 
     final androidVersionCtrl =
         TextEditingController(text: android.latestVersion);
@@ -512,6 +514,16 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     final iosUrlCtrl = TextEditingController(text: ios.url);
     final iosTitleCtrl = TextEditingController(text: ios.title);
     final iosMessageCtrl = TextEditingController(text: ios.message);
+
+    final windowsVersionCtrl =
+        TextEditingController(text: windows.latestVersion);
+    final windowsLatestBuildCtrl =
+        TextEditingController(text: '${windows.latestBuild}');
+    final windowsMinimumBuildCtrl =
+        TextEditingController(text: '${windows.minimumBuild}');
+    final windowsUrlCtrl = TextEditingController(text: windows.url);
+    final windowsTitleCtrl = TextEditingController(text: windows.title);
+    final windowsMessageCtrl = TextEditingController(text: windows.message);
 
     const dialogBg = Color(0xFFF3F4F6);
     const textPrimary = Color(0xFF1F2937);
@@ -567,6 +579,21 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
                     onForceChanged: (v) => setDialogState(
                         () => ios = ios.copyWith(forceUpdate: v)),
                   ),
+                  SizedBox(height: 12.h),
+                  _AppUpdatePlatformEditor(
+                    title: 'Windows',
+                    settings: windows,
+                    versionCtrl: windowsVersionCtrl,
+                    latestBuildCtrl: windowsLatestBuildCtrl,
+                    minimumBuildCtrl: windowsMinimumBuildCtrl,
+                    urlCtrl: windowsUrlCtrl,
+                    titleCtrl: windowsTitleCtrl,
+                    messageCtrl: windowsMessageCtrl,
+                    onActiveChanged: (v) => setDialogState(
+                        () => windows = windows.copyWith(isActive: v)),
+                    onForceChanged: (v) => setDialogState(
+                        () => windows = windows.copyWith(forceUpdate: v)),
+                  ),
                 ],
               ),
             ),
@@ -601,6 +628,12 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
         iosUrlCtrl,
         iosTitleCtrl,
         iosMessageCtrl,
+        windowsVersionCtrl,
+        windowsLatestBuildCtrl,
+        windowsMinimumBuildCtrl,
+        windowsUrlCtrl,
+        windowsTitleCtrl,
+        windowsMessageCtrl,
       ]);
       return;
     }
@@ -629,6 +662,18 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
           ? 'يرجى تحديث التطبيق للحصول على آخر التحسينات.'
           : iosMessageCtrl.text.trim(),
     );
+    windows = windows.copyWith(
+      latestVersion: windowsVersionCtrl.text.trim(),
+      latestBuild: int.tryParse(windowsLatestBuildCtrl.text.trim()) ?? 0,
+      minimumBuild: int.tryParse(windowsMinimumBuildCtrl.text.trim()) ?? 0,
+      url: windowsUrlCtrl.text.trim(),
+      title: windowsTitleCtrl.text.trim().isEmpty
+          ? 'تحديث جديد متاح'
+          : windowsTitleCtrl.text.trim(),
+      message: windowsMessageCtrl.text.trim().isEmpty
+          ? 'يرجى تحديث التطبيق للحصول على آخر التحسينات.'
+          : windowsMessageCtrl.text.trim(),
+    );
     _disposeAppUpdateControllers([
       androidVersionCtrl,
       androidLatestBuildCtrl,
@@ -642,11 +687,18 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       iosUrlCtrl,
       iosTitleCtrl,
       iosMessageCtrl,
+      windowsVersionCtrl,
+      windowsLatestBuildCtrl,
+      windowsMinimumBuildCtrl,
+      windowsUrlCtrl,
+      windowsTitleCtrl,
+      windowsMessageCtrl,
     ]);
 
     final ok = await service.updateAppUpdateSettings(
       android: android,
       ios: ios,
+      windows: windows,
     );
     if (!mounted) return;
     if (ok) {
@@ -1898,7 +1950,11 @@ class _AppVersionSummaryTile extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            row.platform == 'ios' ? Icons.phone_iphone : Icons.android,
+            row.platform == 'ios'
+                ? Icons.phone_iphone
+                : row.platform == 'windows'
+                    ? Icons.desktop_windows_outlined
+                    : Icons.android,
             color: const Color(0xFF2563EB),
             size: 22.sp,
           ),

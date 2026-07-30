@@ -37,6 +37,10 @@ class PeriodFilterSheet extends StatelessWidget {
       {'key': 'given', 'label': 'gave'.tr},
       {'key': 'settled', 'label': 'ledgerDebtTypeSettled'.tr},
     ];
+    final balanceScopeOptions = <Map<String, String>>[
+      {'key': 'full', 'label': 'ledgerBalanceScopeFull'.tr},
+      {'key': 'period', 'label': 'ledgerBalanceScopePeriod'.tr},
+    ];
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -146,6 +150,24 @@ class PeriodFilterSheet extends StatelessWidget {
                         ],
                       );
                     }),
+                    SizedBox(height: 10.h),
+                    Obx(
+                      () => _FilterCardSection(
+                        title: 'ledgerBalanceScope'.tr,
+                        children: balanceScopeOptions
+                            .map(
+                              (option) => _FilterOptionTile(
+                                label: option['label']!,
+                                selected:
+                                    controller.selectedBalanceScope.value ==
+                                        option['key'],
+                                onTap: () => controller.selectedBalanceScope
+                                    .value = option['key']!,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
                     SizedBox(height: 10.h),
                     Obx(
                       () => _FilterCardSection(

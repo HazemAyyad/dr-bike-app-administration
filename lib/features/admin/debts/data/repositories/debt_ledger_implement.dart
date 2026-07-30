@@ -226,6 +226,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    String? balanceScope,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -237,6 +238,7 @@ class DebtLedgerImplement implements DebtLedgerRepository {
         startDate: startDate,
         endDate: endDate,
         currency: currency,
+        balanceScope: balanceScope,
       );
       if (data['status'] != 'success') {
         return Left(ServerFailure(

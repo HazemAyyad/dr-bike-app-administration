@@ -26,9 +26,9 @@ class StockProductGridLayout {
     return DesktopLayout.gridColumns(
       context,
       horizontalPadding: 48.w,
-      minTileWidth: desktop ? 175 : 120,
-      min: desktop ? 4 : 2,
-      max: desktop ? 8 : 10,
+      minTileWidth: desktop ? 175 : 105,
+      min: desktop ? 4 : 3,
+      max: desktop ? 8 : 3,
       gap: 8.w,
     );
   }

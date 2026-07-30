@@ -30,6 +30,7 @@ import '../../domain/entities/employee_entity.dart';
 import '../../domain/entities/working_times_entity.dart';
 import '../../domain/usecases/approve_employee_order_usecase.dart';
 import '../../domain/usecases/cancel_log_usecase.dart';
+import '../../domain/usecases/change_employee_password_usecase.dart';
 import '../../domain/usecases/delete_employee_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/employee_advances_usecase.dart';
@@ -64,6 +65,7 @@ class EmployeeSectionController extends GetxController
   final GetLogsUsecase getLogsUsecase;
   final CancelLogUsecase cancelLogUsecase;
   final DeleteEmployeeUsecase deleteEmployeeUsecase;
+  final ChangeEmployeePasswordUsecase changeEmployeePasswordUsecase;
   final GetAdminUsersUsecase getAdminUsersUsecase;
   final ManageAdminUserUsecase manageAdminUserUsecase;
   final EmployeeService employeeService;
@@ -85,6 +87,7 @@ class EmployeeSectionController extends GetxController
     required this.getLogsUsecase,
     required this.cancelLogUsecase,
     required this.deleteEmployeeUsecase,
+    required this.changeEmployeePasswordUsecase,
     required this.getAdminUsersUsecase,
     required this.manageAdminUserUsecase,
     required this.employeeService,
@@ -510,6 +513,11 @@ class EmployeeSectionController extends GetxController
   }
 
   final RxBool isDeletingEmployee = false.obs;
+  final RxBool isChangingEmployeePassword = false.obs;
+  final TextEditingController employeePasswordController =
+      TextEditingController();
+  final TextEditingController employeePasswordConfirmationController =
+      TextEditingController();
 
   /// Soft-deletes an employee on the backend and removes them from the
   /// local cached lists so the UI reflects the change immediately.
@@ -548,6 +556,43 @@ class EmployeeSectionController extends GetxController
       );
     } finally {
       isDeletingEmployee.value = false;
+    }
+  }
+
+  Future<bool> changeEmployeePassword(String employeeId) async {
+    isChangingEmployeePassword.value = true;
+    try {
+      final result = await changeEmployeePasswordUsecase.call(
+        employeeId: employeeId,
+        password: employeePasswordController.text,
+        passwordConfirmation: employeePasswordConfirmationController.text,
+      );
+      return result.fold(
+        (failure) {
+          Get.snackbar(
+            'error'.tr,
+            failure.errMessage,
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return false;
+        },
+        (message) {
+          employeePasswordController.clear();
+          employeePasswordConfirmationController.clear();
+          Get.snackbar(
+            'success'.tr,
+            message.isNotEmpty
+                ? message
+                : 'employeePasswordChangedSuccessfully'.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: const Color(0xFFE8F5E9),
+            colorText: const Color(0xFF1B5E20),
+          );
+          return true;
+        },
+      );
+    } finally {
+      isChangingEmployeePassword.value = false;
     }
   }
 
@@ -1183,6 +1228,8 @@ class EmployeeSectionController extends GetxController
   @override
   void onClose() {
     employeeNameController.dispose();
+    employeePasswordController.dispose();
+    employeePasswordConfirmationController.dispose();
     paySalaryController.dispose();
     rejectionReasonController.dispose();
     addRegularWorkingHoursController.dispose();

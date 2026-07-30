@@ -8,11 +8,10 @@ import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/custom_dropdown_field.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
-import '../../../../../core/helpers/custom_calendar.dart';
 import '../../../../../core/helpers/custom_chechbox.dart';
 import '../../../../../core/helpers/custom_text_field.dart';
-import '../../../../../core/helpers/custom_time_picker.dart';
 import '../../../../../core/helpers/show_image_or_video.dart';
+import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../whatsapp_center/presentation/views/whatsapp_camera_screen.dart';
@@ -59,12 +58,12 @@ class NewMaintenanceScreen extends StatelessWidget {
                         Expanded(
                           child: CustomCheckBox(
                             title: 'seller'.tr,
-                            value: RxBool(
-                                !controller.selectedSellers.value == true),
+                            value: RxBool(controller.selectedSellers.value),
                             onChanged: (val) {
                               controller.getAllCustomersAndSellers();
                               if (!controller.isEdit.value) {
-                                controller.selectedSellers.value = false;
+                                controller.selectedSellers.value = true;
+                                controller.partnerIdController.clear();
                               }
                             },
                           ),
@@ -72,12 +71,12 @@ class NewMaintenanceScreen extends StatelessWidget {
                         Expanded(
                           child: CustomCheckBox(
                             title: 'customer'.tr,
-                            value: RxBool(
-                                !controller.selectedSellers.value == false),
+                            value: RxBool(!controller.selectedSellers.value),
                             onChanged: (val) {
                               controller.getAllCustomersAndSellers();
                               if (!controller.isEdit.value) {
-                                controller.selectedSellers.value = true;
+                                controller.selectedSellers.value = false;
+                                controller.partnerIdController.clear();
                               }
                             },
                           ),
@@ -144,35 +143,7 @@ class NewMaintenanceScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 10.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomCalendar(
-                          isRequired: true,
-                          label: 'deliveryDate',
-                          isVisible: controller.isCalendarVisible,
-                          onTap: () {
-                            controller.isCalendarVisible.value =
-                                !controller.isCalendarVisible.value;
-                          },
-                          selectedDay: controller.deliveryDate,
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: CustomTimePicker(
-                          label: 'deliveryTime',
-                          isRequired: true,
-                          isVisible: controller.isTimeVisible,
-                          onTap: () {
-                            controller.isTimeVisible.value =
-                                !controller.isTimeVisible.value;
-                          },
-                          selectedTime: controller.deliveryTime,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _MaintenanceDeliveryDateTimeFields(controller: controller),
                   SizedBox(height: 10.h),
                   CustomTextField(
                     validator: (value) => null,
@@ -215,6 +186,111 @@ class NewMaintenanceScreen extends StatelessWidget {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceDeliveryDateTimeFields extends StatelessWidget {
+  const _MaintenanceDeliveryDateTimeFields({required this.controller});
+
+  final MaintenanceController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'deliveryDate'.tr,
+          style: TextStyle(
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w600,
+            color: AppColors.operationalNavy,
+          ),
+        ),
+        SizedBox(height: 6.h),
+        Obx(
+          () => Row(
+            children: [
+              Expanded(
+                child: _MaintenancePickerTile(
+                  icon: Icons.calendar_today_outlined,
+                  value: showData(controller.deliveryDate.value),
+                  onTap: () => controller.pickDeliveryDate(context),
+                ),
+              ),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: _MaintenancePickerTile(
+                  icon: Icons.access_time_rounded,
+                  value: _formatTime(controller.deliveryTime.value),
+                  onTap: () => controller.pickDeliveryTime(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(TimeOfDay time) {
+    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+    final period = time.period == DayPeriod.am ? 'morning'.tr : 'evening'.tr;
+    return '${hour.toString().padLeft(2, '0')}:'
+        '${time.minute.toString().padLeft(2, '0')} $period';
+  }
+}
+
+class _MaintenancePickerTile extends StatelessWidget {
+  const _MaintenancePickerTile({
+    required this.icon,
+    required this.value,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.whiteColor,
+      borderRadius: BorderRadius.circular(10.r),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10.r),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: AppColors.operationalCardBorder),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 18.sp,
+                color: AppColors.operationalPurple,
+              ),
+              SizedBox(width: 6.w),
+              Expanded(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: AppColors.operationalNavy,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

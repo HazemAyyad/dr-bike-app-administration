@@ -167,6 +167,7 @@ class DebtLedgerDatasource {
     String? startDate,
     String? endDate,
     String? currency,
+    String? balanceScope,
   }) async {
     try {
       final response = await api.get(
@@ -177,6 +178,8 @@ class DebtLedgerDatasource {
           if (startDate != null) 'start_date': startDate,
           if (endDate != null) 'end_date': endDate,
           if (currency != null && currency.isNotEmpty) 'currency': currency,
+          if (balanceScope != null && balanceScope.isNotEmpty)
+            'balance_scope': balanceScope,
         },
       );
       return response.data as Map<String, dynamic>;

@@ -2889,13 +2889,16 @@ class SalesController extends GetxController
       }
     }
 
+    final isEditingInstantSale = activeEditInstantSaleId.value != null;
     final buyerPayload = <String, dynamic>{
       'buyer_type': invoice.buyerType,
       'buyer_name': invoice.buyerName,
-      'payment_box_id': invoice.paymentBoxId,
-      'payment_box_name': invoice.paymentBoxName,
       'payment_box_value': invoice.paymentBoxValue,
     };
+    if (!isEditingInstantSale) {
+      buyerPayload['payment_box_id'] = invoice.paymentBoxId;
+      buyerPayload['payment_box_name'] = invoice.paymentBoxName;
+    }
     if (invoice.sellerId != null) {
       buyerPayload['seller_id'] = invoice.sellerId;
     } else if (invoice.buyerId != null) {
@@ -2970,11 +2973,11 @@ class SalesController extends GetxController
   void applySuspendedPaymentToController(PaymentController payment) {
     if (_paymentBoxId != null && _paymentBoxId!.isNotEmpty) {
       payment.boxIdController.text = _paymentBoxId!;
-      if (_paymentBoxValue != null && _paymentBoxValue!.isNotEmpty) {
-        payment.cashValueController.text =
-            SalesAmountFormat.display(double.tryParse(_paymentBoxValue!) ?? 0);
-        _instantSalePaymentAmountTouched = true;
-      }
+    }
+    if (_paymentBoxValue != null && _paymentBoxValue!.isNotEmpty) {
+      payment.cashValueController.text =
+          SalesAmountFormat.display(double.tryParse(_paymentBoxValue!) ?? 0);
+      _instantSalePaymentAmountTouched = true;
     }
     final buyerId = _paymentBuyerId;
     final sellerId = _paymentSellerId;
@@ -3030,12 +3033,8 @@ class SalesController extends GetxController
     final boxName = result['payment_box_name']?.toString();
     _paymentBoxName = (boxName != null && boxName.isNotEmpty) ? boxName : null;
     final boxValue = result['payment_box_value']?.toString();
-    if (_paymentBoxId != null && _paymentBoxId!.isNotEmpty) {
-      _paymentBoxValue =
-          (boxValue != null && boxValue.isNotEmpty) ? boxValue : '0';
-    } else {
-      _paymentBoxValue = null;
-    }
+    _paymentBoxValue =
+        (boxValue != null && boxValue.isNotEmpty) ? boxValue : null;
     _syncPickerPartnerObservables();
     syncPickerPartnerFromPayment();
   }

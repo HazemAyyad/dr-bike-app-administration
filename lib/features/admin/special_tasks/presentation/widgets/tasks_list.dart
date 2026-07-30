@@ -277,25 +277,50 @@ class _TransferWeekDayPicker extends StatelessWidget {
                   controller.selectedDay.value,
                   day,
                 );
+                final isNextWeek = controller.isNextTransferWeekDay(day);
+                final accentColor =
+                    isNextWeek ? Colors.orange : AppColors.primaryColor;
+                final backgroundColor = isNextWeek
+                    ? Colors.orange.withValues(alpha: 0.12)
+                    : AppColors.whiteColor;
                 return ChoiceChip(
-                  label: Text(
-                    DateFormat('EEEE', Get.locale?.languageCode).format(day),
+                  label: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('EEEE', Get.locale?.languageCode)
+                            .format(day),
+                      ),
+                      Text(
+                        DateFormat('d/M').format(day),
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                   selected: selected,
                   onSelected: (_) => controller.selectTransferWeekDay(day),
-                  selectedColor: AppColors.primaryColor,
-                  backgroundColor: AppColors.whiteColor,
+                  selectedColor: accentColor,
+                  backgroundColor: backgroundColor,
                   labelStyle: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w700,
-                    color: selected ? Colors.white : AppColors.operationalNavy,
+                    color: selected
+                        ? Colors.white
+                        : isNextWeek
+                            ? Colors.orange
+                            : AppColors.operationalNavy,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.r),
                     side: BorderSide(
                       color: selected
-                          ? AppColors.primaryColor
-                          : AppColors.operationalCardBorder,
+                          ? accentColor
+                          : isNextWeek
+                              ? Colors.orange.withValues(alpha: 0.45)
+                              : AppColors.operationalCardBorder,
                     ),
                   ),
                   visualDensity: VisualDensity.compact,

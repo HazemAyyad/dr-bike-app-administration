@@ -78,6 +78,7 @@ class AppUpdateService {
   String? _currentPlatform() {
     if (defaultTargetPlatform == TargetPlatform.android) return 'android';
     if (defaultTargetPlatform == TargetPlatform.iOS) return 'ios';
+    if (defaultTargetPlatform == TargetPlatform.windows) return 'windows';
     return null;
   }
 

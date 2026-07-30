@@ -241,12 +241,43 @@ class MaintenanceImplement implements MaintenanceRepository {
   }
 
   @override
-  Future<Either<Failure, Map<String, dynamic>>> openDailySession() async {
+  Future<Either<Failure, Map<String, dynamic>>> openDailySession({
+    double openingBalance = 0,
+  }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
     try {
-      final result = await maintenanceDatasource.openDailySession();
+      final result = await maintenanceDatasource.openDailySession(
+        openingBalance: openingBalance,
+      );
+      if (result['status'] == 'success') {
+        return Right(Map<String, dynamic>.from(result['daily_box'] ?? {}));
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    } on DioException catch (e) {
+      return Left(ServerFailure(e.message ?? 'error'.tr, {}));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> requestDailySessionClosing({
+    String? note,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await maintenanceDatasource.requestDailySessionClosing(
+        note: note,
+      );
       if (result['status'] == 'success') {
         return Right(Map<String, dynamic>.from(result['daily_box'] ?? {}));
       }

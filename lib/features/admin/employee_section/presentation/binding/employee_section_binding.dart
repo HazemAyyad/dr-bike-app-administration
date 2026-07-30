@@ -9,6 +9,7 @@ import '../../data/repositorie_imp/employee_implement.dart';
 import '../../domain/usecases/add_points_usecase.dart';
 import '../../domain/usecases/approve_employee_order_usecase.dart';
 import '../../domain/usecases/cancel_log_usecase.dart';
+import '../../domain/usecases/change_employee_password_usecase.dart';
 import '../../domain/usecases/delete_employee_usecase.dart';
 import '../../domain/usecases/employee_details_usecase.dart';
 import '../../domain/usecases/employee_advances_usecase.dart';
@@ -87,6 +88,9 @@ class EmployeeSectionBinding extends Bindings {
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         deleteEmployeeUsecase: DeleteEmployeeUsecase(
+          employeeRepository: Get.find<EmployeeImplement>(),
+        ),
+        changeEmployeePasswordUsecase: ChangeEmployeePasswordUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         getAdminUsersUsecase: GetAdminUsersUsecase(

@@ -152,7 +152,7 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
     final idx = _yearCtrl.selectedItem;
     if (idx == _lastYearIdx) return;
     _lastYearIdx = idx;
-    HapticHelper.selection();
+    HapticHelper.selection(sound: true);
     _year = widget.firstYear + idx;
     _clampDayAndSyncWheel();
     _emit();
@@ -163,7 +163,7 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
     final idx = _monthCtrl.selectedItem;
     if (idx == _lastMonthIdx) return;
     _lastMonthIdx = idx;
-    HapticHelper.selection();
+    HapticHelper.selection(sound: true);
     _month = idx + 1;
     _clampDayAndSyncWheel();
     _emit();
@@ -174,7 +174,7 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
     final idx = _dayCtrl.selectedItem;
     if (idx == _lastDayIdx) return;
     _lastDayIdx = idx;
-    HapticHelper.selection();
+    HapticHelper.selection(sound: true);
     _day = idx + 1;
     _emit();
   }
@@ -236,7 +236,12 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
             child: _wheel(
               controller: _dayCtrl,
               label: 'day'.tr,
-              items: List.generate(dayCount, (i) => '${i + 1}'),
+              items: List.generate(dayCount, (i) {
+                final date = DateTime(_year, _month, i + 1);
+                final weekday = DateFormat('EEEE', locale).format(date);
+                return '${i + 1} $weekday';
+              }),
+              fontSize: 13.sp,
             ),
           ),
         ],
@@ -249,6 +254,7 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
     required FixedExtentScrollController controller,
     required String label,
     required List<String> items,
+    double? fontSize,
   }) {
     return Column(
       children: [
@@ -267,15 +273,17 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
             itemExtent: 36.h,
             diameterRatio: 1.4,
             perspective: 0.003,
-            physics: const FixedExtentScrollPhysics(),
+            physics: const _SlowerFixedExtentScrollPhysics(),
             childDelegate: ListWheelChildBuilderDelegate(
               childCount: items.length,
               builder: (context, index) {
                 return Center(
                   child: Text(
                     items[index],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 16.sp,
+                      fontSize: fontSize ?? 16.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.operationalNavy,
                     ),
@@ -287,5 +295,31 @@ class _ScrollDatePickerSheetState extends State<ScrollDatePickerSheet> {
         ),
       ],
     );
+  }
+}
+
+class _SlowerFixedExtentScrollPhysics extends FixedExtentScrollPhysics {
+  const _SlowerFixedExtentScrollPhysics({ScrollPhysics? parent})
+      : super(parent: parent);
+
+  static const double _dragFactor = 0.62;
+  static const double _flingFactor = 0.55;
+
+  @override
+  _SlowerFixedExtentScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return _SlowerFixedExtentScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
+    return super.applyPhysicsToUserOffset(position, offset * _dragFactor);
+  }
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    return super.createBallisticSimulation(position, velocity * _flingFactor);
   }
 }

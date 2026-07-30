@@ -524,6 +524,7 @@ class AddEmployeeController extends GetxController {
       'Employees Create': 'employees',
       'Employees Edit Basic': 'employees',
       'Employees Delete': 'employees',
+      'Employees Password Manage': 'employees',
       'Employees Permissions View': 'employees',
       'Employees Permissions Manage': 'employees',
       'Employees Financial View': 'employees',

@@ -20,6 +20,32 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
 
   String _money(double value) => value.toStringAsFixed(2);
 
+  Widget _compactActionButton({
+    required String tooltip,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox(
+          width: 28.w,
+          height: 34.h,
+          child: Center(
+            child: Icon(
+              icon,
+              size: 18.sp,
+              color: color,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmDelete(
     BuildContext context,
     MaintenanceDataModel item,
@@ -268,7 +294,9 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                     padding: const EdgeInsets.all(5),
                                     child: Row(
                                       children: [
-                                        Flexible(
+                                        SizedBox(
+                                          width: 58.w,
+                                          height: 52.h,
                                           child: ClipRRect(
                                             borderRadius:
                                                 BorderRadius.circular(5.r),
@@ -284,8 +312,6 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                               imageBuilder:
                                                   (context, imageProvider) =>
                                                       Container(
-                                                height: 50.h,
-                                                width: 64.w,
                                                 decoration: BoxDecoration(
                                                   image: DecorationImage(
                                                     image: imageProvider,
@@ -297,13 +323,9 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                               ),
                                               imageUrl: item.mediaFiles,
                                               placeholder: (context, url) =>
-                                                  SizedBox(
-                                                height: 58.h,
-                                                width: 66.w,
-                                                child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(),
-                                                ),
+                                                  const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
                                               ),
                                               errorWidget:
                                                   (context, url, error) =>
@@ -311,112 +333,96 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                             ),
                                           ),
                                         ),
-                                        SizedBox(width: 5.w),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              displayName,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
-                                                    fontSize: 14.sp,
-                                                    fontWeight: FontWeight.w800,
-                                                    color: ThemeService
-                                                            .isDark.value
-                                                        ? AppColors.whiteColor
-                                                        : AppColors
-                                                            .secondaryColor,
-                                                  ),
-                                            ),
-                                            SizedBox(height: 5.h),
-                                            Text(
-                                              showData(item.receiptDate),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium!
-                                                  .copyWith(
-                                                    fontSize: 12.sp,
-                                                    color: Colors.grey
-                                                        .withAlpha(500),
-                                                  ),
-                                            ),
-                                            if (item.invoiceTotal > 0)
+                                        SizedBox(width: 6.w),
+                                        Expanded(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
                                               Text(
-                                                '${'total'.tr}: ${_money(item.invoiceTotal)} | ${'paidAmount'.tr}: ${_money(item.paidAmount)}',
+                                                displayName,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodyMedium!
                                                     .copyWith(
-                                                      fontSize: 12.sp,
+                                                      fontSize: 13.sp,
                                                       fontWeight:
-                                                          FontWeight.w600,
-                                                      color: AppColors
-                                                          .primaryColor,
+                                                          FontWeight.w800,
+                                                      color: ThemeService
+                                                              .isDark.value
+                                                          ? AppColors.whiteColor
+                                                          : AppColors
+                                                              .secondaryColor,
                                                     ),
                                               ),
-                                            if (item.remainingAmount > 0)
+                                              SizedBox(height: 3.h),
                                               Text(
-                                                '${'remainingAmount'.tr}: ${_money(item.remainingAmount)}',
+                                                showData(item.receiptDate),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodyMedium!
                                                     .copyWith(
-                                                      fontSize: 12.sp,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      color: AppColors.redColor,
+                                                      fontSize: 11.sp,
+                                                      color: Colors.grey
+                                                          .withAlpha(500),
                                                     ),
                                               ),
-                                          ],
+                                              if (item.invoiceTotal > 0)
+                                                Text(
+                                                  [
+                                                    '${'total'.tr}: ${_money(item.invoiceTotal)}',
+                                                    '${'paidAmount'.tr}: ${_money(item.paidAmount)}',
+                                                    if (item.remainingAmount >
+                                                        0)
+                                                      '${'remainingAmount'.tr}: ${_money(item.remainingAmount)}',
+                                                  ].join(' | '),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium!
+                                                      .copyWith(
+                                                        fontSize: 11.sp,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: AppColors
+                                                            .primaryColor,
+                                                      ),
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
                                 SizedBox(
-                                  width: 42.w,
-                                  child: Column(
+                                  width: 58.w,
+                                  child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      IconButton(
+                                      _compactActionButton(
                                         tooltip: 'maintenanceInvoice'.tr,
-                                        visualDensity: VisualDensity.compact,
-                                        padding: EdgeInsets.zero,
-                                        constraints: BoxConstraints(
-                                          minWidth: 32.w,
-                                          minHeight: 28.h,
-                                        ),
-                                        icon: Icon(
-                                          Icons.receipt_long_outlined,
-                                          size: 20.sp,
-                                          color: AppColors.primaryColor,
-                                        ),
-                                        onPressed: () =>
+                                        icon: Icons.receipt_long_outlined,
+                                        color: AppColors.primaryColor,
+                                        onTap: () =>
                                             controller.openMaintenanceInvoice(
                                           context: context,
                                           maintenanceId: item.id.toString(),
                                         ),
                                       ),
-                                      IconButton(
+                                      _compactActionButton(
                                         tooltip: 'maintenanceActivityLog'.tr,
-                                        visualDensity: VisualDensity.compact,
-                                        padding: EdgeInsets.zero,
-                                        constraints: BoxConstraints(
-                                          minWidth: 32.w,
-                                          minHeight: 28.h,
-                                        ),
-                                        icon: Icon(
-                                          Icons.history,
-                                          size: 20.sp,
-                                          color: AppColors.customGreyColor,
-                                        ),
-                                        onPressed: () =>
-                                            controller.openActivityLog(
+                                        icon: Icons.history,
+                                        color: AppColors.customGreyColor,
+                                        onTap: () => controller.openActivityLog(
                                           context: context,
                                           maintenanceId: item.id.toString(),
                                         ),
@@ -428,8 +434,8 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                   () => Container(
                                     padding:
                                         EdgeInsets.symmetric(horizontal: 5.w),
-                                    width: 58.w,
-                                    height: 58.h,
+                                    width: 50.w,
+                                    height: 54.h,
                                     decoration: BoxDecoration(
                                       color: getStatusColor(
                                         receiptDate: item.receiptDate,
@@ -456,12 +462,14 @@ class MaintenanceDataWidget extends GetView<MaintenanceController> {
                                                 receiptTime: item.receiptTime,
                                               ),
                                         textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodyMedium!
                                             .copyWith(
-                                              fontSize: 17.sp,
-                                              fontWeight: FontWeight.w700,
+                                              fontSize: 11.sp,
+                                              fontWeight: FontWeight.w800,
                                               color: Colors.white,
                                             ),
                                       ),

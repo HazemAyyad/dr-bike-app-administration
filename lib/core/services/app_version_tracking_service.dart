@@ -92,11 +92,15 @@ class AppVersionTrackingService with WidgetsBindingObserver {
   String? _currentPlatform() {
     if (defaultTargetPlatform == TargetPlatform.android) return 'android';
     if (defaultTargetPlatform == TargetPlatform.iOS) return 'ios';
+    if (defaultTargetPlatform == TargetPlatform.windows) return 'windows';
     return null;
   }
 
-  String _deviceName(String platform) =>
-      platform == 'android' ? 'Android' : 'iOS';
+  String _deviceName(String platform) {
+    if (platform == 'android') return 'Android';
+    if (platform == 'ios') return 'iOS';
+    return 'Windows';
+  }
 
   String _deviceKey() {
     final existing = FinalClasses.getStorage.read(_deviceKeyStorageKey);

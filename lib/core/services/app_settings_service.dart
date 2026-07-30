@@ -51,6 +51,7 @@ class AppSettingsService {
       <String, AppUpdatePlatformSettings>{
     'android': AppUpdatePlatformSettings.defaults('android'),
     'ios': AppUpdatePlatformSettings.defaults('ios'),
+    'windows': AppUpdatePlatformSettings.defaults('windows'),
   }.obs;
   bool _loaded = false;
 
@@ -261,6 +262,7 @@ class AppSettingsService {
   Future<bool> updateAppUpdateSettings({
     required AppUpdatePlatformSettings android,
     required AppUpdatePlatformSettings ios,
+    required AppUpdatePlatformSettings windows,
   }) async {
     final api = _api;
     if (api == null) return false;
@@ -273,6 +275,7 @@ class AppSettingsService {
             'admin': {
               'android': android.toJson(),
               'ios': ios.toJson(),
+              'windows': windows.toJson(),
             },
           },
         },
@@ -286,6 +289,7 @@ class AppSettingsService {
           appUpdateSettings.assignAll({
             'android': android,
             'ios': ios,
+            'windows': windows,
           });
         }
         return true;
@@ -385,7 +389,7 @@ class AppSettingsService {
     if (admin is! Map) return;
 
     final next = <String, AppUpdatePlatformSettings>{};
-    for (final platform in const ['android', 'ios']) {
+    for (final platform in const ['android', 'ios', 'windows']) {
       final data = admin[platform];
       next[platform] = data is Map
           ? AppUpdatePlatformSettings.fromJson(platform, data)

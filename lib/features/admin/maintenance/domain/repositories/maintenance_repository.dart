@@ -47,7 +47,13 @@ abstract class MaintenanceRepository {
 
   Future<Either<Failure, Map<String, dynamic>>> getDailySessionCurrent();
 
-  Future<Either<Failure, Map<String, dynamic>>> openDailySession();
+  Future<Either<Failure, Map<String, dynamic>>> openDailySession({
+    double openingBalance = 0,
+  });
+
+  Future<Either<Failure, Map<String, dynamic>>> requestDailySessionClosing({
+    String? note,
+  });
 
   Future<Either<Failure, List<MaintenanceActivityLogModel>>> getActivityLog({
     required String maintenanceId,

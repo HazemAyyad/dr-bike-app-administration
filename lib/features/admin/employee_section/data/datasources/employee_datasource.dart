@@ -269,6 +269,38 @@ class EmployeeDatasource {
     }
   }
 
+  // change employee password by admin
+  Future<Map<String, dynamic>> changeEmployeePassword({
+    required String employeeId,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.changeEmployeePassword,
+        data: {
+          'employee_id': employeeId,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        },
+        isFormData: true,
+      );
+      final data = response.data;
+      return data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
   // get all employees
   Future<Map<String, dynamic>> impersonateEmployee(int employeeId) async {
     try {

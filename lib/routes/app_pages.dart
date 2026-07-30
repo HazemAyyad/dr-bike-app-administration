@@ -121,6 +121,7 @@ import '../features/admin/general_data_list/presentation/binding/general_data_li
 import '../features/admin/general_data_list/presentation/views/add_new_customer_screen.dart';
 import '../features/admin/general_data_list/presentation/views/general_data_list_screen.dart';
 import '../features/admin/maintenance/presentation/binding/maintenance_binding.dart';
+import '../features/admin/maintenance/presentation/views/maintenance_daily_admin_screen.dart';
 import '../features/admin/maintenance/presentation/views/maintenance_screen.dart';
 import '../features/admin/maintenance/presentation/views/new_maintenance_screen.dart';
 import '../features/admin/product_management/presentation/binding/product_management_binding.dart';
@@ -161,6 +162,7 @@ import '../features/admin/stock/presentation/views/edit_product_screen.dart';
 import '../features/admin/stock/presentation/views/product_assembly_operations_screen.dart';
 import '../features/admin/stock/presentation/views/product_stock_movements_screen.dart';
 import '../features/admin/stock/presentation/views/product_details_screen.dart';
+import '../features/admin/stock/presentation/views/stock_images_exports_screen.dart';
 import '../features/admin/categories/presentation/binding/category_management_binding.dart';
 import '../features/admin/categories/presentation/views/category_management_screen.dart';
 import '../features/admin/goals_section/presentation/binding/target_section_binding.dart';
@@ -904,11 +906,24 @@ class AppPages {
           ? _transitionLeftToRight
           : _transitionRightToLeft,
     ),
+    GetPage(
+      name: AppRoutes.MAINTENANCEDAILYADMINSCREEN,
+      page: () => const MaintenanceDailyAdminScreen(),
+      binding: MaintenanceBinding(),
+      transition: _transitionFadeIn,
+    ),
 
     // Stock
     GetPage(
       name: AppRoutes.STOCKSCREEN,
       page: () => const StockScreen(),
+      binding: StockBinding(),
+      transition: _transitionNo,
+      transitionDuration: Duration.zero,
+    ),
+    GetPage(
+      name: AppRoutes.STOCKIMAGESEXPORTSSCREEN,
+      page: () => const StockImagesExportsScreen(),
       binding: StockBinding(),
       transition: _transitionNo,
       transitionDuration: Duration.zero,

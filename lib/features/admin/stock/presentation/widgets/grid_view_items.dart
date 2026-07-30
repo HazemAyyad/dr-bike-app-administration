@@ -8,6 +8,7 @@ import 'product_card.dart';
 import 'stock_product_grid_layout.dart';
 import 'stock_location_tab.dart';
 import 'stock_offer_packages_tab.dart';
+import 'quick_edit_products_tab.dart';
 import 'stock_results_count_banner.dart';
 import 'stock_skeleton_widgets.dart';
 
@@ -19,6 +20,11 @@ class GridViewItems extends GetView<StockController> {
       if (controller.currentTab.value == 4) {
         return const SliverToBoxAdapter(
           child: StockOfferPackagesTab(),
+        );
+      }
+      if (controller.isQuickEditTab) {
+        return const SliverToBoxAdapter(
+          child: QuickEditProductsTab(),
         );
       }
       if (controller.currentTab.value == 3) {

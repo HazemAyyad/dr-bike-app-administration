@@ -9,12 +9,14 @@ class NoteUser {
   final String name;
   final String type;
   final String jobTitle;
+  final String imageUrl;
 
   const NoteUser({
     required this.id,
     required this.name,
     required this.type,
     required this.jobTitle,
+    required this.imageUrl,
   });
 
   factory NoteUser.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class NoteUser {
       name: json['name']?.toString() ?? '',
       type: json['type']?.toString() ?? '',
       jobTitle: employee['job_title']?.toString() ?? '',
+      imageUrl: _firstImage(employee['employee_img']),
     );
   }
 }
@@ -85,6 +88,7 @@ class NoteItem {
   final String title;
   final String plainText;
   final String color;
+  final List<String> labels;
   final String visibility;
   final String myPermission;
   final bool isPinned;
@@ -96,6 +100,8 @@ class NoteItem {
   final List<Map<String, dynamic>> bodyJson;
   final List<NoteAttachment> attachments;
   final List<NoteCollaborator> collaborators;
+  final DateTime? reminderAt;
+  final String reminderLabel;
   final DateTime? updatedAt;
 
   const NoteItem({
@@ -103,6 +109,7 @@ class NoteItem {
     required this.title,
     required this.plainText,
     required this.color,
+    required this.labels,
     required this.visibility,
     required this.myPermission,
     required this.isPinned,
@@ -114,6 +121,8 @@ class NoteItem {
     required this.bodyJson,
     required this.attachments,
     required this.collaborators,
+    required this.reminderAt,
+    required this.reminderLabel,
     required this.updatedAt,
   });
 
@@ -122,6 +131,10 @@ class NoteItem {
         title: json['title']?.toString() ?? '',
         plainText: json['plain_text']?.toString() ?? '',
         color: json['color']?.toString() ?? '',
+        labels: (json['labels'] is List ? json['labels'] as List : const [])
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList(),
         visibility: json['visibility']?.toString() ?? 'private',
         myPermission: json['my_permission']?.toString() ?? 'view',
         isPinned: json['is_pinned'] == true,
@@ -152,6 +165,8 @@ class NoteItem {
             .map((e) => NoteCollaborator.fromJson(Map<String, dynamic>.from(e)))
             .where((e) => e.userId > 0)
             .toList(),
+        reminderAt: DateTime.tryParse(json['reminder_at']?.toString() ?? ''),
+        reminderLabel: json['reminder_label']?.toString() ?? '',
         updatedAt: DateTime.tryParse(json['updated_at']?.toString() ?? ''),
       );
 }
@@ -190,17 +205,23 @@ class NotesService {
     required List<Map<String, dynamic>> bodyJson,
     required String visibility,
     required String color,
+    required List<String> labels,
     required bool isPinned,
     required bool isArchived,
     required List<NoteCollaborator> collaborators,
+    DateTime? reminderAt,
+    String? reminderLabel,
   }) async {
     final payload = {
       'title': title,
       'body_json': bodyJson,
       'visibility': visibility,
       'color': color.isEmpty ? null : color,
+      'labels': labels,
       'is_pinned': isPinned,
       'is_archived': isArchived,
+      'reminder_at': reminderAt?.toIso8601String(),
+      'reminder_label': reminderLabel,
       'collaborators': collaborators.map((e) => e.toJson()).toList(),
     };
     final response = id == null
@@ -232,6 +253,10 @@ class NotesService {
     );
   }
 
+  Future<void> deleteAttachment(int noteId, int attachmentId) async {
+    await _api.delete('${EndPoints.noteAttachments(noteId)}/$attachmentId');
+  }
+
   Future<List<NoteUser>> users({String? search}) async {
     final response = await _api.get(
       EndPoints.notesUsers,
@@ -256,4 +281,10 @@ List _extractList(dynamic raw, List<String> path) {
     }
   }
   return current is List ? current : const [];
+}
+
+String _firstImage(dynamic value) {
+  if (value is List && value.isNotEmpty) return value.first?.toString() ?? '';
+  if (value is String) return value;
+  return '';
 }

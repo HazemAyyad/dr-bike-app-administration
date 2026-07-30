@@ -100,6 +100,12 @@ abstract class EmployeeRepository {
     required String employeeId,
   });
 
+  Future<Either<Failure, String>> changeEmployeePassword({
+    required String employeeId,
+    required String password,
+    required String passwordConfirmation,
+  });
+
   Future<List<OvertimeAndLoanModel>> getOvertimeAndLoan({
     required bool isOvertime,
   });

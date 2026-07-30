@@ -48,6 +48,7 @@ abstract class DebtLedgerRepository {
     String? startDate,
     String? endDate,
     String? currency,
+    String? balanceScope,
   });
   Future<Either<Failure, LedgerCreateResult>> createTransaction({
     int? customerId,

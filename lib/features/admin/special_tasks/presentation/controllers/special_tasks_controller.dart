@@ -134,12 +134,18 @@ class SpecialTasksController extends GetxController {
   DateTime get transferWeekStart => getStartOfWeek(startDate);
 
   List<DateTime> get transferWeekDays => List.generate(
-        7,
+        14,
         (index) => transferWeekStart.add(Duration(days: index)),
       );
 
   void selectTransferWeekDay(DateTime day) {
     selectedDay.value = DateTime(day.year, day.month, day.day);
+  }
+
+  bool isNextTransferWeekDay(DateTime day) {
+    final selected = DateTime(day.year, day.month, day.day);
+    final nextWeekStart = transferWeekStart.add(const Duration(days: 7));
+    return !selected.isBefore(nextWeekStart);
   }
 
   bool isPastTransferDay(DateTime day) {

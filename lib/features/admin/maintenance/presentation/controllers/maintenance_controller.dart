@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../../core/databases/api/end_points.dart';
+import '../../../../../core/helpers/scroll_date_picker_sheet.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 import '../../../../../core/services/app_dependency_registry.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -17,6 +18,8 @@ import '../../../sales/presentation/binding/sales_binding.dart';
 import '../../../sales/presentation/controllers/sales_controller.dart';
 import '../../../sales/presentation/models/instant_sale_cart_line.dart';
 import '../../../sales/presentation/utils/sales_amount_format.dart';
+import '../../../create_tasks/presentation/widgets/horizontal_time_picker_sheet.dart';
+import '../../data/repositories/maintenance_implement.dart';
 import '../../data/models/maintenance_product_model.dart';
 import '../../data/models/maintenances_model.dart';
 import '../../domain/usecases/creat_maintenance_usecase.dart';
@@ -28,6 +31,7 @@ import '../../domain/usecases/get_maintenance_invoice_usecase.dart';
 import '../../domain/usecases/get_maintenances_details_usecase.dart';
 import '../../domain/usecases/maintenance_usecase.dart';
 import '../../domain/usecases/open_maintenance_daily_session_usecase.dart';
+import '../../domain/usecases/request_maintenance_daily_session_closing_usecase.dart';
 import '../../domain/usecases/sync_maintenance_products_usecase.dart';
 import 'maintenance_serves.dart';
 import '../widgets/maintenance_activity_log_sheet.dart';
@@ -46,6 +50,8 @@ class MaintenanceController extends GetxController {
   final GetMaintenanceInvoiceUsecase getMaintenanceInvoiceUsecase;
   final GetMaintenanceDailySessionUsecase getMaintenanceDailySessionUsecase;
   final OpenMaintenanceDailySessionUsecase openMaintenanceDailySessionUsecase;
+  final RequestMaintenanceDailySessionClosingUsecase
+      requestMaintenanceDailySessionClosingUsecase;
   final GetShownBoxUsecase getShownBoxUsecase;
 
   MaintenanceController({
@@ -60,6 +66,7 @@ class MaintenanceController extends GetxController {
     required this.getMaintenanceInvoiceUsecase,
     required this.getMaintenanceDailySessionUsecase,
     required this.openMaintenanceDailySessionUsecase,
+    required this.requestMaintenanceDailySessionClosingUsecase,
     required this.getShownBoxUsecase,
   });
 
@@ -82,6 +89,11 @@ class MaintenanceController extends GetxController {
   RxBool isDelivered = false.obs;
   final RxBool isLoading = false.obs;
   final RxBool isDailyBoxLoading = false.obs;
+  final RxBool isDailyClosingReviewLoading = false.obs;
+  final RxList<Map<String, dynamic>> dailyOpenSessions =
+      <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> dailyClosingRequests =
+      <Map<String, dynamic>>[].obs;
   final RxMap<String, dynamic> dailyBoxPayload = <String, dynamic>{}.obs;
   final RxList<MaintenanceProductModel> maintenanceProducts =
       <MaintenanceProductModel>[].obs;
@@ -119,6 +131,48 @@ class MaintenanceController extends GetxController {
   bool get isMaintenanceDailyBoxOpen =>
       dailyBoxSession?['status']?.toString() == 'open';
 
+  bool get isMaintenanceDailyBoxClosingRequested =>
+      dailyBoxSession?['status']?.toString() == 'closing_requested';
+
+  bool get canRequestMaintenanceDailyOpen =>
+      dailyBoxPayload['can_request_open'] == true ||
+      dailyBoxPayload['can_request_open'] == 1;
+
+  bool get canRequestMaintenanceDailyClosing =>
+      dailyBoxSession?['can_request_closing'] == true ||
+      dailyBoxSession?['can_request_closing'] == 1;
+
+  bool get canFinalizeMaintenanceDailyClosing =>
+      dailyBoxPayload['can_finalize_closing'] == true ||
+      dailyBoxPayload['can_finalize_closing'] == 1;
+
+  bool get isMaintenanceDailyBlockedByOther =>
+      dailyBoxPayload['blocked_by_other_session'] == true ||
+      dailyBoxPayload['blocked_by_other_session'] == 1;
+
+  String? get maintenanceDailyBlockedByEmployeeName =>
+      dailyBoxPayload['blocked_by_employee_name']?.toString();
+
+  double get maintenanceDailyOpeningBalance =>
+      _numFrom(dailyBoxSession?['opening_balance']);
+
+  double get maintenanceDailyCashTotal =>
+      _numFrom(dailyBoxPayload['cash_total']);
+
+  double get maintenanceDailyVisaTotal =>
+      _numFrom(dailyBoxPayload['visa_total']);
+
+  double get maintenanceDailyTransferTotal =>
+      _numFrom(dailyBoxPayload['transfer_total']);
+
+  double get maintenanceDailyDebtTotal =>
+      _numFrom(dailyBoxPayload['debt_total']);
+
+  double get maintenanceDailyExpectedClosingBalance => _numFrom(
+        dailyBoxPayload['expected_closing_balance'] ??
+            dailyBoxSession?['expected_closing_balance'],
+      );
+
   String get maintenanceDailyBoxName =>
       dailyBoxInfo?['name']?.toString() ?? 'صندوق الصيانة اليومي';
 
@@ -142,11 +196,18 @@ class MaintenanceController extends GetxController {
     update();
   }
 
-  Future<bool> openMaintenanceDailySession() async {
+  double _numFrom(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  Future<bool> openMaintenanceDailySession({double openingBalance = 0}) async {
     isDailyBoxLoading(true);
     update();
 
-    final result = await openMaintenanceDailySessionUsecase.call();
+    final result = await openMaintenanceDailySessionUsecase.call(
+      openingBalance: openingBalance,
+    );
     var opened = false;
     result.fold(
       (failure) {
@@ -172,6 +233,263 @@ class MaintenanceController extends GetxController {
     isDailyBoxLoading(false);
     update();
     return opened;
+  }
+
+  Future<bool> requestMaintenanceDailySessionClosing({String? note}) async {
+    isDailyBoxLoading(true);
+    update();
+
+    final result =
+        await requestMaintenanceDailySessionClosingUsecase.call(note: note);
+    var requested = false;
+    result.fold(
+      (failure) {
+        Get.snackbar(
+          'error'.tr,
+          failure.errMessage,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      },
+      (payload) {
+        requested = true;
+        dailyBoxPayload.assignAll(payload);
+        Get.snackbar(
+          'success'.tr,
+          'تم إرسال طلب إغلاق صندوق الصيانة',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
+    );
+
+    isDailyBoxLoading(false);
+    update();
+    return requested;
+  }
+
+  Future<void> loadMaintenanceDailyClosingRequests() async {
+    isDailyClosingReviewLoading(true);
+    update();
+    try {
+      if (paymentBoxes.isEmpty) {
+        paymentBoxes.assignAll(await getShownBoxUsecase.call(screen: 0));
+      }
+      final response = await Get.find<MaintenanceImplement>()
+          .maintenanceDatasource
+          .getPendingDailyClosing();
+      if (response['status'] == 'success') {
+        final rows = response['closing_requests'];
+        dailyClosingRequests.assignAll(
+          rows is List
+              ? rows
+                  .whereType<Map>()
+                  .map((row) => Map<String, dynamic>.from(row))
+                  .toList()
+              : <Map<String, dynamic>>[],
+        );
+      } else {
+        Get.snackbar(
+          'error'.tr,
+          response['message']?.toString() ?? 'tryAgain'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isDailyClosingReviewLoading(false);
+      update();
+    }
+  }
+
+  Future<void> loadMaintenanceDailyAdminData() async {
+    isDailyClosingReviewLoading(true);
+    update();
+    try {
+      if (paymentBoxes.isEmpty) {
+        paymentBoxes.assignAll(await getShownBoxUsecase.call(screen: 0));
+      }
+      final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
+      final openResponse = await datasource.getOpenDailySessions();
+      final closingResponse = await datasource.getPendingDailyClosing();
+
+      if (openResponse['status'] == 'success') {
+        final rows = openResponse['sessions'];
+        dailyOpenSessions.assignAll(
+          rows is List
+              ? rows
+                  .whereType<Map>()
+                  .map((row) => Map<String, dynamic>.from(row))
+                  .toList()
+              : <Map<String, dynamic>>[],
+        );
+      } else {
+        throw Exception(openResponse['message']?.toString() ?? 'tryAgain'.tr);
+      }
+
+      if (closingResponse['status'] == 'success') {
+        final rows = closingResponse['closing_requests'];
+        dailyClosingRequests.assignAll(
+          rows is List
+              ? rows
+                  .whereType<Map>()
+                  .map((row) => Map<String, dynamic>.from(row))
+                  .toList()
+              : <Map<String, dynamic>>[],
+        );
+      } else {
+        throw Exception(
+          closingResponse['message']?.toString() ?? 'tryAgain'.tr,
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isDailyClosingReviewLoading(false);
+      update();
+    }
+  }
+
+  Future<bool> approveMaintenanceDailyClosing(
+    int closingRequestId, {
+    int? toBoxId,
+    String? note,
+  }) async {
+    return _reviewMaintenanceDailyClosing(
+      closingRequestId,
+      approve: true,
+      toBoxId: toBoxId,
+      note: note,
+    );
+  }
+
+  Future<bool> rejectMaintenanceDailyClosing(
+    int closingRequestId, {
+    String? note,
+  }) async {
+    return _reviewMaintenanceDailyClosing(
+      closingRequestId,
+      approve: false,
+      note: note,
+    );
+  }
+
+  Future<bool> directCloseMaintenanceDailySession(
+    int sessionId, {
+    int? toBoxId,
+    String? note,
+  }) async {
+    isDailyClosingReviewLoading(true);
+    update();
+    try {
+      final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
+      final response = await datasource.directCloseDailySession(
+        sessionId: sessionId,
+        toBoxId: toBoxId,
+        reviewNote: note,
+      );
+      if (response['status'] == 'success') {
+        Get.snackbar(
+          'success'.tr,
+          response['message']?.toString() ?? 'تم إغلاق صندوق الصيانة مباشرة',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        await loadMaintenanceDailyAdminData();
+        await loadMaintenanceDailySession();
+        return true;
+      }
+      Get.snackbar(
+        'error'.tr,
+        response['message']?.toString() ?? 'tryAgain'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      isDailyClosingReviewLoading(false);
+      update();
+    }
+  }
+
+  Future<bool> _reviewMaintenanceDailyClosing(
+    int closingRequestId, {
+    required bool approve,
+    int? toBoxId,
+    String? note,
+  }) async {
+    isDailyClosingReviewLoading(true);
+    update();
+    try {
+      final datasource = Get.find<MaintenanceImplement>().maintenanceDatasource;
+      final response = approve
+          ? await datasource.approveDailyClosing(
+              closingRequestId: closingRequestId,
+              toBoxId: toBoxId,
+              reviewNote: note,
+            )
+          : await datasource.rejectDailyClosing(
+              closingRequestId: closingRequestId,
+              reviewNote: note,
+            );
+      if (response['status'] == 'success') {
+        Get.snackbar(
+          'success'.tr,
+          response['message']?.toString() ??
+              (approve
+                  ? 'تم اعتماد إغلاق صندوق الصيانة'
+                  : 'تم رفض طلب إغلاق صندوق الصيانة'),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        await loadMaintenanceDailyClosingRequests();
+        await loadMaintenanceDailySession();
+        return true;
+      }
+      Get.snackbar(
+        'error'.tr,
+        response['message']?.toString() ?? 'tryAgain'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      isDailyClosingReviewLoading(false);
+      update();
+    }
   }
 
   @override
@@ -232,6 +550,31 @@ class MaintenanceController extends GetxController {
   final Rx<DateTime> deliveryDate = DateTime.now().obs;
   final Rx<TimeOfDay> deliveryTime = TimeOfDay.now().obs;
   List<File> selectedMedia = [];
+
+  Future<void> pickDeliveryDate(BuildContext context) async {
+    final picked = await ScrollDatePickerSheet.show(
+      context,
+      initial: deliveryDate.value,
+      title: 'deliveryDate',
+    );
+    if (picked == null) return;
+    deliveryDate.value = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      deliveryTime.value.hour,
+      deliveryTime.value.minute,
+    );
+  }
+
+  Future<void> pickDeliveryTime(BuildContext context) async {
+    final picked = await HorizontalTimePickerSheet.show(
+      context,
+      initial: deliveryTime.value,
+    );
+    if (picked == null) return;
+    deliveryTime.value = picked;
+  }
 
   Future<void> openProductPicker(BuildContext context) async {
     if (!formKey.currentState!.validate()) return;

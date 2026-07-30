@@ -212,6 +212,7 @@ class EndPoints {
       'employee/attendance/overtime-requests/$requestId/reject';
   static const String employeeAttendanceReports = 'employee-attendance/reports';
   static const String editEmployee = 'edit/employee';
+  static const String changeEmployeePassword = 'employee/change-password';
   static const String deleteEmployee = 'delete/employee';
 
   // admin users
@@ -381,6 +382,20 @@ class EndPoints {
   static const String getDeletedProducts = 'get/deleted/products';
   static const String productCostPrice = 'product/cost-price';
   static const String exportProductsCsv = 'products/export-csv';
+  static const String quickEditProducts = 'products/quick-edit';
+  static const String quickEditProductsUpdate = 'products/quick-edit/update';
+  static const String quickEditProductsMark = 'products/quick-edit/mark';
+  static const String productsImagesZipExports = 'products/images-zip-exports';
+  static const String listProductsImagesZipExports =
+      'products/images-zip-exports';
+  static const String latestProductsImagesZipExport =
+      'products/images-zip-exports/latest';
+  static String productsImagesZipExport(String id) =>
+      'products/images-zip-exports/$id';
+  static String productsImagesZipExportDownload(String id) =>
+      'products/images-zip-exports/$id/download';
+  static String productsImagesZipExportDelete(String id) =>
+      'products/images-zip-exports/$id';
   static const String previewImportProductsCsv = 'products/import-csv/preview';
   static const String importProductsCsv = 'products/import-csv';
   static const String productSizeOptions = 'get/product/size-options';
@@ -610,6 +625,18 @@ class EndPoints {
       'maintenance/daily-session/current';
   static const String maintenanceDailySessionOpen =
       'maintenance/daily-session/open';
+  static const String maintenanceDailySessionsOpen =
+      'maintenance/daily-sessions/open';
+  static const String maintenanceDailySessionRequestClosing =
+      'maintenance/daily-session/request-closing';
+  static const String maintenanceDailyClosingPending =
+      'maintenance/daily-closing/pending';
+  static const String maintenanceDailyClosingDirect =
+      'maintenance/daily-closing/direct';
+  static const String maintenanceDailyClosingApprove =
+      'maintenance/daily-closing/approve';
+  static const String maintenanceDailyClosingReject =
+      'maintenance/daily-closing/reject';
 
   // goals
   static const String getAllGoals = 'get/all/goals';

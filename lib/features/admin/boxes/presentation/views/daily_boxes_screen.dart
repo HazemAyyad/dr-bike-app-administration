@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../../../maintenance/data/repositories/maintenance_implement.dart';
 import '../../../maintenance/domain/usecases/get_maintenance_invoice_usecase.dart';
+import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
 import '../../../maintenance/presentation/widgets/maintenance_invoice_sheet.dart';
 import '../../../sales/data/datasources/sales_datasources.dart';
 import '../../../sales/data/models/daily_session_model.dart';
@@ -37,6 +38,13 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
   @override
   void initState() {
     super.initState();
+    final args = Get.arguments;
+    if (args is Map && args['filter'] != null) {
+      final filter = args['filter'].toString();
+      if (['all', 'sales', 'orders', 'maintenance'].contains(filter)) {
+        _filter = filter;
+      }
+    }
     _loadSalesSessions();
   }
 
@@ -338,7 +346,25 @@ class _DailyBoxesScreenState extends State<DailyBoxesScreen> {
                       _showSalesSessionDetails(context, session),
                 ),
               if (showSalesSessions && boxes.isNotEmpty) SizedBox(height: 12.h),
-              if (boxes.isEmpty && !hasSalesSessions)
+              if (_filter == 'maintenance')
+                _MaintenanceBoxesSection(
+                  boxes: boxes,
+                  logsForBox: _boxLogs,
+                  amount: _amount,
+                  date: _date,
+                  onTransfer: (box) {
+                    controller.transferToBoxIdController.clear();
+                    controller.transferTotalController.clear();
+                    Get.dialog(
+                      TransferBalanceWidget(
+                        boxId: box.boxId,
+                        currency: box.currency,
+                      ),
+                    );
+                  },
+                  onOpenInvoice: (log) => _openMaintenanceInvoice(context, log),
+                )
+              else if (boxes.isEmpty && !hasSalesSessions)
                 SizedBox(height: 360.h, child: const ShowNoData())
               else
                 ...boxes.map((box) => _DailyBoxCard(
@@ -1049,6 +1075,767 @@ class _DetailLine extends StatelessWidget {
   }
 }
 
+class _MaintenanceBoxesSection extends StatefulWidget {
+  const _MaintenanceBoxesSection({
+    required this.boxes,
+    required this.logsForBox,
+    required this.amount,
+    required this.date,
+    required this.onTransfer,
+    required this.onOpenInvoice,
+  });
+
+  final List<ShownBoxesModel> boxes;
+  final List<BoxLogModel> Function(ShownBoxesModel box) logsForBox;
+  final String Function(double value) amount;
+  final String Function(DateTime date) date;
+  final ValueChanged<ShownBoxesModel> onTransfer;
+  final ValueChanged<BoxLogModel> onOpenInvoice;
+
+  @override
+  State<_MaintenanceBoxesSection> createState() =>
+      _MaintenanceBoxesSectionState();
+}
+
+class _MaintenanceBoxesSectionState extends State<_MaintenanceBoxesSection> {
+  _DailyBoxLogScope _scope = _DailyBoxLogScope.today;
+  DateTime? _customDate;
+
+  DateTime _dateOnly(DateTime date) {
+    final local = date.toLocal();
+    return DateTime(local.year, local.month, local.day);
+  }
+
+  String _dayKey(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
+
+  String _dayTitle(String key) {
+    final date = DateTime.tryParse(key);
+    if (date == null) return key;
+    final today = _dateOnly(DateTime.now());
+    final day = _dateOnly(date);
+    if (day == today) return 'today'.tr;
+    if (day == today.subtract(const Duration(days: 1))) return 'yesterday'.tr;
+    final locale = Get.locale?.languageCode == 'ar' ? 'ar' : 'en';
+    return DateFormat('EEEE d/M/yyyy', locale).format(day);
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _customDate ?? now,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (picked == null) return;
+    setState(() {
+      _customDate = picked;
+      _scope = _DailyBoxLogScope.custom;
+    });
+  }
+
+  bool _matchesScope(BoxLogModel log) {
+    final today = _dateOnly(DateTime.now());
+    final logDay = _dateOnly(log.createdAt);
+    switch (_scope) {
+      case _DailyBoxLogScope.today:
+        return logDay == today;
+      case _DailyBoxLogScope.yesterday:
+        return logDay == today.subtract(const Duration(days: 1));
+      case _DailyBoxLogScope.custom:
+        final target = _customDate == null ? today : _dateOnly(_customDate!);
+        return logDay == target;
+      case _DailyBoxLogScope.all:
+        return true;
+    }
+  }
+
+  List<BoxLogModel> _filteredLogsForBox(ShownBoxesModel box) {
+    final logs = widget.logsForBox(box).where(_matchesScope).toList();
+    logs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return logs;
+  }
+
+  double _paidValue(BoxLogModel log) {
+    if (log.type == 'minus') return 0;
+    return log.value.abs();
+  }
+
+  String _totalsText(List<BoxLogModel> logs) {
+    final cash = logs
+        .where((log) =>
+            log.affectsCashBalance &&
+            (log.paymentMethod == null || log.paymentMethod == 'cash'))
+        .fold<double>(0, (sum, log) => sum + _paidValue(log));
+    final visa = logs
+        .where((log) => log.paymentMethod == 'visa')
+        .fold<double>(0, (sum, log) => sum + _paidValue(log));
+    final transfer = logs
+        .where((log) => log.paymentMethod == 'bank_transfer')
+        .fold<double>(0, (sum, log) => sum + _paidValue(log));
+    final debt = logs
+        .where((log) => log.paymentMethod == 'debt')
+        .fold<double>(0, (sum, log) => sum + _paidValue(log));
+    final parts = <String>[
+      'كاش: ${widget.amount(cash)}',
+      if (visa > 0) 'فيزا: ${widget.amount(visa)}',
+      if (transfer > 0) 'حوالة: ${widget.amount(transfer)}',
+      if (debt > 0) 'دين: ${widget.amount(debt)}',
+    ];
+    return parts.join(' | ');
+  }
+
+  String _ownerName(ShownBoxesModel box) {
+    final parts = box.boxName.split(' - ');
+    if (parts.length >= 2 && parts[1].trim().isNotEmpty) {
+      return parts[1].trim();
+    }
+    return box.boxName;
+  }
+
+  bool _isCurrentShownBox(ShownBoxesModel box) {
+    final currentBoxId = _currentMaintenanceBoxId();
+    if (currentBoxId != null) {
+      return box.boxId == currentBoxId;
+    }
+    return BoxesServes().shownBoxes.any((item) => item.boxId == box.boxId);
+  }
+
+  int? _currentMaintenanceBoxId() {
+    if (!Get.isRegistered<MaintenanceController>()) return null;
+    final payload = Get.find<MaintenanceController>().dailyBoxPayload;
+    final box = payload['box'];
+    if (box is Map) {
+      final id = box['id'];
+      if (id is int) return id;
+      return int.tryParse(id?.toString() ?? '');
+    }
+    return null;
+  }
+
+  bool get _shouldShowCurrentEmptyBoxes {
+    if (_scope == _DailyBoxLogScope.today) return true;
+    if (_scope != _DailyBoxLogScope.custom || _customDate == null) {
+      return false;
+    }
+    return _dateOnly(_customDate!) == _dateOnly(DateTime.now());
+  }
+
+  Map<String, List<_MaintenanceBoxLogs>> _groupByDay() {
+    final grouped = <String, List<_MaintenanceBoxLogs>>{};
+    final todayKey = _dayKey(DateTime.now());
+    for (final box in widget.boxes) {
+      final logs = _filteredLogsForBox(box);
+      if (logs.isEmpty) {
+        if (_shouldShowCurrentEmptyBoxes && _isCurrentShownBox(box)) {
+          grouped
+              .putIfAbsent(todayKey, () => [])
+              .add(_MaintenanceBoxLogs(box: box, logs: const []));
+        }
+        continue;
+      }
+      final logsByDay = <String, List<BoxLogModel>>{};
+      for (final log in logs) {
+        logsByDay.putIfAbsent(_dayKey(log.createdAt), () => []).add(log);
+      }
+      for (final entry in logsByDay.entries) {
+        grouped
+            .putIfAbsent(entry.key, () => [])
+            .add(_MaintenanceBoxLogs(box: box, logs: entry.value));
+      }
+    }
+    for (final groups in grouped.values) {
+      groups.sort((a, b) => _ownerName(a.box).compareTo(_ownerName(b.box)));
+    }
+    return Map.fromEntries(
+      grouped.entries.toList()..sort((a, b) => b.key.compareTo(a.key)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allLogs = widget.boxes.expand(_filteredLogsForBox).toList();
+    final grouped = _groupByDay();
+    final mutedColor = AppColors.greyColor;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: AppColors.operationalCardBorder),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          tilePadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+          childrenPadding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
+          leading: Container(
+            width: 48.w,
+            height: 48.w,
+            decoration: BoxDecoration(
+              color: const Color(0xFF007C89).withValues(alpha: .12),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(
+              Icons.account_balance_wallet_outlined,
+              color: const Color(0xFF007C89),
+              size: 24.sp,
+            ),
+          ),
+          title: Text(
+            'صناديق الصيانة اليومية',
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900),
+          ),
+          subtitle: Text(
+            'الصيانة اليومية ${_totalsText(allLogs)} شيكل',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: mutedColor,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          children: [
+            _DailyBoxLogFilterBar(
+              scope: _scope,
+              customDate: _customDate,
+              onChanged: (scope) => setState(() => _scope = scope),
+              onPickDate: () => _pickDate(context),
+            ),
+            SizedBox(height: 10.h),
+            if (widget.boxes.isEmpty || grouped.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.h),
+                child: Text(
+                  'noData'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: mutedColor, fontSize: 12.sp),
+                ),
+              )
+            else
+              ...grouped.entries.map(
+                (entry) => _MaintenanceDayGroup(
+                  title: _dayTitle(entry.key),
+                  groups: entry.value,
+                  totalsText: _totalsText(
+                    entry.value.expand((group) => group.logs).toList(),
+                  ),
+                  amount: widget.amount,
+                  date: widget.date,
+                  ownerName: _ownerName,
+                  onTransfer: widget.onTransfer,
+                  onOpenInvoice: widget.onOpenInvoice,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceBoxLogs {
+  const _MaintenanceBoxLogs({
+    required this.box,
+    required this.logs,
+  });
+
+  final ShownBoxesModel box;
+  final List<BoxLogModel> logs;
+}
+
+class _MaintenanceDayGroup extends StatelessWidget {
+  const _MaintenanceDayGroup({
+    required this.title,
+    required this.groups,
+    required this.totalsText,
+    required this.amount,
+    required this.date,
+    required this.ownerName,
+    required this.onTransfer,
+    required this.onOpenInvoice,
+  });
+
+  final String title;
+  final List<_MaintenanceBoxLogs> groups;
+  final String totalsText;
+  final String Function(double value) amount;
+  final String Function(DateTime date) date;
+  final String Function(ShownBoxesModel box) ownerName;
+  final ValueChanged<ShownBoxesModel> onTransfer;
+  final ValueChanged<BoxLogModel> onOpenInvoice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor
+            : const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: AppColors.operationalCardBorder),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          tilePadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+          childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+          title: Text(
+            title,
+            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+          ),
+          subtitle: Text(
+            '$totalsText شيكل',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.greyColor,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          children: groups
+              .map(
+                (group) => _MaintenanceBoxSessionTile(
+                  box: group.box,
+                  logs: group.logs,
+                  ownerName: ownerName(group.box),
+                  amount: amount,
+                  date: date,
+                  onTransfer: () => onTransfer(group.box),
+                  onOpenInvoice: onOpenInvoice,
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceBoxSessionTile extends StatelessWidget {
+  const _MaintenanceBoxSessionTile({
+    required this.box,
+    required this.logs,
+    required this.ownerName,
+    required this.amount,
+    required this.date,
+    required this.onTransfer,
+    required this.onOpenInvoice,
+  });
+
+  final ShownBoxesModel box;
+  final List<BoxLogModel> logs;
+  final String ownerName;
+  final String Function(double value) amount;
+  final String Function(DateTime date) date;
+  final VoidCallback onTransfer;
+  final ValueChanged<BoxLogModel> onOpenInvoice;
+
+  String _totalsText() {
+    double cash = 0;
+    double visa = 0;
+    double transfer = 0;
+    double debt = 0;
+    for (final log in logs) {
+      if (log.type == 'minus') continue;
+      final value = log.value.abs();
+      if (log.paymentMethod == 'visa') {
+        visa += value;
+      } else if (log.paymentMethod == 'bank_transfer') {
+        transfer += value;
+      } else if (log.paymentMethod == 'debt') {
+        debt += value;
+      } else if (log.affectsCashBalance) {
+        cash += value;
+      }
+    }
+    return [
+      'كاش: ${amount(cash)}',
+      if (visa > 0) 'فيزا: ${amount(visa)}',
+      if (transfer > 0) 'حوالة: ${amount(transfer)}',
+      if (debt > 0) 'دين: ${amount(debt)}',
+    ].join(' | ');
+  }
+
+  List<_MaintenanceRequestGroup> _requestGroups() {
+    final grouped = <String, List<BoxLogModel>>{};
+    for (final log in logs) {
+      final maintenanceId = log.maintenanceId?.trim();
+      final invoice = log.invoiceNumber?.trim();
+      final key = maintenanceId != null && maintenanceId.isNotEmpty
+          ? 'maintenance:$maintenanceId'
+          : invoice != null && invoice.isNotEmpty
+              ? 'invoice:$invoice'
+              : 'log:${log.id}';
+      grouped.putIfAbsent(key, () => []).add(log);
+    }
+
+    final groups =
+        grouped.values.map((items) => _MaintenanceRequestGroup(items)).toList();
+    groups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return groups;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final requestGroups = _requestGroups();
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      decoration: BoxDecoration(
+        color: ThemeService.isDark.value
+            ? AppColors.customGreyColor4
+            : AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: AppColors.operationalCardBorder),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: true,
+          tilePadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+          childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+          leading: CircleAvatar(
+            radius: 22.r,
+            backgroundColor: const Color(0xFF007C89).withValues(alpha: .12),
+            child: Icon(
+              Icons.person_outline,
+              color: const Color(0xFF007C89),
+              size: 22.sp,
+            ),
+          ),
+          title: Text(
+            ownerName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+          ),
+          subtitle: Text(
+            [
+              'الرصيد: ${amount(box.totalBalance)} ${box.currency}',
+              _totalsText(),
+            ].join(' | '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.greyColor,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          children: [
+            Align(
+              alignment: AlignmentDirectional.center,
+              child: ElevatedButton.icon(
+                onPressed: onTransfer,
+                icon: const Icon(Icons.swap_horiz),
+                label: Text(
+                  'transferBalanceToAnotherBox'.tr ==
+                          'transferBalanceToAnotherBox'
+                      ? 'ترحيل لصندوق آخر'
+                      : 'transferBalanceToAnotherBox'.tr,
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondaryColor,
+                  foregroundColor: AppColors.whiteColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 10.h),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                'حركات صندوق $ownerName',
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            if (requestGroups.isEmpty)
+              Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: Text(
+                  'noData'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.greyColor,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            else
+              ...requestGroups.map(
+                (group) => _MaintenanceRequestLogTile(
+                  group: group,
+                  amount: amount,
+                  date: date,
+                  onOpenInvoice: onOpenInvoice,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceRequestGroup {
+  _MaintenanceRequestGroup(List<BoxLogModel> logs)
+      : logs = [...logs]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+  final List<BoxLogModel> logs;
+
+  BoxLogModel get primary => logs.first;
+  DateTime get createdAt => primary.createdAt;
+
+  String? get maintenanceId {
+    for (final log in logs) {
+      final value = log.maintenanceId?.trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  String? get invoiceNumber {
+    for (final log in logs) {
+      final value = log.invoiceNumber?.trim();
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  String? get note {
+    for (final log in logs) {
+      final value = log.note?.trim();
+      if (value != null &&
+          value.isNotEmpty &&
+          value != log.description.trim()) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  double get cash => _sumWhere((log) =>
+      log.affectsCashBalance &&
+      (log.paymentMethod == null || log.paymentMethod == 'cash'));
+
+  double get visa => _sumWhere((log) => log.paymentMethod == 'visa');
+
+  double get transfer =>
+      _sumWhere((log) => log.paymentMethod == 'bank_transfer');
+
+  double get debt => _sumWhere((log) => log.paymentMethod == 'debt');
+
+  double get paidTotal => cash + visa + transfer;
+
+  double _sumWhere(bool Function(BoxLogModel log) test) {
+    return logs
+        .where((log) => log.type != 'minus' && test(log))
+        .fold<double>(0, (sum, log) => sum + log.value.abs());
+  }
+}
+
+class _MaintenanceRequestLogTile extends StatelessWidget {
+  const _MaintenanceRequestLogTile({
+    required this.group,
+    required this.amount,
+    required this.date,
+    required this.onOpenInvoice,
+  });
+
+  final _MaintenanceRequestGroup group;
+  final String Function(double value) amount;
+  final String Function(DateTime date) date;
+  final ValueChanged<BoxLogModel> onOpenInvoice;
+
+  bool get _canOpenInvoice {
+    final maintenanceId = group.maintenanceId;
+    return maintenanceId != null && maintenanceId.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final maintenanceId = group.maintenanceId;
+    final invoiceNumber = group.invoiceNumber;
+    final note = group.note;
+
+    return InkWell(
+      onTap: _canOpenInvoice ? () => onOpenInvoice(group.primary) : null,
+      borderRadius: BorderRadius.circular(8.r),
+      child: Container(
+        margin: EdgeInsets.only(bottom: 8.h),
+        padding: EdgeInsets.all(10.w),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value
+              ? AppColors.customGreyColor
+              : const Color(0xFFF7F8FA),
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: AppColors.operationalCardBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.arrow_downward_rounded,
+              color: AppColors.customGreen1,
+              size: 18.sp,
+            ),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    maintenanceId == null
+                        ? 'حركة صيانة'
+                        : 'طلب صيانة #$maintenanceId',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w900),
+                  ),
+                  Text(
+                    date(group.createdAt),
+                    style: TextStyle(
+                      color: AppColors.greyColor,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (invoiceNumber != null)
+                    Text(
+                      '${'billNumber'.tr}: $invoiceNumber',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.primaryColor,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  if (note != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: 2.h),
+                      child: Text(
+                        note,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.greyColor,
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  SizedBox(height: 6.h),
+                  Wrap(
+                    spacing: 6.w,
+                    runSpacing: 6.h,
+                    children: [
+                      if (group.cash > 0)
+                        _MaintenancePaymentPill(
+                          label: 'كاش',
+                          value: amount(group.cash),
+                          color: AppColors.customGreen1,
+                        ),
+                      if (group.visa > 0)
+                        _MaintenancePaymentPill(
+                          label: 'فيزا',
+                          value: amount(group.visa),
+                          color: AppColors.primaryColor,
+                        ),
+                      if (group.transfer > 0)
+                        _MaintenancePaymentPill(
+                          label: 'حوالة',
+                          value: amount(group.transfer),
+                          color: AppColors.primaryColor,
+                        ),
+                      if (group.debt > 0)
+                        _MaintenancePaymentPill(
+                          label: 'دين متبقي',
+                          value: amount(group.debt),
+                          color: AppColors.redColor,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: 8.w),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (group.paidTotal > 0)
+                  Text(
+                    '+${amount(group.paidTotal)}',
+                    style: TextStyle(
+                      color: AppColors.customGreen1,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                if (group.debt > 0)
+                  Text(
+                    '-${amount(group.debt)}',
+                    style: TextStyle(
+                      color: AppColors.redColor,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenancePaymentPill extends StatelessWidget {
+  const _MaintenancePaymentPill({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: color.withValues(alpha: .35)),
+      ),
+      child: Text(
+        '$label: $value',
+        style: TextStyle(
+          color: color,
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
 enum _DailyBoxLogScope { today, yesterday, custom, all }
 
 class _DailyBoxCard extends StatefulWidget {
@@ -1079,6 +1866,19 @@ class _DailyBoxCard extends StatefulWidget {
 class _DailyBoxCardState extends State<_DailyBoxCard> {
   _DailyBoxLogScope _scope = _DailyBoxLogScope.today;
   DateTime? _customDate;
+
+  bool get _isMaintenanceBox =>
+      widget.box.type.toLowerCase() == 'daily_maintenance' ||
+      widget.box.boxName.contains('الصيانة');
+
+  String? get _boxOwnerName {
+    final parts = widget.box.boxName.split(' - ');
+    if (parts.length >= 2) {
+      final owner = parts[1].trim();
+      return owner.isEmpty ? null : owner;
+    }
+    return null;
+  }
 
   DateTime _dateOnly(DateTime date) {
     final local = date.toLocal();
@@ -1189,6 +1989,7 @@ class _DailyBoxCardState extends State<_DailyBoxCard> {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          initiallyExpanded: _isMaintenanceBox,
           tilePadding: EdgeInsets.all(14.w),
           childrenPadding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
           leading: Container(
@@ -1205,7 +2006,7 @@ class _DailyBoxCardState extends State<_DailyBoxCard> {
             ),
           ),
           title: Text(
-            widget.box.boxName,
+            _isMaintenanceBox ? 'صندوق الصيانة اليومي' : widget.box.boxName,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -1221,6 +2022,15 @@ class _DailyBoxCardState extends State<_DailyBoxCard> {
               runSpacing: 3.h,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
+                if (_boxOwnerName != null)
+                  Text(
+                    'الصندوق باسم: $_boxOwnerName',
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 Text(
                   widget.kindLabel,
                   style: TextStyle(
@@ -1258,7 +2068,9 @@ class _DailyBoxCardState extends State<_DailyBoxCard> {
             ),
             SizedBox(height: 12.h),
             Text(
-              'dailyBoxDayLog'.tr,
+              _isMaintenanceBox
+                  ? 'حركات صندوق ${_boxOwnerName ?? 'الصيانة'}'
+                  : 'dailyBoxDayLog'.tr,
               style: TextStyle(
                 color: textColor,
                 fontSize: 13.sp,
@@ -1411,6 +2223,9 @@ class _DailyBoxDayGroup extends StatelessWidget {
     final transferTotal = logs
         .where((log) => log.paymentMethod == 'bank_transfer')
         .fold<double>(0, (sum, log) => sum + log.value.abs());
+    final debtTotal = logs
+        .where((log) => log.paymentMethod == 'debt')
+        .fold<double>(0, (sum, log) => sum + log.value.abs());
     final invoiceCount = logs.where((log) {
       final invoice = log.invoiceNumber?.trim();
       return invoice != null && invoice.isNotEmpty;
@@ -1470,6 +2285,11 @@ class _DailyBoxDayGroup extends StatelessWidget {
                 _DailyBoxMetric(
                   label: 'حوالة',
                   value: amount(transferTotal),
+                ),
+              if (debtTotal > 0)
+                _DailyBoxMetric(
+                  label: 'دين',
+                  value: amount(debtTotal),
                 ),
               _DailyBoxMetric(
                 label: 'dailyBoxInvoicesCount'.tr,
@@ -1555,6 +2375,8 @@ class _DailyBoxLogTile extends StatelessWidget {
         return 'فيزا';
       case 'bank_transfer':
         return 'حوالة';
+      case 'debt':
+        return 'دين';
     }
     return null;
   }

@@ -211,6 +211,35 @@ class EmployeeImplement implements EmployeeRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, String>> changeEmployeePassword({
+    required String employeeId,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    if (!await networkInfo.isConnected) {
+      return Left(NoConnectionFailure());
+    }
+    try {
+      final result = await employeeDatasource.changeEmployeePassword(
+        employeeId: employeeId,
+        password: password,
+        passwordConfirmation: passwordConfirmation,
+      );
+      if (result['status'] == 'success') {
+        return Right(result['message'] ?? '');
+      }
+      return Left(
+        ValidationFailure(
+          result['message'] ?? 'Unknown error',
+          result,
+        ),
+      );
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
+    }
+  }
+
   // get all employees
   @override
   Future<List<EmployeeModel>> getEmployees() async {

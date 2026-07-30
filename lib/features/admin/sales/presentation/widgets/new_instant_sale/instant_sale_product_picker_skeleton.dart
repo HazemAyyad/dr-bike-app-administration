@@ -25,14 +25,33 @@ class InstantSaleProductPickerGridSkeleton extends StatelessWidget {
         final vGap = 6.h;
         final padH = 10.w;
         final desktop = DesktopLayout.isDesktop(context);
+        if (!desktop) {
+          final tileWidth = ((constraints.maxWidth - padH * 2 - hGap * 3) / 4)
+              .clamp(68.0, 96.0)
+              .toDouble();
+          return GridView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: padH),
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: hGap,
+              crossAxisSpacing: vGap,
+              mainAxisExtent: tileWidth,
+            ),
+            itemCount: 4 * visibleColumns,
+            itemBuilder: (_, __) => const _InstantSaleProductCardSkeleton(),
+          );
+        }
+
         final columns = DesktopLayout.gridColumnsForWidth(
           constraints.maxWidth - padH * 2,
-          minTileWidth: desktop ? 190 : 152.w,
-          min: desktop ? 4 : minRows,
-          max: desktop ? 8 : 10,
+          minTileWidth: 190,
+          min: 4,
+          max: 8,
           gap: hGap,
         );
-        final itemCount = columns * (desktop ? 4 : visibleColumns);
+        final itemCount = columns * maxRows;
 
         return GridView.builder(
           padding: EdgeInsets.symmetric(horizontal: padH),

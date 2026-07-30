@@ -10,6 +10,7 @@ import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:image_picker/image_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
@@ -21,6 +22,7 @@ import '../../../sales/data/models/product_model.dart';
 import '../../data/datasources/stock_datasource.dart';
 import '../../data/models/all_stock_products_model.dart';
 import '../../data/models/product_details_model.dart';
+import '../../data/models/quick_edit_product_model.dart';
 import '../../data/models/stock_products_page_result.dart';
 import '../../data/models/product_stock_movement_model.dart';
 import '../../data/models/store_section_model.dart';
@@ -138,9 +140,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     'storeLocationTab',
     'offerPackages',
     'deletedProducts',
+    if (Platform.isWindows) 'quickEditProducts',
   ].obs;
 
   final currentTab = 0.obs;
+
+  bool get isQuickEditTab =>
+      Platform.isWindows &&
+      currentTab.value == tabs.indexOf('quickEditProducts');
 
   void changeTab(int index) {
     if (index != currentTab.value) {
@@ -166,6 +173,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       if (deletedProducts.isEmpty) {
         _resetPaginationForCurrentTab();
         Future<void>(() async => getAllProducts());
+      }
+    } else if (isQuickEditTab) {
+      if (quickEditRows.isEmpty) {
+        resetQuickEditPagination();
+        Future<void>(() async => getQuickEditProducts());
       }
     } else {
       final needsLoad = (index == 0 && allProducts.isEmpty) ||
@@ -1381,11 +1393,18 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (!scrollController.hasClients) {
       return;
     }
-    if (currentTab.value == 3 || currentTab.value == 4) {
+    if (currentTab.value == 3 || currentTab.value == 4 || isQuickEditTab) {
       if (currentTab.value == 3 &&
           scrollController.position.pixels >=
               scrollController.position.maxScrollExtent - 120) {
         Future<void>(() async => loadMoreLocationFilterProducts());
+      }
+      if (isQuickEditTab &&
+          scrollController.position.pixels >=
+              scrollController.position.maxScrollExtent - 120 &&
+          quickEditHasMore &&
+          !isQuickEditLoadingMore.value) {
+        Future<void>(() async => getQuickEditProducts(isRefresh: true));
       }
       return;
     }
@@ -1410,14 +1429,23 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       <AllStockProductsModel>[].obs;
   final RxList<AllStockProductsModel> deletedProducts =
       <AllStockProductsModel>[].obs;
+  final RxList<QuickEditProductRowState> quickEditRows =
+      <QuickEditProductRowState>[].obs;
+  final RxBool isQuickEditLoading = false.obs;
+  final RxBool isQuickEditLoadingMore = false.obs;
+  final RxBool quickEditOnlyUnmarked = false.obs;
+  final RxnString quickEditEditingProductId = RxnString();
   int _productsPage = 1;
   int _clearancesPage = 1;
   int _combinationsPage = 1;
   int _deletedProductsPage = 1;
+  int quickEditPage = 1;
+  int quickEditLastPage = 1;
   bool _hasMoreProducts = true;
   bool _hasMoreClearances = true;
   bool _hasMoreCombinations = true;
   bool _hasMoreDeletedProducts = true;
+  bool quickEditHasMore = true;
 
   int get page {
     switch (currentTab.value) {
@@ -1540,6 +1568,11 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
   Future<void> pullToRefresh() async {
     _resetPaginationForCurrentTab();
+    if (isQuickEditTab) {
+      resetQuickEditPagination();
+      await getQuickEditProducts();
+      return;
+    }
     if (currentTab.value == 4) {
       if (Get.isRegistered<OfferPackagesController>()) {
         await Get.find<OfferPackagesController>().pullToRefresh();
@@ -1572,7 +1605,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
     try {
       isProductsCsvBusy(true);
-      final bytes = await stockDatasource.exportProductsCsv();
+      var exportFilters = productListFilters.value;
+      final activeSearch = stockSearchActiveQuery.value.trim().isNotEmpty
+          ? stockSearchActiveQuery.value.trim()
+          : stockSearchQueryController.text.trim();
+      if (activeSearch.isNotEmpty) {
+        exportFilters = exportFilters.copyWith(search: activeSearch);
+      }
+      final filters = exportFilters.hasActiveFilters ? exportFilters : null;
+      final bytes = await stockDatasource.exportProductsCsv(filters: filters);
       final dir = await _productsCsvExportDirectory();
       final file = File('${dir.path}/${_productsCsvFileName()}');
       await file.writeAsBytes(bytes, flush: true);
@@ -1584,7 +1625,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
         colorText: Colors.white,
         duration: const Duration(seconds: 4),
       );
-      await OpenFilex.open(file.path);
+      await _showProductsCsvExportActions(file);
     } on ServerException catch (e) {
       _showProductsCsvError(e.errorModel.errorMessage);
     } catch (e) {
@@ -1594,6 +1635,303 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     }
   }
 
+  Future<void> exportProductsImagesZip() async {
+    if (isProductsCsvBusy.value) {
+      return;
+    }
+
+    try {
+      isProductsCsvBusy(true);
+      final latest = await stockDatasource.latestProductsImagesZipExport();
+      if (latest != null && latest['status']?.toString() == 'completed') {
+        final shouldDownload = await Get.dialog<bool>(
+          AlertDialog(
+            title: Text('stockImagesReadyTitle'.tr),
+            content: Text(
+              'stockImagesReadyMessage'.trParams({
+                'size': latest['file_size_human']?.toString() ?? '',
+              }),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: Text('startNewExport'.tr),
+              ),
+              FilledButton(
+                onPressed: () => Get.back(result: true),
+                child: Text('download'.tr),
+              ),
+            ],
+          ),
+        );
+        if (shouldDownload == true) {
+          isProductsCsvBusy(false);
+          await downloadProductsImagesZipExport(
+            latest['id']?.toString() ?? '',
+          );
+          return;
+        }
+      } else if (latest != null &&
+          ['pending', 'processing'].contains(latest['status']?.toString())) {
+        final processed = latest['processed_products']?.toString() ?? '0';
+        final total = latest['total_products']?.toString() ?? '0';
+        Get.snackbar(
+          'stockImagesPreparingTitle'.tr,
+          'stockImagesPreparingMessage'.trParams({
+            'processed': processed,
+            'total': total,
+          }),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.secondaryColor,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+        return;
+      }
+
+      var exportFilters = productListFilters.value;
+      final activeSearch = stockSearchActiveQuery.value.trim().isNotEmpty
+          ? stockSearchActiveQuery.value.trim()
+          : stockSearchQueryController.text.trim();
+      if (activeSearch.isNotEmpty) {
+        exportFilters = exportFilters.copyWith(search: activeSearch);
+      }
+      final filters = exportFilters.hasActiveFilters ? exportFilters : null;
+      await stockDatasource.startProductsImagesZipExport(filters: filters);
+      Get.snackbar(
+        'success'.tr,
+        'stockImagesExportStarted'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+    } on ServerException catch (e) {
+      _showProductsCsvError(e.errorModel.errorMessage);
+    } catch (e) {
+      _showProductsCsvError(e.toString());
+    } finally {
+      isProductsCsvBusy(false);
+    }
+  }
+
+  StockProductFilters? currentStockImagesExportFilters() {
+    var exportFilters = productListFilters.value;
+    final activeSearch = stockSearchActiveQuery.value.trim().isNotEmpty
+        ? stockSearchActiveQuery.value.trim()
+        : stockSearchQueryController.text.trim();
+    if (activeSearch.isNotEmpty) {
+      exportFilters = exportFilters.copyWith(search: activeSearch);
+    }
+    return exportFilters.hasActiveFilters ? exportFilters : null;
+  }
+
+  Future<void> startNewProductsImagesZipExport() async {
+    if (isProductsCsvBusy.value) {
+      return;
+    }
+
+    try {
+      isProductsCsvBusy(true);
+      await stockDatasource.startProductsImagesZipExport(
+        filters: currentStockImagesExportFilters(),
+      );
+      Get.snackbar(
+        'success'.tr,
+        'stockImagesExportStarted'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 5),
+      );
+    } on ServerException catch (e) {
+      _showProductsCsvError(e.errorModel.errorMessage);
+    } catch (e) {
+      _showProductsCsvError(e.toString());
+    } finally {
+      isProductsCsvBusy(false);
+    }
+  }
+
+  Future<void> downloadProductsImagesZipExport(String exportId) async {
+    if (exportId.isEmpty) return;
+    if (isProductsCsvBusy.value) return;
+
+    try {
+      isProductsCsvBusy(true);
+      final status = await stockDatasource.productsImagesZipExportStatus(
+        exportId: exportId,
+      );
+      if (status == null || status['status']?.toString() != 'completed') {
+        Get.snackbar(
+          'stockImagesPreparingTitle'.tr,
+          'stockImagesNotReadyYet'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.secondaryColor,
+          colorText: Colors.white,
+        );
+        return;
+      }
+      final bytes = await stockDatasource.downloadProductsImagesZipExport(
+        exportId: exportId,
+      );
+      final dir = await _productsCsvExportDirectory();
+      final name = status['file_name']?.toString();
+      final file = File(
+        '${dir.path}/${name != null && name.isNotEmpty ? name : _productsImagesZipFileName()}',
+      );
+      await file.writeAsBytes(bytes, flush: true);
+      Get.snackbar(
+        'success'.tr,
+        '${'stockImagesExported'.tr}\n${file.path}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
+      await _showProductsZipExportActions(file);
+    } on ServerException catch (e) {
+      _showProductsCsvError(e.errorModel.errorMessage);
+    } catch (e) {
+      _showProductsCsvError(e.toString());
+    } finally {
+      isProductsCsvBusy(false);
+    }
+  }
+
+  Future<void> _showProductsCsvExportActions(File file) async {
+    await Get.bottomSheet<void>(
+      SafeArea(
+        child: Material(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.insert_drive_file_outlined),
+                  title: const Text('فتح الملف'),
+                  onTap: () async {
+                    Get.back<void>();
+                    await OpenFilex.open(file.path);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.folder_open_outlined),
+                  title: const Text('فتح موقع الملف'),
+                  subtitle: Text(file.parent.path),
+                  onTap: () async {
+                    Get.back<void>();
+                    await OpenFilex.open(file.parent.path);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.ios_share_outlined),
+                  title: const Text('مشاركة الملف'),
+                  subtitle: const Text('واتساب، ماسنجر، تليجرام، إيميل...'),
+                  onTap: () async {
+                    Get.back<void>();
+                    await SharePlus.instance.share(
+                      ShareParams(
+                        files: [
+                          XFile(
+                            file.path,
+                            mimeType:
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            name: file.uri.pathSegments.isNotEmpty
+                                ? file.uri.pathSegments.last
+                                : 'products.xlsx',
+                          ),
+                        ],
+                        text: 'ملف المنتجات',
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 8),
+                ListTile(
+                  leading: const Icon(Icons.close),
+                  title: Text('cancel'.tr),
+                  onTap: () => Get.back<void>(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  Future<void> _showProductsZipExportActions(File file) async {
+    await Get.bottomSheet<void>(
+      SafeArea(
+        child: Material(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.folder_zip_outlined),
+                  title: Text('openFile'.tr),
+                  onTap: () async {
+                    Get.back<void>();
+                    await OpenFilex.open(file.path);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.folder_open_outlined),
+                  title: const Text('فتح موقع الملف'),
+                  subtitle: Text(file.parent.path),
+                  onTap: () async {
+                    Get.back<void>();
+                    await OpenFilex.open(file.parent.path);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.ios_share_outlined),
+                  title: Text('shareFile'.tr),
+                  subtitle: const Text('واتساب، ماسنجر، تليجرام، إيميل...'),
+                  onTap: () async {
+                    Get.back<void>();
+                    await SharePlus.instance.share(
+                      ShareParams(
+                        files: [
+                          XFile(
+                            file.path,
+                            mimeType: 'application/zip',
+                            name: file.uri.pathSegments.isNotEmpty
+                                ? file.uri.pathSegments.last
+                                : 'stock_images.zip',
+                          ),
+                        ],
+                        text: 'ملف صور المخزون',
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 8),
+                ListTile(
+                  leading: const Icon(Icons.close),
+                  title: Text('cancel'.tr),
+                  onTap: () => Get.back<void>(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
   Future<void> importProductsCsv() async {
     if (isProductsCsvBusy.value) {
       return;
@@ -1601,7 +1939,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['csv', 'txt'],
+      allowedExtensions: ['csv', 'txt', 'xlsx', 'xls'],
       allowMultiple: false,
     );
     final path = result?.files.single.path;
@@ -1748,7 +2086,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     final now = DateTime.now();
     String two(int value) => value.toString().padLeft(2, '0');
 
-    return 'products_${now.year}-${two(now.month)}-${two(now.day)}_${two(now.hour)}-${two(now.minute)}.csv';
+    return 'products_${now.year}-${two(now.month)}-${two(now.day)}_${two(now.hour)}-${two(now.minute)}.xlsx';
+  }
+
+  String _productsImagesZipFileName() {
+    final now = DateTime.now();
+    String two(int value) => value.toString().padLeft(2, '0');
+
+    return 'stock_images_${now.year}-${two(now.month)}-${two(now.day)}_${two(now.hour)}-${two(now.minute)}.zip';
   }
 
   Future<Directory> _productsCsvExportDirectory() async {
@@ -1826,6 +2171,111 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       filters: filters,
       perPage: perPage,
     );
+  }
+
+  void resetQuickEditPagination() {
+    for (final row in quickEditRows) {
+      row.dispose();
+    }
+    quickEditRows.clear();
+    quickEditPage = 1;
+    quickEditLastPage = 1;
+    quickEditHasMore = true;
+    quickEditEditingProductId.value = null;
+  }
+
+  Future<void> getQuickEditProducts({bool isRefresh = false}) async {
+    if (!isQuickEditTab) return;
+    if (isQuickEditLoading.value || isQuickEditLoadingMore.value) return;
+    if (isRefresh && !quickEditHasMore) return;
+
+    try {
+      if (isRefresh) {
+        isQuickEditLoadingMore(true);
+      } else if (quickEditRows.isEmpty) {
+        isQuickEditLoading(true);
+      }
+
+      final result = await stockDatasource.getQuickEditProducts(
+        page: quickEditPage,
+        perPage: DesktopLayout.isDesktopPlatform ? 80 : 30,
+        filters: productListFilters.value.hasActiveFilters
+            ? productListFilters.value
+            : null,
+      );
+      quickEditLastPage = result.lastPage;
+      quickEditHasMore = result.currentPage < result.lastPage;
+      quickEditRows.addAll(
+        result.products.map((product) => QuickEditProductRowState(product)),
+      );
+      quickEditPage++;
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      isQuickEditLoading(false);
+      isQuickEditLoadingMore(false);
+    }
+  }
+
+  void editQuickEditRow(QuickEditProductRowState row) {
+    quickEditEditingProductId.value = row.product.productId;
+    row.isEditing.value = true;
+  }
+
+  Future<void> saveQuickEditRow(QuickEditProductRowState row) async {
+    if (row.isSaving.value) return;
+    try {
+      row.isSaving(true);
+      final updated = await stockDatasource.updateQuickEditProduct(
+        row.toProduct(),
+        markToday: row.markedToday.value,
+      );
+      row.replaceProduct(updated);
+      row.isEditing(false);
+      quickEditEditingProductId.value = null;
+      Get.snackbar('success'.tr, 'productUpdatedSuccess'.tr);
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      row.isSaving(false);
+    }
+  }
+
+  Future<void> toggleQuickEditMark(QuickEditProductRowState row) async {
+    if (row.isSaving.value) return;
+    final next = !row.markedToday.value;
+    try {
+      row.markedToday.value = next;
+      row.isSaving(true);
+      final updated = await stockDatasource.markQuickEditProduct(
+        productId: row.product.productId,
+        marked: next,
+      );
+      row.replaceProduct(updated);
+    } on ServerException catch (e) {
+      row.markedToday.value = !next;
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      row.isSaving(false);
+    }
   }
 
   // Get stock list for the active tab only (avoids 3× API calls and rate limits).
@@ -2806,6 +3256,10 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     if (routeArgs is Map && routeArgs['createProduct'] == true) {
       prepareCreateProduct();
     }
+    if (routeArgs is Map && routeArgs['stockImagesExportId'] != null) {
+      final exportId = routeArgs['stockImagesExportId'].toString();
+      Future<void>(() async => downloadProductsImagesZipExport(exportId));
+    }
     loadStockSearchHistory();
     getAllProducts();
     getCategories();
@@ -2874,7 +3328,132 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     closeoutsMinimumSaleController.dispose();
     closeoutsProductNameController.dispose();
     stockSearchQueryController.dispose();
+    for (final row in quickEditRows) {
+      row.dispose();
+    }
     super.onClose();
+  }
+}
+
+class QuickEditProductRowState {
+  QuickEditProductModel product;
+  final RxBool isEditing = false.obs;
+  final RxBool isSaving = false.obs;
+  final RxBool markedToday = false.obs;
+
+  final TextEditingController productCodeController = TextEditingController();
+  final TextEditingController nameArController = TextEditingController();
+  final TextEditingController nameEngController = TextEditingController();
+  final TextEditingController nameAbreeController = TextEditingController();
+  final TextEditingController descriptionArController = TextEditingController();
+  final TextEditingController normailPriceController = TextEditingController();
+  final TextEditingController wholesalePriceController =
+      TextEditingController();
+  final TextEditingController costPriceController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  final TextEditingController minSalePriceController = TextEditingController();
+  final TextEditingController stockController = TextEditingController();
+  final TextEditingController minStockController = TextEditingController();
+  final TextEditingController discountController = TextEditingController();
+  final TextEditingController rateController = TextEditingController();
+  final TextEditingController manufactureYearController =
+      TextEditingController();
+  final TextEditingController modelController = TextEditingController();
+  final TextEditingController rotationDateController = TextEditingController();
+
+  bool isShow = true;
+  bool isNewItem = false;
+  bool isMoreSales = false;
+  bool isSoldWithPaper = false;
+
+  QuickEditProductRowState(this.product) {
+    _fillControllers(product);
+  }
+
+  void _fillControllers(QuickEditProductModel value) {
+    productCodeController.text = value.productCode;
+    nameArController.text = value.nameAr;
+    nameEngController.text = value.nameEng;
+    nameAbreeController.text = value.nameAbree;
+    descriptionArController.text = value.descriptionAr;
+    normailPriceController.text = value.normailPrice;
+    wholesalePriceController.text = value.wholesalePrice;
+    costPriceController.text = value.costPrice;
+    priceController.text = value.price;
+    minSalePriceController.text = value.minSalePrice;
+    stockController.text = value.stock;
+    minStockController.text = value.minStock;
+    discountController.text = value.discount;
+    rateController.text = value.rate;
+    manufactureYearController.text = value.manufactureYear;
+    modelController.text = value.model;
+    rotationDateController.text = value.rotationDate;
+    isShow = value.isShow;
+    isNewItem = value.isNewItem;
+    isMoreSales = value.isMoreSales;
+    isSoldWithPaper = value.isSoldWithPaper;
+    markedToday.value = value.markedToday;
+  }
+
+  QuickEditProductModel toProduct() {
+    return QuickEditProductModel(
+      productId: product.productId,
+      productCode: productCodeController.text.trim(),
+      productImage: product.productImage,
+      nameAr: nameArController.text.trim(),
+      nameEng: nameEngController.text.trim(),
+      nameAbree: nameAbreeController.text.trim(),
+      descriptionAr: descriptionArController.text.trim(),
+      descriptionEng: product.descriptionEng,
+      descriptionAbree: product.descriptionAbree,
+      categoryName: product.categoryName,
+      subCategories: product.subCategories,
+      storeSectionName: product.storeSectionName,
+      normailPrice: normailPriceController.text.trim(),
+      wholesalePrice: wholesalePriceController.text.trim(),
+      costPrice: costPriceController.text.trim(),
+      price: priceController.text.trim(),
+      minSalePrice: minSalePriceController.text.trim(),
+      stock: stockController.text.trim(),
+      minStock: minStockController.text.trim(),
+      discount: discountController.text.trim(),
+      isShow: isShow,
+      isNewItem: isNewItem,
+      isMoreSales: isMoreSales,
+      isSoldWithPaper: isSoldWithPaper,
+      rate: rateController.text.trim(),
+      manufactureYear: manufactureYearController.text.trim(),
+      model: modelController.text.trim(),
+      rotationDate: rotationDateController.text.trim(),
+      projectName: product.projectName,
+      lastEditMarkedAt: product.lastEditMarkedAt,
+      markedToday: markedToday.value,
+    );
+  }
+
+  void replaceProduct(QuickEditProductModel value) {
+    product = value;
+    _fillControllers(value);
+  }
+
+  void dispose() {
+    productCodeController.dispose();
+    nameArController.dispose();
+    nameEngController.dispose();
+    nameAbreeController.dispose();
+    descriptionArController.dispose();
+    normailPriceController.dispose();
+    wholesalePriceController.dispose();
+    costPriceController.dispose();
+    priceController.dispose();
+    minSalePriceController.dispose();
+    stockController.dispose();
+    minStockController.dispose();
+    discountController.dispose();
+    rateController.dispose();
+    manufactureYearController.dispose();
+    modelController.dispose();
+    rotationDateController.dispose();
   }
 }
 

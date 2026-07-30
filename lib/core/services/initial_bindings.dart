@@ -72,11 +72,14 @@ const int employeesLogsViewPermissionId = 62;
 const int employeesOrdersManagePermissionId = 63;
 const int employeesFingerprintManagePermissionId = 64;
 const int employeesRewardsRulesManagePermissionId = 65;
+const int employeesPasswordManagePermissionId = 66;
 const String employeesSectionPermissionName = 'Employees Section';
 const String employeesViewPermissionName = 'Employees View';
 const String employeesCreatePermissionName = 'Employees Create';
 const String employeesEditBasicPermissionName = 'Employees Edit Basic';
 const String employeesDeletePermissionName = 'Employees Delete';
+const String employeesPasswordManagePermissionName =
+    'Employees Password Manage';
 const String employeesPermissionsViewPermissionName =
     'Employees Permissions View';
 const String employeesPermissionsManagePermissionName =
@@ -101,6 +104,7 @@ const List<String> employeeSectionDetailedPermissionNames = [
   employeesCreatePermissionName,
   employeesEditBasicPermissionName,
   employeesDeletePermissionName,
+  employeesPasswordManagePermissionName,
   employeesPermissionsViewPermissionName,
   employeesPermissionsManagePermissionName,
   employeesFinancialViewPermissionName,
@@ -120,6 +124,7 @@ const List<int> employeeSectionDetailedPermissionIds = [
   employeesCreatePermissionId,
   employeesEditBasicPermissionId,
   employeesDeletePermissionId,
+  employeesPasswordManagePermissionId,
   employeesPermissionsViewPermissionId,
   employeesPermissionsManagePermissionId,
   employeesFinancialViewPermissionId,
@@ -154,9 +159,11 @@ bool get canViewEmployees =>
     employeePermissionNames.contains(employeesViewPermissionName) ||
     employeePermissionNames.contains(employeesEditBasicPermissionName) ||
     employeePermissionNames.contains(employeesDeletePermissionName) ||
+    employeePermissionNames.contains(employeesPasswordManagePermissionName) ||
     employeePermissions.contains(employeesViewPermissionId) ||
     employeePermissions.contains(employeesEditBasicPermissionId) ||
     employeePermissions.contains(employeesDeletePermissionId) ||
+    employeePermissions.contains(employeesPasswordManagePermissionId) ||
     employeePermissions.contains(employeesSectionPermissionId);
 
 bool get canCreateEmployees =>
@@ -173,6 +180,11 @@ bool get canDeleteEmployees =>
     userType == 'admin' ||
     employeePermissionNames.contains(employeesDeletePermissionName) ||
     employeePermissions.contains(employeesDeletePermissionId);
+
+bool get canManageEmployeesPasswords =>
+    userType == 'admin' ||
+    employeePermissionNames.contains(employeesPasswordManagePermissionName) ||
+    employeePermissions.contains(employeesPasswordManagePermissionId);
 
 bool get canViewEmployeesPermissions =>
     userType == 'admin' ||

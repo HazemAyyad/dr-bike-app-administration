@@ -220,9 +220,145 @@ class MaintenanceDatasource {
     }
   }
 
-  Future<dynamic> openDailySession() async {
+  Future<dynamic> openDailySession({double openingBalance = 0}) async {
     try {
-      final response = await api.post(EndPoints.maintenanceDailySessionOpen);
+      final response = await api.post(
+        EndPoints.maintenanceDailySessionOpen,
+        data: {'opening_balance': openingBalance},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> requestDailySessionClosing({String? note}) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceDailySessionRequestClosing,
+        data: {if (note != null && note.trim().isNotEmpty) 'note': note},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> getPendingDailyClosing() async {
+    try {
+      final response = await api.get(EndPoints.maintenanceDailyClosingPending);
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> getOpenDailySessions() async {
+    try {
+      final response = await api.get(EndPoints.maintenanceDailySessionsOpen);
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> directCloseDailySession({
+    required int sessionId,
+    int? toBoxId,
+    String? reviewNote,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceDailyClosingDirect,
+        data: {
+          'session_id': sessionId,
+          if (toBoxId != null) 'to_box_id': toBoxId,
+          if (reviewNote != null && reviewNote.trim().isNotEmpty)
+            'review_note': reviewNote,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> approveDailyClosing({
+    required int closingRequestId,
+    int? toBoxId,
+    String? reviewNote,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceDailyClosingApprove,
+        data: {
+          'closing_request_id': closingRequestId,
+          if (toBoxId != null) 'to_box_id': toBoxId,
+          if (reviewNote != null && reviewNote.trim().isNotEmpty)
+            'review_note': reviewNote,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<dynamic> rejectDailyClosing({
+    required int closingRequestId,
+    String? reviewNote,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.maintenanceDailyClosingReject,
+        data: {
+          'closing_request_id': closingRequestId,
+          if (reviewNote != null && reviewNote.trim().isNotEmpty)
+            'review_note': reviewNote,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       final data = e.response?.data;
