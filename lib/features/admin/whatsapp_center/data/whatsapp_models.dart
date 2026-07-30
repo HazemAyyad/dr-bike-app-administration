@@ -67,20 +67,81 @@ class WhatsAppContact {
   final String phone;
   final String? profilePictureUrl;
   final int? customerId, supplierId;
+  final Map<String, dynamic> rawProfile;
   const WhatsAppContact(
       {required this.id,
       this.name,
       required this.phone,
       this.profilePictureUrl,
       this.customerId,
-      this.supplierId});
+      this.supplierId,
+      this.rawProfile = const {}});
   factory WhatsAppContact.fromJson(Map<String, dynamic> j) => WhatsAppContact(
       id: _int(j['id']),
       name: j['name']?.toString(),
       phone: j['phone']?.toString() ?? '',
       profilePictureUrl: j['profile_picture_url']?.toString(),
       customerId: int.tryParse(j['customer_id']?.toString() ?? ''),
-      supplierId: int.tryParse(j['supplier_id']?.toString() ?? ''));
+      supplierId: int.tryParse(j['supplier_id']?.toString() ?? ''),
+      rawProfile: j['raw_profile'] is Map
+          ? Map<String, dynamic>.from(j['raw_profile'] as Map)
+          : const {});
+}
+
+class ConversationTag {
+  final int id;
+  final String name;
+  final String? color;
+
+  const ConversationTag({required this.id, required this.name, this.color});
+
+  factory ConversationTag.fromJson(Map<String, dynamic> json) =>
+      ConversationTag(
+        id: _int(json['id']),
+        name: json['name']?.toString() ?? '',
+        color: json['color']?.toString(),
+      );
+}
+
+class ConversationAssignee {
+  final int? id;
+  final int? userId;
+  final String name;
+  final String? phone, jobTitle;
+
+  const ConversationAssignee({
+    this.id,
+    this.userId,
+    required this.name,
+    this.phone,
+    this.jobTitle,
+  });
+
+  factory ConversationAssignee.fromJson(Map<String, dynamic> json) =>
+      ConversationAssignee(
+        id: int.tryParse(json['id']?.toString() ?? ''),
+        userId: int.tryParse(json['user_id']?.toString() ?? ''),
+        name: json['name']?.toString() ?? '',
+        phone: json['phone']?.toString(),
+        jobTitle: json['job_title']?.toString(),
+      );
+}
+
+class MetaAppStatus {
+  final bool published;
+  final String mode, message;
+
+  const MetaAppStatus({
+    required this.published,
+    required this.mode,
+    required this.message,
+  });
+
+  factory MetaAppStatus.fromJson(Map<String, dynamic> json) => MetaAppStatus(
+        published: json['published'] == true || json['published'] == 1,
+        mode: json['mode']?.toString() ?? 'development',
+        message: json['message']?.toString() ?? '',
+      );
 }
 
 class WhatsAppConversation {
@@ -89,6 +150,9 @@ class WhatsAppConversation {
   final String? lastMessage, lastMessageType;
   final DateTime? lastMessageAt;
   final WhatsAppContact? contact;
+  final bool needsReply;
+  final ConversationAssignee? assignedEmployee;
+  final List<ConversationTag> tags;
 
   const WhatsAppConversation({
     required this.id,
@@ -101,6 +165,9 @@ class WhatsAppConversation {
     this.failedCount = 0,
     this.lastMessageType,
     this.contact,
+    this.needsReply = false,
+    this.assignedEmployee,
+    this.tags = const [],
   });
 
   factory WhatsAppConversation.fromJson(Map<String, dynamic> j) =>
@@ -115,6 +182,18 @@ class WhatsAppConversation {
         unreadCount: _int(j['unread_count']),
         failedCount: _int(j['failed_count']),
         lastMessageType: j['last_message_type']?.toString(),
+        needsReply: j['needs_reply'] == true || j['needs_reply'] == 1,
+        assignedEmployee: j['assigned_employee'] is Map
+            ? ConversationAssignee.fromJson(
+                Map<String, dynamic>.from(j['assigned_employee'] as Map))
+            : null,
+        tags: j['tags'] is List
+            ? (j['tags'] as List)
+                .whereType<Map>()
+                .map((item) =>
+                    ConversationTag.fromJson(Map<String, dynamic>.from(item)))
+                .toList()
+            : const [],
         contact: j['contact'] is Map
             ? WhatsAppContact.fromJson(
                 Map<String, dynamic>.from(j['contact'] as Map))
@@ -234,6 +313,7 @@ class WhatsAppSettings {
   final String? phoneNumberId, businessAccountId;
   final Map<String, dynamic> values;
   final List<SocialChannelSetting> channels;
+  final MetaAppStatus? metaAppStatus;
   const WhatsAppSettings({
     required this.configured,
     required this.message,
@@ -241,6 +321,7 @@ class WhatsAppSettings {
     this.businessAccountId,
     required this.values,
     this.channels = const [],
+    this.metaAppStatus,
   });
   factory WhatsAppSettings.fromJson(Map<String, dynamic> j) {
     final c = j['connection'] is Map
@@ -260,6 +341,10 @@ class WhatsAppSettings {
           .map((item) =>
               SocialChannelSetting.fromJson(Map<String, dynamic>.from(item)))
           .toList(),
+      metaAppStatus: j['meta_app_status'] is Map
+          ? MetaAppStatus.fromJson(
+              Map<String, dynamic>.from(j['meta_app_status'] as Map))
+          : null,
     );
   }
 }

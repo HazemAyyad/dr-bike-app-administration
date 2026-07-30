@@ -46,6 +46,31 @@ class WhatsAppApiService {
         if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
       });
 
+  Future<Map<String, dynamic>> resendMessage(
+    int conversationId,
+    int messageId, {
+    String channel = 'whatsapp',
+  }) =>
+      _post(
+          '$_socialBase/conversations/$channel/$conversationId/messages/$messageId/resend',
+          const {});
+
+  Future<Map<String, dynamic>> assignConversation(
+    int conversationId, {
+    required String channel,
+    int? employeeId,
+  }) =>
+      _post('$_socialBase/conversations/$channel/$conversationId/assign',
+          {'employee_id': employeeId});
+
+  Future<Map<String, dynamic>> updateConversationTags(
+    int conversationId, {
+    required String channel,
+    required List<String> tags,
+  }) =>
+      _post('$_socialBase/conversations/$channel/$conversationId/tags',
+          {'tags': tags});
+
   Future<Map<String, dynamic>> requestConversationContinuation(int id) =>
       _post('$_base/conversations/$id/request-continuation', const {});
 

@@ -103,13 +103,53 @@ class WhatsAppConversationScreen
                         surfaceTintColor: Colors.transparent,
                         icon: const Icon(Icons.more_vert),
                         onSelected: (value) {
-                          if (value == 'add_person') {
+                          if (value == 'profile') {
+                            _showProfileDetails(context);
+                          } else if (value == 'assign') {
+                            _showAssignSheet(context);
+                          } else if (value == 'tags') {
+                            _showTagsSheet(context);
+                          } else if (value == 'add_person') {
                             _showAddPerson(context);
                           } else if (value == 'share_products') {
                             Get.to(() => const WhatsAppProductPickerScreen());
                           }
                         },
                         itemBuilder: (_) => [
+                          const PopupMenuItem<String>(
+                            value: 'profile',
+                            child: Row(
+                              children: [
+                                Icon(Icons.badge_outlined,
+                                    color: Color(0xFF075E54)),
+                                SizedBox(width: 10),
+                                Text('تفاصيل البروفايل'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'assign',
+                            child: Row(
+                              children: [
+                                Icon(Icons.assignment_ind_outlined,
+                                    color: Color(0xFF075E54)),
+                                SizedBox(width: 10),
+                                Text('تعيين لموظف'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'tags',
+                            child: Row(
+                              children: [
+                                Icon(Icons.sell_outlined,
+                                    color: Color(0xFF075E54)),
+                                SizedBox(width: 10),
+                                Text('وسوم المحادثة'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(),
                           PopupMenuItem<String>(
                             value: 'add_person',
                             enabled: !linked,
@@ -148,6 +188,15 @@ class WhatsAppConversationScreen
               body: CustomPaint(
                 painter: _ChatPatternPainter(),
                 child: Column(children: [
+                  Obx(() {
+                    final status = controller.metaAppStatus.value;
+                    if (status == null ||
+                        status.published ||
+                        controller.channel == 'whatsapp') {
+                      return const SizedBox.shrink();
+                    }
+                    return _MetaUnpublishedBanner(status: status);
+                  }),
                   Expanded(child: Obx(() {
                     if (controller.loading.value) {
                       return const Center(child: CircularProgressIndicator());
@@ -401,6 +450,17 @@ class WhatsAppConversationScreen
                 controller.replyTo(message);
               },
             ),
+            if (message.direction == 'outbound' &&
+                message.status == 'failed' &&
+                message.type == 'text')
+              ListTile(
+                leading: const Icon(Icons.refresh, color: Color(0xFF1877F2)),
+                title: const Text('إعادة إرسال'),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.resendMessage(message);
+                },
+              ),
             ListTile(
               leading:
                   const Icon(Icons.delete_outline, color: Color(0xFFD93025)),
@@ -474,6 +534,218 @@ class WhatsAppConversationScreen
             ));
     name.dispose();
   }
+
+  Future<void> _showProfileDetails(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => SafeArea(
+        child: Obx(() {
+          final c = controller.conversation.value;
+          final contact = c?.contact;
+          final name = contact?.name?.isNotEmpty == true
+              ? contact!.name!
+              : c?.phone ?? 'بدون اسم';
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: _channelColor(controller.channel)
+                        .withValues(alpha: .14),
+                    backgroundImage:
+                        contact?.profilePictureUrl?.trim().isNotEmpty == true
+                            ? NetworkImage(contact!.profilePictureUrl!.trim())
+                            : null,
+                    child: contact?.profilePictureUrl?.trim().isNotEmpty == true
+                        ? null
+                        : Text(_avatarInitial(name)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(name,
+                            style: Theme.of(context).textTheme.titleMedium),
+                        Text(
+                            '${_channelLabel(controller.channel)} • ${c?.phone ?? ''}',
+                            textDirection: TextDirection.ltr,
+                            style: const TextStyle(color: Color(0xFF52635F))),
+                      ],
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 14),
+                _ProfileRow(
+                    icon: Icons.link_outlined,
+                    label: 'الربط',
+                    value: contact?.customerId != null
+                        ? 'زبون #${contact!.customerId}'
+                        : contact?.supplierId != null
+                            ? 'تاجر #${contact!.supplierId}'
+                            : 'غير مربوط'),
+                _ProfileRow(
+                    icon: Icons.assignment_ind_outlined,
+                    label: 'الموظف المسؤول',
+                    value: c?.assignedEmployee?.name ?? 'غير معين'),
+                _ProfileRow(
+                    icon: Icons.update_outlined,
+                    label: 'آخر رسالة',
+                    value: _time(c?.lastMessageAt)),
+                if (c?.tags.isNotEmpty == true)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children:
+                          c!.tags.map((tag) => _TagChip(tag: tag)).toList(),
+                    ),
+                  ),
+                if (contact?.rawProfile.isNotEmpty == true) ...[
+                  const Divider(height: 22),
+                  Text('بيانات Meta',
+                      style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 6),
+                  ...contact!.rawProfile.entries.take(8).map(
+                        (entry) => _ProfileRow(
+                          icon: Icons.info_outline,
+                          label: entry.key.toString(),
+                          value: entry.value?.toString() ?? '',
+                        ),
+                      ),
+                ],
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Future<void> _showAssignSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Obx(() {
+          final current = controller.conversation.value?.assignedEmployee?.id;
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 18),
+            children: [
+              Text('تعيين المحادثة',
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.person_off_outlined),
+                title: const Text('بدون تعيين'),
+                trailing: current == null ? const Icon(Icons.check) : null,
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.assignTo(null);
+                },
+              ),
+              ...controller.assignees.map(
+                (employee) => ListTile(
+                  leading: const Icon(Icons.support_agent),
+                  title: Text(employee.name),
+                  subtitle: employee.jobTitle == null
+                      ? null
+                      : Text(employee.jobTitle!),
+                  trailing:
+                      current == employee.id ? const Icon(Icons.check) : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.assignTo(employee.id);
+                  },
+                ),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Future<void> _showTagsSheet(BuildContext context) async {
+    final input = TextEditingController();
+    final selected = <String>{
+      ...controller.conversation.value?.tags.map((tag) => tag.name) ?? const []
+    }.obs;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+              14, 12, 14, MediaQuery.viewInsetsOf(context).bottom + 16),
+          child: Obx(() => Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('وسوم المحادثة',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: controller.availableTags.map((tag) {
+                      final active = selected.contains(tag.name);
+                      return FilterChip(
+                        selected: active,
+                        label: Text(tag.name),
+                        onSelected: (value) {
+                          value
+                              ? selected.add(tag.name)
+                              : selected.remove(tag.name);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: input,
+                    decoration: InputDecoration(
+                      labelText: 'وسم جديد',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () {
+                          final value = input.text.trim();
+                          if (value.isNotEmpty) selected.add(value);
+                          input.clear();
+                        },
+                      ),
+                    ),
+                    onSubmitted: (value) {
+                      final tag = value.trim();
+                      if (tag.isNotEmpty) selected.add(tag);
+                      input.clear();
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        controller.updateTags(selected.toList());
+                      },
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text('حفظ الوسوم'),
+                    ),
+                  ),
+                ],
+              )),
+        ),
+      ),
+    );
+    input.dispose();
+  }
 }
 
 class _Composer extends StatefulWidget {
@@ -514,6 +786,7 @@ class _ComposerState extends State<_Composer> {
                     if (!controller.customerServiceWindowOpen.value)
                       _closedWindowBanner()
                     else ...[
+                      if (!controller.recording.value) _quickReplies(),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -626,6 +899,28 @@ class _ComposerState extends State<_Composer> {
               icon: const Icon(Icons.close, size: 20),
             ),
           ],
+        ),
+      );
+
+  Widget _quickReplies() => SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          reverse: true,
+          itemCount: controller.quickReplies.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (_, index) => ActionChip(
+            avatar: const Icon(Icons.bolt_outlined, size: 16),
+            label: Text(
+              controller.quickReplies[index],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onPressed: () {
+              controller.insertQuickReply(controller.quickReplies[index]);
+              _messageFocus.requestFocus();
+            },
+          ),
         ),
       );
 
@@ -980,6 +1275,108 @@ class _ComposerState extends State<_Composer> {
   }
 }
 
+class _MetaUnpublishedBanner extends StatelessWidget {
+  const _MetaUnpublishedBanner({required this.status});
+
+  final MetaAppStatus status;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF3CD),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFFD76A)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.science_outlined,
+                color: Color(0xFF8A5A00), size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                status.message,
+                style: const TextStyle(
+                  color: Color(0xFF6F4A00),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label, value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF52635F)),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 105,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF52635F),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                textDirection: TextDirection.rtl,
+                style: const TextStyle(color: Color(0xFF102A25)),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _TagChip extends StatelessWidget {
+  const _TagChip({required this.tag});
+
+  final ConversationTag tag;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _parseColor(tag.color) ?? const Color(0xFF52635F);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: .35)),
+      ),
+      child: Text(
+        tag.name,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatPatternPainter extends CustomPainter {
   final Paint _paint = Paint()
     ..color = const Color(0x0C5F6F68)
@@ -1147,4 +1544,11 @@ String _channelLabel(String channel) =>
 String _avatarInitial(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? '?' : trimmed.characters.first;
+}
+
+Color? _parseColor(String? hex) {
+  if (hex == null || hex.isEmpty) return null;
+  final normalized = hex.replaceFirst('#', '');
+  final value = int.tryParse('FF$normalized', radix: 16);
+  return value == null ? null : Color(value);
 }

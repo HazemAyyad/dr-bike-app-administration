@@ -30,6 +30,16 @@ class WhatsAppConversationController extends GetxController {
   final customerServiceWindowOpen = true.obs;
   final customerServiceWindowExpiresAt = Rxn<DateTime>();
   final replyingTo = Rxn<WhatsAppMessage>();
+  final assignees = <ConversationAssignee>[].obs;
+  final availableTags = <ConversationTag>[].obs;
+  final metaAppStatus = Rxn<MetaAppStatus>();
+  final quickReplies = const [
+    'أهلًا بك في دكتور بايك، كيف بنقدر نساعدك؟',
+    'تمام، ممكن تبعت صورة أو فيديو للمشكلة؟',
+    'ممكن رقم هاتفك للتواصل؟',
+    'تم استلام طلبك وسيقوم أحد الموظفين بالمتابعة معك.',
+    'هل ترغب أن نشاركك المنتجات المتوفرة؟',
+  ];
   late final RecorderController recorder;
   final recording = false.obs;
   final recordingPaused = false.obs;
@@ -84,6 +94,20 @@ class WhatsAppConversationController extends GetxController {
         customerServiceWindowExpiresAt.value =
             DateTime.tryParse(serviceWindow['expires_at']?.toString() ?? '');
       }
+      final assigneesBlock = result['assignees'];
+      assignees.assignAll(assigneesBlock is List
+          ? assigneesBlock.whereType<Map>().map((item) =>
+              ConversationAssignee.fromJson(Map<String, dynamic>.from(item)))
+          : const []);
+      final tagsBlock = result['available_tags'];
+      availableTags.assignAll(tagsBlock is List
+          ? tagsBlock.whereType<Map>().map((item) =>
+              ConversationTag.fromJson(Map<String, dynamic>.from(item)))
+          : const []);
+      metaAppStatus.value = result['meta_app_status'] is Map
+          ? MetaAppStatus.fromJson(
+              Map<String, dynamic>.from(result['meta_app_status'] as Map))
+          : null;
       final data = block is Map && block['data'] is List
           ? block['data'] as List
           : const [];
@@ -164,6 +188,62 @@ class WhatsAppConversationController extends GetxController {
     } finally {
       sending.value = false;
     }
+  }
+
+  Future<void> resendMessage(WhatsAppMessage message) async {
+    if (sending.value) return;
+    sending.value = true;
+    try {
+      await api.resendMessage(id, message.id, channel: channel);
+      await load(silent: true);
+      Get.snackbar('تم', 'تمت إعادة إرسال الرسالة');
+    } catch (e) {
+      Get.snackbar('تعذر إعادة الإرسال', e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      sending.value = false;
+    }
+  }
+
+  Future<void> assignTo(int? employeeId) async {
+    try {
+      final result = await api.assignConversation(id,
+          channel: channel, employeeId: employeeId);
+      if (result['conversation'] is Map) {
+        conversation.value = WhatsAppConversation.fromJson(
+            Map<String, dynamic>.from(result['conversation'] as Map));
+      }
+      Get.snackbar(
+          'تم', employeeId == null ? 'تم إلغاء التعيين' : 'تم تعيين المحادثة');
+    } catch (e) {
+      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> updateTags(List<String> tags) async {
+    try {
+      final result =
+          await api.updateConversationTags(id, channel: channel, tags: tags);
+      if (result['conversation'] is Map) {
+        conversation.value = WhatsAppConversation.fromJson(
+            Map<String, dynamic>.from(result['conversation'] as Map));
+      }
+      final tagsBlock = result['available_tags'];
+      if (tagsBlock is List) {
+        availableTags.assignAll(tagsBlock.whereType<Map>().map((item) =>
+            ConversationTag.fromJson(Map<String, dynamic>.from(item))));
+      }
+      Get.snackbar('تم', 'تم تحديث وسوم المحادثة');
+    } catch (e) {
+      Get.snackbar('خطأ', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  void insertQuickReply(String text) {
+    final current = input.text;
+    input.text = current.trim().isEmpty ? text : '$current\n$text';
+    input.selection = TextSelection.collapsed(offset: input.text.length);
+    composing.value = input.text.trim().isNotEmpty;
   }
 
   Future<void> requestContinuation() async {

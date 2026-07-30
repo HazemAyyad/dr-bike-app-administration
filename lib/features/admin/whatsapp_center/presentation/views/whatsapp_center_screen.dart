@@ -599,6 +599,11 @@ class _ConversationFilters extends StatelessWidget {
                     'icon': Icons.error_outline
                   },
                   {
+                    'id': 'needs_reply',
+                    'label': 'تحتاج رد',
+                    'icon': Icons.priority_high_outlined
+                  },
+                  {
                     'id': 'linked',
                     'label': 'مربوطة',
                     'icon': Icons.verified_user_outlined
@@ -694,6 +699,11 @@ class _ConversationCard extends StatelessWidget {
           ),
           if (item.failedCount > 0)
             const Icon(Icons.error_outline, color: Colors.red, size: 18),
+          if (item.needsReply) ...[
+            const SizedBox(width: 4),
+            const Icon(Icons.priority_high_outlined,
+                color: Color(0xFFE65100), size: 18),
+          ],
         ]),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,6 +734,26 @@ class _ConversationCard extends StatelessWidget {
                     color: Color(0xFF1D9BF0),
                     icon: Icons.verified_user_outlined,
                   ),
+                if (item.needsReply)
+                  const _TinyBadge(
+                    label: 'تحتاج رد',
+                    color: Color(0xFFE65100),
+                    icon: Icons.priority_high_outlined,
+                  ),
+                if (item.assignedEmployee != null)
+                  _TinyBadge(
+                    label: item.assignedEmployee!.name,
+                    color: const Color(0xFF6D4C41),
+                    icon: Icons.support_agent,
+                  ),
+                ...item.tags.take(2).map(
+                      (tag) => _TinyBadge(
+                        label: tag.name,
+                        color:
+                            _parseColor(tag.color) ?? const Color(0xFF52635F),
+                        icon: Icons.sell_outlined,
+                      ),
+                    ),
               ],
             ),
           ],
@@ -840,6 +870,14 @@ void _showContactProfile(BuildContext context, WhatsAppConversation item) {
                 label: 'رسائل فاشلة',
                 value: '${item.failedCount}'),
             _ProfileRow(
+                icon: Icons.priority_high_outlined,
+                label: 'تحتاج رد',
+                value: item.needsReply ? 'نعم' : 'لا'),
+            _ProfileRow(
+                icon: Icons.assignment_ind_outlined,
+                label: 'الموظف المسؤول',
+                value: item.assignedEmployee?.name ?? 'غير معين'),
+            _ProfileRow(
               icon: Icons.link,
               label: 'الربط',
               value: contact?.customerId != null
@@ -848,6 +886,21 @@ void _showContactProfile(BuildContext context, WhatsAppConversation item) {
                       ? 'تاجر #${contact!.supplierId}'
                       : 'غير مربوط',
             ),
+            if (item.tags.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: item.tags
+                    .map((tag) => _TinyBadge(
+                          label: tag.name,
+                          color:
+                              _parseColor(tag.color) ?? const Color(0xFF52635F),
+                          icon: Icons.sell_outlined,
+                        ))
+                    .toList(),
+              ),
+            ],
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -1041,6 +1094,8 @@ class _SettingsTab extends StatelessWidget {
           icon: Icons.settings_outlined, text: 'لا توجد إعدادات');
     }
     return ListView(padding: const EdgeInsets.all(16), children: [
+      if (settings.metaAppStatus != null && !settings.metaAppStatus!.published)
+        _MetaSettingsBanner(status: settings.metaAppStatus!),
       Obx(() {
         final selectedChannel = controller.selectedChannel.value;
         final visibleChannels = selectedChannel == 'all'
@@ -1400,6 +1455,34 @@ class _HealthChip extends StatelessWidget {
       );
 }
 
+class _MetaSettingsBanner extends StatelessWidget {
+  final MetaAppStatus status;
+  const _MetaSettingsBanner({required this.status});
+
+  @override
+  Widget build(BuildContext context) => Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        color: const Color(0xFFFFF3CD),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Color(0xFFFFD76A)),
+        ),
+        child: ListTile(
+          leading: const Icon(Icons.science_outlined, color: Color(0xFF8A5A00)),
+          title: const Text('Meta في وضع اختبار'),
+          subtitle: Text(status.message),
+          trailing: Text(
+            status.mode,
+            style: const TextStyle(
+              color: Color(0xFF8A5A00),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      );
+}
+
 class _StateMessage extends StatelessWidget {
   final IconData icon;
   final String text;
@@ -1518,6 +1601,13 @@ Color _channelColor(String channel) =>
 String _avatarInitial(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? '?' : trimmed.characters.first;
+}
+
+Color? _parseColor(String? hex) {
+  if (hex == null || hex.isEmpty) return null;
+  final normalized = hex.replaceFirst('#', '');
+  final value = int.tryParse('FF$normalized', radix: 16);
+  return value == null ? null : Color(value);
 }
 
 String _healthLabel(String key) =>
