@@ -612,6 +612,8 @@ class SalesDatasource {
     List<Map<String, dynamic>>? cartOtherProducts,
     String? instantSaleId,
     String saleKind = kInstantSaleKindRegular,
+    String? closedDayEditMode,
+    String? closedDayEditReason,
   }) async {
     try {
       String resolvedProductId = productId;
@@ -715,8 +717,12 @@ class SalesDatasource {
           'payment_box_id': paymentBoxId,
         if (paymentBoxName != null && paymentBoxName.isNotEmpty)
           'payment_box_name': paymentBoxName,
-        if (paymentBoxId != null && paymentBoxId.isNotEmpty)
-          'payment_box_value': paymentBoxValue ?? '0',
+        if (paymentBoxValue != null && paymentBoxValue.isNotEmpty)
+          'payment_box_value': paymentBoxValue,
+        if (closedDayEditMode != null && closedDayEditMode.isNotEmpty)
+          'closed_day_edit_mode': closedDayEditMode,
+        if (closedDayEditReason != null && closedDayEditReason.isNotEmpty)
+          'closed_day_edit_reason': closedDayEditReason,
         ...otherProductsMap,
       };
       if (isEdit) {

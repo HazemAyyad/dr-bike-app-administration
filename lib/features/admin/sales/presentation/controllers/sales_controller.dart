@@ -2195,6 +2195,8 @@ class SalesController extends GetxController
 
   void clearActiveEditInstantSale() {
     activeEditInstantSaleId.value = null;
+    _closedDayEditMode = null;
+    _closedDayEditReason = null;
   }
 
   Map<String, dynamic> buildInstantSaleSuspendPayload() {
@@ -2912,6 +2914,109 @@ class SalesController extends GetxController
     bumpCartRevision();
   }
 
+  Future<bool> _prepareClosedDayEditDecision(InvoiceModel invoice) async {
+    if (!invoice.isSalesDailySessionClosed || invoice.isAdjustmentSale) {
+      _closedDayEditMode = null;
+      _closedDayEditReason = null;
+      return true;
+    }
+
+    final dialogContext = Get.overlayContext ?? Get.context;
+    if (dialogContext == null) return false;
+
+    final reasonCtrl = TextEditingController();
+    try {
+      final result = await showDialog<Map<String, String>?>(
+        context: dialogContext,
+        barrierDismissible: false,
+        builder: (ctx) {
+          Map<String, String>? closeWithMode(String mode) {
+            final reason = reasonCtrl.text.trim();
+            if (reason.isEmpty) {
+              Get.snackbar(
+                'error'.tr,
+                'سبب تعديل فاتورة من صندوق مغلق مطلوب.',
+                backgroundColor: Colors.red,
+              );
+              return null;
+            }
+            return {
+              'mode': mode,
+              'reason': reason,
+            };
+          }
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            title: const Text(
+              'تعديل فاتورة من صندوق مغلق',
+              style: TextStyle(color: Color(0xFF374151)),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'اختر كيف بدك نعالج الفرق. التصحيح الإداري لا يحرك أي صندوق، والتسوية المالية تسجل فرق الدفع على صندوق اليوم.',
+                  style: TextStyle(color: Color(0xFF4B5563), height: 1.35),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: reasonCtrl,
+                  minLines: 2,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: 'سبب التعديل',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                  ),
+                  style: const TextStyle(color: Color(0xFF374151)),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: Text('cancel'.tr),
+              ),
+              TextButton(
+                onPressed: () {
+                  final payload = closeWithMode('administrative_correction');
+                  if (payload != null) Navigator.pop(ctx, payload);
+                },
+                child: const Text('تصحيح إداري'),
+              ),
+              TextButton(
+                onPressed: () {
+                  final payload = closeWithMode('today_financial_settlement');
+                  if (payload != null) Navigator.pop(ctx, payload);
+                },
+                child: const Text('تسوية مالية اليوم'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (result == null) return false;
+      _closedDayEditMode = result['mode'];
+      _closedDayEditReason = result['reason'];
+      return true;
+    } finally {
+      reasonCtrl.dispose();
+    }
+  }
+
   Future<void> openEditInstantSaleFlow(
     BuildContext context,
     InstantSalesModel sale,
@@ -2937,10 +3042,10 @@ class SalesController extends GetxController
       final invoice =
           await invoiceModelUsecase.call(invoiceId: sale.id.toString());
       if ((invoice.status ?? '').toLowerCase() == 'cancelled') {
-        Helpers.showCustomDialogError(
-          context: context,
-          title: 'error'.tr,
-          message: 'instantSaleAlreadyCancelled'.tr,
+        Get.snackbar(
+          'error'.tr,
+          'instantSaleAlreadyCancelled'.tr,
+          backgroundColor: Colors.red,
         );
         return;
       }
@@ -2949,6 +3054,12 @@ class SalesController extends GetxController
         getAllProducts();
       }
       await loadOfferPackagesForSale();
+
+      if (!await _prepareClosedDayEditDecision(invoice)) {
+        clearActiveEditInstantSale();
+        resetInstantSaleForm();
+        return;
+      }
 
       activeEditInstantSaleId.value = sale.id;
       await hydrateFromInvoice(invoice);
@@ -2960,11 +3071,7 @@ class SalesController extends GetxController
           : AppRoutes.INSTANTSALEPRODUCTPICKER);
     } catch (e) {
       clearActiveEditInstantSale();
-      Helpers.showCustomDialogError(
-        context: context,
-        title: 'error'.tr,
-        message: e.toString(),
-      );
+      Get.snackbar('error'.tr, e.toString(), backgroundColor: Colors.red);
     } finally {
       isLoading(false);
     }
@@ -3018,6 +3125,8 @@ class SalesController extends GetxController
   String? _paymentBoxId;
   String? _paymentBoxName;
   String? _paymentBoxValue;
+  String? _closedDayEditMode;
+  String? _closedDayEditReason;
 
   void applyBuyerFromPayment(Map<String, dynamic> result) {
     _paymentBuyerType = result['buyer_type']?.toString() ?? 'unknown';
@@ -4474,6 +4583,7 @@ class SalesController extends GetxController
         'buyerName': _paymentBuyerName,
         'paymentBoxId': _paymentBoxId,
         'paymentBoxValue': _paymentBoxValue,
+        'closedDayEditMode': _closedDayEditMode,
         'cartPayloadCount': cartPayload?.length ?? 0,
         'itemsCount': items.length,
         'notesLength': instantSaleNotesText.length,
@@ -4507,6 +4617,8 @@ class SalesController extends GetxController
         offerPackageId:
             isPackageSale.value ? selectedPackageId.value?.toString() : null,
         instantSaleId: activeEditInstantSaleId.value?.toString(),
+        closedDayEditMode: _closedDayEditMode,
+        closedDayEditReason: _closedDayEditReason,
       );
       await result.fold(
         (failure) async {

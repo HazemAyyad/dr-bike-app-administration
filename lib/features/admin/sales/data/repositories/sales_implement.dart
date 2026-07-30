@@ -173,7 +173,9 @@ class SalesImplement implements SalesRepository {
       String? offerPackageId,
       List<Map<String, dynamic>>? cartOtherProducts,
       String? instantSaleId,
-      String saleKind = kInstantSaleKindRegular}) async {
+      String saleKind = kInstantSaleKindRegular,
+      String? closedDayEditMode,
+      String? closedDayEditReason}) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
     }
@@ -200,6 +202,8 @@ class SalesImplement implements SalesRepository {
         cartOtherProducts: cartOtherProducts,
         instantSaleId: instantSaleId,
         saleKind: saleKind,
+        closedDayEditMode: closedDayEditMode,
+        closedDayEditReason: closedDayEditReason,
       );
       if (result['status'] == 'success') {
         return Right(result['message']!);

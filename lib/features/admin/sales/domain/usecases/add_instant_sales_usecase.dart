@@ -31,6 +31,8 @@ class AddInstantSalesUsecase {
     List<Map<String, dynamic>>? cartOtherProducts,
     String? instantSaleId,
     String saleKind = kInstantSaleKindRegular,
+    String? closedDayEditMode,
+    String? closedDayEditReason,
   }) async {
     return await salesRepository.addInstantSales(
       productId: productId,
@@ -54,6 +56,8 @@ class AddInstantSalesUsecase {
       cartOtherProducts: cartOtherProducts,
       instantSaleId: instantSaleId,
       saleKind: saleKind,
+      closedDayEditMode: closedDayEditMode,
+      closedDayEditReason: closedDayEditReason,
     );
   }
 }

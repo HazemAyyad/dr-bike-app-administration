@@ -70,6 +70,8 @@ abstract class SalesRepository {
     List<Map<String, dynamic>>? cartOtherProducts,
     String? instantSaleId,
     String saleKind = kInstantSaleKindRegular,
+    String? closedDayEditMode,
+    String? closedDayEditReason,
   });
 
   Future<Either<Failure, String>> cancelInstantSale(

@@ -61,6 +61,10 @@ class InvoiceModel {
   final String? salesOrderSerial;
   final int? maintenanceId;
   final String? maintenanceInvoiceNumber;
+  final int? salesDailySessionId;
+  final String? salesDailyBusinessDate;
+  final String? salesDailySessionStatus;
+  final bool isSalesDailySessionClosed;
 
   InvoiceModel({
     required this.id,
@@ -118,6 +122,10 @@ class InvoiceModel {
     this.salesOrderSerial,
     this.maintenanceId,
     this.maintenanceInvoiceNumber,
+    this.salesDailySessionId,
+    this.salesDailyBusinessDate,
+    this.salesDailySessionStatus,
+    this.isSalesDailySessionClosed = false,
   });
 
   bool get isAdjustmentSale => saleKind == 'adjustment';
@@ -267,6 +275,18 @@ class InvoiceModel {
               : int.tryParse('${json['maintenance_id']}')),
       maintenanceInvoiceNumber:
           asNullableString(json['maintenance_invoice_number']),
+      salesDailySessionId: json['sales_daily_session_id'] == null
+          ? null
+          : (json['sales_daily_session_id'] is int
+              ? json['sales_daily_session_id'] as int
+              : int.tryParse('${json['sales_daily_session_id']}')),
+      salesDailyBusinessDate:
+          asNullableString(json['sales_daily_business_date']),
+      salesDailySessionStatus:
+          asNullableString(json['sales_daily_session_status']),
+      isSalesDailySessionClosed:
+          json['is_sales_daily_session_closed'] == true ||
+              json['is_sales_daily_session_closed'] == 1,
     );
   }
 
