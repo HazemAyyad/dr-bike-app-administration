@@ -83,12 +83,15 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
                 label: 'password',
                 hintText: 'password',
                 obscureText: true,
-                validator: controller.isEdit
-                    ? null
-                    : (v) => Validators.validatePassword(
-                          v,
-                          Get.locale?.languageCode ?? 'ar',
-                        ),
+                validator: (v) {
+                  if (controller.isEdit && (v == null || v.isEmpty)) {
+                    return null;
+                  }
+                  return Validators.validatePassword(
+                    v,
+                    Get.locale?.languageCode ?? 'ar',
+                  );
+                },
               ),
               SizedBox(height: 12.h),
               CustomTextField(
@@ -97,14 +100,17 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
                 label: 'passwordConfirmation',
                 hintText: 'passwordConfirmation',
                 obscureText: true,
-                validator: controller.isEdit
-                    ? null
-                    : (v) {
-                        if (v != controller.passwordController.text) {
-                          return 'passwordMismatch'.tr;
-                        }
-                        return null;
-                      },
+                validator: (v) {
+                  if (controller.isEdit &&
+                      controller.passwordController.text.isEmpty &&
+                      (v == null || v.isEmpty)) {
+                    return null;
+                  }
+                  if (v != controller.passwordController.text) {
+                    return 'passwordMismatch'.tr;
+                  }
+                  return null;
+                },
               ),
               SizedBox(height: 24.h),
               AppButton(

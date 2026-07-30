@@ -94,10 +94,10 @@ class AddAdminController extends GetxController {
         );
       },
       (success) async {
-        await sectionController.getAdminUsers();
         Get.back();
         Get.snackbar('success'.tr, success,
             snackPosition: SnackPosition.BOTTOM);
+        await sectionController.getAdminUsers();
       },
     );
   }
