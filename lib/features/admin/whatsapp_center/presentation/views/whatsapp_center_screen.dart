@@ -762,6 +762,7 @@ class _ConversationCard extends StatelessWidget {
           width: 66,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 _shortDate(item.lastMessageAt),
@@ -773,11 +774,16 @@ class _ConversationCard extends StatelessWidget {
               if (item.unreadCount > 0)
                 Badge(label: Text('${item.unreadCount}'))
               else
-                IconButton(
-                  tooltip: 'عرض البروفايل',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _showContactProfile(context, item),
-                  icon: const Icon(Icons.info_outline, size: 20),
+                Tooltip(
+                  message: 'عرض البروفايل',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => _showContactProfile(context, item),
+                    child: const SizedBox.square(
+                      dimension: 26,
+                      child: Icon(Icons.info_outline, size: 19),
+                    ),
+                  ),
                 ),
             ],
           ),
