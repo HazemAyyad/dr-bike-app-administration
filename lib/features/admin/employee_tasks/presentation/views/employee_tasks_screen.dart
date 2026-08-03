@@ -29,6 +29,7 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
         },
         action: false,
         actions: [
+          _EmployeeTaskAppBarTabs(controller: controller),
           Obx(
             () => IconButton(
               tooltip: 'employeeTasksSearch'.tr,
@@ -81,9 +82,6 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
           controller: controller.scrollController,
           physics: kRefreshableScrollPhysics,
           slivers: [
-            SliverToBoxAdapter(
-              child: _EmployeeTaskIconTabs(controller: controller),
-            ),
             GetBuilder<EmployeeTasksController>(
               id: 'searchBar',
               builder: (_) => SliverToBoxAdapter(
@@ -185,8 +183,8 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
   }
 }
 
-class _EmployeeTaskIconTabs extends StatelessWidget {
-  const _EmployeeTaskIconTabs({required this.controller});
+class _EmployeeTaskAppBarTabs extends StatelessWidget {
+  const _EmployeeTaskAppBarTabs({required this.controller});
 
   final EmployeeTasksController controller;
 
@@ -206,35 +204,24 @@ class _EmployeeTaskIconTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(
-      () => Container(
-        margin: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
-        padding: EdgeInsets.all(4.w),
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Row(
-          children: [
-            for (var i = 0; i < controller.tabs.length; i++)
-              Expanded(
-                child: _EmployeeTaskIconTab(
-                  icon: _iconForIndex(i),
-                  label: controller.tabs[i].tr,
-                  selected: controller.currentTab.value == i,
-                  onTap: () => controller.changeTab(i),
-                ),
-              ),
-          ],
-        ),
+      () => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < controller.tabs.length; i++)
+            _EmployeeTaskAppBarTab(
+              icon: _iconForIndex(i),
+              label: controller.tabs[i].tr,
+              selected: controller.currentTab.value == i,
+              onTap: () => controller.changeTab(i),
+            ),
+        ],
       ),
     );
   }
 }
 
-class _EmployeeTaskIconTab extends StatelessWidget {
-  const _EmployeeTaskIconTab({
+class _EmployeeTaskAppBarTab extends StatelessWidget {
+  const _EmployeeTaskAppBarTab({
     required this.icon,
     required this.label,
     required this.selected,
@@ -255,37 +242,19 @@ class _EmployeeTaskIconTab extends StatelessWidget {
             : AppColors.secondaryColor;
     return Tooltip(
       message: label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(9.r),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          height: 44.h,
-          padding: EdgeInsets.symmetric(horizontal: 4.w),
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(minWidth: 34.w, minHeight: 40.h),
+        onPressed: onTap,
+        icon: Container(
+          width: 30.w,
+          height: 30.w,
           decoration: BoxDecoration(
             color: selected ? AppColors.operationalPurple : Colors.transparent,
-            borderRadius: BorderRadius.circular(9.r),
+            shape: BoxShape.circle,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18.sp, color: fg),
-              SizedBox(width: 4.w),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10.5.sp,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                    color: fg,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: Icon(icon, size: 18.sp, color: fg),
         ),
       ),
     );
