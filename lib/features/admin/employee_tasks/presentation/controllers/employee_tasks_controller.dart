@@ -1629,6 +1629,13 @@ class EmployeeTasksController extends GetxController {
   /// Kept for callers that still use [changeWeek].
   void changeWeek(bool isNext) => changePeriod(isNext);
 
+  void jumpToPeriod(DateTime date) {
+    syncPeriodBounds(anchor: date);
+    applyFiltersForTab(currentTab.value);
+    scrollToToday();
+    update(['tasksList', 'periodBar']);
+  }
+
   final ScrollController scrollController = ScrollController();
 
   void scrollToToday() {

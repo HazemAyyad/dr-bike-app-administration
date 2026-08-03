@@ -31,7 +31,7 @@ class TasksViewModeBar extends GetView<EmployeeTasksController> {
         child: Row(
           children: [
             _navButton(
-              icon: Icons.chevron_right_rounded,
+              icon: Icons.chevron_left_rounded,
               onTap: () => controller.changePeriod(false),
             ),
             SizedBox(width: 2.w),
@@ -58,29 +58,54 @@ class TasksViewModeBar extends GetView<EmployeeTasksController> {
             ),
             SizedBox(width: 8.w),
             Expanded(
-              child: Text(
-                controller.compactPeriodLabel,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: ThemeService.isDark.value
-                          ? AppColors.primaryColor
-                          : AppColors.operationalNavy,
+              child: Tooltip(
+                message: 'selectDate'.tr,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8.r),
+                  onTap: () => _pickPeriodAnchor(context),
+                  child: Container(
+                    height: 32.h,
+                    alignment: Alignment.center,
+                    padding: EdgeInsets.symmetric(horizontal: 6.w),
+                    child: Text(
+                      controller.compactPeriodLabel,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                            color: ThemeService.isDark.value
+                                ? AppColors.primaryColor
+                                : AppColors.operationalNavy,
+                          ),
                     ),
+                  ),
+                ),
               ),
             ),
             SizedBox(width: 2.w),
             _navButton(
-              icon: Icons.chevron_left_rounded,
+              icon: Icons.chevron_right_rounded,
               onTap: () => controller.changePeriod(true),
             ),
           ],
         ),
       );
     });
+  }
+
+  Future<void> _pickPeriodAnchor(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: controller.startDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      locale: Get.locale,
+    );
+    if (picked != null) {
+      controller.jumpToPeriod(picked);
+    }
   }
 
   Widget _modeButton({
