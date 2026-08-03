@@ -118,58 +118,6 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
               ),
             ),
             const SliverToBoxAdapter(child: TasksViewModeBar()),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
-                child: Obx(() {
-                  controller.listEpoch.value;
-                  controller.tasksViewMode.value;
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            BoxConstraints(minWidth: 36.w, minHeight: 36.w),
-                        onPressed: () => controller.changePeriod(false),
-                        icon: Icon(
-                          Icons.chevron_left_rounded,
-                          color: AppColors.operationalPurple,
-                          size: 26.sp,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          controller.periodLabel,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.primaryColor
-                                        : AppColors.operationalNavy,
-                                  ),
-                        ),
-                      ),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            BoxConstraints(minWidth: 36.w, minHeight: 36.w),
-                        onPressed: () => controller.changePeriod(true),
-                        icon: Icon(
-                          Icons.chevron_right_rounded,
-                          color: AppColors.operationalPurple,
-                          size: 26.sp,
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ),
             const EmployeeTasks(),
             SliverToBoxAdapter(child: SizedBox(height: 72.h)),
           ],

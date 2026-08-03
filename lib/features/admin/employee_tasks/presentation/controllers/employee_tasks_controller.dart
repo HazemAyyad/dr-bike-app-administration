@@ -207,6 +207,16 @@ class EmployeeTasksController extends GetxController {
     return '${DateFormat('d/M/yyyy').format(startDate)} — ${DateFormat('d/M/yyyy').format(endDate)}';
   }
 
+  String get compactPeriodLabel {
+    if (tasksViewMode.value == tasksViewDaily) {
+      return DateFormat('d/M', Get.locale?.languageCode).format(startDate);
+    }
+    if (tasksViewMode.value == tasksViewWeekly) {
+      return '${DateFormat('d/M').format(startDate)} - ${DateFormat('d/M').format(endDate)}';
+    }
+    return DateFormat('M/yyyy').format(startDate);
+  }
+
   final RxBool deleteTask = false.obs;
 
   final RxBool deleteTasDuplicate = false.obs;
