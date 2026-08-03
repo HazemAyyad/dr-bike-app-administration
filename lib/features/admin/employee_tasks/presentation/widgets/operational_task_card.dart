@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../core/helpers/task_source_debug_badge.dart';
 import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
@@ -32,6 +31,9 @@ class OperationalTaskCard extends StatelessWidget {
     final progress = task.progress.clamp(0, 100);
     final showProgress = progress > 0 && task.status != 'completed';
     final matchedSubtasks = task.matchingSubtaskNames(searchQuery);
+    final taskNumber = task.taskId > 0 ? task.taskId : task.occurrenceId;
+    final displayName =
+        taskNumber != null ? '#$taskNumber ${task.taskName}' : task.taskName;
 
     return Material(
       color: Colors.transparent,
@@ -69,7 +71,7 @@ class OperationalTaskCard extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                task.taskName,
+                                displayName,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -99,15 +101,6 @@ class OperationalTaskCard extends StatelessWidget {
                             color: AppColors.customGreyColor5,
                           ),
                         ),
-                        TaskSourceDebugBadge(
-                          label: TaskSourceDebug.label(
-                            source: task.source,
-                            taskId: task.taskId,
-                            occurrenceId: task.occurrenceId,
-                            templateId: task.templateId,
-                            parentId: task.parentId,
-                          ),
-                        ),
                         if (matchedSubtasks.isNotEmpty) ...[
                           SizedBox(height: 3.h),
                           _SubtaskMatchLabel(names: matchedSubtasks),
@@ -131,14 +124,6 @@ class OperationalTaskCard extends StatelessWidget {
                       label: 'sharedTask'.tr,
                       color: AppColors.customGreen1,
                       icon: Icons.people_outline,
-                    ),
-                  ],
-                  if (task.isRepeatedCopy) ...[
-                    SizedBox(width: 4.w),
-                    _MiniChip(
-                      label: 'taskRepeatedCopy'.tr,
-                      color: AppColors.customOrange3,
-                      icon: Icons.copy_all_outlined,
                     ),
                   ],
                   SizedBox(width: 4.w),
