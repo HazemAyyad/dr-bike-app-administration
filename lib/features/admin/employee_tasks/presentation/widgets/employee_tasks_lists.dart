@@ -33,11 +33,7 @@ class EmployeeTasksLists extends StatelessWidget {
             if (controller.currentTab.value == controller.archiveTabIndex) {
               return;
             }
-            if (controller.isCompletedTab) {
-              _showReopenDialog(context, theme);
-            } else {
-              _showDeleteDialog(context, theme);
-            }
+            _showTaskActions(context, theme);
           },
           onTap: () => controller.openTaskDetails(order),
           child: OperationalTaskCard(
@@ -47,6 +43,142 @@ class EmployeeTasksLists extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  void _showTaskActions(BuildContext context, TextStyle theme) {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 20.h),
+        decoration: BoxDecoration(
+          color: ThemeService.isDark.value ? AppColors.darkColor : Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                order.taskName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.copyWith(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              ListTile(
+                leading: const Icon(Icons.notifications_active_outlined),
+                title: const Text('إرسال تذكير'),
+                subtitle: Text(order.displayAssigneeLabel),
+                onTap: () {
+                  Get.back();
+                  _showReminderDialog(context, theme);
+                },
+              ),
+              if (controller.isCompletedTab)
+                ListTile(
+                  leading: const Icon(Icons.restore_outlined),
+                  title: Text('reopenTask'.tr),
+                  onTap: () {
+                    Get.back();
+                    _showReopenDialog(context, theme);
+                  },
+                )
+              else
+                ListTile(
+                  leading: const Icon(Icons.delete_outline, color: Colors.red),
+                  title: Text('deleteTask'.tr),
+                  onTap: () {
+                    Get.back();
+                    _showDeleteDialog(context, theme);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showReminderDialog(BuildContext context, TextStyle theme) {
+    final noteController = TextEditingController();
+    Get.dialog(
+      Dialog(
+        backgroundColor: ThemeService.isDark.value
+            ? AppColors.darkColor
+            : AppColors.whiteColor,
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Obx(
+            () => controller.isLoading.value
+                ? const SizedBox(
+                    height: 120,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'إرسال تذكير',
+                        style: theme.copyWith(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        order.taskName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.copyWith(fontSize: 14.sp),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'سيصل التذكير إلى: ${order.displayAssigneeLabel}',
+                        style: theme.copyWith(fontSize: 12.sp),
+                      ),
+                      SizedBox(height: 12.h),
+                      TextField(
+                        controller: noteController,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          hintText: 'ملاحظة اختيارية',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      SizedBox(height: 16.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: Get.back,
+                              child: Text('cancel'.tr),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: AppButton(
+                              isSafeArea: false,
+                              text: 'send',
+                              onPressed: () => controller.sendTaskReminder(
+                                task: order,
+                                note: noteController.text,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    ).then((_) => noteController.dispose());
   }
 
   void _showReopenDialog(BuildContext context, TextStyle theme) {

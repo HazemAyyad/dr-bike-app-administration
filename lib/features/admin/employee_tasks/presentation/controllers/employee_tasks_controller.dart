@@ -2,10 +2,12 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:doctorbike/core/helpers/media_permissions.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../../../../core/helpers/camera_capture_helper.dart';
 import '../../../../../core/helpers/task_details_debug.dart';
 import '../../../../../core/helpers/task_recurrence_rules.dart';
@@ -208,6 +210,228 @@ class EmployeeTasksController extends GetxController {
   final RxBool deleteTask = false.obs;
 
   final RxBool deleteTasDuplicate = false.obs;
+  final RxBool isSearchVisible = false.obs;
+  final RxBool isExportingFutureTasks = false.obs;
+  final RxBool isClearingAllTasks = false.obs;
+
+  bool get canClearAllTasks => userType == 'admin';
+
+  void toggleSearch() {
+    isSearchVisible.value = !isSearchVisible.value;
+    if (!isSearchVisible.value) {
+      employeeNameController.clear();
+      filterEmployeeTasks();
+    }
+    update(['searchBar']);
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    employeeNameController.clear();
+    filterEmployeeTasks();
+    update(['searchBar']);
+  }
+
+  Future<void> exportFutureTasks() async {
+    if (isExportingFutureTasks.value) return;
+    isExportingFutureTasks.value = true;
+    try {
+      final bytes = await _taskDs.exportFutureEmployeeTasks();
+      if (bytes.isEmpty) {
+        Get.snackbar('تنبيه', 'ملف التصدير فارغ أو غير قابل للتحميل');
+        return;
+      }
+      final fileName =
+          'future_employee_tasks_with_subtasks_${DateFormat('yyyy-MM-dd').format(DateTime.now())}.xlsx';
+      final savedPath = await FilePicker.platform.saveFile(
+        dialogTitle: 'حفظ ملف مهام الموظفين',
+        fileName: fileName,
+        bytes: bytes,
+      );
+      if (savedPath == null) {
+        Get.snackbar('تنبيه', 'تم إلغاء حفظ الملف');
+        return;
+      }
+      Get.snackbar('تم', 'تم حفظ ملف المهام المستقبلية');
+      await OpenFilex.open(savedPath);
+    } catch (e) {
+      Get.snackbar('خطأ', 'فشل تصدير المهام: $e');
+    } finally {
+      isExportingFutureTasks.value = false;
+    }
+  }
+
+  String _previewLine(Map data, String key, String label) {
+    final value = data[key] ?? 0;
+    return '$label: $value';
+  }
+
+  Future<void> showClearAllTasksDialog() async {
+    if (!canClearAllTasks || isClearingAllTasks.value) return;
+    isClearingAllTasks.value = true;
+    try {
+      final preview = await _taskDs.clearEmployeeTasksPreview();
+      final data = preview['data'] is Map
+          ? Map<String, dynamic>.from(preview['data'] as Map)
+          : <String, dynamic>{};
+      isClearingAllTasks.value = false;
+      final passwordController = TextEditingController();
+      final confirmationController = TextEditingController();
+      await Get.dialog(
+        Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Obx(
+              () => isClearingAllTasks.value
+                  ? const SizedBox(
+                      height: 120,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'تفريغ كل مهام الموظفين',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          [
+                            _previewLine(data, 'employee_tasks_count',
+                                'المهام الرئيسية'),
+                            _previewLine(
+                                data, 'sub_tasks_count', 'المهام الفرعية'),
+                            _previewLine(
+                                data, 'occurrences_count', 'تكرارات المهام'),
+                            _previewLine(
+                                data, 'templates_count', 'قوالب التكرار'),
+                            _previewLine(data, 'future_tasks_count',
+                                'المهام المستقبلية'),
+                            _previewLine(data, 'completed_tasks_count',
+                                'المهام المكتملة'),
+                            _previewLine(
+                                data, 'canceled_tasks_count', 'المهام الملغاة'),
+                          ].join('\n'),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'تحذير: سيتم حذف هذه البيانات من النظام. اكتب DELETE وأدخل كلمة مرور الأدمن للتأكيد.',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: confirmationController,
+                          decoration: const InputDecoration(
+                            labelText: 'اكتب DELETE',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: passwordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'كلمة مرور الأدمن',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: Get.back,
+                                child: Text('cancel'.tr),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () async {
+                                  if (confirmationController.text.trim() !=
+                                      'DELETE') {
+                                    Get.snackbar(
+                                        'تنبيه', 'اكتب DELETE للتأكيد');
+                                    return;
+                                  }
+                                  await clearAllTasks(
+                                    passwordController.text,
+                                  );
+                                },
+                                child: const Text('حذف الكل'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+            ),
+          ),
+        ),
+      );
+      passwordController.dispose();
+      confirmationController.dispose();
+    } catch (e) {
+      Get.snackbar('خطأ', 'فشل تحميل ملخص التفريغ: $e');
+    } finally {
+      isClearingAllTasks.value = false;
+    }
+  }
+
+  Future<void> clearAllTasks(String password) async {
+    if (password.trim().isEmpty) {
+      Get.snackbar('تنبيه', 'أدخل كلمة مرور الأدمن');
+      return;
+    }
+    isClearingAllTasks.value = true;
+    try {
+      final res = await _taskDs.clearEmployeeTasks(password: password);
+      if (res['status'] == 'success') {
+        Get.back();
+        await getEmployeeTasks(scrollToTodayb: false);
+        Get.snackbar('تم', '${res['message'] ?? 'تم التفريغ'}');
+        return;
+      }
+      Get.snackbar('خطأ', '${res['message'] ?? 'فشل التفريغ'}');
+    } catch (e) {
+      Get.snackbar('خطأ', e.toString());
+    } finally {
+      isClearingAllTasks.value = false;
+    }
+  }
+
+  Future<void> sendTaskReminder({
+    required EmployeeTaskModel task,
+    String? note,
+  }) async {
+    isLoading(true);
+    try {
+      final actionTask = resolveTaskForInteraction(task);
+      final res = await _taskDs.sendEmployeeTaskReminder(
+        employeeTaskId: actionTask.taskId.toString(),
+        occurrenceId: actionTask.occurrenceId,
+        note: note,
+      );
+      if (res['status'] == 'success') {
+        Get.back();
+        Get.snackbar('تم', '${res['message'] ?? 'تم إرسال التذكير'}');
+        return;
+      }
+      Get.snackbar('خطأ', '${res['message'] ?? 'فشل إرسال التذكير'}');
+    } catch (e) {
+      Get.snackbar('خطأ', e.toString());
+    } finally {
+      isLoading(false);
+    }
+  }
 
   /// Default: current week. User can switch to daily / monthly.
   final RxString tasksViewMode = tasksViewWeekly.obs;

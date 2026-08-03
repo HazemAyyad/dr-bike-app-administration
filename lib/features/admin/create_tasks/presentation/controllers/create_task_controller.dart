@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:doctorbike/core/helpers/helpers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../../core/helpers/haptic_helper.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -48,6 +49,7 @@ class CreateTaskController extends GetxController {
   final formKey = GlobalKey<FormState>();
 
   final TextEditingController taskNameController = TextEditingController();
+  final FocusNode taskNameFocusNode = FocusNode();
   final TextEditingController taskDescriptionController =
       TextEditingController();
   final TextEditingController taskNotesController = TextEditingController();
@@ -260,6 +262,7 @@ class CreateTaskController extends GetxController {
 
   final startTime = TimeOfDay.now().obs;
   final endTime = TimeOfDay.now().obs;
+  bool _endManuallyChanged = false;
 
   RxInt isSelected = 0.obs;
 
@@ -329,9 +332,19 @@ class CreateTaskController extends GetxController {
 
   void _initDefaultEndAfterStart() {
     _mergeStartDateTime();
-    if (!endDate.value.isAfter(startDate.value)) {
-      endDate.value = startDate.value.add(const Duration(hours: 1));
-      endTime.value = TimeOfDay.fromDateTime(endDate.value);
+    _setEndOneHourAfterStart();
+    _endManuallyChanged = false;
+  }
+
+  void _setEndOneHourAfterStart() {
+    endDate.value = startDate.value.add(const Duration(hours: 1));
+    endTime.value = TimeOfDay.fromDateTime(endDate.value);
+  }
+
+  void _autoAdjustEndAfterStartChange() {
+    _mergeStartDateTime();
+    if (!_endManuallyChanged) {
+      _setEndOneHourAfterStart();
     }
   }
 
@@ -371,7 +384,7 @@ class CreateTaskController extends GetxController {
       if (isSpecialTaskFlow) {
         _initSpecialTaskDefaultEndDate();
       } else {
-        _mergeStartDateTime();
+        _autoAdjustEndAfterStartChange();
       }
     }
   }
@@ -390,6 +403,7 @@ class CreateTaskController extends GetxController {
         endTime.value.hour,
         endTime.value.minute,
       );
+      _endManuallyChanged = true;
       _mergeEndDateTime();
     }
   }
@@ -401,11 +415,11 @@ class CreateTaskController extends GetxController {
     );
     if (picked != null) {
       startTime.value = picked;
-      _mergeStartDateTime();
       if (isSpecialTaskFlow) {
+        _mergeStartDateTime();
         _initSpecialTaskDefaultEndDate();
-      } else if (!endDate.value.isAfter(startDate.value)) {
-        _ensureEndAfterStart(autoFix: true);
+      } else {
+        _autoAdjustEndAfterStartChange();
       }
     }
   }
@@ -417,6 +431,7 @@ class CreateTaskController extends GetxController {
     );
     if (picked != null) {
       endTime.value = picked;
+      _endManuallyChanged = true;
       _mergeEndDateTime();
       if (!endDate.value.isAfter(startDate.value)) {
         _ensureEndAfterStart(autoFix: true);
@@ -932,6 +947,7 @@ class CreateTaskController extends GetxController {
     selectedFile = data.adminImg.map((e) => File(e)).toList();
     startDate.value = data.startTime;
     endDate.value = data.endTime;
+    _endManuallyChanged = true;
     startTime.value = TimeOfDay.fromDateTime(data.startTime);
     endTime.value = TimeOfDay.fromDateTime(data.endTime);
     recordedPath.value = parseAudioFromApi(data.audio) ?? '';
@@ -1028,6 +1044,7 @@ class CreateTaskController extends GetxController {
     pointsController.text = data.points.toString();
     startDate.value = data.startTime;
     endDate.value = data.endTime;
+    _endManuallyChanged = false;
     startTime.value = TimeOfDay.fromDateTime(data.startTime);
     endTime.value = TimeOfDay.fromDateTime(data.endTime);
     hideTask.value = data.notShownForEmployee;
@@ -1137,6 +1154,12 @@ class CreateTaskController extends GetxController {
         title == 'addNewPravateTask' ||
         title == 'editSpecialTask') {
       updateRecurrenceSummary();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_closed && taskNameFocusNode.canRequestFocus) {
+          taskNameFocusNode.requestFocus();
+          SystemChannels.textInput.invokeMethod('TextInput.show');
+        }
+      });
     }
   }
 
@@ -1148,6 +1171,7 @@ class CreateTaskController extends GetxController {
     );
     _closed = true;
     taskNameController.dispose();
+    taskNameFocusNode.dispose();
     taskDescriptionController.dispose();
     taskNotesController.dispose();
     subTaskNameController.dispose();

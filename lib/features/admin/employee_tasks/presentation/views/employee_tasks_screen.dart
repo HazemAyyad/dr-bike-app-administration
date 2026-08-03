@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../../core/helpers/custom_app_bar.dart';
+import '../../../../../core/helpers/costom_dialog_filter.dart';
 import '../widgets/employee_tasks_fab_lens.dart';
 import '../../../../../core/helpers/custom_tab_bar.dart';
 import '../../../../../core/services/theme_service.dart';
@@ -29,6 +30,74 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
           Get.back();
         },
         action: false,
+        actions: [
+          Obx(
+            () => IconButton(
+              tooltip: 'employeeTasksSearch'.tr,
+              onPressed: controller.toggleSearch,
+              icon: Icon(
+                controller.isSearchVisible.value
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+            ),
+          ),
+          Obx(
+            () => IconButton(
+              tooltip: 'تصدير المهام المستقبلية',
+              onPressed: controller.isExportingFutureTasks.value
+                  ? null
+                  : controller.exportFutureTasks,
+              icon: controller.isExportingFutureTasks.value
+                  ? SizedBox(
+                      width: 18.w,
+                      height: 18.w,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(
+                      Icons.file_download_outlined,
+                      color: ThemeService.isDark.value
+                          ? AppColors.primaryColor
+                          : AppColors.secondaryColor,
+                    ),
+            ),
+          ),
+          if (controller.canClearAllTasks)
+            IconButton(
+              tooltip: 'تفريغ كل المهام',
+              onPressed: controller.showClearAllTasksDialog,
+              icon: const Icon(
+                Icons.delete_sweep_outlined,
+                color: Colors.red,
+              ),
+            ),
+          IconButton(
+            tooltip: 'filter'.tr,
+            onPressed: () {
+              showCustomDialog(
+                context,
+                fromDateController: controller.fromDateController,
+                toDateController: controller.toDateController,
+                employeeNameController: controller.employeeNameController,
+                label: 'employeeTasksSearch',
+                onPressed: () {
+                  controller.filterEmployeeTasks();
+                  Get.back();
+                },
+              );
+            },
+            icon: Icon(
+              Icons.calendar_today_outlined,
+              color: ThemeService.isDark.value
+                  ? AppColors.primaryColor
+                  : AppColors.secondaryColor,
+            ),
+          ),
+          SizedBox(width: 8.w),
+        ],
       ),
       body: AppPullToRefresh(
         onRefresh: controller.pullToRefresh,
@@ -43,20 +112,38 @@ class EmployeeTasksScreen extends GetView<EmployeeTasksController> {
                 changeTab: controller.changeTab,
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-                child: SearchBar(
-                  controller: controller.employeeNameController,
-                  shadowColor: WidgetStateProperty.all(Colors.transparent),
-                  leading: const Icon(Icons.search),
-                  hintText: 'employeeTasksSearchHint'.tr,
-                  backgroundColor: WidgetStateProperty.all(
-                    ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.customGreyColor7,
-                  ),
-                  onChanged: (_) => controller.filterEmployeeTasks(),
+            GetBuilder<EmployeeTasksController>(
+              id: 'searchBar',
+              builder: (_) => SliverToBoxAdapter(
+                child: Obx(
+                  () => controller.isSearchVisible.value
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 6.h,
+                          ),
+                          child: SearchBar(
+                            controller: controller.employeeNameController,
+                            shadowColor:
+                                WidgetStateProperty.all(Colors.transparent),
+                            leading: const Icon(Icons.search),
+                            trailing: [
+                              IconButton(
+                                tooltip: 'cancel'.tr,
+                                onPressed: controller.closeSearch,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                            hintText: 'employeeTasksSearchHint'.tr,
+                            backgroundColor: WidgetStateProperty.all(
+                              ThemeService.isDark.value
+                                  ? AppColors.customGreyColor
+                                  : AppColors.customGreyColor7,
+                            ),
+                            onChanged: (_) => controller.filterEmployeeTasks(),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ),

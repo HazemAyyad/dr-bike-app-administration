@@ -273,6 +273,12 @@ class EndPoints {
   static const String getEmployeeTasks = 'employee/ongoing/tasks';
   static const String getCompletedTasks = 'employee/completed/tasks';
   static const String getCanceledTasks = 'employee/canceled/tasks';
+  static const String exportFutureEmployeeTasks =
+      'employee/tasks/export/future';
+  static const String clearEmployeeTasksPreview =
+      'employee/tasks/clear/preview';
+  static const String clearEmployeeTasks = 'employee/tasks/clear';
+  static const String sendEmployeeTaskReminder = 'employee/task/send-reminder';
   static const String cancelEmployeeTask = 'cancel/employee/task';
   static const String cancelEmployeeTaskWithRepetition =
       'cancel/employee/task/with/repetition';

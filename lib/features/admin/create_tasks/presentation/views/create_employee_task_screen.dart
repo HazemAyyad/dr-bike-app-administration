@@ -59,6 +59,7 @@ class CreateEmployeeTaskScreen extends GetView<CreateTaskController> {
                             label: 'taskName',
                             hintText: 'taskNameExample',
                             controller: controller.taskNameController,
+                            focusNode: controller.taskNameFocusNode,
                             keyboardType: TextInputType.multiline,
                             textInputAction: TextInputAction.newline,
                             minLines: 2,

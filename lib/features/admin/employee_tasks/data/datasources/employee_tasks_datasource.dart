@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide MultipartFile;
@@ -154,6 +155,97 @@ class EmployeeTasksDatasource {
           errorMessage: data['message'] ?? 'Unknown error',
           status: data['status'] ?? 500,
           data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Uint8List> exportFutureEmployeeTasks() async {
+    try {
+      final response = await api.get(
+        EndPoints.exportFutureEmployeeTasks,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final data = response.data;
+      if (data is Uint8List) return data;
+      if (data is List<int>) return Uint8List.fromList(data);
+      return Uint8List(0);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data?['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> clearEmployeeTasksPreview() async {
+    try {
+      final response = await api.get(EndPoints.clearEmployeeTasksPreview);
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data?['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> clearEmployeeTasks({
+    required String password,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.clearEmployeeTasks,
+        data: {
+          'password': password,
+          'confirmation': 'DELETE',
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data?['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> sendEmployeeTaskReminder({
+    required String employeeTaskId,
+    int? occurrenceId,
+    String? note,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.sendEmployeeTaskReminder,
+        data: {
+          if (occurrenceId != null && occurrenceId > 0)
+            'occurrence_id': occurrenceId
+          else
+            'employee_task_id': employeeTaskId,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        },
+      );
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data?['message'] ?? 'Unknown error',
+          status: data?['status'] ?? 500,
+          data: data?['data'] ?? {},
         ),
       );
     }
