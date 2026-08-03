@@ -11,6 +11,7 @@ import '../../domain/entities/task_assignee_info.dart';
 class EmployeeTaskModel extends EmployeeTaskEntity {
   EmployeeTaskModel({
     required int taskId,
+    int? displayNumber,
     int? occurrenceId,
     String? parentId,
     String source = 'legacy',
@@ -39,6 +40,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     List<String> subtaskNames = const [],
   }) : super(
           taskId: taskId,
+          displayNumber: displayNumber,
           occurrenceId: occurrenceId,
           parentId: parentId,
           source: source,
@@ -69,9 +71,8 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
 
   factory EmployeeTaskModel.fromJson(Map<String, dynamic> json) {
     final trt = json[ApiKey.task_recurrence_time];
-    final List<String> recurrenceTimes = trt is List
-        ? trt.map((e) => e.toString()).toList()
-        : const [];
+    final List<String> recurrenceTimes =
+        trt is List ? trt.map((e) => e.toString()).toList() : const [];
     final assignees = _parseAssignees(json['assignees']);
     final assigneeIds = json['assignee_ids'] is List
         ? (json['assignee_ids'] as List).map((e) => asInt(e)).toList()
@@ -83,6 +84,8 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
 
     return EmployeeTaskModel(
       taskId: asInt(json[ApiKey.task_id]),
+      displayNumber:
+          json['display_number'] != null ? asInt(json['display_number']) : null,
       occurrenceId:
           json['occurrence_id'] != null ? asInt(json['occurrence_id']) : null,
       parentId: asNullableString(json[ApiKey.parent_id]),
@@ -107,7 +110,8 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
       proofRequired: asBool(json['is_forced_to_upload_img']),
       taskRecurrence: asString(json[ApiKey.task_recurrence], 'noRepeat'),
       taskRecurrenceTime: recurrenceTimes,
-      templateId: json['template_id'] != null ? asInt(json['template_id']) : null,
+      templateId:
+          json['template_id'] != null ? asInt(json['template_id']) : null,
       assigneeIds: assigneeIds,
       assignees: assignees,
       isShared: json.containsKey('is_shared')
@@ -149,6 +153,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     }
     return EmployeeTaskModel(
       taskId: taskId,
+      displayNumber: displayNumber,
       occurrenceId: occurrenceId,
       parentId: parentId,
       source: source,
@@ -192,6 +197,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
     }
     return EmployeeTaskModel(
       taskId: taskId,
+      displayNumber: displayNumber,
       occurrenceId: occurrenceId,
       parentId: parentId,
       source: source,
@@ -224,6 +230,7 @@ class EmployeeTaskModel extends EmployeeTaskEntity {
   Map<String, dynamic> toJson() {
     return {
       ApiKey.task_id: taskId,
+      'display_number': displayNumber,
       ApiKey.parent_id: parentId,
       'source': source,
       ApiKey.task_name: taskName,

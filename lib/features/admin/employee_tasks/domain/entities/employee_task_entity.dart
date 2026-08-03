@@ -2,6 +2,7 @@ import 'task_assignee_info.dart';
 
 class EmployeeTaskEntity {
   final int taskId;
+  final int? displayNumber;
   final int? occurrenceId;
   final String? parentId;
   final String source;
@@ -31,6 +32,7 @@ class EmployeeTaskEntity {
 
   EmployeeTaskEntity({
     required this.taskId,
+    this.displayNumber,
     this.occurrenceId,
     this.parentId,
     this.source = 'legacy',
