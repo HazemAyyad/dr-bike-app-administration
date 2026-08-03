@@ -104,81 +104,13 @@ class EmployeeTasksLists extends StatelessWidget {
   }
 
   void _showReminderDialog(BuildContext context, TextStyle theme) {
-    final noteController = TextEditingController();
     Get.dialog(
-      Dialog(
-        backgroundColor: ThemeService.isDark.value
-            ? AppColors.darkColor
-            : AppColors.whiteColor,
-        child: Padding(
-          padding: EdgeInsets.all(16.w),
-          child: Obx(
-            () => controller.isLoading.value
-                ? const SizedBox(
-                    height: 120,
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'إرسال تذكير',
-                        style: theme.copyWith(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        order.taskName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.copyWith(fontSize: 14.sp),
-                      ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        'سيصل التذكير إلى: ${order.displayAssigneeLabel}',
-                        style: theme.copyWith(fontSize: 12.sp),
-                      ),
-                      SizedBox(height: 12.h),
-                      TextField(
-                        controller: noteController,
-                        minLines: 2,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          hintText: 'ملاحظة اختيارية',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      SizedBox(height: 16.h),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: Get.back,
-                              child: Text('cancel'.tr),
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: AppButton(
-                              isSafeArea: false,
-                              text: 'send',
-                              onPressed: () => controller.sendTaskReminder(
-                                task: order,
-                                note: noteController.text,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-          ),
-        ),
+      _TaskReminderDialog(
+        controller: controller,
+        order: order,
+        theme: theme,
       ),
-    ).then((_) => noteController.dispose());
+    );
   }
 
   void _showReopenDialog(BuildContext context, TextStyle theme) {
@@ -324,6 +256,115 @@ class EmployeeTasksLists extends StatelessWidget {
                   ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TaskReminderDialog extends StatefulWidget {
+  const _TaskReminderDialog({
+    required this.controller,
+    required this.order,
+    required this.theme,
+  });
+
+  final EmployeeTasksController controller;
+  final EmployeeTaskModel order;
+  final TextStyle theme;
+
+  @override
+  State<_TaskReminderDialog> createState() => _TaskReminderDialogState();
+}
+
+class _TaskReminderDialogState extends State<_TaskReminderDialog> {
+  final TextEditingController _noteController = TextEditingController();
+  bool _isSending = false;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendReminder() async {
+    if (_isSending) return;
+    setState(() => _isSending = true);
+    await widget.controller.sendTaskReminder(
+      task: widget.order,
+      note: _noteController.text,
+    );
+    if (mounted) {
+      setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: ThemeService.isDark.value
+          ? AppColors.darkColor
+          : AppColors.whiteColor,
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: _isSending
+            ? const SizedBox(
+                height: 120,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'إرسال تذكير',
+                    style: widget.theme.copyWith(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    widget.order.taskName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: widget.theme.copyWith(fontSize: 14.sp),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    'سيصل التذكير إلى: ${widget.order.displayAssigneeLabel}',
+                    style: widget.theme.copyWith(fontSize: 12.sp),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextField(
+                    controller: _noteController,
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText: 'ملاحظة اختيارية',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: Get.back,
+                          child: Text('cancel'.tr),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: AppButton(
+                          isSafeArea: false,
+                          text: 'send',
+                          onPressed: _sendReminder,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
       ),
     );
   }
