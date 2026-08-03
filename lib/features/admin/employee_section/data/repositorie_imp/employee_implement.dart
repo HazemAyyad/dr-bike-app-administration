@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dartz/dartz.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_details_model.dart';
+import 'package:flutter/foundation.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/employee_advances_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_details_model.dart';
 import 'package:doctorbike/features/admin/employee_section/data/models/financial_dues_model.dart';
@@ -981,6 +982,7 @@ class EmployeeImplement implements EmployeeRepository {
     }
     try {
       final result = await request();
+      debugPrint('[AdminEdit] repository result=$result');
       if (result['status'] == 'success') {
         return Right(result['message']?.toString() ?? 'success');
       }
@@ -991,6 +993,10 @@ class EmployeeImplement implements EmployeeRepository {
         ),
       );
     } on ServerException catch (e) {
+      debugPrint(
+        '[AdminEdit] repository ServerException '
+        'message=${e.errorModel.errorMessage} data=${e.errorModel.data}',
+      );
       return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
     }
   }

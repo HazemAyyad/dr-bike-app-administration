@@ -202,7 +202,7 @@ class StockMovementsTable extends StatelessWidget {
   ) {
     final qty = m.quantity;
     final qtyColor = qty >= 0 ? Colors.green.shade700 : AppColors.redColor;
-    final qtyText = qty >= 0 ? '+$qty' : '$qty';
+    final qtyText = qty == 0 ? '—' : (qty > 0 ? '+$qty' : '$qty');
     final variant = [
       if (m.size != null && m.size!.isNotEmpty) m.size,
       if (m.colorAr != null && m.colorAr!.isNotEmpty) m.colorAr,
@@ -268,7 +268,7 @@ class StockMovementListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final qty = movement.quantity;
     final qtyColor = qty >= 0 ? Colors.green.shade700 : AppColors.redColor;
-    final qtyText = qty >= 0 ? '+$qty' : '$qty';
+    final qtyText = qty == 0 ? '—' : (qty > 0 ? '+$qty' : '$qty');
     final variant = [
       if (movement.size != null && movement.size!.isNotEmpty) movement.size,
       if (movement.colorAr != null && movement.colorAr!.isNotEmpty)

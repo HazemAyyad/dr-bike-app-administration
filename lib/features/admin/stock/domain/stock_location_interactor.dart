@@ -16,10 +16,12 @@ class StockLocationInteractor {
   Future<ProductsByLocationResult> loadProductsByLocation({
     required String sectionId,
     required int page,
+    int perPage = 15,
   }) =>
       _ds.getProductsByLocation(
         sectionId: sectionId,
         page: page,
+        perPage: perPage,
       );
 
   Future<StoreSectionModel> createSection({

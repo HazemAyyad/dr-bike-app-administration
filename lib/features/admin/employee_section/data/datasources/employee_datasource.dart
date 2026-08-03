@@ -1603,6 +1603,15 @@ class EmployeeDatasource {
     String? passwordConfirmation,
   }) async {
     try {
+      debugPrint(
+        '[AdminEdit] API updateAdminUser request '
+        'endpoint=${EndPoints.editAdminUser(int.parse(adminId))} '
+        'adminId=$adminId email=$email phone=${phone?.trim()} '
+        'developmentRole=$developmentRole '
+        'hasPassword=${password != null && password.isNotEmpty} '
+        'passwordLength=${password?.length ?? 0} '
+        'hasConfirmation=${passwordConfirmation != null && passwordConfirmation.isNotEmpty}',
+      );
       final response = await api.post(
         EndPoints.editAdminUser(int.parse(adminId)),
         data: {
@@ -1615,9 +1624,18 @@ class EmployeeDatasource {
             'password_confirmation': passwordConfirmation,
         },
       );
+      debugPrint(
+        '[AdminEdit] API updateAdminUser response '
+        'statusCode=${response.statusCode} data=${response.data}',
+      );
       return Map<String, dynamic>.from(response.data as Map);
     } on DioException catch (e) {
       final data = e.response?.data;
+      debugPrint(
+        '[AdminEdit] API updateAdminUser DioException '
+        'statusCode=${e.response?.statusCode} message=${e.message} '
+        'data=$data',
+      );
       throw ServerException(
         ErrorModel(
           errorMessage: data is Map

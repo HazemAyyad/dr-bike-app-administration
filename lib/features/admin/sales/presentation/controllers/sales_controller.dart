@@ -270,6 +270,7 @@ class SalesController extends GetxController
   final Rx<XFile?> profitSaleVideo = Rx<XFile?>(null);
   final RxList<InstantSaleNoteLine> instantSaleNotes =
       <InstantSaleNoteLine>[].obs;
+  bool _instantSaleSubmitInFlight = false;
 
   // filters
   final TextEditingController fromDateController = TextEditingController();
@@ -2930,7 +2931,7 @@ class SalesController extends GetxController
         context: dialogContext,
         barrierDismissible: false,
         builder: (ctx) {
-          Map<String, String>? closeWithMode(String mode) {
+          Future<Map<String, String>?> closeWithMode(String mode) async {
             final reason = reasonCtrl.text.trim();
             if (reason.isEmpty) {
               Get.snackbar(
@@ -2940,6 +2941,40 @@ class SalesController extends GetxController
               );
               return null;
             }
+
+            final isAdministrative = mode == 'administrative_correction';
+            final confirmed = await showDialog<bool>(
+              context: ctx,
+              barrierDismissible: false,
+              builder: (confirmCtx) => AlertDialog(
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+                title: Text(
+                  isAdministrative
+                      ? 'تأكيد التصحيح الإداري'
+                      : 'تأكيد تسوية مالية اليوم',
+                  style: const TextStyle(color: Color(0xFF374151)),
+                ),
+                content: Text(
+                  isAdministrative
+                      ? 'يمكنك تعديل المنتجات والكميات والأسعار والخصم والملاحظات ومبلغ الدفع.\n\nسيتم تحديث الفاتورة والدين والمخزون حسب التعديل.\n\nلن يتم تسجيل أي إضافة أو سحب على الصندوق القديم أو صندوق اليوم، ولن يتم فتح الترحيل القديم.'
+                      : 'يمكنك تعديل المنتجات والكميات والأسعار والخصم والملاحظات ومبلغ الدفع.\n\nسيتم تحديث الفاتورة والدين والمخزون حسب التعديل.\n\nفرق مبلغ الدفع فقط سيتم تسجيله على صندوق اليوم كحركة تسوية. الصندوق القديم والترحيل القديم لن يتغيرا، والفاتورة تبقى مربوطة بصندوقها القديم.',
+                  style: const TextStyle(color: Color(0xFF4B5563), height: 1.4),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(confirmCtx, false),
+                    child: Text('cancel'.tr),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(confirmCtx, true),
+                    child: const Text('استمرار'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed != true) return null;
+
             return {
               'mode': mode,
               'reason': reason,
@@ -2990,16 +3025,22 @@ class SalesController extends GetxController
                 child: Text('cancel'.tr),
               ),
               TextButton(
-                onPressed: () {
-                  final payload = closeWithMode('administrative_correction');
-                  if (payload != null) Navigator.pop(ctx, payload);
+                onPressed: () async {
+                  final payload =
+                      await closeWithMode('administrative_correction');
+                  if (payload != null && ctx.mounted) {
+                    Navigator.pop(ctx, payload);
+                  }
                 },
                 child: const Text('تصحيح إداري'),
               ),
               TextButton(
-                onPressed: () {
-                  final payload = closeWithMode('today_financial_settlement');
-                  if (payload != null) Navigator.pop(ctx, payload);
+                onPressed: () async {
+                  final payload =
+                      await closeWithMode('today_financial_settlement');
+                  if (payload != null && ctx.mounted) {
+                    Navigator.pop(ctx, payload);
+                  }
                 },
                 child: const Text('تسوية مالية اليوم'),
               ),
@@ -3694,11 +3735,6 @@ class SalesController extends GetxController
     final hasPartner = hasPickerPartner;
     final isSeller = hasPartner && pickerPersonType == 'seller';
 
-    if (!hasPartner) {
-      if (product.unitPrice > 0) return _formatUnitPrice(product.unitPrice);
-      return null;
-    }
-
     final tierPrice = product.tierPriceForQuantity(quantity);
     if (tierPrice != null && tierPrice > 0) {
       return _formatUnitPrice(tierPrice);
@@ -3708,20 +3744,6 @@ class SalesController extends GetxController
         product.customPrice != null &&
         product.customPrice! > 0) {
       return _formatUnitPrice(product.customPrice!);
-    }
-
-    try {
-      final history = await fetchLinePriceHistory(
-        productId: product.id,
-        sizeColorId: sizeColorId,
-        limit: 1,
-      );
-      final last = history?.lastPrice;
-      if (last != null && last > 0) {
-        return _formatUnitPrice(last);
-      }
-    } catch (_) {
-      // fall through to catalog price
     }
 
     if (isSeller) {
@@ -3987,58 +4009,66 @@ class SalesController extends GetxController
 
   /// Single step: قبض then create instant sale.
   Future<void> submitInstantSaleWithPayment(BuildContext context) async {
-    _instantSaleDebug('submit with payment requested', {
-      'hasPackage': hasSelectedPackage,
-      'cartLines': cartLines.length,
-      'items': items.length,
-      'activeSuspendedSaleId': activeSuspendedSaleId.value,
-      'activeEditInstantSaleId': activeEditInstantSaleId.value,
-      'saleKind': currentInstantSaleKind,
-      'totalCost': totalCost.value,
-    });
-    if (!(instantSaleFormKey.currentState?.validate() ?? false)) return;
-
-    final hasPackage = hasSelectedPackage;
-    final hasProducts = cartLines.isNotEmpty;
-
-    if (!hasPackage && !hasProducts) {
-      Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
-          backgroundColor: Colors.red);
+    if (_instantSaleSubmitInFlight) {
+      _instantSaleDebug('submit ignored because another submit is running');
       return;
     }
 
-    if (hasPackage) {
-      final qtyError = validatePackageSaleQuantity(
-        items.first.quantityController.text,
-      );
-      if (qtyError != null && !isAdjustmentInstantSale) {
-        Get.snackbar('error'.tr, qtyError, backgroundColor: Colors.red);
+    _instantSaleSubmitInFlight = true;
+    try {
+      _instantSaleDebug('submit with payment requested', {
+        'hasPackage': hasSelectedPackage,
+        'cartLines': cartLines.length,
+        'items': items.length,
+        'activeSuspendedSaleId': activeSuspendedSaleId.value,
+        'activeEditInstantSaleId': activeEditInstantSaleId.value,
+        'saleKind': currentInstantSaleKind,
+        'totalCost': totalCost.value,
+      });
+      if (!(instantSaleFormKey.currentState?.validate() ?? false)) return;
+
+      final hasPackage = hasSelectedPackage;
+      final hasProducts = cartLines.isNotEmpty;
+
+      if (!hasPackage && !hasProducts) {
+        Get.snackbar('error'.tr, 'instantSaleCartEmpty'.tr,
+            backgroundColor: Colors.red);
         return;
       }
-    }
 
-    if (hasProducts && !hasPackage) {
-      syncCartToItems();
-    }
+      if (hasPackage) {
+        final qtyError = validatePackageSaleQuantity(
+          items.first.quantityController.text,
+        );
+        if (qtyError != null && !isAdjustmentInstantSale) {
+          Get.snackbar('error'.tr, qtyError, backgroundColor: Colors.red);
+          return;
+        }
+      }
 
-    if (!isAdjustmentInstantSale && !await ensureInstantSaleCanBeFinalized()) {
-      return;
-    }
+      if (hasProducts && !hasPackage) {
+        syncCartToItems();
+      }
 
-    final payment = _instantSalePayment;
-    if (payment == null) return;
-    if (!_validateInstantSaleRemainingBuyer(payment)) return;
+      if (!isAdjustmentInstantSale &&
+          !await ensureInstantSaleCanBeFinalized()) {
+        return;
+      }
 
-    payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
+      final payment = _instantSalePayment;
+      if (payment == null) return;
+      if (!_validateInstantSaleRemainingBuyer(payment)) return;
 
-    isLoading(true);
-    try {
+      payment.instantSaleBoxLogNote = buildInstantSalePaymentBoxNote();
+
+      isLoading(true);
       if (isAdjustmentInstantSale) {
         final buyer = payment.buildInstantSaleBuyerPayload();
         buyer.remove('payment_box_id');
         buyer.remove('payment_box_name');
         buyer['payment_box_value'] = '0';
         applyBuyerFromPayment(buyer);
+        // ignore: use_build_context_synchronously
         await addInstantSale(context, previousDayWarningConfirmed: true);
         return;
       }
@@ -4094,6 +4124,7 @@ class SalesController extends GetxController
         return;
       }
 
+      // ignore: use_build_context_synchronously
       final buyer = await payment.submitReceiveForInstantSale(context);
       _instantSaleDebug('payment result', buyer);
       if (buyer == null) return;
@@ -4102,6 +4133,7 @@ class SalesController extends GetxController
       // ignore: use_build_context_synchronously
       await addInstantSale(context, previousDayWarningConfirmed: true);
     } finally {
+      _instantSaleSubmitInFlight = false;
       isLoading(false);
     }
   }

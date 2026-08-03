@@ -15,6 +15,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../../core/errors/expentions.dart';
 import '../../../../../core/errors/failure.dart';
 import '../../../../../core/helpers/server_validation_messages.dart';
+import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/utils/assets_manger.dart';
 import '../../../../../core/utils/desktop_layout.dart';
@@ -134,19 +135,27 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxBool isProductsCsvBusy = false.obs;
 
   final tabs = [
-    'products',
-    'clearance',
-    'productComposition',
-    'storeLocationTab',
-    'offerPackages',
-    'deletedProducts',
-    if (Platform.isWindows) 'quickEditProducts',
+    if (StockController._canAccessFullStock) ...[
+      'products',
+      'clearance',
+      'productComposition',
+      'storeLocationTab',
+      'offerPackages',
+      'deletedProducts',
+    ],
+    if (canQuickEditProducts) 'quickEditProducts',
   ].obs;
 
   final currentTab = 0.obs;
 
+  static bool get _canAccessFullStock =>
+      userType == 'admin' ||
+      employeePermissions.contains(stockPermissionId) ||
+      employeePermissionNames.contains('Stock');
+
+  bool get canAccessFullStock => StockController._canAccessFullStock;
+
   bool get isQuickEditTab =>
-      Platform.isWindows &&
       currentTab.value == tabs.indexOf('quickEditProducts');
 
   void changeTab(int index) {
@@ -199,6 +208,8 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxInt locationFilterTotalCount = 0.obs;
   final RxInt productListTotalCount = 0.obs;
   final RxBool locationProductsLoadingMore = false.obs;
+  final RxBool locationTableView = false.obs;
+  final RxSet<String> locationPriceSavingKeys = <String>{}.obs;
   int locationProductsPage = 1;
   int locationProductsLastPage = 1;
 
@@ -212,9 +223,12 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
   final RxBool isProductDeleteBusy = false.obs;
 
   bool get canPickProductLocation =>
-      currentTab.value == 0 || currentTab.value == 3;
+      canAccessFullStock && (currentTab.value == 0 || currentTab.value == 3);
+
+  bool get canUseLocationQuickEditTable => canQuickEditProducts;
 
   bool get canDeleteProducts {
+    if (!canAccessFullStock || isQuickEditTab) return false;
     if (currentTab.value == 0) return true;
     if (currentTab.value != 3) return false;
     final sectionId = selectedLocationSectionId.value;
@@ -782,6 +796,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       final res = await stockLocationInteractor.loadProductsByLocation(
         sectionId: sectionId,
         page: 1,
+        perPage: locationTableView.value ? 40 : 15,
       );
       locationFilterProducts.assignAll(res.products);
       locationProductsPage = res.currentPage;
@@ -813,6 +828,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       final res = await stockLocationInteractor.loadProductsByLocation(
         sectionId: sectionId,
         page: next,
+        perPage: locationTableView.value ? 40 : 15,
       );
       for (final p in res.products) {
         if (!locationFilterProducts.any((x) => x.productId == p.productId)) {
@@ -825,6 +841,80 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
     } finally {
       locationProductsLoadingMore.value = false;
       update();
+    }
+  }
+
+  Future<void> setLocationTableView(bool enabled) async {
+    if (!canUseLocationQuickEditTable || locationTableView.value == enabled) {
+      return;
+    }
+    locationTableView.value = enabled;
+    final sectionId = selectedLocationSectionId.value;
+    if (sectionId != null && sectionId.isNotEmpty) {
+      await selectLocationFilter(sectionId);
+    } else {
+      update();
+    }
+  }
+
+  bool isLocationPriceSaving(String productId, String field) {
+    return locationPriceSavingKeys.contains('$productId:$field');
+  }
+
+  Future<void> saveLocationProductPrice({
+    required AllStockProductsModel product,
+    required String field,
+    required String value,
+  }) async {
+    if (!canUseLocationQuickEditTable) return;
+    final trimmed = value.trim();
+    const numericFields = {
+      'normailPrice',
+      'wholesalePrice',
+      'cost_price',
+      'price',
+      'min_sale_price',
+      'stock',
+      'min_stock',
+      'discount',
+    };
+    const requiredTextFields = {'product_code', 'nameAr'};
+    if (requiredTextFields.contains(field) && trimmed.isEmpty) {
+      Get.snackbar('error'.tr, 'invalidValue'.tr);
+      return;
+    }
+    if (numericFields.contains(field) &&
+        (trimmed.isEmpty || double.tryParse(trimmed) == null)) {
+      Get.snackbar('error'.tr, 'invalidPrice'.tr);
+      return;
+    }
+
+    final key = '${product.productId}:$field';
+    if (locationPriceSavingKeys.contains(key)) return;
+    locationPriceSavingKeys.add(key);
+    try {
+      final updated = await stockDatasource.updateQuickEditProductPrice(
+        productId: product.productId,
+        field: field,
+        value: trimmed,
+      );
+      final index = locationFilterProducts.indexWhere(
+        (p) => p.productId == product.productId,
+      );
+      if (index != -1) {
+        locationFilterProducts[index] = updated;
+      }
+      Get.snackbar('success'.tr, 'productUpdatedSuccess'.tr);
+    } on ServerException catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.errorModel.errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      locationPriceSavingKeys.remove(key);
     }
   }
 
@@ -1404,7 +1494,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
               scrollController.position.maxScrollExtent - 120 &&
           quickEditHasMore &&
           !isQuickEditLoadingMore.value) {
-        Future<void>(() async => getQuickEditProducts(isRefresh: true));
+        getQuickEditProducts(isRefresh: true);
       }
       return;
     }
@@ -2198,11 +2288,15 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
 
       final result = await stockDatasource.getQuickEditProducts(
         page: quickEditPage,
-        perPage: DesktopLayout.isDesktopPlatform ? 80 : 30,
+        perPage: 20,
         filters: productListFilters.value.hasActiveFilters
             ? productListFilters.value
             : null,
       );
+      if (result.products.isEmpty) {
+        quickEditHasMore = false;
+        return;
+      }
       quickEditLastPage = result.lastPage;
       quickEditHasMore = result.currentPage < result.lastPage;
       quickEditRows.addAll(
@@ -2210,6 +2304,9 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       );
       quickEditPage++;
     } on ServerException catch (e) {
+      if (isRefresh) {
+        quickEditHasMore = false;
+      }
       Get.snackbar(
         'error'.tr,
         e.errorModel.errorMessage,
@@ -3261,8 +3358,14 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       Future<void>(() async => downloadProductsImagesZipExport(exportId));
     }
     loadStockSearchHistory();
-    getAllProducts();
-    getCategories();
+    if (isQuickEditTab) {
+      getQuickEditProducts();
+    } else {
+      getAllProducts();
+    }
+    if (canAccessFullStock) {
+      getCategories();
+    }
     scrollController.addListener(_onScroll);
     scrollController.addListener(() {
       if (scrollController.offset > 100) {

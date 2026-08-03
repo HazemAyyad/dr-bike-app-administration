@@ -283,11 +283,17 @@ bool get canCloneEmployeeTasks =>
 /// اسم صلاحية إعدادات المخزون (يطابق name_en في الباك إند).
 const String stockInventorySettingsPermissionName = 'Stock Inventory Settings';
 
+/// اسم صلاحية تعديل المنتجات السريع داخل المخزون.
+const String productQuickEditPermissionName = 'Product Quick Edit';
+
 /// اسم صلاحية إدارة محادثات الدعم الفني.
 const String technicalSupportPermissionName = 'Technical Support';
 
 /// رقم صلاحية إعدادات المخزون في قائمة إنشاء/تعديل الموظف.
 const int stockInventorySettingsPermissionId = 47;
+
+/// رقم صلاحية تعديل المنتجات السريع.
+const int productQuickEditPermissionId = 67;
 
 /// رقم صلاحية إدارة محادثات الدعم الفني.
 const int technicalSupportPermissionId = 49;
@@ -302,6 +308,17 @@ bool get canManageStockInventorySettings =>
     employeePermissions.contains(stockInventorySettingsPermissionId) ||
     employeePermissions.contains(stockPermissionId) ||
     employeePermissionNames.contains(stockInventorySettingsPermissionName);
+
+bool get canQuickEditProducts =>
+    userType == 'admin' ||
+    employeePermissions.contains(productQuickEditPermissionId) ||
+    employeePermissionNames.contains(productQuickEditPermissionName);
+
+bool get canAccessStockScreen =>
+    userType == 'admin' ||
+    employeePermissions.contains(stockPermissionId) ||
+    employeePermissionNames.contains('Stock') ||
+    canQuickEditProducts;
 
 bool get canManageTechnicalSupport =>
     userType == 'admin' ||

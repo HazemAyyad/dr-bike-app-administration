@@ -22,6 +22,8 @@ class AddAdminController extends GetxController {
   final passwordController = TextEditingController();
   final passwordConfirmationController = TextEditingController();
   final developmentRole = 'none'.obs;
+  final passwordObscured = true.obs;
+  final passwordConfirmationObscured = true.obs;
 
   final isLoading = false.obs;
 
@@ -42,12 +44,16 @@ class AddAdminController extends GetxController {
   }
 
   Future<void> submit(BuildContext context) async {
-    if (!(formKey.currentState?.validate() ?? false)) return;
+    if (!(formKey.currentState?.validate() ?? false)) {
+      debugPrint('[AdminEdit] form validation failed before request');
+      return;
+    }
 
     final wantsPasswordChange = passwordController.text.isNotEmpty ||
         passwordConfirmationController.text.isNotEmpty;
     if ((!isEdit || wantsPasswordChange) &&
         passwordController.text != passwordConfirmationController.text) {
+      debugPrint('[AdminEdit] password confirmation mismatch');
       Helpers.showCustomDialogError(
         context: context,
         title: 'error'.tr,
@@ -57,6 +63,17 @@ class AddAdminController extends GetxController {
     }
 
     isLoading(true);
+    debugPrint(
+      '[AdminEdit] submit start '
+      'isEdit=$isEdit adminId=${editingAdmin?.id} '
+      'name=${nameController.text.trim()} '
+      'email=${emailController.text.trim()} '
+      'phone=${phoneController.text.trim()} '
+      'developmentRole=${developmentRole.value} '
+      'wantsPasswordChange=$wantsPasswordChange '
+      'passwordLength=${passwordController.text.length} '
+      'confirmLength=${passwordConfirmationController.text.length}',
+    );
 
     final result = isEdit
         ? await manageAdminUserUsecase.update(
@@ -84,9 +101,14 @@ class AddAdminController extends GetxController {
           );
 
     isLoading(false);
+    debugPrint('[AdminEdit] submit request finished');
 
     result.fold(
       (failure) {
+        debugPrint(
+          '[AdminEdit] failure '
+          'message=${failure.errMessage} data=${failure.data}',
+        );
         Helpers.showCustomDialogError(
           context: context,
           title: 'error'.tr,
@@ -94,10 +116,13 @@ class AddAdminController extends GetxController {
         );
       },
       (success) async {
+        debugPrint('[AdminEdit] success message=$success');
         Get.back();
         Get.snackbar('success'.tr, success,
             snackPosition: SnackPosition.BOTTOM);
+        debugPrint('[AdminEdit] refreshing admin list after success');
         await sectionController.getAdminUsers();
+        debugPrint('[AdminEdit] admin list refresh finished');
       },
     );
   }

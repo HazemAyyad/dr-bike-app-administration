@@ -384,6 +384,7 @@ class EndPoints {
   static const String exportProductsCsv = 'products/export-csv';
   static const String quickEditProducts = 'products/quick-edit';
   static const String quickEditProductsUpdate = 'products/quick-edit/update';
+  static const String quickEditProductsPrice = 'products/quick-edit/price';
   static const String quickEditProductsMark = 'products/quick-edit/mark';
   static const String productsImagesZipExports = 'products/images-zip-exports';
   static const String listProductsImagesZipExports =

@@ -377,6 +377,46 @@ class StockDatasource {
     }
   }
 
+  Future<AllStockProductsModel> updateQuickEditProductPrice({
+    required String productId,
+    required String field,
+    required String value,
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.quickEditProductsPrice,
+        data: {
+          'product_id': productId,
+          'field': field,
+          'value': value,
+        },
+      );
+      final raw = response.data;
+      final map =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final productMap = map['product'];
+      if (productMap is Map) {
+        return AllStockProductsModel.fromJson(
+          Map<String, dynamic>.from(productMap),
+        );
+      }
+      throw ServerException(
+        ErrorModel(errorMessage: 'Invalid response', status: 500, data: map),
+      );
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? data : {},
+        ),
+      );
+    }
+  }
+
   Future<Map<String, dynamic>> _sendProductsCsv({
     required String endpoint,
     required String filePath,
@@ -1453,6 +1493,7 @@ class StockDatasource {
   Future<ProductsByLocationResult> getProductsByLocation({
     required String sectionId,
     required int page,
+    int perPage = 15,
   }) async {
     try {
       final response = await api.get(
@@ -1460,6 +1501,7 @@ class StockDatasource {
         queryParameters: {
           'section_id': sectionId,
           'page': page,
+          'per_page': perPage,
         },
       );
       final raw = response.data;

@@ -543,18 +543,26 @@ class _SalesVariantPickerSheetState extends State<_SalesVariantPickerSheet> {
     final tierPrice = widget.product.tierPriceForQuantity(draft.quantity);
     if (tierPrice != null && tierPrice > 0) {
       return Text(
-        '${'quantity'.tr}: ${draft.quantity} / ${SalesAmountFormat.displayShekel(tierPrice)}',
+        '${'instantSaleTierPriceSource'.tr}: ${draft.quantity} / ${SalesAmountFormat.displayShekel(tierPrice)}',
         style: TextStyle(fontSize: 11.sp, color: Colors.green.shade800),
+      );
+    }
+    if (widget.product.hasCustomPrice &&
+        widget.product.customPrice != null &&
+        widget.product.customPrice! > 0) {
+      return Text(
+        '${'instantSaleCustomPriceSource'.tr}: ${SalesAmountFormat.displayShekel(widget.product.customPrice!)}',
+        style: TextStyle(fontSize: 11.sp, color: Colors.deepPurple.shade700),
       );
     }
     if (_sales.isWholesalePartner && draft.variant.wholesalePrice > 0) {
       return Text(
-        '${'price'.tr}: ${SalesAmountFormat.displayShekel(draft.variant.wholesalePrice)}',
+        '${'instantSaleVariantWholesalePriceSource'.tr}: ${SalesAmountFormat.displayShekel(draft.variant.wholesalePrice)}',
         style: TextStyle(fontSize: 11.sp, color: Colors.blueGrey.shade700),
       );
     }
     return Text(
-      '${'price'.tr}: ${SalesAmountFormat.displayShekel(draft.variant.normailPrice)}',
+      '${'instantSaleVariantRetailPriceSource'.tr}: ${SalesAmountFormat.displayShekel(draft.variant.normailPrice)}',
       style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade700),
     );
   }

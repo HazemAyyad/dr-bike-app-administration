@@ -62,38 +62,41 @@ class StockScreen extends GetView<StockController> {
                   : () => controller.startDeleteSelection(),
             );
           }),
-          Obx(() {
-            final busy = controller.isProductsCsvBusy.value;
-            return IconButton(
-              icon: busy
-                  ? SizedBox(
-                      width: 20.w,
-                      height: 20.w,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.folder_zip_outlined),
-              tooltip: 'downloadStockImages'.tr,
-              onPressed: busy
-                  ? null
-                  : () => Get.toNamed(AppRoutes.STOCKIMAGESEXPORTSSCREEN),
-            );
-          }),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'stockInventorySettings'.tr,
-            onPressed: () async {
-              await Get.toNamed(AppRoutes.STOCKINVENTORYSETTINGSSCREEN);
-              await controller.refreshAfterStoreSectionsChanged();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.archive_outlined),
-            tooltip: 'archive'.tr,
-            onPressed: () {
-              controller.getArchived();
-              Get.dialog(const ArchiveDialog());
-            },
-          ),
+          if (controller.canAccessFullStock)
+            Obx(() {
+              final busy = controller.isProductsCsvBusy.value;
+              return IconButton(
+                icon: busy
+                    ? SizedBox(
+                        width: 20.w,
+                        height: 20.w,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.folder_zip_outlined),
+                tooltip: 'downloadStockImages'.tr,
+                onPressed: busy
+                    ? null
+                    : () => Get.toNamed(AppRoutes.STOCKIMAGESEXPORTSSCREEN),
+              );
+            }),
+          if (controller.canAccessFullStock)
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'stockInventorySettings'.tr,
+              onPressed: () async {
+                await Get.toNamed(AppRoutes.STOCKINVENTORYSETTINGSSCREEN);
+                await controller.refreshAfterStoreSectionsChanged();
+              },
+            ),
+          if (controller.canAccessFullStock)
+            IconButton(
+              icon: const Icon(Icons.archive_outlined),
+              tooltip: 'archive'.tr,
+              onPressed: () {
+                controller.getArchived();
+                Get.dialog(const ArchiveDialog());
+              },
+            ),
         ],
       ),
       body: Stack(

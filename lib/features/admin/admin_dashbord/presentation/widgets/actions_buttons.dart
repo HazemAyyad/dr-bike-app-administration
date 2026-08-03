@@ -113,6 +113,9 @@ class BuildActionButtons extends StatelessWidget {
     if (route == AppRoutes.GENERALSETTINGSSCREEN) {
       return canManageStockInventorySettings;
     }
+    if (route == AppRoutes.STOCKSCREEN) {
+      return canAccessStockScreen;
+    }
     if (route == AppRoutes.MYEMPLOYEESUGGESTIONSSCREEN) {
       return true;
     }

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -6,8 +8,98 @@ import '../../../../../core/helpers/show_net_image.dart';
 import '../../../sales/presentation/utils/product_image_viewer.dart';
 import '../controllers/stock_controller.dart';
 
-class QuickEditProductsTab extends GetView<StockController> {
+class QuickEditProductsTab extends StatefulWidget {
   const QuickEditProductsTab({Key? key}) : super(key: key);
+
+  @override
+  State<QuickEditProductsTab> createState() => _QuickEditProductsTabState();
+}
+
+class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
+  static const double _desktopTableWidth = 4620;
+  static const double _mobileTableWidth = 3560;
+  static const double _rowHeight = 88;
+  static const double _headingHeight = 56;
+  static const double _scrollbarThickness = 12;
+
+  final ScrollController _topHorizontalController = ScrollController();
+  final ScrollController _tableHorizontalController = ScrollController();
+  final ScrollController _verticalController = ScrollController();
+
+  StockController get controller => Get.find<StockController>();
+
+  bool _syncingHorizontalScroll = false;
+  DateTime? _lastLoadMoreAt;
+
+  @override
+  void initState() {
+    super.initState();
+    _topHorizontalController.addListener(_syncTopToTable);
+    _tableHorizontalController.addListener(_syncTableToTop);
+    _verticalController.addListener(_loadMoreNearBottom);
+  }
+
+  @override
+  void dispose() {
+    _topHorizontalController.removeListener(_syncTopToTable);
+    _tableHorizontalController.removeListener(_syncTableToTop);
+    _verticalController.removeListener(_loadMoreNearBottom);
+    _topHorizontalController.dispose();
+    _tableHorizontalController.dispose();
+    _verticalController.dispose();
+    super.dispose();
+  }
+
+  void _syncTopToTable() {
+    _syncHorizontalControllers(
+      source: _topHorizontalController,
+      target: _tableHorizontalController,
+    );
+  }
+
+  void _syncTableToTop() {
+    _syncHorizontalControllers(
+      source: _tableHorizontalController,
+      target: _topHorizontalController,
+    );
+  }
+
+  void _syncHorizontalControllers({
+    required ScrollController source,
+    required ScrollController target,
+  }) {
+    if (_syncingHorizontalScroll || !source.hasClients || !target.hasClients) {
+      return;
+    }
+    final max = target.position.maxScrollExtent;
+    final next = source.offset.clamp(0.0, max);
+    if ((target.offset - next).abs() < 0.5) return;
+
+    _syncingHorizontalScroll = true;
+    target.jumpTo(next);
+    _syncingHorizontalScroll = false;
+  }
+
+  void _loadMoreNearBottom() {
+    if (!_verticalController.hasClients) return;
+    if (controller.isQuickEditLoading.value ||
+        controller.isQuickEditLoadingMore.value ||
+        !controller.quickEditHasMore) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final last = _lastLoadMoreAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 1)) {
+      return;
+    }
+
+    if (_verticalController.position.pixels >=
+        _verticalController.position.maxScrollExtent - 160) {
+      _lastLoadMoreAt = now;
+      controller.getQuickEditProducts(isRefresh: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +116,15 @@ class QuickEditProductsTab extends GetView<StockController> {
               .where((row) => !row.markedToday.value)
               .toList()
           : controller.quickEditRows.toList();
+
+      final viewportHeight = MediaQuery.sizeOf(context).height;
+      final rowsHeight = rows.length * _rowHeight + _headingHeight;
+      final tableHeight = rowsHeight.clamp(
+        240.0,
+        (viewportHeight - 245).clamp(320.0, 720.0),
+      );
+      final isCompact = MediaQuery.sizeOf(context).width < 700;
+      final tableWidth = isCompact ? _mobileTableWidth : _desktopTableWidth;
 
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 48),
@@ -62,47 +163,120 @@ class QuickEditProductsTab extends GetView<StockController> {
                 border: Border.all(color: Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Scrollbar(
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    headingRowColor: WidgetStatePropertyAll(
-                      Colors.grey.shade100,
-                    ),
-                    dataRowMinHeight: 56,
-                    dataRowMaxHeight: 88,
-                    columns: [
-                      _col('quickEditMark'),
-                      _col('productId'),
-                      _col('productCode'),
-                      _col('productImages'),
-                      _col('productName'),
-                      _col('productNameEn'),
-                      _col('productNameHe'),
-                      _col('productDetails'),
-                      _col('category'),
-                      _col('subCategories'),
-                      _col('storeLocationTab'),
-                      _col('retailPrice'),
-                      _col('wholesalePrice'),
-                      _col('productCost'),
-                      _col('price'),
-                      _col('minSalePrice'),
-                      _col('stock'),
-                      _col('minStock'),
-                      _col('discount'),
-                      _col('productVisible'),
-                      _col('productNewBadge'),
-                      _col('productBestSeller'),
-                      _col('soldWithPaper'),
-                      _col('rate'),
-                      _col('manufactureYear'),
-                      _col('productModel'),
-                      _col('productRotationDate'),
-                      _col('quickEditAction'),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: ScrollConfiguration(
+                  behavior: const _QuickEditScrollBehavior(),
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: _scrollbarThickness + 4,
+                        child: Scrollbar(
+                          controller: _topHorizontalController,
+                          thumbVisibility: true,
+                          trackVisibility: true,
+                          thickness: _scrollbarThickness,
+                          child: SingleChildScrollView(
+                            controller: _topHorizontalController,
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: tableWidth,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        height: tableHeight,
+                        child: Scrollbar(
+                          controller: _verticalController,
+                          thumbVisibility: true,
+                          trackVisibility: true,
+                          child: SingleChildScrollView(
+                            controller: _verticalController,
+                            child: Scrollbar(
+                              controller: _tableHorizontalController,
+                              thumbVisibility: true,
+                              trackVisibility: true,
+                              thickness: _scrollbarThickness,
+                              child: SingleChildScrollView(
+                                controller: _tableHorizontalController,
+                                scrollDirection: Axis.horizontal,
+                                child: SizedBox(
+                                  width: tableWidth,
+                                  child: DataTable(
+                                    headingRowColor: WidgetStatePropertyAll(
+                                      Colors.grey.shade100,
+                                    ),
+                                    dataRowMinHeight: 56,
+                                    dataRowMaxHeight: 88,
+                                    columnSpacing: 32,
+                                    horizontalMargin: 12,
+                                    columns: [
+                                      _iconCol(
+                                        'quickEditMark',
+                                        Icons.check_box_outlined,
+                                      ),
+                                      _col('productId', width: 72),
+                                      _col('productCode', width: 110),
+                                      _iconCol(
+                                        'productImages',
+                                        Icons.image_outlined,
+                                      ),
+                                      _col('productName', width: 220),
+                                      if (!isCompact) ...[
+                                        _col('productNameEn', width: 180),
+                                        _col('productNameHe', width: 180),
+                                        _col('productDetails', width: 260),
+                                      ],
+                                      _col('category', width: 140),
+                                      _col('subCategories', width: 170),
+                                      _col('storeLocationTab', width: 130),
+                                      _col('retailPrice', width: 90),
+                                      _col('wholesalePrice', width: 90),
+                                      _col('productCost', width: 90),
+                                      _col('price', width: 90),
+                                      _col('minSalePrice', width: 90),
+                                      _col('stock', width: 90),
+                                      _col('minStock', width: 90),
+                                      _col('discount', width: 90),
+                                      _iconCol(
+                                        'productVisible',
+                                        Icons.visibility_outlined,
+                                      ),
+                                      _iconCol(
+                                        'productNewBadge',
+                                        Icons.fiber_new_outlined,
+                                      ),
+                                      _iconCol(
+                                        'productBestSeller',
+                                        Icons.local_fire_department_outlined,
+                                      ),
+                                      _iconCol(
+                                        'soldWithPaper',
+                                        Icons.receipt_long_outlined,
+                                      ),
+                                      _col('rate', width: 90),
+                                      _col('manufactureYear', width: 90),
+                                      _col('productModel', width: 120),
+                                      _col('productRotationDate', width: 130),
+                                      _iconCol(
+                                        'quickEditAction',
+                                        Icons.edit_outlined,
+                                      ),
+                                    ],
+                                    rows: rows
+                                        .map((row) =>
+                                            _row(row, isCompact: isCompact))
+                                        .toList(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
-                    rows: rows.map(_row).toList(),
                   ),
                 ),
               ),
@@ -118,9 +292,39 @@ class QuickEditProductsTab extends GetView<StockController> {
     });
   }
 
-  DataColumn _col(String key) => DataColumn(label: Text(key.tr));
+  DataColumn _col(String key, {double width = 100}) {
+    return DataColumn(
+      label: Tooltip(
+        message: key.tr,
+        child: SizedBox(
+          width: width,
+          child: Text(
+            key.tr,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          ),
+        ),
+      ),
+    );
+  }
 
-  DataRow _row(QuickEditProductRowState row) {
+  DataColumn _iconCol(String key, IconData icon) {
+    return DataColumn(
+      label: Tooltip(
+        message: key.tr,
+        child: SizedBox(
+          width: 40,
+          child: Center(child: Icon(icon, size: 18)),
+        ),
+      ),
+    );
+  }
+
+  DataRow _row(
+    QuickEditProductRowState row, {
+    required bool isCompact,
+  }) {
     return DataRow(
       color: WidgetStateProperty.resolveWith((states) {
         return row.markedToday.value ? Colors.green.withAlpha(18) : null;
@@ -140,9 +344,11 @@ class QuickEditProductsTab extends GetView<StockController> {
         DataCell(_field(row, row.productCodeController, width: 110)),
         DataCell(_image(row.product.productImage)),
         DataCell(_field(row, row.nameArController, width: 220)),
-        DataCell(_field(row, row.nameEngController, width: 180)),
-        DataCell(_field(row, row.nameAbreeController, width: 180)),
-        DataCell(_field(row, row.descriptionArController, width: 260)),
+        if (!isCompact) ...[
+          DataCell(_field(row, row.nameEngController, width: 180)),
+          DataCell(_field(row, row.nameAbreeController, width: 180)),
+          DataCell(_field(row, row.descriptionArController, width: 260)),
+        ],
         DataCell(_readonly(row.product.categoryName, width: 140)),
         DataCell(_readonly(row.product.subCategories, width: 170)),
         DataCell(_readonly(row.product.storeSectionName, width: 130)),
@@ -170,7 +376,7 @@ class QuickEditProductsTab extends GetView<StockController> {
         DataCell(
             _number(row, row.manufactureYearController, integerOnly: true)),
         DataCell(_field(row, row.modelController, width: 120)),
-        DataCell(_field(row, row.rotationDateController, width: 130)),
+        DataCell(_dateField(row, row.rotationDateController, width: 140)),
         DataCell(
           Obx(() {
             if (row.isSaving.value) {
@@ -296,6 +502,53 @@ class QuickEditProductsTab extends GetView<StockController> {
     });
   }
 
+  Widget _dateField(
+    QuickEditProductRowState row,
+    TextEditingController textController, {
+    double width = 130,
+  }) {
+    return Obx(() {
+      if (!row.isEditing.value) {
+        return InkWell(
+          onTap: () async {
+            final picked = await _pickDate(textController.text);
+            if (picked == null) return;
+            controller.editQuickEditRow(row);
+            textController.text = _formatDate(picked);
+          },
+          child: _readonly(textController.text, width: width),
+        );
+      }
+      return SizedBox(
+        width: width,
+        child: TextField(
+          controller: textController,
+          readOnly: true,
+          onTap: () async {
+            final picked = await _pickDate(textController.text);
+            if (picked == null) return;
+            textController.text = _formatDate(picked);
+          },
+          decoration: const InputDecoration(
+            isDense: true,
+            border: OutlineInputBorder(),
+            suffixIcon: Icon(Icons.calendar_month_outlined, size: 18),
+          ),
+        ),
+      );
+    });
+  }
+
+  Future<DateTime?> _pickDate(String currentValue) {
+    final current = _parseDate(currentValue) ?? DateTime.now();
+    return showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+  }
+
   Widget _switch(
     QuickEditProductRowState row,
     ValueChanged<bool> update,
@@ -321,4 +574,29 @@ class QuickEditProductsTab extends GetView<StockController> {
       );
     });
   }
+}
+
+DateTime? _parseDate(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return null;
+  return DateTime.tryParse(trimmed);
+}
+
+String _formatDate(DateTime value) {
+  final year = value.year.toString().padLeft(4, '0');
+  final month = value.month.toString().padLeft(2, '0');
+  final day = value.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
+}
+
+class _QuickEditScrollBehavior extends MaterialScrollBehavior {
+  const _QuickEditScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
 }

@@ -35,6 +35,8 @@ class _StockMovementsFilterSheetState extends State<StockMovementsFilterSheet> {
     'manual_add': 'stockMoveTypeManualAdd',
     'manual_set': 'stockMoveTypeManualSet',
     'import': 'stockMoveTypeImport',
+    'price_update': 'stockMoveTypePriceUpdate',
+    'product_update': 'stockMoveTypeProductUpdate',
   };
 
   @override
@@ -99,7 +101,7 @@ class _StockMovementsFilterSheetState extends State<StockMovementsFilterSheet> {
             ),
             SizedBox(height: 14.h),
             DropdownButtonFormField<String?>(
-              value: type,
+              initialValue: type,
               decoration: InputDecoration(
                 labelText: 'stockMoveFilterType'.tr,
                 border: OutlineInputBorder(
@@ -146,7 +148,7 @@ class _StockMovementsFilterSheetState extends State<StockMovementsFilterSheet> {
               onPressed: _clear,
               child: Text(
                 'clearFilters'.tr,
-                style: TextStyle(color: AppColors.redColor),
+                style: const TextStyle(color: AppColors.redColor),
               ),
             ),
           ],

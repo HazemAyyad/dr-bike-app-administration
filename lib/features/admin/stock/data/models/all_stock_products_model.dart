@@ -11,6 +11,9 @@ class AllStockProductsModel {
   final String stock;
   final String productMinSalePrice;
   final double normailPrice;
+  final double wholesalePrice;
+  final double price;
+  final String discount;
   final String image;
   final List<String> viewImageUrls;
   final List<String> normalImageUrls;
@@ -22,6 +25,8 @@ class AllStockProductsModel {
   final String? storeSectionName;
   final double? costPrice;
   final bool hasCostPrice;
+  final String minStock;
+  final String rotationDate;
 
   AllStockProductsModel({
     required this.closeoutId,
@@ -31,6 +36,9 @@ class AllStockProductsModel {
     required this.stock,
     required this.productMinSalePrice,
     this.normailPrice = 0,
+    this.wholesalePrice = 0,
+    this.price = 0,
+    this.discount = '',
     required this.image,
     this.viewImageUrls = const [],
     this.normalImageUrls = const [],
@@ -42,6 +50,8 @@ class AllStockProductsModel {
     this.storeSectionName,
     this.costPrice,
     this.hasCostPrice = false,
+    this.minStock = '',
+    this.rotationDate = '',
   });
 
   factory AllStockProductsModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +72,11 @@ class AllStockProductsModel {
       normailPrice: asDouble(
         json['product_normail_price'] ?? json['normail_price'],
       ),
+      wholesalePrice: asDouble(
+        json['product_wholesale_price'] ?? json['wholesalePrice'],
+      ),
+      price: asDouble(json['product_price'] ?? json['price']),
+      discount: asString(json['discount']),
       image: asString(json['product_image']),
       viewImageUrls:
           ProductImageUtils.allValidUrlsFromList(json['product_viewImages']),
@@ -77,6 +92,44 @@ class AllStockProductsModel {
       costPrice:
           json['cost_price'] == null ? null : asDouble(json['cost_price']),
       hasCostPrice: json['has_cost_price'] == true,
+      minStock: asString(json['product_min_stock'] ?? json['min_stock']),
+      rotationDate: asString(json['rotation_date']),
+    );
+  }
+
+  AllStockProductsModel copyWith({
+    String? productMinSalePrice,
+    double? normailPrice,
+    double? wholesalePrice,
+    double? price,
+    String? discount,
+    String? minStock,
+    String? rotationDate,
+  }) {
+    return AllStockProductsModel(
+      closeoutId: closeoutId,
+      closeoutStatus: closeoutStatus,
+      productId: productId,
+      name: name,
+      stock: stock,
+      productMinSalePrice: productMinSalePrice ?? this.productMinSalePrice,
+      normailPrice: normailPrice ?? this.normailPrice,
+      wholesalePrice: wholesalePrice ?? this.wholesalePrice,
+      price: price ?? this.price,
+      discount: discount ?? this.discount,
+      image: image,
+      viewImageUrls: viewImageUrls,
+      normalImageUrls: normalImageUrls,
+      image3dUrls: image3dUrls,
+      numberOfUsedProducts: numberOfUsedProducts,
+      productCode: productCode,
+      tags: tags,
+      storeSectionId: storeSectionId,
+      storeSectionName: storeSectionName,
+      costPrice: costPrice,
+      hasCostPrice: hasCostPrice,
+      minStock: minStock ?? this.minStock,
+      rotationDate: rotationDate ?? this.rotationDate,
     );
   }
 
@@ -88,6 +141,9 @@ class AllStockProductsModel {
       'product_name': name,
       'product_stock': stock,
       'product_min_sale_price': productMinSalePrice,
+      'product_wholesale_price': wholesalePrice,
+      'product_price': price,
+      'discount': discount,
       'product_image': image,
       'product_viewImages': viewImageUrls,
       'product_normalImages': normalImageUrls,
@@ -99,6 +155,8 @@ class AllStockProductsModel {
       'store_section_name': storeSectionName,
       'cost_price': costPrice,
       'has_cost_price': hasCostPrice,
+      'product_min_stock': minStock,
+      'rotation_date': rotationDate,
     };
   }
 

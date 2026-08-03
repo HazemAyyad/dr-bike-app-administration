@@ -84,6 +84,8 @@ class ProductStockMovementModel {
       'assembly_output': 'stockMoveTypeAssemblyOutput',
       'disassembly_component': 'stockMoveTypeDisassemblyComponent',
       'disassembly_output': 'stockMoveTypeDisassemblyOutput',
+      'price_update': 'stockMoveTypePriceUpdate',
+      'product_update': 'stockMoveTypeProductUpdate',
     };
     final key = keys[type];
     return key != null ? key.tr : type;

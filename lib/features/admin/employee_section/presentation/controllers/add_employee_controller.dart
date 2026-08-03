@@ -280,6 +280,12 @@ class AddEmployeeController extends GetxController {
       'permission': false.obs
     },
     {
+      'name': 'quickEditProducts'.tr,
+      'id': '67',
+      'group': 'stock',
+      'permission': false.obs
+    },
+    {
       'name': 'dailyBoxes'.tr,
       'id': '48',
       'group': 'financial',

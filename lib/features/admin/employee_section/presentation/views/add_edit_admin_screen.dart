@@ -21,6 +21,7 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
         padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
         child: Form(
           key: controller.formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
             children: [
               CustomTextField(
@@ -77,40 +78,69 @@ class AddEditAdminScreen extends GetView<AddAdminController> {
                 ),
               ),
               SizedBox(height: 12.h),
-              CustomTextField(
-                isRequired: !controller.isEdit,
-                controller: controller.passwordController,
-                label: 'password',
-                hintText: 'password',
-                obscureText: true,
-                validator: (v) {
-                  if (controller.isEdit && (v == null || v.isEmpty)) {
-                    return null;
-                  }
-                  return Validators.validatePassword(
-                    v,
-                    Get.locale?.languageCode ?? 'ar',
-                  );
-                },
+              Obx(
+                () => CustomTextField(
+                  isRequired: !controller.isEdit,
+                  controller: controller.passwordController,
+                  label: 'password',
+                  hintText: controller.isEdit ? 'password' : 'password',
+                  obscureText: controller.passwordObscured.value,
+                  onChanged: (_) => controller.formKey.currentState?.validate(),
+                  suffixIcon: IconButton(
+                    tooltip: controller.passwordObscured.value
+                        ? 'إظهار كلمة المرور'
+                        : 'إخفاء كلمة المرور',
+                    icon: Icon(
+                      controller.passwordObscured.value
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                    onPressed: () => controller.passwordObscured.toggle(),
+                  ),
+                  validator: (v) {
+                    if (controller.isEdit && (v == null || v.isEmpty)) {
+                      return null;
+                    }
+                    return Validators.validatePassword(
+                      v,
+                      Get.locale?.languageCode ?? 'ar',
+                    );
+                  },
+                ),
               ),
               SizedBox(height: 12.h),
-              CustomTextField(
-                isRequired: !controller.isEdit,
-                controller: controller.passwordConfirmationController,
-                label: 'passwordConfirmation',
-                hintText: 'passwordConfirmation',
-                obscureText: true,
-                validator: (v) {
-                  if (controller.isEdit &&
-                      controller.passwordController.text.isEmpty &&
-                      (v == null || v.isEmpty)) {
+              Obx(
+                () => CustomTextField(
+                  isRequired: !controller.isEdit,
+                  controller: controller.passwordConfirmationController,
+                  label: 'passwordConfirmation',
+                  hintText: 'passwordConfirmation',
+                  obscureText: controller.passwordConfirmationObscured.value,
+                  onChanged: (_) => controller.formKey.currentState?.validate(),
+                  suffixIcon: IconButton(
+                    tooltip: controller.passwordConfirmationObscured.value
+                        ? 'إظهار تأكيد كلمة المرور'
+                        : 'إخفاء تأكيد كلمة المرور',
+                    icon: Icon(
+                      controller.passwordConfirmationObscured.value
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                    onPressed: () =>
+                        controller.passwordConfirmationObscured.toggle(),
+                  ),
+                  validator: (v) {
+                    if (controller.isEdit &&
+                        controller.passwordController.text.isEmpty &&
+                        (v == null || v.isEmpty)) {
+                      return null;
+                    }
+                    if (v != controller.passwordController.text) {
+                      return 'passwordMismatch'.tr;
+                    }
                     return null;
-                  }
-                  if (v != controller.passwordController.text) {
-                    return 'passwordMismatch'.tr;
-                  }
-                  return null;
-                },
+                  },
+                ),
               ),
               SizedBox(height: 24.h),
               AppButton(
