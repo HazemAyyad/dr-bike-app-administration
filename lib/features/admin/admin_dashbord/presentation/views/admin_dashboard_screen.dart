@@ -213,8 +213,8 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                 ),
                 SizedBox(height: 12.h),
                 Flexible(
-                  child: Obx(
-                    () => ListView.separated(
+                  child: GetBuilder<AdminDashboardController>(
+                    builder: (controller) => ListView.separated(
                       shrinkWrap: true,
                       itemCount: controller.buttons.length,
                       separatorBuilder: (_, __) => Divider(
