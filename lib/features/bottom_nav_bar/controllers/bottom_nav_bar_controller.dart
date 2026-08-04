@@ -7,7 +7,9 @@ import 'package:get/get.dart';
 import '../../admin/admin_dashbord/data/repositories/admin_dashboard_implement.dart';
 import '../../admin/admin_dashbord/domain/usecases/get_activity_summary_usecase.dart';
 import '../../admin/admin_dashbord/domain/usecases/get_admin_logs_usecase.dart';
+import '../../admin/admin_dashbord/domain/usecases/get_admin_ui_preferences_usecase.dart';
 import '../../admin/admin_dashbord/domain/usecases/get_main_dashboard_data_usecase.dart';
+import '../../admin/admin_dashbord/domain/usecases/save_admin_ui_preferences_usecase.dart';
 import '../../admin/admin_dashbord/presentation/controllers/admin_dashboard_controller.dart';
 import '../../admin/admin_dashbord/presentation/views/admin_dashboard_screen.dart';
 import '../../admin/counters/data/repositories/countrers_implement.dart';
@@ -83,6 +85,12 @@ class BottomNavBarController extends GetxController {
                   employeeRepository: Get.find<EmployeeImplement>(),
                 ),
                 getMainDashboardDataUsecase: GetMainDashboardDataUsecase(
+                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+                ),
+                getAdminUiPreferencesUsecase: GetAdminUiPreferencesUsecase(
+                  adminDashboardRepository: Get.find<AdminDashboardImplement>(),
+                ),
+                saveAdminUiPreferencesUsecase: SaveAdminUiPreferencesUsecase(
                   adminDashboardRepository: Get.find<AdminDashboardImplement>(),
                 ),
               ),
