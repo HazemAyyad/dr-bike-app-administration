@@ -63,4 +63,34 @@ class AdminDashboardImplement implements AdminDashboardRepository {
       throw NoConnectionFailure();
     }
   }
+
+  @override
+  Future<List<String>> getHiddenDashboardButtonKeys() async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await adminDashboardDataSource.getHiddenDashboardButtonKeys();
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw NoConnectionFailure();
+    }
+  }
+
+  @override
+  Future<List<String>> saveHiddenDashboardButtonKeys(
+    List<String> hiddenButtonKeys,
+  ) async {
+    if (await networkInfo.isConnected) {
+      try {
+        return await adminDashboardDataSource.saveHiddenDashboardButtonKeys(
+          hiddenButtonKeys,
+        );
+      } on ServerException catch (e) {
+        throw ServerFailure(e.errorModel.errorMessage, e.errorModel.data);
+      }
+    } else {
+      throw NoConnectionFailure();
+    }
+  }
 }

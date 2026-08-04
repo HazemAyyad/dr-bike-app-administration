@@ -54,6 +54,7 @@ class EndPoints {
   static const String adminLogs = 'all/logs';
   static const String activitySummary = 'activity/summary';
   static const String adminHomeData = 'admin/home/page/data';
+  static const String adminUiPreferences = 'admin/ui-preferences';
 
   static const String adminNotifications = 'admin/notifications';
   static const String adminNotificationsUnreadCount =

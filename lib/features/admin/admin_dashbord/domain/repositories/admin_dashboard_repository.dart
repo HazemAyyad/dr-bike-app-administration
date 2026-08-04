@@ -11,4 +11,10 @@ abstract class AdminDashboardRepository {
   });
 
   Future<MainDashboardDataModel> getAdminDashboardData();
+
+  Future<List<String>> getHiddenDashboardButtonKeys();
+
+  Future<List<String>> saveHiddenDashboardButtonKeys(
+    List<String> hiddenButtonKeys,
+  );
 }

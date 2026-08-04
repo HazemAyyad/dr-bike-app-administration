@@ -97,6 +97,26 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
                 ),
               );
             }),
+          if (userType == 'admin')
+            ClipOval(
+              child: Container(
+                color: ThemeService.isDark.value
+                    ? AppColors.customGreyColor
+                    : AppColors.whiteColor2,
+                child: IconButton(
+                  tooltip: 'customizeDashboard'.tr,
+                  highlightColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                  icon: Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.primaryColor,
+                    size: 24.sp,
+                  ),
+                  onPressed: () => _showCustomizeDashboardDialog(context),
+                ),
+              ),
+            ),
+          if (userType == 'admin') SizedBox(width: 8.w),
           ClipOval(
             child: Container(
               color: ThemeService.isDark.value
@@ -133,7 +153,7 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
             // أزرار الوظائف
             GetBuilder<AdminDashboardController>(
               builder: (controller) => BuildActionButtons(
-                buttons: controller.buttons,
+                buttons: controller.visibleDashboardButtons,
                 badges:
                     controller.mainDashboardDataModel?.dashboardBadges ?? {},
               ),
@@ -153,6 +173,108 @@ class AdminDashboardScreen extends GetView<AdminDashboardController> {
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  void _showCustomizeDashboardDialog(BuildContext context) {
+    Get.dialog(
+      Dialog(
+        insetPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 24.h),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: 520.w, maxHeight: 620.h),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(18.w, 16.h, 18.w, 12.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.tune_rounded,
+                      color: AppColors.primaryColor,
+                      size: 22.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'customizeDashboard'.tr,
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w800,
+                              color: ThemeService.isDark.value
+                                  ? AppColors.customGreyColor6
+                                  : AppColors.secondaryColor,
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Flexible(
+                  child: Obx(
+                    () => ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: controller.buttons.length,
+                      separatorBuilder: (_, __) => Divider(
+                        height: 1,
+                        color: ThemeService.isDark.value
+                            ? AppColors.customGreyColor
+                            : AppColors.customGreyColor3,
+                      ),
+                      itemBuilder: (context, index) {
+                        final button = controller.buttons[index];
+                        final isVisible =
+                            !controller.isDashboardButtonHidden(button);
+                        return SwitchListTile.adaptive(
+                          value: isVisible,
+                          onChanged: controller.isUiPreferencesSaving.value
+                              ? null
+                              : (value) => controller.setDashboardButtonVisible(
+                                    button,
+                                    value,
+                                  ),
+                          contentPadding: EdgeInsets.zero,
+                          activeThumbColor: AppColors.primaryColor,
+                          title: Text(
+                            (button['title']?.toString() ?? '').tr,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () =>
+                          controller.resetDashboardButtonsVisibility(),
+                      icon: const Icon(Icons.restart_alt_rounded),
+                      label: Text('resetDashboardSections'.tr),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: Get.back,
+                      child: Text('close'.tr),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -76,4 +76,51 @@ class AdminDashboardDatasource {
       );
     }
   }
+
+  Future<List<String>> getHiddenDashboardButtonKeys() async {
+    try {
+      final response = await api.get(EndPoints.adminUiPreferences);
+      final data = response.data['data'] as Map? ?? {};
+      final adminDashboard = data['admin_dashboard'] as Map? ?? {};
+      final keys = adminDashboard['hidden_button_keys'] as List? ?? const [];
+      return keys.map((item) => item.toString()).toList(growable: false);
+    } on DioException catch (e) {
+      final data = e.response?.data ?? {};
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
+
+  Future<List<String>> saveHiddenDashboardButtonKeys(
+    List<String> hiddenButtonKeys,
+  ) async {
+    try {
+      final response = await api.put(
+        EndPoints.adminUiPreferences,
+        data: {
+          'admin_dashboard': {
+            'hidden_button_keys': hiddenButtonKeys,
+          },
+        },
+      );
+      final data = response.data['data'] as Map? ?? {};
+      final adminDashboard = data['admin_dashboard'] as Map? ?? {};
+      final keys = adminDashboard['hidden_button_keys'] as List? ?? const [];
+      return keys.map((item) => item.toString()).toList(growable: false);
+    } on DioException catch (e) {
+      final data = e.response?.data ?? {};
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data['message'] ?? 'Unknown error',
+          status: data['status'] ?? 500,
+          data: data['data'] ?? {},
+        ),
+      );
+    }
+  }
 }

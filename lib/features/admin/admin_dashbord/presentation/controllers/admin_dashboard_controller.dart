@@ -14,7 +14,9 @@ import '../../data/models/activity_summary_model.dart';
 import '../../data/models/main_dashboard_mata_model.dart';
 import '../../domain/usecases/get_activity_summary_usecase.dart';
 import '../../domain/usecases/get_admin_logs_usecase.dart';
+import '../../domain/usecases/get_admin_ui_preferences_usecase.dart';
 import '../../domain/usecases/get_main_dashboard_data_usecase.dart';
+import '../../domain/usecases/save_admin_ui_preferences_usecase.dart';
 
 class AdminDashboardController extends GetxController
     with GetTickerProviderStateMixin {
@@ -23,6 +25,8 @@ class AdminDashboardController extends GetxController
   final GetActivitySummaryUsecase getActivitySummaryUsecase;
   final CancelLogUsecase cancelLogUsecase;
   final GetMainDashboardDataUsecase getMainDashboardDataUsecase;
+  final GetAdminUiPreferencesUsecase getAdminUiPreferencesUsecase;
+  final SaveAdminUiPreferencesUsecase saveAdminUiPreferencesUsecase;
 
   AdminDashboardController({
     required this.getAllEmployeeUsecase,
@@ -30,6 +34,8 @@ class AdminDashboardController extends GetxController
     required this.getActivitySummaryUsecase,
     required this.cancelLogUsecase,
     required this.getMainDashboardDataUsecase,
+    required this.getAdminUiPreferencesUsecase,
+    required this.saveAdminUiPreferencesUsecase,
   });
 
   List<Map<String, dynamic>> buttons = [
@@ -191,6 +197,86 @@ class AdminDashboardController extends GetxController
       'route': AppRoutes.METACATALOGSYNC
     },
   ];
+
+  final RxList<String> hiddenDashboardButtonKeys = <String>[].obs;
+  final RxBool isUiPreferencesSaving = false.obs;
+
+  List<Map<String, dynamic>> get visibleDashboardButtons {
+    return buttons
+        .where((button) => !isDashboardButtonHidden(button))
+        .toList(growable: false);
+  }
+
+  String dashboardButtonKey(Map<String, dynamic> button) {
+    final route = button['route']?.toString() ?? '';
+    if (route.isNotEmpty) return route;
+    return button['id']?.toString() ?? button['title']?.toString() ?? '';
+  }
+
+  bool isDashboardButtonHidden(Map<String, dynamic> button) {
+    return hiddenDashboardButtonKeys.contains(dashboardButtonKey(button));
+  }
+
+  Future<void> loadUiPreferences() async {
+    if (userType != 'admin') return;
+    try {
+      final hiddenKeys = await getAdminUiPreferencesUsecase.call();
+      hiddenDashboardButtonKeys.assignAll(hiddenKeys);
+      update();
+    } catch (_) {
+      hiddenDashboardButtonKeys.clear();
+      update();
+    }
+  }
+
+  Future<void> setDashboardButtonVisible(
+    Map<String, dynamic> button,
+    bool visible,
+  ) async {
+    final key = dashboardButtonKey(button);
+    if (key.isEmpty || isUiPreferencesSaving.value) return;
+
+    final previous = List<String>.from(hiddenDashboardButtonKeys);
+    if (visible) {
+      hiddenDashboardButtonKeys.remove(key);
+    } else if (!hiddenDashboardButtonKeys.contains(key)) {
+      hiddenDashboardButtonKeys.add(key);
+    }
+    update();
+
+    isUiPreferencesSaving(true);
+    try {
+      final saved = await saveAdminUiPreferencesUsecase.call(
+        hiddenDashboardButtonKeys.toList(growable: false),
+      );
+      hiddenDashboardButtonKeys.assignAll(saved);
+    } catch (_) {
+      hiddenDashboardButtonKeys.assignAll(previous);
+      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+    } finally {
+      isUiPreferencesSaving(false);
+      update();
+    }
+  }
+
+  Future<void> resetDashboardButtonsVisibility() async {
+    if (isUiPreferencesSaving.value) return;
+    final previous = List<String>.from(hiddenDashboardButtonKeys);
+    hiddenDashboardButtonKeys.clear();
+    update();
+
+    isUiPreferencesSaving(true);
+    try {
+      final saved = await saveAdminUiPreferencesUsecase.call(const []);
+      hiddenDashboardButtonKeys.assignAll(saved);
+    } catch (_) {
+      hiddenDashboardButtonKeys.assignAll(previous);
+      Get.snackbar('error'.tr, 'dashboardCustomizeSaveFailed'.tr);
+    } finally {
+      isUiPreferencesSaving(false);
+      update();
+    }
+  }
 
   // متغيرات للإحصائيات
   final RxInt debtToUs = 100.obs;
@@ -481,6 +567,7 @@ class AdminDashboardController extends GetxController
       Get.find<AdminNotificationBadgeController>().refresh();
     }
     AppSettingsService.instance.ensureLoaded();
+    loadUiPreferences();
     getMainDashboardData();
     super.onInit();
     animController = AnimationController(
