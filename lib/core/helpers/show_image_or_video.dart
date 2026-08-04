@@ -6,6 +6,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'full_screen_image_viewer.dart';
+import 'task_media_paths.dart';
 import 'video_view.dart';
 
 class ShowImageOrVideo extends StatelessWidget {
@@ -13,7 +14,7 @@ class ShowImageOrVideo extends StatelessWidget {
 
   final String path;
 
-  bool get _isVideo => path.toLowerCase().contains('.mp4');
+  bool get _isVideo => isVideoMediaPath(path);
   bool get _isNetwork => path.toLowerCase().startsWith('http');
 
   @override
