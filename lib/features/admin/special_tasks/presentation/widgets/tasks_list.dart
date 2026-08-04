@@ -11,6 +11,7 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../employee_tasks/presentation/widgets/task_status_badge.dart';
 import '../controllers/special_tasks_controller.dart';
 
 class TasksList extends GetView<SpecialTasksController> {
@@ -177,6 +178,7 @@ class TasksList extends GetView<SpecialTasksController> {
 
   void _showTaskActions(BuildContext context, SpecialTaskModel task) {
     final theme = Theme.of(context).textTheme.bodyMedium!;
+    final canTransfer = controller.currentTab.value != 2;
     Get.dialog(
       Dialog(
         backgroundColor: ThemeService.isDark.value
@@ -189,7 +191,7 @@ class TasksList extends GetView<SpecialTasksController> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (controller.currentTab.value == 0)
+                if (canTransfer)
                   CustomCheckBox(
                     title: 'transferTask',
                     style: theme.copyWith(
@@ -200,7 +202,7 @@ class TasksList extends GetView<SpecialTasksController> {
                     onChanged: (_) => controller.setOnlyOneTrue('transferTask'),
                     shape: const CircleBorder(),
                   ),
-                if (controller.currentTab.value == 0)
+                if (canTransfer)
                   Obx(
                     () => controller.transferTask.value
                         ? _TransferWeekDayPicker(controller: controller)
@@ -359,9 +361,10 @@ class _SpecialTaskCard extends StatelessWidget {
     final progress = task.progress.clamp(0, 100);
     final showProgress = progress > 0 && task.status != 'completed';
     final matchedSubtasks = task.matchingSubtaskNames(searchQuery);
+    final displayName = '#${task.id} ${task.name}';
 
     return Padding(
-      padding: EdgeInsets.only(bottom: archived ? 3.h : 1.h),
+      padding: EdgeInsets.only(bottom: 3.h),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -369,8 +372,8 @@ class _SpecialTaskCard extends StatelessWidget {
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(10.r),
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 2.w),
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+            margin: EdgeInsets.symmetric(horizontal: 2.w, vertical: 3.h),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
             decoration: BoxDecoration(
               color: isDark ? AppColors.customGreyColor : AppColors.whiteColor,
               borderRadius: BorderRadius.circular(12.r),
@@ -387,68 +390,87 @@ class _SpecialTaskCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Obx(
-                      () => Checkbox(
-                        value: checked.value,
-                        onChanged: archived ? null : onComplete,
-                        activeColor: AppColors.operationalPurple,
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        shape: const CircleBorder(),
-                      ),
-                    ),
-                    SizedBox(width: 4.w),
-                    Container(
-                      width: 30.r,
-                      height: 30.r,
-                      decoration: BoxDecoration(
-                        color:
-                            AppColors.operationalPurple.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.assignment_outlined,
-                        color: AppColors.operationalPurple,
-                        size: 16.sp,
+                    InkWell(
+                      onTap: archived ? null : () => onComplete(!checked.value),
+                      borderRadius: BorderRadius.circular(18.r),
+                      child: Obx(
+                        () => Container(
+                          width: 34.r,
+                          height: 34.r,
+                          decoration: BoxDecoration(
+                            color: checked.value
+                                ? AppColors.operationalPurple
+                                : AppColors.operationalPurple
+                                    .withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            checked.value
+                                ? Icons.check_rounded
+                                : Icons.assignment_outlined,
+                            color: checked.value
+                                ? Colors.white
+                                : AppColors.operationalPurple,
+                            size: 18.sp,
+                          ),
+                        ),
                       ),
                     ),
                     SizedBox(width: 8.w),
                     Expanded(
-                      child: Text(
-                        task.name,
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                          decoration: archived
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
-                          color: isDark
-                              ? AppColors.whiteColor
-                              : AppColors.operationalNavy,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
+                                    decoration: archived
+                                        ? TextDecoration.lineThrough
+                                        : TextDecoration.none,
+                                    color: isDark
+                                        ? AppColors.whiteColor
+                                        : AppColors.operationalNavy,
+                                  ),
+                                ),
+                              ),
+                              if (!archived) ...[
+                                SizedBox(width: 6.w),
+                                _TimeLeftLabel(endTime: task.endDate),
+                              ],
+                            ],
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            '${'dueDate'.tr}: ${DateFormat('d/M/yyyy h:mm a', Get.locale?.languageCode).format(task.endDate)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.5.sp,
+                              height: 1.2,
+                              color: AppColors.customGreyColor5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    if (!archived) ...[
-                      SizedBox(width: 6.w),
-                      _TimeLeftLabel(endTime: task.endDate),
-                    ],
                   ],
                 ),
-                if (matchedSubtasks.isNotEmpty) ...[
-                  SizedBox(height: 3.h),
-                  Padding(
-                    padding: EdgeInsetsDirectional.only(start: 74.w),
-                    child: _SubtaskMatchLabel(names: matchedSubtasks),
-                  ),
-                ],
-                if (showProgress) ...[
-                  SizedBox(height: 5.h),
-                  Row(
-                    children: [
-                      const Spacer(),
+                SizedBox(height: 6.h),
+                Row(
+                  children: [
+                    TaskStatusBadge(status: task.status, compact: true),
+                    const Spacer(),
+                    if (showProgress)
                       Text(
                         '$progress%',
                         style: TextStyle(
@@ -457,9 +479,14 @@ class _SpecialTaskCard extends StatelessWidget {
                           color: AppColors.operationalPurple,
                         ),
                       ),
-                    ],
-                  ),
+                  ],
+                ),
+                if (matchedSubtasks.isNotEmpty) ...[
                   SizedBox(height: 3.h),
+                  _SubtaskMatchLabel(names: matchedSubtasks),
+                ],
+                if (showProgress) ...[
+                  SizedBox(height: 4.h),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4.r),
                     child: LinearProgressIndicator(

@@ -99,6 +99,16 @@ class SpecialTasksController extends GetxController {
     return '${DateFormat('d/M/yyyy').format(startDate)} — ${DateFormat('d/M/yyyy').format(endDate)}';
   }
 
+  String get compactPeriodLabel {
+    if (tasksViewMode.value == tasksViewDaily) {
+      return DateFormat('d/M', Get.locale?.languageCode).format(startDate);
+    }
+    if (tasksViewMode.value == tasksViewWeekly) {
+      return '${DateFormat('d/M').format(startDate)} - ${DateFormat('d/M').format(endDate)}';
+    }
+    return DateFormat('M/yyyy').format(startDate);
+  }
+
   final RxMap<String, RxBool> checkedMap = <String, RxBool>{}.obs;
 
   final RxBool transferTask = false.obs;
@@ -117,6 +127,23 @@ class SpecialTasksController extends GetxController {
   final RxBool deleteTask = false.obs;
 
   final RxBool deleteRepeatedTask = false.obs;
+  final RxBool isSearchVisible = false.obs;
+
+  void toggleSearch() {
+    isSearchVisible.value = !isSearchVisible.value;
+    if (!isSearchVisible.value) {
+      searchController.clear();
+      filterLists(false);
+    }
+    update(['specialSearchBar']);
+  }
+
+  void closeSearch() {
+    isSearchVisible.value = false;
+    searchController.clear();
+    filterLists(false);
+    update(['specialSearchBar']);
+  }
 
   void setOnlyOneTrue(String key) {
     transferTask.value = key == 'transferTask';
@@ -728,6 +755,13 @@ class SpecialTasksController extends GetxController {
   }
 
   void changeWeek(bool isNext) => changePeriod(isNext);
+
+  void jumpToPeriod(DateTime date) {
+    syncPeriodBounds(anchor: date);
+    filterDataByDateRange();
+    scrollToToday();
+    update(['specialTasksList', 'specialPeriodBar', 'specialViewMode']);
+  }
 
   DateTime getStartOfWeek(DateTime date) {
     int weekday = date.weekday; // 1 = Monday ... 7 = Sunday

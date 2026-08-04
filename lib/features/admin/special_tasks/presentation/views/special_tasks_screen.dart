@@ -22,6 +22,24 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
         toDateController: controller.toDateController,
         onPressedFilter: () => controller.filterLists(true),
         action: false,
+        actions: [
+          _SpecialTaskAppBarTabs(controller: controller),
+          Obx(
+            () => IconButton(
+              tooltip: 'search'.tr,
+              onPressed: controller.toggleSearch,
+              icon: Icon(
+                controller.isSearchVisible.value
+                    ? Icons.search_off_rounded
+                    : Icons.search_rounded,
+                color: ThemeService.isDark.value
+                    ? AppColors.primaryColor
+                    : AppColors.secondaryColor,
+              ),
+            ),
+          ),
+          SizedBox(width: 8.w),
+        ],
       ),
       body: AppPullToRefresh(
         onRefresh: controller.pullToRefresh,
@@ -29,86 +47,42 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
           controller: controller.scrollController,
           physics: kRefreshableScrollPhysics,
           slivers: [
-            SliverToBoxAdapter(
-              child: _SpecialCompactTabs(controller: controller),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
-                child: SearchBar(
-                  controller: controller.searchController,
-                  shadowColor: WidgetStateProperty.all(Colors.transparent),
-                  leading: const Icon(Icons.search),
-                  hintText: 'search'.tr,
-                  backgroundColor: WidgetStateProperty.all(
-                    ThemeService.isDark.value
-                        ? AppColors.customGreyColor
-                        : AppColors.customGreyColor7,
-                  ),
-                  onChanged: controller.onSearchChanged,
+            GetBuilder<SpecialTasksController>(
+              id: 'specialSearchBar',
+              builder: (_) => SliverToBoxAdapter(
+                child: Obx(
+                  () => controller.isSearchVisible.value
+                      ? Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 6.h,
+                          ),
+                          child: SearchBar(
+                            controller: controller.searchController,
+                            shadowColor:
+                                WidgetStateProperty.all(Colors.transparent),
+                            leading: const Icon(Icons.search),
+                            trailing: [
+                              IconButton(
+                                tooltip: 'cancel'.tr,
+                                onPressed: controller.closeSearch,
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                            ],
+                            hintText: 'search'.tr,
+                            backgroundColor: WidgetStateProperty.all(
+                              ThemeService.isDark.value
+                                  ? AppColors.customGreyColor
+                                  : AppColors.customGreyColor7,
+                            ),
+                            onChanged: controller.onSearchChanged,
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ),
             const SliverToBoxAdapter(child: _SpecialTasksViewModeBar()),
-            SliverToBoxAdapter(
-              child: GetBuilder<SpecialTasksController>(
-                id: 'specialPeriodBar',
-                builder: (controller) {
-                  return Obx(() {
-                    controller.tasksViewMode.value;
-                    return Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints:
-                                BoxConstraints(minWidth: 36.w, minHeight: 36.w),
-                            onPressed: () => controller.changePeriod(false),
-                            icon: Icon(
-                              Icons.chevron_left_rounded,
-                              color: AppColors.operationalPurple,
-                              size: 26.sp,
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              controller.periodLabel,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: ThemeService.isDark.value
-                                        ? AppColors.primaryColor
-                                        : AppColors.operationalNavy,
-                                  ),
-                            ),
-                          ),
-                          IconButton(
-                            padding: EdgeInsets.zero,
-                            constraints:
-                                BoxConstraints(minWidth: 36.w, minHeight: 36.w),
-                            onPressed: () => controller.changePeriod(true),
-                            icon: Icon(
-                              Icons.chevron_right_rounded,
-                              color: AppColors.operationalPurple,
-                              size: 26.sp,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  });
-                },
-              ),
-            ),
             const TasksList(),
             SliverToBoxAdapter(child: SizedBox(height: 72.h)),
           ],
@@ -131,65 +105,76 @@ class SpecialTasksScreen extends GetView<SpecialTasksController> {
   }
 }
 
-class _SpecialCompactTabs extends StatelessWidget {
-  const _SpecialCompactTabs({required this.controller});
+class _SpecialTaskAppBarTabs extends StatelessWidget {
+  const _SpecialTaskAppBarTabs({required this.controller});
 
   final SpecialTasksController controller;
 
+  IconData _iconForIndex(int index) {
+    switch (index) {
+      case 1:
+        return Icons.event_busy_outlined;
+      case 2:
+        return Icons.archive_outlined;
+      default:
+        return Icons.view_week_outlined;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
-      child: Container(
-        height: 38.h,
-        padding: EdgeInsets.all(3.w),
-        decoration: BoxDecoration(
-          color: ThemeService.isDark.value
-              ? AppColors.customGreyColor
-              : AppColors.whiteColor2,
-          borderRadius: BorderRadius.circular(10.r),
-        ),
-        child: Obx(
-          () => Row(
-            children: List.generate(controller.tabs.length, (index) {
-              final selected = controller.currentTab.value == index;
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 2.w),
-                  child: InkWell(
-                    onTap: () => controller.changeTab(index),
-                    borderRadius: BorderRadius.circular(8.r),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? ThemeService.isDark.value
-                                ? AppColors.customGreyColor5
-                                : AppColors.whiteColor
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Text(
-                        controller.tabs[index].tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                              fontSize: 10.sp,
-                              fontWeight:
-                                  selected ? FontWeight.w700 : FontWeight.w500,
-                              color: ThemeService.isDark.value
-                                  ? Colors.white
-                                  : AppColors.secondaryColor,
-                            ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
+    return Obx(
+      () => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < controller.tabs.length; i++)
+            _SpecialTaskAppBarTab(
+              icon: _iconForIndex(i),
+              label: controller.tabs[i].tr,
+              selected: controller.currentTab.value == i,
+              onTap: () => controller.changeTab(i),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpecialTaskAppBarTab extends StatelessWidget {
+  const _SpecialTaskAppBarTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected
+        ? Colors.white
+        : ThemeService.isDark.value
+            ? Colors.white70
+            : AppColors.secondaryColor;
+    return Tooltip(
+      message: label,
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints(minWidth: 34.w, minHeight: 40.h),
+        onPressed: onTap,
+        icon: Container(
+          width: 30.w,
+          height: 30.w,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.operationalPurple : Colors.transparent,
+            shape: BoxShape.circle,
           ),
+          child: Icon(icon, size: 18.sp, color: fg),
         ),
       ),
     );
@@ -202,36 +187,88 @@ class _SpecialTasksViewModeBar extends GetView<SpecialTasksController> {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<SpecialTasksController>(
-      id: 'specialViewMode',
+      id: 'specialPeriodBar',
       builder: (controller) {
         return Obx(() {
           final mode = controller.tasksViewMode.value;
-          return Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
+          return Container(
+            margin: EdgeInsets.fromLTRB(12.w, 6.h, 12.w, 4.h),
+            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+            decoration: BoxDecoration(
+              color: ThemeService.isDark.value
+                  ? AppColors.customGreyColor
+                  : AppColors.whiteColor2,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(
+                color: ThemeService.isDark.value
+                    ? Colors.white10
+                    : AppColors.operationalCardBorder,
+              ),
+            ),
             child: Row(
               children: [
-                _chip(
+                _navButton(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: () => controller.changePeriod(false),
+                ),
+                SizedBox(width: 2.w),
+                _modeButton(
+                  icon: Icons.today_outlined,
                   label: 'tasksViewDaily'.tr,
                   selected: mode == SpecialTasksController.tasksViewDaily,
                   onTap: () => controller.setTasksViewMode(
                     SpecialTasksController.tasksViewDaily,
                   ),
                 ),
-                SizedBox(width: 6.w),
-                _chip(
+                _modeButton(
+                  icon: Icons.view_week_outlined,
                   label: 'tasksViewWeekly'.tr,
                   selected: mode == SpecialTasksController.tasksViewWeekly,
                   onTap: () => controller.setTasksViewMode(
                     SpecialTasksController.tasksViewWeekly,
                   ),
                 ),
-                SizedBox(width: 6.w),
-                _chip(
+                _modeButton(
+                  icon: Icons.calendar_month_outlined,
                   label: 'tasksViewMonthly'.tr,
                   selected: mode == SpecialTasksController.tasksViewMonthly,
                   onTap: () => controller.setTasksViewMode(
                     SpecialTasksController.tasksViewMonthly,
                   ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Tooltip(
+                    message: 'selectDate'.tr,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8.r),
+                      onTap: () => _pickPeriodAnchor(context),
+                      child: Container(
+                        height: 32.h,
+                        alignment: Alignment.center,
+                        padding: EdgeInsets.symmetric(horizontal: 6.w),
+                        child: Text(
+                          controller.compactPeriodLabel,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium!.copyWith(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: ThemeService.isDark.value
+                                        ? AppColors.primaryColor
+                                        : AppColors.operationalNavy,
+                                  ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 2.w),
+                _navButton(
+                  icon: Icons.chevron_right_rounded,
+                  onTap: () => controller.changePeriod(true),
                 ),
               ],
             ),
@@ -241,35 +278,65 @@ class _SpecialTasksViewModeBar extends GetView<SpecialTasksController> {
     );
   }
 
-  Widget _chip({
+  Future<void> _pickPeriodAnchor(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: controller.startDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      locale: Get.locale,
+    );
+    if (picked != null) {
+      controller.jumpToPeriod(picked);
+    }
+  }
+
+  Widget _modeButton({
+    required IconData icon,
     required String label,
     required bool selected,
     required VoidCallback onTap,
   }) {
-    return Expanded(
-      child: GestureDetector(
+    final fg = selected
+        ? Colors.white
+        : ThemeService.isDark.value
+            ? Colors.white70
+            : AppColors.operationalNavy;
+
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8.r),
         onTap: onTap,
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: 7.h),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 34.w,
+          height: 32.h,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color:
-                selected ? AppColors.operationalPurple : AppColors.whiteColor,
+            color: selected ? AppColors.operationalPurple : Colors.transparent,
             borderRadius: BorderRadius.circular(8.r),
-            border: Border.all(
-              color: selected
-                  ? AppColors.operationalPurple
-                  : AppColors.operationalCardBorder,
-            ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w700,
-              color: selected ? Colors.white : AppColors.operationalNavy,
-            ),
-          ),
+          child: Icon(icon, size: 18.sp, color: fg),
+        ),
+      ),
+    );
+  }
+
+  Widget _navButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8.r),
+      onTap: onTap,
+      child: SizedBox(
+        width: 30.w,
+        height: 32.h,
+        child: Icon(
+          icon,
+          color: AppColors.operationalPurple,
+          size: 22.sp,
         ),
       ),
     );
