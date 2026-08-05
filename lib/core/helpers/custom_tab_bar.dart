@@ -21,9 +21,11 @@ class AppTabs extends StatefulWidget {
     this.fontSize,
     this.translateLabels = true,
     this.fitToWidthUpToCount,
+    this.tabCounts,
   }) : super(key: key);
 
   final List<String> tabs;
+  final List<int>? tabCounts;
   final RxInt currentTab;
   final Function(int index) changeTab;
   final double? width;
@@ -130,6 +132,9 @@ class _AppTabsState extends State<AppTabs> {
       verticalPadding: widget.tabVerticalPadding,
       horizontalMargin: widget.tabHorizontalMargin,
       fontSize: widget.fontSize,
+      count: widget.tabCounts != null && index < widget.tabCounts!.length
+          ? widget.tabCounts![index]
+          : null,
     );
   }
 }
@@ -184,11 +189,13 @@ class CustomTabBar extends StatelessWidget {
     this.verticalPadding,
     this.horizontalMargin,
     this.translateLabel = true,
+    this.count,
     Key? key,
   }) : super(key: key);
   final int index;
   final RxInt currentTab;
   final String label;
+  final int? count;
   final VoidCallback onTap;
   final double? fontSize;
   final double? horizontalPadding;
@@ -228,18 +235,58 @@ class CustomTabBar extends StatelessWidget {
                     ),
             ],
           ),
-          child: Text(
-            translateLabel ? label.tr : label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                  fontSize: fontSize ?? 17.sp,
-                  fontWeight: FontWeight.w400,
-                  color: ThemeService.isDark.value
-                      ? Colors.white
-                      : AppColors.secondaryColor,
-                ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final labelText = Text(
+                translateLabel ? label.tr : label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                      fontSize: fontSize ?? 17.sp,
+                      fontWeight: FontWeight.w400,
+                      color: ThemeService.isDark.value
+                          ? Colors.white
+                          : AppColors.secondaryColor,
+                    ),
+              );
+
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  constraints.hasBoundedWidth
+                      ? Flexible(child: labelText)
+                      : labelText,
+                  if (count != null) ...[
+                    SizedBox(width: 5.w),
+                    Container(
+                      constraints: BoxConstraints(minWidth: 20.w),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                      decoration: BoxDecoration(
+                        color: currentTab.value == index
+                            ? AppColors.primaryColor
+                            : AppColors.customGreyColor.withAlpha(35),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Text(
+                        count.toString(),
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w800,
+                              color: currentTab.value == index
+                                  ? Colors.white
+                                  : AppColors.secondaryColor,
+                            ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ),

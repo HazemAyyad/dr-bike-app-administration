@@ -110,21 +110,41 @@ class EmployeeSectionController extends GetxController
 
   final tabs = <String>[].obs;
   final visibleTabIndexes = <int>[].obs;
+  final RxInt actionTab = (-1).obs;
 
   final RxBool isLoading = false.obs;
+
+  bool get isEmployeeListMergedWithWorkHours =>
+      canViewEmployees && canViewEmployeesAttendance;
+
+  int get pendingLoanRequestsCount => employeeService.loanList
+      .where((request) => request.orderStatus == 'pending')
+      .length;
 
   List<DateTime>? dateTimeList;
   final Rx<DateTime> selectedFinancialMonth = DateTime.now().obs;
   final Rx<DateTime> selectedFinancialDate = DateTime.now().obs;
 
   void changeTab(int index) {
+    actionTab.value = -1;
     currentTab.value = index;
     if (activeTab == adminsTab) {
       getAdminUsers();
     }
   }
 
+  void openLoansTab() {
+    actionTab.value = loansTab;
+  }
+
+  void openEntitlementsTab() {
+    actionTab.value = entitlementsTab;
+  }
+
   int get activeTab {
+    if (actionTab.value >= 0) {
+      return actionTab.value;
+    }
     if (visibleTabIndexes.isEmpty) {
       return employeeListTab;
     }
@@ -144,15 +164,23 @@ class EmployeeSectionController extends GetxController
     }
 
     add(employeeListTab, 'employeeList', canViewEmployees);
-    add(workHoursTab, 'workHours', canViewEmployeesAttendance);
-    add(entitlementsTab, 'entitlements', canViewEmployeesFinancial);
-    add(loansTab, 'loans', canManageEmployeesOrders);
+    add(
+      workHoursTab,
+      'workHours',
+      canViewEmployeesAttendance && !isEmployeeListMergedWithWorkHours,
+    );
     add(overtimeTab, 'overtime',
         canManageEmployeesOrders || canViewEmployeesAttendance);
     add(adminsTab, 'admins', userType == 'admin');
 
     tabs.assignAll(nextTabs);
     visibleTabIndexes.assignAll(nextIndexes);
+    if (actionTab.value == loansTab && !canManageEmployeesOrders) {
+      actionTab.value = -1;
+    }
+    if (actionTab.value == entitlementsTab && !canViewEmployeesFinancial) {
+      actionTab.value = -1;
+    }
     if (currentTab.value >= tabs.length) {
       currentTab.value = 0;
     }

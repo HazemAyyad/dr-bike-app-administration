@@ -88,6 +88,7 @@ import '../features/admin/general_settings/presentation/controllers/banks_settin
 import '../features/admin/general_settings/presentation/views/attendance_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/banks_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/contact_categories_settings_screen.dart';
+import '../features/admin/general_settings/presentation/views/app_version_report_screen.dart';
 import '../features/admin/general_settings/presentation/views/database_backups_screen.dart';
 import '../features/admin/general_settings/presentation/views/general_settings_screen.dart';
 import '../features/admin/general_settings/presentation/views/product_size_options_settings_screen.dart';
@@ -578,6 +579,11 @@ class AppPages {
     GetPage(
       name: AppRoutes.GENERALSETTINGSSCREEN,
       page: () => const GeneralSettingsScreen(),
+      transition: _transitionFadeIn,
+    ),
+    GetPage(
+      name: AppRoutes.APPVERSIONREPORTSCREEN,
+      page: () => const AppVersionReportScreen(),
       transition: _transitionFadeIn,
     ),
     GetPage(

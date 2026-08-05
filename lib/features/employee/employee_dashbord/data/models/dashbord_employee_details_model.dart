@@ -258,7 +258,7 @@ class Task {
     }
     if (progress > 0) return progress.clamp(0, 100);
     if (status == 'completed') return 100;
-    if (status == 'waiting_review') return 90;
+    if (status == 'waiting_review') return 100;
     if (status == 'in_progress' || status == 'started') return 50;
     return 0;
   }

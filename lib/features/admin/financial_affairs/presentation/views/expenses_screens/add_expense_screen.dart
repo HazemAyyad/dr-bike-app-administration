@@ -10,7 +10,6 @@ import '../../../../../../core/helpers/app_button.dart';
 import '../../../../../../core/helpers/custom_app_bar.dart';
 import '../../../../../../core/helpers/custom_text_field.dart';
 import '../../../../../../core/helpers/full_screen_image_viewer.dart';
-import '../../../../../../core/helpers/video_view.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../controllers/expenses_controller.dart';
@@ -125,6 +124,14 @@ class AddExpenseScreen extends GetView<ExpensesController> {
                           pageBuilder: (context, anim1, anim2) {
                             return FullScreenZoomImage(
                               imageUrl: controller.invoiceFile.first.path,
+                              imageUrls: controller.invoiceFile
+                                  .map((file) => file.path)
+                                  .toList(),
+                              downloadFolderSegments: [
+                                'Expenses',
+                                controller.expenseNameController.text,
+                                'Invoices',
+                              ],
                             );
                           },
                         );
@@ -214,117 +221,122 @@ class EditImagesWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetBuilder<ExpensesController>(
       builder: (controller) {
+        final mediaFiles = controller.expensesFile
+            .map((file) => file.path)
+            .where((path) => path.trim().isNotEmpty)
+            .toList();
+
         return controller.isEditing.value
             ? SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Column(
                   children: [
                     SizedBox(height: 10.h),
-                    controller.expensesFile.isEmpty
+                    mediaFiles.isEmpty
                         ? const SizedBox.shrink()
                         : Row(
                             children: [
-                              ...controller.expensesFile.map(
-                                (e) => controller.isLoadingGet.value
-                                    ? const Center(
-                                        child: CircularProgressIndicator())
-                                    : Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 5.w),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(5.r),
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              e.path.contains('mp4')
-                                                  ? showGeneralDialog(
-                                                      context: context,
-                                                      barrierDismissible: true,
-                                                      barrierLabel: 'Dismiss',
-                                                      barrierColor: Colors.black
-                                                          .withAlpha(128),
-                                                      transitionDuration:
-                                                          const Duration(
-                                                              milliseconds:
-                                                                  300),
-                                                      pageBuilder: (context,
-                                                          anim1, anim2) {
-                                                        return VideoView(
-                                                            videoPath: e.path);
-                                                      },
-                                                    )
-                                                  : showGeneralDialog(
-                                                      context: context,
-                                                      barrierDismissible: true,
-                                                      barrierLabel: 'Dismiss',
-                                                      barrierColor: Colors.black
-                                                          .withAlpha(128),
-                                                      transitionDuration:
-                                                          const Duration(
-                                                              milliseconds:
-                                                                  300),
-                                                      pageBuilder: (context,
-                                                          anim1, anim2) {
-                                                        return FullScreenZoomImage(
-                                                            imageUrl: e.path);
-                                                      },
-                                                    );
-                                            },
-                                            child: e.path.contains('.mp4')
-                                                ? Icon(
-                                                    Icons
-                                                        .play_circle_outline_rounded,
-                                                    size: 150.sp,
-                                                    color:
-                                                        AppColors.primaryColor,
-                                                  )
-                                                : CachedNetworkImage(
-                                                    cacheManager: CacheManager(
-                                                      Config(
-                                                        'imagesCache',
-                                                        stalePeriod:
-                                                            const Duration(
-                                                                days: 7),
-                                                        maxNrOfCacheObjects:
-                                                            100,
-                                                      ),
-                                                    ),
-                                                    imageBuilder: (context,
-                                                            imageProvider) =>
-                                                        Container(
-                                                      height: 200.h,
-                                                      width: 200.w,
-                                                      decoration: BoxDecoration(
-                                                        image: DecorationImage(
-                                                          image: imageProvider,
-                                                          fit: BoxFit.fill,
-                                                          filterQuality:
-                                                              FilterQuality
-                                                                  .medium,
+                              ...mediaFiles.asMap().entries.map(
+                                    (entry) => controller.isLoadingGet.value
+                                        ? const Center(
+                                            child: CircularProgressIndicator())
+                                        : Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 5.w),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(5.r),
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  showGeneralDialog(
+                                                    context: context,
+                                                    barrierDismissible: true,
+                                                    barrierLabel: 'Dismiss',
+                                                    barrierColor: Colors.black
+                                                        .withAlpha(128),
+                                                    transitionDuration:
+                                                        const Duration(
+                                                            milliseconds: 300),
+                                                    pageBuilder: (context,
+                                                        anim1, anim2) {
+                                                      return FullScreenZoomImage(
+                                                        imageUrl: entry.value,
+                                                        imageUrls: mediaFiles,
+                                                        downloadFolderSegments: [
+                                                          'Expenses',
+                                                          controller
+                                                              .expenseNameController
+                                                              .text,
+                                                          'Media',
+                                                        ],
+                                                        initialIndex: entry.key,
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                                child: entry.value
+                                                        .contains('.mp4')
+                                                    ? Icon(
+                                                        Icons
+                                                            .play_circle_outline_rounded,
+                                                        size: 150.sp,
+                                                        color: AppColors
+                                                            .primaryColor,
+                                                      )
+                                                    : CachedNetworkImage(
+                                                        cacheManager:
+                                                            CacheManager(
+                                                          Config(
+                                                            'imagesCache',
+                                                            stalePeriod:
+                                                                const Duration(
+                                                                    days: 7),
+                                                            maxNrOfCacheObjects:
+                                                                100,
+                                                          ),
                                                         ),
+                                                        imageBuilder: (context,
+                                                                imageProvider) =>
+                                                            Container(
+                                                          height: 200.h,
+                                                          width: 200.w,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            image:
+                                                                DecorationImage(
+                                                              image:
+                                                                  imageProvider,
+                                                              fit: BoxFit.fill,
+                                                              filterQuality:
+                                                                  FilterQuality
+                                                                      .medium,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        fadeInDuration:
+                                                            const Duration(
+                                                                milliseconds:
+                                                                    200),
+                                                        fadeOutDuration:
+                                                            const Duration(
+                                                                milliseconds:
+                                                                    200),
+                                                        placeholder:
+                                                            (context, url) =>
+                                                                const Center(
+                                                          child:
+                                                              CircularProgressIndicator(),
+                                                        ),
+                                                        errorWidget: (context,
+                                                                url, error) =>
+                                                            const Icon(
+                                                                Icons.error),
+                                                        imageUrl: entry.value,
                                                       ),
-                                                    ),
-                                                    imageUrl: e.path,
-                                                    fadeInDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    fadeOutDuration:
-                                                        const Duration(
-                                                            milliseconds: 200),
-                                                    placeholder:
-                                                        (context, url) =>
-                                                            const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                    errorWidget: (context, url,
-                                                            error) =>
-                                                        const Icon(Icons.error),
-                                                  ),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                              ),
+                                  ),
                             ],
                           ),
                     SizedBox(height: 20.h),

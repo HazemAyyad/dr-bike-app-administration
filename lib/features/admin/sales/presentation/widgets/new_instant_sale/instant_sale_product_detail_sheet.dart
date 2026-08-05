@@ -1,9 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../../../core/helpers/show_net_image.dart';
+import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/services/initial_bindings.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../stock/presentation/widgets/product_location_badge.dart';
@@ -45,8 +44,8 @@ class _ProductDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<SalesController>();
-    final url = ShowNetImage.getThumbnailPhoto(product.imageUrl);
-    final hasImage = url.isNotEmpty && product.imageUrl != 'no image';
+    final hasImage = product.allImageUrlsInPriority.isNotEmpty &&
+        product.imageUrl != 'no image';
     final stock = int.tryParse(product.stock) ?? 0;
     final locationCodeLabel = ProductLocationLabel.withProductCode(
       sectionName: product.storeSectionName,
@@ -107,9 +106,22 @@ class _ProductDetailSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10.r),
                     child: AspectRatio(
                       aspectRatio: 16 / 9,
-                      child: CachedNetworkImage(
-                        imageUrl: url,
+                      child: ProductPriorityImage(
+                        imageUrls: product.allImageUrlsInPriority,
                         fit: BoxFit.cover,
+                        placeholder: ColoredBox(
+                          color: Colors.grey.shade100,
+                          child: Center(
+                            child: SizedBox(
+                              width: 24.w,
+                              height: 24.w,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

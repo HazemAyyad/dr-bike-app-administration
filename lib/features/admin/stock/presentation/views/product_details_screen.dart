@@ -182,6 +182,12 @@ class _ProductMediaSectionState extends State<_ProductMediaSection> {
           title: 'productImages',
           images: product.viewImages!,
           compact: true,
+          downloadFolderSegments: [
+            'Products',
+            product.storeSectionName ?? 'Uncategorized',
+            product.nameAr,
+            'Product Images',
+          ],
         ),
       );
     }
@@ -191,6 +197,12 @@ class _ProductMediaSectionState extends State<_ProductMediaSection> {
           title: 'naturalImages',
           images: product.normalImages!,
           compact: true,
+          downloadFolderSegments: [
+            'Products',
+            product.storeSectionName ?? 'Uncategorized',
+            product.nameAr,
+            'Natural Images',
+          ],
         ),
       );
     }
@@ -200,6 +212,12 @@ class _ProductMediaSectionState extends State<_ProductMediaSection> {
           title: 'dimensionImages',
           images: product.image3d!,
           compact: true,
+          downloadFolderSegments: [
+            'Products',
+            product.storeSectionName ?? 'Uncategorized',
+            product.nameAr,
+            '3D Images',
+          ],
         ),
       );
     }

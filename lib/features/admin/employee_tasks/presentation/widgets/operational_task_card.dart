@@ -31,15 +31,7 @@ class OperationalTaskCard extends StatelessWidget {
     final progress = task.progress.clamp(0, 100);
     final showProgress = progress > 0 && task.status != 'completed';
     final matchedSubtasks = task.matchingSubtaskNames(searchQuery);
-    final taskNumber = task.taskId > 0 ? task.taskId : task.occurrenceId;
-    final sequenceNumber = task.displayNumber;
-    final taskPrefix = taskNumber == null
-        ? null
-        : sequenceNumber != null && sequenceNumber > 0
-            ? '#${sequenceNumber.toString().padLeft(6, '0')}-$taskNumber'
-            : '#$taskNumber';
-    final displayName =
-        taskPrefix != null ? '$taskPrefix ${task.taskName}' : task.taskName;
+    final displayName = task.taskName;
 
     return Material(
       color: Colors.transparent,

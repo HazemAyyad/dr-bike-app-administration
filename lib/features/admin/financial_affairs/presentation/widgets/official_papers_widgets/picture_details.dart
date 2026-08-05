@@ -20,6 +20,12 @@ class PictureDetails extends GetView<OfficialPapersController> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaFiles = picture.file
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
     return Dialog(
       backgroundColor: ThemeService.isDark.value
           ? AppColors.darkColor
@@ -76,7 +82,7 @@ class PictureDetails extends GetView<OfficialPapersController> {
                   title: 'notes',
                   discription: picture.description,
                 ),
-              if (picture.file.isNotEmpty)
+              if (mediaFiles.isNotEmpty)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -90,8 +96,8 @@ class PictureDetails extends GetView<OfficialPapersController> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          ...picture.file.split(',').map(
-                                (e) => e.contains('.mp4')
+                          ...mediaFiles.asMap().entries.map(
+                                (entry) => entry.value.contains('.mp4')
                                     ? Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 5),
@@ -109,7 +115,15 @@ class PictureDetails extends GetView<OfficialPapersController> {
                                               pageBuilder:
                                                   (context, anim1, anim2) {
                                                 return FullScreenZoomImage(
-                                                    imageUrl: e);
+                                                  imageUrl: entry.value,
+                                                  imageUrls: mediaFiles,
+                                                  downloadFolderSegments: [
+                                                    'Official Papers',
+                                                    'Pictures',
+                                                    picture.name,
+                                                  ],
+                                                  initialIndex: entry.key,
+                                                );
                                               },
                                             );
                                           },
@@ -137,7 +151,14 @@ class PictureDetails extends GetView<OfficialPapersController> {
                                               pageBuilder:
                                                   (context, anim1, anim2) {
                                                 return FullScreenZoomImage(
-                                                  imageUrl: e,
+                                                  imageUrl: entry.value,
+                                                  imageUrls: mediaFiles,
+                                                  downloadFolderSegments: [
+                                                    'Official Papers',
+                                                    'Pictures',
+                                                    picture.name,
+                                                  ],
+                                                  initialIndex: entry.key,
                                                 );
                                               },
                                             );
@@ -165,7 +186,6 @@ class PictureDetails extends GetView<OfficialPapersController> {
                                                 ),
                                               ),
                                             ),
-                                            imageUrl: e,
                                             placeholder: (context, url) =>
                                                 const Center(
                                               child: CircularProgressIndicator(
@@ -179,6 +199,7 @@ class PictureDetails extends GetView<OfficialPapersController> {
                                               size: 50,
                                               color: Colors.red,
                                             ),
+                                            imageUrl: entry.value,
                                           ),
                                         ),
                                       ),

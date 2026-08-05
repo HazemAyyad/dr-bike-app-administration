@@ -556,6 +556,7 @@ class AppVersionSummaryRow {
 class AppVersionDeviceRow {
   AppVersionDeviceRow({
     required this.userName,
+    required this.userEmail,
     required this.userType,
     required this.platform,
     required this.deviceName,
@@ -565,6 +566,7 @@ class AppVersionDeviceRow {
   });
 
   final String userName;
+  final String userEmail;
   final String userType;
   final String platform;
   final String deviceName;
@@ -575,6 +577,7 @@ class AppVersionDeviceRow {
   factory AppVersionDeviceRow.fromJson(Map<dynamic, dynamic> json) {
     return AppVersionDeviceRow(
       userName: json['user_name']?.toString() ?? '',
+      userEmail: json['user_email']?.toString() ?? '',
       userType: json['user_type']?.toString() ?? '',
       platform: json['platform']?.toString() ?? '',
       deviceName: json['device_name']?.toString() ?? '',

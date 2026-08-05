@@ -241,7 +241,17 @@ class BuildProductCard extends GetView<StockController> {
       return GestureDetector(
         onTapUp: (details) async {
           if (isZoomTap(details.localPosition)) {
-            openProductImageViewer(context, product.preferredImageUrl);
+            openProductImageViewer(
+              context,
+              product.preferredImageUrl,
+              imageUrls: product.allImageUrlsInPriority,
+              title: product.name,
+              downloadFolderSegments: [
+                'Products',
+                product.storeSectionName ?? 'Uncategorized',
+                product.name,
+              ],
+            );
             return;
           }
           await handleCardTap();

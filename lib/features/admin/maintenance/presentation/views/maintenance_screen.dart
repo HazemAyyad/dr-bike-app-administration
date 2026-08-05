@@ -66,16 +66,19 @@ class MaintenanceScreen extends GetView<MaintenanceController> {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: AppTabs(
-              tabs: controller.tabs,
-              currentTab: controller.currentTab,
-              changeTab: controller.changeTab,
-              height: 42.h,
-              tabHorizontalPadding: 4.w,
-              tabVerticalPadding: 8.h,
-              tabHorizontalMargin: 2.w,
-              fontSize: 13.sp,
-              fitToWidthUpToCount: 4,
+            child: GetBuilder<MaintenanceController>(
+              builder: (controller) => AppTabs(
+                tabs: controller.tabs,
+                tabCounts: controller.tabCounts,
+                currentTab: controller.currentTab,
+                changeTab: controller.changeTab,
+                height: 42.h,
+                tabHorizontalPadding: 4.w,
+                tabVerticalPadding: 8.h,
+                tabHorizontalMargin: 2.w,
+                fontSize: 13.sp,
+                fitToWidthUpToCount: 4,
+              ),
             ),
           ),
           const SliverToBoxAdapter(child: _MaintenanceDailyBoxStatus()),

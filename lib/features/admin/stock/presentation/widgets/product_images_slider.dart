@@ -1,17 +1,11 @@
-import 'dart:io';
-
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:get/get.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../../core/helpers/admin_ui_colors.dart';
+import '../../../../../core/helpers/full_screen_image_viewer.dart';
 import '../../../../../core/helpers/show_net_image.dart';
 
 List<String> _filterProductImageList(List<String> images) {
@@ -97,146 +91,22 @@ class ProductImagesSlider extends StatelessWidget {
     required this.images,
     required this.title,
     this.compact = false,
+    this.downloadFolderSegments,
   }) : super(key: key);
 
   final List<String> images;
   final String title;
   final bool compact;
-
-  Future<void> downloadImage(String imageUrl) async {
-    try {
-      if (Platform.isAndroid) {
-        await Permission.photos.request();
-        await Permission.storage.request();
-      } else if (Platform.isIOS) {
-        await Permission.photosAddOnly.request();
-      }
-
-      Get.snackbar(
-        'تنبيه',
-        'جاري تحميل الصورة...',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
-
-      final tempDir = await getTemporaryDirectory();
-      final fileName = imageUrl.split('/').last;
-      final tempPath = '${tempDir.path}/$fileName';
-
-      await Dio().download(imageUrl, tempPath);
-      await GallerySaver.saveImage(tempPath, albumName: 'Doctor Bike');
-
-      Get.snackbar(
-        'تم',
-        'تم حفظ الصورة في المعرض',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
-    } catch (e) {
-      Get.snackbar(
-        'خطأ',
-        'فشل التحميل: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-      );
-    }
-  }
-
-  void _closeViewer() {
-    if (Get.isSnackbarOpen) {
-      Get.closeAllSnackbars();
-    }
-    if (Get.isDialogOpen == true) {
-      Get.back();
-    }
-  }
+  final List<String>? downloadFolderSegments;
 
   void _openViewer(BuildContext context, List<String> slides, int initialPage) {
-    final carouselController = CarouselSliderController();
-    final currentIndex = initialPage.obs;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-
-    Get.dialog(
-      Material(
-        type: MaterialType.transparency,
-        child: Stack(
-          children: [
-            Positioned(
-              top: 58.h,
-              right: 16.w,
-              child: _ViewerIconButton(
-                icon: Icons.close,
-                onTap: _closeViewer,
-              ),
-            ),
-            Positioned(
-              top: 58.h,
-              left: 16.w,
-              child: _ViewerIconButton(
-                icon: Icons.download,
-                onTap: () => downloadImage(
-                  ShowNetImage.getPhoto(slides[currentIndex.value]),
-                ),
-              ),
-            ),
-            Center(
-              child: CarouselSlider.builder(
-                carouselController: carouselController,
-                itemCount: slides.length,
-                itemBuilder: (context, index, realIdx) {
-                  final raw = slides[index];
-                  return Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(18.r),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          _NetworkProductImage(
-                            imageUrl: ShowNetImage.getPhoto(raw),
-                            fit: BoxFit.contain,
-                            backgroundColor: Colors.black,
-                          ),
-                          _ImageSourceBadge(
-                            source: ShowNetImage.classifySource(raw),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-                options: CarouselOptions(
-                  height: screenHeight * 0.62,
-                  enlargeCenterPage: slides.length > 1,
-                  enableInfiniteScroll: slides.length > 1,
-                  autoPlay: false,
-                  viewportFraction: slides.length == 1 ? 0.92 : 0.86,
-                  initialPage: initialPage,
-                  onPageChanged: (i, reason) => currentIndex.value = i,
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 42.h,
-              left: 0,
-              right: 0,
-              child: Obx(
-                () => Text(
-                  '${currentIndex.value + 1} / ${slides.length}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.74),
+    final resolvedSlides = slides.map(ShowNetImage.getPhoto).toList();
+    FullScreenZoomImage.open(
+      context,
+      resolvedSlides[initialPage],
+      imageUrls: resolvedSlides,
+      downloadFolderSegments: downloadFolderSegments,
+      initialIndex: initialPage,
     );
   }
 
@@ -369,17 +239,15 @@ class _NetworkProductImage extends StatelessWidget {
   const _NetworkProductImage({
     required this.imageUrl,
     required this.fit,
-    this.backgroundColor,
   });
 
   final String imageUrl;
   final BoxFit fit;
-  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: backgroundColor ?? AdminUiColors.subtleOverlay(context),
+      color: AdminUiColors.subtleOverlay(context),
       child: CachedNetworkImage(
         cacheManager: _productImageCache(),
         imageUrl: imageUrl,
@@ -440,33 +308,6 @@ class _ThumbnailTile extends StatelessWidget {
                 ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ViewerIconButton extends StatelessWidget {
-  const _ViewerIconButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.12),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 46.w,
-          height: 46.w,
-          child: Icon(icon, color: Colors.white, size: 24.sp),
         ),
       ),
     );

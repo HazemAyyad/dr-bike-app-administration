@@ -1116,6 +1116,17 @@ class MaintenanceController extends GetxController {
   final Map<String, List<MaintenanceDataModel>> readyMaintenancesSearch = {};
   final Map<String, List<MaintenanceDataModel>> archiveMaintenancesSearch = {};
 
+  List<int> get tabCounts => [
+        _groupedCount(maintenancesSearch),
+        _groupedCount(ongoingMaintenancesSearch),
+        _groupedCount(readyMaintenancesSearch),
+        _groupedCount(archiveMaintenancesSearch),
+      ];
+
+  int _groupedCount(Map<String, List<MaintenanceDataModel>> grouped) {
+    return grouped.values.fold(0, (sum, list) => sum + list.length);
+  }
+
   void filterAllMaintenances() {
     final nameQuery = employeeNameController.text.trim();
     final fromDate = fromDateController.text.trim();

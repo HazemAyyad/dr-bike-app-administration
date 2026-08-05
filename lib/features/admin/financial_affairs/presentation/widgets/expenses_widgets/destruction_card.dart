@@ -182,6 +182,9 @@ class DestructionDetails extends GetView<OfficialPapersController> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaFiles =
+        data.image.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+
     return Dialog(
       backgroundColor: ThemeService.isDark.value
           ? AppColors.darkColor
@@ -254,7 +257,7 @@ class DestructionDetails extends GetView<OfficialPapersController> {
                   ),
                 ],
               ),
-              if (data.image.isNotEmpty)
+              if (mediaFiles.isNotEmpty)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -268,93 +271,114 @@ class DestructionDetails extends GetView<OfficialPapersController> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          ...data.image.map(
-                            (e) => e.contains('.mp4')
-                                ? Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 5),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        showGeneralDialog(
-                                          context: context,
-                                          barrierDismissible: true,
-                                          barrierLabel: 'Dismiss',
-                                          barrierColor:
-                                              Colors.black.withAlpha(128),
-                                          transitionDuration:
-                                              const Duration(milliseconds: 300),
-                                          pageBuilder: (context, anim1, anim2) {
-                                            return FullScreenZoomImage(
-                                                imageUrl: e);
-                                          },
-                                        );
-                                      },
-                                      child: Icon(
-                                        Icons.video_library_rounded,
-                                        size: 80.sp,
-                                        color: AppColors.primaryColor,
-                                      ),
-                                    ),
-                                  )
-                                : Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 5),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        showGeneralDialog(
-                                          context: context,
-                                          barrierDismissible: true,
-                                          barrierLabel: 'Dismiss',
-                                          barrierColor:
-                                              Colors.black.withAlpha(128),
-                                          transitionDuration:
-                                              const Duration(milliseconds: 300),
-                                          pageBuilder: (context, anim1, anim2) {
-                                            return FullScreenZoomImage(
-                                              imageUrl: e,
+                          ...mediaFiles.asMap().entries.map(
+                                (entry) => entry.value.contains('.mp4')
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            showGeneralDialog(
+                                              context: context,
+                                              barrierDismissible: true,
+                                              barrierLabel: 'Dismiss',
+                                              barrierColor:
+                                                  Colors.black.withAlpha(128),
+                                              transitionDuration:
+                                                  const Duration(
+                                                      milliseconds: 300),
+                                              pageBuilder:
+                                                  (context, anim1, anim2) {
+                                                return FullScreenZoomImage(
+                                                  imageUrl: entry.value,
+                                                  imageUrls: mediaFiles,
+                                                  downloadFolderSegments: [
+                                                    'Expenses',
+                                                    'Destruction',
+                                                    data.productName,
+                                                  ],
+                                                  initialIndex: entry.key,
+                                                );
+                                              },
                                             );
                                           },
-                                        );
-                                      },
-                                      child: CachedNetworkImage(
-                                        imageUrl: e,
-                                        cacheManager: CacheManager(
-                                          Config(
-                                            'imagesCache',
-                                            stalePeriod:
-                                                const Duration(days: 7),
-                                            maxNrOfCacheObjects: 100,
+                                          child: Icon(
+                                            Icons.video_library_rounded,
+                                            size: 80.sp,
+                                            color: AppColors.primaryColor,
                                           ),
                                         ),
-                                        imageBuilder:
-                                            (context, imageProvider) =>
-                                                Container(
-                                          height: 150.h,
-                                          width: 150.w,
-                                          decoration: BoxDecoration(
-                                            image: DecorationImage(
-                                              image: imageProvider,
-                                              fit: BoxFit.cover,
-                                              filterQuality:
-                                                  FilterQuality.medium,
+                                      )
+                                    : Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 5),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            showGeneralDialog(
+                                              context: context,
+                                              barrierDismissible: true,
+                                              barrierLabel: 'Dismiss',
+                                              barrierColor:
+                                                  Colors.black.withAlpha(128),
+                                              transitionDuration:
+                                                  const Duration(
+                                                      milliseconds: 300),
+                                              pageBuilder:
+                                                  (context, anim1, anim2) {
+                                                return FullScreenZoomImage(
+                                                  imageUrl: entry.value,
+                                                  imageUrls: mediaFiles,
+                                                  downloadFolderSegments: [
+                                                    'Expenses',
+                                                    'Destruction',
+                                                    data.productName,
+                                                  ],
+                                                  initialIndex: entry.key,
+                                                );
+                                              },
+                                            );
+                                          },
+                                          child: CachedNetworkImage(
+                                            imageUrl: entry.value,
+                                            cacheManager: CacheManager(
+                                              Config(
+                                                'imagesCache',
+                                                stalePeriod:
+                                                    const Duration(days: 7),
+                                                maxNrOfCacheObjects: 100,
+                                              ),
+                                            ),
+                                            imageBuilder:
+                                                (context, imageProvider) =>
+                                                    Container(
+                                              height: 150.h,
+                                              width: 150.w,
+                                              decoration: BoxDecoration(
+                                                image: DecorationImage(
+                                                  image: imageProvider,
+                                                  fit: BoxFit.cover,
+                                                  filterQuality:
+                                                      FilterQuality.medium,
+                                                ),
+                                              ),
+                                            ),
+                                            placeholder: (context, url) =>
+                                                const Center(
+                                              child: CircularProgressIndicator(
+                                                  color:
+                                                      AppColors.primaryColor),
+                                            ),
+                                            errorWidget:
+                                                (context, url, error) =>
+                                                    const Icon(
+                                              Icons.error,
+                                              size: 50,
+                                              color: Colors.red,
                                             ),
                                           ),
                                         ),
-                                        placeholder: (context, url) =>
-                                            const Center(
-                                          child: CircularProgressIndicator(
-                                              color: AppColors.primaryColor),
-                                        ),
-                                        errorWidget: (context, url, error) =>
-                                            const Icon(
-                                          Icons.error,
-                                          size: 50,
-                                          color: Colors.red,
-                                        ),
                                       ),
-                                    ),
-                                  ),
-                          ),
+                              ),
                         ],
                       ),
                     )

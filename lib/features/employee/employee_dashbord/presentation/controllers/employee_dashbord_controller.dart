@@ -334,6 +334,11 @@ class EmployeeDashbordController extends GetxController
       'badgeKey': 'technical_support',
     },
     {
+      'id': 'notes',
+      'title': 'الملاحظات',
+      'route': AppRoutes.NOTES,
+    },
+    {
       'id': '6',
       'title': 'privateTasks',
       'route': AppRoutes.PRIVATETASKSSCREEN,

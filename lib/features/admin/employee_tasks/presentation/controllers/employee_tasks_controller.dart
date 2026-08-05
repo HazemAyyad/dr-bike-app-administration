@@ -1844,7 +1844,7 @@ class EmployeeTasksController extends GetxController {
     if (data.subTasks.isEmpty) {
       if (data.progress > 0) return data.progress.clamp(0, 100);
       if (data.status == 'completed') return 100;
-      if (data.status == 'waiting_review') return 90;
+      if (data.status == 'waiting_review') return 100;
       if (data.status == 'in_progress' || data.status == 'started') return 50;
       return 0;
     }

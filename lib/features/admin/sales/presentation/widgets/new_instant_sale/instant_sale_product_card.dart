@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../stock/presentation/widgets/product_location_badge.dart';
-import '../../../../../../core/helpers/show_net_image.dart';
+import '../../../../../../core/helpers/product_priority_image.dart';
 import '../../../../../../core/utils/app_colors.dart';
 import '../../../../../../core/utils/desktop_layout.dart';
 import '../../../data/models/product_model.dart';
@@ -28,8 +27,8 @@ class InstantSaleProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDesktop = DesktopLayout.isDesktop(context);
     final controller = Get.find<SalesController>();
-    final url = ShowNetImage.getThumbnailPhoto(product.imageUrl);
-    final hasImage = url.isNotEmpty && product.imageUrl != 'no image';
+    final hasImage = product.allImageUrlsInPriority.isNotEmpty &&
+        product.imageUrl != 'no image';
     final locationCodeLabel = ProductLocationLabel.withProductCode(
       sectionName: product.storeSectionName,
       productCode: product.displayProductCode,
@@ -55,9 +54,11 @@ class InstantSaleProductCard extends StatelessWidget {
         }
       }
       final orderStock = ordersCtrl?.availabilityForProduct(product.id);
-      final physicalStock =
+      final rawPhysicalStock =
           orderStock?.physicalStock ?? int.tryParse(product.stock) ?? 0;
-      final displayStock = orderStock?.availableQty ?? physicalStock;
+      final physicalStock = rawPhysicalStock < 0 ? 0 : rawPhysicalStock;
+      final rawDisplayStock = orderStock?.availableQty ?? physicalStock;
+      final displayStock = rawDisplayStock < 0 ? 0 : rawDisplayStock;
       final badgeReserved =
           orderStock?.totalReservedQty ?? orderStock?.reservedQty ?? 0;
       final effectiveReserved = badgeReserved > 0
@@ -126,18 +127,17 @@ class InstantSaleProductCard extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       hasImage
-                          ? CachedNetworkImage(
-                              imageUrl: url,
+                          ? ProductPriorityImage(
+                              imageUrls: product.allImageUrlsInPriority,
                               fit: BoxFit.cover,
-                            )
-                          : ColoredBox(
-                              color: Colors.grey.shade100,
-                              child: Icon(
-                                Icons.inventory_2_outlined,
-                                size: 22.sp,
-                                color: Colors.grey.shade400,
+                              placeholder: _ProductImagePlaceholder(
+                                iconSize: 22.sp,
                               ),
-                            ),
+                              missingPlaceholder: _ProductImagePlaceholder(
+                                iconSize: 22.sp,
+                              ),
+                            )
+                          : _ProductImagePlaceholder(iconSize: 22.sp),
                       Positioned(
                         bottom: 3.h,
                         right: 3.w,
@@ -355,6 +355,26 @@ class InstantSaleProductCard extends StatelessWidget {
       return null;
     }
     return Get.find<SalesOrdersController>();
+  }
+}
+
+class _ProductImagePlaceholder extends StatelessWidget {
+  const _ProductImagePlaceholder({
+    required this.iconSize,
+  });
+
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.grey.shade100,
+      child: Icon(
+        Icons.inventory_2_outlined,
+        size: iconSize,
+        color: Colors.grey.shade400,
+      ),
+    );
   }
 }
 

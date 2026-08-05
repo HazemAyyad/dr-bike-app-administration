@@ -72,6 +72,11 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                   child: Center(child: ShowNoData()),
                 );
               }
+              final paperImages = FinacialService()
+                  .filesPapers
+                  .map((paper) => paper.paperImage.trim())
+                  .where((image) => image.isNotEmpty)
+                  .toList();
 
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
@@ -110,6 +115,14 @@ class ShowFilesData extends GetView<OfficialPapersController> {
                                   pageBuilder: (context, anim1, anim2) {
                                     return FullScreenZoomImage(
                                       imageUrl: data.paperImage,
+                                      imageUrls: paperImages,
+                                      downloadFolderSegments: [
+                                        'Official Papers',
+                                        data.fileName,
+                                        data.paperName,
+                                      ],
+                                      initialIndex:
+                                          paperImages.indexOf(data.paperImage),
                                     );
                                   },
                                 );

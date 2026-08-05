@@ -173,6 +173,7 @@ class AppRoutes {
 
   // General Settings (admin)
   static const GENERALSETTINGSSCREEN = '/GeneralSettingsScreen';
+  static const APPVERSIONREPORTSCREEN = '/AppVersionReportScreen';
   static const STOCKINVENTORYSETTINGSSCREEN = '/StockInventorySettingsScreen';
   static const PRODUCTSIZEOPTIONSSETTINGSSCREEN =
       '/ProductSizeOptionsSettingsScreen';

@@ -1,6 +1,8 @@
 import 'package:doctorbike/core/helpers/app_button.dart';
 import 'package:doctorbike/core/helpers/show_no_data.dart';
 import 'package:doctorbike/features/admin/special_tasks/data/models/special_task_model.dart';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -11,7 +13,6 @@ import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../core/widgets/skeleton_loading.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../employee_tasks/presentation/widgets/task_status_badge.dart';
 import '../controllers/special_tasks_controller.dart';
 
 class TasksList extends GetView<SpecialTasksController> {
@@ -361,7 +362,7 @@ class _SpecialTaskCard extends StatelessWidget {
     final progress = task.progress.clamp(0, 100);
     final showProgress = progress > 0 && task.status != 'completed';
     final matchedSubtasks = task.matchingSubtaskNames(searchQuery);
-    final displayName = '#${task.id} ${task.name}';
+    final displayName = task.name;
 
     return Padding(
       padding: EdgeInsets.only(bottom: 3.h),
@@ -390,87 +391,43 @@ class _SpecialTaskCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
+                  textDirection: ui.TextDirection.ltr,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    InkWell(
-                      onTap: archived ? null : () => onComplete(!checked.value),
-                      borderRadius: BorderRadius.circular(18.r),
-                      child: Obx(
-                        () => Container(
-                          width: 34.r,
-                          height: 34.r,
-                          decoration: BoxDecoration(
-                            color: checked.value
-                                ? AppColors.operationalPurple
-                                : AppColors.operationalPurple
-                                    .withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            checked.value
-                                ? Icons.check_rounded
-                                : Icons.assignment_outlined,
-                            color: checked.value
-                                ? Colors.white
-                                : AppColors.operationalPurple,
-                            size: 18.sp,
-                          ),
-                        ),
+                    Obx(
+                      () => Checkbox(
+                        value: checked.value,
+                        onChanged: archived ? null : onComplete,
+                        activeColor: AppColors.operationalPurple,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: const CircleBorder(),
                       ),
                     ),
                     SizedBox(width: 8.w),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  displayName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.2,
-                                    decoration: archived
-                                        ? TextDecoration.lineThrough
-                                        : TextDecoration.none,
-                                    color: isDark
-                                        ? AppColors.whiteColor
-                                        : AppColors.operationalNavy,
-                                  ),
-                                ),
-                              ),
-                              if (!archived) ...[
-                                SizedBox(width: 6.w),
-                                _TimeLeftLabel(endTime: task.endDate),
-                              ],
-                            ],
-                          ),
-                          SizedBox(height: 2.h),
-                          Text(
-                            '${'dueDate'.tr}: ${DateFormat('d/M/yyyy h:mm a', Get.locale?.languageCode).format(task.endDate)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 10.5.sp,
-                              height: 1.2,
-                              color: AppColors.customGreyColor5,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        displayName,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          decoration: archived
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
+                          color: isDark
+                              ? AppColors.whiteColor
+                              : AppColors.operationalNavy,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 6.h),
-                Row(
-                  children: [
-                    TaskStatusBadge(status: task.status, compact: true),
-                    const Spacer(),
-                    if (showProgress)
+                if (showProgress) ...[
+                  SizedBox(height: 5.h),
+                  Row(
+                    children: [
+                      const Spacer(),
                       Text(
                         '$progress%',
                         style: TextStyle(
@@ -479,8 +436,9 @@ class _SpecialTaskCard extends StatelessWidget {
                           color: AppColors.operationalPurple,
                         ),
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
                 if (matchedSubtasks.isNotEmpty) ...[
                   SizedBox(height: 3.h),
                   _SubtaskMatchLabel(names: matchedSubtasks),
@@ -605,50 +563,6 @@ class _SubtaskMatchLabel extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class _TimeLeftLabel extends StatelessWidget {
-  const _TimeLeftLabel({required this.endTime});
-
-  final DateTime endTime;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = _formatTimeLeft(endTime);
-    final color = _colorFor(endTime);
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6.r),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 9.5.sp,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  static String _formatTimeLeft(DateTime end) {
-    final diff = end.difference(DateTime.now());
-    if (diff.inSeconds <= 0) return 'overdue'.tr;
-    if (diff.inDays >= 1) return '${diff.inDays} ${'days'.tr}';
-    if (diff.inHours >= 1) return '${diff.inHours} ${'hours'.tr}';
-    final mins = diff.inMinutes.clamp(1, 59);
-    return '$mins ${'minute'.tr}';
-  }
-
-  static Color _colorFor(DateTime end) {
-    final hours = end.difference(DateTime.now()).inHours;
-    if (hours <= 0) return AppColors.redColor;
-    if (hours <= 24) return AppColors.customOrange3;
-    return AppColors.customGreen1;
   }
 }
 
