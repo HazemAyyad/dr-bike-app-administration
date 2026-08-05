@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 
 import '../../../counters/domain/usecases/get_report_by_type_usecase.dart';
 import '../../data/repositorie_imp/employee_implement.dart';
-import '../../domain/usecases/add_points_usecase.dart';
 import '../../domain/usecases/approve_employee_order_usecase.dart';
 import '../../domain/usecases/cancel_log_usecase.dart';
 import '../../domain/usecases/change_employee_password_usecase.dart';
@@ -115,9 +114,6 @@ class EmployeeSectionBinding extends Bindings {
     Get.lazyPut(
       () => AddEmployeeController(
         employeeUsecase: AddEmployeeUsecase(
-          employeeRepository: Get.find<EmployeeImplement>(),
-        ),
-        addPointsUsecase: AddPointsUsecase(
           employeeRepository: Get.find<EmployeeImplement>(),
         ),
         getPermissionsUsecase: GetPermissionsUsecase(

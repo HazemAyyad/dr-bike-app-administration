@@ -9,7 +9,6 @@ import '../../../../../core/helpers/showtime.dart';
 import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/user_data.dart';
 import '../../domain/usecases/add_employee_usecase.dart';
-import '../../domain/usecases/add_points_usecase.dart';
 import '../../domain/usecases/get_permissions_usecase.dart';
 import '../../domain/usecases/update_permission_grant_policy_usecase.dart';
 import 'employee_section_controller.dart';
@@ -32,14 +31,12 @@ class AddEmployeeController extends GetxController {
   static const String grantPolicyPermissionsManage = 'permissions_manage';
 
   AddEmployeeUsecase employeeUsecase;
-  AddPointsUsecase addPointsUsecase;
   GetPermissionsUsecase getPermissionsUsecase;
   UpdatePermissionGrantPolicyUsecase updatePermissionGrantPolicyUsecase;
   EmployeeService employeeService;
 
   AddEmployeeController({
     required this.employeeUsecase,
-    required this.addPointsUsecase,
     required this.getPermissionsUsecase,
     required this.updatePermissionGrantPolicyUsecase,
     required this.employeeService,
@@ -695,9 +692,6 @@ class AddEmployeeController extends GetxController {
 
   final TextEditingController employeeConroller = TextEditingController();
 
-  final TextEditingController pointsConroller = TextEditingController();
-  final TextEditingController notesConroller = TextEditingController();
-
   final RxBool isVisible = false.obs;
 
   void toggleVisibility() {
@@ -825,44 +819,6 @@ class AddEmployeeController extends GetxController {
     }
   }
 
-  // add or minus points
-  void addOrMinusPoints(BuildContext context, bool isAdd) async {
-    if (formKey.currentState!.validate()) {
-      isLoading(true);
-      final result = await addPointsUsecase.call(
-        employeeId: employeeConroller.text,
-        points: pointsConroller.text,
-        notes: notesConroller.text,
-        isAdd: isAdd,
-      );
-      result.fold(
-        (failure) {
-          Helpers.showCustomDialogError(
-            context: context,
-            title: failure.errMessage,
-            message: failure.data['message'],
-          );
-        },
-        (success) {
-          Future.delayed(
-            const Duration(milliseconds: 100),
-            () {
-              Get.back();
-              Get.back();
-            },
-          );
-          Helpers.showCustomDialogSuccess(
-            context: context,
-            title: 'success'.tr,
-            message: success,
-          );
-        },
-      );
-      Get.find<EmployeeSectionController>().getEmployee();
-      isLoading(false);
-    }
-  }
-
   RxBool deleteImage = false.obs;
 
   @override
@@ -879,8 +835,6 @@ class AddEmployeeController extends GetxController {
     // regularWorkingHoursController.dispose();
     employeeNameController.dispose();
     employeeConroller.dispose();
-    pointsConroller.dispose();
-    notesConroller.dispose();
     super.onClose();
   }
 }

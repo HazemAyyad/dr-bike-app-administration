@@ -147,7 +147,6 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
     controller.getEmployeeDetails(widget.employee.id.toString());
     Get.toNamed(
       AppRoutes.EMPLOYEEDETAILSSCREEN,
-      arguments: widget.employee.points,
     );
   }
 
@@ -505,7 +504,7 @@ class _EmployeeWorkHoursListState extends State<EmployeeWorkHoursList> {
 
   String _pointsLabel() {
     final summary = widget.employee.pointsSummary;
-    if (summary == null) return '${widget.employee.points} ${'point'.tr}';
+    if (summary == null) return 'employeeNoPoints'.tr;
     return '${summary.netPoints} ${'employeePointsBadgeUnit'.tr}';
   }
 

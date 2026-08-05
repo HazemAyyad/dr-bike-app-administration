@@ -29,7 +29,6 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
   @override
   Widget build(BuildContext context) {
     final TextStyle theme = Theme.of(context).textTheme.bodyMedium!;
-    final String points = Get.arguments;
     final showPointsTab = canViewEmployeesPoints;
     return DefaultTabController(
       length: showPointsTab ? 3 : 2,
@@ -118,7 +117,6 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
             final children = <Widget>[
               _EmployeeOverviewTab(
                 employee: controller.employeeService.employeeDetails.value!,
-                points: points,
                 isManualCheckoutLoading:
                     controller.isManualCheckoutLoading.value,
                 onManualCheckout: () => controller.manualCheckoutEmployee(
@@ -139,13 +137,11 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
 class _EmployeeOverviewTab extends StatelessWidget {
   const _EmployeeOverviewTab({
     required this.employee,
-    required this.points,
     required this.isManualCheckoutLoading,
     required this.onManualCheckout,
   });
 
   final EmployeeDetailsEntity employee;
-  final String points;
   final bool isManualCheckoutLoading;
   final VoidCallback onManualCheckout;
 
@@ -181,9 +177,7 @@ class _EmployeeOverviewTab extends StatelessWidget {
         children: [
           _EmployeeHeaderCard(
             employee: employee,
-            points: points,
             onCopyEmail: () => _copyEmail(context, employee.email),
-            onShowPoints: () => _showPointsHistory(context, employee),
           ),
           SizedBox(height: 12.h),
           _DetailSection(
@@ -296,68 +290,16 @@ class _EmployeeOverviewTab extends StatelessWidget {
       ),
     );
   }
-
-  void _showPointsHistory(
-    BuildContext context,
-    EmployeeDetailsEntity employee,
-  ) {
-    final isDark = ThemeService.isDark.value;
-    Get.dialog(
-      Dialog(
-        backgroundColor: isDark ? AppColors.darkColor : AppColors.whiteColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8.r),
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: 0.72.sh),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(14.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'pointsHistory'.tr,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryColor,
-                  ),
-                ),
-                SizedBox(height: 10.h),
-                if (employee.rewardPunishment.isEmpty)
-                  Text(
-                    'noData'.tr,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: isDark ? Colors.white70 : const Color(0xFF6B7280),
-                    ),
-                  )
-                else
-                  ...employee.rewardPunishment.map(
-                    (e) => _PointHistoryRow(item: e),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _EmployeeHeaderCard extends StatelessWidget {
   const _EmployeeHeaderCard({
     required this.employee,
-    required this.points,
     required this.onCopyEmail,
-    required this.onShowPoints,
   });
 
   final EmployeeDetailsEntity employee;
-  final String points;
   final VoidCallback onCopyEmail;
-  final VoidCallback onShowPoints;
 
   @override
   Widget build(BuildContext context) {
@@ -407,12 +349,6 @@ class _EmployeeHeaderCard extends StatelessWidget {
                   spacing: 8.w,
                   runSpacing: 6.h,
                   children: [
-                    _MetricChip(
-                      icon: Icons.stars_rounded,
-                      label: '${'points'.tr}: $points',
-                      color: AppColors.primaryColor,
-                      onTap: onShowPoints,
-                    ),
                     _MetricChip(
                       icon: Icons.copy_rounded,
                       label: 'copy'.tr,
@@ -797,52 +733,6 @@ class _PermissionChip extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: AppColors.secondaryColor,
         ),
-      ),
-    );
-  }
-}
-
-class _PointHistoryRow extends StatelessWidget {
-  const _PointHistoryRow({required this.item});
-
-  final RewardPunishmentEntity item;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = ThemeService.isDark.value;
-    final textColor = isDark ? Colors.white : const Color(0xFF111827);
-    final subColor = isDark ? Colors.white70 : const Color(0xFF6B7280);
-
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(bottom: 8.h),
-      padding: EdgeInsets.all(10.w),
-      decoration: BoxDecoration(
-        color: AppColors.primaryColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(
-          color: AppColors.primaryColor.withValues(alpha: 0.18),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${item.type.tr}: ${item.points} ${'point'.tr}',
-            style: TextStyle(
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w800,
-              color: textColor,
-            ),
-          ),
-          if (item.notes.trim().isNotEmpty) ...[
-            SizedBox(height: 4.h),
-            Text(
-              item.notes,
-              style: TextStyle(fontSize: 12.sp, color: subColor),
-            ),
-          ],
-        ],
       ),
     );
   }

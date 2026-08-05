@@ -22,7 +22,6 @@ class EmployeeList extends GetView<EmployeeSectionController> {
     controller.getEmployeeDetails(employee.id.toString());
     Get.toNamed(
       AppRoutes.EMPLOYEEDETAILSSCREEN,
-      arguments: employee.points,
     );
   }
 
@@ -551,7 +550,7 @@ class _PointsBadge extends StatelessWidget {
 
   String _label() {
     final net = employee.pointsSummary?.netPoints;
-    if (net == null) return '${employee.points} ${'point'.tr}';
+    if (net == null) return 'employeeNoPoints'.tr;
     return '$net ${'employeePointsBadgeUnit'.tr}';
   }
 

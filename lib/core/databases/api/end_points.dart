@@ -762,7 +762,6 @@ class ApiKey {
   static const String financial_dues = 'financial_dues';
   static const String employee_id = 'employee_id';
   static const String total_work_hours = 'total_work_hours';
-  static const String points_revenue = 'points_revenue';
   static const String financial_details = 'financial_details';
   static const String employee_details = 'employee_details';
   static const String overtime_work_price = 'overtime_work_price';

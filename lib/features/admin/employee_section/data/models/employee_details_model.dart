@@ -32,7 +32,6 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
     required List<String> documentImg,
     required List<String> weeklyDaysOff,
     required List<PermissionEntity> permissions,
-    required List<RewardPunishmentEntity> rewardPunishment,
   }) : super(
           id: id,
           name: name,
@@ -53,7 +52,6 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
           documentImg: documentImg,
           weeklyDaysOff: weeklyDaysOff,
           permissions: permissions,
-          rewardPunishment: rewardPunishment,
         );
 
   factory EmployeeDetailsModel.fromJson(Map<String, dynamic> json) {
@@ -76,7 +74,8 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
       endWorkTime: asString(details[ApiKey.end_work_time]),
       fingerprintEnabled: asBool(details['fingerprint_enabled']),
       deviceUserId: asNullableString(details['device_user_id']),
-      lastFingerprintScanAt: asNullableString(details['last_fingerprint_scan_at']),
+      lastFingerprintScanAt:
+          asNullableString(details['last_fingerprint_scan_at']),
       lastFingerprintAttendanceAt:
           asNullableString(details['last_fingerprint_attendance_at']),
       currentlyInToday: asBool(details['currently_in_today']),
@@ -86,10 +85,6 @@ class EmployeeDetailsModel extends EmployeeDetailsEntity {
       permissions: mapList(
         j[ApiKey.permissions],
         (Map<String, dynamic> m) => PermissionModel.fromJson(m),
-      ),
-      rewardPunishment: mapList(
-        j['rewards_and_punishments'],
-        (Map<String, dynamic> m) => RewardPunishmentModel.fromJson(m),
       ),
     );
   }
@@ -113,34 +108,5 @@ class PermissionModel extends PermissionEntity {
       permissionName: asString(j[ApiKey.permission_name]),
       permissionNameEn: asString(j[ApiKey.permission_name_en]),
     );
-  }
-}
-
-class RewardPunishmentModel extends RewardPunishmentEntity {
-  const RewardPunishmentModel({
-    required String points,
-    required String notes,
-    required String type,
-  }) : super(
-          points: points,
-          notes: notes,
-          type: type,
-        );
-
-  factory RewardPunishmentModel.fromJson(Map<String, dynamic> json) {
-    final j = Map<String, dynamic>.from(json);
-    return RewardPunishmentModel(
-      points: asString(j['points']),
-      notes: asString(j['notes']),
-      type: asString(j['type']),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'points': points,
-      'notes': notes,
-      'type': type,
-    };
   }
 }

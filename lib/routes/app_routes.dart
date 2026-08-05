@@ -55,7 +55,6 @@ class AppRoutes {
 
   // EMPLOYEE TASKS SCREEN
   static const EMPLOYEEDETAILSSCREEN = '/EmployeeDetailsScreen';
-  static const ADDPENALTYANDREWARDSCREEN = '/AddPenaltyAndRewardScreen';
   static const POINTSTABLE = '/PointsTable';
   static const ACTIVITYLOGSCREEN = '/ActivityLogScreen';
   static const FULLSCREENQRSCANNER = '/FullScreenQRScanner';

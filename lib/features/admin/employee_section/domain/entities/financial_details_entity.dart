@@ -3,11 +3,9 @@ class FinancialDetailsEntity {
   final String employeeName;
   final String salary;
   final String debts;
-  final String points;
   final String hourWorkPrice;
   final String totalWorkHours;
   final String numberOfWorkHours;
-  final dynamic pointsRevenue;
   final dynamic total;
   final String month;
   final String selectedMonth;
@@ -23,6 +21,7 @@ class FinancialDetailsEntity {
   final String additions;
   final String advances;
   final String finalNetEntitlement;
+
   /// API: `month` for calendar context, `view` is `day` or `month`.
   final String view;
   final String? selectedDate;
@@ -32,11 +31,9 @@ class FinancialDetailsEntity {
     required this.employeeName,
     required this.salary,
     required this.debts,
-    required this.points,
     required this.hourWorkPrice,
     required this.totalWorkHours,
     required this.numberOfWorkHours,
-    required this.pointsRevenue,
     required this.total,
     required this.month,
     required this.selectedMonth,
