@@ -13,6 +13,7 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../checks/data/datasources/checks_datasource.dart';
 import '../models/employee_details_model.dart';
 import '../models/employee_advances_model.dart';
+import '../models/employee_activity_log_model.dart';
 import '../models/employee_model.dart';
 import '../models/financial_details_model.dart';
 import '../models/financial_dues_model.dart';
@@ -543,6 +544,43 @@ class EmployeeDatasource {
           status: data is Map && data['status'] is int
               ? data['status'] as int
               : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<EmployeeActivityLogsResult> getEmployeeActivityLogs({
+    required int employeeId,
+    String module = 'all',
+    String? search,
+    String? fromDate,
+    String? toDate,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    try {
+      final response = await api.get(
+        EndPoints.employeeActivityLogs(employeeId),
+        queryParameters: {
+          'page': page,
+          'per_page': perPage,
+          if (module.isNotEmpty && module != 'all') 'module': module,
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
+          if (fromDate != null && fromDate.isNotEmpty) 'from_date': fromDate,
+          if (toDate != null && toDate.isNotEmpty) 'to_date': toDate,
+        },
+      );
+      return EmployeeActivityLogsResult.fromJson(asMap(response.data));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
           data: data is Map ? (data['data'] ?? {}) : {},
         ),
       );

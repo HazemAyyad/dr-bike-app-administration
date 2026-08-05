@@ -240,6 +240,8 @@ class EndPoints {
   static const String approveEmployeeOvertimeOrder =
       'approve/employee/overtime/order';
   static const String employeeLogs = 'employee/logs';
+  static String employeeActivityLogs(int employeeId) =>
+      'employees/$employeeId/activity-logs';
   static const String cancelLog = 'cancel/log';
   static const String employeeFinancialDataReport =
       'get/employee/financial/data/report';

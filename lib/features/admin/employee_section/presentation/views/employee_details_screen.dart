@@ -12,6 +12,13 @@ import '../../../../../core/services/initial_bindings.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../debts/presentation/binding/debts_binding.dart';
+import '../../../employee_tasks/presentation/binding/employee_tasks_binding.dart';
+import '../../../maintenance/presentation/binding/maintenance_binding.dart';
+import '../../../maintenance/presentation/controllers/maintenance_controller.dart';
+import '../../../stock/presentation/utils/open_instant_sale_invoice.dart';
+import '../../data/datasources/employee_datasource.dart';
+import '../../data/models/employee_activity_log_model.dart';
 import '../controllers/employee_section_controller.dart';
 import '../../domain/entities/employee_details_entity.dart';
 import '../widgets/employee_points_tab.dart';
@@ -25,7 +32,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
     final String points = Get.arguments;
     final showPointsTab = canViewEmployeesPoints;
     return DefaultTabController(
-      length: showPointsTab ? 2 : 1,
+      length: showPointsTab ? 3 : 2,
       child: Scaffold(
         appBar: CustomAppBar(
           title: 'employeeDetails',
@@ -36,6 +43,9 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                   ? AppColors.darkColor
                   : Colors.white,
               child: TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                labelPadding: EdgeInsets.symmetric(horizontal: 10.w),
                 labelColor: ThemeService.isDark.value
                     ? AppColors.primaryColor
                     : AppColors.secondaryColor,
@@ -44,12 +54,17 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                     ? AppColors.primaryColor
                     : AppColors.secondaryColor,
                 labelStyle: TextStyle(
-                  fontSize: 13.sp,
+                  fontSize: 11.sp,
                   fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelStyle: TextStyle(
+                  fontSize: 10.5.sp,
+                  fontWeight: FontWeight.w600,
                 ),
                 tabs: [
                   Tab(text: 'employeeDetails'.tr),
                   if (showPointsTab) Tab(text: 'pointsAndRewardsTab'.tr),
+                  const Tab(text: 'سجل النشاط'),
                 ],
               ),
             ),
@@ -111,6 +126,7 @@ class EmployeeDetailsScreen extends GetView<EmployeeSectionController> {
                 ),
               ),
               if (showPointsTab) EmployeePointsTab(employeeId: employeeId),
+              EmployeeActivityLogsTab(employeeId: employeeId),
             ];
             return TabBarView(children: children);
           },
@@ -830,6 +846,436 @@ class _PointHistoryRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class EmployeeActivityLogsTab extends StatefulWidget {
+  const EmployeeActivityLogsTab({Key? key, required this.employeeId})
+      : super(key: key);
+
+  final int employeeId;
+
+  @override
+  State<EmployeeActivityLogsTab> createState() =>
+      _EmployeeActivityLogsTabState();
+}
+
+class _EmployeeActivityLogsTabState extends State<EmployeeActivityLogsTab> {
+  final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  final _logs = <EmployeeActivityLogModel>[];
+  EmployeeActivitySummary? _summary;
+  String _module = 'all';
+  int _page = 1;
+  int _lastPage = 1;
+  bool _loading = true;
+  bool _loadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load(reset: true);
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load({required bool reset}) async {
+    if (reset) {
+      setState(() {
+        _loading = true;
+        _page = 1;
+      });
+    } else {
+      if (_loadingMore || _page >= _lastPage) return;
+      setState(() => _loadingMore = true);
+      _page += 1;
+    }
+
+    try {
+      final result =
+          await Get.find<EmployeeDatasource>().getEmployeeActivityLogs(
+        employeeId: widget.employeeId,
+        module: _module,
+        search: _searchController.text,
+        page: _page,
+      );
+      setState(() {
+        if (reset) _logs.clear();
+        _logs.addAll(result.logs);
+        _summary = result.summary;
+        _lastPage = result.pagination.lastPage;
+      });
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _loadingMore = false;
+        });
+      }
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 180) {
+      _load(reset: false);
+    }
+  }
+
+  Future<void> _openNavigation(
+    BuildContext context,
+    EmployeeActivityNavigation nav,
+  ) async {
+    switch (nav.type) {
+      case 'sales_order':
+        Get.toNamed(AppRoutes.SALESORDERDETAILSCREEN, arguments: nav.id);
+        return;
+      case 'instant_sale':
+        await openInstantSaleInvoiceFromStock(
+          context: context,
+          saleId: nav.id.toString(),
+        );
+        return;
+      case 'maintenance':
+        MaintenanceBinding().dependencies();
+        final c = Get.find<MaintenanceController>();
+        c.clearControllers();
+        c.getMaintenancesDetails(maintenanceId: nav.id.toString());
+        Get.toNamed(AppRoutes.NEWMAINTENANCESCREEN);
+        return;
+      case 'debt':
+        DebtsBinding().dependencies();
+        Get.toNamed(AppRoutes.DEBTSSCREEN);
+        return;
+      case 'employee_task':
+        EmployeeTasksBinding().dependencies();
+        Get.toNamed(
+          AppRoutes.TASKDETAILS,
+          arguments: {'taskId': nav.id.toString()},
+        );
+        return;
+      case 'employee_task_occurrence':
+        EmployeeTasksBinding().dependencies();
+        Get.toNamed(
+          AppRoutes.TASKDETAILS,
+          arguments: {'occurrence_id': nav.id.toString()},
+        );
+        return;
+      default:
+        Get.snackbar('info'.tr, 'لا يوجد رابط جاهز لهذه الحركة');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final pageBg = isDark ? AppColors.darkColor : const Color(0xFFF4F6FA);
+
+    return ColoredBox(
+      color: pageBg,
+      child: RefreshIndicator(
+        onRefresh: () => _load(reset: true),
+        child: ListView(
+          controller: _scrollController,
+          padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 28.h),
+          children: [
+            _ActivitySummaryRow(summary: _summary),
+            SizedBox(height: 10.h),
+            _ActivityFilters(
+              selected: _module,
+              searchController: _searchController,
+              onModuleChanged: (value) {
+                setState(() => _module = value);
+                _load(reset: true);
+              },
+              onSearch: () => _load(reset: true),
+            ),
+            SizedBox(height: 10.h),
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(30),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_logs.isEmpty)
+              Padding(
+                padding: EdgeInsets.only(top: 60.h),
+                child: Center(child: Text('noData'.tr)),
+              )
+            else
+              ..._logs.map(
+                (log) => Padding(
+                  padding: EdgeInsets.only(bottom: 8.h),
+                  child: _ActivityTile(
+                    log: log,
+                    onOpen: log.navigation == null
+                        ? null
+                        : () => _openNavigation(context, log.navigation!),
+                  ),
+                ),
+              ),
+            if (_loadingMore)
+              const Padding(
+                padding: EdgeInsets.all(14),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivitySummaryRow extends StatelessWidget {
+  const _ActivitySummaryRow({required this.summary});
+
+  final EmployeeActivitySummary? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = summary;
+    return Row(
+      children: [
+        Expanded(
+            child:
+                _ActivityStat(title: 'الحركات', value: '${s?.totalLogs ?? 0}')),
+        SizedBox(width: 8.w),
+        Expanded(
+            child: _ActivityStat(
+                title: 'المبيعات', value: '${_money(s?.salesAmount ?? 0)} ₪')),
+        SizedBox(width: 8.w),
+        Expanded(
+            child: _ActivityStat(
+                title: 'الديون', value: '${_money(s?.debtsAmount ?? 0)} ₪')),
+      ],
+    );
+  }
+}
+
+class _ActivityStat extends StatelessWidget {
+  const _ActivityStat({required this.title, required this.value});
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.customGreyColor4 : Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+            color: isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(fontSize: 10.sp, color: Colors.grey)),
+          SizedBox(height: 4.h),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityFilters extends StatelessWidget {
+  const _ActivityFilters({
+    required this.selected,
+    required this.searchController,
+    required this.onModuleChanged,
+    required this.onSearch,
+  });
+
+  final String selected;
+  final TextEditingController searchController;
+  final ValueChanged<String> onModuleChanged;
+  final VoidCallback onSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    const modules = {
+      'all': 'الكل',
+      'sales': 'مبيعات',
+      'debts': 'ديون',
+      'maintenance': 'صيانة',
+      'tasks': 'مهام',
+      'stock': 'مخزون',
+    };
+    return Column(
+      children: [
+        TextField(
+          controller: searchController,
+          textInputAction: TextInputAction.search,
+          onSubmitted: (_) => onSearch(),
+          decoration: InputDecoration(
+            hintText: 'بحث في السجل',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: onSearch,
+            ),
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(8.r)),
+            isDense: true,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: modules.entries
+                .map(
+                  (e) => Padding(
+                    padding: EdgeInsetsDirectional.only(end: 6.w),
+                    child: FilterChip(
+                      label: Text(e.value),
+                      selected: selected == e.key,
+                      onSelected: (_) => onModuleChanged(e.key),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActivityTile extends StatelessWidget {
+  const _ActivityTile({required this.log, required this.onOpen});
+
+  final EmployeeActivityLogModel log;
+  final VoidCallback? onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final icon = _activityIcon(log.module);
+    final color = _activityColor(log.module);
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.customGreyColor4 : Colors.white,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+            color: isDark ? Colors.white12 : const Color(0xFFE5E7EB)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36.w,
+            height: 36.w,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.11),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(icon, color: color, size: 19.sp),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  log.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+                ),
+                if (log.description.isNotEmpty) ...[
+                  SizedBox(height: 3.h),
+                  Text(
+                    log.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 11.5.sp, color: Colors.grey.shade600),
+                  ),
+                ],
+                SizedBox(height: 6.h),
+                Text(
+                  [
+                    formatApiDateTime12(log.createdAt),
+                    if (log.amount != null) '${_money(log.amount!)} ₪',
+                  ].join(' • '),
+                  style:
+                      TextStyle(fontSize: 10.5.sp, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          if (onOpen != null)
+            IconButton(
+              tooltip: log.navigation?.label ?? 'فتح',
+              icon: const Icon(Icons.open_in_new_outlined),
+              onPressed: onOpen,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+IconData _activityIcon(String module) {
+  switch (module) {
+    case 'sales':
+      return Icons.receipt_long_outlined;
+    case 'debts':
+      return Icons.account_balance_wallet_outlined;
+    case 'maintenance':
+      return Icons.build_outlined;
+    case 'tasks':
+      return Icons.task_alt_outlined;
+    case 'stock':
+      return Icons.inventory_2_outlined;
+    default:
+      return Icons.history;
+  }
+}
+
+Color _activityColor(String module) {
+  switch (module) {
+    case 'sales':
+      return const Color(0xFF2563EB);
+    case 'debts':
+      return const Color(0xFF059669);
+    case 'maintenance':
+      return const Color(0xFFEA580C);
+    case 'tasks':
+      return const Color(0xFF7C3AED);
+    case 'stock':
+      return const Color(0xFF0891B2);
+    default:
+      return AppColors.primaryColor;
+  }
+}
+
+String _money(double value) {
+  if (value == value.roundToDouble()) return value.toStringAsFixed(0);
+  return value.toStringAsFixed(2);
 }
 
 CacheManager _employeeImageCacheManager() {
