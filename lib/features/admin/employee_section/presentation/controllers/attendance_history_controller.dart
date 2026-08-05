@@ -29,9 +29,12 @@ class AttendanceHistoryController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxBool isCheckoutLoading = false.obs;
   final RxBool isExporting = false.obs;
+  final RxBool isAdvancesLoading = false.obs;
   final RxBool isWeeklyOffImportLoading = false.obs;
   final RxString importingWeeklyOffDate = ''.obs;
   final Rxn<EmployeeAttendanceHistoryResult> result = Rxn();
+  final Rxn<EmployeeAdvancesResult> advances = Rxn();
+  final RxList<Map<String, dynamic>> shownBoxes = <Map<String, dynamic>>[].obs;
   final RxList<WeeklyOffAttendanceImportCandidate> weeklyOffImportCandidates =
       <WeeklyOffAttendanceImportCandidate>[].obs;
 
@@ -104,8 +107,9 @@ class AttendanceHistoryController extends GetxController {
         employeeId: employeeId,
         fromDate: from,
         toDate: to,
-        includeEmptyDays: reportMode,
+        includeEmptyDays: true,
       );
+      await loadAdvances(silent: true);
     } on Failure catch (e) {
       result.value = null;
       Get.snackbar('error'.tr, e.errMessage,
@@ -116,6 +120,64 @@ class AttendanceHistoryController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
     } finally {
       if (!silent) isLoading.value = false;
+    }
+  }
+
+  Future<void> loadAdvances({bool silent = false}) async {
+    final id = int.tryParse(employeeId);
+    if (id == null || id <= 0) return;
+    try {
+      if (!silent) isAdvancesLoading.value = true;
+      advances.value = await Get.find<EmployeeDatasource>().getEmployeeAdvances(
+        employeeId: id,
+        month:
+            '${selectedYear.value}-${selectedMonth.value.toString().padLeft(2, '0')}',
+      );
+    } catch (_) {
+      advances.value = null;
+    } finally {
+      if (!silent) isAdvancesLoading.value = false;
+    }
+  }
+
+  Future<void> loadShownBoxes() async {
+    shownBoxes.value =
+        await Get.find<EmployeeDatasource>().getShownBoxesForEmployeeAdvance();
+  }
+
+  Future<bool> createAdvance({
+    required String loanValue,
+    required int boxId,
+    String note = '',
+  }) async {
+    final id = int.tryParse(employeeId);
+    if (id == null || id <= 0) return false;
+    try {
+      isAdvancesLoading.value = true;
+      final raw = await Get.find<EmployeeDatasource>().createEmployeeAdvance(
+        employeeId: id,
+        loanValue: loanValue,
+        boxId: boxId,
+        note: note,
+      );
+      if (raw['status']?.toString() != 'success') {
+        Get.snackbar(
+          'error'.tr,
+          raw['message']?.toString() ?? 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return false;
+      }
+      Get.snackbar('success'.tr, raw['message']?.toString() ?? 'تمت الإضافة',
+          snackPosition: SnackPosition.BOTTOM);
+      await loadAdvances(silent: true);
+      return true;
+    } catch (e) {
+      Get.snackbar('error'.tr, e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    } finally {
+      isAdvancesLoading.value = false;
     }
   }
 

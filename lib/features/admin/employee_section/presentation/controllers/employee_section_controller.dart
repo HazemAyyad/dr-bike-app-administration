@@ -191,6 +191,11 @@ class EmployeeSectionController extends GetxController
   final TextEditingController overtimeValueController = TextEditingController();
 
   final TextEditingController loanValueController = TextEditingController();
+  final RxList<Map<String, dynamic>> loanApprovalBoxes =
+      <Map<String, dynamic>>[].obs;
+  final Rxn<Map<String, dynamic>> selectedLoanApprovalBox =
+      Rxn<Map<String, dynamic>>();
+  final RxBool isLoanApprovalBoxesLoading = false.obs;
   final TextEditingController rejectionReasonController =
       TextEditingController();
 
@@ -215,6 +220,30 @@ class EmployeeSectionController extends GetxController
     overtimeValue.value = key == 'overtimeValue';
   }
 
+  Future<void> loadLoanApprovalBoxes() async {
+    if (isLoanApprovalBoxesLoading.value) return;
+    try {
+      isLoanApprovalBoxesLoading.value = true;
+      final boxes = await Get.find<EmployeeDatasource>()
+          .getShownBoxesForEmployeeAdvance();
+      loanApprovalBoxes.assignAll(boxes);
+      if (selectedLoanApprovalBox.value == null && boxes.isNotEmpty) {
+        selectedLoanApprovalBox.value = boxes.first;
+      }
+    } catch (_) {
+      loanApprovalBoxes.clear();
+      selectedLoanApprovalBox.value = null;
+    } finally {
+      isLoanApprovalBoxesLoading.value = false;
+    }
+  }
+
+  int? get selectedLoanApprovalBoxId {
+    final box = selectedLoanApprovalBox.value;
+    if (box == null) return null;
+    return int.tryParse((box['id'] ?? '').toString());
+  }
+
   // متغير للتحكم في قائمة الإضافة
   final RxBool isAddMenuOpen = false.obs;
 
@@ -233,16 +262,6 @@ class EmployeeSectionController extends GetxController
       'route': AppRoutes.ADDNEWEMPLOYEESCREEN
     },
     {
-      'title': 'reward',
-      'icon': AssetsManager.moneyIcon,
-      'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
-    },
-    {
-      'title': 'penalty',
-      'icon': AssetsManager.invoiceIcon,
-      'route': AppRoutes.ADDPENALTYANDREWARDSCREEN,
-    },
-    {
       'title': 'newAdmin',
       'icon': AssetsManager.userIcon,
       'route': AppRoutes.ADDEDITADMINSCREEN,
@@ -253,9 +272,6 @@ class EmployeeSectionController extends GetxController
         final route = item['route'];
         if (route == AppRoutes.ADDNEWEMPLOYEESCREEN) {
           return canCreateEmployees;
-        }
-        if (route == AppRoutes.ADDPENALTYANDREWARDSCREEN) {
-          return canManageEmployeesPoints;
         }
         if (route == AppRoutes.ADDEDITADMINSCREEN) {
           return userType == 'admin';
@@ -347,6 +363,16 @@ class EmployeeSectionController extends GetxController
     required String employeeOrderId,
   }) async {
     isPaymentLoading(true);
+    if (loanValueController.text.isNotEmpty &&
+        selectedLoanApprovalBoxId == null) {
+      isPaymentLoading(false);
+      Helpers.showCustomDialogError(
+        context: context,
+        title: 'error'.tr,
+        message: 'يرجى اختيار صندوق صرف السلفة',
+      );
+      return;
+    }
     final result = await approveEmployeeOrderUsecase.call(
       employeeOrderId: employeeOrderId,
       overtimeValue: overtimeValueController.text.isEmpty
@@ -357,6 +383,7 @@ class EmployeeSectionController extends GetxController
       extraWorkHoursValue: extraWorkHoursController.text.isEmpty
           ? ''
           : extraWorkHoursController.text,
+      boxId: selectedLoanApprovalBoxId,
     );
     result.fold(
       (failure) {
@@ -371,6 +398,7 @@ class EmployeeSectionController extends GetxController
         loanValueController.clear();
         rejectionReasonController.clear();
         extraWorkHoursController.clear();
+        selectedLoanApprovalBox.value = null;
         loanValue.value = false;
         rejectOrder.value = false;
         extraWorkHours.value = false;

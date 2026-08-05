@@ -179,40 +179,6 @@ class EmployeeDatasource {
     }
   }
 
-  // add or minus points
-  Future<Map<String, dynamic>> addPointsToEmployee({
-    required String employeeId,
-    required String points,
-    required bool isAdd,
-    required String notes,
-  }) async {
-    try {
-      final response = await api.post(
-        isAdd
-            ? EndPoints.addPointsToEmployee
-            : EndPoints.minusPointsFromEmployee,
-        data: {
-          'employee_id': employeeId,
-          'points': points,
-          'notes': notes,
-        },
-        isFormData: true,
-      );
-      final data = response.data;
-      // print('Response data: $response');
-      return data;
-    } on DioException catch (e) {
-      final data = e.response?.data;
-      throw ServerException(
-        ErrorModel(
-          errorMessage: data['message'] ?? 'Unknown error',
-          status: data['status'] ?? 500,
-          data: data['data'] ?? {},
-        ),
-      );
-    }
-  }
-
   // pay salary
   Future<Map<String, dynamic>> paySalaryToEmployeeUsecase({
     required String employeeId,
@@ -500,6 +466,64 @@ class EmployeeDatasource {
         queryParameters: {'month': month},
       );
       return EmployeeAdvancesResult.fromJson(asMap(response.data));
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> createEmployeeAdvance({
+    required int employeeId,
+    required String loanValue,
+    required int boxId,
+    String note = '',
+  }) async {
+    try {
+      final response = await api.post(
+        EndPoints.createEmployeeAdvance(employeeId),
+        data: {
+          'loan_value': loanValue,
+          'box_id': boxId,
+          if (note.trim().isNotEmpty) 'order': note.trim(),
+        },
+      );
+      return Map<String, dynamic>.from(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      throw ServerException(
+        ErrorModel(
+          errorMessage: data is Map
+              ? (data['message'] ?? 'Unknown error')
+              : 'Unknown error',
+          status: data is Map ? (data['status'] ?? 500) : 500,
+          data: data is Map ? (data['data'] ?? {}) : {},
+        ),
+      );
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getShownBoxesForEmployeeAdvance() async {
+    try {
+      final response = await api.get(EndPoints.getShownBoxes);
+      final data = response.data;
+      final raw = data is Map
+          ? (data['boxes'] ?? data['shown_boxes'] ?? data['data'])
+          : null;
+      if (raw is List) {
+        return raw
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+      return <Map<String, dynamic>>[];
     } on DioException catch (e) {
       final data = e.response?.data;
       throw ServerException(
@@ -990,6 +1014,7 @@ class EmployeeDatasource {
     required String overtimeValue,
     required String loanValue,
     required String extraWorkHoursValue,
+    int? boxId,
   }) async {
     try {
       final response = await api.post(
@@ -999,6 +1024,7 @@ class EmployeeDatasource {
         data: {
           'employee_order_id': employeeOrderId,
           if (loanValue.isNotEmpty) 'loan_value': loanValue,
+          if (loanValue.isNotEmpty && boxId != null) 'box_id': boxId,
           if (overtimeValue.isNotEmpty) 'overtime_value': overtimeValue,
           if (extraWorkHoursValue.isNotEmpty)
             'extra_work_hours': extraWorkHoursValue,

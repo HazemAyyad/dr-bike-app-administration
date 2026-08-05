@@ -360,6 +360,98 @@ Future<void> _showAddDayDialog(
   );
 }
 
+Future<void> _showAddAdvanceDialog(
+  BuildContext context,
+  AttendanceHistoryController controller,
+) async {
+  await controller.loadShownBoxes();
+  if (!context.mounted) return;
+
+  final amountController = TextEditingController();
+  final noteController = TextEditingController();
+  Map<String, dynamic>? selectedBox =
+      controller.shownBoxes.isEmpty ? null : controller.shownBoxes.first;
+
+  String boxName(Map<String, dynamic> box) =>
+      (box['box_name'] ?? box['name'] ?? '').toString();
+  String boxBalance(Map<String, dynamic> box) =>
+      (box['total_balance'] ?? box['total'] ?? '0').toString();
+  int boxId(Map<String, dynamic> box) =>
+      int.tryParse((box['id'] ?? '').toString()) ?? 0;
+
+  final ok = await Get.dialog<bool>(
+    StatefulBuilder(
+      builder: (ctx, setState) {
+        return AlertDialog(
+          title: const Text('إضافة سلفة'),
+          content: SizedBox(
+            width: 460.w,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountController,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'المبلغ'),
+                ),
+                SizedBox(height: 10.h),
+                DropdownButtonFormField<Map<String, dynamic>>(
+                  initialValue: selectedBox,
+                  decoration: const InputDecoration(labelText: 'الصندوق'),
+                  items: controller.shownBoxes
+                      .map(
+                        (box) => DropdownMenuItem(
+                          value: box,
+                          child: Text(
+                            '${boxName(box)} - ${boxBalance(box)}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => selectedBox = value),
+                ),
+                SizedBox(height: 10.h),
+                TextField(
+                  controller: noteController,
+                  maxLines: 2,
+                  decoration: const InputDecoration(labelText: 'ملاحظة'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('cancel'.tr),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              child: Text('save'.tr),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+
+  if (ok != true) return;
+  final box = selectedBox;
+  if (box == null || boxId(box) <= 0 || amountController.text.trim().isEmpty) {
+    Get.snackbar('error'.tr, 'يرجى اختيار صندوق وإدخال المبلغ',
+        snackPosition: SnackPosition.BOTTOM);
+    return;
+  }
+
+  await controller.createAdvance(
+    loanValue: amountController.text.trim(),
+    boxId: boxId(box),
+    note: noteController.text.trim(),
+  );
+}
+
+// ignore: unused_element
 Future<void> _showWeeklyOffImportDialog(
   BuildContext context,
   AttendanceHistoryController controller,
@@ -492,15 +584,7 @@ class EmployeeAttendanceHistoryScreen
                 color: AppColors.primaryColor,
               ),
             ),
-          if (!controller.reportMode)
-            IconButton(
-              tooltip: 'weeklyOffImportsTitle'.tr,
-              onPressed: () => _showWeeklyOffImportDialog(context, controller),
-              icon: const Icon(
-                Icons.event_repeat_outlined,
-                color: AppColors.primaryColor,
-              ),
-            ),
+          if (!controller.reportMode) const SizedBox.shrink(),
           Obx(() {
             final ready = controller.result.value != null &&
                 controller.result.value!.days.isNotEmpty;
@@ -649,6 +733,9 @@ class EmployeeAttendanceHistoryScreen
                 showAdminEdit: true,
                 onEditDay: (day) =>
                     _showEditDayDialog(context, controller, day),
+                advances: controller.advances.value,
+                advancesLoading: controller.isAdvancesLoading.value,
+                onAddAdvance: () => _showAddAdvanceDialog(context, controller),
               );
             }),
           ),

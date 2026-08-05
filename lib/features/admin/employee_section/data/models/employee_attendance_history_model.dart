@@ -106,10 +106,17 @@ class EmployeeAttendanceDay {
   final DateTime? firstCheckInServer;
   final String? firstCheckInSource;
   final DateTime? lastCheckOut;
+  final DateTime? actualCheckOut;
+  final DateTime? calculatedCheckOut;
   final DateTime? lastCheckOutServer;
   final String? lastCheckOutSource;
   final bool currentlyIn;
   final int workedMinutes;
+  final int actualWorkedMinutes;
+  final int calculatedWorkedMinutes;
+  final int overtimeGraceMinutes;
+  final bool isWeeklyOff;
+  final bool weeklyOffWorked;
   final int awayMinutes;
   final int expectedWorkMinutes;
   final bool? onTime;
@@ -132,6 +139,7 @@ class EmployeeAttendanceDay {
   final bool canEditDay;
   final String? attendanceStatus;
   final String? attendanceStatusLabel;
+  final List<EmployeeAttendanceAdjustmentRow> adjustments;
 
   const EmployeeAttendanceDay({
     required this.date,
@@ -140,10 +148,17 @@ class EmployeeAttendanceDay {
     required this.firstCheckInServer,
     required this.firstCheckInSource,
     required this.lastCheckOut,
+    required this.actualCheckOut,
+    required this.calculatedCheckOut,
     required this.lastCheckOutServer,
     required this.lastCheckOutSource,
     required this.currentlyIn,
     required this.workedMinutes,
+    required this.actualWorkedMinutes,
+    required this.calculatedWorkedMinutes,
+    required this.overtimeGraceMinutes,
+    required this.isWeeklyOff,
+    required this.weeklyOffWorked,
     required this.awayMinutes,
     required this.expectedWorkMinutes,
     required this.onTime,
@@ -165,6 +180,7 @@ class EmployeeAttendanceDay {
     this.canEditDay = false,
     this.attendanceStatus,
     this.attendanceStatusLabel,
+    this.adjustments = const [],
   });
 
   factory EmployeeAttendanceDay.fromJson(Map<String, dynamic> json) {
@@ -187,12 +203,25 @@ class EmployeeAttendanceDay {
       lastCheckOut: j['last_check_out'] == null
           ? null
           : parseApiDateTime(j['last_check_out']),
+      actualCheckOut: j['actual_check_out'] == null
+          ? null
+          : parseApiDateTime(j['actual_check_out']),
+      calculatedCheckOut: j['calculated_check_out'] == null
+          ? null
+          : parseApiDateTime(j['calculated_check_out']),
       lastCheckOutServer: j['last_check_out_server'] == null
           ? null
           : parseApiDateTime(j['last_check_out_server']),
       lastCheckOutSource: asNullableString(j['last_check_out_source']),
       currentlyIn: asBool(j['currently_in']),
       workedMinutes: asInt(j['worked_minutes']),
+      actualWorkedMinutes:
+          asInt(j['actual_worked_minutes'], asInt(j['worked_minutes'])),
+      calculatedWorkedMinutes:
+          asInt(j['calculated_worked_minutes'], asInt(j['worked_minutes'])),
+      overtimeGraceMinutes: asInt(j['overtime_grace_minutes'], 15),
+      isWeeklyOff: asBool(j['is_weekly_off']),
+      weeklyOffWorked: asBool(j['weekly_off_worked']),
       awayMinutes: asInt(j['away_minutes']),
       expectedWorkMinutes: asInt(j['expected_work_minutes']),
       onTime: onTime,
@@ -227,6 +256,37 @@ class EmployeeAttendanceDay {
       canEditDay: asBool(j['can_edit_day']),
       attendanceStatus: asNullableString(j['attendance_status']),
       attendanceStatusLabel: asNullableString(j['attendance_status_label']),
+      adjustments: mapList(
+        j['adjustments'],
+        (m) => EmployeeAttendanceAdjustmentRow.fromJson(
+          Map<String, dynamic>.from(m),
+        ),
+      ),
+    );
+  }
+}
+
+class EmployeeAttendanceAdjustmentRow {
+  final int id;
+  final Map<String, dynamic> beforeValues;
+  final Map<String, dynamic> afterValues;
+  final DateTime? createdAt;
+
+  const EmployeeAttendanceAdjustmentRow({
+    required this.id,
+    required this.beforeValues,
+    required this.afterValues,
+    required this.createdAt,
+  });
+
+  factory EmployeeAttendanceAdjustmentRow.fromJson(Map<String, dynamic> json) {
+    final j = Map<String, dynamic>.from(json);
+    return EmployeeAttendanceAdjustmentRow(
+      id: asInt(j['id']),
+      beforeValues: asMap(j['before_values']),
+      afterValues: asMap(j['after_values']),
+      createdAt:
+          j['created_at'] == null ? null : parseApiDateTime(j['created_at']),
     );
   }
 }

@@ -13,12 +13,14 @@ class ApproveEmployeeOrderUsecase {
     required String overtimeValue,
     required String loanValue,
     required String extraWorkHoursValue,
+    int? boxId,
   }) {
     return employeeRepository.approveEmployeeOrder(
       employeeOrderId: employeeOrderId,
       overtimeValue: overtimeValue,
       loanValue: loanValue,
       extraWorkHoursValue: extraWorkHoursValue,
+      boxId: boxId,
     );
   }
 }

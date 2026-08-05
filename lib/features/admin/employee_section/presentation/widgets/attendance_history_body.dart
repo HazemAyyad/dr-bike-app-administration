@@ -7,6 +7,7 @@ import '../../../../../core/widgets/attendance_dual_time_text.dart';
 import '../../../../../core/services/theme_service.dart';
 import '../../../../../core/utils/app_colors.dart';
 import '../../data/models/employee_attendance_history_model.dart';
+import '../../data/models/employee_advances_model.dart';
 import '../controllers/attendance_history_controller.dart';
 
 String _weeklyDaysOffLabel(List<String> stored) => stored.isEmpty
@@ -57,6 +58,9 @@ class AttendanceHistoryBody extends StatelessWidget {
     this.showTodaySummary = false,
     this.showAdminEdit = false,
     this.onEditDay,
+    this.advances,
+    this.advancesLoading = false,
+    this.onAddAdvance,
   }) : super(key: key);
 
   final EmployeeAttendanceHead employee;
@@ -66,6 +70,9 @@ class AttendanceHistoryBody extends StatelessWidget {
   final bool showTodaySummary;
   final bool showAdminEdit;
   final Future<void> Function(EmployeeAttendanceDay day)? onEditDay;
+  final EmployeeAdvancesResult? advances;
+  final bool advancesLoading;
+  final VoidCallback? onAddAdvance;
 
   List<EmployeeAttendanceDay> get _logDays {
     final list = showTodaySummary
@@ -77,6 +84,7 @@ class AttendanceHistoryBody extends StatelessWidget {
   }
 
   /// ملخص الأسبوع — يُحسب من صفوف الأيام المحمّلة (آخر 7 أيام ضمن البيانات).
+  // ignore: unused_element
   List<Widget> _buildWeeklySection() {
     final agg = _WeeklyAggregate.fromDays(days);
     if (agg == null) return const [];
@@ -97,9 +105,6 @@ class AttendanceHistoryBody extends StatelessWidget {
             employee: employee,
             day: todayDay,
           ),
-        if (monthlySummary != null)
-          _MonthlySummarySection(summary: monthlySummary!),
-        ..._buildWeeklySection(),
         if (_logDays.isNotEmpty) ...[
           Padding(
             padding: EdgeInsets.fromLTRB(4.w, 4.h, 4.w, 8.h),
@@ -112,15 +117,328 @@ class AttendanceHistoryBody extends StatelessWidget {
               ),
             ),
           ),
-          ..._logDays.map(
-            (d) => _CompactAttendanceDayCard(
-              day: d,
-              showAdminEdit: showAdminEdit,
-              onEdit: onEditDay == null ? null : () => onEditDay!(d),
-            ),
+          _AttendanceDaysTable(
+            days: _logDays,
+            showAdminEdit: showAdminEdit,
+            onEditDay: onEditDay,
+          ),
+          SizedBox(height: 14.h),
+          _EmployeeAdvancesInlineSection(
+            advances: advances,
+            loading: advancesLoading,
+            onAdd: onAddAdvance,
           ),
         ],
       ],
+    );
+  }
+}
+
+class _EmployeeAdvancesInlineSection extends StatelessWidget {
+  const _EmployeeAdvancesInlineSection({
+    required this.advances,
+    required this.loading,
+    required this.onAdd,
+  });
+
+  final EmployeeAdvancesResult? advances;
+  final bool loading;
+  final VoidCallback? onAdd;
+
+  String _status(String value) {
+    switch (value) {
+      case 'approved':
+        return 'مقبولة';
+      case 'rejected':
+        return 'مرفوضة';
+      case 'paid':
+        return 'مدفوعة';
+      default:
+        return 'قيد المراجعة';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final items = advances?.advances ?? const <EmployeeAdvanceModel>[];
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: _cardBg(isDark),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.fromBorderSide(_cardBorder(isDark)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'السلف',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.operationalNavy,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'إضافة سلفة',
+                onPressed: onAdd,
+                icon: const Icon(Icons.add_circle_outline),
+                color: AppColors.primaryColor,
+              ),
+            ],
+          ),
+          if (loading)
+            const Center(child: CircularProgressIndicator())
+          else if (items.isEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              child: Text(
+                'لا توجد سلف في هذه الفترة',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: isDark ? Colors.white70 : Colors.grey),
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columnSpacing: 18.w,
+                horizontalMargin: 8.w,
+                columns: const [
+                  DataColumn(label: Text('التاريخ')),
+                  DataColumn(label: Text('الحالة')),
+                  DataColumn(label: Text('المبلغ')),
+                  DataColumn(label: Text('المعتمد')),
+                ],
+                rows: items
+                    .map(
+                      (advance) => DataRow(
+                        cells: [
+                          DataCell(Text(advance.date)),
+                          DataCell(Text(_status(advance.status))),
+                          DataCell(Text(advance.amount)),
+                          DataCell(Text(
+                            advance.approvedLoanValue ?? '-',
+                          )),
+                        ],
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          SizedBox(height: 6.h),
+          Text(
+            'المجموع: ${advances?.total ?? '0'}   المقبول: ${advances?.approvedTotal ?? '0'}',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white70 : const Color(0xFF4B5563),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttendanceDaysTable extends StatelessWidget {
+  const _AttendanceDaysTable({
+    required this.days,
+    required this.showAdminEdit,
+    required this.onEditDay,
+  });
+
+  final List<EmployeeAttendanceDay> days;
+  final bool showAdminEdit;
+  final Future<void> Function(EmployeeAttendanceDay day)? onEditDay;
+
+  static String _time(DateTime? value) {
+    if (value == null) return '-';
+    final local = value.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  static String _value(Map<String, dynamic> data, String key) {
+    final value = data[key];
+    if (value == null || value.toString().isEmpty) return '-';
+    return value.toString();
+  }
+
+  void _showAdjustments(EmployeeAttendanceDay day) {
+    if (day.adjustments.isEmpty) return;
+    Get.dialog<void>(
+      AlertDialog(
+        title: Text('تعديلات ${day.date}'),
+        content: SizedBox(
+          width: 560.w,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: day.adjustments.map((adjustment) {
+                final before = adjustment.beforeValues;
+                final after = adjustment.afterValues;
+                return Container(
+                  margin: EdgeInsets.only(bottom: 10.h),
+                  padding: EdgeInsets.all(10.w),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        adjustment.createdAt == null
+                            ? 'تعديل #${adjustment.id}'
+                            : 'تعديل #${adjustment.id} - ${_time(adjustment.createdAt)}',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      DataTable(
+                        columnSpacing: 14.w,
+                        horizontalMargin: 6.w,
+                        columns: const [
+                          DataColumn(label: Text('الحقل')),
+                          DataColumn(label: Text('قبل')),
+                          DataColumn(label: Text('بعد')),
+                        ],
+                        rows: [
+                          _adjustmentRow('الدخول', before, after, 'arrived_at'),
+                          _adjustmentRow('الخروج', before, after, 'left_at'),
+                          _adjustmentRow('الصافي بالدقائق', before, after,
+                              'worked_minutes'),
+                          _adjustmentRow('العادي بالدقائق', before, after,
+                              'normal_minutes'),
+                          _adjustmentRow('الأوفر بالدقائق', before, after,
+                              'overtime_minutes'),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('cancel'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static DataRow _adjustmentRow(
+    String label,
+    Map<String, dynamic> before,
+    Map<String, dynamic> after,
+    String key,
+  ) {
+    return DataRow(
+      cells: [
+        DataCell(Text(label)),
+        DataCell(Text(_value(before, key))),
+        DataCell(Text(_value(after, key))),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = ThemeService.isDark.value;
+    final bg = isDark ? AppColors.customGreyColor4 : Colors.white;
+    final border = isDark ? Colors.white12 : const Color(0xFFE1E5EE);
+    final weeklyOffColor = isDark
+        ? AppColors.customOrange3.withValues(alpha: 0.22)
+        : const Color(0xFFFFF3D8);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: border),
+        ),
+        child: DataTable(
+          columnSpacing: 18.w,
+          horizontalMargin: 10.w,
+          headingRowColor: WidgetStateProperty.resolveWith(
+            (_) => AppColors.primaryColor,
+          ),
+          headingTextStyle: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
+          columns: [
+            const DataColumn(label: Text('التاريخ')),
+            const DataColumn(label: Text('الحالة')),
+            const DataColumn(label: Text('دخول')),
+            const DataColumn(label: Text('خروج فعلي')),
+            const DataColumn(label: Text('خروج محسوب')),
+            const DataColumn(label: Text('الصافي')),
+            const DataColumn(label: Text('أوفر تايم')),
+            const DataColumn(label: Text('تعديلات')),
+            if (showAdminEdit) const DataColumn(label: Text('')),
+          ],
+          rows: days.map((day) {
+            final isOff = day.isWeeklyOff || _isPresentOnWeeklyDayOff(day);
+            return DataRow(
+              color: WidgetStateProperty.resolveWith(
+                (_) => isOff ? weeklyOffColor : null,
+              ),
+              cells: [
+                DataCell(Text(_compactDayTitle(day.date))),
+                DataCell(Text(day.attendanceStatusLabel ?? '-')),
+                DataCell(Text(_time(day.firstCheckIn))),
+                DataCell(Text(_time(day.actualCheckOut ?? day.lastCheckOut))),
+                DataCell(
+                    Text(_time(day.calculatedCheckOut ?? day.lastCheckOut))),
+                DataCell(Text(
+                  day.workedHours ??
+                      AttendanceHistoryController.formatMinutes(
+                        day.calculatedWorkedMinutes,
+                      ),
+                )),
+                DataCell(Text(
+                  AttendanceHistoryController.formatMinutes(
+                    day.contractOvertimeMinutes ?? day.overtimeMinutes,
+                  ),
+                )),
+                DataCell(
+                  day.adjustments.isEmpty
+                      ? const Text('-')
+                      : TextButton.icon(
+                          onPressed: () => _showAdjustments(day),
+                          icon: const Icon(Icons.history, size: 16),
+                          label: Text('${day.adjustments.length}'),
+                        ),
+                ),
+                if (showAdminEdit)
+                  DataCell(
+                    IconButton(
+                      tooltip: 'editAttendanceDay'.tr,
+                      onPressed: day.canEditDay && onEditDay != null
+                          ? () => onEditDay!(day)
+                          : null,
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                  ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 }
@@ -321,6 +639,7 @@ class _TodayShiftSummaryCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _MonthlySummarySection extends StatelessWidget {
   const _MonthlySummarySection({required this.summary});
 
@@ -688,11 +1007,12 @@ class _SummaryStatCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _CompactAttendanceDayCard extends StatelessWidget {
   const _CompactAttendanceDayCard({
     required this.day,
-    this.showAdminEdit = false,
-    this.onEdit,
+    required this.showAdminEdit,
+    required this.onEdit,
   });
 
   final EmployeeAttendanceDay day;

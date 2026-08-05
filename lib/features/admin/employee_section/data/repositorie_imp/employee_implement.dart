@@ -126,38 +126,6 @@ class EmployeeImplement implements EmployeeRepository {
     }
   }
 
-  // add points or minus points
-  @override
-  Future<Either<Failure, String>> addPointsToEmployee({
-    required String employeeId,
-    required String points,
-    required String notes,
-    required bool isAdd,
-  }) async {
-    if (!await networkInfo.isConnected) {
-      return Left(NoConnectionFailure());
-    }
-    try {
-      final result = await employeeDatasource.addPointsToEmployee(
-        employeeId: employeeId,
-        points: points,
-        notes: notes,
-        isAdd: isAdd,
-      );
-      if (result['status'] == 'success') {
-        return Right(result['message']);
-      }
-      return Left(
-        ValidationFailure(
-          result['message'] ?? 'Unknown error',
-          result,
-        ),
-      );
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.errorModel.errorMessage, e.errorModel.data));
-    }
-  }
-
   // pay salary to employee
   @override
   Future<Either<Failure, String>> paySalaryToEmployeeUsecase({
@@ -487,6 +455,7 @@ class EmployeeImplement implements EmployeeRepository {
     required String overtimeValue,
     required String loanValue,
     required String extraWorkHoursValue,
+    int? boxId,
   }) async {
     if (!await networkInfo.isConnected) {
       return Left(NoConnectionFailure());
@@ -497,6 +466,7 @@ class EmployeeImplement implements EmployeeRepository {
         overtimeValue: overtimeValue,
         loanValue: loanValue,
         extraWorkHoursValue: extraWorkHoursValue,
+        boxId: boxId,
       );
       if (result['status'] == 'success') {
         return Right(result['message']);

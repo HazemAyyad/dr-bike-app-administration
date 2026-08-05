@@ -8,7 +8,8 @@ import '../databases/api/end_points.dart';
 class AttendanceSettingsService {
   AttendanceSettingsService._();
 
-  static final AttendanceSettingsService instance = AttendanceSettingsService._();
+  static final AttendanceSettingsService instance =
+      AttendanceSettingsService._();
 
   ApiConsumer? get _api =>
       Get.isRegistered<DioConsumer>() ? Get.find<DioConsumer>() : null;
@@ -22,6 +23,8 @@ class AttendanceSettingsService {
   final RxInt deduplicateMinutes = 2.obs;
   final RxInt reverseCheckoutWindowMinutes = 60.obs;
   final RxInt afterMidnightGraceHour = 4.obs;
+  final RxInt overtimeGraceMinutes = 15.obs;
+  final RxnString overtimeGraceEffectiveFrom = RxnString();
 
   final RxBool isLoading = false.obs;
   final RxBool isSaving = false.obs;
@@ -51,11 +54,14 @@ class AttendanceSettingsService {
               .toLowerCase();
           fingerprintSyncMode.value =
               (mode == 'pull' || mode == 'push') ? mode : 'disabled';
-          defaultDeviceId.value = _asNullableInt(s['fingerprint_default_device_id']);
-          syncIntervalMinutes.value = _asInt(s['fingerprint_sync_interval_minutes'], 5);
+          defaultDeviceId.value =
+              _asNullableInt(s['fingerprint_default_device_id']);
+          syncIntervalMinutes.value =
+              _asInt(s['fingerprint_sync_interval_minutes'], 5);
           autoCreateUnknownUsers.value =
               _asBool(s['fingerprint_auto_create_unknown_users'], false);
-          deduplicateMinutes.value = _asInt(s['fingerprint_deduplicate_minutes'], 2);
+          deduplicateMinutes.value =
+              _asInt(s['fingerprint_deduplicate_minutes'], 2);
           reverseCheckoutWindowMinutes.value = _asInt(
             s['fingerprint_reverse_checkout_window_minutes'],
             60,
@@ -64,6 +70,15 @@ class AttendanceSettingsService {
             s['attendance_after_midnight_grace_hour'],
             4,
           );
+          overtimeGraceMinutes.value = _asInt(
+            s['overtime_grace_minutes'],
+            15,
+          );
+          final rule = s['overtime_grace_rule'];
+          if (rule is Map) {
+            overtimeGraceEffectiveFrom.value =
+                rule['effective_from']?.toString();
+          }
         }
       }
       _loaded = true;
@@ -93,13 +108,16 @@ class AttendanceSettingsService {
           'fingerprint_reverse_checkout_window_minutes':
               reverseCheckoutWindowMinutes.value,
           'attendance_after_midnight_grace_hour': afterMidnightGraceHour.value,
+          'overtime_grace_minutes': overtimeGraceMinutes.value,
+          'overtime_grace_effective_from': _tomorrowDateKey(),
         },
       );
       final data = _responseData(response);
       if (data is Map && data['status']?.toString() == 'success') {
         final s = data['settings'];
         if (s is Map) {
-          qrEnabled.value = _asBool(s['attendance_qr_enabled'], qrEnabled.value);
+          qrEnabled.value =
+              _asBool(s['attendance_qr_enabled'], qrEnabled.value);
           fingerprintEnabled.value = _asBool(
             s['attendance_fingerprint_enabled'],
             fingerprintEnabled.value,
@@ -109,7 +127,8 @@ class AttendanceSettingsService {
               .toLowerCase();
           fingerprintSyncMode.value =
               (mode == 'pull' || mode == 'push') ? mode : 'disabled';
-          defaultDeviceId.value = _asNullableInt(s['fingerprint_default_device_id']);
+          defaultDeviceId.value =
+              _asNullableInt(s['fingerprint_default_device_id']);
           syncIntervalMinutes.value = _asInt(
             s['fingerprint_sync_interval_minutes'],
             syncIntervalMinutes.value,
@@ -130,6 +149,15 @@ class AttendanceSettingsService {
             s['attendance_after_midnight_grace_hour'],
             afterMidnightGraceHour.value,
           );
+          overtimeGraceMinutes.value = _asInt(
+            s['overtime_grace_minutes'],
+            overtimeGraceMinutes.value,
+          );
+          final rule = s['overtime_grace_rule'];
+          if (rule is Map) {
+            overtimeGraceEffectiveFrom.value =
+                rule['effective_from']?.toString();
+          }
         }
         return true;
       }
@@ -163,5 +191,9 @@ class AttendanceSettingsService {
     final n = int.tryParse(s);
     return n;
   }
-}
 
+  String _tomorrowDateKey() {
+    final d = DateTime.now().add(const Duration(days: 1));
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  }
+}

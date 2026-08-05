@@ -156,8 +156,6 @@ class EndPoints {
 
   // employees section
   static const String createEmployee = 'create/employee';
-  static const String addPointsToEmployee = 'add/points/to/employee';
-  static const String minusPointsFromEmployee = 'minus/points/from/employee';
   static const String paySalaryToEmployee = 'pay/employee/salary';
   static const String employees = 'employees';
   static String adminImpersonateEmployee(int employeeId) =>
@@ -190,6 +188,8 @@ class EndPoints {
   static const String employeeFinancialDetails =
       'show/employee/financial/details';
   static String employeeAdvances(int employeeId) =>
+      'employees/$employeeId/advances';
+  static String createEmployeeAdvance(int employeeId) =>
       'employees/$employeeId/advances';
   static const String allPermissions = 'all/permissions';
   static const String updatePermissionGrantPolicy = 'permissions/grant-policy';

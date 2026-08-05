@@ -95,8 +95,7 @@ class _AttendanceSettingsScreenState extends State<AttendanceSettingsScreen> {
     final cardBg = isDark ? const Color(0xFF1F2937) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF374151) : const Color(0xFFE5E7EB);
-    final textPrimary =
-        isDark ? Colors.white : const Color(0xFF111827);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF111827);
     final textSecondary =
         isDark ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280);
 
@@ -350,6 +349,43 @@ class _AttendanceSettingsScreenState extends State<AttendanceSettingsScreen> {
                         () => _GraceHourChips(
                           value: _s.afterMidnightGraceHour.value,
                           onChanged: (v) => _s.afterMidnightGraceHour.value = v,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                _SettingsCard(
+                  cardBg: cardBg,
+                  borderColor: borderColor,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'سماحية الأوفر تايم عند الخروج',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Obx(
+                        () => Text(
+                          'تطبق على الأيام القادمة فقط. السريان القادم: ${_s.overtimeGraceEffectiveFrom.value ?? 'غداً'}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: textSecondary,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Obx(
+                        () => _MinutesChips(
+                          values: const [0, 5, 10, 15, 20, 30, 45, 60],
+                          value: _s.overtimeGraceMinutes.value,
+                          onChanged: (v) => _s.overtimeGraceMinutes.value = v,
                         ),
                       ),
                     ],
@@ -725,7 +761,8 @@ class _DefaultDeviceDropdown extends StatelessWidget {
         decoration: InputDecoration(
           filled: true,
           fillColor: const Color(0xFFF9FAFB),
-          contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          contentPadding:
+              EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
             borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -874,7 +911,8 @@ class _PushEndpointCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.link_rounded, size: 18.sp, color: const Color(0xFF2563EB)),
+              Icon(Icons.link_rounded,
+                  size: 18.sp, color: const Color(0xFF2563EB)),
               SizedBox(width: 6.w),
               Text(
                 'pushEndpoint'.tr,
@@ -897,7 +935,8 @@ class _PushEndpointCard extends StatelessWidget {
             ),
             child: SelectableText(
               endpoint,
-              style: TextStyle(fontSize: 11.sp, color: textSecondary, height: 1.4),
+              style:
+                  TextStyle(fontSize: 11.sp, color: textSecondary, height: 1.4),
             ),
           ),
           SizedBox(height: 10.h),

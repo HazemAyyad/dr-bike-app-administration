@@ -109,6 +109,11 @@ class RequestsDetails extends StatelessWidget {
   }
 
   Widget _reviewControls(TextStyle textStyle, BuildContext context) {
+    String boxName(Map<String, dynamic> box) =>
+        (box['box_name'] ?? box['name'] ?? '').toString();
+    String boxBalance(Map<String, dynamic> box) =>
+        (box['total_balance'] ?? box['total'] ?? '0').toString();
+
     return Column(
       children: [
         isOvertime!
@@ -177,20 +182,63 @@ class RequestsDetails extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
                 value: controller.loanValue,
-                onChanged: (value) => controller.setOnlyOneTrue('loanValue'),
+                onChanged: (value) {
+                  controller.setOnlyOneTrue('loanValue');
+                  controller.loadLoanApprovalBoxes();
+                },
               )
             : const SizedBox.shrink(),
         Obx(
           () => controller.loanValue.value
-              ? CustomTextField(
-                  label: '',
-                  labelTextstyle: textStyle.copyWith(
-                    color: AppColors.primaryColor,
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  hintText: 'debtValue',
-                  controller: controller.loanValueController,
+              ? Column(
+                  children: [
+                    CustomTextField(
+                      label: '',
+                      labelTextstyle: textStyle.copyWith(
+                        color: AppColors.primaryColor,
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      hintText: 'debtValue',
+                      controller: controller.loanValueController,
+                    ),
+                    SizedBox(height: 10.h),
+                    Obx(() {
+                      if (controller.isLoanApprovalBoxesLoading.value) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.h),
+                          child: const CircularProgressIndicator(),
+                        );
+                      }
+                      return DropdownButtonFormField<Map<String, dynamic>>(
+                        initialValue: controller.selectedLoanApprovalBox.value,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: 'صندوق الصرف',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                        ),
+                        items: controller.loanApprovalBoxes
+                            .map(
+                              (box) => DropdownMenuItem(
+                                value: box,
+                                child: Text(
+                                  '${boxName(box)} - ${boxBalance(box)}',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) =>
+                            controller.selectedLoanApprovalBox.value = value,
+                        validator: (_) =>
+                            controller.selectedLoanApprovalBoxId == null
+                                ? 'يرجى اختيار صندوق صرف السلفة'
+                                : null,
+                      );
+                    }),
+                  ],
                 )
               : const SizedBox.shrink(),
         ),

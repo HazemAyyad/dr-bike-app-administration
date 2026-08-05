@@ -84,13 +84,6 @@ abstract class EmployeeRepository {
     String? deviceUserId,
   });
 
-  Future<Either<Failure, String>> addPointsToEmployee({
-    required String employeeId,
-    required String points,
-    required bool isAdd,
-    required String notes,
-  });
-
   Future<Either<Failure, String>> paySalaryToEmployeeUsecase({
     required String employeeId,
     required String salary,
@@ -120,6 +113,7 @@ abstract class EmployeeRepository {
     required String overtimeValue,
     required String loanValue,
     required String extraWorkHoursValue,
+    int? boxId,
   });
 
   Future<List<LogsModel>> getLogs();
