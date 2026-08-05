@@ -227,9 +227,6 @@ class EmployeeSectionController extends GetxController
       final boxes = await Get.find<EmployeeDatasource>()
           .getShownBoxesForEmployeeAdvance();
       loanApprovalBoxes.assignAll(boxes);
-      if (selectedLoanApprovalBox.value == null && boxes.isNotEmpty) {
-        selectedLoanApprovalBox.value = boxes.first;
-      }
     } catch (_) {
       loanApprovalBoxes.clear();
       selectedLoanApprovalBox.value = null;
@@ -363,16 +360,6 @@ class EmployeeSectionController extends GetxController
     required String employeeOrderId,
   }) async {
     isPaymentLoading(true);
-    if (loanValueController.text.isNotEmpty &&
-        selectedLoanApprovalBoxId == null) {
-      isPaymentLoading(false);
-      Helpers.showCustomDialogError(
-        context: context,
-        title: 'error'.tr,
-        message: 'يرجى اختيار صندوق صرف السلفة',
-      );
-      return;
-    }
     final result = await approveEmployeeOrderUsecase.call(
       employeeOrderId: employeeOrderId,
       overtimeValue: overtimeValueController.text.isEmpty

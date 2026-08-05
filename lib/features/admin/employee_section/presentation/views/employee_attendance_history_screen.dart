@@ -369,8 +369,7 @@ Future<void> _showAddAdvanceDialog(
 
   final amountController = TextEditingController();
   final noteController = TextEditingController();
-  Map<String, dynamic>? selectedBox =
-      controller.shownBoxes.isEmpty ? null : controller.shownBoxes.first;
+  Map<String, dynamic>? selectedBox;
 
   String boxName(Map<String, dynamic> box) =>
       (box['box_name'] ?? box['name'] ?? '').toString();
@@ -399,17 +398,21 @@ Future<void> _showAddAdvanceDialog(
                 DropdownButtonFormField<Map<String, dynamic>>(
                   initialValue: selectedBox,
                   decoration: const InputDecoration(labelText: 'الصندوق'),
-                  items: controller.shownBoxes
-                      .map(
-                        (box) => DropdownMenuItem(
-                          value: box,
-                          child: Text(
-                            '${boxName(box)} - ${boxBalance(box)}',
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                  items: [
+                    const DropdownMenuItem<Map<String, dynamic>>(
+                      value: null,
+                      child: Text('بدون صندوق'),
+                    ),
+                    ...controller.shownBoxes.map(
+                      (box) => DropdownMenuItem(
+                        value: box,
+                        child: Text(
+                          '${boxName(box)} - ${boxBalance(box)}',
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      )
-                      .toList(),
+                      ),
+                    ),
+                  ],
                   onChanged: (value) => setState(() => selectedBox = value),
                 ),
                 SizedBox(height: 10.h),
@@ -438,15 +441,15 @@ Future<void> _showAddAdvanceDialog(
 
   if (ok != true) return;
   final box = selectedBox;
-  if (box == null || boxId(box) <= 0 || amountController.text.trim().isEmpty) {
-    Get.snackbar('error'.tr, 'يرجى اختيار صندوق وإدخال المبلغ',
+  if (amountController.text.trim().isEmpty) {
+    Get.snackbar('error'.tr, 'يرجى إدخال مبلغ السلفة',
         snackPosition: SnackPosition.BOTTOM);
     return;
   }
 
   await controller.createAdvance(
     loanValue: amountController.text.trim(),
-    boxId: boxId(box),
+    boxId: box == null || boxId(box) <= 0 ? null : boxId(box),
     note: noteController.text.trim(),
   );
 }

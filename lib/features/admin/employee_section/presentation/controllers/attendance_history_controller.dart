@@ -147,7 +147,7 @@ class AttendanceHistoryController extends GetxController {
 
   Future<bool> createAdvance({
     required String loanValue,
-    required int boxId,
+    int? boxId,
     String note = '',
   }) async {
     final id = int.tryParse(employeeId);

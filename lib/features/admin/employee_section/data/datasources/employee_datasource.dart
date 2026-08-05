@@ -483,7 +483,7 @@ class EmployeeDatasource {
   Future<Map<String, dynamic>> createEmployeeAdvance({
     required int employeeId,
     required String loanValue,
-    required int boxId,
+    int? boxId,
     String note = '',
   }) async {
     try {
@@ -491,7 +491,7 @@ class EmployeeDatasource {
         EndPoints.createEmployeeAdvance(employeeId),
         data: {
           'loan_value': loanValue,
-          'box_id': boxId,
+          if (boxId != null) 'box_id': boxId,
           if (note.trim().isNotEmpty) 'order': note.trim(),
         },
       );

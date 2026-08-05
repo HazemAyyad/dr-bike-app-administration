@@ -214,28 +214,28 @@ class RequestsDetails extends StatelessWidget {
                         initialValue: controller.selectedLoanApprovalBox.value,
                         isExpanded: true,
                         decoration: InputDecoration(
-                          labelText: 'صندوق الصرف',
+                          labelText: 'صندوق الصرف (اختياري)',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.r),
                           ),
                         ),
-                        items: controller.loanApprovalBoxes
-                            .map(
-                              (box) => DropdownMenuItem(
-                                value: box,
-                                child: Text(
-                                  '${boxName(box)} - ${boxBalance(box)}',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                        items: [
+                          const DropdownMenuItem<Map<String, dynamic>>(
+                            value: null,
+                            child: Text('بدون صندوق'),
+                          ),
+                          ...controller.loanApprovalBoxes.map(
+                            (box) => DropdownMenuItem(
+                              value: box,
+                              child: Text(
+                                '${boxName(box)} - ${boxBalance(box)}',
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            )
-                            .toList(),
+                            ),
+                          ),
+                        ],
                         onChanged: (value) =>
                             controller.selectedLoanApprovalBox.value = value,
-                        validator: (_) =>
-                            controller.selectedLoanApprovalBoxId == null
-                                ? 'يرجى اختيار صندوق صرف السلفة'
-                                : null,
                       );
                     }),
                   ],
