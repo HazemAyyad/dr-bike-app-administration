@@ -877,6 +877,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       'stock',
       'min_stock',
       'discount',
+      'rotation_date',
     };
     const requiredTextFields = {'product_code', 'nameAr'};
     if (requiredTextFields.contains(field) && trimmed.isEmpty) {
@@ -3003,11 +3004,7 @@ class StockController extends GetxController with GetTickerProviderStateMixin {
       return '';
     }
     if (rotationDate is String) {
-      final s = rotationDate.trim();
-      if (s.length >= 10) {
-        return s.substring(0, 10);
-      }
-      return s;
+      return rotationDate.trim();
     }
     try {
       final dt = rotationDate as DateTime;

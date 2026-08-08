@@ -16,8 +16,8 @@ class QuickEditProductsTab extends StatefulWidget {
 }
 
 class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
-  static const double _desktopTableWidth = 4620;
-  static const double _mobileTableWidth = 3560;
+  static const double _desktopTableWidth = 3850;
+  static const double _mobileTableWidth = 2860;
   static const double _rowHeight = 88;
   static const double _headingHeight = 56;
   static const double _scrollbarThickness = 12;
@@ -210,8 +210,8 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                     ),
                                     dataRowMinHeight: 56,
                                     dataRowMaxHeight: 88,
-                                    columnSpacing: 32,
-                                    horizontalMargin: 12,
+                                    columnSpacing: 22,
+                                    horizontalMargin: 10,
                                     columns: [
                                       _iconCol(
                                         'quickEditMark',
@@ -235,11 +235,9 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                       _col('retailPrice', width: 90),
                                       _col('wholesalePrice', width: 90),
                                       _col('productCost', width: 90),
-                                      _col('price', width: 90),
                                       _col('minSalePrice', width: 90),
                                       _col('stock', width: 90),
                                       _col('minStock', width: 90),
-                                      _col('discount', width: 90),
                                       _iconCol(
                                         'productVisible',
                                         Icons.visibility_outlined,
@@ -259,7 +257,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
                                       _col('rate', width: 90),
                                       _col('manufactureYear', width: 90),
                                       _col('productModel', width: 120),
-                                      _col('productRotationDate', width: 130),
+                                      _col('rotationNumberField', width: 110),
                                       _iconCol(
                                         'quickEditAction',
                                         Icons.edit_outlined,
@@ -355,11 +353,9 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
         DataCell(_number(row, row.normailPriceController)),
         DataCell(_number(row, row.wholesalePriceController)),
         DataCell(_number(row, row.costPriceController)),
-        DataCell(_number(row, row.priceController)),
         DataCell(_number(row, row.minSalePriceController)),
         DataCell(_number(row, row.stockController, integerOnly: true)),
         DataCell(_number(row, row.minStockController)),
-        DataCell(_number(row, row.discountController)),
         DataCell(_switch(row, (v) => row.isShow = v, () => row.isShow)),
         DataCell(_switch(row, (v) => row.isNewItem = v, () => row.isNewItem)),
         DataCell(
@@ -376,7 +372,7 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
         DataCell(
             _number(row, row.manufactureYearController, integerOnly: true)),
         DataCell(_field(row, row.modelController, width: 120)),
-        DataCell(_dateField(row, row.rotationDateController, width: 140)),
+        DataCell(_number(row, row.rotationDateController, width: 110)),
         DataCell(
           Obx(() {
             if (row.isSaving.value) {
@@ -478,13 +474,14 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
     QuickEditProductRowState row,
     TextEditingController textController, {
     bool integerOnly = false,
+    double width = 90,
   }) {
     return Obx(() {
       if (!row.isEditing.value) {
-        return _readonly(textController.text, width: 90);
+        return _readonly(textController.text, width: width);
       }
       return SizedBox(
-        width: 90,
+        width: width,
         child: TextField(
           controller: textController,
           keyboardType: TextInputType.number,
@@ -500,53 +497,6 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
         ),
       );
     });
-  }
-
-  Widget _dateField(
-    QuickEditProductRowState row,
-    TextEditingController textController, {
-    double width = 130,
-  }) {
-    return Obx(() {
-      if (!row.isEditing.value) {
-        return InkWell(
-          onTap: () async {
-            final picked = await _pickDate(textController.text);
-            if (picked == null) return;
-            controller.editQuickEditRow(row);
-            textController.text = _formatDate(picked);
-          },
-          child: _readonly(textController.text, width: width),
-        );
-      }
-      return SizedBox(
-        width: width,
-        child: TextField(
-          controller: textController,
-          readOnly: true,
-          onTap: () async {
-            final picked = await _pickDate(textController.text);
-            if (picked == null) return;
-            textController.text = _formatDate(picked);
-          },
-          decoration: const InputDecoration(
-            isDense: true,
-            border: OutlineInputBorder(),
-            suffixIcon: Icon(Icons.calendar_month_outlined, size: 18),
-          ),
-        ),
-      );
-    });
-  }
-
-  Future<DateTime?> _pickDate(String currentValue) {
-    final current = _parseDate(currentValue) ?? DateTime.now();
-    return showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-    );
   }
 
   Widget _switch(
@@ -574,19 +524,6 @@ class _QuickEditProductsTabState extends State<QuickEditProductsTab> {
       );
     });
   }
-}
-
-DateTime? _parseDate(String value) {
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) return null;
-  return DateTime.tryParse(trimmed);
-}
-
-String _formatDate(DateTime value) {
-  final year = value.year.toString().padLeft(4, '0');
-  final month = value.month.toString().padLeft(2, '0');
-  final day = value.day.toString().padLeft(2, '0');
-  return '$year-$month-$day';
 }
 
 class _QuickEditScrollBehavior extends MaterialScrollBehavior {

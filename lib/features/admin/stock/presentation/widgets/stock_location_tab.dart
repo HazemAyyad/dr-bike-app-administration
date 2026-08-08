@@ -215,7 +215,7 @@ class _LocationProductsTable extends StatefulWidget {
 }
 
 class _LocationProductsTableState extends State<_LocationProductsTable> {
-  static const double _tableWidth = 1660;
+  static const double _tableWidth = 1220;
   static const double _scrollbarThickness = 12;
 
   final ScrollController _topHorizontalController = ScrollController();
@@ -312,17 +312,15 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
                     columns: [
                       _iconCol('productImages', Icons.image_outlined),
                       _col('productId', width: 70),
-                      _col('productCode', width: 120),
-                      _col('productName', width: 240),
-                      _col('retailPrice'),
-                      _col('wholesalePrice'),
+                      _col('productCode', width: 105),
+                      _col('productName', width: 210),
+                      _col('retailPrice', width: 86),
+                      _col('wholesalePrice', width: 86),
                       _col('productCost'),
-                      _col('price'),
                       _col('minimumSale'),
                       _col('stock'),
                       _col('minStock'),
-                      _col('discount'),
-                      _col('rotationDateField', width: 140),
+                      _col('rotationNumberField', width: 110),
                     ],
                     rows: widget.products
                         .map(
@@ -334,14 +332,14 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
                                 product: p,
                                 field: 'product_code',
                                 value: p.productCode,
-                                width: 120,
+                                width: 105,
                                 numeric: false,
                               )),
                               DataCell(_EditablePriceCell(
                                 product: p,
                                 field: 'nameAr',
                                 value: p.name,
-                                width: 240,
+                                width: 210,
                                 numeric: false,
                                 maxLines: 2,
                               )),
@@ -364,11 +362,6 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
                               )),
                               DataCell(_EditablePriceCell(
                                 product: p,
-                                field: 'price',
-                                value: _money(p.price),
-                              )),
-                              DataCell(_EditablePriceCell(
-                                product: p,
                                 field: 'min_sale_price',
                                 value: p.productMinSalePrice,
                               )),
@@ -384,10 +377,10 @@ class _LocationProductsTableState extends State<_LocationProductsTable> {
                               )),
                               DataCell(_EditablePriceCell(
                                 product: p,
-                                field: 'discount',
-                                value: p.discount,
+                                field: 'rotation_date',
+                                value: p.rotationDate,
+                                width: 110,
                               )),
-                              DataCell(_EditableDateCell(product: p)),
                             ],
                           ),
                         )
@@ -488,93 +481,6 @@ class _LocationProductImage extends StatelessWidget {
   }
 }
 
-class _EditableDateCell extends StatefulWidget {
-  const _EditableDateCell({required this.product});
-
-  final AllStockProductsModel product;
-
-  @override
-  State<_EditableDateCell> createState() => _EditableDateCellState();
-}
-
-class _EditableDateCellState extends State<_EditableDateCell> {
-  late final TextEditingController _controller;
-
-  StockController get controller => Get.find<StockController>();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.product.rotationDate);
-  }
-
-  @override
-  void didUpdateWidget(covariant _EditableDateCell oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.product.rotationDate != widget.product.rotationDate) {
-      _controller.text = widget.product.rotationDate;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDate() async {
-    final current = _parseDate(_controller.text) ?? DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: current,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
-    );
-    if (picked == null) return;
-
-    final next = _formatDate(picked);
-    _controller.text = next;
-    await controller.saveLocationProductPrice(
-      product: widget.product,
-      field: 'rotation_date',
-      value: next,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final saving = controller.isLocationPriceSaving(
-        widget.product.productId,
-        'rotation_date',
-      );
-      return SizedBox(
-        width: 140,
-        child: TextField(
-          controller: _controller,
-          readOnly: true,
-          enabled: !saving,
-          onTap: saving ? null : _pickDate,
-          decoration: InputDecoration(
-            isDense: true,
-            border: const OutlineInputBorder(),
-            suffixIcon: saving
-                ? const Padding(
-                    padding: EdgeInsets.all(10),
-                    child: SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : const Icon(Icons.calendar_month_outlined, size: 18),
-          ),
-        ),
-      );
-    });
-  }
-}
-
 class _EditablePriceCell extends StatefulWidget {
   const _EditablePriceCell({
     required this.product,
@@ -594,19 +500,6 @@ class _EditablePriceCell extends StatefulWidget {
 
   @override
   State<_EditablePriceCell> createState() => _EditablePriceCellState();
-}
-
-DateTime? _parseDate(String value) {
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) return null;
-  return DateTime.tryParse(trimmed);
-}
-
-String _formatDate(DateTime value) {
-  final year = value.year.toString().padLeft(4, '0');
-  final month = value.month.toString().padLeft(2, '0');
-  final day = value.day.toString().padLeft(2, '0');
-  return '$year-$month-$day';
 }
 
 class _EditablePriceCellState extends State<_EditablePriceCell> {

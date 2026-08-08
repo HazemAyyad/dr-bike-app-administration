@@ -45,8 +45,8 @@ class EditProductHero extends StatelessWidget {
             final chips = <Widget>[];
             if (controller.editingProductId.value != null) {
               final p = controller.productDetails.value;
-              final sectionName = controller.selectedProductSectionName ??
-                  p?.storeSectionName;
+              final sectionName =
+                  controller.selectedProductSectionName ?? p?.storeSectionName;
               final locationCodeLabel = ProductLocationLabel.withProductCode(
                 sectionName: sectionName,
                 productCode: p?.productCode,
@@ -217,32 +217,8 @@ class EditProductOverviewSection extends StatefulWidget {
       _EditProductOverviewSectionState();
 }
 
-class _EditProductOverviewSectionState extends State<EditProductOverviewSection> {
-  Future<void> _pickRotationDate() async {
-    final c = widget.controller;
-    final now = DateTime.now();
-    final t = c.rotationDateController.text.trim();
-    DateTime initial = now;
-    if (t.length >= 10) {
-      initial = DateTime.tryParse(t.substring(0, 10)) ?? now;
-    }
-    final d = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      locale: Get.locale,
-    );
-    if (d != null) {
-      c.rotationDateController.text =
-          '${d.year.toString().padLeft(4, '0')}-'
-          '${d.month.toString().padLeft(2, '0')}-'
-          '${d.day.toString().padLeft(2, '0')}';
-      c.update();
-      setState(() {});
-    }
-  }
-
+class _EditProductOverviewSectionState
+    extends State<EditProductOverviewSection> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
@@ -294,24 +270,9 @@ class _EditProductOverviewSectionState extends State<EditProductOverviewSection>
           ),
         ),
       EditMetricInputCard(
-        icon: Icons.percent,
-        label: 'discountPercentage'.tr,
-        controller: c.discountPercentageController,
-        keyboardType: const TextInputType.numberWithOptions(
-          decimal: true,
-          signed: false,
-        ),
-      ),
-      EditMetricInputCard(
         icon: Icons.price_change_outlined,
         label: 'minimumSalePrice'.tr,
         controller: c.minSalePriceController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      ),
-      EditMetricInputCard(
-        icon: Icons.price_check_outlined,
-        label: 'listPriceField'.tr,
-        controller: c.listPriceController,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
       EditMetricInputCard(
@@ -339,10 +300,12 @@ class _EditProductOverviewSectionState extends State<EditProductOverviewSection>
       ),
       EditMetricInputCard(
         icon: Icons.update_rounded,
-        label: 'rotationDateField'.tr,
+        label: 'rotationNumberField'.tr,
         controller: c.rotationDateController,
-        readOnly: true,
-        onTap: _pickRotationDate,
+        keyboardType: const TextInputType.numberWithOptions(
+          decimal: true,
+          signed: false,
+        ),
       ),
     ];
 
@@ -362,7 +325,8 @@ class _EditProductOverviewSectionState extends State<EditProductOverviewSection>
 }
 
 class EditSizeColorSection extends StatefulWidget {
-  const EditSizeColorSection({Key? key, required this.controller}) : super(key: key);
+  const EditSizeColorSection({Key? key, required this.controller})
+      : super(key: key);
 
   final StockController controller;
 
@@ -389,9 +353,8 @@ class _EditSizeColorSectionState extends State<EditSizeColorSection> {
           grouped.putIfAbsent(key, () => []).add(entry);
         }
 
-        final countLabel = grouped.isEmpty
-            ? '0'
-            : '${grouped.length} / ${rows.length}';
+        final countLabel =
+            grouped.isEmpty ? '0' : '${grouped.length} / ${rows.length}';
 
         return Container(
           padding: EdgeInsets.all(14.w),
@@ -502,7 +465,8 @@ class _EditSizeColorDataTable extends StatelessWidget {
         horizontalMargin: 8.w,
         columns: [
           DataColumn(
-            label: Text('addImage'.tr, style: _editSizeColorHeaderStyle(context)),
+            label:
+                Text('addImage'.tr, style: _editSizeColorHeaderStyle(context)),
           ),
           DataColumn(
             label: Text('size'.tr, style: _editSizeColorHeaderStyle(context)),
@@ -511,7 +475,8 @@ class _EditSizeColorDataTable extends StatelessWidget {
             label: Text('color'.tr, style: _editSizeColorHeaderStyle(context)),
           ),
           DataColumn(
-            label: Text('quantity'.tr, style: _editSizeColorHeaderStyle(context)),
+            label:
+                Text('quantity'.tr, style: _editSizeColorHeaderStyle(context)),
           ),
           DataColumn(
             label: Text('price'.tr, style: _editSizeColorHeaderStyle(context)),
@@ -529,7 +494,8 @@ class _EditSizeColorDataTable extends StatelessWidget {
             ),
           ),
           DataColumn(
-            label: Text('actions'.tr, style: _editSizeColorHeaderStyle(context)),
+            label:
+                Text('actions'.tr, style: _editSizeColorHeaderStyle(context)),
           ),
         ],
         rows: rows.map((entry) {
@@ -736,10 +702,9 @@ class EditProductMediaSection extends StatelessWidget {
                   Expanded(
                     child: Text(
                       'productDetailsSectionMedia'.tr,
-                      style:
-                          Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                              ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
                     ),
                   ),
                 ],
@@ -1130,7 +1095,8 @@ class _EditVideoStrip extends StatelessWidget {
       child: IconButton(
         tooltip: 'delete'.tr,
         padding: small ? EdgeInsets.all(4.w) : null,
-        constraints: small ? const BoxConstraints(minWidth: 28, minHeight: 28) : null,
+        constraints:
+            small ? const BoxConstraints(minWidth: 28, minHeight: 28) : null,
         onPressed: c.confirmRemoveExistingVideo,
         icon: Icon(
           Icons.close,
@@ -1184,7 +1150,8 @@ class _EditVideoStrip extends StatelessWidget {
 }
 
 class EditProductSaveBar extends StatelessWidget {
-  const EditProductSaveBar({Key? key, required this.controller}) : super(key: key);
+  const EditProductSaveBar({Key? key, required this.controller})
+      : super(key: key);
 
   final StockController controller;
 
