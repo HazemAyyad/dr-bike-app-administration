@@ -25,7 +25,7 @@ class _EditBoxesScreenState extends State<EditBoxesScreen> {
   void initState() {
     super.initState();
     controller = Get.find<BoxesController>();
-    boxId = Get.arguments as String;
+    boxId = Get.arguments?.toString() ?? '';
     controller.getboxDetails(boxId);
   }
 
@@ -112,7 +112,7 @@ class _EditBoxesScreenState extends State<EditBoxesScreen> {
                           isLoading: controller.isAddBoxLoading,
                           text: 'editBox',
                           onPressed: () {
-                            if ((controller. formKey.currentState as FormState)
+                            if ((controller.formKey.currentState as FormState)
                                 .validate()) {
                               controller.editBox(
                                   context: context, boxId: boxId);

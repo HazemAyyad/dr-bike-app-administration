@@ -82,7 +82,8 @@ class BoxesController extends GetxController {
   // اضافة رصيد
   final TextEditingController addBalanceValueController =
       TextEditingController();
-  final TextEditingController addBalanceNoteController = TextEditingController();
+  final TextEditingController addBalanceNoteController =
+      TextEditingController();
 
   // نقل رصيد
   final TextEditingController transferToBoxIdController =
@@ -116,20 +117,30 @@ class BoxesController extends GetxController {
 
   String boxDetailsId = '0';
   // get box details
-  void getboxDetails(String boxId) async {
+  Future<void> getboxDetails(String boxId) async {
     isLoading(true);
     update();
     boxDetailsId = boxId;
-    final boxDetails = await boxDetailsUesecase.call(boxId: boxId);
+    try {
+      final boxDetails = await boxDetailsUesecase.call(boxId: boxId);
 
-    editBoxNameController.text = boxDetails.boxName;
-    editStartBalanceController.text = boxDetails.totalBalance.toString();
-    editAppearController.text =
-        boxDetails.isShown == 1.toString() ? 'visible' : 'notVisible';
-    editCurrencyController.text = boxDetails.currency;
-    boxDetailsLogs.assignAll(boxDetails.boxLogs);
-    isLoading(false);
-    update();
+      editBoxNameController.text = boxDetails.boxName;
+      editStartBalanceController.text = boxDetails.totalBalance.toString();
+      editAppearController.text =
+          boxDetails.isShown == 1.toString() ? 'visible' : 'notVisible';
+      editCurrencyController.text = boxDetails.currency;
+      boxDetailsLogs.assignAll(boxDetails.boxLogs);
+    } catch (e) {
+      Get.snackbar(
+        'error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      isLoading(false);
+      update();
+    }
   }
 
   final RxBool isAddBoxLoading = false.obs;

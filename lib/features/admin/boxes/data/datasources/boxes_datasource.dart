@@ -176,6 +176,15 @@ class BoxesDatasource {
       dynamic details = root['box details'];
       details ??= asMap(raw)['box details'];
       final detailsMap = asMap(details);
+      if (detailsMap.isEmpty) {
+        throw ServerException(
+          ErrorModel(
+            errorMessage: asString(root['message'], 'failed_to_load_box'),
+            status: 500,
+            data: root,
+          ),
+        );
+      }
       if (kDebugMode && detailsMap.isNotEmpty) {
         debugParseLog(
           'BoxesDatasource.boxDetails',
@@ -197,7 +206,9 @@ class BoxesDatasource {
 
   // add box balance
   Future<Map<String, dynamic>> addBoxBalance(
-      {required String boxId, required String total, required String note}) async {
+      {required String boxId,
+      required String total,
+      required String note}) async {
     try {
       final response = await api.post(EndPoints.addBoxBalance,
           data: {'box_id': boxId, 'total': total, 'note': note});
