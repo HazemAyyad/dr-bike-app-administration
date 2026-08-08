@@ -376,7 +376,9 @@ Future<void> _showAddAdvanceDialog(
   String boxBalance(Map<String, dynamic> box) =>
       (box['total_balance'] ?? box['total'] ?? '0').toString();
   int boxId(Map<String, dynamic> box) =>
-      int.tryParse((box['id'] ?? '').toString()) ?? 0;
+      int.tryParse((box['box_id'] ?? box['id'] ?? '').toString()) ?? 0;
+  String boxLabel(Map<String, dynamic> box) =>
+      '${boxName(box)} - ${boxBalance(box)}';
 
   final ok = await Get.dialog<bool>(
     StatefulBuilder(
@@ -397,7 +399,22 @@ Future<void> _showAddAdvanceDialog(
                 SizedBox(height: 10.h),
                 DropdownButtonFormField<Map<String, dynamic>>(
                   initialValue: selectedBox,
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: 'الصندوق'),
+                  selectedItemBuilder: (ctx) => [
+                    const Text(
+                      'بدون صندوق',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    ...controller.shownBoxes.map(
+                      (box) => Text(
+                        boxLabel(box),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                   items: [
                     const DropdownMenuItem<Map<String, dynamic>>(
                       value: null,
@@ -407,13 +424,29 @@ Future<void> _showAddAdvanceDialog(
                       (box) => DropdownMenuItem(
                         value: box,
                         child: Text(
-                          '${boxName(box)} - ${boxBalance(box)}',
+                          boxLabel(box),
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ),
                   ],
                   onChanged: (value) => setState(() => selectedBox = value),
+                ),
+                SizedBox(height: 4.h),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    selectedBox == null
+                        ? 'اختيار الصندوق اختياري. بدون صندوق لن يتم خصم المبلغ من أي صندوق.'
+                        : 'سيتم خصم السلفة من الصندوق المختار.',
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: selectedBox == null
+                          ? Colors.orange.shade700
+                          : Colors.green.shade700,
+                    ),
+                  ),
                 ),
                 SizedBox(height: 10.h),
                 TextField(
