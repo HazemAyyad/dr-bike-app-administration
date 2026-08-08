@@ -137,6 +137,7 @@ class EmployeeAttendanceDay {
   final int overtimeRequestedMinutes;
   final int? overtimeApprovedMinutes;
   final bool canEditDay;
+  final String? canEditDayReason;
   final String? attendanceStatus;
   final String? attendanceStatusLabel;
   final List<EmployeeAttendanceAdjustmentRow> adjustments;
@@ -178,6 +179,7 @@ class EmployeeAttendanceDay {
     this.overtimeRequestedMinutes = 0,
     this.overtimeApprovedMinutes,
     this.canEditDay = false,
+    this.canEditDayReason,
     this.attendanceStatus,
     this.attendanceStatusLabel,
     this.adjustments = const [],
@@ -254,6 +256,7 @@ class EmployeeAttendanceDay {
           ? null
           : asInt(j['overtime_approved_minutes']),
       canEditDay: asBool(j['can_edit_day']),
+      canEditDayReason: asNullableString(j['can_edit_day_reason']),
       attendanceStatus: asNullableString(j['attendance_status']),
       attendanceStatusLabel: asNullableString(j['attendance_status_label']),
       adjustments: mapList(
@@ -270,12 +273,20 @@ class EmployeeAttendanceAdjustmentRow {
   final int id;
   final Map<String, dynamic> beforeValues;
   final Map<String, dynamic> afterValues;
+  final int? editedBy;
+  final String? editedByName;
+  final String? source;
+  final String? note;
   final DateTime? createdAt;
 
   const EmployeeAttendanceAdjustmentRow({
     required this.id,
     required this.beforeValues,
     required this.afterValues,
+    required this.editedBy,
+    required this.editedByName,
+    required this.source,
+    required this.note,
     required this.createdAt,
   });
 
@@ -285,6 +296,10 @@ class EmployeeAttendanceAdjustmentRow {
       id: asInt(j['id']),
       beforeValues: asMap(j['before_values']),
       afterValues: asMap(j['after_values']),
+      editedBy: j['edited_by'] == null ? null : asInt(j['edited_by']),
+      editedByName: asNullableString(j['edited_by_name']),
+      source: asNullableString(j['source']),
+      note: asNullableString(j['note']),
       createdAt:
           j['created_at'] == null ? null : parseApiDateTime(j['created_at']),
     );

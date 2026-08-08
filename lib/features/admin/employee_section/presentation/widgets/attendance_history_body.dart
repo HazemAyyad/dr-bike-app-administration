@@ -269,6 +269,72 @@ class _AttendanceDaysTable extends StatelessWidget {
     return value.toString();
   }
 
+  static String _durationValue(Map<String, dynamic> data, String key) {
+    final raw = data[key];
+    final minutes =
+        raw is num ? raw.toInt() : int.tryParse(raw?.toString() ?? '');
+    if (minutes == null) return _value(data, key);
+    return AttendanceHistoryController.formatMinutes(minutes);
+  }
+
+  static String _sourceLabel(String? source) {
+    switch (source) {
+      case 'admin_edit':
+        return 'تعديل يدوي';
+      case 'fingerprint':
+        return 'بصمة';
+      case 'qr':
+        return 'QR';
+      case 'manual':
+        return 'يدوي';
+      case 'auto':
+        return 'تلقائي';
+      default:
+        return source == null || source.isEmpty ? '-' : source;
+    }
+  }
+
+  static String _editDisabledReason(EmployeeAttendanceDay day) {
+    switch (day.canEditDayReason) {
+      case 'shift_open':
+        return 'لا يمكن تعديل اليوم والموظف ما زال داخل الدوام. سجل خروج أولا.';
+      default:
+        return 'لا يمكن تعديل هذا اليوم حاليا';
+    }
+  }
+
+  static String _scanLine(Map<String, dynamic> scan) {
+    final direction = scan['direction']?.toString() == 'out' ? 'خروج' : 'دخول';
+    final source = _sourceLabel(scan['source']?.toString());
+    final rawAt = scan['scanned_at']?.toString() ?? '';
+    final at = rawAt.length >= 16 ? rawAt.substring(11, 16) : rawAt;
+    return '$direction $at - $source';
+  }
+
+  static Widget _scanList(String title, Map<String, dynamic> values) {
+    final raw = values['scans'];
+    final scans = raw is List ? raw.whereType<Map>().toList() : const <Map>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w800),
+        ),
+        SizedBox(height: 4.h),
+        if (scans.isEmpty)
+          Text('-', style: TextStyle(fontSize: 11.sp))
+        else
+          ...scans.map(
+            (scan) => Text(
+              _scanLine(Map<String, dynamic>.from(scan)),
+              style: TextStyle(fontSize: 11.sp),
+            ),
+          ),
+      ],
+    );
+  }
+
   void _showAdjustments(EmployeeAttendanceDay day) {
     if (day.adjustments.isEmpty) return;
     Get.dialog<void>(
@@ -301,6 +367,21 @@ class _AttendanceDaysTable extends StatelessWidget {
                           fontWeight: FontWeight.w900,
                         ),
                       ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'بواسطة: ${adjustment.editedByName ?? adjustment.editedBy?.toString() ?? '-'}   المصدر: ${_sourceLabel(adjustment.source)}',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: AppColors.customGreyColor5,
+                        ),
+                      ),
+                      if ((adjustment.note ?? '').isNotEmpty) ...[
+                        SizedBox(height: 3.h),
+                        Text(
+                          adjustment.note!,
+                          style: TextStyle(fontSize: 11.sp),
+                        ),
+                      ],
                       SizedBox(height: 8.h),
                       DataTable(
                         columnSpacing: 14.w,
@@ -314,11 +395,23 @@ class _AttendanceDaysTable extends StatelessWidget {
                           _adjustmentRow('الدخول', before, after, 'arrived_at'),
                           _adjustmentRow('الخروج', before, after, 'left_at'),
                           _adjustmentRow('الصافي بالدقائق', before, after,
-                              'worked_minutes'),
+                              'worked_minutes',
+                              duration: true),
                           _adjustmentRow('العادي بالدقائق', before, after,
-                              'normal_minutes'),
+                              'normal_minutes',
+                              duration: true),
                           _adjustmentRow('الأوفر بالدقائق', before, after,
-                              'overtime_minutes'),
+                              'overtime_minutes',
+                              duration: true),
+                        ],
+                      ),
+                      SizedBox(height: 8.h),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: _scanList('السكانات قبل', before)),
+                          SizedBox(width: 12.w),
+                          Expanded(child: _scanList('السكانات بعد', after)),
                         ],
                       ),
                     ],
@@ -342,13 +435,16 @@ class _AttendanceDaysTable extends StatelessWidget {
     String label,
     Map<String, dynamic> before,
     Map<String, dynamic> after,
-    String key,
-  ) {
+    String key, {
+    bool duration = false,
+  }) {
     return DataRow(
       cells: [
         DataCell(Text(label)),
-        DataCell(Text(_value(before, key))),
-        DataCell(Text(_value(after, key))),
+        DataCell(
+            Text(duration ? _durationValue(before, key) : _value(before, key))),
+        DataCell(
+            Text(duration ? _durationValue(after, key) : _value(after, key))),
       ],
     );
   }
@@ -426,13 +522,19 @@ class _AttendanceDaysTable extends StatelessWidget {
                 ),
                 if (showAdminEdit)
                   DataCell(
-                    IconButton(
-                      tooltip: 'editAttendanceDay'.tr,
-                      onPressed: day.canEditDay && onEditDay != null
-                          ? () => onEditDay!(day)
-                          : null,
-                      icon: const Icon(Icons.edit_outlined),
-                    ),
+                    day.canEditDay && onEditDay != null
+                        ? IconButton(
+                            tooltip: 'editAttendanceDay'.tr,
+                            onPressed: () => onEditDay!(day),
+                            icon: const Icon(Icons.edit_outlined),
+                          )
+                        : Tooltip(
+                            message: _editDisabledReason(day),
+                            child: const Icon(
+                              Icons.lock_clock_outlined,
+                              color: Colors.grey,
+                            ),
+                          ),
                   ),
               ],
             );
