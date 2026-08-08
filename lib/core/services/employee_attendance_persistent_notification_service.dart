@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -15,7 +14,7 @@ import '../../routes/app_routes.dart';
 import 'initial_bindings.dart';
 import 'notification_firebase_service.dart';
 
-/// Persistent attendance strip (Android foreground / iOS limited refresh).
+/// Attendance reminder notification.
 class EmployeeAttendancePersistentNotificationService {
   EmployeeAttendancePersistentNotificationService._();
 
@@ -26,8 +25,6 @@ class EmployeeAttendancePersistentNotificationService {
   static const channelId = 'dr_bike_employee_attendance_status';
   static const payloadType = 'employee_attendance_persistent';
 
-  Timer? _tickTimer;
-  bool _foregroundActive = false;
   bool _iosBannerShown = false;
 
   List<String> _weeklyDaysOff = const [];
@@ -46,9 +43,6 @@ class EmployeeAttendancePersistentNotificationService {
   }
 
   Future<void> stop({String reason = 'manual'}) async {
-    _tickTimer?.cancel();
-    _tickTimer = null;
-    _foregroundActive = false;
     _iosBannerShown = false;
 
     final plugin =
@@ -103,7 +97,7 @@ class EmployeeAttendancePersistentNotificationService {
       const AndroidNotificationChannel(
         channelId,
         'حضور الدوام',
-        description: 'إشعار ثابت لتسجيل الدخول وإحصائيات الدوام',
+        description: 'تذكير تسجيل الدخول وإحصائيات الدوام',
         importance: Importance.low,
         playSound: false,
         enableVibration: false,
@@ -210,8 +204,9 @@ class EmployeeAttendancePersistentNotificationService {
       icon: 'ic_notification',
       importance: Importance.low,
       priority: Priority.low,
-      ongoing: true,
-      autoCancel: false,
+      ongoing: false,
+      autoCancel: true,
+      timeoutAfter: 15000,
       playSound: false,
       enableVibration: false,
       onlyAlertOnce: true,
@@ -248,27 +243,16 @@ class EmployeeAttendancePersistentNotificationService {
     if (Platform.isAndroid) {
       final android = plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
-      if (!_foregroundActive) {
-        await android?.startForegroundService(
-          notificationId,
-          title,
-          body,
-          notificationDetails: androidDetails,
-          payload: payload,
-          foregroundServiceTypes: {
-            AndroidServiceForegroundType.foregroundServiceTypeDataSync,
-          },
-        );
-        _foregroundActive = true;
-      } else {
-        await plugin.show(
-          notificationId,
-          title,
-          body,
-          details,
-          payload: payload,
-        );
-      }
+      try {
+        await android?.stopForegroundService();
+      } catch (_) {}
+      await plugin.show(
+        notificationId,
+        title,
+        body,
+        details,
+        payload: payload,
+      );
     } else if (Platform.isIOS) {
       await plugin.show(
         notificationId,
@@ -278,18 +262,6 @@ class EmployeeAttendancePersistentNotificationService {
         payload: payload,
       );
     }
-
-    _startTicker();
-  }
-
-  void _startTicker() {
-    if (_tickTimer != null) return;
-    final interval = Platform.isIOS
-        ? const Duration(seconds: 30)
-        : const Duration(seconds: 1);
-    _tickTimer = Timer.periodic(interval, (_) {
-      _renderOrStop();
-    });
   }
 
   static void handlePayload(Map<String, dynamic> data) {
