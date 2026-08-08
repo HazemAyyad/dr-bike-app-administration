@@ -308,7 +308,7 @@ class _AttendanceDaysTable extends StatelessWidget {
     final source = _sourceLabel(scan['source']?.toString());
     final rawAt = scan['scanned_at']?.toString() ?? '';
     final at = rawAt.length >= 16 ? rawAt.substring(11, 16) : rawAt;
-    return '$direction $at - $source';
+    return '$direction: $at ($source)';
   }
 
   static Widget _scanList(String title, Map<String, dynamic> values) {
@@ -394,13 +394,13 @@ class _AttendanceDaysTable extends StatelessWidget {
                         rows: [
                           _adjustmentRow('الدخول', before, after, 'arrived_at'),
                           _adjustmentRow('الخروج', before, after, 'left_at'),
-                          _adjustmentRow('الصافي بالدقائق', before, after,
-                              'worked_minutes',
+                          _adjustmentRow(
+                              'الصافي المحتسب', before, after, 'worked_minutes',
                               duration: true),
-                          _adjustmentRow('العادي بالدقائق', before, after,
-                              'normal_minutes',
+                          _adjustmentRow(
+                              'الدوام العادي', before, after, 'normal_minutes',
                               duration: true),
-                          _adjustmentRow('الأوفر بالدقائق', before, after,
+                          _adjustmentRow('الأوفر تايم المعتمد', before, after,
                               'overtime_minutes',
                               duration: true),
                         ],
@@ -409,9 +409,9 @@ class _AttendanceDaysTable extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: _scanList('السكانات قبل', before)),
+                          Expanded(child: _scanList('حركات اليوم قبل', before)),
                           SizedBox(width: 12.w),
-                          Expanded(child: _scanList('السكانات بعد', after)),
+                          Expanded(child: _scanList('حركات اليوم بعد', after)),
                         ],
                       ),
                     ],
